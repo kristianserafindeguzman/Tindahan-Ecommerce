@@ -112,19 +112,60 @@ php artisan migrate
 
 ## 🌿 Core Branching and Git Workflow
 
-To maintain a clean codebase and prevent layout or merge conflicts, the team strictly adheres to this branch policy:
+To maintain a clean codebase and prevent layout or merge conflicts, our team operates as direct collaborators on a single repository using an isolated feature branch strategy. **Do not fork this repository.**
 
-* **`main` branch:** Holds production-ready, fully tested milestones. **Never** commit or push code directly to this branch.
-* **`development` branch:** The shared integration sandbox. Pull the latest state from this branch before beginning any feature assignment.
-* **Feature Branches:** Create a separate tracking branch for individual tasks using the following command layout:
+### Branch Hierarchy
+
+*   **`main` branch:** Holds production-ready, fully tested milestones. **Never** commit or push code directly to this branch.
+*   **`dev` branch:** The shared integration sandbox. This is our central development branch where all completed features are combined. **Never** commit directly to this branch.
+
+### Daily Contribution Workflow
+
+Whenever you are assigned a task (e.g., designing a layout, setting up a database migration, or writing a backend function), follow these exact terminal steps:
+
+#### 1. Synchronize Your Local Sandbox
+Before starting any new work, make sure your local machine has the absolute latest changes from the team:
 ```bash
-git checkout -b feature/your-feature-name
+git checkout dev
+git pull origin dev
 
 ```
 
+#### 2. Create an Isolated Feature Branch
 
-*Example:* `git checkout -b feature/login-interface`. Always merge back to the `development` branch via an approved Pull Request.
+Create and switch to a separate local branch dedicated to your specific task. Name it using the `feature/your-task-name` format:
+
+```bash
+git checkout -b feature/login-interface
 
 ```
 
+#### 3. Stage and Commit Your Progress
+
+As you work on your files inside VS Code, create local save points with descriptive commit messages:
+
+```bash
+git add .
+git commit -m "Feat: Implemented secure multi-vendor login page layout"
+
 ```
+
+#### 4. Publish Your Feature Branch to GitHub
+
+When your code is ready for review, push your isolated branch to the online repository:
+
+```bash
+git push -u origin feature/login-interface
+
+```
+
+#### 5. Open a Pull Request (PR)
+
+1. Navigate to our repository on GitHub (`kristianserafindeguzman/multi-vendor-ecommerce`).
+2. Click the yellow **"Compare & pull request"** banner that appears.
+3. Configure the pull request targeting: **`base: dev` ← `compare: feature/login-interface**`.
+4. Submit the request. Once another team member reviews and approves the changes, the code will be safely merged into the `dev` branch.
+
+```
+
+---
