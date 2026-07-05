@@ -1,58 +1,97 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Tindahan: Machine Learning-Driven Multi-Vendor E-Commerce Platform
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A comprehensive multi-vendor web application designed to optimize localized sari-sari store operations, digitalize physical sales workflows, and streamline livelihood monitoring. The system integrates predictive modeling via a Random Forest algorithm and interactive geospatial tracking to support cooperative stakeholders and local administrators.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 👥 Development Team
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **De Guzman, Kristian Serafin I.** 
+- **Dueñas, Earl Dann C.** 
+- **Fabula, Lawrence Joe B.** 
+- **Gabitan, Angelo** 
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 🛠️ Tech Stack
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- **Frontend:** HTML5, CSS3, JavaScript
+- **Backend Framework:** PHP (Laravel Framework)
+- **Database Engine:** MySQL
+- **Data Science / ML:** Python (Random Forest Algorithm)
+- **Mapping & GIS:** Leaflet.js & OpenStreetMap API
+- **Environment & Hosting:** Laragon / Git / GitHub
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Local Development Setup
 
-## Agentic Development
+Follow these exact steps to clone the repository and establish your local working environment.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### 1. Prerequisites
+Before starting, ensure your machine has the following tools installed globally:
+- **Laragon** (Latest version running PHP 8.4+ and MySQL)
+- **Composer** (PHP dependency manager)
+- **Node.js & NPM** (For compiling frontend assets and running Vite)
+- **Git**
 
-```bash
-composer require laravel/boost --dev
+---
 
-php artisan boost:install
-```
+### 2. Step-by-Step Installation
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Open your terminal or command prompt, navigate to your local Laragon web directory (`C:\laragon\www`), and execute the following commands sequentially:
 
-## Contributing
+#### Step A: Clone the Codebase
+Clone the project from GitHub into your local directory:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+git clone [https://github.com/kristianserafindeguzman/multi-vendor-ecommerce.git](https://github.com/kristianserafindeguzman/multi-vendor-ecommerce.git)
+cd multi-vendor-ecommerce
 
-## Code of Conduct
+#### Step B: Install Package Dependencies
+Install the required framework packages for both the backend (Composer) and frontend (NPM):
+# Install PHP dependencies
+composer install
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Install and build Javascript/CSS dependencies
+npm install
+npm run dev
 
-## Security Vulnerabilities
+#### Step C: Set Up Your Local Environment File (.env)
+1. In your project's root directory, look for a file named .env.example.
+2. Duplicate this file or rename a copy of it to exactly .env.
+3. Open the .env file in VS Code and locate the database configurations (around lines 22-27). Change them to match our project schema layout:
+    DB_CONNECTION=mysql
+    DB_HOST=127.0.0.1
+    DB_PORT=3306
+    DB_DATABASE=tindahan_db
+    DB_USERNAME=root
+    DB_PASSWORD=
+4. Network Port Adjustment: If your local Laragon web server runs into a Port 80 conflict and you had to switch your Apache port to 8080, make sure you also update line 5 of your .env file:
+    APP_URL=http://localhost:8080
+But if your Laragon server successfully runs on standard Port 80, leave it as APP_URL=http://localhost.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+#### Step D: Establish Your Local Database
+1. Open your web browser and navigate to your local phpMyAdmin dashboard (http://localhost:8080/phpmyadmin6/ or http://localhost/phpmyadmin/).
+2. Log in using the username root and leave the password field completely blank.
+3. Click the Databases tab at the top left.
+4. Under Create database, type tindahan_db in the name field and click Create.
 
-## License
+#### Step E: Generate App Security Key & Run Migrations
+Go back to your primary VS Code terminal inside the project folder and run the final setup scripts:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# Generate unique application encryption key
+php artisan key:generate
+
+# Build all framework and system architecture tables inside MySQL
+php artisan migrate
+
+---
+
+#### 🌿 Core Branching and Git Workflow
+To maintain a clean codebase and prevent layout or merge conflicts, the team strictly adheres to this branch policy:
+
+main branch: Holds production-ready, fully tested milestones. Never commit or push code directly to this branch.
+
+development branch: The shared integration sandbox. Pull the latest state from this branch before beginning any feature assignment.
+
+Feature Branches: Create a separate tracking branch for individual tasks (e.g., git checkout -b feature/login-interface). Merge back to development via an approved Pull Request.
