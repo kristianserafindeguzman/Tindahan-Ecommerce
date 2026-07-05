@@ -47,6 +47,7 @@ Clone the project from GitHub into your local directory:
 ```bash
 git clone [https://github.com/kristianserafindeguzman/multi-vendor-ecommerce.git](https://github.com/kristianserafindeguzman/multi-vendor-ecommerce.git)
 cd multi-vendor-ecommerce
+```
 
 #### Step B: Install Package Dependencies
 
