@@ -87,11 +87,14 @@ php artisan migrate
 
 ---
 
-#### 🌿 Core Branching and Git Workflow
+## 🌿 Core Branching and Git Workflow
+
 To maintain a clean codebase and prevent layout or merge conflicts, the team strictly adheres to this branch policy:
 
-main branch: Holds production-ready, fully tested milestones. Never commit or push code directly to this branch.
-
-development branch: The shared integration sandbox. Pull the latest state from this branch before beginning any feature assignment.
-
-Feature Branches: Create a separate tracking branch for individual tasks (e.g., git checkout -b feature/login-interface). Merge back to development via an approved Pull Request.
+*   **`main` branch:** Holds production-ready, fully tested milestones. **Never** commit or push code directly to this branch.
+*   **`development` branch:** The shared integration sandbox. Pull the latest state from this branch before beginning any feature assignment.
+*   **Feature Branches:** Create a separate tracking branch for individual tasks using the following command layout:
+    ```bash
+    git checkout -b feature/your-feature-name
+    ```
+    *Example:* `git checkout -b feature/login-interface`. Always merge back to the `development` branch via an approved Pull Request.
