@@ -1,4 +1,4 @@
-```markdown
+
 # Tindahan: Machine Learning-Driven Multi-Vendor E-Commerce Platform
 
 A comprehensive multi-vendor web application designed to optimize localized sari-sari store operations, digitalize physical sales workflows, and streamline livelihood monitoring. The system integrates predictive modeling via a Random Forest algorithm and interactive geospatial tracking to support cooperative stakeholders and local administrators.
@@ -47,8 +47,6 @@ Clone the project from GitHub into your local directory:
 ```bash
 git clone [https://github.com/kristianserafindeguzman/multi-vendor-ecommerce.git](https://github.com/kristianserafindeguzman/multi-vendor-ecommerce.git)
 cd multi-vendor-ecommerce
-
-```
 
 #### Step B: Install Package Dependencies
 
