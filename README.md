@@ -43,9 +43,10 @@ Before starting, ensure your machine has the following tools installed globally:
 Open your terminal or command prompt, navigate to your local Laragon web directory (`C:\laragon\www`), and execute the following commands sequentially:
 
 #### Step A: Clone the Codebase
-Clone the project from GitHub into your local directory:
+Clone the project from Azure DevOps into your local directory and enter the project folder:
 ```bash
-git clone [https://github.com/kristianserafindeguzman/multi-vendor-ecommerce.git](https://github.com/kristianserafindeguzman/multi-vendor-ecommerce.git)
+cd C:\laragon\www
+git clone https://GRP9-Capstone-Project@dev.azure.com/GRP9-Capstone-Project/multi-vendor-ecommerce/_git/multi-vendor-ecommerce
 cd multi-vendor-ecommerce
 ```
 
