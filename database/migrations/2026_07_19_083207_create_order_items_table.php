@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('order_items', function (Blueprint $table) {
             $table->increments('order_item_id'); // PK matching project standards
             $table->unsignedInteger('order_id'); // FK linking to the orders table
-            $table->unsignedInteger('inventory_id'); // FK linking to Lawrence's inventory table
+            $table->unsignedInteger('inventory_id'); // FK linking to inventory table
             
             $table->integer('quantity');
-            $table->decimal('price_at_purchase', 8, 2);
+            $table->decimal('subtotal', 8, 2); // Renamed to subtotal per manuscript
 
             // Foreign Key Constraints
             $table->foreign('order_id')

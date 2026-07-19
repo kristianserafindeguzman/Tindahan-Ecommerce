@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('cart_items', function (Blueprint $table) {
             $table->increments('cart_id'); // PK matching project standards
             $table->unsignedInteger('consumer_id'); // FK linking to the users table
-            $table->unsignedInteger('inventory_id'); // FK linking to Lawrence's inventory table
+            $table->unsignedInteger('inventory_id'); // FK linking to inventory table
             
             $table->integer('quantity')->default(1);
-            $table->timestamps(); // Keeps track of when items were added/updated
+            $table->timestamp('added_at')->useCurrent(); // Renamed to added_at per manuscript
 
             // Foreign Key Constraints
             $table->foreign('consumer_id')

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->unsignedInteger('store_id'); // FK to stores
             
             $table->decimal('total_amount', 10, 2);
-            $table->string('status', 50)->default('pending'); // Handles 'completed' filtering for your ML view
+            $table->string('status', 50)->default('pending'); // Handles 'completed' filtering the ML view
             
             $table->timestamps(); // Generates created_at and updated_at
 
