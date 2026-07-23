@@ -14,7 +14,7 @@ return new class extends Migration
         // 1. Users Table (based from data dictionary)
         Schema::create('users', function (Blueprint $table) {
             $table->increments('user_id'); // INT(11) Primary Key, Auto-Incrementing
-            $table->enum('role', ['owner', 'consumer']); // ENUM constraint for system access levels
+            $table->enum('role', ['Admin', 'Vendor', 'Consumer'])->default('Consumer'); // Updated ENUM values
             $table->string('full_name', 100); // VARCHAR(100) for profile identification
             $table->string('phone_number', 15); // VARCHAR(15) for checkout/pickup contact
             $table->string('email', 100)->unique(); // VARCHAR(100) and Unique constraint
