@@ -1,0 +1,29 @@
+trigger:
+  branches:
+    include:
+      - main  # Change this to master if that is your default branch name
+      - dev
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+- group: GithubSyncVariables # Connects the variables we created in Step 1
+
+steps:
+- checkout: self
+  persistCredentials: true
+  clean: true
+  fetchDepth: 0 # Fetches full history so git pushes cleanly
+
+- script: |
+    # Formulate the authenticated URL with your hidden PAT variable
+    GITHUB_REPO_URL="https://$(GITHUB_PAT)@github.com/kristianserafindeguzman/multi-vendor-ecommerce-repo.git"
+    
+    echo "Configuring git author identity..."
+    git config --global user.email "devops-sync@local"
+    git config --global user.name "Azure DevOps Sync"
+    
+    echo "Pushing and mirroring branches/tags to GitHub..."
+    git push --prune $GITHUB_REPO_URL +refs/remotes/origin/*:refs/heads/* +refs/tags/*:refs/tags/*
+  displayName: 'Sync Azure DevOps Repo to GitHub'
