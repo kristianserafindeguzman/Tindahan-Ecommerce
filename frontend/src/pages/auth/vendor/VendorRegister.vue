@@ -1,16 +1,16 @@
 <template>
-  <q-page class="merchant-page">
-    <div class="merchant-card">
+  <q-page class="vendor-page">
+    <div class="vendor-card">
 
       <!-- HEADER -->
-      <div class="merchant-header">
+      <div class="vendor-header">
         <img
           src="@/assets/tindahan-mobile.png"
           alt="Tindahan Logo"
           class="tindahan-logo"
         />
 
-        <h1>Merchant Registration</h1>
+        <h1>Vendor Registration</h1>
 
         <p class="subtitle">
           Join our ecosystem of successful micro-entrepreneurs today.
@@ -18,9 +18,9 @@
       </div>
 
       <q-form
-        ref="merchantForm"
-        class="merchant-form"
-        @submit.prevent="handleMerchantRegister"
+        ref="vendorForm"
+        class="vendor-form"
+        @submit.prevent="handleVendorRegister"
       >
 
         <div class="register-body">
@@ -332,7 +332,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const merchantForm = ref(null)
+const vendorForm = ref(null)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 const loading = ref(false)
@@ -394,8 +394,8 @@ const handlePhotoChange = event => {
   photoPreview.value = URL.createObjectURL(file)
 }
 
-const handleMerchantRegister = async () => {
-  const isValid = await merchantForm.value.validate()
+const handleVendorRegister = async () => {
+  const isValid = await vendorForm.value.validate()
 
   if (!isValid) {
     return
@@ -405,10 +405,10 @@ const handleMerchantRegister = async () => {
 
   try {
     // Laravel backend integration will be added later.
-    // This will register the user as a Merchant.
+    // This will register the user as a Vendor.
     // photoFile.value holds the raw File for multipart upload.
 
-    console.log('Merchant Register:', {
+    console.log('Vendor Register:', {
       storeName: form.storeName,
       ownerName: form.ownerName,
       email: form.email,
@@ -426,7 +426,7 @@ const handleMerchantRegister = async () => {
     })
 
   } catch (error) {
-    console.error('Merchant registration failed:', error)
+    console.error('Vendor registration failed:', error)
 
   } finally {
     loading.value = false
@@ -443,7 +443,7 @@ const goToLogin = () => {
    PAGE
 ========================= */
 
-.merchant-page {
+.vendor-page {
   min-height: 100vh;
 
   display: flex;
@@ -460,7 +460,7 @@ const goToLogin = () => {
    CARD
 ========================= */
 
-.merchant-card {
+.vendor-card {
   width: 100%;
   max-width: 900px;
 
@@ -476,7 +476,7 @@ const goToLogin = () => {
    HEADER
 ========================= */
 
-.merchant-header {
+.vendor-header {
   text-align: center;
 
   margin-bottom: 22px;
@@ -492,7 +492,7 @@ const goToLogin = () => {
   object-fit: contain;
 }
 
-.merchant-header h1 {
+.vendor-header h1 {
   margin: 0 0 4px;
 
   font-size: 22px;
@@ -515,7 +515,7 @@ const goToLogin = () => {
    FORM LAYOUT
 ========================= */
 
-.merchant-form {
+.vendor-form {
   width: 100%;
 }
 
@@ -854,7 +854,7 @@ const goToLogin = () => {
 ========================= */
 
 @media (max-width: 900px) {
-  .merchant-card {
+  .vendor-card {
     padding: 35px 30px;
   }
 
@@ -874,13 +874,13 @@ const goToLogin = () => {
 ========================= */
 
 @media (max-width: 600px) {
-  .merchant-page {
+  .vendor-page {
     padding: 0;
 
     background: #ffffff;
   }
 
-  .merchant-card {
+  .vendor-card {
     box-shadow: none;
 
     padding: 30px 20px 40px;
@@ -890,7 +890,7 @@ const goToLogin = () => {
     width: 120px;
   }
 
-  .merchant-header h1 {
+  .vendor-header h1 {
     font-size: 19px;
   }
 

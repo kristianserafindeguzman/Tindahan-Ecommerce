@@ -153,11 +153,11 @@
           />
 
           <q-btn
-            label="Register as Merchant"
+            label="Register as Vendor"
             no-caps
             outline
-            class="merchant-registration-button"
-            @click="goToMerchantRegister"
+            class="vendor-registration-button"
+            @click="goToVendorRegister"
           />
 
         </q-card-section>
@@ -207,7 +207,7 @@ const handleLogin = async () => {
   try {
     // Laravel backend integration will be added later.
     // The backend will determine whether the user
-    // is an Admin, Merchant, or Consumer.
+    // is an Admin, Vendor, or Consumer.
 
     console.log('Login:', {
       identifier: form.identifier,
@@ -231,9 +231,9 @@ const goToConsumerRegister = () => {
   router.push('/consumer/register')
 }
 
-const goToMerchantRegister = () => {
+const goToVendorRegister = () => {
   showRegistrationOptions.value = false
-  router.push('/merchant/register')
+  router.push('/vendor/register')
 }
 </script>
 
@@ -557,7 +557,7 @@ const goToMerchantRegister = () => {
   color: #ffffff;
 }
 
-.merchant-registration-button {
+.vendor-registration-button {
   height: 45px;
 
   color: #bd2427;

@@ -29,8 +29,8 @@ const routes = [
       },
 
       {
-        path: 'merchant/register',
-        component: () => import('@/pages/auth/merchant/MerchantRegister.vue')
+        path: 'vendor/register',
+        component: () => import('@/pages/auth/vendor/VendorRegister.vue')
       }
     ]
   },
