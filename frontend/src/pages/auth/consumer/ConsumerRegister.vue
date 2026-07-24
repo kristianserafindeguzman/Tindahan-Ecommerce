@@ -7,7 +7,12 @@
         <img
           src="@/assets/tindahan-logo.png"
           alt="Tindahan Logo"
-          class="tindahan-logo"
+          class="tindahan-logo tindahan-logo-desktop"
+        />
+        <img
+          src="@/assets/tindahan-mobile.png"
+          alt="Tindahan Logo"
+          class="tindahan-logo tindahan-logo-mobile"
         />
       </div>
 
@@ -333,6 +338,10 @@ const goToLogin = () => {
   object-fit: contain;
 }
 
+.tindahan-logo-mobile {
+  display: none;
+}
+
 /* =========================
    RIGHT REGISTER PANEL
 ========================= */
@@ -572,19 +581,29 @@ const goToLogin = () => {
 
   .branding-panel {
     width: 100%;
-    height: 180px;
+    height: auto;
 
-    padding: 25px;
+    justify-content: center;
+
+    padding: 30px 25px 5px;
+
+    background: none;
   }
 
-  .tindahan-logo {
-    width: 200px;
+  .tindahan-logo-desktop {
+    display: none;
+  }
+
+  .tindahan-logo-mobile {
+    display: block;
+
+    width: 130px;
   }
 
   .login-panel {
     width: 100%;
 
-    padding: 40px 25px;
+    padding: 15px 25px 40px;
   }
 
   .login-content {
@@ -592,17 +611,19 @@ const goToLogin = () => {
   }
 
   .login-content h1 {
-    font-size: 25px;
+    font-size: 22px;
+  }
+
+  .subtitle {
+    margin-bottom: 22px;
   }
 
   .login-button {
-    height: 50px;
+    height: 48px;
   }
 
   .name-row {
-    flex-direction: column;
-
-    gap: 0;
+    gap: 10px;
   }
 }
 </style>
