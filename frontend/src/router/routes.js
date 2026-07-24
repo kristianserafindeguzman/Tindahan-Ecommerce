@@ -3,17 +3,36 @@ const routes = [
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
     children: [
-      { path: '', component: () => import('@/pages/IndexPage.vue') },
-      { path: 'second', component: () => import('@/pages/SecondPage.vue') },
-      { path: 'vendor-login', component: () => import('@/pages/Vendor/VendorLogin.vue') }
-    ],
+      {
+        path: '',
+        redirect: '/login'
+      },
+
+      {
+        path: 'login',
+        component: () => import('@/pages/auth/LoginPage.vue')
+      },
+
+      {
+        path: 'consumer/register',
+        component: () => import('@/pages/auth/consumer/ConsumerRegister.vue')
+      },
+
+      {
+        path: 'consumer/verify',
+        component: () => import('@/pages/auth/consumer/ConsumerVerify.vue')
+      },
+
+      {
+        path: 'consumer/success',
+        component: () => import('@/pages/auth/consumer/ConsumerSuccess.vue')
+      }
+    ]
   },
 
-  // Always leave this as last one,
-  // but you can also remove it
   {
     path: '/:catchAll(.*)*',
-    component: () => import('@/pages/ErrorNotFound.vue'),
+    component: () => import('@/pages/ErrorNotFound.vue')
   }
 ]
 
