@@ -7,7 +7,12 @@
         <img
           src="@/assets/tindahan-logo.png"
           alt="Tindahan Logo"
-          class="tindahan-logo"
+          class="tindahan-logo tindahan-logo-desktop"
+        />
+        <img
+          src="@/assets/tindahan-mobile.png"
+          alt="Tindahan Logo"
+          class="tindahan-logo tindahan-logo-mobile"
         />
       </div>
 
@@ -148,11 +153,11 @@
           />
 
           <q-btn
-            label="Register as Merchant"
+            label="Register as Vendor"
             no-caps
             outline
-            class="merchant-registration-button"
-            @click="goToMerchantRegister"
+            class="vendor-registration-button"
+            @click="goToVendorRegister"
           />
 
         </q-card-section>
@@ -202,7 +207,7 @@ const handleLogin = async () => {
   try {
     // Laravel backend integration will be added later.
     // The backend will determine whether the user
-    // is an Admin, Merchant, or Consumer.
+    // is an Admin, Vendor, or Consumer.
 
     console.log('Login:', {
       identifier: form.identifier,
@@ -226,9 +231,9 @@ const goToConsumerRegister = () => {
   router.push('/consumer/register')
 }
 
-const goToMerchantRegister = () => {
+const goToVendorRegister = () => {
   showRegistrationOptions.value = false
-  router.push('/merchant/register')
+  router.push('/vendor/register')
 }
 </script>
 
@@ -300,6 +305,10 @@ const goToMerchantRegister = () => {
   height: auto;
 
   object-fit: contain;
+}
+
+.tindahan-logo-mobile {
+  display: none;
 }
 
 /* =========================
@@ -548,7 +557,7 @@ const goToMerchantRegister = () => {
   color: #ffffff;
 }
 
-.merchant-registration-button {
+.vendor-registration-button {
   height: 45px;
 
   color: #bd2427;
@@ -601,19 +610,29 @@ const goToMerchantRegister = () => {
 
   .branding-panel {
     width: 100%;
-    height: 180px;
+    height: auto;
 
-    padding: 25px;
+    justify-content: center;
+
+    padding: 30px 25px 5px;
+
+    background: none;
   }
 
-  .tindahan-logo {
-    width: 200px;
+  .tindahan-logo-desktop {
+    display: none;
+  }
+
+  .tindahan-logo-mobile {
+    display: block;
+
+    width: 130px;
   }
 
   .login-panel {
     width: 100%;
 
-    padding: 40px 25px;
+    padding: 15px 25px 40px;
   }
 
   .login-content {
@@ -621,11 +640,15 @@ const goToMerchantRegister = () => {
   }
 
   .login-content h1 {
-    font-size: 25px;
+    font-size: 22px;
+  }
+
+  .subtitle {
+    margin-bottom: 22px;
   }
 
   .login-button {
-    height: 50px;
+    height: 48px;
   }
 }
 </style>

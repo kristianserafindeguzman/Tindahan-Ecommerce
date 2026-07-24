@@ -26,6 +26,11 @@ const routes = [
       {
         path: 'consumer/success',
         component: () => import('@/pages/auth/consumer/ConsumerSuccess.vue')
+      },
+
+      {
+        path: 'vendor/register',
+        component: () => import('@/pages/auth/vendor/VendorRegister.vue')
       }
     ]
   },
