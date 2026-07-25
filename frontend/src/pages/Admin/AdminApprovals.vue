@@ -68,40 +68,52 @@
 
     </div>
 
-    <!-- REJECT REASON MODAL -->
+    <!-- REJECT MODAL -->
     <q-dialog v-model="showRejectModal">
       <q-card class="reject-dialog">
-        <q-card-section>
-          <div class="modal-title">Reject Application</div>
-          <p class="modal-subtitle">
-            Please provide a reason for rejecting
-            <strong>{{ rejectTarget?.owner_name }}'s</strong> application.
-          </p>
-
+        <q-card-section class="q-pt-md">
+          <div class="modal-title text-red-6">Reject Vendor</div>
+          <p class="modal-subtitle">Please provide a reason for rejecting this application.</p>
           <q-input
             v-model="rejectionReason"
-            outlined
             type="textarea"
-            label="Rejection reason"
-            :rules="[val => !!val || 'Reason is required']"
-            class="reason-input"
+            outlined
+            dense
+            placeholder="e.g., Incomplete documentation, suspicious activity..."
+            class="q-mt-md"
+            autofocus
           />
         </q-card-section>
-
-        <q-card-actions align="right" class="modal-actions">
+        <q-card-actions align="right" class="q-pb-md q-px-md">
+          <q-btn flat label="Cancel" color="grey-7" no-caps @click="showRejectModal = false" />
           <q-btn
-            label="Cancel"
-            no-caps
-            flat
-            @click="showRejectModal = false"
-          />
-          <q-btn
-            label="Reject Application"
-            no-caps
             unelevated
-            class="reject-confirm-btn"
+            label="Confirm Rejection"
+            color="red-6"
+            no-caps
             :loading="actionLoading"
             @click="handleReject"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- APPROVE MODAL -->
+    <q-dialog v-model="showApproveModal">
+      <q-card class="reject-dialog">
+        <q-card-section class="q-pt-md">
+          <div class="modal-title text-green-6">Approve Vendor</div>
+          <p class="modal-subtitle">Are you sure you want to approve this application? They will gain access to the Vendor Dashboard.</p>
+        </q-card-section>
+        <q-card-actions align="right" class="q-pb-md q-px-md">
+          <q-btn flat label="Cancel" color="grey-7" no-caps @click="showApproveModal = false" />
+          <q-btn
+            unelevated
+            label="Confirm Approval"
+            color="green-6"
+            no-caps
+            :loading="actionLoading"
+            @click="handleApproveConfirm"
           />
         </q-card-actions>
       </q-card>
@@ -121,7 +133,9 @@ const pending = ref([])
 
 // Reject modal
 const showRejectModal = ref(false)
+const showApproveModal = ref(false)
 const rejectTarget = ref(null)
+const approveTarget = ref(null)
 const rejectionReason = ref('')
 
 const columns = [
@@ -148,12 +162,23 @@ const fetchPending = async () => {
   }
 }
 
-const handleApprove = async (row) => {
+const handleApprove = (row) => {
+  approveTarget.value = row
+  showApproveModal.value = true
+}
+
+const handleApproveConfirm = async () => {
+  if (!approveTarget.value) return
+
+  actionLoading.value = true
   try {
-    await api.post(`/admin/vendors/${row.store_id}/approve`)
-    pending.value = pending.value.filter(p => p.store_id !== row.store_id)
+    await api.post(`/admin/vendors/${approveTarget.value.store_id}/approve`)
+    pending.value = pending.value.filter(p => p.store_id !== approveTarget.value.store_id)
+    showApproveModal.value = false
   } catch {
     // Error handling
+  } finally {
+    actionLoading.value = false
   }
 }
 

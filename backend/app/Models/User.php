@@ -28,6 +28,7 @@ class User extends Authenticatable
         'email',
         'password_hash',
         'account_status',
+        'suspension_message',
         'last_activity_at',
     ];
 

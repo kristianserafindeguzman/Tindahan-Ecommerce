@@ -351,6 +351,72 @@
       </q-card>
     </q-dialog>
 
+    <!-- SUSPENDED MODAL -->
+    <q-dialog v-model="showSuspended" persistent>
+      <q-card class="status-dialog">
+        <q-card-section class="status-content">
+          <div class="status-icon-wrap bg-red-1 text-red-6">
+            <q-icon name="block" size="36px" />
+          </div>
+          <div class="modal-title">Account Suspended</div>
+          <p class="modal-subtitle">Your account has been temporarily suspended.</p>
+
+          <div class="reason-box bg-red-1">
+            <strong>Notice:</strong> {{ suspensionMessage }}
+          </div>
+        </q-card-section>
+        <q-card-actions align="center" class="status-actions">
+          <q-btn
+            unelevated
+            label="Contact Support"
+            color="red-6"
+            class="full-width-btn"
+            @click="showContactSupport = true"
+          />
+          <q-btn
+            flat
+            label="Back to Login"
+            color="grey-7"
+            class="full-width-btn q-mt-sm"
+            @click="handleStatusLogout"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- INACTIVE MODAL -->
+    <q-dialog v-model="showInactive" persistent>
+      <q-card class="status-dialog">
+        <q-card-section class="status-content">
+          <div class="status-icon-wrap bg-orange-1 text-orange-6">
+            <q-icon name="warning" size="36px" />
+          </div>
+          <div class="modal-title">Account Inactive</div>
+          <p class="modal-subtitle">Your account is currently inactive.</p>
+
+          <div class="reason-box bg-orange-1">
+            <strong>Notice:</strong> {{ inactiveMessage }}
+          </div>
+        </q-card-section>
+        <q-card-actions align="center" class="status-actions">
+          <q-btn
+            unelevated
+            label="Contact Support"
+            color="orange-6"
+            class="full-width-btn"
+            @click="showContactSupport = true"
+          />
+          <q-btn
+            flat
+            label="Back to Login"
+            color="grey-7"
+            class="full-width-btn q-mt-sm"
+            @click="handleStatusLogout"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- LEGAL & SUPPORT MODALS -->
     <TermsModal v-model="showTerms" />
     <PrivacyModal v-model="showPrivacy" />
@@ -378,7 +444,11 @@ const showRegistrationOptions = ref(false)
 // Vendor status modals
 const showUnderReview = ref(false)
 const showRejected = ref(false)
+const showSuspended = ref(false)
+const showInactive = ref(false)
 const rejectionReason = ref('')
+const suspensionMessage = ref('')
+const inactiveMessage = ref('')
 const showContactSupport = ref(false)
 
 // Forgot password flow state
@@ -463,6 +533,18 @@ const handleLogin = async () => {
     if (error.response && error.response.status === 422) {
       const errors = error.response.data.errors
       loginError.value = errors?.email?.[0] || 'Invalid credentials. Please try again.'
+    } else if (error.response && error.response.status === 403) {
+      if (error.response.data.contact_support) {
+        if (error.response.data.account_status === 'inactive') {
+          inactiveMessage.value = error.response.data.message
+          showInactive.value = true
+        } else {
+          suspensionMessage.value = error.response.data.message
+          showSuspended.value = true
+        }
+      } else {
+        loginError.value = error.response.data.message || 'Account access denied.'
+      }
     } else {
       loginError.value = 'Something went wrong. Please try again later.'
     }
@@ -485,6 +567,8 @@ const handleStatusLogout = async () => {
 
   showUnderReview.value = false
   showRejected.value = false
+  showSuspended.value = false
+  showInactive.value = false
 }
 
 const handleForgotPassword = () => {

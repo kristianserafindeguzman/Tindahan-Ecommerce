@@ -47,6 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Manage Consumers
         Route::get('/consumers', [AdminController::class, 'listConsumers']);
+        Route::patch('/consumers/{userId}/status', [AdminController::class, 'updateConsumerStatus']);
         Route::delete('/consumers/{userId}', [AdminController::class, 'deleteConsumer']);
     });
 

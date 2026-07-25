@@ -25,7 +25,7 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'full_name'    => 'required|string|max:100',
-            'email'        => 'required|email|max:100|unique:users,email',
+            'email'        => 'required|email|max:100',
             'phone_number' => 'required|string|max:15',
             'password'     => 'required|string|min:8|confirmed',
         ]);
@@ -33,16 +33,37 @@ class AuthController extends Controller
         try {
             \Illuminate\Support\Facades\DB::beginTransaction();
 
-            $user = User::create([
-                'role'          => 'Consumer',
-                'full_name'     => $validated['full_name'],
-                'email'         => $validated['email'],
-                'phone_number'  => $validated['phone_number'],
-                'password_hash' => Hash::make($validated['password']),
-                'account_status'=> 'inactive',
-            ]);
+            $existingUser = User::where('email', $validated['email'])
+                ->orWhere('phone_number', $validated['phone_number'])
+                ->first();
 
-            // Generate OTP for registration verification
+            if ($existingUser) {
+                if ($existingUser->account_status !== 'inactive') {
+                    throw ValidationException::withMessages([
+                        'email' => ['The email or phone number has already been taken.'],
+                    ]);
+                }
+                
+                // Overwrite the existing inactive user
+                $existingUser->update([
+                    'full_name'     => $validated['full_name'],
+                    'email'         => $validated['email'],
+                    'phone_number'  => $validated['phone_number'],
+                    'password_hash' => Hash::make($validated['password']),
+                ]);
+                $user = $existingUser;
+            } else {
+                $user = User::create([
+                    'role'          => 'Consumer',
+                    'full_name'     => $validated['full_name'],
+                    'email'         => $validated['email'],
+                    'phone_number'  => $validated['phone_number'],
+                    'password_hash' => Hash::make($validated['password']),
+                    'account_status'=> 'inactive',
+                ]);
+            }
+
+            // Generate fresh OTP for registration verification
             $this->generateOtp($user, 'registration');
 
             \Illuminate\Support\Facades\DB::commit();
@@ -343,10 +364,24 @@ class AuthController extends Controller
 
         // Block suspended, deleted, or inactive accounts
         if (!$user->isActive()) {
+            if ($user->account_status === 'suspended') {
+                return response()->json([
+                    'message' => $user->suspension_message ?? 'Your account has been suspended. Please contact support.',
+                    'contact_support' => true,
+                    'account_status' => 'suspended'
+                ], 403);
+            }
+
+            if ($user->account_status === 'inactive') {
+                return response()->json([
+                    'message' => 'Your account is inactive. Please complete registration or contact support.',
+                    'contact_support' => true,
+                    'account_status' => 'inactive'
+                ], 403);
+            }
+
             $statusMessages = [
-                'suspended' => 'Your account has been suspended. Please contact support.',
                 'deleted'   => 'This account has been deactivated.',
-                'inactive'  => 'Your account is inactive. Please contact support.',
             ];
 
             return response()->json([
