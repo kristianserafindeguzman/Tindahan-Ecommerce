@@ -30,23 +30,36 @@ class AuthController extends Controller
             'password'     => 'required|string|min:8|confirmed',
         ]);
 
-        $user = User::create([
-            'role'          => 'Consumer',
-            'full_name'     => $validated['full_name'],
-            'email'         => $validated['email'],
-            'phone_number'  => $validated['phone_number'],
-            'password_hash' => Hash::make($validated['password']),
-        ]);
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
 
-        // Generate OTP for registration verification
-        $this->generateOtp($user, 'registration');
+            $user = User::create([
+                'role'          => 'Consumer',
+                'full_name'     => $validated['full_name'],
+                'email'         => $validated['email'],
+                'phone_number'  => $validated['phone_number'],
+                'password_hash' => Hash::make($validated['password']),
+                'account_status'=> 'inactive',
+            ]);
 
-        return response()->json([
-            'message'      => 'Consumer registered successfully. Please verify your phone number.',
-            'user'         => $user,
-            'otp_sent'     => true,
-            'phone_number' => $validated['phone_number'],
-        ], 201);
+            // Generate OTP for registration verification
+            $this->generateOtp($user, 'registration');
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return response()->json([
+                'message'      => 'Consumer registered successfully. Please verify your phone number.',
+                'user'         => $user,
+                'otp_sent'     => true,
+                'phone_number' => $validated['phone_number'],
+            ], 201);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to register consumer. Please try again later.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -130,10 +143,24 @@ class AuthController extends Controller
             ->latest('created_at')
             ->first();
 
-        if (!$otp || !Hash::check($request->code, $otp->code)) {
+        \Illuminate\Support\Facades\Log::info('OTP Verification Debug', [
+            'incoming_phone' => $request->phone_number,
+            'incoming_code'  => $request->code,
+            'otp_record_found' => $otp ? true : false,
+            'db_code_hash'   => $otp ? $otp->code : null,
+            'hash_match'     => $otp ? Hash::check($request->code, $otp->code) : false,
+        ]);
+
+        if (!$otp) {
             return response()->json([
-                'message' => 'Invalid verification code. Please try again.',
-            ], 422);
+                'message' => 'Debug: No OTP record found for phone: ' . $request->phone_number
+            ], 400);
+        }
+
+        if (!Hash::check($request->code, $otp->code)) {
+            return response()->json([
+                'message' => 'Debug: Hash mismatch. Payload received: ' . json_encode($request->code)
+            ], 400);
         }
 
         if ($otp->isExpired()) {
@@ -144,6 +171,12 @@ class AuthController extends Controller
 
         // Mark as verified
         $otp->update(['verified_at' => now()]);
+
+        // Activate user account if they were inactive (e.g., new registration)
+        $user = User::where('phone_number', $request->phone_number)->first();
+        if ($user && $user->account_status === 'inactive') {
+            $user->update(['account_status' => 'active']);
+        }
 
         $responseData = [
             'message'  => 'Verification successful.',

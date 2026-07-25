@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -18,7 +17,7 @@ return new class extends Migration
 
             $table->string('phone_number', 15);
 
-            $table->string('code', 6);
+            $table->string('code');
 
             $table->enum('type', ['registration', 'password_reset']);
 
@@ -29,9 +28,9 @@ return new class extends Migration
             $table->timestamp('created_at')->useCurrent();
 
             $table->foreign('user_id')
-                  ->references('user_id')
-                  ->on('users')
-                  ->onDelete('cascade');
+                ->references('user_id')
+                ->on('users')
+                ->onDelete('cascade');
         });
     }
 
