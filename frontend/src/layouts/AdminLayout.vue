@@ -1,5 +1,5 @@
 <template>
-  <q-layout view="hHh LpR fFf" class="admin-layout">
+  <q-layout view="hHh LpR fFf" class="admin-layout text-dark">
 
     <!-- LEFT SIDEBAR -->
     <q-drawer
@@ -123,7 +123,7 @@ const handleLogout = async () => {
 /* SIDEBAR */
 
 .admin-sidebar {
-  background: #1a1a2e !important;
+  background: #ffffff !important;
 }
 
 .sidebar-content {
@@ -153,7 +153,7 @@ const handleLogout = async () => {
   font-size: 18px;
   font-weight: 700;
 
-  color: #ffffff;
+  color: #333333;
 
   letter-spacing: 0.02em;
 }
@@ -174,35 +174,35 @@ const handleLogout = async () => {
 
   border-radius: 8px;
 
-  color: rgba(255, 255, 255, 0.6);
+  color: #333333;
 
   font-size: 13px;
 }
 
 .nav-item :deep(.q-icon) {
-  color: rgba(255, 255, 255, 0.5);
+  color: #555555;
 
   font-size: 20px;
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.06);
 
-  color: #ffffff;
+  color: #111111;
 }
 
 .nav-item:hover :deep(.q-icon) {
-  color: #ffffff;
+  color: #111111;
 }
 
 .nav-active {
-  background: rgba(189, 36, 39, 0.25) !important;
+  background: rgba(189, 36, 39, 0.1) !important;
 
-  color: #ffffff !important;
+  color: #bd2427 !important;
 }
 
 .nav-active :deep(.q-icon) {
-  color: #e85d5d !important;
+  color: #bd2427 !important;
 }
 
 /* SPACER & FOOTER */
@@ -216,7 +216,7 @@ const handleLogout = async () => {
 }
 
 .logout-item {
-  color: rgba(255, 255, 255, 0.5);
+  color: #555555;
 }
 
 .logout-item:hover {

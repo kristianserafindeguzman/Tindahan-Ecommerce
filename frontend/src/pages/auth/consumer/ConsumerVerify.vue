@@ -138,12 +138,21 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
+import { api } from '@/boot/axios'
 
 const router = useRouter()
 const route = useRoute()
 
-// The phone number passed from consumer registration
-const displayPhone = computed(() => route.query.phone_number || 'your mobile number')
+// The phone number passed from consumer registration, masked for privacy
+const displayPhone = computed(() => {
+  const phone = route.query.phone_number
+  if (!phone) return 'your mobile number'
+  if (phone.length >= 10) {
+    // e.g. 0917***4567
+    return phone.slice(0, 4) + '***' + phone.slice(-4)
+  }
+  return phone
+})
 
 // OTP state
 const otp = ref(['', '', '', '', '', ''])
@@ -239,9 +248,10 @@ const handleOtpPaste = (event) => {
 
 // Real OTP verification
 const verifyOtp = async () => {
-  const code = otp.value.join('')
+  // Safely parse the code whether it's an array (6 boxes) or a string (1 box)
+  const parsedCode = Array.isArray(otp.value) ? otp.value.join('') : String(otp.value || '')
 
-  if (code.length < 6) {
+  if (parsedCode.length < 6) {
     otpError.value = 'Please enter the complete 6-digit code.'
     return
   }
@@ -252,16 +262,21 @@ const verifyOtp = async () => {
   try {
     await api.post('/otp/verify', {
       phone_number: route.query.phone_number,
-      code: code,
+      code: parsedCode,
       type: 'registration'
     })
     
     // Success — show dialog
     showSuccessDialog.value = true
   } catch (error) {
-    otpError.value = error.response?.data?.message || 'Invalid verification code. Please try again.'
-    // Clear the OTP boxes
-    otp.value = ['', '', '', '', '', '']
+    console.error('OTP Verification Error:', error)
+    otpError.value = error.response?.data?.message || 'An unexpected error occurred'
+    // Clear the OTP boxes appropriately
+    if (Array.isArray(otp.value)) {
+      otp.value = ['', '', '', '', '', '']
+    } else {
+      otp.value = ''
+    }
     otpRefs.value[0]?.focus()
   } finally {
     loading.value = false
