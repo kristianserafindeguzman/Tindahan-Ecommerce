@@ -38,8 +38,7 @@
                 v-model="form.identifier"
                 outlined
                 dense
-                hide-bottom-space
-                label="Email or mobile number"
+                label="Email or Mobile Number"
                 class="login-input"
                 :rules="[
                   val => !!val || 'Email or mobile number is required',
@@ -54,7 +53,6 @@
                 v-model="form.password"
                 outlined
                 dense
-                hide-bottom-space
                 :type="showPassword ? 'text' : 'password'"
                 label="Password"
                 class="login-input"
@@ -123,7 +121,7 @@
               Terms and Conditions
             </a>
             and
-            <br>
+            <br />
             <a href="#" @click.prevent="showPrivacy = true">
               Privacy Policy
             </a>
@@ -666,49 +664,14 @@ const goToVendorRegister = () => {
 
 .login-page {
   min-height: 100vh;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 40px 20px;
-
-  background: #f4f4f4;
-
-  font-family: 'Roboto', Arial, sans-serif;
-}
-
-/* =========================
-   LOGIN CARD
-========================= */
-
-.login-card {
   width: 100%;
-  max-width: 850px;
-  min-height: 520px;
-
-  display: flex;
-
-  background: #ffffff;
-
-  overflow: hidden;
-
-  box-shadow:
-    0 12px 35px rgba(0, 0, 0, 0.12);
-}
-
-/* =========================
-   LEFT BRANDING PANEL
-========================= */
-
-.branding-panel {
-  width: 42%;
+  box-sizing: border-box;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  padding: 40px;
+  padding: 0;
 
   background:
     linear-gradient(
@@ -717,12 +680,56 @@ const goToVendorRegister = () => {
       #9c171b 55%,
       #651012 100%
     );
+
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+/* =========================
+   LOGIN CARD (layout row, no visual chrome of its own)
+========================= */
+
+.login-card {
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(40px, 8vw, 140px);
+
+  padding: 0 clamp(24px, 6vw, 80px);
+
+  background: transparent;
+
+  overflow: hidden;
+}
+
+/* =========================
+   LEFT BRANDING PANEL
+========================= */
+
+.branding-panel {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 40px;
+
+  background: transparent;
 }
 
 .tindahan-logo {
   display: block;
 
-  width: 260px;
+  width: 380px;
   max-width: 100%;
   height: auto;
 
@@ -738,13 +745,22 @@ const goToVendorRegister = () => {
 ========================= */
 
 .login-panel {
-  width: 58%;
+  width: 420px;
+  max-width: 90vw;
+  flex: 0 0 auto;
+  box-sizing: border-box;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  padding: 55px 50px;
+  padding: 45px 45px;
+
+  background: #ffffff;
+  border-radius: 4px;
+
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.3);
 }
 
 .login-content {
@@ -783,7 +799,11 @@ const goToVendorRegister = () => {
 }
 
 .field-group {
-  margin-bottom: 17px;
+  margin-bottom: 2px;
+}
+
+.login-input :deep(.q-field__bottom) {
+  padding-bottom: 8px;
 }
 
 .login-input :deep(.q-field__control) {
@@ -1126,17 +1146,15 @@ const goToVendorRegister = () => {
 
 @media (max-width: 768px) {
   .login-card {
-    max-width: 700px;
+    padding: 0 24px;
   }
 
   .branding-panel {
-    width: 38%;
-
-    padding: 25px;
+    padding: 20px;
   }
 
   .login-panel {
-    width: 62%;
+    width: 360px;
 
     padding: 45px 35px;
   }
@@ -1152,28 +1170,40 @@ const goToVendorRegister = () => {
 
 @media (max-width: 600px) {
   .login-page {
+    min-height: 100vh;
+
+    align-items: stretch;
+    justify-content: flex-start;
+
     padding: 0;
 
     background: #ffffff;
   }
 
   .login-card {
+    width: 100%;
     min-height: 100vh;
+    height: auto;
+    max-width: 100%;
 
-    display: block;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
 
-    box-shadow: none;
+    padding: 0;
+
+    background: #ffffff;
   }
 
   .branding-panel {
     width: 100%;
     height: auto;
+    flex: none;
 
     justify-content: center;
 
-    padding: 30px 25px 5px;
-
-    background: none;
+    padding: 28px 0 8px;
   }
 
   .tindahan-logo-desktop {
@@ -1183,13 +1213,19 @@ const goToVendorRegister = () => {
   .tindahan-logo-mobile {
     display: block;
 
-    width: 130px;
+    width: 110px;
   }
 
   .login-panel {
     width: 100%;
+    max-width: 100%;
+    flex: none;
 
-    padding: 15px 25px 40px;
+    padding: 20px 24px 32px;
+
+    background: #ffffff;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .login-content {
