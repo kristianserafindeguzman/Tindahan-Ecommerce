@@ -17,7 +17,7 @@ return new class extends Migration
 
             $table->unsignedInteger('store_id');
 
-            $table->unsignedInteger('admin_id');
+            $table->unsignedInteger('admin_id')->nullable();
 
             $table->enum('status', [
                 'pending',
@@ -27,7 +27,7 @@ return new class extends Migration
 
             $table->text('rejection_reason')->nullable();
 
-            $table->timestamp('reviewed_at')->useCurrent();
+            $table->timestamp('reviewed_at')->nullable();
 
             $table->foreign('store_id')
                   ->references('store_id')

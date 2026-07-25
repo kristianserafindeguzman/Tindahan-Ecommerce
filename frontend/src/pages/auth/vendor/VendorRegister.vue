@@ -81,13 +81,26 @@
                   <div class="upload-hint">PNG, JPG, GIF up to 10MB</div>
                 </template>
 
-                <img
-                  v-else
-                  :src="photoPreview"
-                  alt="Store exterior preview"
-                  class="upload-preview"
-                />
+                <div v-else class="preview-container">
+                  <img
+                    :src="photoPreview"
+                    alt="Store exterior preview"
+                    class="upload-preview"
+                  />
+                  <div class="preview-overlay" @click.prevent="openCropModal">
+                    <q-icon name="crop" size="18px" />
+                    <span>Edit / Crop</span>
+                  </div>
+                </div>
               </label>
+
+              <div v-if="photoFile" class="photo-info">
+                <q-icon name="image" size="14px" />
+                <span>{{ photoFile.name }}</span>
+                <button type="button" class="remove-photo" @click="removePhoto">
+                  <q-icon name="close" size="14px" />
+                </button>
+              </div>
             </div>
 
             <!-- CONTACT & SECURITY -->
@@ -283,6 +296,11 @@
 
         </div>
 
+        <!-- ERROR MESSAGE -->
+        <div v-if="registerError" class="error-message">
+          {{ registerError }}
+        </div>
+
         <!-- SUBMIT BUTTON -->
         <q-btn
           type="submit"
@@ -313,22 +331,94 @@
       <!-- TERMS -->
       <p class="terms">
         By signing up, you agree to our
-        <a href="#" @click.prevent>
+        <a href="#" @click.prevent="showTerms = true">
           Terms and Conditions
         </a>
         and
-        <a href="#" @click.prevent>
+        <a href="#" @click.prevent="showPrivacy = true">
           Privacy Policy
         </a>
       </p>
 
     </div>
+
+    <!-- CROP DIALOG -->
+    <q-dialog v-model="showCropModal" persistent>
+      <q-card style="width: 500px; max-width: 90vw;">
+        <q-card-section>
+          <div class="text-h6">Crop Image</div>
+        </q-card-section>
+        <q-card-section style="text-align: center;">
+          <canvas
+            ref="cropCanvas"
+            style="border: 1px dashed #ccc; cursor: crosshair; max-width: 100%;"
+            @mousedown="onCropMouseDown"
+            @mousemove="onCropMouseMove"
+            @mouseup="onCropMouseUp"
+            @mouseleave="onCropMouseUp"
+          ></canvas>
+          <div class="text-caption q-mt-sm">Drag to select a crop area.</div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="primary" @click="showCropModal = false" />
+          <q-btn flat label="Apply Crop" color="primary" @click="applyCrop" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- SUCCESS DIALOG -->
+    <q-dialog v-model="showSuccess" persistent>
+      <q-card class="success-dialog">
+
+        <q-card-section class="success-content">
+          <div class="success-icon-wrap">
+            <q-icon name="check" size="36px" color="white" />
+          </div>
+
+          <div class="success-title">Application Submitted!</div>
+
+          <p class="success-message">
+            Your vendor application has been submitted and is currently
+            under review. Our team will process your application within
+            1–3 business days.
+          </p>
+        </q-card-section>
+
+        <q-card-actions class="success-actions" vertical>
+          <q-btn
+            label="Close"
+            no-caps
+            unelevated
+            class="success-btn primary-btn"
+            @click="handleSuccessClose"
+          />
+          <q-btn
+            label="Contact Support"
+            no-caps
+            flat
+            class="success-btn flat-btn"
+            @click="showContactSupport = true"
+          />
+        </q-card-actions>
+
+      </q-card>
+    </q-dialog>
+
+    <!-- LEGAL & SUPPORT MODALS -->
+    <TermsModal v-model="showTerms" />
+    <PrivacyModal v-model="showPrivacy" />
+    <ContactSupportModal v-model="showContactSupport" />
+
   </q-page>
 </template>
 
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { api } from '@/boot/axios'
+import TermsModal from '@/components/modals/TermsModal.vue'
+import PrivacyModal from '@/components/modals/PrivacyModal.vue'
+import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
 
 const router = useRouter()
 
@@ -338,6 +428,22 @@ const showConfirmPassword = ref(false)
 const loading = ref(false)
 const photoPreview = ref(null)
 const photoFile = ref(null)
+const originalPhotoUrl = ref(null)
+const registerError = ref('')
+
+// Dialogs
+const showSuccess = ref(false)
+const showContactSupport = ref(false)
+const showTerms = ref(false)
+const showPrivacy = ref(false)
+
+// Crop State
+const showCropModal = ref(false)
+const cropCanvas = ref(null)
+let imageObj = null
+let isDragging = false
+const cropRect = reactive({ x: 0, y: 0, w: 0, h: 0 })
+const startPos = reactive({ x: 0, y: 0 })
 
 const form = reactive({
   storeName: '',
@@ -391,7 +497,138 @@ const handlePhotoChange = event => {
   }
 
   photoFile.value = file
-  photoPreview.value = URL.createObjectURL(file)
+  const url = URL.createObjectURL(file)
+  photoPreview.value = url
+  originalPhotoUrl.value = url
+}
+
+const openCropModal = () => {
+  showCropModal.value = true
+  // Wait for dialog to mount
+  setTimeout(() => {
+    const canvas = cropCanvas.value
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    imageObj = new Image()
+    imageObj.onload = () => {
+      // Scale down image to fit in modal if necessary
+      const maxW = 400
+      let w = imageObj.width
+      let h = imageObj.height
+      if (w > maxW) {
+        h = (h * maxW) / w
+        w = maxW
+      }
+      canvas.width = w
+      canvas.height = h
+      ctx.drawImage(imageObj, 0, 0, w, h)
+      // reset crop rect
+      cropRect.x = 0; cropRect.y = 0; cropRect.w = w; cropRect.h = h
+      drawCropCanvas()
+    }
+    imageObj.src = originalPhotoUrl.value
+  }, 100)
+}
+
+const drawCropCanvas = () => {
+  const canvas = cropCanvas.value
+  if (!canvas || !imageObj) return
+  const ctx = canvas.getContext('2d')
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height)
+  
+  // Draw dim overlay
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  
+  // Clear the crop area
+  if (cropRect.w > 0 && cropRect.h > 0) {
+    ctx.clearRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
+    ctx.drawImage(imageObj, 
+      (cropRect.x / canvas.width) * imageObj.width, 
+      (cropRect.y / canvas.height) * imageObj.height, 
+      (cropRect.w / canvas.width) * imageObj.width, 
+      (cropRect.h / canvas.height) * imageObj.height, 
+      cropRect.x, cropRect.y, cropRect.w, cropRect.h)
+    
+    // Draw border
+    ctx.strokeStyle = '#fff'
+    ctx.lineWidth = 2
+    ctx.strokeRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
+  }
+}
+
+const onCropMouseDown = (e) => {
+  isDragging = true
+  const rect = cropCanvas.value.getBoundingClientRect()
+  startPos.x = e.clientX - rect.left
+  startPos.y = e.clientY - rect.top
+  cropRect.x = startPos.x
+  cropRect.y = startPos.y
+  cropRect.w = 0
+  cropRect.h = 0
+}
+
+const onCropMouseMove = (e) => {
+  if (!isDragging) return
+  const rect = cropCanvas.value.getBoundingClientRect()
+  const mouseX = e.clientX - rect.left
+  const mouseY = e.clientY - rect.top
+  cropRect.w = mouseX - startPos.x
+  cropRect.h = mouseY - startPos.y
+  drawCropCanvas()
+}
+
+const onCropMouseUp = () => {
+  if (isDragging) {
+    // Normalize rect to always have positive width/height
+    if (cropRect.w < 0) {
+      cropRect.x += cropRect.w
+      cropRect.w = Math.abs(cropRect.w)
+    }
+    if (cropRect.h < 0) {
+      cropRect.y += cropRect.h
+      cropRect.h = Math.abs(cropRect.h)
+    }
+    isDragging = false
+  }
+}
+
+const applyCrop = () => {
+  if (cropRect.w <= 0 || cropRect.h <= 0) {
+    showCropModal.value = false
+    return
+  }
+  
+  const canvas = cropCanvas.value
+  const scaleX = imageObj.width / canvas.width
+  const scaleY = imageObj.height / canvas.height
+  
+  const tempCanvas = document.createElement('canvas')
+  tempCanvas.width = cropRect.w * scaleX
+  tempCanvas.height = cropRect.h * scaleY
+  const ctx = tempCanvas.getContext('2d')
+  ctx.drawImage(imageObj, 
+    cropRect.x * scaleX, cropRect.y * scaleY, cropRect.w * scaleX, cropRect.h * scaleY, 
+    0, 0, tempCanvas.width, tempCanvas.height)
+    
+  tempCanvas.toBlob((blob) => {
+    if (blob) {
+      const croppedFile = new File([blob], 'cropped_' + photoFile.value.name, { type: 'image/jpeg' })
+      photoFile.value = croppedFile
+      photoPreview.value = URL.createObjectURL(croppedFile)
+      showCropModal.value = false
+    }
+  }, 'image/jpeg', 0.9)
+}
+
+const removePhoto = () => {
+  photoFile.value = null
+  photoPreview.value = null
+
+  // Reset the file input
+  const input = document.getElementById('storePhoto')
+  if (input) input.value = ''
 }
 
 const handleVendorRegister = async () => {
@@ -401,36 +638,62 @@ const handleVendorRegister = async () => {
     return
   }
 
+  if (!photoFile.value) {
+    registerError.value = 'Please upload a store exterior photo.'
+    return
+  }
+
   loading.value = true
+  registerError.value = ''
 
   try {
-    // Laravel backend integration will be added later.
-    // This will register the user as a Vendor.
-    // photoFile.value holds the raw File for multipart upload.
+    // Build multipart form data for file upload
+    const formData = new FormData()
+    formData.append('full_name', form.ownerName)
+    formData.append('email', form.email)
+    formData.append('phone_number', `+63${form.phoneNumber}`)
+    formData.append('password', form.password)
+    formData.append('password_confirmation', form.confirmPassword)
+    formData.append('store_name', form.storeName)
+    formData.append('store_picture', photoFile.value)
 
-    console.log('Vendor Register:', {
-      storeName: form.storeName,
-      ownerName: form.ownerName,
-      email: form.email,
-      phoneNumber: `+63${form.phoneNumber}`,
-      password: form.password,
-      confirmPassword: form.confirmPassword,
-      openingTime: form.openingTime,
-      closingTime: form.closingTime,
-      hoursOption: form.hoursOption,
-      detectedAddress: form.detectedAddress,
-      manualAddress: form.manualAddress,
-      latitude: form.latitude,
-      longitude: form.longitude,
-      photo: photoFile.value
+    // Handle 24/7 hours
+    if (form.hoursOption === 'always') {
+      formData.append('opening_time', '00:00')
+      formData.append('closing_time', '23:59')
+    } else {
+      formData.append('opening_time', form.openingTime)
+      formData.append('closing_time', form.closingTime)
+    }
+
+    // Use placeholder coordinates if map is not wired
+    formData.append('latitude', form.latitude || '14.5764')
+    formData.append('longitude', form.longitude || '121.0351')
+
+    await api.post('/register/vendor', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     })
 
+    // Show success popup
+    showSuccess.value = true
+
   } catch (error) {
-    console.error('Vendor registration failed:', error)
+    if (error.response && error.response.status === 422) {
+      const errors = error.response.data.errors
+      const firstError = Object.values(errors || {})[0]
+      registerError.value = firstError?.[0] || 'Validation failed. Please check your inputs.'
+    } else {
+      registerError.value = 'Something went wrong. Please try again later.'
+    }
 
   } finally {
     loading.value = false
   }
+}
+
+const handleSuccessClose = () => {
+  showSuccess.value = false
+  router.push('/login')
 }
 
 const goToLogin = () => {
@@ -634,6 +897,25 @@ const goToLogin = () => {
 }
 
 /* =========================
+   ERROR MESSAGE
+========================= */
+
+.error-message {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+
+  border-radius: 6px;
+
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+
+  font-size: 12px;
+  line-height: 1.4;
+
+  color: #b91c1c;
+}
+
+/* =========================
    PHOTO UPLOAD
 ========================= */
 
@@ -655,6 +937,7 @@ const goToLogin = () => {
   cursor: pointer;
 
   overflow: hidden;
+  position: relative;
 }
 
 .upload-input {
@@ -680,11 +963,73 @@ const goToLogin = () => {
   color: #9a9aa2;
 }
 
+.preview-container {
+  position: relative;
+
+  width: 100%;
+  height: 100%;
+}
+
 .upload-preview {
   width: 100%;
   height: 100%;
 
   object-fit: cover;
+}
+
+.preview-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 6px;
+
+  padding: 6px;
+
+  background: rgba(0, 0, 0, 0.55);
+
+  font-size: 11px;
+  font-weight: 500;
+
+  color: #ffffff;
+}
+
+.photo-info {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  margin-top: 8px;
+
+  font-size: 11px;
+
+  color: #666666;
+}
+
+.remove-photo {
+  display: flex;
+  align-items: center;
+
+  padding: 0;
+
+  margin-left: auto;
+
+  border: none;
+  background: transparent;
+
+  color: #999999;
+
+  cursor: pointer;
+}
+
+.remove-photo:hover {
+  color: #bd2427;
 }
 
 /* =========================
@@ -847,6 +1192,86 @@ const goToLogin = () => {
   color: #333333;
 
   text-decoration: underline;
+}
+
+/* =========================
+   SUCCESS DIALOG
+========================= */
+
+.success-dialog {
+  width: 400px;
+  max-width: 90vw;
+
+  border-radius: 10px;
+
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+.success-content {
+  text-align: center;
+
+  padding: 30px 28px 10px;
+}
+
+.success-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 70px;
+  height: 70px;
+
+  border-radius: 50%;
+
+  background: #22c55e;
+
+  margin-bottom: 18px;
+}
+
+.success-title {
+  font-size: 19px;
+  font-weight: 700;
+
+  color: #222222;
+
+  margin-bottom: 10px;
+}
+
+.success-message {
+  font-size: 13px;
+  line-height: 1.6;
+
+  color: #666666;
+
+  margin: 0;
+}
+
+.success-actions {
+  padding: 14px 28px 24px;
+}
+
+.success-btn {
+  width: 100%;
+
+  height: 42px;
+
+  border-radius: 6px;
+
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.primary-btn {
+  background: #bd2427;
+  color: #ffffff;
+}
+
+.primary-btn:hover {
+  background: #a91e21;
+}
+
+.flat-btn {
+  color: #666666;
 }
 
 /* =========================

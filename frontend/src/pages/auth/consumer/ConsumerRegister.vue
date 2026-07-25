@@ -152,6 +152,11 @@
               </q-input>
             </div>
 
+            <!-- ERROR MESSAGE -->
+            <div v-if="registerError" class="error-message">
+              {{ registerError }}
+            </div>
+
             <!-- SUBMIT BUTTON -->
             <q-btn
               type="submit"
@@ -182,12 +187,12 @@
           <!-- TERMS -->
           <p class="terms">
             By signing up, you agree to our
-            <a href="#" @click.prevent>
+            <a href="#" @click.prevent="showTerms = true">
               Terms and Conditions
             </a>
             and
             <br>
-            <a href="#" @click.prevent>
+            <a href="#" @click.prevent="showPrivacy = true">
               Privacy Policy
             </a>
           </p>
@@ -196,12 +201,19 @@
       </div>
     </div>
 
+    <!-- LEGAL MODALS -->
+    <TermsModal v-model="showTerms" />
+    <PrivacyModal v-model="showPrivacy" />
+
   </q-page>
 </template>
 
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { api } from '@/boot/axios'
+import TermsModal from '@/components/modals/TermsModal.vue'
+import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 
 const router = useRouter()
 
@@ -209,6 +221,11 @@ const registerForm = ref(null)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 const loading = ref(false)
+const registerError = ref('')
+
+// Legal modals
+const showTerms = ref(false)
+const showPrivacy = ref(false)
 
 const form = reactive({
   firstName: '',
@@ -241,22 +258,31 @@ const handleRegister = async () => {
   }
 
   loading.value = true
+  registerError.value = ''
 
   try {
-    // Laravel backend integration will be added later.
-    // This will register the user as a Consumer.
-
-    console.log('Consumer Register:', {
-      firstName: form.firstName,
-      lastName: form.lastName,
+    await api.post('/register/consumer', {
+      full_name: `${form.firstName} ${form.lastName}`,
       email: form.email,
-      mobileNumber: form.mobileNumber,
+      phone_number: form.mobileNumber,
       password: form.password,
-      confirmPassword: form.confirmPassword
+      password_confirmation: form.confirmPassword
+    })
+
+    // On success, route to OTP verification page with the mobile number
+    router.push({
+      path: '/consumer/verify',
+      query: { phone_number: form.mobileNumber }
     })
 
   } catch (error) {
-    console.error('Registration failed:', error)
+    if (error.response && error.response.status === 422) {
+      const errors = error.response.data.errors
+      const firstError = Object.values(errors || {})[0]
+      registerError.value = firstError?.[0] || 'Validation failed. Please check your inputs.'
+    } else {
+      registerError.value = 'Something went wrong. Please try again later.'
+    }
 
   } finally {
     loading.value = false
@@ -440,6 +466,25 @@ const goToLogin = () => {
   font-size: 18px;
 
   color: #777777;
+}
+
+/* =========================
+   ERROR MESSAGE
+========================= */
+
+.error-message {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+
+  border-radius: 6px;
+
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+
+  font-size: 12px;
+  line-height: 1.4;
+
+  color: #b91c1c;
 }
 
 /* =========================

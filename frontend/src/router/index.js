@@ -32,5 +32,37 @@ export default defineRouter((/* { store, ssrContext } */) => {
     history: createHistory(import.meta.env.QUASAR_VUE_ROUTER_BASE)
   })
 
+  // Navigation guard for auth & RBAC
+  Router.beforeEach((to, from, next) => {
+    const token = localStorage.getItem('auth_token')
+    const role = localStorage.getItem('auth_role')
+
+    // If route requires authentication
+    if (to.meta.requiresAuth) {
+      if (!token) {
+        // Not logged in — redirect to login
+        return next('/login')
+      }
+
+      // If route requires a specific role
+      if (to.meta.role && to.meta.role !== role) {
+        // Wrong role — redirect to their own dashboard
+        if (role === 'Admin') return next('/admin/dashboard')
+        if (role === 'Vendor') return next('/vendor/dashboard')
+        if (role === 'Consumer') return next('/consumer/home')
+        return next('/login')
+      }
+    }
+
+    // If route is guest-only (login, register) and user is already logged in
+    if (to.meta.guest && token && role) {
+      if (role === 'Admin') return next('/admin/dashboard')
+      if (role === 'Vendor') return next('/vendor/dashboard')
+      if (role === 'Consumer') return next('/consumer/home')
+    }
+
+    next()
+  })
+
   return Router
 })
