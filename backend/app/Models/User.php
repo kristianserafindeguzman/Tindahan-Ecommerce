@@ -27,6 +27,8 @@ class User extends Authenticatable
         'phone_number',
         'email',
         'password_hash',
+        'account_status',
+        'last_activity_at',
     ];
 
     /**
@@ -60,7 +62,8 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'password_hash' => 'hashed',
+            'password_hash'    => 'hashed',
+            'last_activity_at' => 'datetime',
         ];
     }
 
@@ -70,5 +73,13 @@ class User extends Authenticatable
     public function store()
     {
         return $this->hasOne(Store::class, 'owner_id', 'user_id');
+    }
+
+    /**
+     * Check if the account is active (not suspended/deleted/inactive).
+     */
+    public function isActive(): bool
+    {
+        return $this->account_status === 'active';
     }
 }

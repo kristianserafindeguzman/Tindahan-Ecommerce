@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('product_name', 100);
             $table->decimal('price', 8, 2);
             $table->integer('stock_quantity');
+            $table->string('product_picture', 255)->nullable();
             $table->enum('status', ['active', 'archived']);
 
             // Foreign Key Constraints

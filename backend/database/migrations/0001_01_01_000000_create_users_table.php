@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('phone_number', 15); // VARCHAR(15) for checkout/pickup contact
             $table->string('email', 100)->unique(); // VARCHAR(100) and Unique constraint
             $table->string('password_hash', 255); // VARCHAR(255) for secure cryptographic hashing
+            $table->enum('account_status', ['active', 'inactive', 'suspended', 'deleted'])->default('active');
+            $table->timestamp('last_activity_at')->nullable(); // For "30 mins ago" display
             $table->timestamp('created_at')->useCurrent(); // TIMESTAMP tracking registration dates
         });
 
