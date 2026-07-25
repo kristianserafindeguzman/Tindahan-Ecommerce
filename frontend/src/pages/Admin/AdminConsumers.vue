@@ -50,12 +50,20 @@
             </q-td>
           </template>
 
-          <!-- STATUS BADGE -->
+          <!-- STATUS BADGE / SELECT -->
           <template #body-cell-account_status="props">
             <q-td :props="props">
-              <span class="status-badge" :class="'badge-' + props.row.account_status">
-                {{ props.row.account_status }}
-              </span>
+              <q-select
+                v-model="props.row.account_status"
+                dense
+                borderless
+                emit-value
+                map-options
+                class="status-select"
+                :class="'status-' + props.row.account_status"
+                :options="statusOptions"
+                @update:model-value="val => updateStatus(props.row.user_id, val)"
+              />
             </q-td>
           </template>
 
@@ -115,6 +123,46 @@
       </q-card>
     </q-dialog>
 
+    <!-- SUSPEND CONSUMER MODAL -->
+    <q-dialog v-model="showSuspendModal">
+      <q-card class="suspend-dialog">
+        <q-card-section class="suspend-content">
+          <div class="suspend-icon-wrap">
+            <q-icon name="warning" size="32px" color="white" />
+          </div>
+          <div class="modal-title">Suspend Consumer</div>
+          <p class="modal-subtitle">
+            Please provide a reason for suspending this consumer account. This message will be shown to the consumer upon login.
+          </p>
+          <q-input
+            v-model="suspensionMessage"
+            type="textarea"
+            outlined
+            dense
+            placeholder="e.g., Violation of terms and conditions..."
+            class="suspension-input q-mt-md"
+            autofocus
+          />
+        </q-card-section>
+        <q-card-actions align="right" class="modal-actions">
+          <q-btn
+            label="Cancel"
+            no-caps
+            flat
+            @click="cancelSuspension"
+          />
+          <q-btn
+            label="Suspend Account"
+            no-caps
+            unelevated
+            class="suspend-confirm-btn"
+            :loading="actionLoading"
+            @click="confirmSuspension"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
@@ -130,6 +178,18 @@ const consumers = ref([])
 // Delete modal
 const showDeleteModal = ref(false)
 const deleteTarget = ref(null)
+
+// Suspend modal state
+const showSuspendModal = ref(false)
+const suspensionTarget = ref(null)
+const suspensionMessage = ref('')
+const originalStatus = ref(null)
+
+const statusOptions = [
+  { label: 'Active', value: 'active' },
+  { label: 'Inactive', value: 'inactive' },
+  { label: 'Suspended', value: 'suspended' },
+]
 
 const columns = [
   { name: 'full_name', label: 'Name', field: 'full_name', align: 'left', sortable: true },
@@ -185,6 +245,51 @@ const formatActivity = (timestamp) => {
   if (diff < 604800) return `${Math.floor(diff / 86400)} days ago`
 
   return then.toLocaleDateString()
+}
+
+const updateStatus = async (userId, newStatus) => {
+  if (newStatus === 'suspended') {
+    suspensionTarget.value = userId
+    const consumer = consumers.value.find(c => c.user_id === userId)
+    if (consumer) {
+      originalStatus.value = consumer.account_status 
+    }
+    suspensionMessage.value = ''
+    showSuspendModal.value = true
+    return
+  }
+
+  try {
+    await api.patch(`/admin/consumers/${userId}/status`, {
+      account_status: newStatus
+    })
+  } catch {
+    fetchConsumers()
+  }
+}
+
+const cancelSuspension = () => {
+  showSuspendModal.value = false
+  suspensionTarget.value = null
+  fetchConsumers()
+}
+
+const confirmSuspension = async () => {
+  if (!suspensionMessage.value) return
+
+  actionLoading.value = true
+  try {
+    await api.patch(`/admin/consumers/${suspensionTarget.value}/status`, {
+      account_status: 'suspended',
+      suspension_message: suspensionMessage.value
+    })
+    showSuspendModal.value = false
+    suspensionTarget.value = null
+  } catch {
+    fetchConsumers()
+  } finally {
+    actionLoading.value = false
+  }
 }
 
 const handleExport = () => {
@@ -276,29 +381,24 @@ onMounted(() => {
   color: #333333;
 }
 
-/* STATUS */
+/* STATUS SELECT */
 
-.status-badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 10px;
-  font-size: 11px;
+.status-select :deep(.q-field__native) {
+  font-size: 12px;
   font-weight: 600;
-  text-transform: capitalize;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
-.badge-active {
-  background: #f0fdf4;
+.status-active :deep(.q-field__native) {
   color: #16a34a;
 }
 
-.badge-inactive {
-  background: #f5f5f5;
+.status-inactive :deep(.q-field__native) {
   color: #9ca3af;
 }
 
-.badge-deleted {
-  background: #fef2f2;
+.status-suspended :deep(.q-field__native) {
   color: #ef4444;
 }
 
@@ -357,6 +457,32 @@ onMounted(() => {
   color: #ffffff;
   border-radius: 6px;
   font-size: 13px;
+}
+
+/* SUSPEND MODAL */
+.suspend-dialog {
+  width: 440px;
+  max-width: 90vw;
+  border-radius: 10px;
+}
+.suspend-content {
+  text-align: center;
+  padding: 28px 28px 10px;
+}
+.suspend-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #ef4444;
+  margin-bottom: 16px;
+}
+.suspend-confirm-btn {
+  background: #ef4444;
+  color: #ffffff;
+  border-radius: 6px;
 }
 
 /* PRINT */
