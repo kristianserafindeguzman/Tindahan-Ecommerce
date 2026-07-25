@@ -87,7 +87,7 @@
                     alt="Store exterior preview"
                     class="upload-preview"
                   />
-                  <div class="preview-overlay">
+                  <div class="preview-overlay" @click.prevent="openCropModal">
                     <q-icon name="crop" size="18px" />
                     <span>Edit / Crop</span>
                   </div>
@@ -342,6 +342,30 @@
 
     </div>
 
+    <!-- CROP DIALOG -->
+    <q-dialog v-model="showCropModal" persistent>
+      <q-card style="width: 500px; max-width: 90vw;">
+        <q-card-section>
+          <div class="text-h6">Crop Image</div>
+        </q-card-section>
+        <q-card-section style="text-align: center;">
+          <canvas
+            ref="cropCanvas"
+            style="border: 1px dashed #ccc; cursor: crosshair; max-width: 100%;"
+            @mousedown="onCropMouseDown"
+            @mousemove="onCropMouseMove"
+            @mouseup="onCropMouseUp"
+            @mouseleave="onCropMouseUp"
+          ></canvas>
+          <div class="text-caption q-mt-sm">Drag to select a crop area.</div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="primary" @click="showCropModal = false" />
+          <q-btn flat label="Apply Crop" color="primary" @click="applyCrop" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- SUCCESS DIALOG -->
     <q-dialog v-model="showSuccess" persistent>
       <q-card class="success-dialog">
@@ -404,6 +428,7 @@ const showConfirmPassword = ref(false)
 const loading = ref(false)
 const photoPreview = ref(null)
 const photoFile = ref(null)
+const originalPhotoUrl = ref(null)
 const registerError = ref('')
 
 // Dialogs
@@ -411,6 +436,14 @@ const showSuccess = ref(false)
 const showContactSupport = ref(false)
 const showTerms = ref(false)
 const showPrivacy = ref(false)
+
+// Crop State
+const showCropModal = ref(false)
+const cropCanvas = ref(null)
+let imageObj = null
+let isDragging = false
+const cropRect = reactive({ x: 0, y: 0, w: 0, h: 0 })
+const startPos = reactive({ x: 0, y: 0 })
 
 const form = reactive({
   storeName: '',
@@ -464,7 +497,129 @@ const handlePhotoChange = event => {
   }
 
   photoFile.value = file
-  photoPreview.value = URL.createObjectURL(file)
+  const url = URL.createObjectURL(file)
+  photoPreview.value = url
+  originalPhotoUrl.value = url
+}
+
+const openCropModal = () => {
+  showCropModal.value = true
+  // Wait for dialog to mount
+  setTimeout(() => {
+    const canvas = cropCanvas.value
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    imageObj = new Image()
+    imageObj.onload = () => {
+      // Scale down image to fit in modal if necessary
+      const maxW = 400
+      let w = imageObj.width
+      let h = imageObj.height
+      if (w > maxW) {
+        h = (h * maxW) / w
+        w = maxW
+      }
+      canvas.width = w
+      canvas.height = h
+      ctx.drawImage(imageObj, 0, 0, w, h)
+      // reset crop rect
+      cropRect.x = 0; cropRect.y = 0; cropRect.w = w; cropRect.h = h
+      drawCropCanvas()
+    }
+    imageObj.src = originalPhotoUrl.value
+  }, 100)
+}
+
+const drawCropCanvas = () => {
+  const canvas = cropCanvas.value
+  if (!canvas || !imageObj) return
+  const ctx = canvas.getContext('2d')
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height)
+  
+  // Draw dim overlay
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  
+  // Clear the crop area
+  if (cropRect.w > 0 && cropRect.h > 0) {
+    ctx.clearRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
+    ctx.drawImage(imageObj, 
+      (cropRect.x / canvas.width) * imageObj.width, 
+      (cropRect.y / canvas.height) * imageObj.height, 
+      (cropRect.w / canvas.width) * imageObj.width, 
+      (cropRect.h / canvas.height) * imageObj.height, 
+      cropRect.x, cropRect.y, cropRect.w, cropRect.h)
+    
+    // Draw border
+    ctx.strokeStyle = '#fff'
+    ctx.lineWidth = 2
+    ctx.strokeRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
+  }
+}
+
+const onCropMouseDown = (e) => {
+  isDragging = true
+  const rect = cropCanvas.value.getBoundingClientRect()
+  startPos.x = e.clientX - rect.left
+  startPos.y = e.clientY - rect.top
+  cropRect.x = startPos.x
+  cropRect.y = startPos.y
+  cropRect.w = 0
+  cropRect.h = 0
+}
+
+const onCropMouseMove = (e) => {
+  if (!isDragging) return
+  const rect = cropCanvas.value.getBoundingClientRect()
+  const mouseX = e.clientX - rect.left
+  const mouseY = e.clientY - rect.top
+  cropRect.w = mouseX - startPos.x
+  cropRect.h = mouseY - startPos.y
+  drawCropCanvas()
+}
+
+const onCropMouseUp = () => {
+  if (isDragging) {
+    // Normalize rect to always have positive width/height
+    if (cropRect.w < 0) {
+      cropRect.x += cropRect.w
+      cropRect.w = Math.abs(cropRect.w)
+    }
+    if (cropRect.h < 0) {
+      cropRect.y += cropRect.h
+      cropRect.h = Math.abs(cropRect.h)
+    }
+    isDragging = false
+  }
+}
+
+const applyCrop = () => {
+  if (cropRect.w <= 0 || cropRect.h <= 0) {
+    showCropModal.value = false
+    return
+  }
+  
+  const canvas = cropCanvas.value
+  const scaleX = imageObj.width / canvas.width
+  const scaleY = imageObj.height / canvas.height
+  
+  const tempCanvas = document.createElement('canvas')
+  tempCanvas.width = cropRect.w * scaleX
+  tempCanvas.height = cropRect.h * scaleY
+  const ctx = tempCanvas.getContext('2d')
+  ctx.drawImage(imageObj, 
+    cropRect.x * scaleX, cropRect.y * scaleY, cropRect.w * scaleX, cropRect.h * scaleY, 
+    0, 0, tempCanvas.width, tempCanvas.height)
+    
+  tempCanvas.toBlob((blob) => {
+    if (blob) {
+      const croppedFile = new File([blob], 'cropped_' + photoFile.value.name, { type: 'image/jpeg' })
+      photoFile.value = croppedFile
+      photoPreview.value = URL.createObjectURL(croppedFile)
+      showCropModal.value = false
+    }
+  }, 'image/jpeg', 0.9)
 }
 
 const removePhoto = () => {

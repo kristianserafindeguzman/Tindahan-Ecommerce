@@ -250,6 +250,107 @@
       </q-card>
     </q-dialog>
 
+    <!-- FORGOT PASSWORD FLOW MODALS -->
+
+    <!-- Step 1: Request OTP -->
+    <q-dialog v-model="showForgotWarning">
+      <q-card class="status-dialog">
+        <q-card-section class="status-content">
+          <div class="status-icon-wrap status-pending" style="background: #3b82f6;">
+            <q-icon name="lock_reset" size="36px" color="white" />
+          </div>
+          <div class="status-title">Reset Password</div>
+          <p class="status-message q-mb-md">
+            Enter your registered mobile number. We will send an SMS with a 6-digit verification code.
+          </p>
+          <q-input
+            v-model="forgotPhone"
+            outlined
+            dense
+            placeholder="09..."
+            label="Mobile Number"
+          />
+          <div v-if="forgotError" class="error-message q-mt-sm">{{ forgotError }}</div>
+        </q-card-section>
+        <q-card-actions class="status-actions" vertical>
+          <q-btn label="Send Code" no-caps unelevated class="status-btn primary-btn" :loading="forgotLoading" @click="requestResetOTP" />
+          <q-btn label="Cancel" no-caps flat class="status-btn flat-btn" @click="showForgotWarning = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Step 2: Verify OTP -->
+    <q-dialog v-model="showForgotOtp" persistent>
+      <q-card class="status-dialog">
+        <q-card-section class="status-content">
+          <div class="status-title">Verify Phone Number</div>
+          <p class="status-message q-mb-md">
+            Enter the 6-digit code sent to {{ forgotPhone }}
+          </p>
+          <q-input
+            v-model="forgotOtpCode"
+            outlined
+            dense
+            placeholder="123456"
+            label="Verification Code"
+            mask="######"
+          />
+          <div v-if="forgotError" class="error-message q-mt-sm">{{ forgotError }}</div>
+        </q-card-section>
+        <q-card-actions class="status-actions" vertical>
+          <q-btn label="Verify Code" no-caps unelevated class="status-btn primary-btn" :loading="forgotLoading" @click="verifyResetOTP" />
+          <q-btn label="Cancel" no-caps flat class="status-btn flat-btn" @click="showForgotOtp = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Step 3: New Password -->
+    <q-dialog v-model="showForgotReset" persistent>
+      <q-card class="status-dialog">
+        <q-card-section class="status-content">
+          <div class="status-title">Create New Password</div>
+          <p class="status-message q-mb-md">
+            Your new password must be at least 8 characters long.
+          </p>
+          <q-input
+            v-model="forgotPassword1"
+            outlined
+            dense
+            type="password"
+            label="New Password"
+            class="q-mb-sm"
+          />
+          <q-input
+            v-model="forgotPassword2"
+            outlined
+            dense
+            type="password"
+            label="Confirm New Password"
+          />
+          <div v-if="forgotError" class="error-message q-mt-sm">{{ forgotError }}</div>
+        </q-card-section>
+        <q-card-actions class="status-actions" vertical>
+          <q-btn label="Reset Password" no-caps unelevated class="status-btn primary-btn" :loading="forgotLoading" @click="submitNewPassword" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- SUCCESS NOTIFICATION DIALOG -->
+    <q-dialog v-model="showResetSuccess">
+      <q-card class="status-dialog">
+        <q-card-section class="status-content">
+          <div class="status-icon-wrap" style="background: #22c55e;">
+            <q-icon name="check" size="36px" color="white" />
+          </div>
+          <div class="status-title">Password Reset Successful</div>
+          <p class="status-message">You can now log in with your new password.</p>
+        </q-card-section>
+        <q-card-actions class="status-actions" vertical>
+          <q-btn label="Login Now" no-caps unelevated class="status-btn primary-btn" @click="showResetSuccess = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- LEGAL & SUPPORT MODALS -->
     <TermsModal v-model="showTerms" />
     <PrivacyModal v-model="showPrivacy" />
@@ -279,6 +380,19 @@ const showUnderReview = ref(false)
 const showRejected = ref(false)
 const rejectionReason = ref('')
 const showContactSupport = ref(false)
+
+// Forgot password flow state
+const showForgotWarning = ref(false)
+const showForgotOtp = ref(false)
+const showForgotReset = ref(false)
+const showResetSuccess = ref(false)
+const forgotPhone = ref('')
+const forgotOtpCode = ref('')
+const forgotPassword1 = ref('')
+const forgotPassword2 = ref('')
+const forgotResetToken = ref('')
+const forgotLoading = ref(false)
+const forgotError = ref('')
 
 // Legal modals
 const showTerms = ref(false)
@@ -374,7 +488,80 @@ const handleStatusLogout = async () => {
 }
 
 const handleForgotPassword = () => {
-  console.log('Forgot password')
+  forgotError.value = ''
+  forgotPhone.value = ''
+  showForgotWarning.value = true
+}
+
+const requestResetOTP = async () => {
+  if (!forgotPhone.value) {
+    forgotError.value = 'Please enter your mobile number.'
+    return
+  }
+  forgotError.value = ''
+  forgotLoading.value = true
+  try {
+    await api.post('/forgot-password', { phone_number: forgotPhone.value })
+    showForgotWarning.value = false
+    forgotOtpCode.value = ''
+    showForgotOtp.value = true
+  } catch (error) {
+    forgotError.value = error.response?.data?.message || 'Failed to send OTP.'
+  } finally {
+    forgotLoading.value = false
+  }
+}
+
+const verifyResetOTP = async () => {
+  if (!forgotOtpCode.value || forgotOtpCode.value.length < 6) {
+    forgotError.value = 'Please enter the 6-digit code.'
+    return
+  }
+  forgotError.value = ''
+  forgotLoading.value = true
+  try {
+    const res = await api.post('/otp/verify', {
+      phone_number: forgotPhone.value,
+      code: forgotOtpCode.value,
+      type: 'password_reset'
+    })
+    forgotResetToken.value = res.data.reset_token
+    showForgotOtp.value = false
+    forgotPassword1.value = ''
+    forgotPassword2.value = ''
+    showForgotReset.value = true
+  } catch (error) {
+    forgotError.value = error.response?.data?.message || 'Invalid OTP code.'
+  } finally {
+    forgotLoading.value = false
+  }
+}
+
+const submitNewPassword = async () => {
+  if (!forgotPassword1.value || forgotPassword1.value.length < 8) {
+    forgotError.value = 'Password must be at least 8 characters.'
+    return
+  }
+  if (forgotPassword1.value !== forgotPassword2.value) {
+    forgotError.value = 'Passwords do not match.'
+    return
+  }
+  forgotError.value = ''
+  forgotLoading.value = true
+  try {
+    await api.post('/forgot-password/reset', {
+      phone_number: forgotPhone.value,
+      reset_token: forgotResetToken.value,
+      password: forgotPassword1.value,
+      password_confirmation: forgotPassword2.value
+    })
+    showForgotReset.value = false
+    showResetSuccess.value = true
+  } catch (error) {
+    forgotError.value = error.response?.data?.message || 'Failed to reset password.'
+  } finally {
+    forgotLoading.value = false
+  }
 }
 
 const goToConsumerRegister = () => {

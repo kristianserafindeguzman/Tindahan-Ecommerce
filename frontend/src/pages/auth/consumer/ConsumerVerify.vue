@@ -23,8 +23,8 @@
           <h1>Verify your account</h1>
 
           <p class="subtitle">
-            We've sent a 6-digit verification code to
-            <strong>{{ displayEmail }}</strong>.
+            We've sent a 6-digit verification code via SMS to
+            <strong>{{ displayPhone }}</strong>.
           </p>
 
           <!-- OTP INPUT BOXES -->
@@ -142,8 +142,8 @@ import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 const router = useRouter()
 const route = useRoute()
 
-// The email passed from consumer registration
-const displayEmail = computed(() => route.query.email || 'your email')
+// The phone number passed from consumer registration
+const displayPhone = computed(() => route.query.phone_number || 'your mobile number')
 
 // OTP state
 const otp = ref(['', '', '', '', '', ''])
@@ -237,8 +237,8 @@ const handleOtpPaste = (event) => {
   otpError.value = ''
 }
 
-// Mock OTP verification — correct code is 123456
-const verifyOtp = () => {
+// Real OTP verification
+const verifyOtp = async () => {
   const code = otp.value.join('')
 
   if (code.length < 6) {
@@ -247,29 +247,42 @@ const verifyOtp = () => {
   }
 
   loading.value = true
+  otpError.value = ''
 
-  // Simulate a brief network delay
-  setTimeout(() => {
-    if (code === '123456') {
-      // Success — show dialog
-      showSuccessDialog.value = true
-    } else {
-      otpError.value = 'Invalid verification code. Please try again.'
-
-      // Clear the OTP boxes
-      otp.value = ['', '', '', '', '', '']
-      otpRefs.value[0]?.focus()
-    }
-
+  try {
+    await api.post('/otp/verify', {
+      phone_number: route.query.phone_number,
+      code: code,
+      type: 'registration'
+    })
+    
+    // Success — show dialog
+    showSuccessDialog.value = true
+  } catch (error) {
+    otpError.value = error.response?.data?.message || 'Invalid verification code. Please try again.'
+    // Clear the OTP boxes
+    otp.value = ['', '', '', '', '', '']
+    otpRefs.value[0]?.focus()
+  } finally {
     loading.value = false
-  }, 800)
+  }
 }
 
-const resendCode = () => {
-  otpError.value = ''
-  otp.value = ['', '', '', '', '', '']
-  otpRefs.value[0]?.focus()
-  startTimer()
+const resendCode = async () => {
+  if (timer.value > 0) return
+
+  try {
+    await api.post('/otp/resend', {
+      phone_number: route.query.phone_number,
+      type: 'registration'
+    })
+    otpError.value = ''
+    otp.value = ['', '', '', '', '', '']
+    otpRefs.value[0]?.focus()
+    startTimer()
+  } catch (error) {
+    otpError.value = error.response?.data?.message || 'Failed to resend code.'
+  }
 }
 
 const goToLogin = () => {

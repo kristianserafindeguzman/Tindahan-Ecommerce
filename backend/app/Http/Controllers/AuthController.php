@@ -125,13 +125,12 @@ class AuthController extends Controller
         ]);
 
         $otp = OtpCode::where('phone_number', $request->phone_number)
-            ->where('code', $request->code)
             ->where('type', $request->type)
             ->whereNull('verified_at')
             ->latest('created_at')
             ->first();
 
-        if (!$otp) {
+        if (!$otp || !Hash::check($request->code, $otp->code)) {
             return response()->json([
                 'message' => 'Invalid verification code. Please try again.',
             ], 422);
@@ -414,7 +413,7 @@ class AuthController extends Controller
         return OtpCode::create([
             'user_id'      => $user->user_id,
             'phone_number' => $user->phone_number,
-            'code'         => $code,
+            'code'         => Hash::make($code),
             'type'         => $type,
             'expires_at'   => now()->addMinutes(10),
         ]);

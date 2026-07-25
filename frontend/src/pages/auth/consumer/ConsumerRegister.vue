@@ -269,10 +269,10 @@ const handleRegister = async () => {
       password_confirmation: form.confirmPassword
     })
 
-    // On success, route to OTP verification page with the email
+    // On success, route to OTP verification page with the mobile number
     router.push({
       path: '/consumer/verify',
-      query: { email: form.email }
+      query: { phone_number: form.mobileNumber }
     })
 
   } catch (error) {

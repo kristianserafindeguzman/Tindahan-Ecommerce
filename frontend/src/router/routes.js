@@ -39,23 +39,46 @@ const routes = [
         meta: { guest: true }
       },
 
-      // ----- Protected Dashboard Routes -----
-      {
-        path: 'admin/dashboard',
-        component: () => import('@/pages/Admin/AdminDashboard.vue'),
-        meta: { requiresAuth: true, role: 'Admin' }
-      },
-
+      // ----- Protected Dashboard Routes (MainLayout) -----
       {
         path: 'vendor/dashboard',
         component: () => import('@/pages/Vendor/VendorDashboard.vue'),
         meta: { requiresAuth: true, role: 'Vendor' }
       },
-
+      {
+        path: 'vendor/inventory',
+        component: () => import('@/pages/Vendor/VendorInventory.vue'),
+        meta: { requiresAuth: true, role: 'Vendor' }
+      },
       {
         path: 'consumer/home',
         component: () => import('@/pages/Consumer/ConsumerHome.vue'),
         meta: { requiresAuth: true, role: 'Consumer' }
+      }
+    ]
+  },
+  
+  // ----- Admin Routes (AdminLayout) -----
+  {
+    path: '/admin',
+    component: () => import('@/layouts/AdminLayout.vue'),
+    meta: { requiresAuth: true, role: 'Admin' },
+    children: [
+      {
+        path: 'dashboard',
+        component: () => import('@/pages/Admin/AdminDashboard.vue')
+      },
+      {
+        path: 'approvals',
+        component: () => import('@/pages/Admin/AdminApprovals.vue')
+      },
+      {
+        path: 'vendors',
+        component: () => import('@/pages/Admin/AdminVendors.vue')
+      },
+      {
+        path: 'consumers',
+        component: () => import('@/pages/Admin/AdminConsumers.vue')
       }
     ]
   },
