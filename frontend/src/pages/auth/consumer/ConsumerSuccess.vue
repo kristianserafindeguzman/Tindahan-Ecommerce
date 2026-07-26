@@ -64,49 +64,14 @@ const goToLogin = () => {
 
 .login-page {
   min-height: 100vh;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 40px 20px;
-
-  background: #f4f4f4;
-
-  font-family: 'Roboto', Arial, sans-serif;
-}
-
-/* =========================
-   LOGIN CARD
-========================= */
-
-.login-card {
   width: 100%;
-  max-width: 850px;
-  min-height: 520px;
-
-  display: flex;
-
-  background: #ffffff;
-
-  overflow: hidden;
-
-  box-shadow:
-    0 12px 35px rgba(0, 0, 0, 0.12);
-}
-
-/* =========================
-   LEFT BRANDING PANEL
-========================= */
-
-.branding-panel {
-  width: 42%;
+  box-sizing: border-box;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  padding: 40px;
+  padding: 56px clamp(24px, 6vw, 80px);
 
   background:
     linear-gradient(
@@ -115,12 +80,56 @@ const goToLogin = () => {
       #9c171b 55%,
       #651012 100%
     );
+
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+/* =========================
+   LOGIN CARD (layout row, no visual chrome of its own)
+========================= */
+
+.login-card {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  max-width: none;
+  margin: 0 auto;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(40px, 8vw, 140px);
+
+  padding: 0;
+
+  background: transparent;
+
+  overflow: visible;
+}
+
+/* =========================
+   LEFT BRANDING PANEL
+========================= */
+
+.branding-panel {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 40px;
+
+  background: transparent;
 }
 
 .tindahan-logo {
   display: block;
 
-  width: 260px;
+  width: 380px;
   max-width: 100%;
   height: auto;
 
@@ -136,13 +145,22 @@ const goToLogin = () => {
 ========================= */
 
 .login-panel {
-  width: 58%;
+  width: 420px;
+  max-width: 90vw;
+  flex: 0 0 auto;
+  box-sizing: border-box;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  padding: 55px 50px;
+  padding: 45px 45px;
+
+  background: #ffffff;
+  border-radius: 4px;
+
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.3);
 }
 
 .login-content {
@@ -168,7 +186,7 @@ const goToLogin = () => {
 
   border-radius: 50%;
 
-  background: #22c55e;
+  background: #bd2427;
 
   margin-bottom: 22px;
 }
@@ -220,23 +238,21 @@ const goToLogin = () => {
 
 @media (max-width: 768px) {
   .login-card {
-    max-width: 700px;
+    padding: 0 24px;
   }
 
   .branding-panel {
-    width: 38%;
-
-    padding: 25px;
+    padding: 20px;
   }
 
   .login-panel {
-    width: 62%;
+    width: 380px;
 
-    padding: 45px 35px;
+    padding: 40px 35px;
   }
 
   .tindahan-logo {
-    width: 220px;
+    width: 260px;
   }
 }
 
@@ -246,28 +262,40 @@ const goToLogin = () => {
 
 @media (max-width: 600px) {
   .login-page {
+    min-height: 100vh;
+
+    align-items: stretch;
+    justify-content: flex-start;
+
     padding: 0;
 
     background: #ffffff;
   }
 
   .login-card {
+    width: 100%;
     min-height: 100vh;
+    height: auto;
+    max-width: 100%;
 
-    display: block;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
 
-    box-shadow: none;
+    padding: 0;
+
+    background: #ffffff;
   }
 
   .branding-panel {
     width: 100%;
     height: auto;
+    flex: none;
 
     justify-content: center;
 
-    padding: 30px 25px 5px;
-
-    background: none;
+    padding: 28px 0 8px;
   }
 
   .tindahan-logo-desktop {
@@ -277,13 +305,19 @@ const goToLogin = () => {
   .tindahan-logo-mobile {
     display: block;
 
-    width: 130px;
+    width: 110px;
   }
 
   .login-panel {
     width: 100%;
+    max-width: 100%;
+    flex: none;
 
-    padding: 15px 25px 40px;
+    padding: 20px 24px 32px;
+
+    background: #ffffff;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .login-content {

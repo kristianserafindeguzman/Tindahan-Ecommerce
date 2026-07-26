@@ -242,7 +242,7 @@ const mobileRule = val =>
 
 const passwordRule = val =>
   /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(val) ||
-  'Password must be at least 8 characters and include a letter and a number'
+  'Min 8 characters, with a letter and a number'
 
 const handleRegister = async () => {
   const isValid = await registerForm.value.validate()
@@ -446,7 +446,12 @@ const goToLogin = () => {
 }
 
 .login-input :deep(.q-field__bottom) {
-  padding-bottom: 8px;
+  padding-top: 4px;
+  padding-bottom: 10px;
+}
+
+.login-input :deep(.q-field__messages) {
+  line-height: 1.4;
 }
 
 .login-input :deep(.q-field__control) {
