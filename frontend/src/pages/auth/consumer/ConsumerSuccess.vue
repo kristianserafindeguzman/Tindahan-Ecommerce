@@ -146,6 +146,7 @@ const goToLogin = () => {
 
 .login-panel {
   width: 420px;
+  min-height: 520px;
   max-width: 90vw;
   flex: 0 0 auto;
   box-sizing: border-box;
@@ -310,6 +311,7 @@ const goToLogin = () => {
 
   .login-panel {
     width: 100%;
+    min-height: 0;
     max-width: 100%;
     flex: none;
 
