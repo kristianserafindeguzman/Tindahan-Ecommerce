@@ -63,24 +63,33 @@ const routes = [
     path: '/admin',
     component: () => import('@/layouts/AdminLayout.vue'),
     meta: { requiresAuth: true, role: 'Admin' },
-    children: [
-      {
-        path: 'dashboard',
-        component: () => import('@/pages/Admin/AdminDashboard.vue')
-      },
-      {
-        path: 'approvals',
-        component: () => import('@/pages/Admin/AdminApprovals.vue')
-      },
-      {
-        path: 'vendors',
-        component: () => import('@/pages/Admin/AdminVendors.vue')
-      },
-      {
-        path: 'consumers',
-        component: () => import('@/pages/Admin/AdminConsumers.vue')
-      }
-    ]
+children: [
+
+  {
+    path: '',
+    redirect: '/admin/dashboard'
+  },
+
+  {
+    path: 'dashboard',
+    component: () => import('@/pages/Admin/AdminDashboard.vue')
+  },
+
+  {
+    path: 'approvals',
+    component: () => import('@/pages/Admin/AdminApprovals.vue')
+  },
+
+  {
+    path: 'vendors',
+    component: () => import('@/pages/Admin/AdminVendors.vue')
+  },
+
+  {
+    path: 'consumers',
+    component: () => import('@/pages/Admin/AdminConsumers.vue')
+  }
+]
   },
 
   {

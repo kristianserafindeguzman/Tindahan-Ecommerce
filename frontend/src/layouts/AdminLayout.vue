@@ -1,13 +1,30 @@
 <template>
-  <q-layout view="hHh LpR fFf" class="admin-layout text-dark">
+  <q-layout view="hHh LpR fFf" class="admin-layout bg-grey-1">
+
+    <!-- HEADER (Mobile only — toggles sidebar) -->
+    <q-header class="admin-header-mobile" elevated>
+      <q-toolbar>
+        <q-btn
+          flat
+          dense
+          round
+          icon="menu"
+          @click="drawerOpen = !drawerOpen"
+        />
+        <q-toolbar-title class="header-title text-weight-bold">
+          Tindahan Admin
+        </q-toolbar-title>
+      </q-toolbar>
+    </q-header>
 
     <!-- LEFT SIDEBAR -->
     <q-drawer
       v-model="drawerOpen"
-      :width="240"
-      :breakpoint="768"
-      bordered
-      class="admin-sidebar"
+      show-if-above
+      :width="260"
+      :breakpoint="1024"
+      class="shadow-4"
+      style="background: linear-gradient(180deg, #A71D20 0%, #821315 100%); color: #ffffff;"
     >
       <div class="sidebar-content">
 
@@ -18,25 +35,25 @@
             alt="Tindahan"
             class="logo-img"
           />
-          <span class="logo-text">Tindahan</span>
         </div>
 
-        <q-separator class="sidebar-separator" />
-
         <!-- NAV ITEMS -->
-        <q-list class="nav-list">
+        <q-list class="nav-list q-mt-md">
           <q-item
             v-for="item in navItems"
             :key="item.path"
             :to="item.path"
             clickable
+            v-ripple
             active-class="nav-active"
             class="nav-item"
           >
-            <q-item-section avatar>
-              <q-icon :name="item.icon" />
+            <q-item-section avatar class="q-pr-sm min-w-0">
+              <q-icon :name="item.icon" size="22px" />
             </q-item-section>
-            <q-item-section>{{ item.label }}</q-item-section>
+            <q-item-section class="nav-label text-weight-medium">
+              {{ item.label }}
+            </q-item-section>
           </q-item>
         </q-list>
 
@@ -45,37 +62,24 @@
 
         <!-- LOGOUT -->
         <div class="sidebar-footer">
-          <q-separator class="sidebar-separator" />
+          <q-separator class="sidebar-separator q-mb-sm q-mx-md" />
           <q-item
             clickable
+            v-ripple
             class="nav-item logout-item"
             @click="handleLogout"
           >
-            <q-item-section avatar>
-              <q-icon name="logout" />
+            <q-item-section avatar class="q-pr-sm min-w-0">
+              <q-icon name="logout" size="22px" />
             </q-item-section>
-            <q-item-section>Logout</q-item-section>
+            <q-item-section class="nav-label text-weight-medium">
+              Logout
+            </q-item-section>
           </q-item>
         </div>
 
       </div>
     </q-drawer>
-
-    <!-- HEADER (mobile only — toggle sidebar) -->
-    <q-header class="admin-header" elevated>
-      <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          @click="drawerOpen = !drawerOpen"
-        />
-        <q-toolbar-title class="header-title">
-          Tindahan Admin
-        </q-toolbar-title>
-      </q-toolbar>
-    </q-header>
 
     <!-- MAIN CONTENT -->
     <q-page-container>
@@ -93,11 +97,12 @@ import { api } from '@/boot/axios'
 const router = useRouter()
 const drawerOpen = ref(true)
 
+// Using modern, rounded Material icons to match the aesthetic
 const navItems = [
-  { label: 'Dashboard',  icon: 'dashboard',       path: '/admin/dashboard' },
-  { label: 'Approvals',  icon: 'pending_actions',  path: '/admin/approvals' },
-  { label: 'Vendors',    icon: 'store',            path: '/admin/vendors' },
-  { label: 'Consumers',  icon: 'people',           path: '/admin/consumers' },
+  { label: 'Dashboard',  icon: 'grid_view',       path: '/admin/dashboard' },
+  { label: 'Approvals',  icon: 'pending_actions', path: '/admin/approvals' },
+  { label: 'Vendors',    icon: 'storefront',      path: '/admin/vendors' },
+  { label: 'Consumers',  icon: 'groups',          path: '/admin/consumers' },
 ]
 
 const handleLogout = async () => {
@@ -117,130 +122,131 @@ const handleLogout = async () => {
 
 <style scoped>
 .admin-layout {
-  font-family: 'Roboto', Arial, sans-serif;
+  font-family: 'Inter', 'Roboto', Arial, sans-serif;
 }
 
-/* SIDEBAR */
-
-.admin-sidebar {
-  background: #ffffff !important;
-}
-
+/* ==========================================================
+   SIDEBAR LAYOUT
+========================================================== */
 .sidebar-content {
   display: flex;
   flex-direction: column;
-
   height: 100%;
 }
 
+/* ==========================================================
+   LOGO
+========================================================== */
 .sidebar-logo {
   display: flex;
   align-items: center;
-
-  gap: 12px;
-
-  padding: 20px 20px 16px;
+  justify-content: center;
+  padding: 32px 20px 24px;
 }
 
 .logo-img {
-  width: 36px;
-  height: 36px;
-
-  object-fit: contain;
+  width: 190px;           /* Expanded width to fill more of the drawer */
+  height: 65px;           /* Fixed height prevents the image from collapsing */
+  object-fit: contain;    /* Ensures the image scales properly without distortion */
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); /* Subtle pop against the dark red */
 }
 
-.logo-text {
-  font-size: 18px;
-  font-weight: 700;
-
-  color: #333333;
-
-  letter-spacing: 0.02em;
-}
-
-.sidebar-separator {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-/* NAV */
-
+/* ==========================================================
+   NAVIGATION ITEMS
+========================================================== */
 .nav-list {
   padding: 10px 0;
 }
 
 .nav-item {
-  margin: 2px 10px;
-  padding: 10px 14px;
-
+  margin: 6px 16px;
+  padding: 12px 16px;
   border-radius: 8px;
-
-  color: #333333;
-
-  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75); /* Muted white for inactive */
+  transition: all 0.3s ease;
 }
 
 .nav-item :deep(.q-icon) {
-  color: #555555;
-
-  font-size: 20px;
+  color: rgba(255, 255, 255, 0.75);
+  transition: color 0.3s ease;
 }
 
-.nav-item:hover {
-  background: rgba(0, 0, 0, 0.06);
+.nav-label {
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
 
-  color: #111111;
+/* Hover State */
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
 .nav-item:hover :deep(.q-icon) {
-  color: #111111;
+  color: #ffffff;
 }
 
+/* Active State (White pill with red text) */
 .nav-active {
-  background: rgba(189, 36, 39, 0.1) !important;
-
-  color: #bd2427 !important;
+  background: #ffffff !important;
+  color: #A71D20 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .nav-active :deep(.q-icon) {
-  color: #bd2427 !important;
+  color: #A71D20 !important;
 }
 
-/* SPACER & FOOTER */
+/* Helper to tighten icon spacing */
+.min-w-0 {
+  min-width: 0 !important;
+}
 
+/* ==========================================================
+   FOOTER & LOGOUT
+========================================================== */
 .sidebar-spacer {
   flex: 1;
 }
 
 .sidebar-footer {
-  padding-bottom: 10px;
+  padding-bottom: 24px;
+}
+
+.sidebar-separator {
+  background: rgba(255, 255, 255, 0.15);
+  height: 1px;
 }
 
 .logout-item {
-  color: #555555;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .logout-item:hover {
-  color: #ef4444;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
 .logout-item:hover :deep(.q-icon) {
-  color: #ef4444;
+  color: #ffffff;
 }
 
-/* HEADER (mobile) */
-
-.admin-header {
-  background: #1a1a2e;
+/* ==========================================================
+   MOBILE HEADER
+========================================================== */
+.admin-header-mobile {
+  background: #A71D20;
 }
 
 .header-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: 0.02em;
 }
 
-/* DESKTOP: hide header */
-@media (min-width: 769px) {
-  .admin-header {
+/* Hide the top header on desktop sizes since the drawer handles navigation */
+@media (min-width: 1025px) {
+  .admin-header-mobile {
     display: none;
   }
 }
