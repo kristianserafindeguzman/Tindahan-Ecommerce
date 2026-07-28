@@ -1,6 +1,10 @@
 <template>
   <q-page class="dashboard-page">
-    <div class="dashboard-container">
+    <div v-if="checkingAccess" class="checking-access">
+      <q-spinner color="primary" size="32px" />
+    </div>
+
+    <div v-else class="dashboard-container">
 
       <!-- HEADER -->
       <div class="dashboard-header">
@@ -22,7 +26,7 @@
           flat
           icon="logout"
           class="logout-btn"
-          @click="handleLogout"
+          @click="logout"
         />
       </div>
 
@@ -68,11 +72,18 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
+import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
+const { logout } = useAuth()
+
+// Prevents a flash of dashboard content before the status check resolves —
+// localStorage's cached role can be stale (e.g. a vendor approved earlier
+// who has since been rejected/suspended), so this page never trusts it alone.
+const checkingAccess = ref(true)
 
 const userName = computed(() => {
   try {
@@ -83,19 +94,38 @@ const userName = computed(() => {
   }
 })
 
-const handleLogout = async () => {
+const verifyAccess = async () => {
   try {
-    await api.post('/logout')
-  } catch {
-    // Token may already be invalid
+    const { data } = await api.get('/user')
+
+    if (data.vendor_status === 'rejected') {
+      router.push({
+        path: '/auth/vendor/rejected',
+        query: { reason: data.rejection_reason || '' }
+      })
+      return
+    }
+
+    if (data.vendor_status !== 'approved') {
+      // pending, or any other non-approved status
+      router.push('/auth/vendor/under-review')
+      return
+    }
+
+    // approved — safe to render the dashboard
+    checkingAccess.value = false
+
+  } catch (error) {
+    if (error.response?.status === 401) {
+      logout()
+    } else {
+      // Unexpected error — don't strand the user on a blank spinner
+      router.push('/login')
+    }
   }
-
-  localStorage.removeItem('auth_token')
-  localStorage.removeItem('auth_user')
-  localStorage.removeItem('auth_role')
-
-  router.push('/login')
 }
+
+onMounted(verifyAccess)
 </script>
 
 <style scoped>
@@ -105,6 +135,14 @@ const handleLogout = async () => {
   background: #f4f4f4;
 
   font-family: 'Roboto', Arial, sans-serif;
+}
+
+.checking-access {
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dashboard-container {

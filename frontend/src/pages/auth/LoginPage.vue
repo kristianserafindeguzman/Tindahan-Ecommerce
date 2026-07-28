@@ -168,86 +168,6 @@
       </q-card>
     </q-dialog>
 
-    <!-- VENDOR UNDER REVIEW DIALOG -->
-    <q-dialog v-model="showUnderReview" persistent>
-      <q-card class="status-dialog">
-
-        <q-card-section class="status-content">
-          <div class="status-icon-wrap status-pending">
-            <q-icon name="hourglass_top" size="36px" color="white" />
-          </div>
-
-          <div class="status-title">Application Under Review</div>
-
-          <p class="status-message">
-            Your vendor application is currently being reviewed by our team.
-            This process typically takes 1–3 business days. Please check back
-            for updates on your application status.
-          </p>
-        </q-card-section>
-
-        <q-card-actions class="status-actions" vertical>
-          <q-btn
-            label="Check Status"
-            no-caps
-            unelevated
-            class="status-btn primary-btn"
-            :loading="loading"
-            @click="handleLogin"
-          />
-          <q-btn
-            label="Logout"
-            no-caps
-            flat
-            class="status-btn flat-btn"
-            @click="handleStatusLogout"
-          />
-        </q-card-actions>
-
-      </q-card>
-    </q-dialog>
-
-    <!-- VENDOR REJECTED DIALOG -->
-    <q-dialog v-model="showRejected" persistent>
-      <q-card class="status-dialog">
-
-        <q-card-section class="status-content">
-          <div class="status-icon-wrap status-rejected">
-            <q-icon name="close" size="36px" color="white" />
-          </div>
-
-          <div class="status-title">Application Rejected</div>
-
-          <p class="status-message">
-            Unfortunately, your vendor application has been rejected.
-          </p>
-
-          <div v-if="rejectionReason" class="rejection-box">
-            <div class="rejection-label">Reason:</div>
-            <div class="rejection-text">{{ rejectionReason }}</div>
-          </div>
-        </q-card-section>
-
-        <q-card-actions class="status-actions" vertical>
-          <q-btn
-            label="Contact Support"
-            no-caps
-            unelevated
-            class="status-btn primary-btn"
-            @click="showContactSupport = true"
-          />
-          <q-btn
-            label="Logout"
-            no-caps
-            flat
-            class="status-btn flat-btn"
-            @click="handleStatusLogout"
-          />
-        </q-card-actions>
-
-      </q-card>
-    </q-dialog>
-
     <!-- FORGOT PASSWORD FLOW MODALS -->
 
     <!-- Step 1: Request OTP -->
@@ -439,12 +359,9 @@ const loading = ref(false)
 const loginError = ref('')
 const showRegistrationOptions = ref(false)
 
-// Vendor status modals
-const showUnderReview = ref(false)
-const showRejected = ref(false)
+// Vendor status modals (Under Review / Rejected now live on their own pages)
 const showSuspended = ref(false)
 const showInactive = ref(false)
-const rejectionReason = ref('')
 const suspensionMessage = ref('')
 const inactiveMessage = ref('')
 const showContactSupport = ref(false)
@@ -518,12 +435,14 @@ const handleLogin = async () => {
         router.push('/vendor/dashboard')
 
       } else if (vendor_status === 'rejected') {
-        rejectionReason.value = rejection_reason || 'No reason provided.'
-        showRejected.value = true
+        router.push({
+          path: '/auth/vendor/rejected',
+          query: { reason: rejection_reason || '' }
+        })
 
       } else {
-        // pending or any other status — show Under Review
-        showUnderReview.value = true
+        // pending or any other status
+        router.push('/auth/vendor/under-review')
       }
     }
 
@@ -563,8 +482,6 @@ const handleStatusLogout = async () => {
   localStorage.removeItem('auth_user')
   localStorage.removeItem('auth_role')
 
-  showUnderReview.value = false
-  showRejected.value = false
   showSuspended.value = false
   showInactive.value = false
 }
@@ -1060,10 +977,6 @@ const goToVendorRegister = () => {
   background: #f59e0b;
 }
 
-.status-rejected {
-  background: #ef4444;
-}
-
 .status-title {
   font-size: 19px;
   font-weight: 700;
@@ -1080,36 +993,6 @@ const goToVendorRegister = () => {
   color: #666666;
 
   margin: 0;
-}
-
-.rejection-box {
-  margin-top: 16px;
-  padding: 12px 14px;
-
-  border-radius: 8px;
-
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-
-  text-align: left;
-}
-
-.rejection-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-
-  color: #b91c1c;
-
-  margin-bottom: 4px;
-}
-
-.rejection-text {
-  font-size: 13px;
-  line-height: 1.5;
-
-  color: #7f1d1d;
 }
 
 .status-actions {

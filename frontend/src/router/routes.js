@@ -39,6 +39,17 @@ const routes = [
         meta: { guest: true }
       },
 
+      // ----- Vendor Application Status (post-login, pre-approval) -----
+      {
+        path: 'auth/vendor/under-review',
+        component: () => import('@/pages/auth/vendor/VendorUnderReview.vue')
+      },
+
+      {
+        path: 'auth/vendor/rejected',
+        component: () => import('@/pages/auth/vendor/VendorRejected.vue')
+      },
+
       // ----- Protected Dashboard Routes (MainLayout) -----
       {
         path: 'vendor/dashboard',
@@ -57,7 +68,7 @@ const routes = [
       }
     ]
   },
-  
+
   // ----- Admin Routes (AdminLayout) -----
   {
     path: '/admin',
