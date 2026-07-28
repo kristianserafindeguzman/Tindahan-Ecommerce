@@ -1,6 +1,10 @@
 <template>
   <q-page class="vendor-page">
-    <div class="page-container">
+    <div v-if="checkingAccess" class="checking-access">
+      <q-spinner color="primary" size="32px" />
+    </div>
+
+    <div v-else class="page-container">
 
       <div class="page-header">
         <h1>Inventory Management</h1>
@@ -158,7 +162,18 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
+import { useAuth } from '@/composables/useAuth'
+
+const router = useRouter()
+const { logout } = useAuth()
+
+// Same access-verification pattern as VendorDashboard.vue — the route guard
+// only checks role, not vendor_status, so a vendor whose approval was
+// revoked after their token was issued could otherwise still reach this
+// page via stale localStorage.
+const checkingAccess = ref(true)
 
 const loading = ref(false)
 const inventory = ref([])
@@ -244,9 +259,36 @@ const getImageUrl = (path) => {
   return `http://127.0.0.1:8000/storage/${path}`
 }
 
-onMounted(() => {
-  fetchInventory()
-})
+const verifyAccess = async () => {
+  try {
+    const { data } = await api.get('/user')
+
+    if (data.vendor_status === 'rejected') {
+      router.push({
+        path: '/auth/vendor/rejected',
+        query: { reason: data.rejection_reason || '' }
+      })
+      return
+    }
+
+    if (data.vendor_status !== 'approved') {
+      router.push('/auth/vendor/under-review')
+      return
+    }
+
+    checkingAccess.value = false
+    fetchInventory()
+
+  } catch (error) {
+    if (error.response?.status === 401) {
+      logout()
+    } else {
+      router.push('/login')
+    }
+  }
+}
+
+onMounted(verifyAccess)
 </script>
 
 <style scoped>
@@ -254,6 +296,14 @@ onMounted(() => {
   background: #f4f5f7;
   font-family: 'Roboto', Arial, sans-serif;
   min-height: 100vh;
+}
+
+.checking-access {
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .page-container {
