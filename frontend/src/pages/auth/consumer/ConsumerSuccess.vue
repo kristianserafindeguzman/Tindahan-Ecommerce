@@ -187,7 +187,7 @@ const goToLogin = () => {
 
   border-radius: 50%;
 
-  background: #bd2427;
+  background: #4BB543;
 
   margin-bottom: 22px;
 }
