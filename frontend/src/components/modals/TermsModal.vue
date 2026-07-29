@@ -17,37 +17,41 @@
       <q-separator />
 
       <q-card-section class="legal-body scroll">
+        <p><strong>Last Updated: July 2026</strong></p>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec at dignissim purus.
-          Sed lobortis eleifend diam, sit amet mollis mi laoreet et. Suspendisse pretium quam in
-          finibus dictum. Pellentesque luctus sagittis sem, volutpat tincidunt augue molestie in.
-          Nam rutrum lorem eu erat interdum efficitur. Vestibulum iaculis libero ac arcu malesuada,
-          sed egestas ipsum rutrum. Etiam malesuada tortor eget odio eleifend aliquam ullamcorper
-          vitae diam. Fusce suscipit id purus vitae tempor.
+          By accessing or using the Tindahan platform, you agree to be bound by these Terms and Conditions. 
+          If you do not agree with any part of these terms, you must not use our services.
         </p>
+
+        <p><strong>1. Account Registration and Verification</strong></p>
+        <ol>
+          <li>You must provide accurate, current, and complete information during registration.</li>
+          <li>You are required to verify your account using a valid 11-digit Philippine mobile number via One-Time Password (OTP).</li>
+          <li>You are responsible for safeguarding your password and for all activities that occur under your account.</li>
+        </ol>
+
+        <p><strong>2. Vendor Obligations</strong></p>
+        <ul>
+          <li><strong>Approvals:</strong> All vendor applications are subject to review. Administrators reserve the right to approve, reject, or request revisions on store applications.</li>
+          <li><strong>Accuracy:</strong> Vendors must provide accurate store photos, locations, and operating hours.</li>
+          <li><strong>Compliance:</strong> Vendors must not list illegal, prohibited, or fraudulent items on the platform.</li>
+        </ul>
+
+        <p><strong>3. Platform Rights & Account Deactivation</strong></p>
         <p>
-          Fusce arcu tortor, pharetra nec imperdiet eget, viverra nec velit. Aenean elementum dui
-          viverra leo volutpat malesuada quis hendrerit felis. Quisque vel turpis elementum purus
-          cursus congue. Pellentesque vel tempus massa. Mauris tristique blandit malesuada. Cras nulla
-          nisl, aliquet quis sodales at, dignissim aliquet risus. In convallis et justo eget lobortis.
+          Tindahan administrators reserve the right to suspend, reject, or deactivate user and vendor accounts that violate these terms. 
+          Deactivated accounts are safely archived (soft-deleted) for auditing and security purposes and lose all access to public platform features.
         </p>
+
+        <p><strong>4. Limitation of Liability</strong></p>
         <p>
-          In sit amet urna eu dolor fringilla efficitur vel et purus. Quisque congue porta leo.
-          Nam nisl velit, malesuada vel velit vel, ullamcorper pretium nibh. Praesent ac nisl fermentum,
-          congue libero id, tristique diam. Proin ac lacinia ante, a fringilla neque. Pellentesque
-          posuere eget mi a facilisis. Pellentesque habitant morbi tristique senectus et netus et
-          malesuada fames ac turpis egestas. Integer iaculis suscipit urna a lacinia. Nulla id lectus
-          ornare, imperdiet libero non, suscipit quam. Nunc convallis laoreet velit vel vehicula.
-          Maecenas luctus pellentesque mauris, nec facilisis nunc rutrum sit amet.
+          Tindahan serves as a marketplace platform connecting consumers and local sari-sari store vendors. 
+          We are not responsible for the quality, safety, or legality of the goods offered by vendors, nor the completion of transactions between users.
         </p>
+
+        <p><strong>5. Modifications to Terms</strong></p>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque bibendum tristique nisi,
-          ut imperdiet magna tincidunt id. Donec ut sapien egestas, molestie ex et, rutrum nunc.
-          Suspendisse eu leo id quam fermentum fringilla a eu nisi. Etiam commodo orci sed pharetra
-          viverra. In hac habitasse platea dictumst. Vestibulum hendrerit nulla augue, at tempor magna
-          luctus in. Duis mattis augue enim, ut finibus sem ullamcorper eget. In sapien arcu, mattis
-          in ultrices nec, rutrum sed felis. Donec varius mattis purus, non euismod quam pellentesque vel.
-          Cras egestas lorem ut hendrerit dignissim. Nunc a pulvinar tellus.
+          We reserve the right to modify these terms at any time. Continued use of the application after changes implies your acceptance of the updated terms.
         </p>
       </q-card-section>
 
@@ -82,9 +86,7 @@ defineEmits(['update:modelValue'])
 .legal-dialog {
   width: 520px;
   max-width: 90vw;
-
   border-radius: 10px;
-
   font-family: 'Roboto', Arial, sans-serif;
 }
 
@@ -92,14 +94,12 @@ defineEmits(['update:modelValue'])
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   padding: 16px 20px;
 }
 
 .legal-title {
   font-size: 18px;
   font-weight: 700;
-
   color: #222222;
 }
 
@@ -109,17 +109,24 @@ defineEmits(['update:modelValue'])
 
 .legal-body {
   max-height: 350px;
-
   padding: 20px 24px;
-
   font-size: 13px;
   line-height: 1.7;
-
   color: #555555;
 }
 
 .legal-body p {
-  margin: 0 0 16px;
+  margin: 0 0 12px;
+}
+
+.legal-body ul, .legal-body ol {
+  margin-top: 0;
+  padding-left: 20px;
+  margin-bottom: 12px;
+}
+
+.legal-body li {
+  margin-bottom: 4px;
 }
 
 .legal-body p:last-child {
@@ -132,14 +139,10 @@ defineEmits(['update:modelValue'])
 
 .close-button {
   height: 38px;
-
   padding: 0 24px;
-
   border-radius: 6px;
-
   background: #bd2427;
   color: #ffffff;
-
   font-size: 13px;
   font-weight: 500;
 }
