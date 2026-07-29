@@ -17,37 +17,41 @@
       <q-separator />
 
       <q-card-section class="legal-body scroll">
+        <p><strong>Last Updated: July 2026</strong></p>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec at dignissim purus.
-          Sed lobortis eleifend diam, sit amet mollis mi laoreet et. Suspendisse pretium quam in
-          finibus dictum. Pellentesque luctus sagittis sem, volutpat tincidunt augue molestie in.
-          Nam rutrum lorem eu erat interdum efficitur. Vestibulum iaculis libero ac arcu malesuada,
-          sed egestas ipsum rutrum. Etiam malesuada tortor eget odio eleifend aliquam ullamcorper
-          vitae diam. Fusce suscipit id purus vitae tempor.
+          Welcome to Tindahan. We are committed to protecting your personal information and your right to privacy. 
+          This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile or web application.
         </p>
+        
+        <p><strong>1. Information We Collect</strong></p>
+        <ul>
+          <li><strong>Personal Data:</strong> We collect your full name, email address, and mobile phone number during registration.</li>
+          <li><strong>Media & Files:</strong> We collect optional profile pictures for consumers, and mandatory store appearance photos for vendors.</li>
+          <li><strong>Business Information (Vendors):</strong> Store name, location/map coordinates, and operating schedules.</li>
+        </ul>
+
+        <p><strong>2. How We Use Your Information</strong></p>
+        <ul>
+          <li>To create, verify (via OTP), and secure your account.</li>
+          <li>To process vendor applications and display approved stores to consumers.</li>
+          <li>To provide customer support and respond to your inquiries.</li>
+        </ul>
+
+        <p><strong>3. Data Retention and Deletion</strong></p>
         <p>
-          Fusce arcu tortor, pharetra nec imperdiet eget, viverra nec velit. Aenean elementum dui
-          viverra leo volutpat malesuada quis hendrerit felis. Quisque vel turpis elementum purus
-          cursus congue. Pellentesque vel tempus massa. Mauris tristique blandit malesuada. Cras nulla
-          nisl, aliquet quis sodales at, dignissim aliquet risus. In convallis et justo eget lobortis.
+          We retain personal information only for as long as necessary to fulfill the purposes outlined in this policy. 
+          When an account is deactivated or deleted by an Administrator, the account undergoes a "soft delete." 
+          This means your active profile is hidden from the public platform but securely archived in our database to preserve transaction histories and ensure platform integrity.
         </p>
+
+        <p><strong>4. Your Rights (Data Privacy Act of 2012)</strong></p>
         <p>
-          In sit amet urna eu dolor fringilla efficitur vel et purus. Quisque congue porta leo.
-          Nam nisl velit, malesuada vel velit vel, ullamcorper pretium nibh. Praesent ac nisl fermentum,
-          congue libero id, tristique diam. Proin ac lacinia ante, a fringilla neque. Pellentesque
-          posuere eget mi a facilisis. Pellentesque habitant morbi tristique senectus et netus et
-          malesuada fames ac turpis egestas. Integer iaculis suscipit urna a lacinia. Nulla id lectus
-          ornare, imperdiet libero non, suscipit quam. Nunc convallis laoreet velit vel vehicula.
-          Maecenas luctus pellentesque mauris, nec facilisis nunc rutrum sit amet.
+          In accordance with the Philippine Data Privacy Act of 2012 (RA 10173), you have the right to be informed, object to processing, access, rectify, or request the erasure of your personal data, subject to platform limitations and legal obligations.
         </p>
+
+        <p><strong>5. Contact Us</strong></p>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque bibendum tristique nisi,
-          ut imperdiet magna tincidunt id. Donec ut sapien egestas, molestie ex et, rutrum nunc.
-          Suspendisse eu leo id quam fermentum fringilla a eu nisi. Etiam commodo orci sed pharetra
-          viverra. In hac habitasse platea dictumst. Vestibulum hendrerit nulla augue, at tempor magna
-          luctus in. Duis mattis augue enim, ut finibus sem ullamcorper eget. In sapien arcu, mattis
-          in ultrices nec, rutrum sed felis. Donec varius mattis purus, non euismod quam pellentesque vel.
-          Cras egestas lorem ut hendrerit dignissim. Nunc a pulvinar tellus.
+          If you have questions or comments about this Privacy Policy, please contact our support team.
         </p>
       </q-card-section>
 
@@ -82,9 +86,7 @@ defineEmits(['update:modelValue'])
 .legal-dialog {
   width: 520px;
   max-width: 90vw;
-
   border-radius: 10px;
-
   font-family: 'Roboto', Arial, sans-serif;
 }
 
@@ -92,14 +94,12 @@ defineEmits(['update:modelValue'])
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   padding: 16px 20px;
 }
 
 .legal-title {
   font-size: 18px;
   font-weight: 700;
-
   color: #222222;
 }
 
@@ -109,17 +109,24 @@ defineEmits(['update:modelValue'])
 
 .legal-body {
   max-height: 350px;
-
   padding: 20px 24px;
-
   font-size: 13px;
   line-height: 1.7;
-
   color: #555555;
 }
 
 .legal-body p {
-  margin: 0 0 16px;
+  margin: 0 0 12px;
+}
+
+.legal-body ul {
+  margin-top: 0;
+  padding-left: 20px;
+  margin-bottom: 12px;
+}
+
+.legal-body li {
+  margin-bottom: 4px;
 }
 
 .legal-body p:last-child {
@@ -132,14 +139,10 @@ defineEmits(['update:modelValue'])
 
 .close-button {
   height: 38px;
-
   padding: 0 24px;
-
   border-radius: 6px;
-
   background: #bd2427;
   color: #ffffff;
-
   font-size: 13px;
   font-weight: 500;
 }
