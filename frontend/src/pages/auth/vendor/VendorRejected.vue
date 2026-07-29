@@ -21,9 +21,15 @@
         </p>
 
         <div v-if="rejectionReason" class="reason-box">
-          <div class="reason-label">
-            <q-icon name="error_outline" size="15px" />
-            Reason for Rejection
+          <div class="reason-label flex items-center justify-between">
+            <div>
+              <q-icon name="error_outline" size="15px" class="q-mr-xs" />
+              Reason for Rejection
+            </div>
+            <div v-if="rejectedBy" class="rejected-by-label flex items-center">
+              <q-icon name="person" size="14px" class="q-mr-xs" />
+              Reviewed by {{ rejectedBy }}
+            </div>
           </div>
           <p class="reason-text">{{ rejectionReason }}</p>
         </div>
@@ -64,9 +70,11 @@ const { logout } = useAuth()
 
 const showContactSupport = ref(false)
 const rejectionReason = ref('')
+const rejectedBy = ref('')
 
 onMounted(() => {
   rejectionReason.value = route.query.reason || ''
+  rejectedBy.value = route.query.rejected_by || ''
 })
 </script>
 
@@ -160,19 +168,16 @@ onMounted(() => {
 }
 
 .reason-label {
-  display: flex;
-  align-items: center;
-
-  gap: 7px;
-
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  color: #d32f2f;
+  margin-bottom: 6px;
+}
 
-  color: #b91c1c;
-
-  margin-bottom: 7px;
+.rejected-by-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
 }
 
 .reason-text {

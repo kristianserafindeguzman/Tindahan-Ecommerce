@@ -22,7 +22,7 @@ const routes = [
       },
 
       {
-        path: 'consumer/verify',
+        path: 'verification',
         component: () => import('@/pages/auth/consumer/ConsumerVerify.vue'),
         meta: { guest: true }
       },

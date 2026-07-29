@@ -115,7 +115,7 @@ const route = useRoute()
 
 // The phone number passed from consumer registration, masked for privacy
 const displayPhone = computed(() => {
-  const phone = route.query.phone_number
+  const phone = history.state?.phone_number
   if (!phone) return 'your mobile number'
   if (phone.length >= 10) {
     // e.g. 0917***4567
@@ -215,11 +215,20 @@ const handleOtpPaste = (event) => {
 
 // Real OTP verification
 const verifyOtp = async () => {
-  // Safely parse the code whether it's an array (6 boxes) or a string (1 box)
-  const parsedCode = Array.isArray(otp.value) ? otp.value.join('') : String(otp.value || '')
+  // Join the 6 separate digits into a single string
+  const finalOtp = otp.value.join('')
+    
+  // Retrieve phone and type from router history state
+  const phoneNum = history.state?.phone_number
+  const verificationType = history.state?.type || 'registration'
 
-  if (parsedCode.length < 6) {
+  if (finalOtp.length < 6) {
     otpError.value = 'Please enter the complete 6-digit code.'
+    return
+  }
+  
+  if (!phoneNum) {
+    otpError.value = 'Missing phone number. Please register again.'
     return
   }
 
@@ -228,9 +237,9 @@ const verifyOtp = async () => {
 
   try {
     await api.post('/otp/verify', {
-      phone_number: route.query.phone_number,
-      code: parsedCode,
-      type: 'registration'
+      phone_number: phoneNum,
+      code: finalOtp,
+      type: verificationType
     })
     
     // Success — go to the full-page success screen
@@ -239,11 +248,7 @@ const verifyOtp = async () => {
     console.error('OTP Verification Error:', error)
     otpError.value = error.response?.data?.message || 'An unexpected error occurred'
     // Clear the OTP boxes appropriately
-    if (Array.isArray(otp.value)) {
-      otp.value = ['', '', '', '', '', '']
-    } else {
-      otp.value = ''
-    }
+    otp.value = ['', '', '', '', '', '']
     otpRefs.value[0]?.focus()
   } finally {
     loading.value = false
@@ -253,10 +258,18 @@ const verifyOtp = async () => {
 const resendCode = async () => {
   if (timer.value > 0) return
 
+  otpError.value = ''
+  
+  const phoneNum = history.state?.phone_number
+  if (!phoneNum) {
+    otpError.value = 'Missing phone number. Please register again.'
+    return
+  }
+
   try {
     await api.post('/otp/resend', {
-      phone_number: route.query.phone_number,
-      type: 'registration'
+      phone_number: phoneNum,
+      type: history.state?.type || 'registration'
     })
     otpError.value = ''
     otp.value = ['', '', '', '', '', '']

@@ -36,7 +36,7 @@
 
       <q-card-actions class="status-actions" vertical>
         <q-btn
-          label="Check Status"
+          label="Check Application Status / Refresh"
           icon="refresh"
           no-caps
           unelevated

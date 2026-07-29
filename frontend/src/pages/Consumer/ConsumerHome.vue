@@ -16,14 +16,23 @@
           </div>
         </div>
 
-        <q-btn
-          label="Logout"
-          no-caps
-          flat
-          icon="logout"
-          class="logout-btn"
-          @click="handleLogout"
-        />
+        <div class="header-right flex items-center">
+          <q-avatar size="40px" class="q-mr-md" v-if="userProfilePicture">
+            <img :src="'http://localhost:8000/storage/' + userProfilePicture" />
+          </q-avatar>
+          <q-avatar size="40px" class="q-mr-md bg-grey-3 text-grey-8" v-else>
+            <q-icon name="person" size="24px" />
+          </q-avatar>
+
+          <q-btn
+            label="Logout"
+            no-caps
+            flat
+            icon="logout"
+            class="logout-btn"
+            @click="handleLogout"
+          />
+        </div>
       </div>
 
       <!-- SEARCH BAR -->
@@ -82,19 +91,27 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 
 const router = useRouter()
+const $q = useQuasar()
 
-const userName = computed(() => {
+const userName = ref('')
+const userProfilePicture = ref('')
+
+onMounted(async () => {
   try {
-    const user = JSON.parse(localStorage.getItem('auth_user') || '{}')
-    const name = user.full_name || 'Consumer'
-    return name.split(' ')[0]
-  } catch {
-    return 'Consumer'
+    const res = await api.get('/user')
+    if (res.data && res.data.user) {
+      const user = res.data.user
+      userName.value = user.full_name ? user.full_name.split(' ')[0] : 'Consumer'
+      userProfilePicture.value = user.profile_picture || null
+    }
+  } catch (error) {
+    userName.value = 'Consumer'
   }
 })
 

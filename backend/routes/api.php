@@ -44,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Manage Vendors
         Route::get('/vendors', [AdminController::class, 'listVendors']);
         Route::patch('/vendors/{userId}/status', [AdminController::class, 'updateVendorStatus']);
+        Route::delete('/vendors/{userId}', [AdminController::class, 'deleteVendor']);
 
         // Manage Consumers
         Route::get('/consumers', [AdminController::class, 'listConsumers']);

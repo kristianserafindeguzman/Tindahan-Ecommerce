@@ -26,8 +26,9 @@ class AuthController extends Controller
         $validated = $request->validate([
             'full_name'    => 'required|string|max:100',
             'email'        => 'required|email|max:100',
-            'phone_number' => 'required|string|max:15',
-            'password'     => 'required|string|min:8|confirmed',
+            'phone_number'    => 'required|string|max:15',
+            'password'        => 'required|string|min:8|confirmed',
+            'profile_picture' => 'nullable|image|max:2048',
         ]);
 
         try {
@@ -44,22 +45,34 @@ class AuthController extends Controller
                     ]);
                 }
                 
+                $photoPath = $existingUser->profile_picture;
+                if ($request->hasFile('profile_picture')) {
+                    $photoPath = $request->file('profile_picture')->store('profiles', 'public');
+                }
+
                 // Overwrite the existing inactive user
                 $existingUser->update([
-                    'full_name'     => $validated['full_name'],
-                    'email'         => $validated['email'],
-                    'phone_number'  => $validated['phone_number'],
-                    'password_hash' => Hash::make($validated['password']),
+                    'full_name'       => $validated['full_name'],
+                    'email'           => $validated['email'],
+                    'phone_number'    => $validated['phone_number'],
+                    'password_hash'   => Hash::make($validated['password']),
+                    'profile_picture' => $photoPath,
                 ]);
                 $user = $existingUser;
             } else {
+                $photoPath = null;
+                if ($request->hasFile('profile_picture')) {
+                    $photoPath = $request->file('profile_picture')->store('profiles', 'public');
+                }
+
                 $user = User::create([
-                    'role'          => 'Consumer',
-                    'full_name'     => $validated['full_name'],
-                    'email'         => $validated['email'],
-                    'phone_number'  => $validated['phone_number'],
-                    'password_hash' => Hash::make($validated['password']),
-                    'account_status'=> 'inactive',
+                    'role'            => 'Consumer',
+                    'full_name'       => $validated['full_name'],
+                    'email'           => $validated['email'],
+                    'phone_number'    => $validated['phone_number'],
+                    'password_hash'   => Hash::make($validated['password']),
+                    'account_status'  => 'inactive',
+                    'profile_picture' => $photoPath,
                 ]);
             }
 
@@ -74,6 +87,9 @@ class AuthController extends Controller
                 'otp_sent'     => true,
                 'phone_number' => $validated['phone_number'],
             ], 201);
+        } catch (ValidationException $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
             return response()->json([
@@ -97,6 +113,7 @@ class AuthController extends Controller
             'password'      => 'required|string|min:8|confirmed',
             'store_name'    => 'required|string|max:150',
             'store_picture' => 'required|image|max:10240',
+            'operating_days'=> 'required|string',
             'opening_time'  => 'required|date_format:H:i',
             'closing_time'  => 'required|date_format:H:i',
             'latitude'      => 'required|numeric|between:-90,90',
@@ -116,11 +133,17 @@ class AuthController extends Controller
         $photoPath = $request->file('store_picture')
             ->store('stores', 'public');
 
+        $operatingDays = $request->input('operating_days');
+        if (is_string($operatingDays)) {
+            $operatingDays = json_decode($operatingDays, true);
+        }
+
         // 3. Create the store record
         $store = Store::create([
             'owner_id'      => $user->user_id,
             'store_name'    => $validated['store_name'],
-            'store_picture'  => $photoPath,
+            'store_picture' => $photoPath,
+            'operating_days'=> $operatingDays,
             'opening_time'  => $validated['opening_time'],
             'closing_time'  => $validated['closing_time'],
             'latitude'      => $validated['latitude'],
@@ -174,13 +197,13 @@ class AuthController extends Controller
 
         if (!$otp) {
             return response()->json([
-                'message' => 'Debug: No OTP record found for phone: ' . $request->phone_number
+                'message' => 'No verification code found. Please request a new one.'
             ], 400);
         }
 
         if (!Hash::check($request->code, $otp->code)) {
             return response()->json([
-                'message' => 'Debug: Hash mismatch. Payload received: ' . json_encode($request->code)
+                'message' => 'Invalid verification code. Please try again.'
             ], 400);
         }
 
@@ -409,8 +432,21 @@ class AuthController extends Controller
             $store = $user->store()->with('approvalStatus')->first();
 
             if ($store && $store->approvalStatus) {
-                $responseData['vendor_status']    = $store->approvalStatus->status;
-                $responseData['rejection_reason'] = $store->approvalStatus->rejection_reason;
+                $approval = $store->approvalStatus;
+                $responseData['vendor_status']    = $approval->status;
+                $responseData['rejection_reason'] = $approval->rejection_reason;
+                
+                if ($approval->status === 'rejected' && $approval->admin_id) {
+                    $admin = User::find($approval->admin_id);
+                    if ($admin) {
+                        $names = explode(' ', trim($admin->full_name));
+                        $initials = '';
+                        foreach($names as $n) {
+                            if(!empty($n)) $initials .= strtoupper($n[0]);
+                        }
+                        $responseData['rejected_by'] = substr($initials, 0, 2);
+                    }
+                }
             } else {
                 $responseData['vendor_status']    = 'pending';
                 $responseData['rejection_reason'] = null;
@@ -448,13 +484,32 @@ class AuthController extends Controller
             'role' => $user->role,
         ];
 
-        if ($user->role === 'Vendor') {
-            $store = $user->store()->with('approvalStatus')->first();
+        // Return response directly. The frontend decides where to route based on role.
+        $vendorStatus = null;
+        $rejectionReason = null;
+        $rejectedBy = null;
 
-            if ($store && $store->approvalStatus) {
-                $responseData['vendor_status']    = $store->approvalStatus->status;
-                $responseData['rejection_reason'] = $store->approvalStatus->rejection_reason;
+        if ($user->role === 'Vendor' && $user->store) {
+            $approval = $user->store->approvalStatus;
+            if ($approval) {
+                $vendorStatus = $approval->status;
+                $rejectionReason = $approval->rejection_reason;
+                
+                if ($vendorStatus === 'rejected' && $approval->admin_id) {
+                    $admin = User::find($approval->admin_id);
+                    if ($admin) {
+                        $names = explode(' ', trim($admin->full_name));
+                        $initials = '';
+                        foreach($names as $n) {
+                            if(!empty($n)) $initials .= strtoupper($n[0]);
+                        }
+                        $rejectedBy = substr($initials, 0, 2);
+                    }
+                }
             }
+            $responseData['vendor_status'] = $vendorStatus;
+            $responseData['rejection_reason'] = $rejectionReason;
+            $responseData['rejected_by'] = $rejectedBy;
         }
 
         return response()->json($responseData);

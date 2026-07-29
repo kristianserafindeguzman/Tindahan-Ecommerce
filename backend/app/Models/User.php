@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasApiTokens, Notifiable;
+    use HasFactory, HasApiTokens, Notifiable, SoftDeletes;
 
     /**
      * Custom primary key matching the data dictionary.
@@ -24,6 +26,7 @@ class User extends Authenticatable
     protected $fillable = [
         'role',
         'full_name',
+        'profile_picture',
         'phone_number',
         'email',
         'password_hash',
@@ -44,6 +47,7 @@ class User extends Authenticatable
      * Disable default timestamps since the table only has created_at.
      */
     public $timestamps = false;
+    const UPDATED_AT = null;
 
     /**
      * Override the default auth password column.
@@ -82,5 +86,24 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->account_status === 'active';
+    }
+
+    /**
+     * Append custom attributes.
+     */
+    protected $appends = ['profile_picture_url'];
+
+    /**
+     * Resolve the profile picture URL safely.
+     */
+    protected function profilePictureUrl(): Attribute
+    {
+        return Attribute::make(
+            get: function (mixed $value, array $attributes) {
+                $pic = $attributes['profile_picture'] ?? null;
+                if (!$pic || $pic === 'null' || trim($pic) === '') return null;
+                return str_starts_with($pic, 'http') ? $pic : asset('storage/' . $pic);
+            }
+        );
     }
 }

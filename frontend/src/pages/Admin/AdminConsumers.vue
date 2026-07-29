@@ -32,8 +32,23 @@
         />
       </div>
 
+      <!-- TABS -->
+      <q-tabs
+        v-model="currentTab"
+        dense
+        class="text-grey"
+        active-color="primary"
+        indicator-color="primary"
+        align="left"
+        narrow-indicator
+        @update:model-value="fetchConsumers"
+      >
+        <q-tab name="active" label="Active Accounts" />
+        <q-tab name="deleted" label="Deleted Accounts" />
+      </q-tabs>
+
       <!-- TABLE -->
-      <div class="table-card">
+      <div class="table-card q-mt-sm">
         <q-table
           flat
           :rows="consumers"
@@ -42,7 +57,23 @@
           :loading="loading"
           no-data-label="No consumers found"
           class="data-table"
+          @row-click="openConsumerInfo"
         >
+          <!-- NAME WITH AVATAR -->
+          <template #body-cell-full_name="props">
+            <q-td :props="props">
+              <div class="flex items-center">
+                <q-avatar size="32px" class="q-mr-sm bg-grey-3 text-grey-8" v-if="props.row.profile_picture_url">
+                  <q-img :src="props.row.profile_picture_url" class="full-height full-width" />
+                </q-avatar>
+                <q-avatar size="32px" class="q-mr-sm bg-grey-3 text-grey-8" v-else>
+                  <q-icon name="person" size="20px" />
+                </q-avatar>
+                <span>{{ props.row.full_name }}</span>
+              </div>
+            </q-td>
+          </template>
+
           <!-- LAST ACTIVITY -->
           <template #body-cell-last_activity_at="props">
             <q-td :props="props">
@@ -71,6 +102,7 @@
           <template #body-cell-actions="props">
             <q-td :props="props">
               <q-btn
+                v-if="currentTab !== 'deleted'"
                 label="Delete Account"
                 no-caps
                 dense
@@ -163,6 +195,44 @@
       </q-card>
     </q-dialog>
 
+    <!-- CONSUMER INFO MODAL -->
+    <q-dialog v-model="showConsumerModal">
+      <q-card class="vendor-info-dialog" style="max-width: 400px; width: 100%;">
+        <q-card-section class="info-header text-center" v-if="selectedConsumer">
+          <q-avatar size="100px" class="q-mb-md shadow-2 bg-grey-3 text-grey-8" v-if="selectedConsumer.profile_picture_url">
+            <q-img :src="selectedConsumer.profile_picture_url" class="full-height full-width" />
+          </q-avatar>
+          <q-avatar size="100px" class="q-mb-md shadow-2 bg-grey-3 text-grey-8" v-else>
+            <q-icon name="person" size="60px" />
+          </q-avatar>
+          
+          <div class="text-h6 text-weight-bold">{{ selectedConsumer.full_name }}</div>
+          <q-chip dense :color="selectedConsumer.account_status === 'active' ? 'green-1' : (selectedConsumer.account_status === 'suspended' ? 'orange-1' : 'red-1')" 
+                  :text-color="selectedConsumer.account_status === 'active' ? 'green-8' : (selectedConsumer.account_status === 'suspended' ? 'orange-8' : 'red-8')" 
+                  class="text-weight-bold q-mt-sm text-uppercase">
+            {{ selectedConsumer.account_status }}
+          </q-chip>
+        </q-card-section>
+
+        <q-card-section v-if="selectedConsumer" class="q-pt-none">
+          <div class="q-mt-md">
+            <div class="flex items-center q-mb-sm">
+              <q-icon name="email" color="grey-7" size="20px" class="q-mr-sm" />
+              <span class="text-dark text-weight-medium">{{ selectedConsumer.email }}</span>
+            </div>
+            <div class="flex items-center q-mb-sm">
+              <q-icon name="phone" color="grey-7" size="20px" class="q-mr-sm" />
+              <span class="text-dark text-weight-medium">{{ selectedConsumer.phone_number || 'N/A' }}</span>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right" class="modal-actions">
+          <q-btn flat label="Close" color="grey-8" no-caps @click="showConsumerModal = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
@@ -174,6 +244,7 @@ const search = ref('')
 const loading = ref(false)
 const actionLoading = ref(false)
 const consumers = ref([])
+const currentTab = ref('active')
 
 // Delete modal
 const showDeleteModal = ref(false)
@@ -184,6 +255,10 @@ const showSuspendModal = ref(false)
 const suspensionTarget = ref(null)
 const suspensionMessage = ref('')
 const originalStatus = ref(null)
+
+// Consumer Info modal state
+const showConsumerModal = ref(false)
+const selectedConsumer = ref(null)
 
 const statusOptions = [
   { label: 'Active', value: 'active' },
@@ -204,7 +279,10 @@ const fetchConsumers = async () => {
   loading.value = true
   try {
     const res = await api.get('/admin/consumers', {
-      params: { search: search.value || undefined }
+      params: { 
+        search: search.value || undefined,
+        tab: currentTab.value 
+      }
     })
     consumers.value = res.data
   } catch {
@@ -232,19 +310,18 @@ const handleDelete = async () => {
   }
 }
 
-const formatActivity = (timestamp) => {
-  if (!timestamp) return 'Never'
+const formatActivity = (dateStr) => {
+  if (!dateStr) return 'Never logged in'
+  const date = new Date(dateStr)
+  return date.toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  })
+}
 
-  const now = new Date()
-  const then = new Date(timestamp)
-  const diff = Math.floor((now - then) / 1000)
-
-  if (diff < 60) return 'Just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)} mins ago`
-  if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`
-  if (diff < 604800) return `${Math.floor(diff / 86400)} days ago`
-
-  return then.toLocaleDateString()
+const openConsumerInfo = (evt, row) => {
+  selectedConsumer.value = row
+  showConsumerModal.value = true
 }
 
 const updateStatus = async (userId, newStatus) => {
