@@ -45,8 +45,23 @@
         />
       </div>
 
+      <!-- TABS -->
+      <q-tabs
+        v-model="currentTab"
+        dense
+        class="text-grey"
+        active-color="primary"
+        indicator-color="primary"
+        align="left"
+        narrow-indicator
+        @update:model-value="fetchVendors"
+      >
+        <q-tab name="active" label="Active Accounts" />
+        <q-tab name="deleted" label="Deleted Accounts" />
+      </q-tabs>
+
       <!-- TABLE -->
-      <div class="table-card">
+      <div class="table-card q-mt-sm">
         <q-table
           flat
           :rows="vendors"
@@ -144,21 +159,38 @@
     <!-- VENDOR INFO MODAL -->
     <q-dialog v-model="showVendorInfoModal">
       <q-card class="vendor-info-dialog">
-        <q-card-section class="info-header" v-if="selectedVendor">
-          <q-avatar size="64px" class="q-mr-md" v-if="selectedVendor.store_picture">
-            <img :src="'http://localhost:8000/storage/' + selectedVendor.store_picture" />
-          </q-avatar>
-          <q-avatar size="64px" class="q-mr-md bg-grey-3 text-grey-8" v-else>
-            <q-icon name="storefront" size="32px" />
-          </q-avatar>
-          <div>
-            <div class="info-store-name">{{ selectedVendor.store_name || 'N/A' }}</div>
-            <div class="info-owner-name text-grey-7">{{ selectedVendor.full_name }}</div>
+        <q-card-section class="info-header text-center" v-if="selectedVendor">
+          <div class="info-store-name q-mb-sm">{{ selectedVendor.store_name || 'N/A' }}</div>
+          <div class="info-owner-name text-grey-7 q-mb-md">{{ selectedVendor.full_name }}</div>
+          
+          <!-- If Image Exists -->
+          <q-img 
+            v-if="selectedVendor.store_picture_url && selectedVendor.store_picture_url !== 'null' && selectedVendor.store_picture_url.trim() !== ''" 
+            :src="selectedVendor.store_picture_url" 
+            style="width: 100%; height: 200px"
+            fit="cover"
+            class="rounded-borders"
+          >
+            <template v-slot:error>
+              <div class="absolute-full flex flex-center bg-grey-3">
+                <q-icon name="storefront" size="64px" color="grey-7" />
+              </div>
+            </template>
+          </q-img>
+        
+          <!-- If Image is Null/Empty in Database -->
+          <div 
+            v-else 
+            class="bg-grey-3 flex flex-center full-width rounded-borders" 
+            style="height: 200px;"
+          >
+            <q-icon name="storefront" size="64px" color="grey-7" />
           </div>
         </q-card-section>
 
         <q-card-section v-if="selectedVendor">
           <div class="info-details q-mb-md">
+            <div><strong>Operating Days:</strong> {{ formatOperatingDays(selectedVendor.operating_days) }}</div>
             <div><strong>Hours:</strong> {{ selectedVendor.opening_time || 'N/A' }} - {{ selectedVendor.closing_time || 'N/A' }}</div>
             <div><strong>Coordinates:</strong> {{ selectedVendor.latitude }}, {{ selectedVendor.longitude }}</div>
           </div>
@@ -192,6 +224,10 @@
             <q-btn flat label="Reject" color="red-6" no-caps @click="rejectFromInfo" />
             <q-btn unelevated label="Approve" color="green-6" no-caps @click="approveFromInfo" />
           </template>
+          <template v-else-if="selectedVendor.approval_status === 'rejected'">
+            <q-btn flat label="Close" color="grey-8" no-caps @click="showVendorInfoModal = false" />
+            <q-btn unelevated label="Approve" color="green-6" no-caps @click="approveFromInfo" />
+          </template>
           <template v-else>
             <q-btn flat label="Close" color="grey-8" no-caps @click="showVendorInfoModal = false" />
           </template>
@@ -211,6 +247,7 @@ const statusFilter = ref(null)
 const loading = ref(false)
 const actionLoading = ref(false)
 const vendors = ref([])
+const currentTab = ref('active')
 
 // Suspend modal state
 const showSuspendModal = ref(false)
@@ -238,19 +275,29 @@ const columns = [
 ]
 
 const fetchVendors = async () => {
-  loading.value = true
   try {
-    const res = await api.get('/admin/vendors', {
-      params: {
-        search: search.value || undefined,
-        status: statusFilter.value || undefined,
-      }
-    })
+    loading.value = true
+    const params = {
+      tab: currentTab.value,
+      search: search.value,
+      status: statusFilter.value
+    }
+    const res = await api.get('/admin/vendors', { params })
     vendors.value = res.data
-  } catch {
-    vendors.value = []
+  } catch (error) {
+    console.error('Error fetching vendors:', error)
   } finally {
     loading.value = false
+  }
+}
+
+const formatOperatingDays = (days) => {
+  if (!days) return 'N/A'
+  try {
+    const parsed = typeof days === 'string' ? JSON.parse(days) : days
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed.join(', ') : 'N/A'
+  } catch (e) {
+    return 'N/A'
   }
 }
 
@@ -555,8 +602,6 @@ onMounted(() => {
   border-radius: 10px;
 }
 .info-header {
-  display: flex;
-  align-items: center;
   padding-bottom: 0;
 }
 .info-store-name {

@@ -32,35 +32,58 @@
         />
       </div>
 
+      <!-- TABS -->
+      <q-tabs
+        v-model="currentTab"
+        dense
+        class="text-grey"
+        active-color="primary"
+        indicator-color="primary"
+        align="left"
+        narrow-indicator
+        @update:model-value="fetchPending"
+      >
+        <q-tab name="pending" label="Pending Applications" />
+        <q-tab name="rejected" label="Rejected Applications" />
+      </q-tabs>
+
       <!-- TABLE -->
-      <div class="table-card">
+      <div class="table-card q-mt-sm">
         <q-table
           flat
-          :rows="pending"
+          :rows="filteredApplications"
           :columns="columns"
           row-key="approval_id"
           :loading="loading"
-          no-data-label="No pending applications"
+          no-data-label="No applications found"
           class="data-table"
+          @row-click="openVendorInfo"
         >
           <template #body-cell-actions="props">
             <q-td :props="props">
-              <q-btn
-                label="Approve"
-                no-caps
-                dense
-                unelevated
-                class="approve-btn q-mr-xs"
-                @click="handleApprove(props.row)"
-              />
-              <q-btn
-                label="Reject"
-                no-caps
-                dense
-                flat
-                class="reject-btn"
-                @click="openRejectModal(props.row)"
-              />
+              <template v-if="props.row.status === 'pending'">
+                <q-btn
+                  label="Approve"
+                  no-caps
+                  dense
+                  unelevated
+                  class="approve-btn q-mr-xs"
+                  @click.stop="handleApprove(props.row)"
+                />
+                <q-btn
+                  label="Reject"
+                  no-caps
+                  dense
+                  flat
+                  class="reject-btn"
+                  @click.stop="openRejectModal(props.row)"
+                />
+              </template>
+              <template v-else>
+                <q-chip dense color="red-1" text-color="red-6" class="q-ma-none text-weight-bold">
+                  Rejected
+                </q-chip>
+              </template>
             </q-td>
           </template>
         </q-table>
@@ -119,17 +142,101 @@
       </q-card>
     </q-dialog>
 
+    <!-- VENDOR INFO MODAL -->
+    <q-dialog v-model="showVendorInfoModal">
+      <q-card class="vendor-info-dialog">
+        <q-card-section class="info-header text-center" v-if="selectedVendor">
+          <div class="info-store-name q-mb-sm">{{ selectedVendor.store?.store_name || 'N/A' }}</div>
+          <div class="info-owner-name text-grey-7 q-mb-md">{{ selectedVendor.store?.owner?.full_name }}</div>
+          
+          <!-- If Image Exists -->
+          <q-img 
+            v-if="selectedVendor.store?.store_picture_url && selectedVendor.store.store_picture_url !== 'null' && selectedVendor.store.store_picture_url.trim() !== ''" 
+            :src="selectedVendor.store.store_picture_url" 
+            style="width: 100%; height: 200px"
+            fit="cover"
+            class="rounded-borders"
+          >
+            <template v-slot:error>
+              <div class="absolute-full flex flex-center bg-grey-3">
+                <q-icon name="storefront" size="64px" color="grey-7" />
+              </div>
+            </template>
+          </q-img>
+        
+          <!-- If Image is Null/Empty in Database -->
+          <div 
+            v-else 
+            class="bg-grey-3 flex flex-center full-width rounded-borders" 
+            style="height: 200px;"
+          >
+            <q-icon name="storefront" size="64px" color="grey-7" />
+          </div>
+        </q-card-section>
+
+        <q-card-section v-if="selectedVendor">
+          <div class="info-details q-mb-md">
+            <div><strong>Operating Days:</strong> {{ formatOperatingDays(selectedVendor.store?.operating_days) }}</div>
+            <div><strong>Hours:</strong> {{ selectedVendor.store?.opening_time || 'N/A' }} - {{ selectedVendor.store?.closing_time || 'N/A' }}</div>
+            <div><strong>Coordinates:</strong> {{ selectedVendor.store?.latitude }}, {{ selectedVendor.store?.longitude }}</div>
+          </div>
+
+          <div class="map-container" v-if="selectedVendor.store?.latitude && selectedVendor.store?.longitude">
+            <iframe 
+              :src="'https://www.openstreetmap.org/export/embed.html?bbox=' + (selectedVendor.store.longitude - 0.01) + '%2C' + (selectedVendor.store.latitude - 0.01) + '%2C' + (selectedVendor.store.longitude + 0.01) + '%2C' + (selectedVendor.store.latitude + 0.01) + '&amp;layer=mapnik&amp;marker=' + selectedVendor.store.latitude + '%2C' + selectedVendor.store.longitude"
+              width="100%" 
+              height="200" 
+              style="border:1px solid #ccc; border-radius: 8px;" 
+              allowfullscreen="" 
+              loading="lazy">
+            </iframe>
+            <div class="q-mt-sm text-right">
+              <q-btn
+                label="Get Directions"
+                no-caps
+                flat
+                dense
+                color="primary"
+                icon="directions"
+                :href="'https://www.google.com/maps/dir/?api=1&destination=' + selectedVendor.store.latitude + ',' + selectedVendor.store.longitude"
+                target="_blank"
+              />
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right" class="modal-actions" v-if="selectedVendor">
+          <template v-if="selectedVendor.status === 'pending'">
+            <q-btn flat label="Reject" color="red-6" no-caps @click="openRejectModal(selectedVendor); showVendorInfoModal = false;" />
+            <q-btn unelevated label="Approve" color="green-6" no-caps @click="handleApprove(selectedVendor); showVendorInfoModal = false;" />
+          </template>
+          <template v-else-if="selectedVendor.status === 'rejected'">
+            <q-btn flat label="Close" color="grey-8" no-caps @click="showVendorInfoModal = false" />
+            <q-btn unelevated label="Approve" color="green-6" no-caps @click="handleApprove(selectedVendor); showVendorInfoModal = false;" />
+          </template>
+          <template v-else>
+            <q-btn flat label="Close" color="grey-8" no-caps @click="showVendorInfoModal = false" />
+          </template>
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { api } from '@/boot/axios'
 
 const search = ref('')
 const loading = ref(false)
 const actionLoading = ref(false)
 const pending = ref([])
+const currentTab = ref('pending')
+
+const filteredApplications = computed(() => {
+  return pending.value.filter(app => app.status === currentTab.value)
+})
 
 // Reject modal
 const showRejectModal = ref(false)
@@ -138,6 +245,10 @@ const rejectTarget = ref(null)
 const approveTarget = ref(null)
 const rejectionReason = ref('')
 
+// Vendor Info modal
+const showVendorInfoModal = ref(false)
+const selectedVendor = ref(null)
+
 const columns = [
   { name: 'owner_name', label: 'Name', field: 'owner_name', align: 'left', sortable: true },
   { name: 'email', label: 'Email', field: 'email', align: 'left', sortable: true },
@@ -145,21 +256,39 @@ const columns = [
   { name: 'store_name', label: 'Store Name', field: 'store_name', align: 'left' },
   { name: 'applied_at', label: 'Applied', field: 'applied_at', align: 'left',
     format: val => val ? new Date(val).toLocaleDateString() : '—' },
-  { name: 'actions', label: 'Actions', field: '', align: 'center' },
+  { name: 'actions', label: 'Actions', field: 'actions', align: 'center' },
 ]
 
 const fetchPending = async () => {
   loading.value = true
   try {
     const res = await api.get('/admin/vendors/pending', {
-      params: { search: search.value || undefined }
+      params: {
+        search: search.value || undefined
+      }
     })
     pending.value = res.data
-  } catch {
-    pending.value = []
+  } catch (error) {
+    console.error('Error fetching applications:', error)
   } finally {
     loading.value = false
   }
+}
+
+const formatOperatingDays = (days) => {
+  if (!days) return 'N/A'
+  try {
+    const parsed = typeof days === 'string' ? JSON.parse(days) : days
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed.join(', ') : 'N/A'
+  } catch (e) {
+    return 'N/A'
+  }
+}
+
+
+const openVendorInfo = (evt, row) => {
+  selectedVendor.value = row
+  showVendorInfoModal.value = true
 }
 
 const handleApprove = (row) => {
@@ -342,6 +471,29 @@ onMounted(() => {
   color: #ffffff;
   border-radius: 6px;
   font-size: 13px;
+}
+
+/* VENDOR INFO MODAL */
+.vendor-info-dialog {
+  width: 500px;
+  max-width: 95vw;
+  border-radius: 10px;
+}
+.info-header {
+  padding-bottom: 0;
+}
+.info-store-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.2;
+}
+.info-owner-name {
+  font-size: 14px;
+}
+.info-details {
+  font-size: 13px;
+  color: #444;
 }
 
 /* PRINT */

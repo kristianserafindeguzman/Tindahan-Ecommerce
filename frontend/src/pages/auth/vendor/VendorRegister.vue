@@ -137,7 +137,7 @@
                   ]"
                 >
                   <template #prepend>
-                    <span class="phone-prefix">+63</span>
+                    <q-icon name="phone" class="phone-prefix" />
                   </template>
                 </q-input>
               </div>
@@ -211,10 +211,7 @@
                     label="Opening time"
                     class="login-input"
                     :options="timeOptions"
-                    :disable="form.hoursOption === 'always'"
-                    :rules="[
-                      val => form.hoursOption === 'always' || !!val || 'Opening time is required'
-                    ]"
+                    :disable="alwaysOpen"
                   >
                     <template #append>
                       <q-icon name="schedule" class="password-icon" />
@@ -233,10 +230,7 @@
                     label="Closing time"
                     class="login-input"
                     :options="timeOptions"
-                    :disable="form.hoursOption === 'always'"
-                    :rules="[
-                      val => form.hoursOption === 'always' || !!val || 'Closing time is required'
-                    ]"
+                    :disable="alwaysOpen"
                   >
                     <template #append>
                       <q-icon name="schedule" class="password-icon" />
@@ -245,16 +239,28 @@
                 </div>
               </div>
 
-              <q-option-group
-                v-model="form.hoursOption"
-                type="radio"
-                class="hours-options"
-                :options="[
-                  { label: 'Always Open (24/7)', value: 'always' },
-                  { label: 'Open Every Weekend', value: 'weekend' },
-                  { label: 'Open Every Weekday', value: 'weekday' }
-                ]"
-              />
+              <div class="q-mt-sm">
+                <div class="text-caption q-mb-xs">Operating Days</div>
+                <div class="flex items-center q-mb-sm">
+                  <q-toggle 
+                    v-model="alwaysOpen" 
+                    label="Always Open (24/7)" 
+                    color="primary" 
+                    @update:model-value="handleAlwaysOpenToggle"
+                  />
+                </div>
+                <q-btn-group spread class="days-toggle" flat>
+                  <q-btn
+                    v-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']"
+                    :key="day"
+                    :label="day"
+                    :color="form.operatingDays.includes(day) ? 'primary' : 'white'"
+                    :text-color="form.operatingDays.includes(day) ? 'white' : 'black'"
+                    :outline="!form.operatingDays.includes(day)"
+                    @click="toggleDay(day)"
+                  />
+                </q-btn-group>
+              </div>
             </div>
 
           </div>
@@ -263,13 +269,6 @@
           <div class="map-column">
             <div class="section-title">Store Location</div>
 
-            <!--
-              NOTE: this is a static placeholder. Wire up your real map
-              provider (Google Maps / Mapbox / Leaflet) here — it needs
-              an API key this file doesn't have access to. Keep
-              `form.latitude` / `form.longitude` / `form.detectedAddress`
-              updated from the map's pin-drag or geolocation events.
-            -->
             <div class="map-placeholder">
               <q-icon name="location_on" class="map-pin-icon" />
               <span class="map-placeholder-text">Map goes here</span>
@@ -436,6 +435,7 @@ const showSuccess = ref(false)
 const showContactSupport = ref(false)
 const showTerms = ref(false)
 const showPrivacy = ref(false)
+const alwaysOpen = ref(false)
 
 // Crop State
 const showCropModal = ref(false)
@@ -454,7 +454,7 @@ const form = reactive({
   confirmPassword: '',
   openingTime: '',
   closingTime: '',
-  hoursOption: 'weekday',
+  operatingDays: [],
   detectedAddress: '',
   manualAddress: '',
   latitude: null,
@@ -477,15 +477,30 @@ for (let minutes = 0; minutes < 24 * 60; minutes += 30) {
 const nameRule = val =>
   /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || 'Only letters are allowed'
 
-const emailRule = val =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || 'Enter a valid email address'
+const emailRule = val => /.+@.+\..+/.test(val) || 'Enter a valid email'
+const phoneRule = val => /^09\d{9}$/.test(val) || 'Phone must be exactly 11 digits starting with 09'
+const passwordRule = val => val.length >= 8 || 'Minimum 8 characters'
 
-const phoneRule = val =>
-  /^\d{9,10}$/.test(val) || 'Enter a valid phone number (e.g. 9171234567)'
+const toggleDay = (day) => {
+  const index = form.operatingDays.indexOf(day)
+  if (index > -1) {
+    form.operatingDays.splice(index, 1)
+  } else {
+    form.operatingDays.push(day)
+  }
+}
 
-const passwordRule = val =>
-  /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(val) ||
-  'Password must be at least 8 characters and include a letter and a number'
+const handleAlwaysOpenToggle = (val) => {
+  if (val) {
+    form.operatingDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    form.openingTime = '00:00'
+    form.closingTime = '23:30'
+  } else {
+    form.operatingDays = []
+    form.openingTime = ''
+    form.closingTime = ''
+  }
+}
 
 const handlePhotoChange = event => {
   const file = event.target.files?.[0]
@@ -504,14 +519,12 @@ const handlePhotoChange = event => {
 
 const openCropModal = () => {
   showCropModal.value = true
-  // Wait for dialog to mount
   setTimeout(() => {
     const canvas = cropCanvas.value
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     imageObj = new Image()
     imageObj.onload = () => {
-      // Scale down image to fit in modal if necessary
       const maxW = 400
       let w = imageObj.width
       let h = imageObj.height
@@ -522,7 +535,6 @@ const openCropModal = () => {
       canvas.width = w
       canvas.height = h
       ctx.drawImage(imageObj, 0, 0, w, h)
-      // reset crop rect
       cropRect.x = 0; cropRect.y = 0; cropRect.w = w; cropRect.h = h
       drawCropCanvas()
     }
@@ -537,11 +549,9 @@ const drawCropCanvas = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height)
   
-  // Draw dim overlay
   ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
   
-  // Clear the crop area
   if (cropRect.w > 0 && cropRect.h > 0) {
     ctx.clearRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
     ctx.drawImage(imageObj, 
@@ -551,7 +561,6 @@ const drawCropCanvas = () => {
       (cropRect.h / canvas.height) * imageObj.height, 
       cropRect.x, cropRect.y, cropRect.w, cropRect.h)
     
-    // Draw border
     ctx.strokeStyle = '#fff'
     ctx.lineWidth = 2
     ctx.strokeRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
@@ -581,7 +590,6 @@ const onCropMouseMove = (e) => {
 
 const onCropMouseUp = () => {
   if (isDragging) {
-    // Normalize rect to always have positive width/height
     if (cropRect.w < 0) {
       cropRect.x += cropRect.w
       cropRect.w = Math.abs(cropRect.w)
@@ -625,50 +633,36 @@ const applyCrop = () => {
 const removePhoto = () => {
   photoFile.value = null
   photoPreview.value = null
-
-  // Reset the file input
   const input = document.getElementById('storePhoto')
   if (input) input.value = ''
 }
 
 const handleVendorRegister = async () => {
   const isValid = await vendorForm.value.validate()
-
-  if (!isValid) {
-    return
-  }
-
-  if (!photoFile.value) {
-    registerError.value = 'Please upload a store exterior photo.'
-    return
-  }
+  if (!isValid || !photoFile.value) return
 
   loading.value = true
   registerError.value = ''
 
   try {
-    // Build multipart form data for file upload
     const formData = new FormData()
+    formData.append('store_name', form.storeName)
     formData.append('full_name', form.ownerName)
     formData.append('email', form.email)
-    formData.append('phone_number', `+63${form.phoneNumber}`)
+    formData.append('phone_number', form.phoneNumber)
     formData.append('password', form.password)
     formData.append('password_confirmation', form.confirmPassword)
-    formData.append('store_name', form.storeName)
-    formData.append('store_picture', photoFile.value)
-
-    // Handle 24/7 hours
-    if (form.hoursOption === 'always') {
-      formData.append('opening_time', '00:00')
-      formData.append('closing_time', '23:59')
-    } else {
-      formData.append('opening_time', form.openingTime)
-      formData.append('closing_time', form.closingTime)
-    }
+    formData.append('opening_time', form.openingTime)
+    formData.append('closing_time', form.closingTime)
+    formData.append('operating_days', JSON.stringify(form.operatingDays))
 
     // Use placeholder coordinates if map is not wired
     formData.append('latitude', form.latitude || '14.5764')
     formData.append('longitude', form.longitude || '121.0351')
+
+    if (photoFile.value) {
+      formData.append('store_picture', photoFile.value)
+    }
 
     await api.post('/register/vendor', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }

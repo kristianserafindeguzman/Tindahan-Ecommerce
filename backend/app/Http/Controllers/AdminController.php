@@ -27,16 +27,15 @@ class AdminController extends Controller
     }
 
     /**
-     * List vendors with pending approval status.
+     * Get pending and rejected vendor applications.
      *
      * GET /api/admin/vendors/pending
      */
     public function pendingVendors(Request $request)
     {
-        $query = ApprovalStatus::where('status', 'pending')
-            ->with(['store.owner']);
+        $query = ApprovalStatus::with(['store.owner'])
+            ->whereIn('status', ['pending', 'rejected']);
 
-        // Search
         if ($request->filled('search')) {
             $search = $request->search;
             $query->whereHas('store.owner', function ($q) use ($search) {
@@ -56,7 +55,20 @@ class AdminController extends Controller
                 'owner_name'  => $owner?->full_name,
                 'email'       => $owner?->email,
                 'phone'       => $owner?->phone_number,
+                'status'      => $approval->status,
                 'applied_at'  => $owner?->created_at,
+                'store'       => [
+                    'store_name' => $store?->store_name,
+                    'store_picture_url' => $store?->store_picture_url,
+                    'operating_days' => $store?->operating_days,
+                    'opening_time' => $store?->opening_time,
+                    'closing_time' => $store?->closing_time,
+                    'latitude' => $store?->latitude,
+                    'longitude' => $store?->longitude,
+                    'owner' => [
+                        'full_name' => $owner?->full_name,
+                    ]
+                ]
             ];
         });
 
@@ -130,7 +142,15 @@ class AdminController extends Controller
     public function listVendors(Request $request)
     {
         $query = User::where('role', 'Vendor')
+            ->whereHas('store.approvalStatus', function ($q) {
+                $q->where('status', 'approved');
+            })
             ->with(['store.approvalStatus']);
+
+        // Handle Active/Deleted Tab
+        if ($request->tab === 'deleted') {
+            $query->onlyTrashed();
+        }
 
         // Search by name or email
         if ($request->filled('search')) {
@@ -177,7 +197,8 @@ class AdminController extends Controller
                 'last_activity_at' => $vendor->last_activity_at,
                 'store_id'         => $store?->store_id,
                 'store_name'       => $store?->store_name,
-                'store_picture'    => $store?->store_picture,
+                'store_picture_url' => $store?->store_picture_url,
+                'operating_days'   => $store?->operating_days,
                 'opening_time'     => $store?->opening_time,
                 'closing_time'     => $store?->closing_time,
                 'latitude'         => $store?->latitude,
@@ -231,14 +252,48 @@ class AdminController extends Controller
     }
 
     /**
+     * Soft-delete a vendor and their store.
+     *
+     * DELETE /api/admin/vendors/{userId}
+     */
+    public function deleteVendor(Request $request, $userId)
+    {
+        $vendor = User::where('user_id', $userId)
+            ->where('role', 'Vendor')
+            ->firstOrFail();
+
+        $vendor->delete(); // Soft delete User
+
+        if ($vendor->store) {
+            $vendor->store->delete(); // Soft delete Store
+        }
+
+        $vendor->tokens()->delete();
+
+        SystemAuditLog::create([
+            'admin_id'         => $request->user()->user_id,
+            'action_performed' => "Deactivated vendor account {$userId}",
+            'created_at'       => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Vendor account has been deactivated.',
+        ]);
+    }
+
+    /**
      * List all consumers (never expose passwords).
      *
      * GET /api/admin/consumers
      */
     public function listConsumers(Request $request)
     {
-        $query = User::where('role', 'Consumer')
-            ->where('account_status', '!=', 'deleted');
+        $query = User::where('role', 'Consumer');
+
+        // Handle Active/Deleted Tab
+        if ($request->tab === 'deleted') {
+            $query->onlyTrashed();
+        }
 
         // Search by name or email
         if ($request->filled('search')) {
@@ -250,7 +305,7 @@ class AdminController extends Controller
         }
 
         $consumers = $query->get(['user_id', 'full_name', 'email', 'phone_number',
-                                   'account_status', 'last_activity_at', 'created_at']);
+                                   'profile_picture', 'account_status', 'last_activity_at', 'created_at']);
 
         return response()->json($consumers);
     }
@@ -307,10 +362,8 @@ class AdminController extends Controller
             ->where('role', 'Consumer')
             ->firstOrFail();
 
-        // Soft delete — preserve the record and all related orders
-        $consumer->update([
-            'account_status' => 'deleted',
-        ]);
+        // Soft delete
+        $consumer->delete();
 
         // Revoke all tokens so they can't access the API anymore
         $consumer->tokens()->delete();

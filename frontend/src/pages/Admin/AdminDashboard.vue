@@ -411,7 +411,7 @@ const loadDashboard = async () => {
       api.get('/admin/vendors/pending')
     ])
     stats.value = statsRes.data
-    pendingApplications.value = pendingRes.data.slice(0, 5)
+    pendingApplications.value = pendingRes.data.filter(app => app.status === 'pending').slice(0, 5)
   } catch (error) {
     console.error(error)
   } finally {

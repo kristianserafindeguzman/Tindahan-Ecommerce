@@ -437,7 +437,10 @@ const handleLogin = async () => {
       } else if (vendor_status === 'rejected') {
         router.push({
           path: '/auth/vendor/rejected',
-          query: { reason: rejection_reason || '' }
+          query: { 
+            reason: rejection_reason || '',
+            rejected_by: rejected_by || ''
+          }
         })
 
       } else {
