@@ -261,47 +261,159 @@
     </div>
 
     <!-- ================= REVIEW DIALOG ================= -->
-    <q-dialog v-model="showApplicationDialog" persistent transition-show="scale" transition-hide="scale">
-      <q-card class="premium-dialog-glass">
-        <q-card-section class="row items-center q-pa-lg bg-red-9 text-white overflow-hidden" style="position: relative;">
-          <div class="dialog-bg-glow"></div>
-          <div class="dialog-pattern-overlay"></div>
-          
-          <q-icon name="storefront" size="32px" class="q-mr-md card-content-layer text-white" />
-          
-          <div class="col card-content-layer">
-            <div class="text-h6 text-weight-bolder letter-spacing-tight line-height-tight">{{ selectedApplication.store_name }}</div>
-            <div class="text-caption text-red-2 text-weight-medium q-mt-xs">Vendor Application Review</div>
+    <q-dialog v-model="showApplicationDialog" transition-show="scale" transition-hide="scale">
+      <q-card class="review-dialog-glass vendor-info-dialog">
+        <q-card-section class="row items-center justify-between q-pa-md panel-header">
+          <div class="text-h6 text-weight-bold text-dark row items-center">
+            <div class="header-accent-3d q-mr-sm"></div>
+            Application Review
           </div>
-          <q-btn icon="close" flat round dense v-close-popup class="text-white card-content-layer hover-rotate" size="sm" />
+          <q-btn icon="close" flat round dense color="grey-7" @click="showApplicationDialog = false" />
         </q-card-section>
 
-        <q-card-section class="q-pa-lg dialog-body-glass">
-          <div class="text-overline text-grey-5 tracking-widest q-mb-md text-weight-bold">Applicant Information</div>
-          <div class="row q-col-gutter-y-lg q-col-gutter-x-lg">
+        <q-card-section class="q-pa-lg scroll" style="max-height: 65vh;" v-if="selectedApplication">
+          <div class="text-center q-mb-lg">
+            <div class="info-store-name q-mb-xs">{{ selectedApplication.store?.store_name || selectedApplication.store_name || 'N/A' }}</div>
+            <div class="info-owner-name text-grey-7 q-mb-md">Owned by: {{ selectedApplication.store?.owner?.full_name || selectedApplication.owner_name }}</div>
+            
+            <div class="image-3d-container">
+              <q-img 
+                v-if="selectedApplication.store?.store_picture_url && selectedApplication.store.store_picture_url !== 'null' && selectedApplication.store.store_picture_url.trim() !== ''" 
+                :src="selectedApplication.store.store_picture_url" 
+                style="width: 100%; height: 220px"
+                fit="cover"
+                class="rounded-borders"
+              >
+                <template v-slot:error>
+                  <div class="absolute-full flex flex-center empty-state-glass">
+                    <q-icon name="storefront" size="64px" color="grey-5" />
+                  </div>
+                </template>
+              </q-img>
+            
+              <div 
+                v-else 
+                class="empty-state-glass flex flex-center full-width rounded-borders" 
+                style="height: 220px;"
+              >
+                <q-icon name="storefront" size="64px" color="grey-5" />
+              </div>
+            </div>
+          </div>
+
+          <div class="row q-col-gutter-y-md q-col-gutter-x-xl q-mb-lg">
             <div class="col-12 col-sm-6">
-              <div class="text-caption text-grey-5 text-uppercase tracking-wide text-weight-bold q-mb-xs">Store Owner</div>
-              <div class="text-subtitle1 text-weight-bold text-dark line-height-tight">{{ selectedApplication.owner_name }}</div>
+              <div class="text-caption text-grey-6 text-uppercase text-weight-bold">Contact Email</div>
+              <div class="text-subtitle2 text-weight-bold text-dark">{{ selectedApplication.email }}</div>
             </div>
             <div class="col-12 col-sm-6">
-              <div class="text-caption text-grey-5 text-uppercase tracking-wide text-weight-bold q-mb-xs">Contact Number</div>
-              <div class="text-subtitle1 text-weight-bold text-dark line-height-tight">{{ selectedApplication.phone || 'Not Provided' }}</div>
+              <div class="text-caption text-grey-6 text-uppercase text-weight-bold">Contact Phone</div>
+              <div class="text-subtitle2 text-weight-bold text-dark">{{ selectedApplication.phone || 'N/A' }}</div>
             </div>
             <div class="col-12 col-sm-6">
-              <div class="text-caption text-grey-5 text-uppercase tracking-wide text-weight-bold q-mb-xs">Email Address</div>
-              <div class="text-subtitle1 text-weight-bold text-dark line-height-tight" style="word-wrap: break-word;">{{ selectedApplication.email }}</div>
+              <div class="text-caption text-grey-6 text-uppercase text-weight-bold">Operating Days</div>
+              <div class="text-subtitle2 text-weight-bold text-dark">{{ formatOperatingDays(selectedApplication.store?.operating_days) }}</div>
             </div>
             <div class="col-12 col-sm-6">
-              <div class="text-caption text-grey-5 text-uppercase tracking-wide text-weight-bold q-mb-xs">Date Applied</div>
-              <div class="text-subtitle1 text-weight-bold text-dark line-height-tight">{{ formatDate(selectedApplication.applied_at) }}</div>
+              <div class="text-caption text-grey-6 text-uppercase text-weight-bold">Business Hours</div>
+              <div class="text-subtitle2 text-weight-bold text-dark">{{ selectedApplication.store?.opening_time || 'N/A' }} - {{ selectedApplication.store?.closing_time || 'N/A' }}</div>
+            </div>
+          </div>
+
+          <div class="map-container-3d" v-if="isValidLocation(selectedApplication)">
+            <iframe 
+              :src="getMapUrl(selectedApplication.store.latitude, selectedApplication.store.longitude)"
+              width="100%" 
+              height="200" 
+              style="border:none; border-radius: 8px;" 
+              allowfullscreen="" 
+              loading="lazy">
+            </iframe>
+            <div class="q-mt-md text-right">
+              <q-btn
+                label="Open in Google Maps"
+                no-caps
+                class="btn-3d-outline q-px-md"
+                text-color="blue-8"
+                icon="map"
+                :href="`https://www.google.com/maps/dir/?api=1&destination=${selectedApplication.store.latitude},${selectedApplication.store.longitude}`"
+                target="_blank"
+              />
             </div>
           </div>
         </q-card-section>
+
+        <q-separator color="grey-3" />
 
         <q-card-actions align="right" class="q-pa-md dialog-actions-glass">
-          <q-btn flat label="Cancel" color="grey-7" no-caps class="btn-premium-outline q-px-md text-weight-bold" v-close-popup size="sm" />
-          <q-btn outline color="red-9" label="Reject" no-caps class="btn-premium-outline q-px-md q-ml-sm text-weight-bold" @click="rejectApplication(selectedApplication)" size="sm" />
-          <q-btn unelevated color="green-7" label="Approve Vendor" icon="check_circle" no-caps class="btn-premium q-px-md q-ml-sm text-weight-bold" @click="approveApplication(selectedApplication)" size="sm" />
+          <q-btn flat label="Cancel" color="grey-7" no-caps class="btn-3d-outline q-px-md" @click="showApplicationDialog = false" />
+          <q-btn flat label="Reject Application" color="red-8" no-caps class="btn-reject-3d q-px-md q-ml-sm" @click="openRejectModal(selectedApplication); showApplicationDialog = false;" />
+          <q-btn unelevated label="Approve Vendor" icon="check_circle" color="white" no-caps class="btn-approve-3d q-px-md q-ml-sm" @click="handleApprove(selectedApplication); showApplicationDialog = false;" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- ================= REJECT MODAL ================= -->
+    <q-dialog v-model="showRejectModal" persistent transition-show="scale" transition-hide="scale">
+      <q-card class="review-dialog-glass text-center">
+        <q-card-section class="q-pt-xl q-pb-md relative-position" style="z-index: 2;">
+          <div class="action-icon-3d bg-red-1 text-red-9 q-mb-md q-mx-auto">
+            <q-icon name="warning" size="36px" />
+          </div>
+          <div class="text-h5 text-weight-bold text-dark q-mb-sm">Reject Application</div>
+          <p class="text-body2 text-grey-7 q-px-md">
+            Action requires justification. Please provide a reason for rejecting this application. This will be visible in records.
+          </p>
+          <q-input
+            v-model="rejectionReason"
+            type="textarea"
+            outlined
+            dense
+            placeholder="e.g., Incomplete documentation, suspicious activity..."
+            class="custom-glass-input text-left q-mt-md"
+            autofocus
+          />
+        </q-card-section>
+        
+        <q-card-actions align="center" class="q-pa-md dialog-actions-glass">
+          <q-btn flat label="Cancel" color="grey-8" no-caps class="btn-3d-outline q-px-md q-mr-sm" v-close-popup />
+          <q-btn
+            unelevated
+            label="Confirm Rejection"
+            color="red-9"
+            no-caps
+            class="btn-3d q-px-md"
+            :loading="actionLoading"
+            @click="handleRejectConfirm"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- ================= APPROVE MODAL ================= -->
+    <q-dialog v-model="showApproveModal" persistent transition-show="scale" transition-hide="scale">
+      <q-card class="review-dialog-glass text-center">
+        <q-card-section class="q-pt-xl q-pb-md relative-position" style="z-index: 2;">
+          <div class="action-icon-3d bg-green-1 text-green-7 q-mb-md q-mx-auto">
+            <q-icon name="check_circle" size="36px" />
+          </div>
+          <div class="text-h5 text-weight-bold text-dark q-mb-sm">Approve Vendor</div>
+          <p class="text-body1 text-grey-7 q-px-md">
+            Are you sure you want to approve this application? <strong>{{ approveTarget?.store_name }}</strong> will immediately gain full access to the Vendor Dashboard.
+          </p>
+        </q-card-section>
+        
+        <q-card-actions align="center" class="q-pa-md dialog-actions-glass">
+          <q-btn flat label="Cancel" color="grey-8" no-caps class="btn-3d-outline q-px-md q-mr-sm" v-close-popup />
+          <q-btn
+            unelevated
+            label="Confirm Approval"
+            color="green-7"
+            no-caps
+            class="btn-approve-3d q-px-md"
+            :loading="actionLoading"
+            @click="handleApproveConfirm"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -328,6 +440,13 @@ const loading = ref(false)
 const selectedApplication = ref({
   approval_id: null, store_id: null, store_name: '', owner_name: '', email: '', phone: '', applied_at: ''
 })
+
+const showApproveModal = ref(false)
+const showRejectModal = ref(false)
+const approveTarget = ref(null)
+const rejectTarget = ref(null)
+const actionLoading = ref(false)
+const rejectionReason = ref('')
 
 // Interactive Hue Logic
 const heroCardRef = ref(null)
@@ -398,6 +517,31 @@ const userName = computed(() => {
   }
 })
 
+const formatOperatingDays = (days) => {
+  if (!days) return 'N/A'
+  try {
+    const parsed = typeof days === 'string' ? JSON.parse(days) : days
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed.join(', ') : 'N/A'
+  } catch (e) {
+    return 'N/A'
+  }
+}
+
+const isValidLocation = (vendor) => {
+  if (!vendor?.store?.latitude || !vendor?.store?.longitude) return false;
+  return !isNaN(parseFloat(vendor.store.latitude)) && !isNaN(parseFloat(vendor.store.longitude));
+}
+
+const getMapUrl = (lat, lng) => {
+  const parsedLat = parseFloat(lat);
+  const parsedLng = parseFloat(lng);
+  
+  if (isNaN(parsedLat) || isNaN(parsedLng)) return '';
+  
+  const bbox = `${parsedLng - 0.01}%2C${parsedLat - 0.01}%2C${parsedLng + 0.01}%2C${parsedLat + 0.01}`;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${parsedLat}%2C${parsedLng}`;
+}
+
 // API calls
 const loadDashboard = async () => {
   loading.value = true
@@ -425,44 +569,56 @@ const viewApplication = (row) => {
   showApplicationDialog.value = true
 }
 
-const approveApplication = (row) => {
-  $q.dialog({
-    title: 'Approve Vendor',
-    message: `Are you sure you want to approve "${row.store_name}"?`,
-    cancel: true, persistent: true,
-    ok: { unelevated: true, color: 'green-7', label: 'Approve', noCaps: true },
-    cancel: { flat: true, color: 'grey-7', label: 'Cancel', noCaps: true }
-  }).onOk(async () => {
-    try {
-      await api.post(`/admin/vendors/${row.store_id}/approve`)
-      showApplicationDialog.value = false
-      await loadDashboard()
-      $q.notify({ type: 'positive', message: 'Vendor approved successfully.', position: 'top-right' })
-    } catch (error) {
-      console.error(error)
-      $q.notify({ type: 'negative', message: 'Unable to approve vendor.', position: 'top-right' })
-    }
-  })
+const handleApprove = (row) => {
+  approveTarget.value = row
+  showApproveModal.value = true
 }
 
-const rejectApplication = (row) => {
-  $q.dialog({
-    title: 'Reject Vendor',
-    message: `Are you sure you want to reject "${row.store_name}"?`,
-    cancel: true, persistent: true,
-    ok: { unelevated: true, color: 'red-9', label: 'Reject', noCaps: true },
-    cancel: { flat: true, color: 'grey-7', label: 'Cancel', noCaps: true }
-  }).onOk(async () => {
-    try {
-      await api.post(`/admin/vendors/${row.store_id}/reject`)
-      showApplicationDialog.value = false
-      await loadDashboard()
-      $q.notify({ type: 'positive', message: 'Vendor rejected successfully.', position: 'top-right' })
-    } catch (error) {
-      console.error(error)
-      $q.notify({ type: 'negative', message: 'Unable to reject vendor.', position: 'top-right' })
-    }
-  })
+const handleApproveConfirm = async () => {
+  if (!approveTarget.value) return
+
+  actionLoading.value = true
+  try {
+    await api.post(`/admin/vendors/${approveTarget.value.store_id}/approve`)
+    showApproveModal.value = false
+    showApplicationDialog.value = false
+    await loadDashboard()
+    $q.notify({ type: 'positive', message: 'Vendor approved successfully.', position: 'top-right' })
+  } catch (error) {
+    console.error(error)
+    $q.notify({ type: 'negative', message: 'Unable to approve vendor.', position: 'top-right' })
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+const openRejectModal = (row) => {
+  rejectTarget.value = row
+  rejectionReason.value = ''
+  showRejectModal.value = true
+}
+
+const handleRejectConfirm = async () => {
+  if (!rejectionReason.value || !rejectTarget.value) {
+    $q.notify({ type: 'warning', message: 'Please provide a rejection reason.', position: 'top-right' })
+    return
+  }
+
+  actionLoading.value = true
+  try {
+    await api.post(`/admin/vendors/${rejectTarget.value.store_id}/reject`, {
+      rejection_reason: rejectionReason.value
+    })
+    showRejectModal.value = false
+    showApplicationDialog.value = false
+    await loadDashboard()
+    $q.notify({ type: 'positive', message: 'Vendor rejected successfully.', position: 'top-right' })
+  } catch (error) {
+    console.error(error)
+    $q.notify({ type: 'negative', message: 'Unable to reject vendor.', position: 'top-right' })
+  } finally {
+    actionLoading.value = false
+  }
 }
 
 onMounted(async () => {
@@ -646,7 +802,7 @@ onUnmounted(() => {
 
 /* ==========================================================
    REVIEW DIALOG 
-========================================================== */
+========================================================= */
 .premium-dialog-glass {
   width: 600px; max-width: 95vw; border-radius: 20px !important;
   background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(32px); border: 1px solid rgba(255, 255, 255, 0.9);
@@ -661,6 +817,53 @@ onUnmounted(() => {
   background-size: 16px 16px; opacity: 0.5; z-index: 1; pointer-events: none;
 }
 .dialog-actions-glass { background: rgba(248, 250, 252, 0.9); border-top: 1px solid rgba(226, 232, 240, 0.8); }
+
+/* ==========================================================
+   IMPORTED FROM ADMIN APPROVALS
+========================================================= */
+.review-dialog-glass {
+  width: 500px;
+  max-width: 95vw;
+  border-radius: 20px !important;
+  background: #ffffff; 
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+.vendor-info-dialog { width: 650px; }
+.action-icon-3d {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.08), -4px -4px 10px rgba(255, 255, 255, 1), inset 2px 2px 5px rgba(255, 255, 255, 0.5);
+}
+.info-store-name { font-size: 24px; font-weight: 800; color: #111; line-height: 1.2; }
+.info-owner-name { font-size: 15px; }
+.image-3d-container {
+  border-radius: 8px;
+  padding: 4px;
+  background: #ffffff;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1), inset 0 0 0 1px rgba(0,0,0,0.05);
+}
+.map-container-3d {
+  border-radius: 12px;
+  padding: 8px;
+  background: #ffffff;
+  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.05), inset -2px -2px 5px rgba(255,255,255,1), 0 4px 15px rgba(0,0,0,0.05);
+}
+.custom-glass-input :deep(.q-field__control) {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+}
+.btn-approve-3d { border-radius: 8px !important; background: linear-gradient(180deg, #10b981 0%, #059669 100%) !important; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.3); transition: all 0.2s ease; }
+.btn-approve-3d:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3); }
+.btn-reject-3d { border-radius: 8px !important; transition: all 0.2s ease; }
+.btn-reject-3d:hover { background: #FEF2F2 !important; color: #991B1B !important; transform: translateY(-2px); }
+.btn-3d-outline { border-radius: 8px !important; background: #ffffff !important; border: 1px solid #E2E8F0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: all 0.2s ease; }
+.btn-3d-outline:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.08); background: #F8FAFC !important; }
 
 /* Utility Animations */
 .pulse-dot-white { width: 6px; height: 6px; background-color: #ffffff; border-radius: 50%; animation: pulse-white 1.5s infinite; }
