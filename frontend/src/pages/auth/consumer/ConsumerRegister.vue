@@ -237,45 +237,6 @@ const emailRule = val => /.+@.+\..+/.test(val) || 'Enter a valid email'
 const phoneRule = val => /^09\d{9}$/.test(val) || 'Phone must be exactly 11 digits starting with 09'
 const passwordRule = val => val.length >= 8 || 'Minimum 8 characters'
 
-    }
-    isDragging = false
-  }
-}
-
-const applyCrop = () => {
-  if (cropRect.w <= 0 || cropRect.h <= 0) {
-    showCropModal.value = false
-    return
-  }
-  
-  const canvas = cropCanvas.value
-  const scaleX = imageObj.width / canvas.width
-  const scaleY = imageObj.height / canvas.height
-  
-  const tempCanvas = document.createElement('canvas')
-  tempCanvas.width = cropRect.w * scaleX
-  tempCanvas.height = cropRect.h * scaleY
-  const ctx = tempCanvas.getContext('2d')
-  ctx.drawImage(imageObj, 
-    cropRect.x * scaleX, cropRect.y * scaleY, cropRect.w * scaleX, cropRect.h * scaleY, 
-    0, 0, tempCanvas.width, tempCanvas.height)
-    
-  tempCanvas.toBlob((blob) => {
-    if (blob) {
-      const croppedFile = new File([blob], 'cropped_' + photoFile.value.name, { type: 'image/jpeg' })
-      photoFile.value = croppedFile
-      photoPreview.value = URL.createObjectURL(croppedFile)
-      showCropModal.value = false
-    }
-  }, 'image/jpeg', 0.9)
-}
-
-const removePhoto = () => {
-  photoFile.value = null
-  photoPreview.value = null
-  const input = document.getElementById('consumerPhoto')
-  if (input) input.value = ''
-}
 
 const handleRegister = async () => {
   const isValid = await registerForm.value.validate()
