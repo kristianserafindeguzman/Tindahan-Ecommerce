@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\CategoryController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,6 +15,9 @@ use Illuminate\Support\Facades\Route;
 
 // Health check
 Route::get('/test', fn () => response()->json(['message' => 'Laravel API is working']));
+
+// ----- Public Application Data Routes -----
+Route::get('/categories', [CategoryController::class, 'index']);
 
 // ----- Public Authentication Routes -----
 Route::post('/register/consumer', [AuthController::class, 'registerConsumer']);
@@ -32,6 +36,8 @@ Route::post('/forgot-password/reset', [AuthController::class, 'resetPassword']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+    // ----- Global Category Routes -----
+    Route::post('/categories', [CategoryController::class, 'store']);
 
     // ----- Admin Routes -----
     Route::middleware('role:Admin')->prefix('admin')->group(function () {
@@ -55,8 +61,21 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ----- Vendor Routes -----
     Route::middleware('role:Vendor')->prefix('vendor')->group(function () {
-        Route::get('/inventory', [InventoryController::class, 'index']);
-        Route::post('/inventory', [InventoryController::class, 'store']);
+        Route::get('/products', [InventoryController::class, 'index']);
+        Route::post('/products', [InventoryController::class, 'store']);
+        Route::get('/products/categories', [InventoryController::class, 'categories']);
+        Route::get('/stats', [\App\Http\Controllers\VendorController::class, 'stats']);
+        Route::get('/profile', [\App\Http\Controllers\VendorController::class, 'profile']);
+        Route::post('/profile/hours', [ProfileController::class, 'updateStoreHours']);
+        
+        Route::get('/sales/metrics', [\App\Http\Controllers\SalesController::class, 'metrics']);
+        Route::get('/sales/transactions', [\App\Http\Controllers\SalesController::class, 'transactions']);
+        Route::post('/sales/manual', [\App\Http\Controllers\SalesController::class, 'storeManual']);
+        
+        Route::get('/orders', [\App\Http\Controllers\OrderController::class, 'index']);
+        Route::get('/orders/{id}', [\App\Http\Controllers\OrderController::class, 'show']);
+        Route::get('/customers', [\App\Http\Controllers\OrderController::class, 'customers']);
+        Route::get('/customers/{id}/orders', [\App\Http\Controllers\OrderController::class, 'customerOrders']);
     });
 
     // ----- Profile Routes -----

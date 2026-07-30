@@ -71,4 +71,16 @@ class InventoryController extends Controller
             'item'    => $item,
         ], 201);
     }
+
+    /**
+     * Get categories utilized by the vendor.
+     *
+     * GET /api/vendor/products/categories
+     */
+    public function categories(Request $request)
+    {
+        // Skeleton logic for now, returning empty array.
+        // In the future, this will aggregate count of products by category for the authenticated vendor's store.
+        return response()->json([]);
+    }
 }

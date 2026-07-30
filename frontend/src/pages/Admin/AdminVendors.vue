@@ -352,6 +352,7 @@ const columns = [
   { name: 'email', label: 'Email', field: 'email', align: 'left', sortable: true },
   { name: 'phone_number', label: 'Mobile', field: 'phone_number', align: 'left' },
   { name: 'account_status', label: 'Status', field: 'account_status', align: 'left' },
+  { name: 'products_count', label: 'Products Count', field: row => row.store?.inventory_count || 0, align: 'left', sortable: true },
   { name: 'last_activity_at', label: 'Last Activity', field: 'last_activity_at', align: 'left', sortable: true },
   { name: 'insights', label: 'Quick Insights', field: '', align: 'left' },
 ]

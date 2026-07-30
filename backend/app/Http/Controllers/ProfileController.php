@@ -120,6 +120,42 @@ class ProfileController extends Controller
         return response()->json(['message' => 'Password updated successfully']);
     }
 
+    public function updateStoreHours(Request $request)
+    {
+        $request->validate([
+            'operatingDays' => 'required|array',
+        ]);
+
+        $days = $request->operatingDays;
+        $activeDays = [];
+        $openingTime = null;
+        $closingTime = null;
+
+        foreach ($days as $day) {
+            if (isset($day['isOpen']) && $day['isOpen']) {
+                $activeDays[] = substr($day['name'], 0, 3); // e.g. "Mon"
+                // Pick the first valid time found as the global store time
+                if (!$openingTime && isset($day['openTime'])) {
+                    $openingTime = $day['openTime'] . ':00'; // Append seconds
+                }
+                if (!$closingTime && isset($day['closeTime'])) {
+                    $closingTime = $day['closeTime'] . ':00';
+                }
+            }
+        }
+
+        $user = $request->user();
+        if ($user->role === 'Vendor' && $user->store) {
+            $user->store->update([
+                'operating_days' => $activeDays,
+                'opening_time' => $openingTime,
+                'closing_time' => $closingTime,
+            ]);
+        }
+
+        return response()->json(['message' => 'Store hours updated successfully']);
+    }
+
     public function deleteAccount(Request $request)
     {
         $user = clone $request->user();
