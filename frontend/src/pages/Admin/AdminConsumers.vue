@@ -42,7 +42,7 @@
             </div>
             <div class="text-left">
               <div class="text-caption text-grey-6 text-weight-bold text-uppercase">Total Users</div>
-              <div class="text-h6 text-weight-bolder text-dark line-height-tight">{{ consumers.length }} Active</div>
+              <div class="text-h6 text-weight-bolder text-dark line-height-tight">{{ consumers.length }} {{ currentTab === 'deleted' ? 'Deleted' : 'Active' }}</div>
             </div>
           </div>
         </div>
@@ -100,7 +100,7 @@
         <q-table
           flat
           class="custom-glass-table interactive-table"
-          :rows="filteredConsumers"
+          :rows="consumers"
           :columns="columns"
           row-key="user_id"
           :loading="loading"
@@ -328,12 +328,7 @@ const columns = [
   { name: 'actions', label: '', field: 'actions', align: 'right', classes: 'print-hide', headerClasses: 'print-hide' },
 ]
 
-const filteredConsumers = computed(() => {
-  if (currentTab.value === 'deleted') {
-    return consumers.value.filter(c => c.is_deleted || c.account_status === 'deleted');
-  }
-  return consumers.value.filter(c => !c.is_deleted && c.account_status !== 'deleted');
-})
+
 
 const fetchConsumers = async () => {
   try {
