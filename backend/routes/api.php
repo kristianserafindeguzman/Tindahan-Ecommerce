@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -56,6 +57,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:Vendor')->prefix('vendor')->group(function () {
         Route::get('/inventory', [InventoryController::class, 'index']);
         Route::post('/inventory', [InventoryController::class, 'store']);
+    });
+
+    // ----- Profile Routes -----
+    Route::middleware('role:Consumer')->prefix('profile')->group(function () {
+        Route::post('/photo', [ProfileController::class, 'updatePhoto']);
+        Route::post('/personal-info', [ProfileController::class, 'updatePersonalInfo']);
+        Route::post('/phone-request-otp', [ProfileController::class, 'requestPhoneOtp']);
+        Route::post('/phone-verify-otp', [ProfileController::class, 'verifyPhoneOtp']);
+        Route::post('/email', [ProfileController::class, 'updateEmail']);
+        Route::post('/password', [ProfileController::class, 'updatePassword']);
+        Route::delete('/delete', [ProfileController::class, 'deleteAccount']);
     });
 
     // ----- Consumer Routes -----

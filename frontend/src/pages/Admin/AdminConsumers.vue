@@ -118,7 +118,7 @@
               <div class="row items-center no-wrap">
                 <div class="avatar-3d-wrapper q-mr-md print-hide">
                   <q-avatar size="36px" color="grey-2" text-color="grey-7">
-                    <img v-if="props.row.avatar_url" :src="props.row.avatar_url" />
+                    <img v-if="props.row.profile_picture_url" :src="props.row.profile_picture_url" />
                     <q-icon v-else name="person" size="20px" />
                   </q-avatar>
                 </div>
@@ -214,7 +214,7 @@
           <div class="column items-center q-mb-lg">
             <div class="avatar-3d-wrapper q-mb-md" style="padding: 4px;">
               <q-avatar size="80px" color="grey-2" text-color="grey-7">
-                <img v-if="viewTarget.avatar_url" :src="viewTarget.avatar_url" />
+                <img v-if="viewTarget.profile_picture_url" :src="viewTarget.profile_picture_url" />
                 <q-icon v-else name="person" size="40px" />
               </q-avatar>
             </div>
