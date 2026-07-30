@@ -145,7 +145,9 @@ class AdminController extends Controller
             ->whereHas('store.approvalStatus', function ($q) {
                 $q->where('status', 'approved');
             })
-            ->with(['store.approvalStatus']);
+            ->with(['store' => function ($q) {
+                $q->withCount('inventory');
+            }, 'store.approvalStatus']);
 
         // Handle Active/Deleted Tab
         if ($request->tab === 'deleted') {
