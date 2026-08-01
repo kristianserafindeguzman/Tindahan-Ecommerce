@@ -38,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     // ----- Global Category Routes -----
     Route::post('/categories', [CategoryController::class, 'store']);
+    Route::patch('/categories/{id}', [CategoryController::class, 'update']);
 
     // ----- Admin Routes -----
     Route::middleware('role:Admin')->prefix('admin')->group(function () {
@@ -63,6 +64,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:Vendor')->prefix('vendor')->group(function () {
         Route::get('/products', [InventoryController::class, 'index']);
         Route::post('/products', [InventoryController::class, 'store']);
+        Route::patch('/products/{id}', [InventoryController::class, 'update']);
+        Route::delete('/products/{id}', [InventoryController::class, 'destroy']);
         Route::get('/products/categories', [InventoryController::class, 'categories']);
         Route::get('/stats', [\App\Http\Controllers\VendorController::class, 'stats']);
         Route::get('/profile', [\App\Http\Controllers\VendorController::class, 'profile']);

@@ -40,4 +40,28 @@ class CategoryController extends Controller
             'message' => 'Category added successfully (Skeleton)'
         ], 201);
     }
+
+    /**
+     * Update an existing category description.
+     *
+     * PATCH /api/categories/{id}
+     */
+    public function update(Request $request, $id)
+    {
+        $category = \App\Models\Category::findOrFail($id);
+
+        $validated = $request->validate([
+            'description' => 'nullable|string',
+        ]);
+
+        if (array_key_exists('description', $validated)) {
+            $category->description = $validated['description'];
+            $category->save();
+        }
+
+        return response()->json([
+            'message' => 'Category description updated successfully.',
+            'category' => $category
+        ]);
+    }
 }
