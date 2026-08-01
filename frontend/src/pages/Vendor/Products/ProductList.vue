@@ -73,7 +73,7 @@
 
           <div class="row q-gutter-sm">
             <q-btn outline icon="download" label="Export" color="dark" no-caps class="btn-3d-outline" />
-            <q-btn unelevated icon="add" label="Add Product" color="red-8" no-caps class="btn-premium text-white" />
+            <q-btn unelevated icon="add" label="Add Product" color="red-8" no-caps class="btn-premium text-white" @click="showAddModal = true" />
           </div>
         </q-card-section>
 
@@ -117,21 +117,13 @@
             <q-td :props="props" class="text-right">
               <q-btn-dropdown flat round dense icon="more_vert" color="grey-7">
                 <q-list style="min-width: 150px">
-                  <q-item clickable v-close-popup>
+                  <q-item clickable v-close-popup @click="openDetails(props.row)">
                     <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="visibility" size="20px" color="blue-6" /></q-item-section>
-                    <q-item-section>View</q-item-section>
+                    <q-item-section>View & Edit</q-item-section>
                   </q-item>
-                  <q-item clickable v-close-popup>
-                    <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="edit" size="20px" color="amber-7" /></q-item-section>
-                    <q-item-section>Edit</q-item-section>
-                  </q-item>
-                  <q-item clickable v-close-popup>
-                    <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="block" size="20px" color="grey-6" /></q-item-section>
-                    <q-item-section>Deactivate</q-item-section>
-                  </q-item>
-                  <q-item clickable v-close-popup>
-                    <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="delete" size="20px" color="red-6" /></q-item-section>
-                    <q-item-section class="text-red">Delete</q-item-section>
+                  <q-item clickable v-close-popup v-if="props.row.status !== 'archived'" @click="deactivateProduct(props.row)">
+                    <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="block" size="20px" color="red-6" /></q-item-section>
+                    <q-item-section class="text-red">Archive (Deactivate)</q-item-section>
                   </q-item>
                 </q-list>
               </q-btn-dropdown>
@@ -141,16 +133,28 @@
       </q-card>
 
     </div>
+
+    <!-- Modals -->
+    <AddProductModal v-model="showAddModal" @refresh="fetchProducts" />
+    <ProductDetailsModal v-model="showDetailsModal" :product="selectedProduct" @refresh="fetchProducts" />
+
   </q-page>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { api } from '@/boot/axios'
+import { useQuasar } from 'quasar'
+import AddProductModal from '@/components/modals/AddProductModal.vue'
+import ProductDetailsModal from '@/components/modals/ProductDetailsModal.vue'
 
+const $q = useQuasar()
 const search = ref('')
 const loading = ref(true)
 const products = ref([])
+const showAddModal = ref(false)
+const showDetailsModal = ref(false)
+const selectedProduct = ref(null)
 
 const mlInsights = ref({
   restockProduct: null,
@@ -165,7 +169,12 @@ const columns = [
   { name: 'product_name', label: 'Name', field: 'product_name', align: 'left', sortable: true },
   { name: 'category', label: 'Category', field: row => row.category?.category_name || 'Uncategorized', align: 'left', sortable: true },
   { name: 'quantity', label: 'QTY', field: 'stock_quantity', align: 'left', sortable: true },
-  { name: 'price', label: 'Price (₱)', field: row => formatNumber(row.price), align: 'left', sortable: true },
+  { name: 'price', label: 'Price (₱)', field: row => {
+      if (row.variants && row.variants.length > 0) {
+        return `${formatNumber(row.price)} (starts at)`
+      }
+      return formatNumber(row.price)
+    }, align: 'left', sortable: true },
   { name: 'status', label: 'Status', field: 'status', align: 'left' },
   { name: 'action', label: '', field: 'action', align: 'right' }
 ]
@@ -196,6 +205,29 @@ const fetchProducts = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const openDetails = (product) => {
+  selectedProduct.value = product
+  showDetailsModal.value = true
+}
+
+const deactivateProduct = async (product) => {
+  $q.dialog({
+    title: 'Archive Product',
+    message: `Are you sure you want to archive "${product.product_name}"? It will no longer be available for sale.`,
+    cancel: true,
+    persistent: true
+  }).onOk(async () => {
+    try {
+      await api.delete(`/vendor/products/${product.inventory_id}`)
+      $q.notify({ type: 'positive', message: 'Product archived successfully' })
+      fetchProducts()
+    } catch (err) {
+      $q.notify({ type: 'negative', message: 'Failed to archive product' })
+      console.error(err)
+    }
+  })
 }
 
 onMounted(() => {

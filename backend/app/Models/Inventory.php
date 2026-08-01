@@ -18,6 +18,7 @@ class Inventory extends Model
         'product_name',
         'price',
         'stock_quantity',
+        'variants',
         'product_picture',
         'status',
     ];
@@ -26,11 +27,17 @@ class Inventory extends Model
     {
         return [
             'price' => 'decimal:2',
+            'variants' => 'array',
         ];
     }
 
     public function store()
     {
         return $this->belongsTo(Store::class, 'store_id', 'store_id');
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'category_id', 'category_id');
     }
 }

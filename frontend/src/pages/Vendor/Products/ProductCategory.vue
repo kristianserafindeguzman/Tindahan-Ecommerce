@@ -50,8 +50,7 @@
           <template #body-cell-action="props">
             <q-td :props="props" class="text-right">
               <div class="row justify-end q-gutter-sm">
-                <q-btn flat round dense icon="edit" color="amber-7" />
-                <q-btn flat round dense icon="delete" color="red-6" />
+                <q-btn flat round dense icon="edit" color="amber-7" @click="openEditModal(props.row)" />
               </div>
             </q-td>
           </template>
@@ -88,6 +87,37 @@
         </q-card>
       </q-dialog>
 
+      <!-- ================= EDIT CATEGORY MODAL ================= -->
+      <q-dialog v-model="showEditModal" persistent>
+        <q-card class="premium-glass-card" style="width: 500px; max-width: 90vw;">
+          <q-card-section class="row items-center q-pb-none">
+            <div class="text-h6 text-weight-bold">Edit Category</div>
+            <q-space />
+            <q-btn icon="close" flat round dense v-close-popup />
+          </q-card-section>
+
+          <q-card-section class="q-pt-md">
+            <q-form @submit.prevent="submitEditCategory" class="q-gutter-md">
+              <div>
+                <div class="text-subtitle2 text-weight-bold text-dark q-mb-xs">Category Name (Readonly)</div>
+                <q-input v-model="editCategoryForm.category_name" outlined dense class="custom-glass-input" disable readonly />
+                <div class="text-caption text-grey-6 q-mt-xs">Global category names cannot be changed.</div>
+              </div>
+
+              <div>
+                <div class="text-subtitle2 text-weight-bold text-dark q-mb-xs">Description (Guide)</div>
+                <q-input v-model="editCategoryForm.description" type="textarea" outlined dense class="custom-glass-input" rows="3" placeholder="Append guidelines or examples..." />
+              </div>
+
+              <div class="row justify-end q-mt-lg q-gutter-sm">
+                <q-btn flat label="Cancel" color="grey-7" v-close-popup no-caps />
+                <q-btn unelevated type="submit" label="Save Changes" color="red-8" class="btn-premium text-white q-px-md" no-caps :loading="submitting" />
+              </div>
+            </q-form>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+
     </div>
   </q-page>
 </template>
@@ -102,9 +132,16 @@ const search = ref('')
 const loading = ref(true)
 const categories = ref([])
 const showAddModal = ref(false)
+const showEditModal = ref(false)
 const submitting = ref(false)
 
 const categoryForm = ref({
+  category_name: '',
+  description: ''
+})
+
+const editCategoryForm = ref({
+  category_id: null,
   category_name: '',
   description: ''
 })
@@ -142,10 +179,34 @@ const submitCategory = async () => {
     $q.notify({ type: 'positive', message: 'Category added successfully' })
     showAddModal.value = false
     categoryForm.value = { category_name: '', description: '' }
-    // Note: since this adds to global categories, the vendor's local category list might not update unless they add a product to it. But we fetch anyway.
     await fetchCategories()
   } catch (error) {
     $q.notify({ type: 'negative', message: 'Failed to add category' })
+  } finally {
+    submitting.value = false
+  }
+}
+
+const openEditModal = (category) => {
+  editCategoryForm.value = {
+    category_id: category.category_id,
+    category_name: category.category_name,
+    description: category.description || ''
+  }
+  showEditModal.value = true
+}
+
+const submitEditCategory = async () => {
+  submitting.value = true
+  try {
+    await api.patch(`/categories/${editCategoryForm.value.category_id}`, {
+      description: editCategoryForm.value.description
+    })
+    $q.notify({ type: 'positive', message: 'Category updated successfully' })
+    showEditModal.value = false
+    await fetchCategories()
+  } catch (error) {
+    $q.notify({ type: 'negative', message: 'Failed to update category' })
   } finally {
     submitting.value = false
   }
