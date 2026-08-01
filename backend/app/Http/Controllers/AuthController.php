@@ -412,6 +412,34 @@ class AuthController extends Controller
             ], 403);
         }
 
+        // ----- Vendor Approval Gate (BEFORE issuing token) -----
+        if ($user->role === 'Vendor') {
+            $store = $user->store()->with('approvalStatus')->first();
+            $approval = $store?->approvalStatus;
+            $vendorStatus = $approval?->status ?? 'pending';
+
+            if ($vendorStatus === 'rejected') {
+                $adminName = null;
+                if ($approval->admin_id) {
+                    $admin = User::find($approval->admin_id);
+                    $adminName = $admin?->full_name;
+                }
+                return response()->json([
+                    'message' => 'Your vendor application has been rejected.',
+                    'error_code' => 'ACCOUNT_REJECTED',
+                    'rejection_reason' => $approval->rejection_reason,
+                    'rejected_by' => $adminName,
+                ], 401);
+            }
+
+            if ($vendorStatus === 'pending') {
+                return response()->json([
+                    'message' => 'Your vendor application is still under review.',
+                    'error_code' => 'ACCOUNT_PENDING',
+                ], 401);
+            }
+        }
+
         // Revoke any existing tokens for security
         $user->tokens()->delete();
 
@@ -427,29 +455,13 @@ class AuthController extends Controller
             'role'    => $user->role,
         ];
 
-        // If the user is a Vendor, include their store approval status
+        // If the user is an approved Vendor, include store metadata
         if ($user->role === 'Vendor') {
             $store = $user->store()->with('approvalStatus')->first();
-
             if ($store && $store->approvalStatus) {
-                $approval = $store->approvalStatus;
-                $responseData['vendor_status']    = $approval->status;
-                $responseData['rejection_reason'] = $approval->rejection_reason;
-                
-                if ($approval->status === 'rejected' && $approval->admin_id) {
-                    $admin = User::find($approval->admin_id);
-                    if ($admin) {
-                        $names = explode(' ', trim($admin->full_name));
-                        $initials = '';
-                        foreach($names as $n) {
-                            if(!empty($n)) $initials .= strtoupper($n[0]);
-                        }
-                        $responseData['rejected_by'] = substr($initials, 0, 2);
-                    }
-                }
+                $responseData['vendor_status'] = $store->approvalStatus->status;
             } else {
-                $responseData['vendor_status']    = 'pending';
-                $responseData['rejection_reason'] = null;
+                $responseData['vendor_status'] = 'approved';
             }
         }
 

@@ -292,6 +292,43 @@
       </q-card>
     </q-dialog>
 
+    <!-- ================= SUSPEND CONSUMER MODAL ================= -->
+    <q-dialog v-model="showSuspendModal" persistent transition-show="scale" transition-hide="scale">
+      <q-card class="review-dialog-glass text-center">
+        <div class="dialog-bg-glow-red"></div>
+        <q-card-section class="q-pt-xl q-pb-md relative-position" style="z-index: 2;">
+          <div class="action-icon-3d bg-red-1 text-red-9 q-mb-md q-mx-auto">
+            <q-icon name="gavel" size="36px" />
+          </div>
+          <div class="text-h5 text-weight-bold text-dark q-mb-sm">Suspend Consumer</div>
+          <p class="text-body2 text-grey-7 q-px-md">
+            Please provide a reason for suspending this consumer account. This message will be shown to the consumer upon login.
+          </p>
+          <q-input
+            v-model="suspensionMessage"
+            type="textarea"
+            outlined
+            dense
+            placeholder="e.g., Violation of terms and conditions..."
+            class="custom-glass-input text-left q-mt-md"
+            autofocus
+          />
+        </q-card-section>
+        
+        <q-card-actions align="center" class="q-pa-md dialog-actions-glass">
+          <q-btn flat label="Cancel" color="grey-8" no-caps class="btn-3d-outline q-px-md q-mr-sm" @click="cancelSuspension" />
+          <q-btn
+            unelevated
+            label="Confirm Suspension"
+            color="red-9"
+            no-caps
+            class="btn-3d q-px-md"
+            :loading="actionLoading"
+            @click="confirmSuspension"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -312,6 +349,12 @@ const viewTarget = ref(null)
 // Delete Modal Refs
 const showDeleteModal = ref(false)
 const deleteTarget = ref(null)
+
+// Suspend Modal Refs
+const showSuspendModal = ref(false)
+const suspensionTarget = ref(null)
+const suspensionMessage = ref('')
+const originalStatus = ref('')
 
 const statusOptions = [
   { label: 'Active', value: 'active' },
@@ -347,12 +390,47 @@ const fetchConsumers = async () => {
 }
 
 const updateStatus = async (userId, newStatus) => {
+  if (newStatus === 'suspended') {
+    suspensionTarget.value = userId
+    const consumer = consumers.value.find(c => c.user_id === userId)
+    if (consumer) {
+      originalStatus.value = consumer.account_status
+    }
+    suspensionMessage.value = ''
+    showSuspendModal.value = true
+    return
+  }
+
   try {
     await api.patch(`/admin/consumers/${userId}/status`, {
       account_status: newStatus
     })
   } catch {
     fetchConsumers() // Revert on failure
+  }
+}
+
+const cancelSuspension = () => {
+  showSuspendModal.value = false
+  suspensionTarget.value = null
+  fetchConsumers()
+}
+
+const confirmSuspension = async () => {
+  if (!suspensionMessage.value) return
+
+  actionLoading.value = true
+  try {
+    await api.patch(`/admin/consumers/${suspensionTarget.value}/status`, {
+      account_status: 'suspended',
+      suspension_message: suspensionMessage.value
+    })
+    showSuspendModal.value = false
+    suspensionTarget.value = null
+  } catch {
+    fetchConsumers()
+  } finally {
+    actionLoading.value = false
   }
 }
 
