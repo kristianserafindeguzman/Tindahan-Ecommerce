@@ -415,12 +415,16 @@ const handleLogin = async () => {
       password: form.password
     })
 
-    const { token, role, user, vendor_status, rejection_reason } = response.data
+    const { token, role, user, vendor_status } = response.data
 
     // Store auth data
     localStorage.setItem('auth_token', token)
     localStorage.setItem('auth_user', JSON.stringify(user))
     localStorage.setItem('auth_role', role)
+
+    if (role === 'Vendor') {
+      localStorage.setItem('vendor_status', vendor_status || 'pending')
+    }
 
     // Route based on role
     if (role === 'Admin') {
@@ -430,29 +434,35 @@ const handleLogin = async () => {
       router.push('/consumer/home')
 
     } else if (role === 'Vendor') {
-      // Check vendor approval status
-      if (vendor_status === 'approved') {
-        router.push('/vendor/dashboard')
-
-      } else if (vendor_status === 'rejected') {
-        router.push({
-          path: '/auth/vendor/rejected',
-          query: { 
-            reason: rejection_reason || '',
-            rejected_by: rejected_by || ''
-          }
-        })
-
-      } else {
-        // pending or any other status
-        router.push('/auth/vendor/under-review')
-      }
+      router.push('/vendor/dashboard')
     }
 
   } catch (error) {
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+    localStorage.removeItem('auth_role')
+
     if (error.response && error.response.status === 422) {
       const errors = error.response.data.errors
       loginError.value = errors?.email?.[0] || 'Invalid credentials. Please try again.'
+    } else if (error.response && error.response.status === 401) {
+      const data = error.response.data
+      
+      if (data.error_code === 'ACCOUNT_REJECTED') {
+        router.push({
+          path: '/auth/vendor/rejected',
+          query: {
+            reason: data.rejection_reason || '',
+            rejected_by: data.rejected_by || ''
+          }
+        })
+        return
+      } else if (data.error_code === 'ACCOUNT_PENDING') {
+        router.push('/auth/vendor/under-review')
+        return
+      } else {
+        loginError.value = data.message || 'Unauthorized.'
+      }
     } else if (error.response && error.response.status === 403) {
       if (error.response.data.contact_support) {
         if (error.response.data.account_status === 'inactive') {

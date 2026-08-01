@@ -16,20 +16,28 @@ api.interceptors.request.use(config => {
   return config
 })
 
-// Handle 401 responses globally — redirect to login
 api.interceptors.response.use(
   response => response,
   error => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('auth_user')
+    if (error.response) {
+      const status = error.response.status
+      const errorCode = error.response.data?.error_code
 
-      // Only redirect if not already on a public page
-      const publicPaths = ['/login', '/consumer/register', '/vendor/register', '/consumer/verify', '/consumer/success']
-      const currentPath = window.location.hash.replace('#', '')
+      const isAccountError = 
+        errorCode === 'ACCOUNT_SUSPENDED' || 
+        errorCode === 'ACCOUNT_INACTIVE' || 
+        errorCode === 'VENDOR_NOT_APPROVED'
 
-      if (!publicPaths.includes(currentPath)) {
-        window.location.href = '/#/login'
+      if (status === 401 || (status === 403 && isAccountError)) {
+        localStorage.clear()
+
+        // Only redirect if not already on a public page
+        const publicPaths = ['/login', '/consumer/register', '/vendor/register', '/consumer/verify', '/consumer/success']
+        const currentPath = window.location.hash.replace('#', '')
+
+        if (!publicPaths.includes(currentPath) && !currentPath.startsWith('/auth/vendor/')) {
+          window.location.href = '/#/login'
+        }
       }
     }
 
