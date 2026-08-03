@@ -11,7 +11,12 @@
         <div>
           <q-btn outline icon="calendar_today" color="dark" :label="selectedDate || 'Select Date'" no-caps class="btn-3d-outline q-px-md">
             <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-              <q-date v-model="selectedDate" mask="YYYY-MM-DD" color="red-8" today-btn />
+              <q-date v-model="selectedDate" mask="YYYY-MM-DD" color="red-8" today-btn>
+                <div class="row items-center justify-end q-mt-sm">
+                  <q-btn label="Cancel" color="primary" flat v-close-popup />
+                  <q-btn label="Okay" color="primary" flat @click="fetchSalesData" v-close-popup />
+                </div>
+              </q-date>
             </q-popup-proxy>
           </q-btn>
         </div>
@@ -25,12 +30,12 @@
           <!-- Today's Revenue -->
           <q-card class="premium-glass-card q-mb-lg q-pa-md bg-gradient-red text-white">
             <q-card-section>
-              <div class="text-subtitle2 text-white opacity-80 text-uppercase q-mb-sm">Today's Revenue</div>
+              <div class="text-subtitle2 text-white opacity-80 text-uppercase q-mb-sm">REVENUE FOR {{ formattedSelectedDate.toUpperCase() }}</div>
               <div class="row items-center justify-between">
                 <div class="text-h2 text-weight-bold">₱{{ formatNumber(metrics.revenue) }}</div>
-                <div class="row items-center text-green-3 text-weight-bold">
-                  <q-icon name="trending_up" size="24px" class="q-mr-xs" />
-                  +12.5% vs Yesterday
+                <div v-if="metrics.revenueGrowth !== null" class="row items-center text-weight-bold" :class="metrics.revenueGrowth >= 0 ? 'text-green-3' : 'text-red-3'">
+                  <q-icon :name="metrics.revenueGrowth >= 0 ? 'trending_up' : 'trending_down'" size="24px" class="q-mr-xs" />
+                  {{ metrics.revenueGrowth > 0 ? '+' : '' }}{{ metrics.revenueGrowth }}% vs Yesterday
                 </div>
               </div>
             </q-card-section>
@@ -62,10 +67,10 @@
                 <q-card-section>
                   <div class="row items-center q-mb-sm">
                     <q-icon name="auto_awesome" size="18px" color="amber-4" class="q-mr-sm" />
-                    <div class="text-subtitle2 text-amber-2 text-uppercase" style="font-size: 11px;">Predicted Best Seller</div>
+                    <div class="text-subtitle2 text-amber-2 text-uppercase" style="font-size: 11px;">BEST SELLER FOR {{ formattedSelectedDate.toUpperCase() }}</div>
                   </div>
-                  <!-- RANDOM FOREST ML INTEGRATION BLUEPRINT: This card will display the *predicted* best-selling category for the upcoming week based on historical data, processed by the Python/Flask ML microservice. Ensure the reactive prop here is ready to receive external ML JSON data. -->
-                  <div class="text-h6 text-weight-bold text-white">{{ metrics.bestSellingCategory || 'Analyzing...' }}</div>
+                  <!-- ML INTEGRATION BLUEPRINT: This card displays the best-selling category for the selected date. -->
+                  <div class="text-h6 text-weight-bold text-white">{{ metrics.bestSellingCategory || 'No Data' }}</div>
                 </q-card-section>
               </q-card>
             </div>
@@ -76,7 +81,7 @@
             <q-card-section class="panel-header q-pa-lg">
               <div class="text-h6 text-weight-bold text-dark row items-center">
                 <div class="header-accent-red q-mr-md"></div>
-                Recent Sales
+                Sales for {{ formattedSelectedDate }}
               </div>
             </q-card-section>
 
@@ -196,18 +201,32 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useQuasar } from 'quasar'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useQuasar, date } from 'quasar'
 import { api } from '@/boot/axios'
 
 const $q = useQuasar()
 
-const selectedDate = ref(null)
+const selectedDate = ref(date.formatDate(Date.now(), 'YYYY-MM-DD'))
+
+const formattedSelectedDate = computed(() => {
+  if (!selectedDate.value) return 'All Time'
+  
+  const d = new Date(selectedDate.value)
+  const today = new Date()
+  
+  if (d.toDateString() === today.toDateString()) {
+    return 'Today'
+  }
+  
+  return date.formatDate(d, 'MMMM D, YYYY')
+})
 const metrics = reactive({
   revenue: 0,
   avgOrderValue: 0,
   cancellationRate: 0,
-  bestSellingCategory: null
+  bestSellingCategory: null,
+  revenueGrowth: null
 })
 const transactions = ref([])
 const submitting = ref(false)
@@ -281,7 +300,8 @@ const confirmManualSale = () => {
         inventory_id: manualForm.product.inventory_id,
         quantity: manualForm.quantity,
         unit_price: manualForm.unitPrice,
-        total_amount: estimatedTotal.value
+        total_amount: estimatedTotal.value,
+        sale_date: selectedDate.value
       })
       $q.notify({ type: 'positive', message: 'Manual sale recorded successfully.' })
       manualForm.product = null
@@ -300,17 +320,25 @@ const confirmManualSale = () => {
 
 const fetchSalesData = async () => {
   try {
+    const requestParams = selectedDate.value 
+      ? { start_date: selectedDate.value, end_date: selectedDate.value } 
+      : {};
+
     const [metricsRes, transRes, invRes] = await Promise.all([
-      api.get('/vendor/sales/metrics'),
-      api.get('/vendor/sales/transactions'),
-      api.get('/vendor/inventory')
+      api.get('/vendor/sales/metrics', { params: requestParams }),
+      api.get('/vendor/sales/transactions', { params: requestParams }),
+      api.get('/vendor/products')
     ])
+    
+    console.log("Sales API Response (Metrics):", metricsRes.data);
+    console.log("Sales API Response (Transactions):", transRes.data);
     
     if (metricsRes.data) {
       metrics.revenue = metricsRes.data.revenue || 0
       metrics.avgOrderValue = metricsRes.data.avg_order_value || 0
       metrics.cancellationRate = metricsRes.data.cancellation_rate || 0
       metrics.bestSellingCategory = metricsRes.data.best_selling_category || null
+      metrics.revenueGrowth = metricsRes.data.revenue_growth !== undefined ? metricsRes.data.revenue_growth : null
     }
     
     transactions.value = transRes.data || []
@@ -322,6 +350,12 @@ const fetchSalesData = async () => {
 
 onMounted(() => {
   fetchSalesData()
+})
+
+watch(selectedDate, (newVal, oldVal) => {
+  if (newVal !== oldVal) {
+    fetchSalesData()
+  }
 })
 </script>
 

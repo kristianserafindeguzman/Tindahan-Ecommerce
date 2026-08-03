@@ -75,7 +75,7 @@
           <template #body-cell-status="props">
             <q-td :props="props">
               <q-chip size="sm" :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bold shadow-1">
-                {{ props.row.status }}
+                {{ formatStatus(props.row.status) }}
               </q-chip>
             </q-td>
           </template>
@@ -110,7 +110,7 @@ const columns = [
   { name: 'date', label: 'Date', field: row => formatDate(row.created_at), align: 'left', sortable: true },
   { name: 'customer', label: 'Customer', field: 'customer', align: 'left' },
   { name: 'price', label: 'Price (₱)', field: row => formatNumber(row.total_amount), align: 'left', sortable: true },
-  { name: 'status', label: 'Status', field: 'status', align: 'left' },
+  { name: 'status', label: 'Status', field: row => formatStatus(row.status), align: 'left' },
   { name: 'action', label: '', field: 'action', align: 'right' }
 ]
 
@@ -121,7 +121,7 @@ const filteredOrders = computed(() => {
       (order.consumer?.full_name || '').toLowerCase().includes(search.value.toLowerCase());
       
     const matchesStatus = activeStatus.value === 'All' || 
-      order.status.toLowerCase() === activeStatus.value.toLowerCase();
+      formatStatus(order.status).toLowerCase() === activeStatus.value.toLowerCase();
 
     return matchesSearch && matchesStatus;
   })
@@ -131,12 +131,16 @@ const getStatusColor = (status) => {
   switch (String(status).toLowerCase()) {
     case 'placed': return 'blue-6'
     case 'preparing': return 'amber-7'
-    case 'ready for pickup': return 'orange-5'
-    case 'picked up': return 'green-6'
-    case 'completed': return 'green-6'
+    case 'ready_for_pickup': return 'orange-5'
+    case 'picked_up': return 'green-6'
     case 'cancelled': return 'red-6'
     default: return 'grey-6'
   }
+}
+
+const formatStatus = (status) => {
+  if (!status) return ''
+  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
 const formatNumber = (num) => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

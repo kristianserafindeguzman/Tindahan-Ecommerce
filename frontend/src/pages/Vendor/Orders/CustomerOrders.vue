@@ -78,7 +78,13 @@
               </div>
             </q-card-section>
 
+            <!-- Conditional Rendering: Details OR Table -->
+            <div v-if="selectedOrder" class="flex-1 h-full scroll">
+              <OrderDetails :orderId="selectedOrder.order_id" isEmbedded @back="selectedOrder = null" />
+            </div>
+
             <q-table
+              v-else
               flat
               class="custom-premium-table flex-1"
               :rows="customerOrders"
@@ -103,14 +109,14 @@
               <template #body-cell-status="props">
                 <q-td :props="props">
                   <q-chip size="sm" :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bold shadow-1">
-                    {{ props.row.status }}
+                    {{ formatStatus(props.row.status) }}
                   </q-chip>
                 </q-td>
               </template>
 
               <template #body-cell-action="props">
                 <q-td :props="props" class="text-right">
-                  <q-btn flat round dense icon="chevron_right" color="grey-7" @click.stop="goToOrder(props.row.order_id)" />
+                  <q-btn flat round dense icon="chevron_right" color="grey-7" @click.stop="goToOrder(props.row)" />
                 </q-td>
               </template>
             </q-table>
@@ -124,13 +130,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
+import OrderDetails from './OrderDetails.vue'
 
-const router = useRouter()
 const search = ref('')
 const customers = ref([])
 const selectedCustomer = ref(null)
+const selectedOrder = ref(null)
 const customerOrders = ref([])
 const ordersLoading = ref(false)
 
@@ -138,7 +144,7 @@ const columns = [
   { name: 'order_id', label: 'Order ID', field: 'order_id', align: 'left', sortable: true },
   { name: 'date', label: 'Date', field: row => formatDate(row.created_at), align: 'left', sortable: true },
   { name: 'price', label: 'Price (₱)', field: row => formatNumber(row.total_amount), align: 'left', sortable: true },
-  { name: 'status', label: 'Status', field: 'status', align: 'left' },
+  { name: 'status', label: 'Status', field: row => formatStatus(row.status), align: 'left' },
   { name: 'action', label: '', field: 'action', align: 'right' }
 ]
 
@@ -152,12 +158,16 @@ const getStatusColor = (status) => {
   switch (String(status).toLowerCase()) {
     case 'placed': return 'blue-6'
     case 'preparing': return 'amber-7'
-    case 'ready for pickup': return 'orange-5'
-    case 'picked up': return 'green-6'
-    case 'completed': return 'green-6'
+    case 'ready_for_pickup': return 'orange-5'
+    case 'picked_up': return 'green-6'
     case 'cancelled': return 'red-6'
     default: return 'grey-6'
   }
+}
+
+const formatStatus = (status) => {
+  if (!status) return ''
+  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
 const formatNumber = (num) => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -178,6 +188,7 @@ const fetchCustomers = async () => {
 
 const selectCustomer = async (customer) => {
   selectedCustomer.value = customer
+  selectedOrder.value = null
   customerOrders.value = []
   ordersLoading.value = true
   try {
@@ -190,12 +201,12 @@ const selectCustomer = async (customer) => {
   }
 }
 
-const goToOrder = (id) => {
-  router.push('/vendor/orders/' + id)
+const goToOrder = (row) => {
+  selectedOrder.value = row
 }
 
 const onRowClick = (evt, row) => {
-  goToOrder(row.order_id)
+  goToOrder(row)
 }
 
 onMounted(() => {

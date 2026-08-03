@@ -14,13 +14,46 @@ class VendorController extends Controller
      */
     public function stats(Request $request)
     {
-        // For now, return 0 for everything since orders are not fully implemented.
+        $user = $request->user();
+        if (!$user->store) {
+            return response()->json([
+                'placed_orders' => 0,
+                'preparing_orders' => 0,
+                'completed_orders' => 0,
+                'cancelled_orders' => 0,
+                'recent_orders' => []
+            ]);
+        }
+        
+        $storeId = $user->store->store_id;
+
+        $placed = \App\Models\Order::where('store_id', $storeId)->where('status', 'placed')->count();
+        $preparing = \App\Models\Order::where('store_id', $storeId)->where('status', 'preparing')->count();
+        $completed = \App\Models\Order::where('store_id', $storeId)->where('status', 'picked_up')->count();
+        $cancelled = \App\Models\Order::where('store_id', $storeId)->where('status', 'cancelled')->count();
+
+        $recentOrders = \App\Models\Order::with('consumer')
+            ->where('store_id', $storeId)
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id' => $order->order_id,
+                    'date' => $order->created_at->format('M j, Y, g:i a'),
+                    'customer' => $order->consumer->full_name ?? 'Unknown',
+                    'avatar' => $order->consumer->profile_picture_url ?? null,
+                    'price' => '₱' . number_format($order->total_amount, 2),
+                    'status' => ucfirst(str_replace('_', ' ', $order->status))
+                ];
+            });
+
         return response()->json([
-            'placed_orders' => 0,
-            'preparing_orders' => 0,
-            'completed_orders' => 0,
-            'cancelled_orders' => 0,
-            'recent_orders' => []
+            'placed_orders' => $placed,
+            'preparing_orders' => $preparing,
+            'completed_orders' => $completed,
+            'cancelled_orders' => $cancelled,
+            'recent_orders' => $recentOrders
         ]);
     }
 

@@ -69,16 +69,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/products/categories', [InventoryController::class, 'categories']);
         Route::get('/stats', [\App\Http\Controllers\VendorController::class, 'stats']);
         Route::get('/profile', [\App\Http\Controllers\VendorController::class, 'profile']);
-        Route::post('/profile/hours', [ProfileController::class, 'updateStoreHours']);
+        Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'updatePersonalInfo']);
+        Route::put('/profile/hours', [\App\Http\Controllers\ProfileController::class, 'updateStoreHours']);
+        Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword']);
+        Route::put('/store/info', [\App\Http\Controllers\ProfileController::class, 'updateStoreInfo']);
+        Route::put('/store/address', [\App\Http\Controllers\ProfileController::class, 'updateStoreAddress']);
+        Route::delete('/account', [\App\Http\Controllers\ProfileController::class, 'deleteAccount']);
         
         Route::get('/sales/metrics', [\App\Http\Controllers\SalesController::class, 'metrics']);
         Route::get('/sales/transactions', [\App\Http\Controllers\SalesController::class, 'transactions']);
         Route::post('/sales/manual', [\App\Http\Controllers\SalesController::class, 'storeManual']);
         
-        Route::get('/orders', [\App\Http\Controllers\OrderController::class, 'index']);
-        Route::get('/orders/{id}', [\App\Http\Controllers\OrderController::class, 'show']);
-        Route::get('/customers', [\App\Http\Controllers\OrderController::class, 'customers']);
-        Route::get('/customers/{id}/orders', [\App\Http\Controllers\OrderController::class, 'customerOrders']);
+        Route::get('/orders', [\App\Http\Controllers\VendorOrderController::class, 'index']);
+        Route::get('/orders/{id}', [\App\Http\Controllers\VendorOrderController::class, 'show']);
+        Route::patch('/orders/{id}/status', [\App\Http\Controllers\VendorOrderController::class, 'updateStatus']);
+        Route::get('/customers', [\App\Http\Controllers\VendorOrderController::class, 'customers']);
+        Route::get('/customers/{id}/orders', [\App\Http\Controllers\VendorOrderController::class, 'customerOrders']);
     });
 
     // ----- Profile Routes -----
