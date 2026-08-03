@@ -3,18 +3,19 @@
     <div class="page-container" v-if="order">
       
       <!-- ================= BREADCRUMBS & TOP BAR ================= -->
-      <div class="q-mb-md">
-        <q-breadcrumbs class="text-grey-7" active-color="dark">
+      <div class="q-mb-md row items-center justify-between">
+        <q-breadcrumbs v-if="!isEmbedded" class="text-grey-7" active-color="dark">
           <q-breadcrumbs-el label="Order List" to="/vendor/orders/list" />
           <q-breadcrumbs-el label="Order Details" />
         </q-breadcrumbs>
+        <q-btn v-else flat icon="arrow_back" color="dark" label="Back to Orders" no-caps @click="$emit('back')" />
       </div>
 
       <div class="page-header q-mb-xl row items-center justify-between bg-white q-pa-md border-radius-12 shadow-1">
         <div class="row items-center">
           <h1 class="text-h5 text-weight-bold q-ma-none q-mr-md">Order #{{ order.order_id }}</h1>
           <q-chip size="sm" :color="getStatusColor(order.status)" text-color="white" class="text-weight-bold shadow-1 q-mr-md">
-            {{ order.status }}
+            {{ formatStatus(order.status) }}
           </q-chip>
           <div class="text-subtitle2 text-grey-7">
             {{ formatDate(order.created_at) }} • {{ order.consumer?.full_name || 'Unknown Customer' }}
@@ -24,24 +25,24 @@
         <div class="row q-gutter-sm">
           <q-btn outline icon="print" label="Print" color="dark" no-caps class="btn-3d-outline" />
           
-          <q-btn-dropdown outline color="dark" label="Update Status" no-caps class="btn-3d-outline bg-grey-2">
+          <q-btn-dropdown :loading="isUpdating" outline color="dark" label="Update Status" no-caps class="btn-3d-outline bg-grey-2">
             <q-list>
-              <q-item clickable v-close-popup @click="updateStatus('Preparing')">
+              <q-item clickable v-close-popup @click="updateStatus('preparing')" v-if="['placed'].includes(order.status)">
                 <q-item-section>
                   <q-item-label>Preparing</q-item-label>
                 </q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="updateStatus('Ready for Pickup')">
+              <q-item clickable v-close-popup @click="updateStatus('ready_for_pickup')" v-if="['placed', 'preparing'].includes(order.status)">
                 <q-item-section>
                   <q-item-label>Ready for Pickup</q-item-label>
                 </q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="updateStatus('Picked up')">
+              <q-item clickable v-close-popup @click="updateStatus('picked_up')" v-if="['ready_for_pickup'].includes(order.status)">
                 <q-item-section>
-                  <q-item-label>Picked up</q-item-label>
+                  <q-item-label>Picked up (Complete)</q-item-label>
                 </q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="updateStatus('Cancelled')">
+              <q-item clickable v-close-popup @click="promptCancelOrder" v-if="!['picked_up', 'cancelled'].includes(order.status)">
                 <q-item-section>
                   <q-item-label class="text-red">Cancel Order</q-item-label>
                 </q-item-section>
@@ -68,9 +69,21 @@
                   
                   <q-timeline color="red-8">
                     <q-timeline-entry title="Order Placed" :subtitle="formatDate(order.created_at)" icon="shopping_cart" />
-                    <q-timeline-entry title="Preparing" subtitle="Pending update" icon="soup_kitchen" color="grey-4" />
-                    <q-timeline-entry title="Ready for Pickup" subtitle="Pending update" icon="inventory_2" color="grey-4" />
-                    <q-timeline-entry title="Picked up" subtitle="Pending update" icon="check_circle" color="grey-4" />
+                    
+                    <q-timeline-entry title="Preparing" 
+                      :subtitle="isStatusActive('preparing') ? 'Currently preparing' : 'Pending update'" 
+                      icon="soup_kitchen" 
+                      :color="isStatusActive('preparing') ? 'amber-7' : 'grey-4'" />
+                      
+                    <q-timeline-entry title="Ready for Pickup" 
+                      :subtitle="isStatusActive('ready_for_pickup') ? 'Ready at store' : 'Pending update'" 
+                      icon="inventory_2" 
+                      :color="isStatusActive('ready_for_pickup') ? 'orange-5' : 'grey-4'" />
+                      
+                    <q-timeline-entry title="Picked up" 
+                      :subtitle="isStatusActive('picked_up') ? 'Order completed' : 'Pending update'" 
+                      icon="check_circle" 
+                      :color="order.status === 'picked_up' ? 'green-6' : 'grey-4'" />
                   </q-timeline>
                 </q-card-section>
               </q-card>
@@ -124,7 +137,7 @@
               </div>
               <div class="row justify-between q-mb-sm text-grey-8">
                 <div>Platform Fee</div>
-                <div class="text-weight-bold">₱0.00</div>
+                <div class="text-weight-bold">₱{{ formatNumber(order.platform_fee || 0) }}</div>
               </div>
               <div class="border-dotted q-my-md"></div>
               <div class="row justify-between items-center text-dark">
@@ -185,8 +198,8 @@
                 <div class="row items-start">
                   <q-icon name="storefront" color="red-8" size="24px" class="q-mr-md q-mt-xs" />
                   <div>
-                    <div class="text-subtitle1 text-weight-bold text-dark">{{ order.store?.store_name || 'Vendor Store' }}</div>
-                    <div class="text-grey-7 q-mt-xs text-caption">{{ order.store?.address || 'Store address not provided.' }}</div>
+                    <div class="text-subtitle1 text-weight-bold text-dark">{{ order.store?.store_name }}</div>
+                    <div class="text-grey-7 q-mt-xs text-caption">{{ order.store?.address }}</div>
                   </div>
                 </div>
               </div>
@@ -205,29 +218,103 @@
       <q-spinner-dots size="40px" color="red-8" />
     </div>
 
+    <!-- Cancellation Dialog -->
+    <q-dialog v-model="showCancelDialog" persistent>
+      <q-card style="min-width: 350px; border-radius: 12px;" class="premium-glass-card">
+        <q-card-section>
+          <div class="text-h6 text-weight-bold text-dark row items-center">
+            <q-icon name="warning" color="red" size="24px" class="q-mr-sm" />
+            Cancel Order
+          </div>
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          <q-checkbox v-model="cancelReasonOutOfStock" label="Item out of stock" class="q-mb-md text-dark" color="red-8" />
+          <q-input
+            v-model="cancelReasonText"
+            type="textarea"
+            label="Cancellation Reason (Required)"
+            outlined
+            color="red-8"
+            autofocus
+            :rules="[val => !!val || 'Reason is required']"
+          />
+        </q-card-section>
+
+        <q-card-actions align="right" class="text-primary q-pa-md">
+          <q-btn flat label="Back" color="grey-7" v-close-popup no-caps />
+          <q-btn flat label="Confirm Cancellation" color="red-8" @click="confirmCancelOrder" :loading="isUpdating" no-caps class="text-weight-bold" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
 
+const props = defineProps({
+  orderId: {
+    type: [String, Number],
+    default: null
+  },
+  isEmbedded: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['back'])
+
 const route = useRoute()
 const $q = useQuasar()
 const order = ref(null)
+const isUpdating = ref(false)
+
+const showCancelDialog = ref(false)
+const cancelReasonOutOfStock = ref(false)
+const cancelReasonText = ref('')
+
+watch(cancelReasonOutOfStock, (val) => {
+  if (val) {
+    cancelReasonText.value = 'Item out of stock'
+  } else if (cancelReasonText.value === 'Item out of stock') {
+    cancelReasonText.value = ''
+  }
+})
+
+const promptCancelOrder = () => {
+  cancelReasonOutOfStock.value = false
+  cancelReasonText.value = ''
+  showCancelDialog.value = true
+}
+
+const confirmCancelOrder = () => {
+  if (!cancelReasonText.value) {
+    $q.notify({ type: 'warning', message: 'Please provide a cancellation reason.' })
+    return
+  }
+  updateStatus('cancelled', cancelReasonText.value)
+}
 
 const getStatusColor = (status) => {
   switch (String(status).toLowerCase()) {
     case 'placed': return 'blue-6'
     case 'preparing': return 'amber-7'
-    case 'ready for pickup': return 'orange-5'
-    case 'picked up': return 'green-6'
-    case 'completed': return 'green-6'
+    case 'ready_for_pickup': return 'orange-5'
+    case 'picked_up': return 'green-6'
     case 'cancelled': return 'red-6'
     default: return 'grey-6'
   }
+}
+
+const formatStatus = (status) => {
+  if (!status) return ''
+  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
 const formatNumber = (num) => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -237,22 +324,55 @@ const formatDate = (dateString) => {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-const updateStatus = (newStatus) => {
-  // Skeleton implementation for status update
+const isStatusActive = (step) => {
+  const flow = ['placed', 'preparing', 'ready_for_pickup', 'picked_up']
+  const currentIndex = flow.indexOf(order.value.status)
+  const stepIndex = flow.indexOf(step)
+  return currentIndex >= stepIndex
+}
+
+const updateStatus = async (newStatus, reason = null) => {
   if (order.value) {
-    order.value.status = newStatus
-    $q.notify({ type: 'positive', message: `Order status updated to ${newStatus}` })
+    try {
+      isUpdating.value = true
+      const payload = { status: newStatus }
+      if (reason) payload.cancellation_reason = reason
+      
+      const res = await api.patch(`/vendor/orders/${order.value.order_id}/status`, payload)
+      order.value.status = res.data.order.status
+      if (res.data.order.cancellation_reason) {
+        order.value.cancellation_reason = res.data.order.cancellation_reason
+      }
+      $q.notify({ type: 'positive', message: `Order status updated to ${formatStatus(newStatus)}` })
+      showCancelDialog.value = false
+    } catch (err) {
+      console.error(err.response?.data || err)
+      const msg = err.response?.data?.message || err.message || "Unknown error occurred"
+      $q.notify({ type: 'negative', message: msg })
+    } finally {
+      isUpdating.value = false
+    }
   }
 }
 
 const fetchOrderDetails = async () => {
+  const id = props.orderId || route.params.id
+  if (!id) return
+  
   try {
-    const res = await api.get(`/vendor/orders/${route.params.id}`)
+    const res = await api.get(`/vendor/orders/${id}`)
     order.value = res.data
   } catch (error) {
     console.error('Failed to load order details', error)
   }
 }
+
+watch(() => props.orderId, (newId) => {
+  if (newId) {
+    order.value = null
+    fetchOrderDetails()
+  }
+})
 
 onMounted(() => {
   fetchOrderDetails()

@@ -18,10 +18,16 @@ class Inventory extends Model
         'product_name',
         'price',
         'stock_quantity',
+        'reserved_quantity',
         'variants',
         'product_picture',
         'status',
     ];
+
+    public function getAvailableQuantityAttribute()
+    {
+        return $this->stock_quantity - $this->reserved_quantity;
+    }
 
     protected function casts(): array
     {

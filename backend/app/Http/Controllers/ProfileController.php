@@ -156,6 +156,34 @@ class ProfileController extends Controller
         return response()->json(['message' => 'Store hours updated successfully']);
     }
 
+    public function updateStoreInfo(Request $request)
+    {
+        $request->validate([
+            'store_name' => 'required|string|max:150',
+        ]);
+
+        $user = $request->user();
+        if ($user->role === 'Vendor' && $user->store) {
+            $user->store->update(['store_name' => $request->store_name]);
+        }
+
+        return response()->json(['message' => 'Store info updated successfully']);
+    }
+
+    public function updateStoreAddress(Request $request)
+    {
+        $request->validate([
+            'address' => 'required|string|max:255',
+        ]);
+
+        $user = $request->user();
+        if ($user->role === 'Vendor' && $user->store) {
+            $user->store->update(['address' => $request->address]);
+        }
+
+        return response()->json(['message' => 'Store address updated successfully']);
+    }
+
     public function deleteAccount(Request $request)
     {
         $user = clone $request->user();
