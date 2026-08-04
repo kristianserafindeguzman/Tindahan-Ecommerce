@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\UpdateLastActivity;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,7 +15,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Register middleware aliases
+        $middleware->alias([
+            'role' => RoleMiddleware::class,
+        ]);
+
+        // Append last-activity tracker to the API middleware stack
+        $middleware->api(append: [
+            UpdateLastActivity::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
