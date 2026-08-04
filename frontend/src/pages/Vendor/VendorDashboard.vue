@@ -113,7 +113,47 @@
 
           <template #body-cell-action="props">
             <q-td :props="props" class="text-right">
-              <q-btn flat round dense icon="more_vert" color="grey-7" />
+              <q-btn flat round dense icon="more_vert" color="grey-7" :loading="updatingOrderId === props.row.id">
+                <q-menu anchor="bottom right" self="top right">
+                  <q-list style="min-width: 150px">
+                    <q-item clickable v-close-popup @click="goToOrder(props.row.id)">
+                      <q-item-section avatar class="min-w-0 q-pr-sm">
+                        <q-icon name="visibility" size="20px" color="primary" />
+                      </q-item-section>
+                      <q-item-section>View Details</q-item-section>
+                    </q-item>
+                    
+                    <q-separator />
+                    
+                    <q-item clickable>
+                      <q-item-section avatar class="min-w-0 q-pr-sm">
+                        <q-icon name="update" size="20px" color="dark" />
+                      </q-item-section>
+                      <q-item-section>Update Status</q-item-section>
+                      <q-item-section side>
+                        <q-icon name="keyboard_arrow_right" />
+                      </q-item-section>
+                      
+                      <q-menu anchor="top end" self="top start">
+                        <q-list>
+                          <q-item clickable v-close-popup @click="updateStatus(props.row.id, 'preparing')" v-if="['placed'].includes(props.row.status.toLowerCase())">
+                            <q-item-section>Preparing</q-item-section>
+                          </q-item>
+                          <q-item clickable v-close-popup @click="updateStatus(props.row.id, 'ready_for_pickup')" v-if="['placed', 'preparing'].includes(props.row.status.toLowerCase())">
+                            <q-item-section>Ready for Pickup</q-item-section>
+                          </q-item>
+                          <q-item clickable v-close-popup @click="updateStatus(props.row.id, 'picked_up')" v-if="['ready_for_pickup'].includes(props.row.status.toLowerCase())">
+                            <q-item-section>Picked Up</q-item-section>
+                          </q-item>
+                          <q-item clickable v-close-popup @click="promptCancelOrder(props.row.id)" v-if="!['picked_up', 'cancelled'].includes(props.row.status.toLowerCase())">
+                            <q-item-section class="text-red">Cancelled</q-item-section>
+                          </q-item>
+                        </q-list>
+                      </q-menu>
+                    </q-item>
+                  </q-list>
+                </q-menu>
+              </q-btn>
             </q-td>
           </template>
         </q-table>
@@ -166,17 +206,81 @@
       </div>
 
     </div>
+
+    <!-- Cancellation Dialog -->
+    <q-dialog v-model="showCancelDialog" persistent>
+      <q-card style="min-width: 350px; border-radius: 12px;" class="premium-glass-card">
+        <q-card-section>
+          <div class="text-h6 text-weight-bold text-dark row items-center">
+            <q-icon name="warning" color="red" size="24px" class="q-mr-sm" />
+            Cancel Order
+          </div>
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          <q-checkbox v-model="cancelReasonOutOfStock" label="Item out of stock" class="q-mb-md text-dark" color="red-8" />
+          <q-input
+            v-model="cancelReasonText"
+            type="textarea"
+            label="Cancellation Reason (Required)"
+            outlined
+            color="red-8"
+            autofocus
+            :rules="[val => !!val || 'Reason is required']"
+          />
+        </q-card-section>
+
+        <q-card-actions align="right" class="text-primary q-pa-md">
+          <q-btn flat label="Back" color="grey-7" v-close-popup no-caps />
+          <q-btn flat label="Confirm Cancellation" color="red-8" @click="confirmCancelOrder" :loading="updatingOrderId !== null" no-caps class="text-weight-bold" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import { useAuth } from '@/composables/useAuth'
+import { useQuasar } from 'quasar'
 
+const router = useRouter()
+const $q = useQuasar()
 const { logout } = useAuth()
 const checkingAccess = ref(true)
 const userName = ref('Vendor')
+const updatingOrderId = ref(null)
+
+const showCancelDialog = ref(false)
+const cancelReasonOutOfStock = ref(false)
+const cancelReasonText = ref('')
+const cancellingOrderId = ref(null)
+
+watch(cancelReasonOutOfStock, (val) => {
+  if (val) {
+    cancelReasonText.value = 'Item out of stock'
+  } else if (cancelReasonText.value === 'Item out of stock') {
+    cancelReasonText.value = ''
+  }
+})
+
+const promptCancelOrder = (id) => {
+  cancellingOrderId.value = id
+  cancelReasonOutOfStock.value = false
+  cancelReasonText.value = ''
+  showCancelDialog.value = true
+}
+
+const confirmCancelOrder = () => {
+  if (!cancelReasonText.value) {
+    $q.notify({ type: 'warning', message: 'Please provide a cancellation reason.' })
+    return
+  }
+  updateStatus(cancellingOrderId.value, 'cancelled', cancelReasonText.value)
+}
 
 const orderColumns = [
   { name: 'id', label: 'Order ID', field: 'id', align: 'left', sortable: true },
@@ -206,14 +310,8 @@ const getStatusColor = (status) => {
   }
 }
 
-onMounted(async () => {
+const fetchDashboardData = async () => {
   try {
-    const res = await api.get('/user')
-    if (res.data && res.data.user) {
-      const user = res.data.user
-      userName.value = user.full_name ? user.full_name.split(' ')[0] : 'Vendor'
-    }
-
     const statsRes = await api.get('/vendor/stats')
     if (statsRes.data) {
       stats.value.placed_orders = statsRes.data.placed_orders || 0
@@ -222,6 +320,41 @@ onMounted(async () => {
       stats.value.cancelled_orders = statsRes.data.cancelled_orders || 0
       recentOrders.value = statsRes.data.recent_orders || []
     }
+  } catch (error) {
+    console.error('Failed to fetch dashboard data', error)
+  }
+}
+
+const goToOrder = (id) => {
+  router.push('/vendor/orders/' + id)
+}
+
+const updateStatus = async (id, newStatus, reason = null) => {
+  try {
+    updatingOrderId.value = id
+    const payload = { status: newStatus }
+    if (reason) payload.cancellation_reason = reason
+    await api.patch(`/vendor/orders/${id}/status`, payload)
+    $q.notify({ type: 'positive', message: 'Order status updated successfully' })
+    showCancelDialog.value = false
+    await fetchDashboardData()
+  } catch (err) {
+    console.error(err.response?.data || err)
+    const msg = err.response?.data?.message || err.message || "Unknown error occurred"
+    $q.notify({ type: 'negative', message: msg })
+  } finally {
+    updatingOrderId.value = null
+  }
+}
+
+onMounted(async () => {
+  try {
+    const res = await api.get('/user')
+    if (res.data && res.data.user) {
+      const user = res.data.user
+      userName.value = user.full_name ? user.full_name.split(' ')[0] : 'Vendor'
+    }
+    await fetchDashboardData()
   } catch (error) {
     userName.value = 'Vendor'
   } finally {

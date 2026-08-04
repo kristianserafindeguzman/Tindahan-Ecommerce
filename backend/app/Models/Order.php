@@ -19,6 +19,7 @@ class Order extends Model
         'store_id',
         'total_amount',
         'status',
+        'cancellation_reason',
     ];
 
     /**

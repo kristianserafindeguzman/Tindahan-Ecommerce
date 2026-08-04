@@ -272,8 +272,13 @@
             <div class="section-title">Store Location</div>
 
             <div class="map-placeholder">
-              <q-icon name="location_on" class="map-pin-icon" />
-              <span class="map-placeholder-text">Map goes here</span>
+
+              <!-- <q-icon name="location_on" class="map-pin-icon" />
+              <span class="map-placeholder-text">Map goes here</span> -->
+
+              <VendorLocationMap
+                @location-selected="handleLocationSelected"
+              />
             </div>
 
             <div class="detected-address">
@@ -420,6 +425,7 @@ import { api } from '@/boot/axios'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
+import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 
 const router = useRouter()
 
@@ -659,8 +665,36 @@ const handleVendorRegister = async () => {
     formData.append('operating_days', JSON.stringify(form.operatingDays))
 
     // Use placeholder coordinates if map is not wired
-    formData.append('latitude', form.latitude || '14.5764')
-    formData.append('longitude', form.longitude || '121.0351')
+    // formData.append('latitude', form.latitude || '14.5764')
+    // formData.append('longitude', form.longitude || '121.0351')
+
+    if (!form.latitude || !form.longitude) {
+        registerError.value =
+          'Please select your store location on the map.'
+        loading.value = false
+        return
+      }
+
+    const finalAddress =
+      form.manualAddress.trim() ||
+      form.detectedAddress
+
+
+    formData.append(
+      'address',
+      finalAddress
+    )
+      
+    formData.append(
+      'latitude',
+      form.latitude
+    )
+
+    formData.append(
+      'longitude',
+      form.longitude
+    )
+
 
     if (photoFile.value) {
       formData.append('store_picture', photoFile.value)
@@ -695,6 +729,22 @@ const handleSuccessClose = () => {
 const goToLogin = () => {
   router.push('/login')
 }
+
+
+function handleLocationSelected(location) {
+
+  console.log('Store location:', location)
+
+  // Save coordinates
+  form.latitude = location.latitude
+  form.longitude = location.longitude
+
+  // Save detected address
+  form.detectedAddress = location.address
+
+}
+
+
 </script>
 
 <style scoped>
