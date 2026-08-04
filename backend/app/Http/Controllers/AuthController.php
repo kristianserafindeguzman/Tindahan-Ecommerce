@@ -1,0 +1,556 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\ApprovalStatus;
+use App\Models\OtpCode;
+use App\Models\Store;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+class AuthController extends Controller
+{
+    /**
+     * Register a new Consumer user.
+     *
+     * POST /api/register/consumer
+     *
+     * After creation, generates a mock OTP code and returns it.
+     * In production, this code would be sent via SMS gateway.
+     */
+    public function registerConsumer(Request $request)
+    {
+        $validated = $request->validate([
+            'full_name'    => 'required|string|max:100',
+            'email'        => 'required|email|max:100',
+            'phone_number'    => 'required|string|max:15',
+            'password'        => 'required|string|min:8|confirmed',
+            'profile_picture' => 'nullable|image|max:2048',
+        ]);
+
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
+            $existingUser = User::where('email', $validated['email'])
+                ->orWhere('phone_number', $validated['phone_number'])
+                ->first();
+
+            if ($existingUser) {
+                if ($existingUser->account_status !== 'inactive') {
+                    throw ValidationException::withMessages([
+                        'email' => ['The email or phone number has already been taken.'],
+                    ]);
+                }
+                
+                $photoPath = $existingUser->profile_picture;
+                if ($request->hasFile('profile_picture')) {
+                    $photoPath = $request->file('profile_picture')->store('profiles', 'public');
+                }
+
+                // Overwrite the existing inactive user
+                $existingUser->update([
+                    'full_name'       => $validated['full_name'],
+                    'email'           => $validated['email'],
+                    'phone_number'    => $validated['phone_number'],
+                    'password_hash'   => Hash::make($validated['password']),
+                    'profile_picture' => $photoPath,
+                ]);
+                $user = $existingUser;
+            } else {
+                $photoPath = null;
+                if ($request->hasFile('profile_picture')) {
+                    $photoPath = $request->file('profile_picture')->store('profiles', 'public');
+                }
+
+                $user = User::create([
+                    'role'            => 'Consumer',
+                    'full_name'       => $validated['full_name'],
+                    'email'           => $validated['email'],
+                    'phone_number'    => $validated['phone_number'],
+                    'password_hash'   => Hash::make($validated['password']),
+                    'account_status'  => 'inactive',
+                    'profile_picture' => $photoPath,
+                ]);
+            }
+
+            // Generate fresh OTP for registration verification
+            $this->generateOtp($user, 'registration');
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return response()->json([
+                'message'      => 'Consumer registered successfully. Please verify your phone number.',
+                'user'         => $user,
+                'otp_sent'     => true,
+                'phone_number' => $validated['phone_number'],
+            ], 201);
+        } catch (ValidationException $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            throw $e;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to register consumer. Please try again later.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Register a new Vendor user with store and pending approval.
+     *
+     * POST /api/register/vendor
+     */
+    public function registerVendor(Request $request)
+    {
+        $validated = $request->validate([
+            'full_name'     => 'required|string|max:100',
+            'email'         => 'required|email|max:100|unique:users,email',
+            'phone_number'  => 'required|string|max:15',
+            'password'      => 'required|string|min:8|confirmed',
+            'store_name'    => 'required|string|max:150',
+            'store_picture' => 'required|image|max:10240',
+            'operating_days'=> 'required|string',
+            'opening_time'  => 'required|date_format:H:i',
+            'closing_time'  => 'required|date_format:H:i',
+            'latitude'      => 'required|numeric|between:-90,90',
+            'longitude'     => 'required|numeric|between:-180,180',
+        ]);
+
+        // 1. Create the vendor user
+        $user = User::create([
+            'role'          => 'Vendor',
+            'full_name'     => $validated['full_name'],
+            'email'         => $validated['email'],
+            'phone_number'  => $validated['phone_number'],
+            'password_hash' => Hash::make($validated['password']),
+        ]);
+
+        // 2. Store the uploaded store photo
+        $photoPath = $request->file('store_picture')
+            ->store('stores', 'public');
+
+        $operatingDays = $request->input('operating_days');
+        if (is_string($operatingDays)) {
+            $operatingDays = json_decode($operatingDays, true);
+        }
+
+        // 3. Create the store record
+        $store = Store::create([
+            'owner_id'      => $user->user_id,
+            'store_name'    => $validated['store_name'],
+            'store_picture' => $photoPath,
+            'operating_days'=> $operatingDays,
+            'opening_time'  => $validated['opening_time'],
+            'closing_time'  => $validated['closing_time'],
+            'latitude'      => $validated['latitude'],
+            'longitude'     => $validated['longitude'],
+        ]);
+
+        // 4. Create a pending approval status (admin_id is NULL — no reviewer yet)
+        ApprovalStatus::create([
+            'store_id'         => $store->store_id,
+            'admin_id'         => null,
+            'status'           => 'pending',
+            'rejection_reason' => null,
+            'reviewed_at'      => null,
+        ]);
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Vendor registered successfully. Your application is under review.',
+            'user'    => $user,
+            'token'   => $token,
+        ], 201);
+    }
+
+    /**
+     * Verify OTP code (for registration or password reset).
+     *
+     * POST /api/otp/verify
+     */
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'phone_number' => 'required|string',
+            'code'         => 'required|string|size:6',
+            'type'         => 'required|in:registration,password_reset',
+        ]);
+
+        $otp = OtpCode::where('phone_number', $request->phone_number)
+            ->where('type', $request->type)
+            ->whereNull('verified_at')
+            ->latest('created_at')
+            ->first();
+
+        \Illuminate\Support\Facades\Log::info('OTP Verification Debug', [
+            'incoming_phone' => $request->phone_number,
+            'incoming_code'  => $request->code,
+            'otp_record_found' => $otp ? true : false,
+            'db_code_hash'   => $otp ? $otp->code : null,
+            'hash_match'     => $otp ? Hash::check($request->code, $otp->code) : false,
+        ]);
+
+        if (!$otp) {
+            return response()->json([
+                'message' => 'No verification code found. Please request a new one.'
+            ], 400);
+        }
+
+        if (!Hash::check($request->code, $otp->code)) {
+            return response()->json([
+                'message' => 'Invalid verification code. Please try again.'
+            ], 400);
+        }
+
+        if ($otp->isExpired()) {
+            return response()->json([
+                'message' => 'Verification code has expired. Please request a new one.',
+            ], 422);
+        }
+
+        // Mark as verified
+        $otp->update(['verified_at' => now()]);
+
+        // Activate user account if they were inactive (e.g., new registration)
+        $user = User::where('phone_number', $request->phone_number)->first();
+        if ($user && $user->account_status === 'inactive') {
+            $user->update(['account_status' => 'active']);
+        }
+
+        $responseData = [
+            'message'  => 'Verification successful.',
+            'verified' => true,
+        ];
+
+        // For password reset, return a temporary reset token
+        if ($request->type === 'password_reset') {
+            $resetToken = Str::random(64);
+
+            // Store the reset token on the user for validation during password reset
+            $user = User::where('phone_number', $request->phone_number)->first();
+            if ($user) {
+                // Use the password_reset_tokens table
+                \DB::table('password_reset_tokens')->updateOrInsert(
+                    ['email' => $user->email],
+                    ['token' => Hash::make($resetToken), 'created_at' => now()]
+                );
+            }
+
+            $responseData['reset_token'] = $resetToken;
+        }
+
+        return response()->json($responseData);
+    }
+
+    /**
+     * Resend OTP code.
+     *
+     * POST /api/otp/resend
+     */
+    public function resendOtp(Request $request)
+    {
+        $request->validate([
+            'phone_number' => 'required|string',
+            'type'         => 'required|in:registration,password_reset',
+        ]);
+
+        $user = User::where('phone_number', $request->phone_number)->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Phone number not found.',
+            ], 404);
+        }
+
+        $this->generateOtp($user, $request->type);
+
+        return response()->json([
+            'message'  => 'A new verification code has been sent.',
+            'otp_sent' => true,
+        ]);
+    }
+
+    /**
+     * Initiate forgot password flow.
+     * Only Consumers and Vendors can reset — Admins are blocked.
+     *
+     * POST /api/forgot-password
+     */
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'phone_number' => 'required|string',
+        ]);
+
+        $user = User::where('phone_number', $request->phone_number)->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'No account found with this phone number.',
+            ], 404);
+        }
+
+        // Block Admin password resets via SMS
+        if ($user->role === 'Admin') {
+            return response()->json([
+                'message' => 'Admin accounts cannot be reset via SMS. Please contact DTI Negosyo Center.',
+            ], 403);
+        }
+
+        // Block deleted/suspended accounts
+        if (in_array($user->account_status, ['deleted', 'suspended'])) {
+            return response()->json([
+                'message' => 'This account is no longer active. Please contact support.',
+            ], 403);
+        }
+
+        $this->generateOtp($user, 'password_reset');
+
+        return response()->json([
+            'message'  => 'A verification code has been sent to your phone number.',
+            'otp_sent' => true,
+        ]);
+    }
+
+    /**
+     * Reset password after OTP verification.
+     *
+     * POST /api/forgot-password/reset
+     */
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'phone_number' => 'required|string',
+            'reset_token'  => 'required|string',
+            'password'     => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = User::where('phone_number', $request->phone_number)->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        // Verify the reset token
+        $resetRecord = \DB::table('password_reset_tokens')
+            ->where('email', $user->email)
+            ->first();
+
+        if (!$resetRecord || !Hash::check($request->reset_token, $resetRecord->token)) {
+            return response()->json([
+                'message' => 'Invalid or expired reset token.',
+            ], 422);
+        }
+
+        // Update the password
+        $user->update([
+            'password_hash' => Hash::make($request->password),
+        ]);
+
+        // Clean up the reset token
+        \DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+
+        return response()->json([
+            'message' => 'Password has been reset successfully. You can now log in.',
+        ]);
+    }
+
+    /**
+     * Unified login for all roles.
+     *
+     * POST /api/login
+     */
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email'    => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        // Find the user by email or phone number
+        $user = User::where('email', $request->email)
+            ->orWhere('phone_number', $request->email)
+            ->first();
+
+        if (!$user || !Hash::check($request->password, $user->password_hash)) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        // Block suspended, deleted, or inactive accounts
+        if (!$user->isActive()) {
+            if ($user->account_status === 'suspended') {
+                return response()->json([
+                    'message' => $user->suspension_message ?? 'Your account has been suspended. Please contact support.',
+                    'contact_support' => true,
+                    'account_status' => 'suspended'
+                ], 403);
+            }
+
+            if ($user->account_status === 'inactive') {
+                return response()->json([
+                    'message' => 'Your account is inactive. Please complete registration or contact support.',
+                    'contact_support' => true,
+                    'account_status' => 'inactive'
+                ], 403);
+            }
+
+            $statusMessages = [
+                'deleted'   => 'This account has been deactivated.',
+            ];
+
+            return response()->json([
+                'message' => $statusMessages[$user->account_status] ?? 'Account is not active.',
+            ], 403);
+        }
+
+        // ----- Vendor Approval Gate (BEFORE issuing token) -----
+        if ($user->role === 'Vendor') {
+            $store = $user->store()->with('approvalStatus')->first();
+            $approval = $store?->approvalStatus;
+            $vendorStatus = $approval?->status ?? 'pending';
+
+            if ($vendorStatus === 'rejected') {
+                $adminName = null;
+                if ($approval->admin_id) {
+                    $admin = User::find($approval->admin_id);
+                    $adminName = $admin?->full_name;
+                }
+                return response()->json([
+                    'message' => 'Your vendor application has been rejected.',
+                    'error_code' => 'ACCOUNT_REJECTED',
+                    'rejection_reason' => $approval->rejection_reason,
+                    'rejected_by' => $adminName,
+                ], 401);
+            }
+
+            if ($vendorStatus === 'pending') {
+                return response()->json([
+                    'message' => 'Your vendor application is still under review.',
+                    'error_code' => 'ACCOUNT_PENDING',
+                ], 401);
+            }
+        }
+
+        // Revoke any existing tokens for security
+        $user->tokens()->delete();
+
+        // Update last activity
+        $user->update(['last_activity_at' => now()]);
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        $responseData = [
+            'message' => 'Login successful.',
+            'user'    => $user,
+            'token'   => $token,
+            'role'    => $user->role,
+        ];
+
+        // If the user is an approved Vendor, include store metadata
+        if ($user->role === 'Vendor') {
+            $store = $user->store()->with('approvalStatus')->first();
+            if ($store && $store->approvalStatus) {
+                $responseData['vendor_status'] = $store->approvalStatus->status;
+            } else {
+                $responseData['vendor_status'] = 'approved';
+            }
+        }
+
+        return response()->json($responseData);
+    }
+
+    /**
+     * Logout — revoke the current access token.
+     *
+     * POST /api/logout
+     */
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'Logged out successfully.',
+        ]);
+    }
+
+    /**
+     * Get the authenticated user's profile.
+     *
+     * GET /api/user
+     */
+    public function user(Request $request)
+    {
+        $user = $request->user();
+
+        $responseData = [
+            'user' => $user,
+            'role' => $user->role,
+        ];
+
+        // Return response directly. The frontend decides where to route based on role.
+        $vendorStatus = null;
+        $rejectionReason = null;
+        $rejectedBy = null;
+
+        if ($user->role === 'Vendor' && $user->store) {
+            $approval = $user->store->approvalStatus;
+            if ($approval) {
+                $vendorStatus = $approval->status;
+                $rejectionReason = $approval->rejection_reason;
+                
+                if ($vendorStatus === 'rejected' && $approval->admin_id) {
+                    $admin = User::find($approval->admin_id);
+                    if ($admin) {
+                        $names = explode(' ', trim($admin->full_name));
+                        $initials = '';
+                        foreach($names as $n) {
+                            if(!empty($n)) $initials .= strtoupper($n[0]);
+                        }
+                        $rejectedBy = substr($initials, 0, 2);
+                    }
+                }
+            }
+            $responseData['vendor_status'] = $vendorStatus;
+            $responseData['rejection_reason'] = $rejectionReason;
+            $responseData['rejected_by'] = $rejectedBy;
+        }
+
+        return response()->json($responseData);
+    }
+
+    /**
+     * Generate a mock OTP code and store it.
+     *
+     * In production, replace the mock code with a random 6-digit
+     * number and send it via an SMS gateway (Semaphore, Twilio, etc.).
+     */
+    private function generateOtp(User $user, string $type): OtpCode
+    {
+        // Invalidate any existing unverified OTPs of this type
+        OtpCode::where('user_id', $user->user_id)
+            ->where('type', $type)
+            ->whereNull('verified_at')
+            ->delete();
+
+        // Mock code — always 123456 for development
+        // In production: $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $code = '123456';
+
+        return OtpCode::create([
+            'user_id'      => $user->user_id,
+            'phone_number' => $user->phone_number,
+            'code'         => Hash::make($code),
+            'type'         => $type,
+            'expires_at'   => now()->addMinutes(10),
+        ]);
+    }
+}
