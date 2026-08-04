@@ -44,6 +44,40 @@ export default defineRouter((/* { store, ssrContext } */) => {
         return next('/login')
       }
 
+      // --- NEW: Status enforcement ---
+      try {
+        const userDataStr = localStorage.getItem('auth_user')
+        const userData = userDataStr ? JSON.parse(userDataStr) : {}
+        const accountStatus = userData.account_status
+
+        if (accountStatus === 'suspended' || accountStatus === 'inactive') {
+          localStorage.removeItem('auth_token')
+          localStorage.removeItem('auth_user')
+          localStorage.removeItem('auth_role')
+          localStorage.removeItem('vendor_status')
+          return next('/login')
+        }
+      } catch (e) {
+        // Corrupted data — force re-login
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+        localStorage.removeItem('auth_role')
+        localStorage.removeItem('vendor_status')
+        return next('/login')
+      }
+
+      // Check vendor approval status for vendor-only routes
+      if (to.meta.role === 'Vendor' && role === 'Vendor') {
+        const vendorStatus = localStorage.getItem('vendor_status')
+        if (vendorStatus === 'rejected') {
+          return next('/auth/vendor/rejected')
+        }
+        if (vendorStatus === 'pending') {
+          return next('/auth/vendor/under-review')
+        }
+      }
+      // --- END NEW ---
+
       // If route requires a specific role
       if (to.meta.role && to.meta.role !== role) {
         // Wrong role — redirect to their own dashboard

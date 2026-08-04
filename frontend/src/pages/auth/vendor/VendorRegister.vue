@@ -239,27 +239,29 @@
                 </div>
               </div>
 
-              <div class="q-mt-sm">
-                <div class="text-caption q-mb-xs">Operating Days</div>
-                <div class="flex items-center q-mb-sm">
-                  <q-toggle 
-                    v-model="alwaysOpen" 
-                    label="Always Open (24/7)" 
-                    color="primary" 
-                    @update:model-value="handleAlwaysOpenToggle"
-                  />
-                </div>
-                <q-btn-group spread class="days-toggle" flat>
-                  <q-btn
+              <div class="operating-days-block">
+                <div class="detected-address-label">Operating Days</div>
+
+                <q-toggle
+                  v-model="alwaysOpen"
+                  label="Always Open (24/7)"
+                  color="red-9"
+                  class="always-open-toggle"
+                  @update:model-value="handleAlwaysOpenToggle"
+                />
+
+                <div class="days-toggle">
+                  <button
                     v-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']"
                     :key="day"
-                    :label="day"
-                    :color="form.operatingDays.includes(day) ? 'primary' : 'white'"
-                    :text-color="form.operatingDays.includes(day) ? 'white' : 'black'"
-                    :outline="!form.operatingDays.includes(day)"
+                    type="button"
+                    class="day-btn"
+                    :class="{ 'day-btn-active': form.operatingDays.includes(day) }"
                     @click="toggleDay(day)"
-                  />
-                </q-btn-group>
+                  >
+                    {{ day }}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -270,8 +272,13 @@
             <div class="section-title">Store Location</div>
 
             <div class="map-placeholder">
-              <q-icon name="location_on" class="map-pin-icon" />
-              <span class="map-placeholder-text">Map goes here</span>
+
+              <!-- <q-icon name="location_on" class="map-pin-icon" />
+              <span class="map-placeholder-text">Map goes here</span> -->
+
+              <VendorLocationMap
+                @location-selected="handleLocationSelected"
+              />
             </div>
 
             <div class="detected-address">
@@ -418,6 +425,7 @@ import { api } from '@/boot/axios'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
+import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 
 const router = useRouter()
 
@@ -657,8 +665,36 @@ const handleVendorRegister = async () => {
     formData.append('operating_days', JSON.stringify(form.operatingDays))
 
     // Use placeholder coordinates if map is not wired
-    formData.append('latitude', form.latitude || '14.5764')
-    formData.append('longitude', form.longitude || '121.0351')
+    // formData.append('latitude', form.latitude || '14.5764')
+    // formData.append('longitude', form.longitude || '121.0351')
+
+    if (!form.latitude || !form.longitude) {
+        registerError.value =
+          'Please select your store location on the map.'
+        loading.value = false
+        return
+      }
+
+    const finalAddress =
+      form.manualAddress.trim() ||
+      form.detectedAddress
+
+
+    formData.append(
+      'address',
+      finalAddress
+    )
+      
+    formData.append(
+      'latitude',
+      form.latitude
+    )
+
+    formData.append(
+      'longitude',
+      form.longitude
+    )
+
 
     if (photoFile.value) {
       formData.append('store_picture', photoFile.value)
@@ -693,6 +729,22 @@ const handleSuccessClose = () => {
 const goToLogin = () => {
   router.push('/login')
 }
+
+
+function handleLocationSelected(location) {
+
+  console.log('Store location:', location)
+
+  // Save coordinates
+  form.latitude = location.latitude
+  form.longitude = location.longitude
+
+  // Save detected address
+  form.detectedAddress = location.address
+
+}
+
+
 </script>
 
 <style scoped>
@@ -1030,12 +1082,65 @@ const goToLogin = () => {
    BUSINESS HOURS OPTIONS
 ========================= */
 
-.hours-options :deep(.q-radio) {
-  margin-right: 18px;
+.operating-days-block {
+  margin-top: 4px;
+}
 
-  font-size: 12px;
+.operating-days-block .detected-address-label {
+  margin-bottom: 10px;
+}
+
+.always-open-toggle {
+  margin: -6px 0 10px -8px;
+}
+
+.always-open-toggle :deep(.q-toggle__label) {
+  font-size: 12.5px;
 
   color: #333333;
+}
+
+.days-toggle {
+  display: flex;
+
+  border: 1px solid #d6d6da;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.day-btn {
+  flex: 1;
+
+  padding: 10px 0;
+
+  border: none;
+  border-right: 1px solid #d6d6da;
+
+  background: #ffffff;
+  color: #555555;
+
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.day-btn:last-child {
+  border-right: none;
+}
+
+.day-btn:hover {
+  background: #fdecec;
+  color: #bd2427;
+}
+
+.day-btn-active,
+.day-btn-active:hover {
+  background: #bd2427;
+  color: #ffffff;
 }
 
 /* =========================

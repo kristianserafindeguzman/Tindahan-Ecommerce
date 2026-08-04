@@ -58,6 +58,14 @@ class Store extends Model
     }
 
     /**
+     * The inventory items belonging to this store.
+     */
+    public function inventory()
+    {
+        return $this->hasMany(Inventory::class, 'store_id', 'store_id');
+    }
+
+    /**
      * Append custom attributes.
      */
     protected $appends = ['store_picture_url'];

@@ -146,38 +146,6 @@
               </q-input>
             </div>
 
-            <!-- PROFILE PHOTO -->
-            <div class="field-group q-mt-sm">
-              <div class="text-caption q-mb-xs">Profile Photo (Optional)</div>
-              
-              <input
-                type="file"
-                id="consumerPhoto"
-                accept="image/*"
-                @change="handlePhotoChange"
-                style="display: none;"
-              />
-              
-              <label for="consumerPhoto" class="upload-area" :class="{ 'has-preview': photoPreview }">
-                <div v-if="!photoPreview" class="upload-placeholder">
-                  <q-icon name="add_a_photo" size="24px" color="grey-6" />
-                  <div class="text-caption text-grey-6 q-mt-xs">Upload Photo</div>
-                </div>
-                <div v-else class="preview-container">
-                  <img :src="photoPreview" alt="Profile Preview" class="photo-preview" />
-                  <div class="preview-overlay" @click.prevent="openCropModal">
-                    <q-icon name="crop" size="18px" />
-                    <span>Crop</span>
-                  </div>
-                </div>
-              </label>
-
-              <div v-if="photoFile" class="photo-info text-center q-mt-xs">
-                <span class="text-caption">{{ photoFile.name }}</span>
-                <q-btn flat dense icon="close" size="sm" color="negative" @click="removePhoto" class="q-ml-sm" />
-              </div>
-            </div>
-
             <!-- ERROR MESSAGE -->
             <div v-if="registerError" class="error-message">
               {{ registerError }}
@@ -231,30 +199,6 @@
     <TermsModal v-model="showTerms" />
     <PrivacyModal v-model="showPrivacy" />
 
-    <!-- CROP DIALOG -->
-    <q-dialog v-model="showCropModal" persistent>
-      <q-card style="width: 500px; max-width: 90vw;">
-        <q-card-section>
-          <div class="text-h6">Crop Profile Photo</div>
-        </q-card-section>
-        <q-card-section style="text-align: center;">
-          <canvas
-            ref="cropCanvas"
-            style="border: 1px dashed #ccc; cursor: crosshair; max-width: 100%;"
-            @mousedown="onCropMouseDown"
-            @mousemove="onCropMouseMove"
-            @mouseup="onCropMouseUp"
-            @mouseleave="onCropMouseUp"
-          ></canvas>
-          <div class="text-caption q-mt-sm">Drag to select a square crop area.</div>
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" @click="showCropModal = false" />
-          <q-btn flat label="Apply Crop" color="primary" @click="applyCrop" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
   </q-page>
 </template>
 
@@ -272,20 +216,10 @@ const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 const loading = ref(false)
 const registerError = ref('')
-const photoPreview = ref(null)
-const originalPhotoUrl = ref(null)
 
 // Legal modals
 const showTerms = ref(false)
 const showPrivacy = ref(false)
-
-// Crop state
-const showCropModal = ref(false)
-const cropCanvas = ref(null)
-let imageObj = null
-let isDragging = false
-const cropRect = reactive({ x: 0, y: 0, w: 0, h: 0 })
-const startPos = reactive({ x: 0, y: 0 })
 
 const form = reactive({
   firstName: '',
@@ -296,8 +230,6 @@ const form = reactive({
   confirmPassword: ''
 })
 
-const photoFile = ref(null)
-
 const nameRule = val =>
   /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || 'Only letters are allowed'
 
@@ -305,138 +237,6 @@ const emailRule = val => /.+@.+\..+/.test(val) || 'Enter a valid email'
 const phoneRule = val => /^09\d{9}$/.test(val) || 'Phone must be exactly 11 digits starting with 09'
 const passwordRule = val => val.length >= 8 || 'Minimum 8 characters'
 
-const handlePhotoChange = event => {
-  const file = event.target.files?.[0]
-  if (!file) {
-    photoFile.value = null
-    photoPreview.value = null
-    return
-  }
-  photoFile.value = file
-  const url = URL.createObjectURL(file)
-  photoPreview.value = url
-  originalPhotoUrl.value = url
-}
-
-const openCropModal = () => {
-  showCropModal.value = true
-  setTimeout(() => {
-    const canvas = cropCanvas.value
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    imageObj = new Image()
-    imageObj.onload = () => {
-      const maxW = 400
-      let w = imageObj.width
-      let h = imageObj.height
-      if (w > maxW) {
-        h = (h * maxW) / w
-        w = maxW
-      }
-      canvas.width = w
-      canvas.height = h
-      ctx.drawImage(imageObj, 0, 0, w, h)
-      cropRect.x = 0; cropRect.y = 0; cropRect.w = w; cropRect.h = h
-      drawCropCanvas()
-    }
-    imageObj.src = originalPhotoUrl.value
-  }, 100)
-}
-
-const drawCropCanvas = () => {
-  const canvas = cropCanvas.value
-  if (!canvas || !imageObj) return
-  const ctx = canvas.getContext('2d')
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height)
-  
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
-  
-  if (cropRect.w > 0 && cropRect.h > 0) {
-    ctx.clearRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
-    ctx.drawImage(imageObj, 
-      (cropRect.x / canvas.width) * imageObj.width, 
-      (cropRect.y / canvas.height) * imageObj.height, 
-      (cropRect.w / canvas.width) * imageObj.width, 
-      (cropRect.h / canvas.height) * imageObj.height, 
-      cropRect.x, cropRect.y, cropRect.w, cropRect.h)
-    
-    ctx.strokeStyle = '#fff'
-    ctx.lineWidth = 2
-    ctx.strokeRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
-  }
-}
-
-const onCropMouseDown = (e) => {
-  isDragging = true
-  const rect = cropCanvas.value.getBoundingClientRect()
-  startPos.x = e.clientX - rect.left
-  startPos.y = e.clientY - rect.top
-  cropRect.x = startPos.x
-  cropRect.y = startPos.y
-  cropRect.w = 0
-  cropRect.h = 0
-}
-
-const onCropMouseMove = (e) => {
-  if (!isDragging) return
-  const rect = cropCanvas.value.getBoundingClientRect()
-  const mouseX = e.clientX - rect.left
-  const mouseY = e.clientY - rect.top
-  cropRect.w = mouseX - startPos.x
-  
-  // Force square aspect ratio
-  cropRect.h = cropRect.w
-  
-  drawCropCanvas()
-}
-
-const onCropMouseUp = () => {
-  if (isDragging) {
-    if (cropRect.w < 0) {
-      cropRect.x += cropRect.w
-      cropRect.w = Math.abs(cropRect.w)
-      cropRect.h = Math.abs(cropRect.h)
-    }
-    isDragging = false
-  }
-}
-
-const applyCrop = () => {
-  if (cropRect.w <= 0 || cropRect.h <= 0) {
-    showCropModal.value = false
-    return
-  }
-  
-  const canvas = cropCanvas.value
-  const scaleX = imageObj.width / canvas.width
-  const scaleY = imageObj.height / canvas.height
-  
-  const tempCanvas = document.createElement('canvas')
-  tempCanvas.width = cropRect.w * scaleX
-  tempCanvas.height = cropRect.h * scaleY
-  const ctx = tempCanvas.getContext('2d')
-  ctx.drawImage(imageObj, 
-    cropRect.x * scaleX, cropRect.y * scaleY, cropRect.w * scaleX, cropRect.h * scaleY, 
-    0, 0, tempCanvas.width, tempCanvas.height)
-    
-  tempCanvas.toBlob((blob) => {
-    if (blob) {
-      const croppedFile = new File([blob], 'cropped_' + photoFile.value.name, { type: 'image/jpeg' })
-      photoFile.value = croppedFile
-      photoPreview.value = URL.createObjectURL(croppedFile)
-      showCropModal.value = false
-    }
-  }, 'image/jpeg', 0.9)
-}
-
-const removePhoto = () => {
-  photoFile.value = null
-  photoPreview.value = null
-  const input = document.getElementById('consumerPhoto')
-  if (input) input.value = ''
-}
 
 const handleRegister = async () => {
   const isValid = await registerForm.value.validate()
@@ -449,21 +249,15 @@ const handleRegister = async () => {
   registerError.value = ''
 
   try {
-    const formData = new FormData()
-    formData.append('full_name', `${form.firstName} ${form.lastName}`)
-    formData.append('email', form.email)
-    formData.append('phone_number', form.phoneNumber)
-    formData.append('password', form.password)
-    formData.append('password_confirmation', form.confirmPassword)
-    
-    if (photoFile.value) {
-      const fileName = photoFile.value.name || 'profile.jpg'
-      formData.append('profile_picture', photoFile.value, fileName)
+    const payload = {
+      full_name: `${form.firstName} ${form.lastName}`,
+      email: form.email,
+      phone_number: form.phoneNumber,
+      password: form.password,
+      password_confirmation: form.confirmPassword
     }
 
-    await api.post('/register/consumer', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    await api.post('/register/consumer', payload)
 
     router.push({
       path: '/verification',

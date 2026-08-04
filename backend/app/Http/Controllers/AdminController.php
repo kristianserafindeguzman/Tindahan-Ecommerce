@@ -141,16 +141,25 @@ class AdminController extends Controller
      */
     public function listVendors(Request $request)
     {
-        $query = User::where('role', 'Vendor')
-            ->whereHas('store.approvalStatus', function ($q) {
-                $q->where('status', 'approved');
-            })
-            ->with(['store.approvalStatus']);
-
-        // Handle Active/Deleted Tab
         if ($request->tab === 'deleted') {
-            $query->onlyTrashed();
+            $query = User::onlyTrashed()->where('role', 'Vendor');
+        } else {
+            $query = User::where('role', 'Vendor');
         }
+
+        $query->whereHas('store', function ($q) use ($request) {
+            if ($request->tab === 'deleted') {
+                $q->withTrashed();
+            }
+            $q->whereHas('approvalStatus', function ($q2) {
+                $q2->where('status', 'approved');
+            });
+        })->with(['store' => function ($q) use ($request) {
+            if ($request->tab === 'deleted') {
+                $q->withTrashed();
+            }
+            $q->withCount('inventory')->with('approvalStatus');
+        }]);
 
         // Search by name or email
         if ($request->filled('search')) {
@@ -288,11 +297,11 @@ class AdminController extends Controller
      */
     public function listConsumers(Request $request)
     {
-        $query = User::where('role', 'Consumer');
-
         // Handle Active/Deleted Tab
         if ($request->tab === 'deleted') {
-            $query->onlyTrashed();
+            $query = User::onlyTrashed()->where('role', 'Consumer');
+        } else {
+            $query = User::where('role', 'Consumer');
         }
 
         // Search by name or email

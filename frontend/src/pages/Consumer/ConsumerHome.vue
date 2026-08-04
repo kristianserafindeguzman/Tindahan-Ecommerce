@@ -17,21 +17,45 @@
         </div>
 
         <div class="header-right flex items-center">
-          <q-avatar size="40px" class="q-mr-md" v-if="userProfilePicture">
-            <img :src="'http://localhost:8000/storage/' + userProfilePicture" />
-          </q-avatar>
-          <q-avatar size="40px" class="q-mr-md bg-grey-3 text-grey-8" v-else>
-            <q-icon name="person" size="24px" />
-          </q-avatar>
-
-          <q-btn
-            label="Logout"
-            no-caps
-            flat
-            icon="logout"
-            class="logout-btn"
-            @click="handleLogout"
-          />
+          <q-btn flat no-caps class="q-px-sm">
+            <div class="row items-center no-wrap">
+              <q-avatar size="36px" class="q-mr-sm" v-if="userProfilePicture">
+                <img :src="userProfilePicture" />
+              </q-avatar>
+              <q-avatar size="36px" class="q-mr-sm bg-grey-3 text-grey-8" v-else>
+                <q-icon name="person" size="20px" />
+              </q-avatar>
+              <div class="text-weight-bold text-dark q-mr-xs">{{ userName }}</div>
+              <q-icon name="keyboard_arrow_down" size="20px" color="grey-8" />
+            </div>
+            
+            <q-menu fit anchor="bottom right" self="top right" class="custom-glass-menu">
+              <q-list style="min-width: 220px">
+                <q-item clickable v-ripple to="/consumer/profile" class="q-py-md">
+                  <q-item-section avatar>
+                    <q-icon name="person" color="primary" />
+                  </q-item-section>
+                  <q-item-section class="text-weight-medium">Profile Settings</q-item-section>
+                </q-item>
+                
+                <q-item clickable v-ripple class="q-py-md">
+                  <q-item-section avatar>
+                    <q-icon name="receipt_long" color="primary" />
+                  </q-item-section>
+                  <q-item-section class="text-weight-medium">Orders & Reordering</q-item-section>
+                </q-item>
+                
+                <q-separator />
+                
+                <q-item clickable v-ripple @click="handleLogout" class="text-red q-py-md">
+                  <q-item-section avatar>
+                    <q-icon name="logout" color="red" />
+                  </q-item-section>
+                  <q-item-section class="text-weight-medium">Logout</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+          </q-btn>
         </div>
       </div>
 
@@ -108,25 +132,32 @@ onMounted(async () => {
     if (res.data && res.data.user) {
       const user = res.data.user
       userName.value = user.full_name ? user.full_name.split(' ')[0] : 'Consumer'
-      userProfilePicture.value = user.profile_picture || null
+      userProfilePicture.value = user.profile_picture_url || null
     }
   } catch (error) {
     userName.value = 'Consumer'
   }
 })
 
-const handleLogout = async () => {
-  try {
-    await api.post('/logout')
-  } catch {
-    // Token may already be invalid
-  }
-
-  localStorage.removeItem('auth_token')
-  localStorage.removeItem('auth_user')
-  localStorage.removeItem('auth_role')
-
-  router.push('/login')
+const handleLogout = () => {
+  $q.dialog({
+    class: 'glass-logout-dialog',
+    title: 'Confirm Logout',
+    message: 'Are you sure you want to log out of your account?',
+    cancel: { flat: true, color: 'grey-7', label: 'Cancel', noCaps: true, class: 'glass-logout-btn-cancel q-px-md' },
+    ok: { unelevated: true, label: 'Logout', noCaps: true, class: 'glass-logout-btn-ok q-px-md' },
+    persistent: true
+  }).onOk(async () => {
+    try {
+      await api.post('/logout')
+    } catch {
+      // Token may already be invalid
+    }
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+    localStorage.removeItem('auth_role')
+    router.push('/login')
+  })
 }
 </script>
 

@@ -50,21 +50,57 @@ const routes = [
         component: () => import('@/pages/auth/vendor/VendorRejected.vue')
       },
 
-      // ----- Protected Dashboard Routes (MainLayout) -----
-      {
-        path: 'vendor/dashboard',
-        component: () => import('@/pages/Vendor/VendorDashboard.vue'),
-        meta: { requiresAuth: true, role: 'Vendor' }
-      },
-      {
-        path: 'vendor/inventory',
-        component: () => import('@/pages/Vendor/VendorInventory.vue'),
-        meta: { requiresAuth: true, role: 'Vendor' }
-      },
+      // ----- Protected Consumer Routes (MainLayout) -----
       {
         path: 'consumer/home',
         component: () => import('@/pages/Consumer/ConsumerHome.vue'),
         meta: { requiresAuth: true, role: 'Consumer' }
+      },
+      {
+        path: 'consumer/profile',
+        component: () => import('@/pages/Consumer/ConsumerProfile.vue'),
+        meta: { requiresAuth: true, role: 'Consumer' }
+      }
+    ]
+  },
+  
+  // ----- Protected Vendor Routes (VendorLayout) -----
+  {
+    path: '/vendor',
+    component: () => import('@/layouts/VendorLayout.vue'),
+    meta: { requiresAuth: true, role: 'Vendor' },
+    children: [
+      {
+        path: 'dashboard',
+        component: () => import('@/pages/Vendor/VendorDashboard.vue'),
+      },
+      {
+        path: 'products/list',
+        component: () => import('@/pages/Vendor/Products/ProductList.vue'),
+      },
+      {
+        path: 'products/categories',
+        component: () => import('@/pages/Vendor/Products/ProductCategory.vue'),
+      },
+      {
+        path: 'profile',
+        component: () => import('@/pages/Vendor/VendorProfile.vue'),
+      },
+      {
+        path: 'sales',
+        component: () => import('@/pages/Vendor/VendorSales.vue'),
+      },
+      {
+        path: 'orders/list',
+        component: () => import('@/pages/Vendor/Orders/OrderList.vue'),
+      },
+      {
+        path: 'orders/customers',
+        component: () => import('@/pages/Vendor/Orders/CustomerOrders.vue'),
+      },
+      {
+        path: 'orders/:id',
+        component: () => import('@/pages/Vendor/Orders/OrderDetails.vue'),
       }
     ]
   },
