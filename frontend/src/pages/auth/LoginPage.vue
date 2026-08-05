@@ -174,17 +174,18 @@
     <q-dialog v-model="showForgotWarning">
       <q-card class="status-dialog">
         <q-card-section class="status-content">
-          <div class="status-icon-wrap status-pending" style="background: #3b82f6;">
+          <div class="status-icon-wrap" style="background: #bd2427;">
             <q-icon name="lock_reset" size="36px" color="white" />
           </div>
           <div class="status-title">Reset Password</div>
-          <p class="status-message q-mb-md">
+          <p class="status-message">
             Enter your registered mobile number. We will send an SMS with a 6-digit verification code.
           </p>
           <q-input
             v-model="forgotPhone"
             outlined
             dense
+            hide-bottom-space
             placeholder="09..."
             label="Mobile Number"
           />
@@ -202,13 +203,14 @@
       <q-card class="status-dialog">
         <q-card-section class="status-content">
           <div class="status-title">Verify Phone Number</div>
-          <p class="status-message q-mb-md">
+          <p class="status-message">
             Enter the 6-digit code sent to {{ forgotPhone }}
           </p>
           <q-input
             v-model="forgotOtpCode"
             outlined
             dense
+            hide-bottom-space
             placeholder="123456"
             label="Verification Code"
             mask="######"
@@ -227,13 +229,14 @@
       <q-card class="status-dialog">
         <q-card-section class="status-content">
           <div class="status-title">Create New Password</div>
-          <p class="status-message q-mb-md">
+          <p class="status-message">
             Your new password must be at least 8 characters long.
           </p>
           <q-input
             v-model="forgotPassword1"
             outlined
             dense
+            hide-bottom-space
             type="password"
             label="New Password"
             class="q-mb-sm"
@@ -242,6 +245,7 @@
             v-model="forgotPassword2"
             outlined
             dense
+            hide-bottom-space
             type="password"
             label="Confirm New Password"
           />
@@ -962,7 +966,7 @@ const goToVendorRegister = () => {
   width: 400px;
   max-width: 90vw;
 
-  border-radius: 10px;
+  border-radius: 8px;
 
   font-family: 'Roboto', Arial, sans-serif;
 }
@@ -986,10 +990,6 @@ const goToVendorRegister = () => {
   margin-bottom: 18px;
 }
 
-.status-pending {
-  background: #f59e0b;
-}
-
 .status-title {
   font-size: 19px;
   font-weight: 700;
@@ -1005,7 +1005,7 @@ const goToVendorRegister = () => {
 
   color: #666666;
 
-  margin: 0;
+  margin: 0 0 16px;
 }
 
 .status-actions {
@@ -1017,7 +1017,7 @@ const goToVendorRegister = () => {
 
   height: 42px;
 
-  border-radius: 6px;
+  border-radius: 8px;
 
   font-size: 13px;
   font-weight: 500;
