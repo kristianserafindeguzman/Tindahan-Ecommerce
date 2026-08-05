@@ -161,7 +161,7 @@ class VendorController extends Controller
 
             return response()->json([
                 'message' => 'Store image uploaded successfully.',
-                'store_picture' => $storeUrl
+                'store_picture_url' => asset('storage/' . $photoPath)
             ]);
         }
 

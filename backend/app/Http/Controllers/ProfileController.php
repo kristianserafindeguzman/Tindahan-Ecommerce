@@ -184,12 +184,22 @@ class ProfileController extends Controller
     {
         $request->validate([
             'address' => 'required|string|max:255',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ]);
 
         $user = $request->user();
         if ($user->role === 'Vendor' && $user->store) {
             $store = $user->store;
             $store->address = $request->address;
+            
+            if ($request->has('latitude')) {
+                $store->latitude = $request->latitude;
+            }
+            if ($request->has('longitude')) {
+                $store->longitude = $request->longitude;
+            }
+            
             $store->save();
         }
 

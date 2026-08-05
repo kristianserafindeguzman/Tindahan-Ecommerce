@@ -252,8 +252,8 @@
         <!-- 2. Dynamic Image / Structural Fallback Container -->
         <div class="full-width">
           <q-img 
-            v-if="vendorStore?.store_picture" 
-            :src="vendorStore.store_picture" 
+            v-if="vendorStore?.store_picture_url && vendorStore.store_picture_url !== 'null' && vendorStore.store_picture_url.trim() !== ''" 
+            :src="vendorStore.store_picture_url" 
             ratio="16/9" 
           />
           <div 
@@ -580,9 +580,9 @@ onMounted(async () => {
       vendorPhone.value = user.phone_number || null
       if (user.store) {
         // Resolve store_picture: prefer the accessor URL, fallback to raw column
-        const store = { ...user.store }
-        store.store_picture = store.store_picture_url || store.store_picture || null
-        vendorStore.value = store
+        // We can just assign the raw store, and the template will read vendorStore.store_picture_url
+        // because the API includes the accessor in the $appends array.
+        vendorStore.value = { ...user.store }
       } else {
         vendorStore.value = null
       }

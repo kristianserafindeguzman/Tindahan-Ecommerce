@@ -77,32 +77,30 @@
                     <template v-slot:hint><span class="text-blue-grey-4">This name will be visible to neighborhood consumers.</span></template>
                   </q-input>
 
-                  <!-- Store Image Preview Box -->
-                  <div class="q-mb-md">
-                    <!-- Reactive Image Preview -->
+                  <!-- RESTORED: Dynamic Image Render or Fallback Container -->
+                  <div class="q-mb-md full-width">
                     <q-img 
-                      v-if="storePicture" 
+                      v-if="storePicture && String(storePicture).trim().length > 10" 
                       :src="storePicture" 
                       ratio="16/9" 
                       class="rounded-borders shadow-2 q-mb-sm" 
                     />
-                    <!-- Structural Fallback if Null -->
                     <div 
                       v-else 
-                      class="bg-grey-3 rounded-borders flex flex-center shadow-1 q-mb-sm" 
+                      class="bg-grey-3 rounded-borders flex flex-center shadow-1 q-mb-sm full-width" 
                       style="height: 200px; min-height: 200px;"
                     >
                       <q-icon name="storefront" size="64px" color="grey-6" />
                     </div>
-                    
-                    <!-- Upload Controls -->
-                    <div class="row items-center justify-between">
-                      <div>
-                        <div class="text-weight-bold">Store Cover Photo</div>
-                        <div class="text-caption text-grey">Upload a crisp 16:9 rectangular photo</div>
-                      </div>
-                      <q-btn outline color="primary" label="Update Photo" @click="showImageCaptureModal = true" :loading="uploadingImage" />
+                  </div>
+                  
+                  <!-- Upload Controls -->
+                  <div class="row items-center justify-between">
+                    <div>
+                      <div class="text-weight-bold">Store Cover Photo</div>
+                      <div class="text-caption text-grey">Upload a crisp 16:9 rectangular photo</div>
                     </div>
+                    <q-btn outline color="primary" label="Update Photo" @click="showImageCaptureModal = true" :loading="uploadingImage" />
                   </div>
                 </div>
                 
@@ -178,16 +176,11 @@
                     <template v-slot:prepend><q-icon name="map" size="20px" color="blue-grey-4" class="q-mt-sm" /></template>
                   </q-input>
                   
-                  <div class="map-placeholder empty-state-glass flex flex-center rounded-borders relative-position overflow-hidden" style="height: 200px;">
-                    <div class="map-grid-bg"></div>
-                    <div class="text-center z-top">
-                      <div class="pin-container">
-                        <q-icon name="location_on" size="56px" color="red-6" class="drop-shadow-icon" />
-                        <div class="pin-pulse"></div>
-                      </div>
-                      <div class="text-blue-grey-8 text-subtitle1 text-weight-bold q-mt-md tracking-wide">Hyperlocal Map Coordinates</div>
-                      <div class="text-body2 text-blue-grey-5 q-mt-xs">Customers use this to calculate walking distance.</div>
-                    </div>
+                  <div class="q-mb-md">
+                    <div id="vendor-profile-map" class="rounded-borders shadow-1" style="height: 250px; width: 100%; z-index: 1;"></div>
+                  </div>
+                  <div class="row justify-end q-mt-sm">
+                    <q-btn outline color="secondary" icon="my_location" label="Detect Current Location" @click="detectLocation" :loading="isDetectingLocation" />
                   </div>
                 </div>
 
@@ -318,11 +311,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import ImageCaptureModal from '@/components/modals/ImageCaptureModal.vue'
 import { useAuth } from '@/composables/useAuth'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 
 const $q = useQuasar()
 const authStore = useAuth()
@@ -435,14 +430,19 @@ const handleCapturedImage = async ({ file }) => {
     const response = await api.post('/vendor/profile/store-image', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
-    console.log("UPLOAD SUCCESS DATA:", response.data);
+    console.log('UPLOAD SUCCESS - RESPONSE PAYLOAD:', response.data);
+    console.log('UPLOAD SUCCESS - NEW URL:', response.data.store_picture_url);
     $q.notify({ type: 'positive', message: 'Store image uploaded successfully.', color: 'green' })
     
     // CRITICAL: Update Pinia auth store so other components (like Dashboard) update instantly
-    const newImageUrl = response.data.store_picture;
-    storePicture.value = newImageUrl;
-    if (authStore.user && authStore.user.store) {
-        authStore.user.store.store_picture = newImageUrl;
+    if (response.data && response.data.store_picture_url) {
+        const newUrl = response.data.store_picture_url;
+        storePicture.value = newUrl; // Immediate local update
+        
+        // Immediate Pinia update for dashboard consistency
+        if (authStore.user && authStore.user.store) {
+            authStore.user.store.store_picture_url = newUrl;
+        }
     }
   } catch (error) {
     const errorMsg = error.response?.data?.message || 'Failed to upload store image.'
@@ -465,7 +465,11 @@ const submitStoreHours = async () => {
 
 const submitAddress = async () => {
   try {
-    await api.put('/vendor/store/address', { address: addressForm.fullAddress })
+    await api.put('/vendor/store/address', { 
+      address: addressForm.fullAddress,
+      latitude: addressForm.latitude,
+      longitude: addressForm.longitude
+    })
     $q.notify({ type: 'positive', message: 'Address saved successfully.', color: 'green' })
   } catch (error) {
     $q.notify({ type: 'negative', message: 'Failed to save address.' })
@@ -514,17 +518,88 @@ const fetchProfile = async () => {
       profileForm.phoneNumber = data.phone_number || ''
       originalPhone.value = profileForm.phoneNumber
       if (data.store) {
+        console.log('PROFILE LOAD - RAW STORE DATA:', data.store);
+        console.log('PROFILE LOAD - PICTURE URL:', data.store?.store_picture_url);
+        
         storeForm.storeName = data.store.store_name || ''
-        // Use store_picture_url (resolved accessor) or fall back to store_picture
-        storePicture.value = data.store.store_picture_url || data.store.store_picture || null
+        
+        if (data.store && data.store.store_picture_url) {
+            storePicture.value = data.store.store_picture_url;
+        } else {
+            storePicture.value = null; // Ensure fallback shows if data is missing
+        }
         addressForm.fullAddress = data.store.address || ''
+        addressForm.latitude = data.store.latitude || null
+        addressForm.longitude = data.store.longitude || null
       }
     }
   } catch (error) { console.error('Failed to load profile data', error) }
 }
 
-onMounted(() => {
-  fetchProfile()
+const map = ref(null)
+const marker = ref(null)
+const isDetectingLocation = ref(false)
+
+const initMap = () => {
+  const lat = addressForm.latitude || 14.5995
+  const lng = addressForm.longitude || 120.9842
+  
+  if (map.value) {
+    map.value.remove()
+  }
+
+  map.value = L.map('vendor-profile-map').setView([lat, lng], 15)
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+  }).addTo(map.value)
+
+  const icon = L.icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  })
+
+  marker.value = L.marker([lat, lng], { icon }).addTo(map.value)
+}
+
+const detectLocation = () => {
+  if (!navigator.geolocation) {
+    $q.notify({ type: 'negative', message: 'Geolocation is not supported by your browser.' })
+    return
+  }
+
+  isDetectingLocation.value = true
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      addressForm.latitude = position.coords.latitude
+      addressForm.longitude = position.coords.longitude
+      
+      if (map.value && marker.value) {
+        map.value.setView([addressForm.latitude, addressForm.longitude], 15)
+        marker.value.setLatLng([addressForm.latitude, addressForm.longitude])
+      }
+      
+      $q.notify({ type: 'positive', message: 'Location detected successfully.', color: 'green' })
+      isDetectingLocation.value = false
+    },
+    (error) => {
+      console.error(error)
+      $q.notify({ type: 'negative', message: 'Failed to detect location.' })
+      isDetectingLocation.value = false
+    }
+  )
+}
+
+onMounted(async () => {
+  await fetchProfile()
+  nextTick(() => {
+    initMap()
+  })
 })
 </script>
 
