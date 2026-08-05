@@ -76,6 +76,34 @@
                     <template v-slot:prepend><q-icon name="store" size="20px" color="blue-grey-4" /></template>
                     <template v-slot:hint><span class="text-blue-grey-4">This name will be visible to neighborhood consumers.</span></template>
                   </q-input>
+
+                  <!-- Store Image Preview Box -->
+                  <div class="q-mb-md">
+                    <!-- Reactive Image Preview -->
+                    <q-img 
+                      v-if="storePicture" 
+                      :src="storePicture" 
+                      ratio="16/9" 
+                      class="rounded-borders shadow-2 q-mb-sm" 
+                    />
+                    <!-- Structural Fallback if Null -->
+                    <div 
+                      v-else 
+                      class="bg-grey-3 rounded-borders flex flex-center shadow-1 q-mb-sm" 
+                      style="height: 200px; min-height: 200px;"
+                    >
+                      <q-icon name="storefront" size="64px" color="grey-6" />
+                    </div>
+                    
+                    <!-- Upload Controls -->
+                    <div class="row items-center justify-between">
+                      <div>
+                        <div class="text-weight-bold">Store Cover Photo</div>
+                        <div class="text-caption text-grey">Upload a crisp 16:9 rectangular photo</div>
+                      </div>
+                      <q-btn outline color="primary" label="Update Photo" @click="showImageCaptureModal = true" :loading="uploadingImage" />
+                    </div>
+                  </div>
                 </div>
                 
                 <div class="text-right q-mt-auto pt-lg">
@@ -251,6 +279,9 @@
       </q-card>
     </q-dialog>
 
+    <!-- Camera/Cropper Modal -->
+    <ImageCaptureModal v-model="showImageCaptureModal" @captured="handleCapturedImage" :aspectRatio="16/9" />
+
     <!-- Secure Delete Account Modal -->
     <q-dialog v-model="deleteDialog.isOpen" persistent backdrop-filter="blur(8px)">
       <!-- Forced height auto to prevent stretching -->
@@ -290,12 +321,21 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
+import ImageCaptureModal from '@/components/modals/ImageCaptureModal.vue'
+import { useAuth } from '@/composables/useAuth'
 
 const $q = useQuasar()
+const authStore = useAuth()
 
 // Form States
 const profileForm = reactive({ firstName: '', lastName: '', email: '', phoneNumber: '' })
-const storeForm = reactive({ storeName: 'Tindahan' }) // Defaulted for testing delete logic
+const storeForm = reactive({
+  storeName: '',
+})
+const storePicture = ref(null)
+
+const uploadingImage = ref(false)
+const showImageCaptureModal = ref(false)
 const addressForm = reactive({ fullAddress: '', latitude: null, longitude: null })
 const passwordForm = reactive({ current: '', new: '', confirm: '' })
 
@@ -364,7 +404,7 @@ const submitProfile = async () => {
       email: profileForm.email,
       phone_number: profileForm.phoneNumber
     })
-    $q.notify({ type: 'positive', message: 'Profile saved successfully.', color: 'red-6' })
+    $q.notify({ type: 'positive', message: 'Profile saved successfully.', color: 'green' })
   } catch (error) {
     $q.notify({ type: 'negative', message: 'Failed to update profile.' })
   }
@@ -373,16 +413,51 @@ const submitProfile = async () => {
 const submitStoreInfo = async () => {
   try {
     await api.put('/vendor/store/info', { store_name: storeForm.storeName })
-    $q.notify({ type: 'positive', message: 'Store Info saved successfully.', color: 'red-6' })
+    $q.notify({ type: 'positive', message: 'Store Info saved successfully.', color: 'green' })
   } catch (error) {
     $q.notify({ type: 'negative', message: 'Failed to update store info.' })
+  }
+}
+
+const handleCapturedImage = async ({ file }) => {
+  if (!file) return
+
+  // Instant local preview from the blob
+  storePicture.value = URL.createObjectURL(file)
+
+  // Immediately upload
+  uploadingImage.value = true
+  const formData = new FormData()
+  formData.append('store_picture', file, 'store_cover.jpg')
+  formData.append('_method', 'POST')
+
+  try {
+    const response = await api.post('/vendor/profile/store-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    console.log("UPLOAD SUCCESS DATA:", response.data);
+    $q.notify({ type: 'positive', message: 'Store image uploaded successfully.', color: 'green' })
+    
+    // CRITICAL: Update Pinia auth store so other components (like Dashboard) update instantly
+    const newImageUrl = response.data.store_picture;
+    storePicture.value = newImageUrl;
+    if (authStore.user && authStore.user.store) {
+        authStore.user.store.store_picture = newImageUrl;
+    }
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || 'Failed to upload store image.'
+    $q.notify({ type: 'negative', message: errorMsg })
+    console.error('Upload error:', error.response?.data || error)
+    storePicture.value = null
+  } finally {
+    uploadingImage.value = false
   }
 }
 
 const submitStoreHours = async () => {
   try {
     await api.put('/vendor/profile/hours', { operatingDays })
-    $q.notify({ type: 'positive', message: 'Store Hours saved successfully.', color: 'red-6' })
+    $q.notify({ type: 'positive', message: 'Store Hours saved successfully.', color: 'green' })
   } catch (error) {
     $q.notify({ type: 'negative', message: 'Failed to save store hours.' })
   }
@@ -391,7 +466,7 @@ const submitStoreHours = async () => {
 const submitAddress = async () => {
   try {
     await api.put('/vendor/store/address', { address: addressForm.fullAddress })
-    $q.notify({ type: 'positive', message: 'Address saved successfully.', color: 'red-6' })
+    $q.notify({ type: 'positive', message: 'Address saved successfully.', color: 'green' })
   } catch (error) {
     $q.notify({ type: 'negative', message: 'Failed to save address.' })
   }
@@ -404,7 +479,7 @@ const submitPassword = async () => {
       new_password: passwordForm.new,
       new_password_confirmation: passwordForm.confirm
     })
-    $q.notify({ type: 'positive', message: 'Password updated successfully.', color: 'red-6' })
+    $q.notify({ type: 'positive', message: 'Password updated successfully.', color: 'green' })
     passwordForm.current = ''
     passwordForm.new = ''
     passwordForm.confirm = ''
@@ -440,6 +515,8 @@ const fetchProfile = async () => {
       originalPhone.value = profileForm.phoneNumber
       if (data.store) {
         storeForm.storeName = data.store.store_name || ''
+        // Use store_picture_url (resolved accessor) or fall back to store_picture
+        storePicture.value = data.store.store_picture_url || data.store.store_picture || null
         addressForm.fullAddress = data.store.address || ''
       }
     }

@@ -68,12 +68,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/products/{id}', [InventoryController::class, 'destroy']);
         Route::get('/products/categories', [InventoryController::class, 'categories']);
         Route::get('/stats', [\App\Http\Controllers\VendorController::class, 'stats']);
+        Route::get('/stats/chart', [\App\Http\Controllers\VendorController::class, 'chartStats']);
         Route::get('/profile', [\App\Http\Controllers\VendorController::class, 'profile']);
         Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'updatePersonalInfo']);
         Route::put('/profile/hours', [\App\Http\Controllers\ProfileController::class, 'updateStoreHours']);
         Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword']);
         Route::put('/store/info', [\App\Http\Controllers\ProfileController::class, 'updateStoreInfo']);
         Route::put('/store/address', [\App\Http\Controllers\ProfileController::class, 'updateStoreAddress']);
+        Route::post('/profile/store-image', [\App\Http\Controllers\VendorController::class, 'uploadStoreImage']);
         Route::delete('/account', [\App\Http\Controllers\ProfileController::class, 'deleteAccount']);
         
         Route::get('/sales/metrics', [\App\Http\Controllers\SalesController::class, 'metrics']);

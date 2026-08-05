@@ -169,13 +169,14 @@ onMounted(async () => {
       
       // Dynamic matching logic. It checks various common property names.
       // Once you check the console.log above, you can delete the checks you don't need.
-      storeName.value = user.store_name 
+      storeName.value = user.store?.store_name
+        || user.store_name 
         || user.store?.name 
         || user.shop?.name 
         || user.vendor?.store_name 
         || user.vendor?.name
         || res.data.store_name
-        || 'Unnamed Store' 
+        || 'My Store' 
     }
   } catch (error) {
     console.error('Error fetching user info:', error)

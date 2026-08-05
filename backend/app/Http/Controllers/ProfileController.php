@@ -160,11 +160,21 @@ class ProfileController extends Controller
     {
         $request->validate([
             'store_name' => 'required|string|max:150',
+            'store_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
         $user = $request->user();
         if ($user->role === 'Vendor' && $user->store) {
-            $user->store->update(['store_name' => $request->store_name]);
+            $store = $user->store;
+            $store->store_name = $request->store_name;
+
+            if ($request->hasFile('store_picture')) {
+                $file = $request->file('store_picture');
+                $path = $file->store('store_images', 'public');
+                $store->store_picture = asset('storage/' . $path);
+            }
+
+            $store->save();
         }
 
         return response()->json(['message' => 'Store info updated successfully']);
@@ -178,7 +188,9 @@ class ProfileController extends Controller
 
         $user = $request->user();
         if ($user->role === 'Vendor' && $user->store) {
-            $user->store->update(['address' => $request->address]);
+            $store = $user->store;
+            $store->address = $request->address;
+            $store->save();
         }
 
         return response()->json(['message' => 'Store address updated successfully']);

@@ -23,9 +23,16 @@
           <q-btn outline icon="calendar_today" color="dark" :label="displayDate" no-caps class="btn-glass-outline text-weight-bold q-px-lg">
             <q-popup-proxy cover transition-show="scale" transition-hide="scale">
               <q-date v-model="selectedDate" mask="YYYY/MM/DD" color="red-8" today-btn class="premium-glass-card">
-                <div class="row items-center justify-end">
-                  <q-btn v-close-popup label="Close" color="red-8" flat no-caps class="text-weight-bold" />
-                </div>
+                  <div class="row justify-between full-width border-top q-pt-sm" style="border-top: 1px solid rgba(0,0,0,0.05)">
+                    <div class="q-gutter-x-sm">
+                      <q-btn label="View All Time" color="grey-8" flat size="sm" class="text-weight-bold" @click="clearDate" v-close-popup />
+                      <q-btn label="Go to Today" color="blue-8" flat size="sm" class="text-weight-bold" @click="setToday" v-close-popup />
+                    </div>
+                    <div class="q-gutter-x-sm">
+                      <q-btn label="Cancel" color="grey-6" flat size="sm" v-close-popup />
+                      <q-btn label="Apply" color="red-8" unelevated size="sm" class="text-weight-bold" @click="fetchSalesData" v-close-popup />
+                    </div>
+                  </div>
               </q-date>
             </q-popup-proxy>
           </q-btn>
@@ -40,7 +47,7 @@
           <!-- Today's Revenue -->
           <q-card class="premium-glass-card q-mb-lg q-pa-md bg-gradient-red text-white">
             <q-card-section>
-              <div class="text-subtitle2 text-white opacity-80 text-uppercase q-mb-sm">Today's Revenue</div>
+              <div class="text-subtitle2 text-white opacity-80 text-uppercase q-mb-sm">REVENUE FOR {{ displayDate.toUpperCase() }}</div>
               <div class="row items-center justify-between">
                 <div class="text-h2 text-weight-bold">₱{{ formatNumber(metrics.revenue) }}</div>
                 
@@ -89,7 +96,7 @@
                 <q-card-section class="relative-position z-top column justify-between h-full">
                   <div class="row items-center q-mb-md">
                     <q-icon name="auto_awesome" size="18px" color="amber-4" class="q-mr-sm" />
-                    <div class="text-subtitle2 text-amber-2 text-uppercase" style="font-size: 11px;">Predicted Best Seller</div>
+                    <div class="text-subtitle2 text-amber-2 text-uppercase" style="font-size: 11px;">BEST SELLER FOR {{ displayDate.toUpperCase() }}</div>
                   </div>
                   <!-- RANDOM FOREST ML INTEGRATION -->
                   <div class="text-h6 text-weight-bold text-white leading-tight">
@@ -105,7 +112,7 @@
             <q-card-section class="panel-header q-pa-lg">
               <div class="text-h6 text-weight-bold text-dark row items-center">
                 <div class="header-accent-red q-mr-md"></div>
-                Recent Sales
+                Sales for {{ displayDate }}
               </div>
             </q-card-section>
 
@@ -151,6 +158,13 @@
                   ₱{{ formatNumber(props.row.total) }}
                 </q-td>
               </template>
+              
+              <!-- Daily Revenue Formatter -->
+              <template #body-cell-daily_revenue="props">
+                <q-td :props="props" class="text-weight-bold text-blue-grey-9">
+                  ₱{{ formatNumber(props.row.daily_revenue) }}
+                </q-td>
+              </template>
             </q-table>
           </q-card>
         </div>
@@ -159,6 +173,14 @@
         <div class="col-12 col-md-4">
           <q-card class="premium-glass-card q-pa-sm manual-entry-card relative-position">
             
+            <!-- OVERLAY FOR ALL TIME VIEW -->
+            <div v-if="!selectedDate" class="absolute-full flex flex-center z-top" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); border-radius: inherit;">
+              <div class="text-center q-pa-lg">
+                <q-icon name="edit_calendar" size="48px" color="blue-grey-4" class="q-mb-sm" />
+                <div class="text-subtitle1 text-weight-bold text-dark leading-tight q-mb-xs">Select a Date</div>
+                <div class="text-caption text-blue-grey-6">All Time date is selected. Please select a specific date from the calendar to manual entry sales.</div>
+              </div>
+            </div>
             <q-card-section class="q-pb-none q-pt-lg">
               <div class="row items-center q-mb-md">
                 <div class="icon-premium-box bg-grey-2 border-grey-light text-red-8 q-mr-md">
@@ -178,7 +200,9 @@
                     :options="inventoryOptions"
                     option-value="inventory_id"
                     option-label="product_name"
-                    use-input
+                    :use-input="!manualForm.product"
+                    clearable
+                    @clear="manualForm.unitPrice = 0"
                     input-debounce="0"
                     @filter="filterInventory"
                     @update:model-value="onProductSelected"
@@ -260,10 +284,20 @@ const timeStamp = Date.now()
 const selectedDate = ref(date.formatDate(timeStamp, 'YYYY/MM/DD'))
 
 const displayDate = computed(() => {
-  if (!selectedDate.value) return 'Select Date'
+  if (!selectedDate.value) return 'All Time'
   const d = new Date(selectedDate.value.replace(/\//g, '-'))
   return date.formatDate(d, 'MMM DD, YYYY')
 })
+
+const clearDate = () => {
+  selectedDate.value = null
+  fetchSalesData()
+}
+
+const setToday = () => {
+  selectedDate.value = date.formatDate(Date.now(), 'YYYY/MM/DD')
+  fetchSalesData()
+}
 
 const metrics = reactive({
   revenue: 0,
@@ -275,18 +309,27 @@ const metrics = reactive({
 const transactions = ref([])
 const submitting = ref(false)
 
-const columns = [
-  { name: 'order_id', label: 'Order ID', field: 'order_id', align: 'left', sortable: true },
-  { name: 'product', label: 'Product', field: 'product', align: 'left' },
-  { name: 'quantity', label: 'Items', field: 'quantity', align: 'left', sortable: true },
-  { name: 'total', label: 'Total (₱)', field: 'total', align: 'left', sortable: true },
-  { name: 'status', label: 'Status', field: 'status', align: 'left' }
-]
+const columns = computed(() => {
+  if (!selectedDate.value) {
+    return [
+      { name: 'sale_date', label: 'Date', field: 'sale_date', align: 'left', sortable: true },
+      { name: 'total_items', label: 'Products Sold', field: 'total_items', align: 'left', sortable: true },
+      { name: 'daily_revenue', label: 'Revenue (₱)', field: 'daily_revenue', align: 'left', sortable: true }
+    ]
+  }
+  return [
+    { name: 'order_id', label: 'Order ID', field: 'order_id', align: 'left', sortable: true },
+    { name: 'product', label: 'Product', field: 'product', align: 'left' },
+    { name: 'quantity', label: 'Items', field: 'quantity', align: 'left', sortable: true },
+    { name: 'total', label: 'Total (₱)', field: 'total', align: 'left', sortable: true },
+    { name: 'status', label: 'Status', field: 'status', align: 'left' }
+  ]
+})
 
 // Enhanced Status Colors returning background and text colors
 const getStatusColor = (status) => {
   switch (String(status).toLowerCase()) {
-    case 'completed': return { bg: 'green-6', text: 'white' }
+    case 'picked_up': return { bg: 'green-6', text: 'white' }
     case 'cancelled': return { bg: 'red-8', text: 'white' }
     case 'pending': return { bg: 'orange-8', text: 'white' }
     default: return { bg: 'grey-6', text: 'white' }
@@ -343,12 +386,15 @@ const confirmManualSale = () => {
   }).onOk(async () => {
     try {
       submitting.value = true
-      await api.post('/vendor/sales/manual', {
+      const payload = {
         inventory_id: manualForm.product.inventory_id,
         quantity: manualForm.quantity,
         unit_price: manualForm.unitPrice,
-        total_amount: estimatedTotal.value
-      })
+        total_amount: estimatedTotal.value,
+        sale_date: selectedDate.value ? selectedDate.value.replace(/\//g, '-') : date.formatDate(Date.now(), 'YYYY-MM-DD')
+      }
+      console.log("MANUAL SALE PAYLOAD", payload)
+      await api.post('/vendor/sales/manual', payload)
       $q.notify({ type: 'positive', message: 'Manual sale recorded successfully.', position: 'top-right' })
       manualForm.product = null
       manualForm.quantity = 1
@@ -356,7 +402,7 @@ const confirmManualSale = () => {
       
       await fetchSalesData()
     } catch (error) {
-      $q.notify({ type: 'negative', message: 'Failed to record manual sale.', position: 'top-right' })
+      $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to record manual sale.', position: 'top-right' })
     } finally {
       submitting.value = false
     }
@@ -365,9 +411,13 @@ const confirmManualSale = () => {
 
 const fetchSalesData = async () => {
   try {
+    const requestParams = selectedDate.value 
+      ? { start_date: selectedDate.value.replace(/\//g, '-'), end_date: selectedDate.value.replace(/\//g, '-') } 
+      : {};
+
     const [metricsRes, transRes, invRes] = await Promise.all([
-      api.get('/vendor/sales/metrics'),
-      api.get('/vendor/sales/transactions'),
+      api.get('/vendor/sales/metrics', { params: requestParams }),
+      api.get('/vendor/sales/transactions', { params: requestParams }),
       api.get('/vendor/products')
     ])
     

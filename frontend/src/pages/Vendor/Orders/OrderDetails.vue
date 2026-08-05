@@ -25,30 +25,35 @@
         <div class="row q-gutter-sm">
           <q-btn outline icon="print" label="Print" color="dark" no-caps class="btn-3d-outline" />
           
-          <q-btn-dropdown :loading="isUpdating" outline color="dark" label="Update Status" no-caps class="btn-3d-outline bg-grey-2">
-            <q-list>
-              <q-item clickable v-close-popup @click="updateStatus('preparing')" v-if="['placed'].includes(order.status)">
-                <q-item-section>
-                  <q-item-label>Preparing</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="updateStatus('ready_for_pickup')" v-if="['placed', 'preparing'].includes(order.status)">
-                <q-item-section>
-                  <q-item-label>Ready for Pickup</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="updateStatus('picked_up')" v-if="['ready_for_pickup'].includes(order.status)">
-                <q-item-section>
-                  <q-item-label>Picked up (Complete)</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="promptCancelOrder" v-if="!['picked_up', 'cancelled'].includes(order.status)">
-                <q-item-section>
-                  <q-item-label class="text-red">Cancel Order</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-btn-dropdown>
+          <template v-if="order.status !== 'picked_up' && order.status !== 'cancelled' && order.status !== 'completed'">
+            <q-btn-dropdown :loading="isUpdating" outline color="dark" label="Update Status" no-caps class="btn-3d-outline bg-grey-2">
+              <q-list>
+                <q-item clickable v-close-popup @click="updateStatus('preparing')" v-if="['placed'].includes(order.status)">
+                  <q-item-section>
+                    <q-item-label>Preparing</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="updateStatus('ready_for_pickup')" v-if="['placed', 'preparing'].includes(order.status)">
+                  <q-item-section>
+                    <q-item-label>Ready for Pickup</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="updateStatus('picked_up')" v-if="['ready_for_pickup'].includes(order.status)">
+                  <q-item-section>
+                    <q-item-label>Picked up (Complete)</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="promptCancelOrder" v-if="!['picked_up', 'cancelled'].includes(order.status)">
+                  <q-item-section>
+                    <q-item-label class="text-red">Cancel Order</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+          </template>
+          <template v-else>
+            <q-badge color="grey-4" text-color="grey-7" label="Order Finalized" class="q-pa-sm text-weight-bold" />
+          </template>
         </div>
       </div>
 
@@ -81,7 +86,7 @@
                       :color="isStatusActive('ready_for_pickup') ? 'orange-5' : 'grey-4'" />
                       
                     <q-timeline-entry title="Picked up" 
-                      :subtitle="isStatusActive('picked_up') ? 'Order completed' : 'Pending update'" 
+                      :subtitle="isStatusActive('picked_up') ? 'Order picked up' : 'Pending update'" 
                       icon="check_circle" 
                       :color="order.status === 'picked_up' ? 'green-6' : 'grey-4'" />
                   </q-timeline>
