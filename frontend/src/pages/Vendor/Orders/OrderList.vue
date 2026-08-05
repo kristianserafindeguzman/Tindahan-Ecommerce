@@ -99,8 +99,9 @@
           <template #body-cell-customer="props">
             <q-td :props="props">
               <div class="row items-center">
-                <q-avatar size="32px" class="q-mr-sm">
-                  <img :src="props.row.consumer?.profile_picture_url || 'https://cdn.quasar.dev/img/avatar.png'">
+                <q-avatar size="32px" class="q-mr-sm bg-blue-grey-1 shadow-soft border-white">
+                  <img v-if="props.row.consumer?.profile_picture_url" :src="props.row.consumer.profile_picture_url">
+                  <q-icon v-else name="person" color="blue-grey-6" size="22px" />
                 </q-avatar>
                 <div class="text-weight-bold">{{ props.row.consumer?.full_name || 'Unknown' }}</div>
               </div>
@@ -109,8 +110,8 @@
           
           <template #body-cell-status="props">
             <q-td :props="props">
-              <q-chip size="sm" :color="getStatusColor(props.row.status).bg" :text-color="getStatusColor(props.row.status).text" class="text-weight-bolder status-chip q-px-sm shadow-1">
-                {{ props.row.status }}
+              <q-chip size="sm" :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bolder status-chip q-px-sm shadow-1">
+                {{ formatStatus(props.row.status) }}
               </q-chip>
             </q-td>
           </template>
@@ -118,8 +119,11 @@
           <!-- Action Arrow (Interactive Hover) -->
           <template #body-cell-action="props">
             <q-td :props="props" class="text-right">
-              <div class="action-btn-wrapper">
+              <div class="action-btn-wrapper" v-if="props.row.status !== 'picked_up'">
                 <q-btn flat round dense icon="chevron_right" color="blue-grey-4" class="hover-action-btn transition-ease" @click.stop="goToOrder(props.row.order_id)" />
+              </div>
+              <div v-else>
+                <q-badge color="grey-4" text-color="grey-7" label="Order Picked Up" class="q-pa-xs" />
               </div>
             </q-td>
           </template>

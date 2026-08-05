@@ -25,7 +25,7 @@ class SalesController extends Controller
         $query = Order::where('store_id', $storeId)->where('status', 'picked_up');
         $cancelQuery = Order::where('store_id', $storeId);
 
-        if ($request->has('start_date') && $request->has('end_date')) {
+        if ($request->filled('start_date') && $request->filled('end_date')) {
             $formattedStart = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d');
             $formattedEnd = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d');
             
@@ -47,7 +47,7 @@ class SalesController extends Controller
         $avgOrderValue = $orderCount > 0 ? $revenue / $orderCount : 0;
 
         $revenueGrowth = null;
-        if ($request->has('start_date') && $request->has('end_date')) {
+        if ($request->filled('start_date') && $request->filled('end_date')) {
             $formattedStart = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d');
             $formattedEnd = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d');
             
@@ -80,7 +80,7 @@ class SalesController extends Controller
             ->where('orders.store_id', $storeId)
             ->where('orders.status', 'picked_up');
 
-        if ($request->has('start_date') && $request->has('end_date')) {
+        if ($request->filled('start_date') && $request->filled('end_date')) {
             $formattedStart = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d');
             $formattedEnd = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d');
             
@@ -125,7 +125,7 @@ class SalesController extends Controller
 
         $query = Order::with('items.inventory')->where('store_id', $storeId)->where('status', 'picked_up');
 
-        if ($request->has('start_date') && $request->has('end_date')) {
+        if ($request->filled('start_date') && $request->filled('end_date')) {
             $formattedStart = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d');
             $formattedEnd = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d');
             
@@ -136,27 +136,52 @@ class SalesController extends Controller
                 $end = \Carbon\Carbon::parse($formattedEnd)->endOfDay();
                 $query->whereBetween('updated_at', [$start, $end]);
             }
-        }
 
-        \Illuminate\Support\Facades\Log::info("Sales Transactions Query: " . $query->toSql(), $query->getBindings());
+            $transactions = $query->orderBy('updated_at', 'desc')->limit(10)->get()->map(function ($order) {
+                $firstItem = $order->items->first();
+                $productName = $firstItem && $firstItem->inventory ? $firstItem->inventory->product_name : 'Multiple Items';
+                if ($order->items->count() > 1) {
+                    $productName .= ' (+' . ($order->items->count() - 1) . ' more)';
+                }
+                
+                return [
+                    'order_id' => $order->order_id,
+                    'product' => $productName,
+                    'quantity' => $order->items->sum('quantity'),
+                    'total' => $order->total_amount,
+                    'status' => 'Picked up'
+                ];
+            });
 
-        $transactions = $query->orderBy('updated_at', 'desc')->limit(10)->get()->map(function ($order) {
-            $firstItem = $order->items->first();
-            $productName = $firstItem && $firstItem->inventory ? $firstItem->inventory->product_name : 'Multiple Items';
-            if ($order->items->count() > 1) {
-                $productName .= ' (+' . ($order->items->count() - 1) . ' more)';
+            return response()->json($transactions);
+        } else {
+            // "All Time" Grouped Logic
+            $orders = Order::with('items')
+                ->where('store_id', $storeId)
+                ->where('status', 'picked_up')
+                ->orderBy('updated_at', 'desc')
+                ->get();
+            
+            $grouped = $orders->groupBy(function($order) {
+                return \Carbon\Carbon::parse($order->updated_at)->format('Y-m-d');
+            });
+
+            $transactions = [];
+            foreach ($grouped as $date => $dailyOrders) {
+                $dailyRevenue = $dailyOrders->sum('total_amount');
+                $totalItems = $dailyOrders->sum(function($order) {
+                    return $order->items->sum('quantity');
+                });
+                
+                $transactions[] = [
+                    'sale_date' => \Carbon\Carbon::parse($date)->format('M d, Y'),
+                    'total_items' => $totalItems,
+                    'daily_revenue' => $dailyRevenue
+                ];
             }
             
-            return [
-                'order_id' => $order->order_id,
-                'product' => $productName,
-                'quantity' => $order->items->sum('quantity'),
-                'total' => $order->total_amount,
-                'status' => 'Completed'
-            ];
-        });
-
-        return response()->json($transactions);
+            return response()->json($transactions);
+        }
     }
 
     /**
@@ -198,31 +223,30 @@ class SalesController extends Controller
             return response()->json(['message' => 'Insufficient stock for this manual sale.'], 400);
         }
 
-        // Create the Order
-        $saleDate = \Carbon\Carbon::parse($request->sale_date)->setHour(12);
+        // Create the Order inside a transaction
+        $saleDate = \Carbon\Carbon::parse($request->sale_date);
 
-        $order = new Order([
-            'consumer_id' => $vendor->user_id, // Map manual sale to the vendor themselves
-            'store_id' => $storeId,
-            'total_amount' => $request->total_amount,
-            'status' => 'picked_up',
-        ]);
-        $order->timestamps = false;
-        $order->created_at = $saleDate;
-        $order->updated_at = $saleDate;
-        $order->save();
+        \Illuminate\Support\Facades\DB::transaction(function () use ($vendor, $storeId, $request, $inventory, $saleDate) {
+            $order = new Order();
+            $order->consumer_id = $vendor->user_id; // Map manual sale to the vendor themselves
+            $order->store_id = $storeId;
+            $order->total_amount = $request->total_amount;
+            $order->status = 'picked_up';
+            $order->timestamps = false;
+            $order->created_at = $saleDate;
+            $order->updated_at = $saleDate;
+            $order->save();
 
-        // Create the OrderItem
-        $orderItem = new OrderItem([
-            'order_id' => $order->order_id,
-            'inventory_id' => $inventory->inventory_id,
-            'quantity' => $request->quantity,
-            'subtotal' => $request->total_amount,
-        ]);
-        $orderItem->timestamps = false;
-        $orderItem->created_at = $saleDate;
-        $orderItem->updated_at = $saleDate;
-        $orderItem->save();
+            // Create the OrderItem
+            $orderItem = new OrderItem();
+            $orderItem->order_id = $order->order_id;
+            $orderItem->inventory_id = $inventory->inventory_id;
+            $orderItem->quantity = $request->quantity;
+            $orderItem->subtotal = $request->total_amount;
+            // Note: If order_items schema is updated in future to include price, add it here:
+            // $orderItem->price = $request->unit_price; 
+            $orderItem->save();
+        });
 
         return response()->json(['message' => 'Manual sale recorded successfully']);
     }

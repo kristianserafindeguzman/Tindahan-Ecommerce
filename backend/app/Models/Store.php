@@ -32,6 +32,7 @@ class Store extends Model
         'operating_days',
         'latitude',
         'longitude',
+        'address',
     ];
 
     /**

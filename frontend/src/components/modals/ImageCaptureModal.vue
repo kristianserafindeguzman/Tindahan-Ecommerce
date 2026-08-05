@@ -50,7 +50,11 @@ import Cropper from 'cropperjs'
 import 'cropperjs/dist/cropper.css'
 
 const props = defineProps({
-  modelValue: Boolean
+  modelValue: Boolean,
+  aspectRatio: {
+    type: Number,
+    default: 1
+  }
 })
 const emit = defineEmits(['update:modelValue', 'captured'])
 
@@ -142,7 +146,7 @@ const initCropper = () => {
   setTimeout(() => {
     if (imageEl.value) {
       cropperInstance = new Cropper(imageEl.value, {
-        aspectRatio: 1, // 1:1 Square by default for products
+        aspectRatio: props.aspectRatio,
         viewMode: 2,
         background: false,
       })
