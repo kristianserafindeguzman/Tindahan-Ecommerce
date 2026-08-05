@@ -1,323 +1,255 @@
 <template>
-  <q-page class="dashboard-page">
-    <div class="dashboard-container">
+  <q-page class="storefront-page">
 
-      <!-- HEADER -->
-      <div class="dashboard-header">
-        <div class="header-left">
-          <img
-            src="@/assets/tindahan-mobile.png"
-            alt="Tindahan Logo"
-            class="header-logo"
-          />
-          <div>
-            <h1>Welcome, {{ userName }}!</h1>
-            <p class="header-subtitle">Discover sari-sari stores near you</p>
-          </div>
-        </div>
+    <SiteHeader :address="address" />
 
-        <div class="header-right flex items-center">
-          <q-btn flat no-caps class="q-px-sm">
-            <div class="row items-center no-wrap">
-              <q-avatar size="36px" class="q-mr-sm" v-if="userProfilePicture">
-                <img :src="userProfilePicture" />
-              </q-avatar>
-              <q-avatar size="36px" class="q-mr-sm bg-grey-3 text-grey-8" v-else>
-                <q-icon name="person" size="20px" />
-              </q-avatar>
-              <div class="text-weight-bold text-dark q-mr-xs">{{ userName }}</div>
-              <q-icon name="keyboard_arrow_down" size="20px" color="grey-8" />
-            </div>
-            
-            <q-menu fit anchor="bottom right" self="top right" class="custom-glass-menu">
-              <q-list style="min-width: 220px">
-                <q-item clickable v-ripple to="/consumer/profile" class="q-py-md">
-                  <q-item-section avatar>
-                    <q-icon name="person" color="primary" />
-                  </q-item-section>
-                  <q-item-section class="text-weight-medium">Profile Settings</q-item-section>
-                </q-item>
-                
-                <q-item clickable v-ripple class="q-py-md">
-                  <q-item-section avatar>
-                    <q-icon name="receipt_long" color="primary" />
-                  </q-item-section>
-                  <q-item-section class="text-weight-medium">Orders & Reordering</q-item-section>
-                </q-item>
-                
-                <q-separator />
-                
-                <q-item clickable v-ripple @click="handleLogout" class="text-red q-py-md">
-                  <q-item-section avatar>
-                    <q-icon name="logout" color="red" />
-                  </q-item-section>
-                  <q-item-section class="text-weight-medium">Logout</q-item-section>
-                </q-item>
-              </q-list>
-            </q-menu>
-          </q-btn>
-        </div>
+    <!-- MAIN CONTENT -->
+    <div class="home-content">
+
+      <!-- HERO BANNER -->
+      <div class="hero-banner">
+        <img
+          src="@/assets/tindahan-logo.png"
+          alt="Tindahan Sari-Sari Store App"
+          class="hero-logo"
+        />
       </div>
 
-      <!-- SEARCH BAR -->
-      <div class="search-bar">
-        <q-input
-          outlined
-          dense
-          placeholder="Search for products or stores..."
-          class="search-input"
-        >
-          <template #prepend>
-            <q-icon name="search" color="grey-6" />
-          </template>
-        </q-input>
-      </div>
+      <!-- CATEGORIES -->
+      <SectionBlock title="Categories">
+        <CategoryCarousel :categories="categories" />
+      </SectionBlock>
 
-      <!-- PLACEHOLDER CONTENT -->
-      <div class="cards-grid">
+      <!-- RECOMMENDED / POPULAR PRODUCTS -->
+      <SectionBlock :title="resultsSectionTitle" view-all>
+        <div class="products-grid">
+          <ProductCard v-for="product in MOCK_PRODUCTS" :key="product.id" :product="product" />
+        </div>
+      </SectionBlock>
 
-        <div class="dash-card">
-          <q-icon name="explore" class="card-icon" />
-          <div class="card-title">Nearby Stores</div>
-          <div class="card-desc">
-            Browse sari-sari stores in your neighborhood.
-          </div>
+      <!-- STORES NEAR YOU -->
+      <SectionBlock title="Stores near You" view-all>
+        <div class="stores-row">
+          <StoreCard v-for="store in MOCK_STORES" :key="store.id" :store="store" />
+        </div>
+      </SectionBlock>
+
+      <!-- DISCOVER PRODUCTS -->
+      <SectionBlock title="Discover Products" view-all>
+        <div class="products-grid">
+          <ProductCard v-for="product in MOCK_DISCOVER_PRODUCTS" :key="product.id" :product="product" />
         </div>
 
-        <div class="dash-card">
-          <q-icon name="shopping_cart" class="card-icon" />
-          <div class="card-title">My Cart</div>
-          <div class="card-desc">
-            View items in your cart and proceed to checkout.
-          </div>
-        </div>
-
-        <div class="dash-card">
-          <q-icon name="receipt_long" class="card-icon" />
-          <div class="card-title">Order History</div>
-          <div class="card-desc">
-            Track your past and current orders.
-          </div>
-        </div>
-
-        <div class="dash-card">
-          <q-icon name="person" class="card-icon" />
-          <div class="card-title">My Profile</div>
-          <div class="card-desc">
-            Update your account details and preferences.
-          </div>
-        </div>
-
-      </div>
+        <q-btn flat no-caps label="See More" class="see-more-btn" />
+      </SectionBlock>
 
     </div>
+
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useQuasar } from 'quasar'
-import { api } from '@/boot/axios'
+import { ref, computed, onMounted } from 'vue'
+import SiteHeader from '@/components/consumer/SiteHeader.vue'
+import SectionBlock from '@/components/consumer/SectionBlock.vue'
+import CategoryCarousel from '@/components/consumer/CategoryCarousel.vue'
+import ProductCard from '@/components/consumer/ProductCard.vue'
+import StoreCard from '@/components/consumer/StoreCard.vue'
+import { useCategories } from '@/composables/useCategories'
 
-const router = useRouter()
-const $q = useQuasar()
+// ==========================================================
+// AUTH STATE — this page renders for both guests and logged-in
+// consumers, so SiteHeader reads localStorage directly rather than
+// this page being route-guarded (see routes.js — this route no
+// longer requires auth).
+// ==========================================================
 
-const userName = ref('')
-const userProfilePicture = ref('')
+const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
-onMounted(async () => {
-  try {
-    const res = await api.get('/user')
-    if (res.data && res.data.user) {
-      const user = res.data.user
-      userName.value = user.full_name ? user.full_name.split(' ')[0] : 'Consumer'
-      userProfilePicture.value = user.profile_picture_url || null
-    }
-  } catch (error) {
-    userName.value = 'Consumer'
-  }
-})
+// ==========================================================
+// ADDRESS — placeholder until real geolocation/address selection
+// is wired up. Matches the address shown in the reference screenshots.
+// ==========================================================
 
-const handleLogout = () => {
-  $q.dialog({
-    class: 'glass-logout-dialog',
-    title: 'Confirm Logout',
-    message: 'Are you sure you want to log out of your account?',
-    cancel: { flat: true, color: 'grey-7', label: 'Cancel', noCaps: true, class: 'glass-logout-btn-cancel q-px-md' },
-    ok: { unelevated: true, label: 'Logout', noCaps: true, class: 'glass-logout-btn-ok q-px-md' },
-    persistent: true
-  }).onOk(async () => {
-    try {
-      await api.post('/logout')
-    } catch {
-      // Token may already be invalid
-    }
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('auth_user')
-    localStorage.removeItem('auth_role')
-    router.push('/login')
-  })
-}
+const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
+
+// ==========================================================
+// CATEGORIES — fetched from /categories (backed by the real
+// `categories` table). See useCategories.js for the icon mapping.
+// ==========================================================
+
+const { categories, fetchCategories } = useCategories()
+
+onMounted(fetchCategories)
+
+// ==========================================================
+// MOCK DATA — replace with real /products and /stores endpoints
+// once they exist.
+// ==========================================================
+// PERSONALIZATION — real personalization needs backend data that
+// doesn't exist yet (order history, browsing signals, etc). For now
+// both states pull from the same MOCK_PRODUCTS; only the section label
+// differs. Once a real recommendation endpoint exists, swap the
+// v-for source in the template based on isLoggedIn — this computed
+// is the one place that needs to change.
+// ==========================================================
+
+const resultsSectionTitle = computed(() =>
+  isLoggedIn.value ? 'Recommended for You' : 'Popular Products Near You'
+)
+
+const MOCK_PRODUCTS = [
+  { id: 1, name: 'Lucky Me Pancit Canton Kalamansi 80g', price: 18, distance: '5 m', store: 'Leslie Store' },
+  { id: 2, name: 'Piattos Sour Cream & Onion', price: 15, distance: '5 m', store: 'Leslie Store' },
+  { id: 3, name: 'Lucky Me Pancit Canton Kalamansi 80g', price: 18, distance: '5 m', store: 'Leslie Store' },
+  { id: 4, name: 'Lucky Me Pancit Canton Kalamansi 80g', price: 18, distance: '5 m', store: 'Leslie Store' },
+  { id: 5, name: 'Lucky Me Pancit Canton Kalamansi 80g', price: 18, distance: '5 m', store: 'Leslie Store' },
+  { id: 6, name: 'Lucky Me Pancit Canton Kalamansi 80g', price: 18, distance: '5 m', store: 'Leslie Store' }
+]
+
+const MOCK_STORES = [
+  { id: 1, name: 'Leslie Store', isOpen: true, closesAt: '10:00 pm', distance: '5 m' },
+  { id: 2, name: 'Jmzhai Sari Sari Store', isOpen: true, closesAt: '9:00 pm', distance: '3 m' },
+  { id: 3, name: 'Sol A Sari Sari Store', isOpen: false, closesAt: '8:00 pm', distance: '4 m' },
+  { id: 4, name: "David's Sari-Sari Store", isOpen: true, closesAt: '9:30 pm', distance: '6 m' }
+]
+
+const MOCK_DISCOVER_PRODUCTS = [
+  { id: 1, name: 'Datu Puti Soy Sauce 1L', price: 42, distance: '3 m', store: 'Jmzhai Sari Sari Store' },
+  { id: 2, name: 'Century Tuna Flakes in Oil 155g', price: 35, distance: '3 m', store: 'Jmzhai Sari Sari Store' },
+  { id: 3, name: 'Safeguard Bar Soap 90g', price: 25, distance: '4 m', store: 'Sol A Sari Sari Store' },
+  { id: 4, name: 'Nescafe 3-in-1 Original 20g', price: 9, distance: '4 m', store: 'Sol A Sari Sari Store' },
+  { id: 5, name: 'Silver Swan Soy Sauce 385ml', price: 22, distance: '5 m', store: 'Leslie Store' },
+  { id: 6, name: 'Kopiko Brown Coffee 3-in-1 25g', price: 10, distance: '5 m', store: 'Leslie Store' }
+]
 </script>
 
 <style scoped>
-.dashboard-page {
+.storefront-page {
   min-height: 100vh;
 
-  background: #f4f4f4;
+  background: #ffffff;
 
   font-family: 'Roboto', Arial, sans-serif;
 }
 
-.dashboard-container {
-  max-width: 960px;
+/* =========================
+   HOME CONTENT
+========================= */
+
+.home-content {
+  max-width: 1200px;
 
   margin: 0 auto;
 
-  padding: 40px 24px;
+  padding: 24px;
 }
 
-/* HEADER */
+/* =========================
+   HERO BANNER
+========================= */
 
-.dashboard-header {
+.hero-banner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
 
-  margin-bottom: 24px;
-  padding: 20px 28px;
+  padding: 36px 24px;
+  margin-bottom: 32px;
+
+  border-radius: 8px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #c02226 0%,
+      #9c171b 55%,
+      #651012 100%
+    );
+}
+
+.hero-logo {
+  width: 320px;
+  max-width: 100%;
+  height: auto;
+
+  object-fit: contain;
+}
+
+/* =========================
+   PRODUCTS GRID
+========================= */
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+
+  gap: 12px;
+}
+
+.see-more-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
 
   background: #ffffff;
-  border-radius: 10px;
-
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.06);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-
-  gap: 16px;
-}
-
-.header-logo {
-  width: 44px;
-  height: auto;
-}
-
-.dashboard-header h1 {
-  margin: 0;
-
-  font-size: 20px;
-  font-weight: 700;
-
-  color: #111111;
-}
-
-.header-subtitle {
-  margin: 2px 0 0;
-
-  font-size: 13px;
-
-  color: #8992a2;
-}
-
-.logout-btn {
   color: #bd2427;
 
-  font-size: 13px;
-}
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 
-/* SEARCH */
-
-.search-bar {
-  margin-bottom: 28px;
-}
-
-.search-input :deep(.q-field__control) {
-  height: 44px;
-
-  border-radius: 10px;
-
-  background: #ffffff;
-}
-
-.search-input :deep(.q-field__native) {
-  font-size: 13px;
-}
-
-/* CARDS */
-
-.cards-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-
-  gap: 20px;
-}
-
-.dash-card {
-  padding: 28px 24px;
-
-  background: #ffffff;
-  border-radius: 10px;
-
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.06);
-
-  transition: box-shadow 0.2s;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
 
   cursor: pointer;
+
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.2s;
 }
 
-.dash-card:hover {
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.1);
+.see-more-btn:hover {
+  border-color: #f3c6c7;
+  background: #fdecec;
+
+  box-shadow: 0 10px 24px rgba(189, 36, 39, 0.14);
 }
 
-.card-icon {
-  font-size: 30px;
+/* =========================
+   STORES ROW
+========================= */
 
-  color: #bd2427;
+.stores-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
 
-  margin-bottom: 12px;
+  gap: 12px;
 }
 
-.card-title {
-  font-size: 16px;
-  font-weight: 700;
+/* =========================
+   RESPONSIVE
+========================= */
 
-  color: #222222;
-
-  margin-bottom: 6px;
+@media (max-width: 900px) {
+  .products-grid,
+  .stores-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
-
-.card-desc {
-  font-size: 13px;
-  line-height: 1.5;
-
-  color: #888888;
-}
-
-/* MOBILE */
 
 @media (max-width: 600px) {
-  .dashboard-container {
-    padding: 20px 16px;
+  .home-content {
+    padding: 16px;
   }
 
-  .dashboard-header {
-    flex-direction: column;
-    align-items: flex-start;
-
-    gap: 12px;
-
-    padding: 16px 20px;
+  .hero-logo {
+    width: 220px;
   }
 
-  .cards-grid {
-    grid-template-columns: 1fr;
+  .products-grid,
+  .stores-row {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

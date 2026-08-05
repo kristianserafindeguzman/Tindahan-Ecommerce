@@ -1,12 +1,14 @@
 <template>
   <q-page class="profile-page">
+
+    <SiteHeader :address="address" />
+
     <div class="profile-container">
-      <div class="q-mb-md">
-        <q-btn flat no-caps icon="arrow_back" label="Back to Home" color="grey-8" class="q-px-none q-mb-md" @click="router.push('/consumer/home')" />
-      </div>
-      <div class="q-mb-xl">
-        <h1 class="text-h4 text-weight-bolder text-dark q-mb-sm">Profile Settings</h1>
-        <p class="text-grey-7">Manage your personal information and security preferences.</p>
+      <q-btn flat no-caps dense icon="arrow_back" label="Back to Home" class="back-btn" @click="router.push('/consumer/home')" />
+
+      <div class="page-header-block">
+        <h1 class="page-title">Profile Settings</h1>
+        <p class="page-subtitle">Manage your personal information and security preferences.</p>
       </div>
 
       <div class="row q-col-gutter-lg">
@@ -15,7 +17,7 @@
         <div class="col-12 col-md-4">
           <q-card flat bordered class="profile-card">
             <q-card-section>
-              <div class="text-h6 text-weight-bold q-mb-md">Profile Photo</div>
+              <div class="section-title">Profile Photo</div>
               <div class="text-center q-mb-md relative-position">
                 <q-avatar size="120px" class="bg-grey-3">
                   <img v-if="photoPreview" :src="photoPreview" />
@@ -38,7 +40,7 @@
           <!-- ================= PERSONAL INFO ================= -->
           <q-card flat bordered class="profile-card q-mb-lg">
             <q-card-section>
-              <div class="text-h6 text-weight-bold q-mb-md">Personal Information</div>
+              <div class="section-title">Personal Information</div>
               <div class="row q-col-gutter-md">
                 <div class="col-12">
                   <q-input v-model="form.full_name" outlined dense label="Full Name" />
@@ -54,7 +56,7 @@
           <!-- ================= PHONE NUMBER (OTP) ================= -->
           <q-card flat bordered class="profile-card q-mb-lg">
             <q-card-section>
-              <div class="text-h6 text-weight-bold q-mb-md">Phone Number</div>
+              <div class="section-title">Phone Number</div>
               <p class="text-caption text-grey-7">Changing your phone number requires OTP verification.</p>
               <div class="row q-col-gutter-md items-center">
                 <div class="col-12 col-sm-8">
@@ -70,7 +72,7 @@
           <!-- ================= EMAIL ================= -->
           <q-card flat bordered class="profile-card q-mb-lg">
             <q-card-section>
-              <div class="text-h6 text-weight-bold q-mb-md">Email Address</div>
+              <div class="section-title">Email Address</div>
               <div class="row q-col-gutter-md items-center">
                 <div class="col-12 col-sm-8">
                   <q-input v-model="form.email" outlined dense label="Email" type="email" />
@@ -85,7 +87,7 @@
           <!-- ================= SECURITY ================= -->
           <q-card flat bordered class="profile-card q-mb-lg">
             <q-card-section>
-              <div class="text-h6 text-weight-bold q-mb-md">Security</div>
+              <div class="section-title">Security</div>
               <div class="row q-col-gutter-md">
                 <div class="col-12">
                   <q-input v-model="passwords.current" outlined dense label="Current Password" type="password" />
@@ -106,7 +108,7 @@
           <!-- ================= DANGER ZONE ================= -->
           <q-card flat bordered class="profile-card bg-red-1 border-red">
             <q-card-section>
-              <div class="text-h6 text-weight-bold text-red-9 q-mb-md">Danger Zone</div>
+              <div class="section-title text-red-9">Danger Zone</div>
               <p class="text-body2 text-red-9">Once you delete your account, there is no going back. Please be certain.</p>
               <div class="text-right">
                 <q-btn outline color="red-9" label="Delete my account" @click="confirmDeleteAccount" />
@@ -180,10 +182,13 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import { useAuth } from '@/composables/useAuth'
+import SiteHeader from '@/components/consumer/SiteHeader.vue'
 
 const $q = useQuasar()
 const router = useRouter()
 const { logout } = useAuth()
+
+const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
 
 const user = ref({})
 const form = reactive({
@@ -511,22 +516,83 @@ const confirmDeleteAccount = () => {
 
 <style scoped>
 .profile-page {
-  background: #f4f4f4;
   min-height: 100vh;
+
+  background: #f4f4f4;
+
+  font-family: 'Roboto', Arial, sans-serif;
 }
+
 .profile-container {
-  max-width: 900px;
+  max-width: 1000px;
+
   margin: 0 auto;
-  padding: 40px 24px;
+
+  padding: 24px;
 }
+
+.back-btn {
+  margin-bottom: 16px;
+  padding: 0 8px 0 0;
+
+  color: #666666;
+
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.page-header-block {
+  margin-bottom: 28px;
+}
+
+.page-title {
+  margin: 0 0 4px;
+
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+
+  color: #111111;
+}
+
+.page-subtitle {
+  margin: 0;
+
+  font-size: 13px;
+
+  color: #767676;
+}
+
 .profile-card {
-  border-radius: 12px;
-  background: white;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
+
+.section-title {
+  margin-bottom: 16px;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  color: #111111;
+}
+
 .border-red {
-  border: 1px solid #fca5a5;
+  border-color: #fca5a5;
 }
+
+.profile-container :deep(.q-btn) {
+  border-radius: 8px;
+}
+
+.profile-container :deep(.q-field--outlined .q-field__control) {
+  border-radius: 8px;
+}
+
 .otp-box {
   width: 48px;
   text-align: center;
@@ -534,5 +600,11 @@ const confirmDeleteAccount = () => {
 }
 .otp-box :deep(.q-field__native) {
   text-align: center;
+}
+
+@media (max-width: 600px) {
+  .profile-container {
+    padding: 16px;
+  }
 }
 </style>
