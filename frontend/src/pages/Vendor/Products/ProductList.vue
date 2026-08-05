@@ -1,86 +1,125 @@
 <template>
-  <q-page class="vendor-page">
-    <div class="page-container">
-      
+  <q-page class="vendor-page relative-position overflow-hidden">
+    <!-- Subtle Ambient Background Glows (Brand Aligned) -->
+    <div class="bg-glow bg-glow-primary"></div>
+    <div class="bg-glow bg-glow-secondary"></div>
+
+    <div class="page-container relative-position" style="z-index: 1;">      
       <!-- ================= HEADER AREA ================= -->
-      <div class="page-header q-mb-lg">
-        <h1 class="text-h4 text-weight-bold q-ma-none">Inventory Management</h1>
-        <p class="text-subtitle1 text-grey-7 q-mt-sm q-mb-none">Monitor and update your product catalog.</p>
+      <div class="page-header q-mb-xl q-mt-sm row items-center justify-between">
+        <div class="row items-center">
+          <div class="glass-icon-box q-mr-md">
+            <q-icon name="inventory_2" size="26px" class="text-brand-red" />
+          </div>
+          <div>
+            <h1 class="text-h4 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight leading-tight">Inventory Management</h1>
+            <p class="text-body1 text-blue-grey-5 q-mt-xs q-mb-none font-medium">Monitor and update your product catalog.</p>
+          </div>
+        </div>
       </div>
 
       <!-- ================= ML INSIGHTS (TOP ROW) ================= -->
-      <div class="row q-col-gutter-md q-mb-xl">
-        <!-- RANDOM FOREST ML INTEGRATION BLUEPRINT: These three cards will display predictive inventory insights powered by the Python/Flask ML microservice in the final sprint. Ensure the reactive props here are ready to receive external ML JSON data (e.g., predicted out-of-stock dates, seasonal trend multipliers). -->
+      <div class="row q-col-gutter-lg q-mb-xl">
         
+        <!-- Restock Alert Card -->
         <div class="col-12 col-md-4">
-          <q-card class="premium-glass-card h-full">
-            <q-card-section>
-              <div class="row items-center q-mb-sm">
-                <div class="icon-premium-box bg-red-50 border-red-light text-red-7 q-mr-sm" style="width:36px; height:36px;">
-                  <q-icon name="warning" size="20px" />
+          <q-card class="premium-glass-card h-full flex column card-hover" style="border-radius: 16px;">
+            <q-card-section class="q-pa-lg flex-1 flex column justify-between">
+              <div>
+                <div class="row items-center q-mb-md">
+                  <q-icon name="warning_amber" size="18px" color="red-8" class="q-mr-sm" />
+                  <div class="text-subtitle2 text-grey-7 text-uppercase" style="font-size: 11px;">Restock Alert</div>
                 </div>
-                <div class="text-subtitle2 text-grey-7 text-uppercase">Restock Alert</div>
+                <div class="text-h6 text-weight-bold text-dark leading-tight">
+                  {{ mlInsights.restockProduct || 'Analyzing Inventory...' }}
+                </div>
               </div>
-              <div class="text-h5 text-weight-bold text-dark q-mb-xs">{{ mlInsights.restockProduct || 'Analyzing...' }}</div>
-              <div class="text-caption text-red-7 text-weight-bold">Predicted stock-out in {{ mlInsights.daysUntilStockout || 'N/A' }} days</div>
+              <div class="insight-badge bg-red-50 text-red-9 border-red-light q-mt-md">
+                <q-icon name="schedule" size="14px" class="q-mr-xs" />
+                Predicted stock-out in {{ mlInsights.daysUntilStockout || 'N/A' }} days
+              </div>
             </q-card-section>
           </q-card>
         </div>
 
+        <!-- Upcoming Trend Card -->
         <div class="col-12 col-md-4">
-          <q-card class="premium-glass-card h-full">
-            <q-card-section>
-              <div class="row items-center q-mb-sm">
-                <div class="icon-premium-box bg-blue-50 border-blue-light text-blue-7 q-mr-sm" style="width:36px; height:36px;">
-                  <q-icon name="trending_up" size="20px" />
+          <q-card class="premium-glass-card h-full flex column card-hover" style="border-radius: 16px;">
+            <q-card-section class="q-pa-lg flex-1 flex column justify-between">
+              <div>
+                <div class="row items-center q-mb-md">
+                  <q-icon name="trending_up" size="18px" color="blue-8" class="q-mr-sm" />
+                  <div class="text-subtitle2 text-grey-7 text-uppercase" style="font-size: 11px;">Upcoming Trend</div>
                 </div>
-                <div class="text-subtitle2 text-grey-7 text-uppercase">Upcoming Trend</div>
+                <div class="text-h6 text-weight-bold text-dark leading-tight">
+                  {{ mlInsights.trendingCategory || 'Gathering Data...' }}
+                </div>
               </div>
-              <div class="text-h5 text-weight-bold text-dark q-mb-xs">{{ mlInsights.trendingCategory || 'Analyzing...' }}</div>
-              <div class="text-caption text-blue-7 text-weight-bold">Expected {{ mlInsights.trendMultiplier || '0' }}x demand increase</div>
+              <div class="insight-badge bg-blue-50 text-blue-9 border-blue-light q-mt-md">
+                <q-icon name="insights" size="14px" class="q-mr-xs" />
+                Expected {{ mlInsights.trendMultiplier || '0' }}x demand increase
+              </div>
             </q-card-section>
           </q-card>
         </div>
 
+        <!-- Top Performance Card (Dark Variant) -->
         <div class="col-12 col-md-4">
-          <q-card class="premium-glass-card h-full">
-            <q-card-section>
-              <div class="row items-center q-mb-sm">
-                <div class="icon-premium-box bg-amber-50 border-amber-light text-amber-7 q-mr-sm" style="width:36px; height:36px;">
-                  <q-icon name="emoji_events" size="20px" />
+          <q-card class="premium-glass-card bg-gradient-dark text-white h-full relative-position overflow-hidden card-hover" style="border-radius: 16px;">
+            <div class="glow-amber"></div>
+            <q-card-section class="relative-position z-top q-pa-lg flex-1 flex column justify-between">
+              <div>
+                <div class="row items-center q-mb-md">
+                  <q-icon name="emoji_events" size="18px" color="amber-4" class="q-mr-sm" />
+                  <div class="text-subtitle2 text-amber-2 text-uppercase" style="font-size: 11px;">Top Performance</div>
                 </div>
-                <div class="text-subtitle2 text-grey-7 text-uppercase">Top Performance</div>
+                <div class="text-h6 text-weight-bold text-white leading-tight">
+                  {{ mlInsights.topCategory || 'Calculating...' }}
+                </div>
               </div>
-              <div class="text-h5 text-weight-bold text-dark q-mb-xs">{{ mlInsights.topCategory || 'Analyzing...' }}</div>
-              <div class="text-caption text-amber-8 text-weight-bold">Highest revenue driver this week</div>
+              <div class="insight-badge bg-amber-9 text-white q-mt-md shadow-1" style="border: 1px solid rgba(255,255,255,0.2);">
+                <q-icon name="star_outline" size="14px" class="q-mr-xs" />
+                Highest revenue driver this week
+              </div>
             </q-card-section>
           </q-card>
         </div>
       </div>
 
       <!-- ================= CONTROLS & TABLE ================= -->
-      <q-card class="premium-glass-card">
-        <q-card-section class="q-pa-md border-bottom row items-center justify-between">
+      <q-card class="premium-glass-card card-hover" style="border-radius: 16px;">
+        <q-card-section class="panel-header q-pa-lg border-bottom">
           
-          <div class="row q-gutter-sm items-center">
-            <q-input v-model="search" outlined dense class="custom-glass-input" placeholder="Search products..." style="width: 300px;">
-              <template v-slot:prepend>
-                <q-icon name="search" />
-              </template>
-            </q-input>
-            <q-btn outline icon="filter_list" label="Filter" color="dark" no-caps class="btn-3d-outline" />
+          <!-- Refined Products Heading with Red Accent Line -->
+          <div class="row items-center justify-between q-mb-lg">
+            <div class="text-h5 text-weight-bold text-dark row items-center">
+              <div class="header-accent-red q-mr-md"></div>
+              Product Catalog
+            </div>
           </div>
 
-          <div class="row q-gutter-sm">
-            <q-btn outline icon="download" label="Export" color="dark" no-caps class="btn-3d-outline" />
-            <q-btn unelevated icon="add" label="Add Product" color="red-8" no-caps class="btn-premium text-white" @click="showAddModal = true" />
+          <!-- Controls (Aligned to standard module styles) -->
+          <div class="row items-center justify-between q-col-gutter-sm">
+            <div class="row q-gutter-md items-center col-12 col-sm-auto">
+              <q-input v-model="search" outlined dense class="custom-glass-input" placeholder="Search products..." style="width: 280px; max-width: 100%;">
+                <template v-slot:prepend>
+                  <q-icon name="search" color="blue-grey-4" size="20px" />
+                </template>
+              </q-input>
+              <q-btn outline icon="filter_list" label="Filter" color="blue-grey-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" />
+            </div>
+
+            <div class="row q-gutter-md col-12 col-sm-auto">
+              <q-btn outline icon="download" label="Export" color="red-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" />
+              <q-btn unelevated icon="add" label="Add Product" color="red-9" no-caps class="btn-premium text-white text-weight-bold q-px-md" @click="showAddModal = true" />
+            </div>
           </div>
         </q-card-section>
 
         <!-- Table -->
         <q-table
           flat
-          class="custom-premium-table"
+          class="custom-premium-table bg-transparent"
           :rows="filteredProducts"
           :columns="columns"
           row-key="inventory_id"
@@ -89,16 +128,16 @@
           <template #no-data>
             <div class="full-width row flex-center text-grey-6 q-pa-xl empty-state-glass">
               <div class="text-center">
-                <q-icon name="inventory_2" size="48px" class="q-mb-md opacity-50" />
-                <div class="text-subtitle1 text-weight-medium">No products found</div>
-                <div class="text-caption">Your inventory is currently empty.</div>
+                <q-icon name="inventory_2" size="48px" class="q-mb-md opacity-50 drop-shadow-icon" />
+                <div class="text-subtitle1 text-weight-bold text-blue-grey-8">No products found</div>
+                <div class="text-caption text-blue-grey-5">Your inventory is currently empty.</div>
               </div>
             </div>
           </template>
 
           <template #body-cell-image="props">
             <q-td :props="props">
-              <q-avatar size="40px" square class="bg-grey-2 border-radius-8">
+              <q-avatar size="40px" square class="bg-grey-2 shadow-1" style="border-radius: 8px;">
                 <img v-if="props.row.image_url" :src="props.row.image_url" />
                 <q-icon v-else name="image" color="grey-5" size="20px" />
               </q-avatar>
@@ -107,7 +146,7 @@
           
           <template #body-cell-status="props">
             <q-td :props="props">
-              <q-chip size="sm" :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bold shadow-1">
+              <q-chip size="sm" :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bold shadow-1 status-chip">
                 {{ props.row.status || 'Active' }}
               </q-chip>
             </q-td>
@@ -116,14 +155,16 @@
           <template #body-cell-action="props">
             <q-td :props="props" class="text-right">
               <q-btn-dropdown flat round dense icon="more_vert" color="grey-7">
-                <q-list style="min-width: 150px">
-                  <q-item clickable v-close-popup @click="openDetails(props.row)">
+                <q-list class="premium-dropdown-list" style="min-width: 150px">
+                  <q-item clickable v-close-popup @click="openDetails(props.row)" class="hover-grey">
                     <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="visibility" size="20px" color="blue-6" /></q-item-section>
-                    <q-item-section>View & Edit</q-item-section>
+                    <q-item-section class="text-weight-medium">View & Edit</q-item-section>
                   </q-item>
-                  <q-item clickable v-close-popup v-if="props.row.status !== 'archived'" @click="deactivateProduct(props.row)">
-                    <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="block" size="20px" color="red-6" /></q-item-section>
-                    <q-item-section class="text-red">Archive (Deactivate)</q-item-section>
+                  <q-item clickable v-close-popup v-if="props.row.status !== 'archived'" @click="deactivateProduct(props.row)" class="hover-red">
+                    <q-item-section avatar class="min-w-0 q-pr-sm">
+                      <q-icon name="archive" size="20px" color="red-9" />
+                    </q-item-section>
+                    <q-item-section class="text-weight-medium text-red-9">Archive</q-item-section>
                   </q-item>
                 </q-list>
               </q-btn-dropdown>
@@ -189,8 +230,8 @@ const getStatusColor = (status) => {
   switch (String(status || 'active').toLowerCase()) {
     case 'active': return 'green-6'
     case 'inactive': return 'grey-6'
-    case 'out of stock': return 'red-6'
-    default: return 'grey-6'
+    case 'out of stock': return 'red-9'
+    default: return 'blue-grey-4'
   }
 }
 
@@ -237,37 +278,147 @@ onMounted(() => {
 
 <style scoped>
 .vendor-page {
-  padding: 24px;
-  background: #f8fafc;
+  padding: 32px 24px;
+  background-color: #f8fafc;
   min-height: 100vh;
 }
 .page-container {
   max-width: 1400px;
   margin: 0 auto;
 }
-.premium-glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+
+/* Strictly Dark Red Brand Colors */
+.text-brand-red { color: #B91C1C !important; }
+
+/* Subtle Ambient Glows (Fixed to Dark Red & Slate) */
+.bg-glow {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  filter: blur(140px);
+  z-index: 0;
+  opacity: 0.15; 
+  pointer-events: none;
 }
-.h-full {
-  height: 100%;
+.bg-glow-primary {
+  top: -50px;
+  left: -50px;
+  background: radial-gradient(circle, rgba(185, 28, 28, 0.25) 0%, transparent 70%); 
 }
-.icon-premium-box {
-  border-radius: 8px;
+.bg-glow-secondary {
+  bottom: 100px;
+  right: -50px;
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.25) 0%, transparent 70%);
+}
+
+/* Typography Enhancements */
+.tracking-tight { letter-spacing: -0.03em; }
+.tracking-wide { letter-spacing: 0.05em; }
+.leading-tight { line-height: 1.2; }
+.font-medium { font-weight: 500; }
+.z-top { z-index: 1; }
+
+/* Beautiful Header Glass Icon Box */
+.glass-icon-box {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.1); 
 }
-.bg-red-50 { background-color: #FEF2F2; } .border-red-light { border: 1px solid #FEE2E2; }
-.bg-blue-50 { background-color: #EFF6FF; } .border-blue-light { border: 1px solid #DBEAFE; }
-.bg-amber-50 { background-color: #FFFBEB; } .border-amber-light { border: 1px solid #FEF3C7; }
 
+/* Unified Brand Accent (The Red Vertical Line) */
+.header-accent-red {
+  width: 6px; height: 24px; background: linear-gradient(180deg, #B91C1C 0%, #450A0A 100%); border-radius: 6px; 
+}
+
+/* Clean Glassmorphism Cards */
+.premium-glass-card {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(241, 245, 249, 1);
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.04);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.bg-gradient-dark {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid #334155;
+}
+.glow-amber {
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(20px);
+}
+
+.h-full { height: 100%; }
+
+/* ML Card Accents */
+.bg-red-50 { background-color: rgba(254, 242, 242, 0.8); } 
+.border-red-light { border: 1px solid rgba(254, 226, 226, 1); }
+.bg-blue-50 { background-color: rgba(239, 246, 255, 0.8); } 
+.border-blue-light { border: 1px solid rgba(219, 234, 254, 1); }
+.bg-amber-50 { background-color: rgba(255, 251, 235, 0.8); } 
+.border-amber-light { border: 1px solid rgba(254, 243, 199, 1); }
+
+.insight-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+/* Custom Inputs & Buttons */
+.custom-glass-input :deep(.q-field__control) {
+  background: rgba(248, 250, 252, 0.8); 
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  height: 40px;
+}
+.custom-glass-input :deep(.q-field__control:before) { border: 1px solid rgba(226, 232, 240, 0.8); }
+.custom-glass-input :deep(.q-field__control:hover) { background: #ffffff; }
+.custom-glass-input :deep(.q-field--focused .q-field__control) {
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.15); 
+  border-color: #B91C1C;
+}
+
+/* Clean Outline Buttons */
+.btn-glass-outline {
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  transition: all 0.2s ease;
+}
+.btn-glass-outline:hover {
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  transform: translateY(-2px);
+}
+
+/* Solid Action Button */
 .btn-premium {
   border-radius: 8px !important;
-  font-weight: 600;
+  font-weight: 700;
   box-shadow: 0 4px 12px rgba(185, 28, 28, 0.3);
   transition: all 0.2s ease;
 }
@@ -275,38 +426,70 @@ onMounted(() => {
   transform: translateY(-2px);
   box-shadow: 0 6px 15px rgba(185, 28, 28, 0.4);
 }
-.btn-3d-outline {
-  border-radius: 8px !important;
-  background: #ffffff !important;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  transition: all 0.2s ease;
+
+/* Utilities */
+.border-bottom { border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
+.panel-header {
+  background: rgba(248, 250, 252, 0.5);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px 16px 0 0;
 }
-.btn-3d-outline:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-  background: #F8FAFC !important;
-}
-.custom-glass-input :deep(.q-field__control) {
-  background: rgba(241, 245, 249, 0.6);
-  border-radius: 8px;
-}
-.border-bottom {
+
+/* Custom Premium Table Styling */
+:deep(.custom-premium-table thead tr th) {
+  background: rgba(248, 250, 252, 0.5); 
+  font-weight: 700;
+  color: #64748b; 
+  text-transform: uppercase; 
+  font-size: 11px; 
+  letter-spacing: 0.05em; 
+  padding: 16px 20px; 
   border-bottom: 1px solid rgba(226, 232, 240, 0.8);
 }
-.border-radius-8 {
-  border-radius: 8px;
-}
-:deep(.custom-premium-table thead tr th) {
-  background: rgba(248, 250, 252, 0.7); backdrop-filter: blur(8px); font-weight: 700;
-  color: #64748B; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; padding: 16px 20px; border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-}
 :deep(.custom-premium-table tbody td) {
-  padding: 16px 20px; border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+  padding: 16px 20px; 
+  border-bottom: 1px solid rgba(241, 245, 249, 1);
+  transition: all 0.2s ease;
+  color: #334155;
+  font-weight: 500;
 }
-.empty-state-glass {
-  background: rgba(248, 250, 252, 0.5);
-  border: 1px dashed #E2E8F0;
+:deep(.custom-premium-table tbody tr) {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+:deep(.custom-premium-table tbody tr:hover) {
+  background: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  transform: scale(1.002);
+  z-index: 5;
+  position: relative;
+}
+:deep(.custom-premium-table tbody tr:hover td) {
+  border-bottom-color: transparent;
+}
+
+.status-chip { 
+  border: 1px solid rgba(255,255,255,0.4); 
+  letter-spacing: 0.3px;
+}
+
+/* Dropdown styling */
+.premium-dropdown-list {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
   border-radius: 12px;
 }
+.hover-grey:hover { background: rgba(241, 245, 249, 0.8); }
+.hover-red:hover { background: rgba(254, 242, 242, 0.8); }
+
+/* Empty State Styling */
+.empty-state-glass {
+  background: rgba(248, 250, 252, 0.6);
+  border: 1px dashed rgba(203, 213, 225, 0.8);
+  border-radius: 12px;
+  margin: 16px;
+  width: calc(100% - 32px);
+  min-height: 300px;
+}
+.drop-shadow-icon { filter: drop-shadow(0 4px 6px rgba(15, 23, 42, 0.05)); }
 </style>

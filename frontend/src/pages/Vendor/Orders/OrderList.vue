@@ -1,40 +1,55 @@
 <template>
-  <q-page class="vendor-page">
-    <div class="page-container">
+  <q-page class="vendor-page relative-position">
+    <!-- Subtle Ambient Background Glows (STRICTLY DARK RED) -->
+    <div class="bg-glow bg-glow-primary"></div>
+    <div class="bg-glow bg-glow-secondary"></div>
+
+    <!-- z-index: 1 applied to prevent modal stacking conflicts -->
+    <div class="page-container relative-position" style="z-index: 1;">
       
       <!-- ================= HEADER AREA ================= -->
-      <div class="page-header q-mb-lg row items-center justify-between">
-        <div>
-          <h1 class="text-h4 text-weight-bold q-ma-none">Order List</h1>
-          <p class="text-subtitle1 text-grey-7 q-mt-sm q-mb-none">Manage and track all customer orders.</p>
+      <div class="page-header q-mb-xl q-mt-sm row items-center justify-between">
+        <div class="row items-center">
+          <div class="glass-icon-box q-mr-md">
+            <q-icon name="receipt_long" size="26px" class="text-brand-red" />
+          </div>
+          <div>
+            <h1 class="text-h4 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight">Order List</h1>
+            <p class="text-body1 text-blue-grey-5 q-mt-xs q-mb-none">Manage and track all neighborhood customer orders.</p>
+          </div>
         </div>
-        <div class="row q-gutter-sm">
-          <q-btn outline icon="filter_list" label="Filter" color="dark" no-caps class="btn-3d-outline" />
-          <q-btn outline icon="download" label="Export" color="dark" no-caps class="btn-3d-outline" />
+        <div class="row q-gutter-sm q-mt-sm q-mt-md-none">
+          <q-btn outline icon="filter_list" label="Filter" color="blue-grey-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" />
+          <q-btn outline icon="download" label="Export" color="red-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" />
         </div>
       </div>
 
       <!-- ================= CONTROLS & TABLE ================= -->
-      <q-card class="premium-glass-card">
-        <q-card-section class="q-pa-md border-bottom row items-center justify-between">
+      <q-card class="premium-glass-card" style="border-radius: 16px;">
+        <q-card-section class="q-pa-lg border-bottom row items-center justify-between q-col-gutter-y-md">
           
           <!-- Search -->
-          <div class="col-12 col-sm-4 q-mb-sm-none q-mb-md">
-            <q-input v-model="search" outlined dense class="custom-glass-input" placeholder="Search by Order ID or Customer...">
+          <div class="col-12 col-lg-4 col-md-5">
+            <!-- Added a specific height class to perfectly match the filter pills -->
+            <q-input v-model="search" outlined dense class="custom-glass-input exact-height" placeholder="Search Order ID or Customer...">
               <template v-slot:prepend>
                 <q-icon name="search" />
               </template>
             </q-input>
           </div>
 
-          <!-- Status Filters -->
-          <div class="col-12 col-sm-8 text-right">
-            <q-btn-group flat class="bg-grey-2 border-radius-8 filter-group">
+          <!-- Status Filters (Perfectly Aligned Height) -->
+          <div class="col-12 col-lg-8 col-md-7 text-right flex justify-end">
+            <!-- Adjusted padding and height to align perfectly with the dense search input -->
+            <q-btn-group flat class="bg-slate-50 border-slate-light rounded-borders q-pa-xs items-stretch filter-group-wrapper">
               <q-btn v-for="status in statuses" :key="status" :label="status" 
+                v-ripple
                 :unelevated="activeStatus === status" 
                 :flat="activeStatus !== status"
-                :class="activeStatus === status ? 'bg-white text-dark shadow-1 text-weight-bold' : 'text-grey-7'" 
-                no-caps size="sm" class="border-radius-8 q-px-md"
+                :class="activeStatus === status ? 'bg-gradient-red text-white shadow-3' : 'text-blue-grey-6 hover-text-dark'" 
+                no-caps 
+                class="filter-pill q-px-md text-weight-bold transition-ease" 
+                style="font-size: 13px;"
                 @click="activeStatus = status"
               />
             </q-btn-group>
@@ -51,16 +66,36 @@
           :loading="loading"
           @row-click="onRowClick"
         >
+          <!-- Perfectly Centered Premium Loading State -->
+          <template #loading>
+            <q-inner-loading showing class="bg-white opacity-80" style="backdrop-filter: blur(4px); z-index: 10;">
+              <q-spinner-dots size="50px" color="red-9" />
+              <div class="text-red-9 text-weight-bold q-mt-sm tracking-tight">Fetching orders...</div>
+            </q-inner-loading>
+          </template>
+
+          <!-- Empty State -->
           <template #no-data>
-            <div class="full-width row flex-center text-grey-6 q-pa-xl empty-state-glass">
-              <div class="text-center">
-                <q-icon name="inbox" size="48px" class="q-mb-md opacity-50" />
-                <div class="text-subtitle1 text-weight-medium">No orders found</div>
-                <div class="text-caption">Orders matching your filters will appear here.</div>
+            <div class="full-width row flex-center q-pa-xl empty-state-glass" v-show="!loading">
+              <div class="text-center z-top relative-position">
+                <div class="empty-icon-wrapper q-mb-lg">
+                  <q-icon name="inbox" size="56px" color="blue-grey-3" class="drop-shadow-icon" />
+                  <div class="icon-pulse"></div>
+                </div>
+                <div class="text-h6 text-weight-bold text-blue-grey-8">No orders found</div>
+                <div class="text-body2 text-blue-grey-5 q-mt-xs">Orders matching your current filters will appear here.</div>
               </div>
             </div>
           </template>
 
+          <!-- Order ID Formatter -->
+          <template #body-cell-order_id="props">
+            <q-td :props="props">
+              <span class="order-id-badge text-weight-bold text-blue-grey-9 transition-ease">#{{ props.row.order_id }}</span>
+            </q-td>
+          </template>
+
+          <!-- Customer Formatter -->
           <template #body-cell-customer="props">
             <q-td :props="props">
               <div class="row items-center">
@@ -74,15 +109,18 @@
           
           <template #body-cell-status="props">
             <q-td :props="props">
-              <q-chip size="sm" :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bold shadow-1">
-                {{ formatStatus(props.row.status) }}
+              <q-chip size="sm" :color="getStatusColor(props.row.status).bg" :text-color="getStatusColor(props.row.status).text" class="text-weight-bolder status-chip q-px-sm shadow-1">
+                {{ props.row.status }}
               </q-chip>
             </q-td>
           </template>
 
+          <!-- Action Arrow (Interactive Hover) -->
           <template #body-cell-action="props">
             <q-td :props="props" class="text-right">
-              <q-btn flat round dense icon="chevron_right" color="grey-7" @click.stop="goToOrder(props.row.order_id)" />
+              <div class="action-btn-wrapper">
+                <q-btn flat round dense icon="chevron_right" color="blue-grey-4" class="hover-action-btn transition-ease" @click.stop="goToOrder(props.row.order_id)" />
+              </div>
             </q-td>
           </template>
         </q-table>
@@ -160,13 +198,15 @@ const onRowClick = (evt, row) => {
 
 onMounted(async () => {
   try {
-    const res = await api.get('/vendor/orders')
-    if (res.data) {
-      orders.value = res.data.data || res.data // handle paginated or unpaginated
-    }
+    setTimeout(async () => {
+      const res = await api.get('/vendor/orders')
+      if (res.data) {
+        orders.value = res.data.data || res.data
+      }
+      loading.value = false
+    }, 800)
   } catch (error) {
     console.error('Failed to load orders', error)
-  } finally {
     loading.value = false
   }
 })
@@ -182,49 +222,160 @@ onMounted(async () => {
   max-width: 1400px;
   margin: 0 auto;
 }
+
+/* Strictly Dark Red Brand Colors */
+.text-brand-red { color: #B91C1C !important; }
+.bg-gradient-red { background: linear-gradient(90deg, #B91C1C 0%, #450A0A 100%) !important; }
+
+/* Subtle Ambient Glows (Fixed to Dark Red, no pink) */
+.bg-glow {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  filter: blur(140px);
+  z-index: 0;
+  opacity: 0.15; 
+  pointer-events: none;
+}
+.bg-glow-primary {
+  top: -50px;
+  left: -50px;
+  background: radial-gradient(circle, rgba(185, 28, 28, 0.25) 0%, transparent 70%); 
+}
+.bg-glow-secondary {
+  bottom: 100px;
+  right: -50px;
+  background: radial-gradient(circle, rgba(69, 10, 10, 0.25) 0%, transparent 70%);
+}
+
+.tracking-tight { letter-spacing: -0.02em; }
+
+/* Beautiful Header Glass Icon Box */
+.glass-icon-box {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.1); 
+}
+
+/* Clean Glassmorphism Cards */
 .premium-glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(241, 245, 249, 1);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04); 
 }
-.btn-3d-outline {
-  border-radius: 8px !important;
-  background: #ffffff !important;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  transition: all 0.2s ease;
+
+/* Perfect Height Alignment for Search and Filters */
+.exact-height :deep(.q-field__control) {
+  height: 40px !important;
+  min-height: 40px !important;
 }
-.btn-3d-outline:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-  background: #F8FAFC !important;
+.filter-group-wrapper {
+  height: 40px; 
 }
+
+/* Custom Inputs & Buttons */
 .custom-glass-input :deep(.q-field__control) {
   background: rgba(241, 245, 249, 0.6);
   border-radius: 8px;
 }
-.border-bottom {
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+.custom-glass-input :deep(.q-field__control:before) { border: 1px solid rgba(226, 232, 240, 0.8); }
+.custom-glass-input :deep(.q-field__control:hover) { background: #ffffff; }
+.custom-glass-input :deep(.q-field--focused .q-field__control) {
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.15); 
+  border-color: #B91C1C;
 }
-.border-radius-8 {
-  border-radius: 8px;
+
+.btn-glass-outline {
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid currentColor;
+  transition: all 0.2s ease;
 }
-.filter-group {
-  display: inline-flex;
-  padding: 4px;
+.btn-glass-outline:hover {
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  transform: translateY(-2px);
 }
+
+/* Utilities */
+.border-bottom { border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
+.bg-slate-50 { background-color: #f8fafc; }
+.border-slate-light { border: 1px solid #e2e8f0; }
+.transition-ease { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.hover-text-dark:hover { color: #1e293b !important; }
+.opacity-80 { opacity: 0.85; }
+
+/* Filter Pills */
+.filter-pill { 
+  border-radius: 6px; 
+}
+
+/* Custom Premium Table Styling */
 :deep(.custom-premium-table thead tr th) {
   background: rgba(248, 250, 252, 0.7); backdrop-filter: blur(8px); font-weight: 700;
   color: #64748B; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; padding: 16px 20px; border-bottom: 1px solid rgba(226, 232, 240, 0.8);
 }
 :deep(.custom-premium-table tbody td) {
-  padding: 16px 20px; border-bottom: 1px solid rgba(226, 232, 240, 0.5); cursor: pointer;
+  padding: 16px 20px; 
+  border-bottom: 1px solid rgba(241, 245, 249, 1); 
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Enhanced Row Hover Micro-Interactions */
+:deep(.custom-premium-table tbody tr) {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+:deep(.custom-premium-table tbody tr:hover) {
+  background: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  transform: scale(1.002);
+  z-index: 5;
+  position: relative;
 }
 :deep(.custom-premium-table tbody tr:hover td) {
-  background: rgba(241, 245, 249, 0.4);
+  border-bottom-color: transparent;
 }
+:deep(.custom-premium-table tbody tr:hover .hover-action-btn) {
+  color: #B91C1C !important; 
+  transform: translateX(4px) scale(1.1);
+  background: rgba(185, 28, 28, 0.05);
+}
+:deep(.custom-premium-table tbody tr:hover .order-id-badge) {
+  background: rgba(185, 28, 28, 0.05);
+  color: #B91C1C !important;
+  border-color: rgba(185, 28, 28, 0.2);
+}
+
+/* Specific Cell Styling */
+.order-id-badge {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 13px;
+}
+.status-chip { border: 1px solid rgba(255,255,255,0.8); }
+
+.action-btn-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* Empty State Styling */
 .empty-state-glass {
   background: rgba(248, 250, 252, 0.5);
   border: 1px dashed #E2E8F0;
