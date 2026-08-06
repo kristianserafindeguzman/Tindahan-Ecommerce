@@ -54,6 +54,10 @@ const props = defineProps({
   aspectRatio: {
     type: Number,
     default: 1
+  },
+  initialImage: {
+    type: String,
+    default: null
   }
 })
 const emit = defineEmits(['update:modelValue', 'captured'])
@@ -62,8 +66,14 @@ const isOpen = ref(props.modelValue)
 watch(() => props.modelValue, (val) => {
   isOpen.value = val
   if (val) {
-    state.value = 'CHOOSING'
-    previewSrc.value = null
+    if (props.initialImage) {
+      state.value = 'CROPPING'
+      previewSrc.value = props.initialImage
+      initCropper()
+    } else {
+      state.value = 'CHOOSING'
+      previewSrc.value = null
+    }
   }
 })
 watch(isOpen, (val) => {

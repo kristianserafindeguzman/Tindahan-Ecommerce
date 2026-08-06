@@ -444,9 +444,11 @@ const chartOptions = ref({
 const fetchChartData = async () => {
   chartLoading.value = true
   try {
+    console.log("before api.get('/vendor/stats/chart')")
     const res = await api.get('/vendor/stats/chart', {
       params: { filter: activeRevenueFilter.value }
     })
+    console.log("after api.get('/vendor/stats/chart')")
     
     if (res.data) {
       chartSeries.value = [{
@@ -573,7 +575,9 @@ const initMap = async () => {
 onMounted(async () => {
   try {
     fetchChartData()
+    console.log("before api.get('/user')")
     const res = await api.get('/user')
+    console.log("after api.get('/user')")
     if (res.data && res.data.user) {
       const user = res.data.user
       userName.value = user.full_name ? user.full_name.split(' ')[0] : 'Vendor'
@@ -588,7 +592,9 @@ onMounted(async () => {
       }
     }
 
+    console.log("before api.get('/vendor/stats')")
     const statsRes = await api.get('/vendor/stats')
+    console.log("after api.get('/vendor/stats')")
     if (statsRes.data) {
       stats.value.placed_orders = statsRes.data.placed_orders || 0
       stats.value.preparing_orders = statsRes.data.preparing_orders || 0

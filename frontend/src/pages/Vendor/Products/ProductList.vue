@@ -106,11 +106,39 @@
                   <q-icon name="search" color="blue-grey-4" size="20px" />
                 </template>
               </q-input>
-              <q-btn outline icon="filter_list" label="Filter" color="blue-grey-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" />
+              <q-btn outline icon="filter_list" label="Filter" color="blue-grey-9" no-caps class="btn-glass-outline text-weight-bold q-px-md">
+                <q-menu class="q-pa-md" style="min-width: 250px;">
+                  <div class="text-subtitle2 text-weight-bold q-mb-sm">Filters</div>
+                  
+                  <div class="q-mb-md">
+                    <div class="text-caption text-grey-7 q-mb-xs">Category</div>
+                    <q-select v-model="filters.category" :options="[{label: 'All Categories', value: 'all'}, ...categoryOptions]" emit-value map-options dense outlined options-dense />
+                  </div>
+
+                  <div class="q-mb-md">
+                    <div class="text-caption text-grey-7 q-mb-xs">Stock Level</div>
+                    <q-select v-model="filters.stock" :options="[{label: 'All', value: 'all'}, {label: 'Low Stock (< 10)', value: 'low_stock'}]" emit-value map-options dense outlined options-dense />
+                  </div>
+
+                  <div class="q-mb-md">
+                    <div class="text-caption text-grey-7 q-mb-xs">Status</div>
+                    <q-select v-model="filters.status" :options="[{label: 'All', value: 'all'}, {label: 'Active', value: 'active'}, {label: 'Archived', value: 'archived'}]" emit-value map-options dense outlined options-dense />
+                  </div>
+
+                  <div class="q-mb-md">
+                    <div class="text-caption text-grey-7 q-mb-xs">Price</div>
+                    <q-select v-model="filters.priceSort" :options="[{label: 'Default', value: 'default'}, {label: 'Low to High', value: 'low_to_high'}, {label: 'High to Low', value: 'high_to_low'}]" emit-value map-options dense outlined options-dense />
+                  </div>
+
+                  <div class="row justify-end q-mt-md">
+                    <q-btn flat label="Clear Filters" color="negative" size="sm" @click="resetFilters" v-close-popup />
+                  </div>
+                </q-menu>
+              </q-btn>
             </div>
 
             <div class="row q-gutter-md col-12 col-sm-auto">
-              <q-btn outline icon="download" label="Export" color="red-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" />
+              <q-btn outline icon="download" label="Export" color="red-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" @click="openExportWizard" />
               <q-btn unelevated icon="add" label="Add Product" color="red-9" no-caps class="btn-premium text-white text-weight-bold q-px-md" @click="showAddModal = true" />
             </div>
           </div>
@@ -175,27 +203,97 @@
 
     </div>
 
+
+
     <!-- Modals -->
     <AddProductModal v-model="showAddModal" @refresh="fetchProducts" />
     <ProductDetailsModal v-model="showDetailsModal" :product="selectedProduct" @refresh="fetchProducts" />
+
+    <!-- Export Wizard Modal -->
+    <q-dialog v-model="showExportModal" persistent transition-show="scale" transition-hide="scale">
+      <q-card style="width: 500px; max-width: 90vw; border-radius: 16px;" class="premium-glass-card">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6 text-weight-bold text-dark">Export Inventory</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup color="grey-6" />
+        </q-card-section>
+
+        <q-card-section class="q-pt-md">
+          <!-- Step 1: Format Selection -->
+          <div v-if="exportStep === 1">
+            <p class="text-body2 text-grey-8 q-mb-md">Choose your preferred export format for the inventory report.</p>
+            
+            <div class="row q-col-gutter-md">
+              <div class="col-6">
+                <q-card class="cursor-pointer format-card text-center q-pa-md" :class="exportFormat === 'pdf' ? 'bg-red-50 border-red' : 'bg-grey-1'" @click="exportFormat = 'pdf'" flat bordered>
+                  <q-icon name="picture_as_pdf" size="40px" :color="exportFormat === 'pdf' ? 'red-9' : 'grey-5'" class="q-mb-sm" />
+                  <div class="text-weight-bold" :class="exportFormat === 'pdf' ? 'text-red-9' : 'text-grey-7'">PDF Document</div>
+                  <div class="text-caption text-grey-6 q-mt-xs">Professional A4 format</div>
+                </q-card>
+              </div>
+              <div class="col-6">
+                <q-card class="cursor-pointer format-card text-center q-pa-md" :class="exportFormat === 'image' ? 'bg-red-50 border-red' : 'bg-grey-1'" @click="exportFormat = 'image'" flat bordered>
+                  <q-icon name="image" size="40px" :color="exportFormat === 'image' ? 'red-9' : 'grey-5'" class="q-mb-sm" />
+                  <div class="text-weight-bold" :class="exportFormat === 'image' ? 'text-red-9' : 'text-grey-7'">Image Snapshot</div>
+                  <div class="text-caption text-grey-6 q-mt-xs">Quick shareable image</div>
+                </q-card>
+              </div>
+            </div>
+
+            <div class="row justify-end q-mt-lg">
+              <q-btn unelevated label="Next" color="red-9" class="q-px-xl text-weight-bold" no-caps @click="proceedToPreview(exportFormat)" />
+            </div>
+          </div>
+
+          <!-- Step 2: Preview -->
+          <div v-else-if="exportStep === 2">
+            <q-banner rounded class="bg-blue-grey-1 q-mb-md" style="border: 1px solid #cbd5e1;">
+              <template v-slot:avatar>
+                <q-icon name="info" color="blue-grey-6" />
+              </template>
+              <div class="text-weight-medium text-dark">Ready to Generate</div>
+              <div class="text-caption text-grey-7">
+                Format: <strong>{{ exportFormat.toUpperCase() }}</strong><br>
+                Total Items: <strong>{{ filteredProducts.length }}</strong>
+              </div>
+            </q-banner>
+
+            <div class="row justify-end q-mt-lg q-gutter-sm">
+              <q-btn flat label="Back" color="grey-7" no-caps @click="exportStep = 1" :disable="isExporting" />
+              <q-btn unelevated label="Confirm & Download" color="red-9" class="q-px-md text-weight-bold" no-caps :loading="isExporting" @click="executeFinalExport" />
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
 
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive, nextTick } from 'vue'
+import html2canvas from 'html2canvas'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
+import { useAuth } from '@/composables/useAuth'
 import AddProductModal from '@/components/modals/AddProductModal.vue'
 import ProductDetailsModal from '@/components/modals/ProductDetailsModal.vue'
 
 const $q = useQuasar()
+const authStore = useAuth()
 const search = ref('')
 const loading = ref(true)
 const products = ref([])
 const showAddModal = ref(false)
 const showDetailsModal = ref(false)
 const selectedProduct = ref(null)
+
+const filters = reactive({
+  stock: 'all',
+  category: 'all',
+  status: 'all',
+  priceSort: 'default'
+})
 
 const mlInsights = ref({
   restockProduct: null,
@@ -221,9 +319,153 @@ const columns = [
 ]
 
 const filteredProducts = computed(() => {
-  if (!search.value) return products.value
-  const needle = search.value.toLowerCase()
-  return products.value.filter(p => p.product_name.toLowerCase().includes(needle))
+  let result = products.value
+
+  // Search
+  if (search.value) {
+    const needle = search.value.toLowerCase()
+    result = result.filter(p => p.product_name.toLowerCase().includes(needle))
+  }
+
+  // Stock
+  if (filters.stock === 'low_stock') {
+    result = result.filter(p => p.stock_quantity < 10)
+  }
+
+  // Category
+  if (filters.category !== 'all') {
+    result = result.filter(p => p.category_id === filters.category)
+  }
+
+  // Status
+  if (filters.status !== 'all') {
+    result = result.filter(p => p.status === filters.status)
+  }
+
+  // Price Sort
+  if (filters.priceSort === 'low_to_high') {
+    result = result.slice().sort((a, b) => (a.price || 0) - (b.price || 0))
+  } else if (filters.priceSort === 'high_to_low') {
+    result = result.slice().sort((a, b) => (b.price || 0) - (a.price || 0))
+  }
+
+  return result
+})
+
+const resetFilters = () => {
+  filters.stock = 'all'
+  filters.category = 'all'
+  filters.status = 'all'
+  filters.priceSort = 'default'
+}
+
+const isExporting = ref(false)
+const showExportModal = ref(false)
+const exportStep = ref(1) // 1: Select Format, 2: Preview
+const exportFormat = ref('pdf') // 'pdf' or 'image'
+const exportDom = ref(null)
+
+const openExportWizard = () => {
+    exportStep.value = 1
+    exportFormat.value = 'pdf'
+    showExportModal.value = true
+}
+
+const proceedToPreview = (format) => {
+    exportFormat.value = format
+    exportStep.value = 2
+}
+
+const executeFinalExport = async () => {
+    if (exportFormat.value === 'pdf') {
+        try {
+            isExporting.value = true
+            const response = await api.get('/vendor/inventory/export', { responseType: 'blob' })
+            const blob = new Blob([response.data], { type: 'application/pdf' })
+            const url = window.URL.createObjectURL(blob)
+            window.open(url, '_blank')
+            setTimeout(() => window.URL.revokeObjectURL(url), 1000)
+            showExportModal.value = false
+        } catch (error) {
+            console.error('PDF Export failed:', error)
+            $q.notify({ type: 'negative', message: 'Failed to generate PDF report' })
+        } finally {
+            isExporting.value = false
+        }
+    } else {
+        // Image Export via Backend HTML rendering
+        try {
+            isExporting.value = true
+            
+            // 1. Fetch the exact same HTML template used by the PDF
+            const response = await api.get('/vendor/inventory/export-html')
+            const htmlContent = response.data.html
+            
+            // 2. Create a temporary off-screen container
+            const container = document.createElement('div')
+            container.innerHTML = htmlContent
+            container.style.position = 'absolute'
+            container.style.left = '-9999px'
+            container.style.top = '0'
+            container.style.width = '800px'
+            container.style.padding = '40px' // Generous margin padding around the whole report
+            container.style.backgroundColor = '#ffffff'
+            container.style.boxSizing = 'border-box'
+            document.body.appendChild(container)
+            
+            await nextTick()
+            
+            // Wait for all images in the container to finish loading
+            const images = container.querySelectorAll('img')
+            const imagePromises = Array.from(images).map(img => {
+                return new Promise((resolve) => {
+                    if (img.complete) {
+                        resolve()
+                    } else {
+                        img.onload = resolve
+                        img.onerror = resolve
+                    }
+                })
+            })
+            await Promise.all([
+                ...imagePromises,
+                document.fonts ? document.fonts.ready : Promise.resolve()
+            ])
+            
+            // 3. Render canvas via html2canvas
+            const canvas = await html2canvas(container, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                logging: false
+            })
+            
+            // 4. Trigger download
+            const imageLink = document.createElement('a')
+            imageLink.download = `inventory-report-${Date.now()}.png`
+            imageLink.href = canvas.toDataURL('image/png')
+            imageLink.click()
+            
+            // 5. Cleanup DOM
+            document.body.removeChild(container)
+            showExportModal.value = false
+        } catch (error) {
+            console.error('Detailed Image Export Error:', error)
+            $q.notify({ type: 'negative', message: 'Failed to generate Image report' })
+        } finally {
+            isExporting.value = false
+        }
+    }
+}
+
+const categoryOptions = computed(() => {
+  const cats = new Map()
+  products.value.forEach(p => {
+    if (p.category) {
+      cats.set(p.category_id, p.category.category_name)
+    }
+  })
+  return Array.from(cats, ([value, label]) => ({ value, label }))
 })
 
 const getStatusColor = (status) => {
@@ -318,6 +560,19 @@ onMounted(() => {
 .leading-tight { line-height: 1.2; }
 .font-medium { font-weight: 500; }
 .z-top { z-index: 1; }
+
+/* Hidden Image Export Layout */
+.print-image-layout {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 800px;
+  background: white;
+  color: #1e293b;
+  padding: 40px;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  z-index: -1;
+}
 
 /* Beautiful Header Glass Icon Box */
 .glass-icon-box {

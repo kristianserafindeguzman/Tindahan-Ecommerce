@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Inventory;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class VendorController extends Controller
 {
@@ -160,11 +161,146 @@ class VendorController extends Controller
             $storeUrl = asset('storage/' . $photoPath);
 
             return response()->json([
-                'message' => 'Store image uploaded successfully.',
-                'store_picture_url' => asset('storage/' . $photoPath)
+                'message' => 'Store image uploaded successfully',
+                'store_picture_url' => $store->store_picture_url
             ]);
         }
 
         return response()->json(['message' => 'No image uploaded.'], 400);
+    }
+
+    public function exportInventoryReport(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $store = $user->store;
+            
+            // Fetch products with category relationship
+            $products = \App\Models\Inventory::where('store_id', $store->store_id)->with('category')->get();
+            
+            // Compute image_url for each product (mirrors InventoryController::index)
+            $products->transform(function ($item) {
+                if ($item->product_picture) {
+                    $item->image_url = url('storage/' . $item->product_picture);
+                } else {
+                    $item->image_url = null;
+                }
+                return $item;
+            });
+            
+            // Calculate Summary
+            $summary = [
+                'total_products' => $products->count(),
+                'available_products' => $products->where('status', 'active')->count(),
+                'archived_products' => $products->where('status', 'archived')->count(),
+                'inventory_value' => $products->where('status', 'active')->sum(function($prod) {
+                    $stock = $prod->stock_quantity ?? $prod->quantity ?? $prod->stock ?? 0;
+                    return $prod->price * $stock;
+                })
+            ];
+            
+            // Generate Static Map URL (Base64 encoded to avoid remote fetching issues in both DomPDF and html2canvas)
+            $mapUrl = null;
+            if ($store->latitude && $store->longitude) {
+                $remoteUrl = "https://static-maps.yandex.ru/1.x/?ll={$store->longitude},{$store->latitude}&z=15&l=map&pt={$store->longitude},{$store->latitude},pm2rdm";
+                try {
+                    $opts = [
+                        "http" => [
+                            "method" => "GET",
+                            "header" => "User-Agent: Mozilla/5.0\r\n"
+                        ]
+                    ];
+                    $context = stream_context_create($opts);
+                    $mapData = file_get_contents($remoteUrl, false, $context);
+                    if ($mapData) {
+                        $mapUrl = 'data:image/png;base64,' . base64_encode($mapData);
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning("Could not fetch map image for PDF export: " . $e->getMessage());
+                }
+            }
+            
+            $pdf = Pdf::loadView('pdf.inventory-report', [
+                'store' => $store,
+                'owner' => $user,
+                'products' => $products,
+                'summary' => $summary,
+                'mapUrl' => $mapUrl,
+                'date' => now()->setTimezone('Asia/Manila')->format('F d, Y h:i A'),
+                'render_mode' => 'pdf'
+            ]);
+            
+            // Use A4 Portrait and Enable Remote Images
+            $pdf->setPaper('a4', 'portrait')
+                ->setOption(['isRemoteEnabled' => true]);
+            
+            return $pdf->stream('inventory-report.pdf');
+        } catch (\Exception $e) {
+            \Log::error('PDF Export Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function exportInventoryReportHtml(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $store = $user->store;
+            
+            // Fetch products with category relationship
+            $products = \App\Models\Inventory::where('store_id', $store->store_id)->with('category')->get();
+            
+            // Compute image_url for each product
+            $products->transform(function ($item) {
+                if ($item->product_picture) {
+                    $item->image_url = url('storage/' . $item->product_picture);
+                } else {
+                    $item->image_url = null;
+                }
+                return $item;
+            });
+            
+            // Calculate Summary
+            $summary = [
+                'total_products' => $products->count(),
+                'available_products' => $products->where('status', 'active')->count(),
+                'archived_products' => $products->where('status', 'archived')->count(),
+                'inventory_value' => $products->where('status', 'active')->sum(function($prod) {
+                    $stock = $prod->stock_quantity ?? $prod->quantity ?? $prod->stock ?? 0;
+                    return $prod->price * $stock;
+                })
+            ];
+            
+            // Generate Static Map URL (Base64 encoded to avoid remote fetching issues in both DomPDF and html2canvas)
+            $mapUrl = null;
+            if ($store->latitude && $store->longitude) {
+                $remoteUrl = "https://static-maps.yandex.ru/1.x/?ll={$store->longitude},{$store->latitude}&z=15&l=map&pt={$store->longitude},{$store->latitude},pm2rdm";
+                try {
+                    $opts = [
+                        "http" => [
+                            "method" => "GET",
+                            "header" => "User-Agent: Mozilla/5.0\r\n"
+                        ]
+                    ];
+                    $context = stream_context_create($opts);
+                    $mapData = file_get_contents($remoteUrl, false, $context);
+                    if ($mapData) {
+                        $mapUrl = 'data:image/png;base64,' . base64_encode($mapData);
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning("Could not fetch map image for HTML export: " . $e->getMessage());
+                }
+            }
+            
+            $date = now()->setTimezone('Asia/Manila')->format('F d, Y h:i A');
+            // In the PDF export we passed 'owner' => $user. I'll do the same to match the blade template.
+            $owner = $user;
+            $html = view('pdf.inventory-report', compact('store', 'owner', 'summary', 'products', 'mapUrl', 'date'))->with('render_mode', 'html')->render();
+
+            return response()->json(['html' => $html]);
+        } catch (\Exception $e) {
+            \Log::error('HTML Export Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate HTML: ' . $e->getMessage()], 500);
+        }
     }
 }

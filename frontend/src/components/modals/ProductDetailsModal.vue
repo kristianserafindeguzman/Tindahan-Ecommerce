@@ -30,6 +30,10 @@
                   dense
                   :rules="[val => !!val || 'Category is required']"
                 />
+                <div v-if="form.category_id" class="text-caption text-blue-grey-6 q-mt-xs">
+                    <q-icon name="info" class="q-mr-xs" />
+                    {{ selectedEditCategoryGuide }}
+                </div>
               </div>
 
               <div class="q-mb-md">
@@ -76,13 +80,17 @@
             <!-- Right Column: Image -->
             <div class="col-12 col-md-5">
               <div class="text-subtitle2 q-mb-xs">Product Image</div>
-              <div class="image-upload-box" @click="triggerFileInput">
+              <div class="image-upload-box" @click="showOptionMenu = true">
                 <img v-if="imagePreview" :src="imagePreview" class="preview-img" />
                 <div v-else class="text-center text-grey-6">
                   <q-icon name="cloud_upload" size="48px" />
                   <div>Click to update</div>
                 </div>
                 <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="handleImageUpload" />
+              </div>
+              <div v-if="imagePreview" class="row q-gutter-sm q-mt-sm justify-center">
+                <q-btn outline color="negative" icon="delete" label="Remove" @click="removeEditImage" />
+                <q-btn outline color="primary" icon="crop" label="Crop Photo" @click="openCropperForEdit" />
               </div>
             </div>
           </div>
@@ -95,12 +103,61 @@
       </q-card-section>
     </q-card>
   </q-dialog>
+
+  <!-- OPTION MENU MODAL -->
+  <q-dialog v-model="showOptionMenu">
+    <q-card style="width: 400px; max-width: 90vw; border-radius: 12px;" class="bg-white q-pa-sm">
+      <q-card-section class="row items-center q-pb-none">
+        <div class="text-h6 text-weight-bolder text-slate-700">Add Product Photo</div>
+        <q-space />
+        <q-btn icon="close" flat round dense v-close-popup />
+      </q-card-section>
+
+      <q-card-section class="q-pt-lg q-pb-lg">
+        <div class="row q-col-gutter-md flex-center">
+          <div class="col-12">
+            <q-btn unelevated icon="camera_alt" label="OPEN CAMERA" class="full-width text-weight-bold btn-save text-white" style="border-radius: 8px; padding: 12px;" @click="openCameraViewfinder" />
+          </div>
+          <div class="col-12 text-center text-weight-bold text-slate-400 q-py-sm">
+            OR
+          </div>
+          <div class="col-12">
+            <q-btn outline icon="cloud_upload" label="UPLOAD FROM DEVICE" class="full-width text-weight-bold btn-outline-dark" style="border-radius: 8px; padding: 12px; border-width: 2px;" @click="triggerDeviceUpload" />
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
+  </q-dialog>
+
+  <!-- CAMERA VIEWFINDER MODAL -->
+  <q-dialog v-model="showCameraLens" persistent @show="startCamera" @hide="stopCamera">
+    <q-card style="width: 650px; max-width: 95vw; border-radius: 12px;" class="bg-white overflow-hidden shadow-4">
+      <q-card-section class="row items-center q-px-lg q-py-md bg-slate-50 border-bottom-light">
+        <div class="text-subtitle1 text-weight-bolder text-slate-700">Take Product Photo</div>
+        <q-space />
+        <q-btn icon="close" flat round dense v-close-popup color="grey-7" class="hover-red" />
+      </q-card-section>
+
+      <q-card-section class="q-pa-lg flex flex-center bg-black">
+        <video ref="videoElement" autoplay playsinline class="camera-feed"></video>
+      </q-card-section>
+
+      <q-card-actions align="center" class="q-pa-md bg-white">
+        <q-btn unelevated icon="camera" label="CAPTURE PHOTO" class="btn-save text-white text-weight-bold" no-caps @click="capturePhoto" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <!-- CROPPER MODAL (ImageCaptureModal) -->
+  <ImageCaptureModal v-model="showCropper" :initialImage="imagePreview" :aspectRatio="1" @captured="handleEditImageCaptured" />
+
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
+import ImageCaptureModal from '@/components/modals/ImageCaptureModal.vue'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -132,6 +189,24 @@ const form = ref({
   stock_quantity: null,
   product_picture: null,
   variants: [{ size: '', price: null, quantity: null }]
+})
+
+const showOptionMenu = ref(false)
+const showCameraLens = ref(false)
+const showCropper = ref(false)
+const videoElement = ref(null)
+let stream = null
+
+const selectedEditCategoryGuide = computed(() => {
+  if (!form.value.category_id && !form.value.category) return 'Select a category to see its description.'
+  
+  const matchedCategory = categories.value.find(c => 
+    c.category_id === form.value.category_id || 
+    c.category_name === form.value.category || 
+    c.category_name === form.value.category?.label
+  )
+  
+  return matchedCategory?.description || 'No description available for this category.'
 })
 
 const populateForm = () => {
@@ -185,12 +260,70 @@ const handleImageUpload = (event) => {
   const file = event.target.files[0]
   if (file) {
     form.value.product_picture = file
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      imagePreview.value = e.target.result
-    }
-    reader.readAsDataURL(file)
+    imagePreview.value = URL.createObjectURL(file)
   }
+}
+
+const openCropperForEdit = () => {
+  showCropper.value = true
+}
+
+const removeEditImage = () => {
+  imagePreview.value = null
+  form.value.product_picture = null
+}
+
+const handleEditImageCaptured = ({ file, dataUrl }) => {
+  if (!file) return;
+  form.value.product_picture = file;
+  imagePreview.value = dataUrl || URL.createObjectURL(file);
+};
+
+const openCameraViewfinder = () => {
+  showOptionMenu.value = false
+  showCameraLens.value = true
+}
+
+const triggerDeviceUpload = () => {
+  showOptionMenu.value = false
+  if (fileInput.value) fileInput.value.click()
+}
+
+const startCamera = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    if (videoElement.value) {
+      videoElement.value.srcObject = stream
+    }
+  } catch (err) {
+    console.error("Camera access denied or unavailable", err)
+  }
+}
+
+const stopCamera = () => {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop())
+    stream = null
+  }
+}
+
+const capturePhoto = () => {
+  if (!videoElement.value) return
+  const canvas = document.createElement('canvas')
+  canvas.width = videoElement.value.videoWidth
+  canvas.height = videoElement.value.videoHeight
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(videoElement.value, 0, 0, canvas.width, canvas.height)
+  
+  const dataUrl = canvas.toDataURL('image/png')
+  canvas.toBlob((blob) => {
+    const file = new File([blob], 'product_capture.png', { type: 'image/png' })
+    form.value.product_picture = file
+    imagePreview.value = dataUrl
+    
+    stopCamera()
+    showCameraLens.value = false
+  }, 'image/png')
 }
 
 const submitForm = async () => {
@@ -267,5 +400,18 @@ const submitForm = async () => {
   border-radius: 8px;
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(185, 28, 28, 0.3);
+}
+.btn-save {
+  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+}
+.btn-outline-dark {
+  color: #334155;
+  border-color: #cbd5e1;
+}
+.camera-feed {
+  width: 100%;
+  max-width: 600px;
+  border-radius: 8px;
+  background-color: #000;
 }
 </style>

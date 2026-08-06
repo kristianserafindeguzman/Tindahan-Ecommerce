@@ -35,7 +35,10 @@ Route::post('/forgot-password/reset', [AuthController::class, 'resetPassword']);
 // ----- Authenticated Routes (Sanctum token required) -----
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/user', function (\Illuminate\Http\Request $request) {
+        \Log::info('API USER route hit');
+        return app(\App\Http\Controllers\AuthController::class)->user($request);
+    });
     // ----- Global Category Routes -----
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::patch('/categories/{id}', [CategoryController::class, 'update']);
@@ -69,6 +72,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/products/categories', [InventoryController::class, 'categories']);
         Route::get('/stats', [\App\Http\Controllers\VendorController::class, 'stats']);
         Route::get('/stats/chart', [\App\Http\Controllers\VendorController::class, 'chartStats']);
+        Route::get('/inventory/export', [\App\Http\Controllers\VendorController::class, 'exportInventoryReport']);
+        Route::get('/inventory/export-html', [\App\Http\Controllers\VendorController::class, 'exportInventoryReportHtml']);
         Route::get('/profile', [\App\Http\Controllers\VendorController::class, 'profile']);
         Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'updatePersonalInfo']);
         Route::put('/profile/hours', [\App\Http\Controllers\ProfileController::class, 'updateStoreHours']);
