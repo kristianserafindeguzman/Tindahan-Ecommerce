@@ -25,6 +25,10 @@
               <div class="q-mb-lg">
                 <div class="input-label q-mb-xs">Category</div>
                 <q-select v-model="form.category_id" :options="categories" option-value="category_id" option-label="category_name" emit-value map-options outlined dense :rules="[val => !!val || 'Category is required']" hide-bottom-space class="custom-input" placeholder="Select a category" />
+                <div v-if="form.category_id" class="text-caption text-blue-grey-6 q-mt-sm">
+                    <q-icon name="info" class="q-mr-xs" />
+                    {{ selectedAddCategoryGuide }}
+                </div>
               </div>
 
               <div class="q-mb-md q-mt-md">
@@ -66,21 +70,21 @@
 
             <!-- RIGHT COLUMN: IMAGE UPLOAD ZONE -->
             <div class="col-12 col-md-5 flex column">
-              <div class="row justify-between items-end q-mb-xs">
-                <div class="input-label">Product Image</div>
-                <div v-if="imagePreview" class="text-caption text-brand-red cursor-pointer hover-underline text-weight-bold" @click="removePhoto">
-                  Remove Photo
-                </div>
-              </div>
+              <div class="input-label q-mb-xs">Product Image</div>
               
               <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="onFileSelected" />
 
-              <div class="image-upload-box flex-1 relative-position">
-                <div v-if="imagePreview" class="full-width full-height relative-position">
-                  <img :src="imagePreview" class="preview-img" />
+              <div v-if="imagePreview" class="q-mb-md">
+                <q-img :src="imagePreview" ratio="1" class="rounded-borders shadow-2" />
+                <div class="row q-gutter-sm q-mt-sm justify-center">
+                  <q-btn outline color="negative" icon="delete" label="Remove" @click="removePhoto" />
+                  <q-btn outline color="primary" icon="crop" label="Crop Photo" @click="openCropperForAdd" />
                 </div>
+              </div>
+
+              <div v-else class="image-upload-box flex-1 relative-position">
                 <!-- Ito ang mag-tritrigger sa pagpili kung Camera o Browse -->
-                <div v-else class="flex column flex-center full-height w-full q-pa-lg text-center cursor-pointer hover-bg-light" @click="showOptionMenu = true">
+                <div class="flex column flex-center full-height w-full q-pa-lg text-center cursor-pointer hover-bg-light" @click="showOptionMenu = true">
                   <q-icon name="cloud_upload" size="64px" color="blue-grey-3" class="q-mb-sm opacity-80" />
                   <div class="text-subtitle1 text-weight-bolder text-slate-700">Upload Product Image</div>
                   <div class="text-caption text-slate-500">Click to add a photo</div>
@@ -147,12 +151,16 @@
     </q-card>
   </q-dialog>
 
+  <!-- CROPPER MODAL -->
+  <ImageCaptureModal v-model="showCropper" :initialImage="imagePreview" :aspectRatio="1" @captured="handleAddImageCaptured" />
+
 </template>
 
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
+import ImageCaptureModal from '@/components/modals/ImageCaptureModal.vue'
 
 // Modal Controllers
 const props = defineProps({ modelValue: Boolean })
@@ -167,6 +175,7 @@ watch(isOpen, (val) => emit('update:modelValue', val))
 // State ng magkasunod na pop-ups (Option tapos Camera)
 const showOptionMenu = ref(false)
 const showCameraLens = ref(false)
+const showCropper = ref(false)
 
 // Form Variables
 const categories = ref([])
@@ -176,6 +185,18 @@ const imagePreview = ref(null)
 const fileInput = ref(null)
 const videoElement = ref(null)
 let stream = null
+
+const selectedAddCategoryGuide = computed(() => {
+  if (!form.value.category_id && !form.value.category) return 'Select a category to see its description.'
+  
+  const matchedCategory = categories.value.find(c => 
+    c.category_id === form.value.category_id || 
+    c.category_name === form.value.category || 
+    c.category_name === form.value.category?.label
+  )
+  
+  return matchedCategory?.description || 'No description available for this category.'
+})
 
 const form = ref({
   product_name: '',
@@ -251,6 +272,16 @@ const removePhoto = () => {
   form.value.product_picture = null
   imagePreview.value = null
   if (fileInput.value) fileInput.value.value = ''
+}
+
+const openCropperForAdd = () => {
+  showCropper.value = true
+}
+
+const handleAddImageCaptured = ({ file, dataUrl }) => {
+  if (!file) return;
+  form.value.product_picture = file;
+  imagePreview.value = dataUrl || URL.createObjectURL(file);
 }
 
 // === FORM API FUNCTIONS === //

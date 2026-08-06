@@ -177,7 +177,24 @@
                   </q-input>
                   
                   <div class="q-mb-md">
-                    <div id="vendor-profile-map" class="rounded-borders shadow-1" style="height: 250px; width: 100%; z-index: 1;"></div>
+                    <!-- Show Map if coordinates exist -->
+                    <div 
+                      v-if="addressForm.latitude && addressForm.longitude"
+                      id="vendor-profile-map" 
+                      class="rounded-borders shadow-1" 
+                      style="height: 250px; width: 100%; z-index: 1;"
+                    ></div>
+                    
+                    <!-- Show Empty State if coordinates are null -->
+                    <div 
+                      v-else
+                      class="bg-grey-3 rounded-borders flex flex-center shadow-1 full-width column" 
+                      style="height: 250px; border: 1px dashed #94a3b8;"
+                    >
+                      <q-icon name="location_off" size="48px" color="blue-grey-4" class="q-mb-sm" />
+                      <div class="text-weight-bold text-blue-grey-7">No Location Detected</div>
+                      <div class="text-caption text-blue-grey-5">Click the button below to detect and set your store coordinates.</div>
+                    </div>
                   </div>
                   <div class="row justify-end q-mt-sm">
                     <q-btn outline color="secondary" icon="my_location" label="Detect Current Location" @click="detectLocation" :loading="isDetectingLocation" />
@@ -541,8 +558,16 @@ const marker = ref(null)
 const isDetectingLocation = ref(false)
 
 const initMap = () => {
-  const lat = addressForm.latitude || 14.5995
-  const lng = addressForm.longitude || 120.9842
+  if (!addressForm.latitude || !addressForm.longitude) {
+    if (map.value) {
+      map.value.remove()
+      map.value = null
+    }
+    return
+  }
+
+  const lat = addressForm.latitude
+  const lng = addressForm.longitude
   
   if (map.value) {
     map.value.remove()
@@ -579,10 +604,14 @@ const detectLocation = () => {
       addressForm.latitude = position.coords.latitude
       addressForm.longitude = position.coords.longitude
       
-      if (map.value && marker.value) {
-        map.value.setView([addressForm.latitude, addressForm.longitude], 15)
-        marker.value.setLatLng([addressForm.latitude, addressForm.longitude])
-      }
+      nextTick(() => {
+        if (map.value && marker.value) {
+          map.value.setView([addressForm.latitude, addressForm.longitude], 15)
+          marker.value.setLatLng([addressForm.latitude, addressForm.longitude])
+        } else {
+          initMap()
+        }
+      })
       
       $q.notify({ type: 'positive', message: 'Location detected successfully.', color: 'green' })
       isDetectingLocation.value = false

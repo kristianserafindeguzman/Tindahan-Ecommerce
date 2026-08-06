@@ -501,9 +501,10 @@ class AuthController extends Controller
         $rejectionReason = null;
         $rejectedBy = null;
 
-        if ($user->role === 'Vendor' && $user->store) {
-            $approval = $user->store->approvalStatus;
-            if ($approval) {
+        if ($user->role === 'Vendor') {
+            $store = $user->store;
+            if ($store) {
+                $approval = $store->approvalStatus;
                 $vendorStatus = $approval->status;
                 $rejectionReason = $approval->rejection_reason;
                 
