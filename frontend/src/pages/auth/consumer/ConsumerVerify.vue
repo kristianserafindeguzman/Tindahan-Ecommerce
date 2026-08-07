@@ -24,7 +24,7 @@
 
           <p class="subtitle">
             We've sent a 6-digit verification code via SMS to
-            <strong>{{ displayPhone }}</strong>.
+            <strong>{{ displayPhone }}</strong>. Enter the code below to continue.
           </p>
 
           <!-- OTP INPUT BOXES -->
@@ -57,6 +57,7 @@
             unelevated
             class="login-button full-width"
             :loading="loading"
+            :disable="!otpComplete"
             @click="verifyOtp"
           />
 
@@ -113,12 +114,11 @@ import { api } from '@/boot/axios'
 const router = useRouter()
 const route = useRoute()
 
-// The phone number passed from consumer registration, masked for privacy
+// Phone number passed from consumer registration, masked for privacy.
 const displayPhone = computed(() => {
   const phone = history.state?.phone_number
   if (!phone) return 'your mobile number'
   if (phone.length >= 10) {
-    // e.g. 0917***4567
     return phone.slice(0, 4) + '***' + phone.slice(-4)
   }
   return phone
@@ -129,6 +129,8 @@ const otp = ref(['', '', '', '', '', ''])
 const otpRefs = ref([])
 const otpError = ref('')
 const loading = ref(false)
+
+const otpComplete = computed(() => otp.value.every(digit => digit !== ''))
 
 // Legal modals
 const showTerms = ref(false)
@@ -160,7 +162,6 @@ const startTimer = () => {
 onMounted(() => {
   startTimer()
 
-  // Auto-focus the first OTP box
   if (otpRefs.value[0]) {
     otpRefs.value[0].focus()
   }
@@ -174,16 +175,13 @@ onUnmounted(() => {
 const handleOtpInput = (index) => {
   const val = otp.value[index]
 
-  // Only allow digits
   if (val && !/^\d$/.test(val)) {
     otp.value[index] = ''
     return
   }
 
-  // Clear error on new input
   otpError.value = ''
 
-  // Auto-advance to next box
   if (val && index < 5) {
     otpRefs.value[index + 1]?.focus()
   }
@@ -206,19 +204,15 @@ const handleOtpPaste = (event) => {
     otp.value[i] = pasted[i] || ''
   }
 
-  // Focus the last filled box
   const lastIndex = Math.min(pasted.length, 5)
   otpRefs.value[lastIndex]?.focus()
 
   otpError.value = ''
 }
 
-// Real OTP verification
 const verifyOtp = async () => {
-  // Join the 6 separate digits into a single string
   const finalOtp = otp.value.join('')
-    
-  // Retrieve phone and type from router history state
+
   const phoneNum = history.state?.phone_number
   const verificationType = history.state?.type || 'registration'
 
@@ -241,13 +235,11 @@ const verifyOtp = async () => {
       code: finalOtp,
       type: verificationType
     })
-    
-    // Success — go to the full-page success screen
+
     router.push('/consumer/success')
   } catch (error) {
     console.error('OTP Verification Error:', error)
-    otpError.value = error.response?.data?.message || 'An unexpected error occurred'
-    // Clear the OTP boxes appropriately
+    otpError.value = error.response?.data?.message || 'The verification code you entered is incorrect.'
     otp.value = ['', '', '', '', '', '']
     otpRefs.value[0]?.focus()
   } finally {
@@ -282,9 +274,7 @@ const resendCode = async () => {
 </script>
 
 <style scoped>
-/* =========================
-   PAGE
-========================= */
+/* PAGE */
 
 .login-page {
   min-height: 100vh;
@@ -308,9 +298,7 @@ const resendCode = async () => {
   font-family: 'Roboto', Arial, sans-serif;
 }
 
-/* =========================
-   LOGIN CARD (layout row, no visual chrome of its own)
-========================= */
+/* LOGIN CARD (layout row, no visual chrome of its own) */
 
 .login-card {
   width: 100%;
@@ -333,9 +321,7 @@ const resendCode = async () => {
   overflow: visible;
 }
 
-/* =========================
-   LEFT BRANDING PANEL
-========================= */
+/* LEFT BRANDING PANEL */
 
 .branding-panel {
   flex: 0 0 auto;
@@ -364,9 +350,7 @@ const resendCode = async () => {
   display: none;
 }
 
-/* =========================
-   RIGHT VERIFY PANEL
-========================= */
+/* RIGHT VERIFY PANEL */
 
 .login-panel {
   width: 420px;
@@ -379,7 +363,7 @@ const resendCode = async () => {
   align-items: center;
   justify-content: center;
 
-  padding: 45px 45px;
+  padding: 24px;
 
   background: #ffffff;
   border-radius: 4px;
@@ -393,12 +377,10 @@ const resendCode = async () => {
   max-width: 390px;
 }
 
-/* =========================
-   HEADING
-========================= */
+/* HEADING */
 
 .login-content h1 {
-  margin: 0 0 6px;
+  margin: 0 0 14px;
 
   font-size: 27px;
   line-height: 1.2;
@@ -417,12 +399,12 @@ const resendCode = async () => {
 }
 
 .subtitle strong {
+  font-weight: 600;
+
   color: #333333;
 }
 
-/* =========================
-   OTP BOXES
-========================= */
+/* OTP BOXES */
 
 .otp-row {
   display: flex;
@@ -435,9 +417,10 @@ const resendCode = async () => {
 
 .otp-box {
   width: 48px;
-  height: 52px;
+  height: 48px;
+  padding: 0;
 
-  border: 1.5px solid #d6d6da;
+  border: 1px solid #d6d6da;
   border-radius: 8px;
 
   background: #ffffff;
@@ -445,6 +428,7 @@ const resendCode = async () => {
   font-family: 'Roboto', Arial, sans-serif;
   font-size: 20px;
   font-weight: 600;
+  line-height: 1;
 
   text-align: center;
 
@@ -452,22 +436,20 @@ const resendCode = async () => {
 
   outline: none;
 
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .otp-box:focus {
   border-color: #bd2427;
 
-  box-shadow: 0 0 0 2px rgba(189, 36, 39, 0.12);
+  box-shadow: 0 0 0 1px rgba(189, 36, 39, 0.1);
 }
 
 .otp-box.otp-error {
   border-color: #ef4444;
 }
 
-/* =========================
-   ERROR MESSAGE
-========================= */
+/* ERROR MESSAGE */
 
 .error-message {
   margin-bottom: 14px;
@@ -486,9 +468,7 @@ const resendCode = async () => {
   text-align: center;
 }
 
-/* =========================
-   VERIFY BUTTON
-========================= */
+/* VERIFY BUTTON */
 
 .login-button {
   height: 48px;
@@ -502,18 +482,43 @@ const resendCode = async () => {
 
   font-size: 13px;
   font-weight: 500;
+
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
 .login-button:hover {
   background: #a91e21;
+
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+
+  transform: translateY(-1px);
 }
 
-/* =========================
-   RESEND
-========================= */
+.login-button:active {
+  background: #8f1a1c;
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.login-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+.login-button:disabled,
+.login-button.disabled {
+  background: #bd2427;
+  opacity: 0.45;
+}
+
+/* RESEND */
 
 .resend-section {
-  margin-top: 18px;
+  margin-top: 16px;
 
   display: flex;
   align-items: center;
@@ -557,24 +562,22 @@ const resendCode = async () => {
   cursor: default;
 }
 
-/* =========================
-   SEPARATOR
-========================= */
+/* SEPARATOR */
 
 .separator {
-  margin: 28px 0 18px;
+  margin: 16px 0;
+
+  background: #eeeeee;
 }
 
-/* =========================
-   TERMS
-========================= */
+/* TERMS */
 
 .terms {
   margin: 0;
 
   text-align: center;
 
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1.5;
 
   color: #8e97a6;
@@ -586,9 +589,7 @@ const resendCode = async () => {
   text-decoration: underline;
 }
 
-/* =========================
-   TABLET
-========================= */
+/* TABLET */
 
 @media (max-width: 768px) {
   .login-card {
@@ -602,7 +603,7 @@ const resendCode = async () => {
   .login-panel {
     width: 380px;
 
-    padding: 40px 35px;
+    padding: 32px 24px;
   }
 
   .tindahan-logo {
@@ -610,9 +611,7 @@ const resendCode = async () => {
   }
 }
 
-/* =========================
-   MOBILE
-========================= */
+/* MOBILE */
 
 @media (max-width: 600px) {
   .login-page {
@@ -668,7 +667,7 @@ const resendCode = async () => {
     max-width: 100%;
     flex: none;
 
-    padding: 20px 24px 32px;
+    padding: 20px 16px 24px;
 
     background: #ffffff;
     border-radius: 0;
@@ -687,9 +686,14 @@ const resendCode = async () => {
     margin-bottom: 22px;
   }
 
+  /* Still square, just scaled down so all six fit within 16px screen margins on narrow phones. */
+  .otp-row {
+    gap: 8px;
+  }
+
   .otp-box {
-    width: 42px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
 
     font-size: 18px;
   }
