@@ -21,78 +21,67 @@
       </SectionBlock>
 
       <!-- RECOMMENDED / POPULAR PRODUCTS -->
-      <SectionBlock :title="resultsSectionTitle" view-all>
+      <SectionBlock :title="resultsSectionTitle" view-all @view-all="router.push('/consumer/personalize')">
         <div class="products-grid">
           <ProductCard v-for="product in MOCK_PRODUCTS" :key="product.id" :product="product" />
         </div>
       </SectionBlock>
 
       <!-- STORES NEAR YOU -->
-      <SectionBlock title="Stores near You" view-all>
+      <SectionBlock title="Stores near You" view-all @view-all="router.push('/consumer/stores')">
         <div class="stores-row">
           <StoreCard v-for="store in MOCK_STORES" :key="store.id" :store="store" />
         </div>
       </SectionBlock>
 
       <!-- DISCOVER PRODUCTS -->
-      <SectionBlock title="Discover Products" view-all>
+      <SectionBlock title="Discover Products" view-all @view-all="router.push('/consumer/products')">
         <div class="products-grid">
-          <ProductCard v-for="product in MOCK_DISCOVER_PRODUCTS" :key="product.id" :product="product" />
+          <ProductCard v-for="product in visibleDiscoverProducts" :key="product.id" :product="product" />
         </div>
 
-        <q-btn flat no-caps label="See More" class="see-more-btn" />
+        <q-btn
+          v-if="visibleDiscoverProducts.length < MOCK_DISCOVER_PRODUCTS.length"
+          flat
+          no-caps
+          label="See More"
+          class="see-more-btn"
+          @click="discoverVisibleCount += DISCOVER_PAGE_SIZE"
+        />
       </SectionBlock>
 
     </div>
+
+    <SiteFooter />
 
   </q-page>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
+import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import SectionBlock from '@/components/consumer/SectionBlock.vue'
 import CategoryCarousel from '@/components/consumer/CategoryCarousel.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import StoreCard from '@/components/consumer/StoreCard.vue'
 import { useCategories } from '@/composables/useCategories'
 
-// ==========================================================
-// AUTH STATE — this page renders for both guests and logged-in
-// consumers, so SiteHeader reads localStorage directly rather than
-// this page being route-guarded (see routes.js — this route no
-// longer requires auth).
-// ==========================================================
+const router = useRouter()
 
+// This page renders for guests and logged-in consumers alike, so SiteHeader reads localStorage directly instead of route-guarding.
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
-// ==========================================================
-// ADDRESS — placeholder until real geolocation/address selection
-// is wired up. Matches the address shown in the reference screenshots.
-// ==========================================================
-
+// Placeholder until real geolocation/address selection is wired up.
 const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
-
-// ==========================================================
-// CATEGORIES — fetched from /categories (backed by the real
-// `categories` table). See useCategories.js for the icon mapping.
-// ==========================================================
 
 const { categories, fetchCategories } = useCategories()
 
 onMounted(fetchCategories)
 
-// ==========================================================
-// MOCK DATA — replace with real /products and /stores endpoints
-// once they exist.
-// ==========================================================
-// PERSONALIZATION — real personalization needs backend data that
-// doesn't exist yet (order history, browsing signals, etc). For now
-// both states pull from the same MOCK_PRODUCTS; only the section label
-// differs. Once a real recommendation endpoint exists, swap the
-// v-for source in the template based on isLoggedIn — this computed
-// is the one place that needs to change.
-// ==========================================================
+// Mock data — replace with real /products and /stores endpoints once they exist.
+// Both states pull from the same MOCK_PRODUCTS; only the label differs until a real recommendation endpoint exists.
 
 const resultsSectionTitle = computed(() =>
   isLoggedIn.value ? 'Recommended for You' : 'Popular Products Near You'
@@ -120,34 +109,58 @@ const MOCK_DISCOVER_PRODUCTS = [
   { id: 3, name: 'Safeguard Bar Soap 90g', price: 25, distance: '4 m', store: 'Sol A Sari Sari Store' },
   { id: 4, name: 'Nescafe 3-in-1 Original 20g', price: 9, distance: '4 m', store: 'Sol A Sari Sari Store' },
   { id: 5, name: 'Silver Swan Soy Sauce 385ml', price: 22, distance: '5 m', store: 'Leslie Store' },
-  { id: 6, name: 'Kopiko Brown Coffee 3-in-1 25g', price: 10, distance: '5 m', store: 'Leslie Store' }
+  { id: 6, name: 'Kopiko Brown Coffee 3-in-1 25g', price: 10, distance: '5 m', store: 'Leslie Store' },
+  { id: 7, name: 'Coca-Cola 1.5L', price: 75, distance: '2 m', store: 'Leslie Store' },
+  { id: 8, name: 'Del Monte Tuna 155g', price: 38, distance: '3 m', store: 'Leslie Store' },
+  { id: 9, name: 'Gardenia Bread', price: 46, distance: '4 m', store: "David's Sari-Sari Store" },
+  { id: 10, name: 'Alaska Evaporada 370ml', price: 25, distance: '2 m', store: 'Leslie Store' },
+  { id: 11, name: 'Jasmine Rice 1kg', price: 52, distance: '2 m', store: 'Leslie Store' },
+  { id: 12, name: 'Selecta Ice Cream 1.3L', price: 99, distance: '5 m', store: "David's Sari-Sari Store" },
+  { id: 13, name: 'Piattos Sour Cream & Onion', price: 15, distance: '5 m', store: 'Leslie Store' },
+  { id: 14, name: 'Lucky Me Pancit Canton Kalamansi 80g', price: 18, distance: '3 m', store: 'Jmzhai Sari Sari Store' },
+  { id: 15, name: 'Sanicare Bath Soap', price: 15, distance: '3 m', store: 'Jmzhai Sari Sari Store' },
+  { id: 16, name: 'Surf Powder Detergent', price: 65, distance: '4 m', store: 'Jmzhai Sari Sari Store' },
+  { id: 17, name: 'Kopiko Blanca Twin Pack', price: 22, distance: '5 m', store: "Sol A Sari Sari Store" },
+  { id: 18, name: 'Selecta Ice Cream 1.3L', price: 99, distance: '5 m', store: "Sol A Sari Sari Store" }
 ]
+
+// "See More" reveals additional products in place rather than navigating away — that's what "View All" is for.
+
+const DISCOVER_PAGE_SIZE = 6
+const discoverVisibleCount = ref(DISCOVER_PAGE_SIZE)
+
+const visibleDiscoverProducts = computed(() =>
+  MOCK_DISCOVER_PRODUCTS.slice(0, discoverVisibleCount.value)
+)
 </script>
 
 <style scoped>
+/* flex column so SiteFooter's margin-top:auto pins it to the viewport bottom on short pages. */
 .storefront-page {
   min-height: 100vh;
+
+  display: flex;
+  flex-direction: column;
 
   background: #ffffff;
 
   font-family: 'Roboto', Arial, sans-serif;
 }
 
-/* =========================
-   HOME CONTENT
-========================= */
+/* HOME CONTENT */
 
+/* width:100% needed: margin:0 auto on a flex item shrinks it to content width otherwise. */
 .home-content {
+  width: 100%;
   max-width: 1200px;
+  box-sizing: border-box;
 
   margin: 0 auto;
 
   padding: 24px;
 }
 
-/* =========================
-   HERO BANNER
-========================= */
+/* HERO BANNER */
 
 .hero-banner {
   display: flex;
@@ -176,9 +189,7 @@ const MOCK_DISCOVER_PRODUCTS = [
   object-fit: contain;
 }
 
-/* =========================
-   PRODUCTS GRID
-========================= */
+/* PRODUCTS GRID */
 
 .products-grid {
   display: grid;
@@ -192,13 +203,11 @@ const MOCK_DISCOVER_PRODUCTS = [
   margin-top: 16px;
   padding: 12px;
 
-  border: 1px solid #f0f0f0;
+  border: 1px solid #e2e2e2;
   border-radius: 8px;
 
   background: #ffffff;
   color: #bd2427;
-
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 
   font-size: 14px;
   font-weight: 600;
@@ -206,19 +215,15 @@ const MOCK_DISCOVER_PRODUCTS = [
 
   cursor: pointer;
 
-  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.2s;
+  transition: background-color 0.15s, border-color 0.15s;
 }
 
 .see-more-btn:hover {
   border-color: #f3c6c7;
   background: #fdecec;
-
-  box-shadow: 0 10px 24px rgba(189, 36, 39, 0.14);
 }
 
-/* =========================
-   STORES ROW
-========================= */
+/* STORES ROW */
 
 .stores-row {
   display: grid;
@@ -227,9 +232,7 @@ const MOCK_DISCOVER_PRODUCTS = [
   gap: 12px;
 }
 
-/* =========================
-   RESPONSIVE
-========================= */
+/* RESPONSIVE */
 
 @media (max-width: 900px) {
   .products-grid,

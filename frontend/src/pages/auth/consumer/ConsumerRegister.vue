@@ -39,12 +39,15 @@
                   v-model="form.firstName"
                   outlined
                   dense
+                  no-error-icon
+                  hide-bottom-space
                   label="First name"
                   class="login-input"
                   :rules="[
-                    val => !!val || 'First name is required',
-                    nameRule
+                    val => !firstNameTouched || !!val || 'First name is required.',
+                    val => !firstNameTouched || nameRule(val)
                   ]"
+                  @blur="firstNameTouched = true"
                 />
               </div>
 
@@ -53,12 +56,15 @@
                   v-model="form.lastName"
                   outlined
                   dense
+                  no-error-icon
+                  hide-bottom-space
                   label="Last name"
                   class="login-input"
                   :rules="[
-                    val => !!val || 'Last name is required',
-                    nameRule
+                    val => !lastNameTouched || !!val || 'Last name is required.',
+                    val => !lastNameTouched || nameRule(val)
                   ]"
+                  @blur="lastNameTouched = true"
                 />
               </div>
             </div>
@@ -69,13 +75,16 @@
                 v-model="form.email"
                 outlined
                 dense
+                no-error-icon
+                hide-bottom-space
                 type="email"
                 label="Email"
                 class="login-input"
                 :rules="[
-                  val => !!val || 'Email is required',
-                  emailRule
+                  val => !emailTouched || !!val || 'Email is required.',
+                  val => !emailTouched || emailRule(val)
                 ]"
+                @blur="emailTouched = true"
               />
             </div>
 
@@ -85,12 +94,15 @@
                 v-model="form.phoneNumber"
                 outlined
                 dense
+                no-error-icon
+                hide-bottom-space
                 label="Mobile number"
                 class="login-input"
                 :rules="[
-                  val => !!val || 'Mobile number is required',
-                  phoneRule
+                  val => !phoneTouched || !!val || 'Mobile number is required.',
+                  val => !phoneTouched || phoneRule(val)
                 ]"
+                @blur="phoneTouched = true"
               />
             </div>
 
@@ -100,13 +112,16 @@
                 v-model="form.password"
                 outlined
                 dense
+                no-error-icon
+                hide-bottom-space
                 :type="showPassword ? 'text' : 'password'"
                 label="Create Password"
                 class="login-input"
                 :rules="[
-                  val => !!val || 'Password is required',
-                  passwordRule
+                  val => !passwordTouched || !!val || 'Password is required.',
+                  val => !passwordTouched || passwordRule(val)
                 ]"
+                @blur="passwordTouched = true"
               >
                 <template #append>
                   <q-icon
@@ -126,13 +141,12 @@
                 v-model="form.confirmPassword"
                 outlined
                 dense
+                no-error-icon
+                hide-bottom-space
                 :type="showConfirmPassword ? 'text' : 'password'"
                 label="Confirm Password"
                 class="login-input"
-                :rules="[
-                  val => !!val || 'Please confirm your password',
-                  val => val === form.password || 'Passwords do not match'
-                ]"
+                :error="confirmPasswordMessage?.type === 'error'"
               >
                 <template #append>
                   <q-icon
@@ -144,6 +158,10 @@
                   />
                 </template>
               </q-input>
+              <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
+                <q-icon v-if="confirmPasswordMessage.type === 'success'" name="check_circle" size="12px" />
+                {{ confirmPasswordMessage.text }}
+              </div>
             </div>
 
             <!-- ERROR MESSAGE -->
@@ -159,6 +177,7 @@
               unelevated
               class="login-button full-width"
               :loading="loading"
+              :disable="!canRegister"
             />
 
           </q-form>
@@ -203,7 +222,7 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import TermsModal from '@/components/modals/TermsModal.vue'
@@ -231,17 +250,46 @@ const form = reactive({
 })
 
 const nameRule = val =>
-  /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || 'Only letters are allowed'
+  /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || 'Only letters are allowed.'
 
-const emailRule = val => /.+@.+\..+/.test(val) || 'Enter a valid email'
-const phoneRule = val => /^09\d{9}$/.test(val) || 'Phone must be exactly 11 digits starting with 09'
+const emailRule = val => /.+@.+\..+/.test(val) || 'Enter a valid email address.'
+const phoneRule = val => /^09\d{9}$/.test(val) || 'Mobile number must start with 09 and contain 11 digits.'
 const passwordRule = val => val.length >= 8 || 'Minimum 8 characters'
 
+// Gates each field's rules until touched, so rules stay silent on page load — same fix as the Login page's lazy-rules bug.
+const firstNameTouched = ref(false)
+const lastNameTouched = ref(false)
+const emailTouched = ref(false)
+const phoneTouched = ref(false)
+const passwordTouched = ref(false)
+
+// Confirm Password uses its own message (not Quasar's :rules) to show a positive "Passwords match" state, not just errors.
+const confirmPasswordMessage = computed(() => {
+  if (!form.confirmPassword) return null
+  if (form.confirmPassword !== form.password) return { type: 'error', text: 'Passwords do not match.' }
+  return { type: 'success', text: 'Passwords match.' }
+})
+
+const canRegister = computed(() =>
+  !!form.firstName && nameRule(form.firstName) === true &&
+  !!form.lastName && nameRule(form.lastName) === true &&
+  !!form.email && emailRule(form.email) === true &&
+  !!form.phoneNumber && phoneRule(form.phoneNumber) === true &&
+  !!form.password && passwordRule(form.password) === true &&
+  !!form.confirmPassword && form.confirmPassword === form.password
+)
 
 const handleRegister = async () => {
+  firstNameTouched.value = true
+  lastNameTouched.value = true
+  emailTouched.value = true
+  phoneTouched.value = true
+  passwordTouched.value = true
+
   const isValid = await registerForm.value.validate()
 
-  if (!isValid) {
+  // Confirm Password isn't part of the form's own :rules, so it needs its own guard here.
+  if (!isValid || !form.confirmPassword || form.confirmPassword !== form.password) {
     return
   }
 
@@ -288,9 +336,7 @@ const goToLogin = () => {
 </script>
 
 <style scoped>
-/* =========================
-   PAGE
-========================= */
+/* PAGE */
 
 .login-page {
   min-height: 100vh;
@@ -314,9 +360,7 @@ const goToLogin = () => {
   font-family: 'Roboto', Arial, sans-serif;
 }
 
-/* =========================
-   LOGIN CARD (layout row, no visual chrome of its own)
-========================= */
+/* LOGIN CARD (layout row, no visual chrome of its own) */
 
 .login-card {
   width: 100%;
@@ -339,9 +383,7 @@ const goToLogin = () => {
   overflow: visible;
 }
 
-/* =========================
-   LEFT BRANDING PANEL
-========================= */
+/* LEFT BRANDING PANEL */
 
 .branding-panel {
   flex: 0 0 auto;
@@ -370,9 +412,7 @@ const goToLogin = () => {
   display: none;
 }
 
-/* =========================
-   RIGHT REGISTER PANEL
-========================= */
+/* RIGHT REGISTER PANEL */
 
 .login-panel {
   width: 420px;
@@ -398,9 +438,7 @@ const goToLogin = () => {
   max-width: 390px;
 }
 
-/* =========================
-   HEADING
-========================= */
+/* HEADING */
 
 .login-content h1 {
   margin: 0 0 6px;
@@ -420,9 +458,7 @@ const goToLogin = () => {
   color: #8992a2;
 }
 
-/* =========================
-   FORM
-========================= */
+/* FORM */
 
 .login-form {
   width: 100%;
@@ -441,12 +477,33 @@ const goToLogin = () => {
 }
 
 .field-group {
-  margin-bottom: 4px;
+  margin-bottom: 16px;
 }
 
+/* hide-bottom-space removes this area entirely when there's no message, so padding only applies once one shows. */
 .login-input :deep(.q-field__bottom) {
-  padding-top: 4px;
-  padding-bottom: 10px;
+  padding-top: 6px;
+  padding-bottom: 0;
+}
+
+/* Confirm Password's message (error or success) — same look as Quasar's own :rules-driven messages. */
+.field-message {
+  margin-top: 6px;
+
+  font-size: 12px;
+  line-height: 1.4;
+
+  color: #dc2626;
+}
+
+.field-message-success {
+  display: flex;
+  align-items: center;
+
+  gap: 3px;
+
+  color: #16a34a;
+  font-weight: 600;
 }
 
 .login-input :deep(.q-field__messages) {
@@ -488,9 +545,7 @@ const goToLogin = () => {
   color: #777777;
 }
 
-/* =========================
-   ERROR MESSAGE
-========================= */
+/* ERROR MESSAGE */
 
 .error-message {
   margin-bottom: 14px;
@@ -507,9 +562,7 @@ const goToLogin = () => {
   color: #b91c1c;
 }
 
-/* =========================
-   REGISTER BUTTON
-========================= */
+/* REGISTER BUTTON */
 
 .login-button {
   height: 48px;
@@ -525,15 +578,40 @@ const goToLogin = () => {
 
   font-size: 13px;
   font-weight: 500;
+
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
 .login-button:hover {
   background: #a91e21;
+
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+
+  transform: translateY(-1px);
 }
 
-/* =========================
-   LOG IN LINK
-========================= */
+.login-button:active {
+  background: #8f1a1c;
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.login-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+.login-button:disabled,
+.login-button.disabled {
+  background: #bd2427;
+  opacity: 0.45;
+}
+
+/* LOG IN LINK */
 
 .register-section {
   margin-top: 17px;
@@ -570,17 +648,13 @@ const goToLogin = () => {
   text-decoration: underline;
 }
 
-/* =========================
-   SEPARATOR
-========================= */
+/* SEPARATOR */
 
 .separator {
   margin: 28px 0 18px;
 }
 
-/* =========================
-   TERMS
-========================= */
+/* TERMS */
 
 .terms {
   margin: 0;
@@ -599,9 +673,7 @@ const goToLogin = () => {
   text-decoration: underline;
 }
 
-/* =========================
-   TABLET
-========================= */
+/* TABLET */
 
 @media (max-width: 768px) {
   .login-card {
@@ -623,9 +695,7 @@ const goToLogin = () => {
   }
 }
 
-/* =========================
-   UPLOAD AREA (from VendorRegister)
-========================= */
+/* UPLOAD AREA (from VendorRegister) */
 .upload-area {
   display: flex;
   align-items: center;
@@ -693,9 +763,7 @@ const goToLogin = () => {
 
 
 
-/* =========================
-   MOBILE
-========================= */
+/* MOBILE */
 
 @media (max-width: 600px) {
   .login-page {
