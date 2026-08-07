@@ -77,21 +77,29 @@
                     <template v-slot:hint><span class="text-blue-grey-4">This name will be visible to neighborhood consumers.</span></template>
                   </q-input>
 
-                  <!-- RESTORED: Dynamic Image Render or Fallback Container -->
-                  <div class="q-mb-md full-width">
-                    <q-img 
-                      v-if="storePicture && String(storePicture).trim().length > 10" 
-                      :src="storePicture" 
-                      ratio="16/9" 
-                      class="rounded-borders shadow-2 q-mb-sm" 
-                    />
-                    <div 
-                      v-else 
-                      class="bg-grey-3 rounded-borders flex flex-center shadow-1 q-mb-sm full-width" 
-                      style="height: 200px; min-height: 200px;"
-                    >
-                      <q-icon name="storefront" size="64px" color="grey-6" />
-                    </div>
+                  <!-- Upload Controls -->
+                  <div class="store-photo-preview-container q-mb-md">
+                      <!-- Display the preview if it exists -->
+                      <q-img 
+                          v-if="storePicturePreview" 
+                          :src="storePicturePreview" 
+                          style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0;" 
+                          ratio="16/9"
+                      >
+                          <template v-slot:error>
+                              <div class="absolute-full flex flex-center bg-grey-3 text-grey-7">
+                                  Error loading image
+                              </div>
+                          </template>
+                      </q-img>
+                      
+                      <!-- Fallback if no photo exists in DB and no photo has been selected -->
+                      <div v-else class="empty-preview flex flex-center bg-grey-2 text-grey-6" style="width: 100%; height: 180px; border: 2px dashed #cbd5e1; border-radius: 8px;">
+                          <div class="text-center">
+                              <q-icon name="storefront" size="40px" />
+                              <div class="q-mt-sm text-caption">No cover photo uploaded</div>
+                          </div>
+                      </div>
                   </div>
                   
                   <!-- Upload Controls -->
@@ -290,7 +298,7 @@
     </q-dialog>
 
     <!-- Camera/Cropper Modal -->
-    <ImageCaptureModal v-model="showImageCaptureModal" @captured="handleCapturedImage" :aspectRatio="16/9" />
+    <ImageCaptureModal v-model="showImageCaptureModal" @captured="handleCapturedImage" :aspectRatio="16/9" title="Update Store Cover Photo" />
 
     <!-- Secure Delete Account Modal -->
     <q-dialog v-model="deleteDialog.isOpen" persistent backdrop-filter="blur(8px)">
@@ -328,7 +336,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import ImageCaptureModal from '@/components/modals/ImageCaptureModal.vue'
@@ -344,7 +352,8 @@ const profileForm = reactive({ firstName: '', lastName: '', email: '', phoneNumb
 const storeForm = reactive({
   storeName: '',
 })
-const storePicture = ref(null)
+const storePicturePreview = ref(null)
+const newStorePictureFile = ref(null)
 
 const uploadingImage = ref(false)
 const showImageCaptureModal = ref(false)
@@ -424,51 +433,48 @@ const submitProfile = async () => {
 
 const submitStoreInfo = async () => {
   try {
-    await api.put('/vendor/store/info', { store_name: storeForm.storeName })
+    const formData = new FormData()
+    formData.append('store_name', storeForm.storeName)
+    if (newStorePictureFile.value) {
+      formData.append('store_picture', newStorePictureFile.value, 'store_cover.jpg')
+    }
+    formData.append('_method', 'PUT')
+
+    const response = await api.post('/vendor/store/info', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+
+    if (response.data && response.data.store_picture_url) {
+      const newUrl = response.data.store_picture_url;
+      storePicturePreview.value = newUrl;
+      if (authStore.user && authStore.user.store) {
+          authStore.user.store.store_picture_url = newUrl;
+      }
+      newStorePictureFile.value = null;
+    }
+
     $q.notify({ type: 'positive', message: 'Store Info saved successfully.', color: 'green' })
   } catch (error) {
-    $q.notify({ type: 'negative', message: 'Failed to update store info.' })
+    const errorMsg = error.response?.data?.message || 'Failed to update store info.'
+    $q.notify({ type: 'negative', message: errorMsg })
   }
 }
 
-const handleCapturedImage = async ({ file }) => {
+const handleCapturedImage = ({ file }) => {
   if (!file) return
 
   // Instant local preview from the blob
-  storePicture.value = URL.createObjectURL(file)
-
-  // Immediately upload
-  uploadingImage.value = true
-  const formData = new FormData()
-  formData.append('store_picture', file, 'store_cover.jpg')
-  formData.append('_method', 'POST')
-
-  try {
-    const response = await api.post('/vendor/profile/store-image', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-    console.log('UPLOAD SUCCESS - RESPONSE PAYLOAD:', response.data);
-    console.log('UPLOAD SUCCESS - NEW URL:', response.data.store_picture_url);
-    $q.notify({ type: 'positive', message: 'Store image uploaded successfully.', color: 'green' })
-    
-    // CRITICAL: Update Pinia auth store so other components (like Dashboard) update instantly
-    if (response.data && response.data.store_picture_url) {
-        const newUrl = response.data.store_picture_url;
-        storePicture.value = newUrl; // Immediate local update
-        
-        // Immediate Pinia update for dashboard consistency
-        if (authStore.user && authStore.user.store) {
-            authStore.user.store.store_picture_url = newUrl;
-        }
-    }
-  } catch (error) {
-    const errorMsg = error.response?.data?.message || 'Failed to upload store image.'
-    $q.notify({ type: 'negative', message: errorMsg })
-    console.error('Upload error:', error.response?.data || error)
-    storePicture.value = null
-  } finally {
-    uploadingImage.value = false
-  }
+  storePicturePreview.value = URL.createObjectURL(file)
+  
+  // Store the file to be uploaded later when saving Store Info
+  newStorePictureFile.value = file
+  
+  $q.notify({ 
+    type: 'info', 
+    message: 'Photo uploaded successfully! Please click "Save Store Info" to apply changes.', 
+    color: 'blue-8',
+    icon: 'info'
+  })
 }
 
 const submitStoreHours = async () => {
@@ -541,9 +547,11 @@ const fetchProfile = async () => {
         storeForm.storeName = data.store.store_name || ''
         
         if (data.store && data.store.store_picture_url) {
-            storePicture.value = data.store.store_picture_url;
+            storePicturePreview.value = data.store.store_picture_url;
+        } else if (data.store && data.store.store_picture) {
+            storePicturePreview.value = `/storage/${data.store.store_picture}`;
         } else {
-            storePicture.value = null; // Ensure fallback shows if data is missing
+            storePicturePreview.value = null;
         }
         addressForm.fullAddress = data.store.address || ''
         addressForm.latitude = data.store.latitude || null

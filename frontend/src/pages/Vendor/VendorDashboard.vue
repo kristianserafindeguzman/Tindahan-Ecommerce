@@ -12,9 +12,8 @@
       
       <!-- ================= DYNAMIC TIME-SYNCED HEADER ================= -->
       <div 
-        class="welcome-banner q-mb-md q-pa-lg row items-center justify-between transition-theme"
+        class="welcome-banner q-mb-md q-pa-lg row items-center justify-between transition-theme card-rounded"
         :class="headerThemeClass"
-        style="border-radius: 16px;"
       >
         <div>
           <div class="row items-center q-mb-sm">
@@ -109,7 +108,7 @@
       </div>
 
       <!-- ================= RECENT ORDERS TABLE ================= -->
-      <q-card class="premium-glass-card q-mb-xl card-hover" style="border-radius: 16px;">
+      <q-card class="premium-glass-card card-rounded q-mb-xl card-hover">
         <q-card-section class="panel-header row items-center justify-between q-pa-md">
           <div class="text-h6 text-weight-bold text-dark row items-center">
             <div class="header-accent-red q-mr-md"></div>
@@ -165,7 +164,7 @@
         
         <!-- Revenue Chart -->
         <div class="col-12 col-md-7">
-          <q-card class="premium-glass-card h-full card-hover" style="border-radius: 16px;">
+          <q-card class="premium-glass-card card-rounded h-full card-hover">
             <q-card-section class="panel-header row items-center justify-between q-pa-md">
               <div class="text-h6 text-weight-bold text-dark row items-center">
                 <div class="header-accent-red q-mr-md"></div>
@@ -186,7 +185,7 @@
               </q-btn-group>
             </q-card-section>
             
-            <q-card-section class="flex flex-center" style="height: 250px; padding: 0;">
+            <q-card-section class="flex flex-center chart-container">
               <VueApexCharts 
                 v-if="!chartLoading" 
                 type="area" 
@@ -204,7 +203,7 @@
 
         <!-- ML Blueprint Container (Reverted to Indigo/Amber) -->
         <div class="col-12 col-md-5">
-          <q-card class="ml-blueprint-card h-full card-hover" style="border-radius: 16px;">
+          <q-card class="ml-blueprint-card card-rounded h-full card-hover">
             <q-card-section class="q-pa-md relative-position h-full column">
               <div class="ml-glow-overlay"></div>
               
@@ -222,7 +221,7 @@
                 Your historical sales data is currently being analyzed by the Random Forest model to predict upcoming inventory needs.
               </p>
 
-              <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft q-mt-auto" style="height: 140px; border-radius: 12px;">
+              <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft q-mt-auto">
                 <div class="ml-animated-bg"></div>
                 
                 <div class="text-center z-top">
@@ -241,82 +240,108 @@
 
     <!-- ================= LIVE STORE MODAL ================= -->
     <q-dialog v-model="liveStoreModal" transition-show="scale" transition-hide="scale" @show="initMap">
-      <q-card style="width: 500px; max-width: 90vw; border-radius: 16px;" class="premium-glass-card">
+      <!-- max-height and column no-wrap enforce scrolling -->
+      <q-card class="premium-glass-card column no-wrap live-store-modal card-rounded">
       
-        <!-- 1. Header Row -->
-        <q-card-section class="row items-center justify-between q-pb-sm">
+        <!-- 1. Header: Store Name -->
+        <q-card-section class="row items-center justify-center q-pb-sm bg-white col-auto z-top-10">
            <div class="text-h6 text-weight-bold">{{ vendorStore?.store_name || 'My Store' }}</div>
-           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
         
-        <!-- 2. Dynamic Image / Structural Fallback Container -->
-        <div class="full-width">
-          <q-img 
-            v-if="vendorStore?.store_picture_url && vendorStore.store_picture_url !== 'null' && vendorStore.store_picture_url.trim() !== ''" 
-            :src="vendorStore.store_picture_url" 
-            ratio="16/9" 
-          />
-          <div 
-            v-else 
-            class="bg-grey-3 flex flex-center full-width" 
-            style="height: 200px; min-height: 200px;"
-          >
-            <q-icon name="storefront" size="80px" color="grey-6" />
+        <q-separator />
+
+        <!-- 2. Scrollable Body Container -->
+        <q-card-section class="q-pa-none col scroll">
+          
+          <!-- Store Picture (or 16:9 Placeholder) -->
+          <div class="full-width">
+            <q-img 
+              v-if="vendorStore?.store_picture_url"
+              :src="vendorStore.store_picture_url"
+              class="store-banner"
+              fit="cover"
+            />
+            <div 
+              v-else 
+              class="bg-grey-3 flex flex-center full-width store-placeholder" 
+            >
+              <q-icon name="storefront" size="80px" color="grey-6" />
+            </div>
           </div>
-        </div>
-        
-        <!-- 3. DESCRIPTION & REST OF CONTENT -->
-        <q-card-section>
-           <div class="text-body2 text-grey-8 q-mb-md">{{ vendorStore?.description || 'Your neighborhood convenience store providing daily essentials.' }}</div>
+          
+          <!-- Remaining Sequence -->
+          <div class="q-pa-md">
+            <q-list>
+              <!-- Store Owner Full Name -->
+              <q-item class="q-px-none">
+                <q-item-section avatar>
+                  <q-icon color="red-8" name="person" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-weight-bold text-dark">Store Owner</q-item-label>
+                  <q-item-label caption>{{ ownerFullName || 'Not provided' }}</q-item-label>
+                </q-item-section>
+              </q-item>
 
-          <q-list class="q-mb-md">
-            <q-item class="q-px-none">
-              <q-item-section avatar>
-                <q-icon color="red-8" name="call" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-weight-bold text-dark">Contact</q-item-label>
-                <q-item-label caption>{{ vendorPhone || 'Not provided' }}</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item class="q-px-none items-start">
-              <q-item-section avatar class="q-pt-xs">
-                <q-icon color="red-8" name="schedule" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-weight-bold text-dark q-mb-sm">Store Schedule</q-item-label>
-                
-                <div class="bg-grey-1 rounded-borders q-pa-sm custom-glass-input" style="border: 1px solid #e2e8f0;">
-                  <div 
-                    v-for="day in weekDays" 
-                    :key="day.name" 
-                    class="row justify-between items-center q-py-xs"
-                    :class="{'text-dark': day.isOpen, 'text-blue-grey-4': !day.isOpen}"
-                  >
-                    <span class="text-weight-medium text-body2">{{ day.name }}</span>
-                    <span v-if="day.isOpen" class="text-caption text-weight-bold">
-                      {{ formatTime(vendorStore?.opening_time) }} - {{ formatTime(vendorStore?.closing_time) }}
-                    </span>
-                    <span v-else class="text-caption text-italic">Closed</span>
+              <!-- Phone Number -->
+              <q-item class="q-px-none">
+                <q-item-section avatar>
+                  <q-icon color="red-8" name="call" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-weight-bold text-dark">Contact</q-item-label>
+                  <q-item-label caption>{{ vendorPhone || 'Not provided' }}</q-item-label>
+                </q-item-section>
+              </q-item>
+
+              <!-- Store Schedule -->
+              <q-item class="q-px-none items-start">
+                <q-item-section avatar class="q-pt-xs">
+                  <q-icon color="red-8" name="schedule" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-weight-bold text-dark q-mb-sm">Store Schedule</q-item-label>
+                  <div class="bg-grey-1 rounded-borders q-pa-sm custom-glass-input">
+                    <div 
+                      v-for="day in weekDays" 
+                      :key="day.name" 
+                      class="row justify-between items-center q-py-xs"
+                      :class="{'text-dark': day.isOpen, 'text-blue-grey-4': !day.isOpen}"
+                    >
+                      <span class="text-weight-medium text-body2">{{ day.name }}</span>
+                      <span v-if="day.isOpen" class="text-caption text-weight-bold">
+                        {{ formatTime(vendorStore?.opening_time) }} - {{ formatTime(vendorStore?.closing_time) }}
+                      </span>
+                      <span v-else class="text-caption text-italic">Closed</span>
+                    </div>
                   </div>
-                </div>
+                </q-item-section>
+              </q-item>
 
-              </q-item-section>
-            </q-item>
-            <q-item class="q-px-none">
-              <q-item-section avatar>
-                <q-icon color="red-8" name="location_on" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-weight-bold text-dark">Address</q-item-label>
-                <q-item-label caption>{{ vendorStore?.address || 'Not provided' }}</q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
+              <!-- Address -->
+              <q-item class="q-px-none">
+                <q-item-section avatar>
+                  <q-icon color="red-8" name="location_on" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-weight-bold text-dark">Address</q-item-label>
+                  <q-item-label caption>{{ vendorStore?.address || 'Not provided' }}</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
 
-          <!-- Real Map Embed -->
-          <div id="store-preview-map" class="border-radius-8 overflow-hidden shadow-soft" style="height: 150px; border: 1px solid #cfd8dc; position: relative; z-index: 1;"></div>
+            <!-- Leaflet Map -->
+            <div id="store-preview-map" class="border-radius-8 overflow-hidden shadow-soft q-mt-sm store-preview-map-container"></div>
+          </div>
         </q-card-section>
+        
+        <q-separator />
+        
+        <!-- 3. Bottom Close Button (Sticky Footer) -->
+        <q-card-actions align="right" class="bg-white col-auto q-pa-md z-top-10">
+          <q-btn flat label="Close" color="blue-grey-8" class="text-weight-bold q-px-md" v-close-popup />
+        </q-card-actions>
+        
       </q-card>
     </q-dialog>
 
@@ -332,47 +357,27 @@ import VueApexCharts from 'vue3-apexcharts'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
+// ==========================================
+// 1. STATE & REFS
+// ==========================================
 const { logout } = useAuth()
 const router = useRouter()
+
 const checkingAccess = ref(true)
 const userName = ref('Vendor')
+const ownerFullName = ref('Vendor')
 const vendorStore = ref(null)
 const vendorPhone = ref(null)
 const liveStoreModal = ref(false)
-
-// Added reactive state for Revenue Filter
 const activeRevenueFilter = ref('Daily')
 
-// --- DYNAMIC TIME LOGIC ---
-const currentHour = new Date().getHours()
-
-const timeGreeting = computed(() => {
-  if (currentHour < 12) return 'Good morning'
-  if (currentHour < 18) return 'Good afternoon'
-  return 'Good evening'
+const recentOrders = ref([])
+const stats = ref({
+  placed_orders: 0,
+  preparing_orders: 0,
+  picked_up_orders: 0,
+  cancelled_orders: 0
 })
-
-const headerThemeClass = computed(() => {
-  if (currentHour < 12) return 'header-morning'
-  if (currentHour < 18) return 'header-afternoon'
-  return 'header-evening'
-})
-
-const headerTextClass = computed(() => {
-  if (currentHour >= 18) return 'text-white'
-  return 'text-blue-grey-9'
-})
-
-const subTextClass = computed(() => {
-  if (currentHour >= 18) return 'text-indigo-1'
-  return 'text-blue-grey-7'
-})
-
-const currentDate = computed(() => {
-  const options = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }
-  return new Intl.DateTimeFormat('en-US', options).format(new Date())
-})
-// --------------------------
 
 const orderColumns = [
   { name: 'id', label: 'Order ID', field: 'id', align: 'left', sortable: true },
@@ -383,26 +388,6 @@ const orderColumns = [
   { name: 'action', label: '', field: 'action', align: 'right' }
 ]
 
-const recentOrders = ref([])
-
-const stats = ref({
-  placed_orders: 0,
-  preparing_orders: 0,
-  picked_up_orders: 0,
-  cancelled_orders: 0
-})
-
-const getStatusColor = (status) => {
-  switch (status.toLowerCase()) {
-    case 'placed': return 'blue-5'
-    case 'preparing': return 'amber-6'
-    case 'picked_up': return 'emerald-5'
-    case 'cancelled': return 'red-5'
-    default: return 'blue-grey-4'
-  }
-}
-
-// --- CHART LOGIC ---
 const chartLoading = ref(false)
 const chartSeries = ref([{ name: 'Revenue', data: [] }])
 const chartOptions = ref({
@@ -441,43 +426,37 @@ const chartOptions = ref({
   }
 })
 
-const fetchChartData = async () => {
-  chartLoading.value = true
-  try {
-    console.log("before api.get('/vendor/stats/chart')")
-    const res = await api.get('/vendor/stats/chart', {
-      params: { filter: activeRevenueFilter.value }
-    })
-    console.log("after api.get('/vendor/stats/chart')")
-    
-    if (res.data) {
-      chartSeries.value = [{
-        name: 'Revenue',
-        data: res.data.map(item => item.total)
-      }]
-      chartOptions.value = {
-        ...chartOptions.value,
-        xaxis: {
-          ...chartOptions.value.xaxis,
-          categories: res.data.map(item => item.period)
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load chart data:', error)
-  } finally {
-    chartLoading.value = false
-  }
-}
+// ==========================================
+// 2. COMPUTED PROPERTIES
+// ==========================================
+const currentHour = new Date().getHours()
 
-watch(activeRevenueFilter, () => {
-  fetchChartData()
+const timeGreeting = computed(() => {
+  if (currentHour < 12) return 'Good morning'
+  if (currentHour < 18) return 'Good afternoon'
+  return 'Good evening'
 })
 
-const formatTime = (timeString) => {
-  if (!timeString) return 'Not set'
-  return new Date(`1970-01-01T${timeString}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
+const headerThemeClass = computed(() => {
+  if (currentHour < 12) return 'header-morning'
+  if (currentHour < 18) return 'header-afternoon'
+  return 'header-evening'
+})
+
+const headerTextClass = computed(() => {
+  if (currentHour >= 18) return 'text-white'
+  return 'text-blue-grey-9'
+})
+
+const subTextClass = computed(() => {
+  if (currentHour >= 18) return 'text-indigo-1'
+  return 'text-blue-grey-7'
+})
+
+const currentDate = computed(() => {
+  const options = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }
+  return new Intl.DateTimeFormat('en-US', options).format(new Date())
+})
 
 const weekDays = computed(() => {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -536,6 +515,57 @@ const isStoreOpen = computed(() => {
   return currentMinutes >= openMinutes && currentMinutes <= closeMinutes
 })
 
+// ==========================================
+// 3. HELPER FUNCTIONS
+// ==========================================
+const getStatusColor = (status) => {
+  switch (status.toLowerCase()) {
+    case 'placed': return 'blue-5'
+    case 'preparing': return 'amber-6'
+    case 'picked_up': return 'emerald-5'
+    case 'cancelled': return 'red-5'
+    default: return 'blue-grey-4'
+  }
+}
+
+const formatTime = (timeString) => {
+  if (!timeString) return 'Not set'
+  return new Date(`1970-01-01T${timeString}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+// ==========================================
+// 4. API FUNCTIONS
+// ==========================================
+const fetchChartData = async () => {
+  chartLoading.value = true
+  try {
+    const res = await api.get('/vendor/stats/chart', {
+      params: { filter: activeRevenueFilter.value }
+    })
+    
+    if (res.data) {
+      chartSeries.value = [{
+        name: 'Revenue',
+        data: res.data.map(item => item.total)
+      }]
+      chartOptions.value = {
+        ...chartOptions.value,
+        xaxis: {
+          ...chartOptions.value.xaxis,
+          categories: res.data.map(item => item.period)
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load chart data:', error)
+  } finally {
+    chartLoading.value = false
+  }
+}
+
+// ==========================================
+// 5. LEAFLET FUNCTIONS
+// ==========================================
 let map = null
 const initMap = async () => {
   await nextTick()
@@ -572,29 +602,30 @@ const initMap = async () => {
   }, 100)
 }
 
+// ==========================================
+// 6. LIFECYCLE HOOKS & WATCHERS
+// ==========================================
 onMounted(async () => {
   try {
     fetchChartData()
-    console.log("before api.get('/user')")
-    const res = await api.get('/user')
-    console.log("after api.get('/user')")
-    if (res.data && res.data.user) {
-      const user = res.data.user
-      userName.value = user.full_name ? user.full_name.split(' ')[0] : 'Vendor'
-      vendorPhone.value = user.phone_number || null
-      if (user.store) {
-        // Resolve store_picture: prefer the accessor URL, fallback to raw column
-        // We can just assign the raw store, and the template will read vendorStore.store_picture_url
-        // because the API includes the accessor in the $appends array.
-        vendorStore.value = { ...user.store }
+    
+    // Use the profile endpoint to guarantee store_picture data is included
+    const res = await api.get('/vendor/profile')
+    
+    if (res.data) {
+      const profile = res.data
+      userName.value = profile.full_name ? profile.full_name.split(' ')[0] : 'Vendor'
+      ownerFullName.value = profile.full_name || 'Vendor'
+      vendorPhone.value = profile.phone_number || null
+      
+      if (profile.store) {
+        vendorStore.value = { ...profile.store }
       } else {
         vendorStore.value = null
       }
     }
 
-    console.log("before api.get('/vendor/stats')")
     const statsRes = await api.get('/vendor/stats')
-    console.log("after api.get('/vendor/stats')")
     if (statsRes.data) {
       stats.value.placed_orders = statsRes.data.placed_orders || 0
       stats.value.preparing_orders = statsRes.data.preparing_orders || 0
@@ -603,10 +634,15 @@ onMounted(async () => {
       recentOrders.value = statsRes.data.recent_orders || []
     }
   } catch (error) {
+    console.error('Dashboard init error:', error)
     userName.value = 'Vendor'
   } finally {
     checkingAccess.value = false
   }
+})
+
+watch(activeRevenueFilter, () => {
+  fetchChartData()
 })
 </script>
 
@@ -649,7 +685,29 @@ onMounted(async () => {
   z-index: 1;
 }
 
-/* Clean Solid Metrics Cards (Replaced the heavily glassed ones) */
+/* Utility Classes */
+.card-rounded {
+  border-radius: 16px;
+}
+.z-top-10 {
+  z-index: 10;
+}
+.h-full { 
+  height: 100%; 
+}
+.border-radius-8 { 
+  border-radius: 8px; 
+}
+.p-1 { 
+  padding: 4px; 
+}
+.opacity-50 { opacity: 0.5; }
+.opacity-80 { opacity: 0.8; }
+.flex-grow-1 { flex-grow: 1; }
+.tracking-wide { letter-spacing: 0.08em; }
+.leading-relaxed { line-height: 1.6; }
+
+/* Clean Solid Metrics Cards */
 .clean-solid-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -658,7 +716,7 @@ onMounted(async () => {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Glassmorphism Panels (Slightly frosted for tables/charts) */
+/* Glassmorphism Panels */
 .premium-glass-card {
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(12px);
@@ -673,7 +731,7 @@ onMounted(async () => {
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
 }
 
-/* ================= TIME-SYNCED HEADER THEMES (Strictly Reverted) ================= */
+/* ================= TIME-SYNCED HEADER THEMES ================= */
 .transition-theme {
   transition: background 1s ease, color 0.5s ease;
 }
@@ -711,8 +769,6 @@ onMounted(async () => {
   70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
-
-.h-full { height: 100%; }
 
 /* Buttons & Icons */
 .btn-premium {
@@ -785,10 +841,11 @@ onMounted(async () => {
   background: rgba(185, 28, 28, 0.05);
 }
 
-.border-radius-8 { border-radius: 8px; }
-.p-1 { padding: 4px; }
-
-/* Fixed Chart Background */
+/* Charts */
+.chart-container {
+  height: 250px; 
+  padding: 0;
+}
 .chart-placeholder-bg {
   background-image: 
     linear-gradient(rgba(226, 232, 240, 0.3) 1px, transparent 1px),
@@ -797,7 +854,7 @@ onMounted(async () => {
   border-radius: 0 0 16px 16px;
 }
 
-/* ML Blueprint Card - Reverted to Original Indigo/Amber Theme */
+/* ML Blueprint Card */
 .ml-blueprint-card {
   background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -815,6 +872,8 @@ onMounted(async () => {
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(251, 191, 36, 0.25);
   backdrop-filter: blur(12px);
+  height: 140px; 
+  border-radius: 12px;
 }
 .ml-animated-bg {
   position: absolute;
@@ -829,13 +888,30 @@ onMounted(async () => {
 .drop-shadow-icon {
   filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.4));
 }
-.opacity-50 { opacity: 0.5; }
-.opacity-80 { opacity: 0.8; }
-.flex-grow-1 { flex-grow: 1; }
 .font-monospace {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   letter-spacing: 0.12em;
 }
-.tracking-wide { letter-spacing: 0.08em; }
-.leading-relaxed { line-height: 1.6; }
+
+/* Live Store Modal specific styles */
+.live-store-modal {
+  width: 500px; 
+  max-width: 90vw; 
+  max-height: 90vh;
+}
+.store-banner {
+  height: 220px;
+}
+.store-placeholder {
+  aspect-ratio: 16/9;
+}
+.custom-glass-input {
+  border: 1px solid #e2e8f0;
+}
+.store-preview-map-container {
+  height: 200px; 
+  border: 1px solid #cfd8dc; 
+  position: relative; 
+  z-index: 1;
+}
 </style>
