@@ -4,7 +4,12 @@
       <q-icon name="storefront" size="32px" />
     </div>
     <q-card-section class="store-card-body">
-      <div class="store-card-name">{{ store.name }}</div>
+      <div class="store-card-name">
+        <template v-for="(part, i) in nameParts" :key="i">
+          <mark v-if="part.match" class="highlight-mark">{{ part.text }}</mark>
+          <template v-else>{{ part.text }}</template>
+        </template>
+      </div>
       <div class="store-card-status" :class="{ 'store-card-status-closed': !store.isOpen }">
         <span class="status-dot" :class="{ 'status-dot-closed': !store.isOpen }" />
         {{ store.isOpen ? `Open until ${store.closesAt}` : 'Closed' }}
@@ -18,12 +23,21 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+import { splitHighlightParts } from '@/utils/textHighlight'
+
+const props = defineProps({
   store: {
     type: Object,
     required: true
+  },
+  highlightQuery: {
+    type: String,
+    default: ''
   }
 })
+
+const nameParts = computed(() => splitHighlightParts(props.store.name, props.highlightQuery))
 </script>
 
 <style scoped>
@@ -84,6 +98,14 @@ defineProps({
 
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.highlight-mark {
+  background: #fdecec;
+  color: #9c171b;
+  font-weight: 700;
+
+  border-radius: 2px;
 }
 
 .store-card-status {

@@ -38,12 +38,15 @@
                 v-model="form.identifier"
                 outlined
                 dense
+                no-error-icon
+                hide-bottom-space
                 label="Email or Mobile Number"
                 class="login-input"
                 :rules="[
-                  val => !!val || 'Email or mobile number is required',
-                  identifierRule
+                  val => !identifierTouched || !!val || 'Email or mobile number is required.',
+                  val => !identifierTouched || identifierRule(val)
                 ]"
+                @blur="identifierTouched = true"
               />
             </div>
 
@@ -53,12 +56,15 @@
                 v-model="form.password"
                 outlined
                 dense
+                no-error-icon
+                hide-bottom-space
                 :type="showPassword ? 'text' : 'password'"
                 label="Password"
                 class="login-input"
                 :rules="[
-                  val => !!val || 'Password is required'
+                  val => !passwordTouched || !!val || 'Password is required.'
                 ]"
+                @blur="passwordTouched = true"
               >
                 <template #append>
                   <q-icon
@@ -95,6 +101,7 @@
               unelevated
               class="login-button full-width"
               :loading="loading"
+              :disable="!canLogin"
             />
 
           </q-form>
@@ -348,7 +355,7 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import TermsModal from '@/components/modals/TermsModal.vue'
@@ -362,6 +369,15 @@ const showPassword = ref(false)
 const loading = ref(false)
 const loginError = ref('')
 const showRegistrationOptions = ref(false)
+
+// Gates each field's own rules until it's been touched (blurred once,
+// or a submit attempt was made) — Quasar's `lazy-rules` only
+// re-validates on the NEXT blur once triggered, not on every
+// keystroke in between, which left stale error text on screen after
+// the field became valid. This keeps rules permanently reactive
+// (default lazy-rules behavior) while suppressing them pre-touch.
+const identifierTouched = ref(false)
+const passwordTouched = ref(false)
 
 // Vendor status modals (Under Review / Rejected now live on their own pages)
 const showSuspended = ref(false)
@@ -403,7 +419,12 @@ const identifierRule = val => {
   )
 }
 
+const canLogin = computed(() => identifierRule(form.identifier) === true && !!form.password)
+
 const handleLogin = async () => {
+  identifierTouched.value = true
+  passwordTouched.value = true
+
   const isValid = await loginForm.value.validate()
 
   if (!isValid) {
@@ -733,11 +754,16 @@ const goToVendorRegister = () => {
 }
 
 .field-group {
-  margin-bottom: 2px;
+  margin-bottom: 16px;
 }
 
+/* hide-bottom-space (set on both inputs) removes this area entirely
+   when there's no message, so the next field naturally sits at the
+   16px above instead of a permanently reserved gap — it only renders,
+   with this padding, once a message actually has something to show. */
 .login-input :deep(.q-field__bottom) {
-  padding-bottom: 8px;
+  padding-top: 6px;
+  padding-bottom: 0;
 }
 
 .login-input :deep(.q-field__control) {
@@ -800,7 +826,7 @@ const goToVendorRegister = () => {
   display: flex;
   justify-content: flex-end;
 
-  margin-top: 7px;
+  margin-top: 8px;
 }
 
 .text-button {
@@ -832,7 +858,10 @@ const goToVendorRegister = () => {
 .login-button {
   height: 48px;
 
-  margin-top: 2px;
+  /* field-group's 16px margin-bottom (above) is the only spacing
+     between Forgot Password? and this button, landing the gap
+     squarely in the requested 12-16px range. */
+  margin-top: 0;
 
   border-radius: 6px;
 
@@ -843,10 +872,37 @@ const goToVendorRegister = () => {
 
   font-size: 13px;
   font-weight: 500;
+
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
 .login-button:hover {
   background: #a91e21;
+
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+
+  transform: translateY(-1px);
+}
+
+.login-button:active {
+  background: #8f1a1c;
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.login-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+.login-button:disabled,
+.login-button.disabled {
+  background: #bd2427;
+  opacity: 0.45;
 }
 
 /* =========================
@@ -854,7 +910,7 @@ const goToVendorRegister = () => {
 ========================= */
 
 .register-section {
-  margin-top: 17px;
+  margin-top: 16px;
 
   display: flex;
   align-items: center;

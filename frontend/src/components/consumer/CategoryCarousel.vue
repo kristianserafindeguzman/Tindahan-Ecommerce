@@ -28,11 +28,7 @@ defineProps({
 
 defineEmits(['select'])
 
-// ==========================================================
-// SCROLL — the ">" button nudges the track forward by roughly one
-// "page" of cards instead of jumping straight to the end.
-// ==========================================================
-
+// The ">" button nudges the track forward by roughly one "page" of cards.
 const track = ref(null)
 
 const scrollNext = () => {

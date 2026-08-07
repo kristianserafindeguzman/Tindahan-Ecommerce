@@ -14,7 +14,12 @@
     </div>
     <q-card-section class="product-card-body">
       <div class="product-price">₱{{ product.price.toFixed(2) }}</div>
-      <div class="product-name">{{ product.name }}</div>
+      <div class="product-name">
+        <template v-for="(part, i) in nameParts" :key="i">
+          <mark v-if="part.match" class="highlight-mark">{{ part.text }}</mark>
+          <template v-else>{{ part.text }}</template>
+        </template>
+      </div>
       <div class="product-meta">
         <q-icon name="location_on" size="13px" class="product-meta-icon" />
         <span class="product-meta-text">{{ product.store }}</span>
@@ -24,14 +29,23 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+import { splitHighlightParts } from '@/utils/textHighlight'
+
+const props = defineProps({
   product: {
     type: Object,
     required: true
+  },
+  highlightQuery: {
+    type: String,
+    default: ''
   }
 })
 
 defineEmits(['add-to-cart'])
+
+const nameParts = computed(() => splitHighlightParts(props.product.name, props.highlightQuery))
 </script>
 
 <style scoped>
@@ -135,6 +149,14 @@ defineEmits(['add-to-cart'])
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.highlight-mark {
+  background: #fdecec;
+  color: #9c171b;
+  font-weight: 700;
+
+  border-radius: 2px;
 }
 
 .product-meta {

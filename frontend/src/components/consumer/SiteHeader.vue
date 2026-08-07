@@ -27,25 +27,101 @@
           />
         </q-tabs>
 
-        <div class="header-search" :class="{ 'header-search-compact': addressExpanded }">
-          <q-icon name="search" size="17px" class="header-search-icon" />
-          <q-input
-            v-model="searchQuery"
-            dense
-            borderless
-            placeholder="Search Products"
-            class="header-search-input"
-            @keyup.enter="handleSearch"
-          />
-          <q-btn
-            round
-            unelevated
-            dense
-            icon="search"
-            aria-label="Search"
-            class="header-search-btn"
-            @click="handleSearch"
-          />
+        <div class="header-search-wrap" :class="{ 'header-search-compact': addressExpanded }">
+          <div class="header-search">
+            <q-icon name="search" size="17px" class="header-search-icon" />
+            <q-input
+              :model-value="searchInput"
+              dense
+              borderless
+              clearable
+              placeholder="Search products and stores"
+              class="header-search-input"
+              autocomplete="off"
+              @keyup.enter="submitSearch"
+              @keydown.down.prevent="moveActiveSuggestion(1)"
+              @keydown.up.prevent="moveActiveSuggestion(-1)"
+              @keydown.esc="closeSuggestions"
+              @focus="openSuggestions"
+              @blur="closeSuggestions"
+              @update:model-value="onSearchInput"
+            />
+            <q-btn
+              round
+              unelevated
+              dense
+              icon="search"
+              aria-label="Search"
+              class="header-search-btn"
+              @click="submitSearch"
+            />
+          </div>
+
+          <div v-if="suggestionsOpen" class="search-suggestions" @mousedown.prevent>
+            <template v-if="!searchInput.trim()">
+              <div v-if="recentSearches.length" class="suggestions-section">
+                <div class="suggestions-section-header">
+                  <span>Recent Searches</span>
+                  <span class="suggestions-clear" @click="clearRecentSearches">Clear</span>
+                </div>
+                <div
+                  v-for="(term, i) in recentSearches"
+                  :key="term"
+                  class="suggestion-item"
+                  :class="{ 'suggestion-item-active': activeSuggestionIndex === i }"
+                  @click="selectSuggestion(term)"
+                >
+                  <q-icon name="history" size="16px" class="suggestion-icon" />
+                  <span class="suggestion-text">{{ term }}</span>
+                </div>
+              </div>
+              <div v-else class="suggestions-empty">Start typing to search products and stores.</div>
+            </template>
+
+            <template v-else>
+              <div v-if="productSuggestions.length" class="suggestions-section">
+                <div class="suggestions-section-header"><span>Products</span></div>
+                <div
+                  v-for="(product, i) in productSuggestions"
+                  :key="`p${product.id}`"
+                  class="suggestion-item"
+                  :class="{ 'suggestion-item-active': activeSuggestionIndex === i }"
+                  @click="selectSuggestion(product.name)"
+                >
+                  <q-icon name="inventory_2" size="16px" class="suggestion-icon" />
+                  <span class="suggestion-text">
+                    <template v-for="(part, pi) in splitHighlightParts(product.name, searchInput)" :key="pi">
+                      <mark v-if="part.match" class="suggestion-highlight">{{ part.text }}</mark>
+                      <template v-else>{{ part.text }}</template>
+                    </template>
+                  </span>
+                </div>
+              </div>
+
+              <div v-if="storeSuggestions.length" class="suggestions-section">
+                <div class="suggestions-section-header"><span>Stores</span></div>
+                <div
+                  v-for="(store, i) in storeSuggestions"
+                  :key="`s${store.id}`"
+                  class="suggestion-item"
+                  :class="{ 'suggestion-item-active': activeSuggestionIndex === productSuggestions.length + i }"
+                  @click="selectSuggestion(store.name)"
+                >
+                  <q-icon name="storefront" size="16px" class="suggestion-icon" />
+                  <span class="suggestion-text">
+                    <template v-for="(part, pi) in splitHighlightParts(store.name, searchInput)" :key="pi">
+                      <mark v-if="part.match" class="suggestion-highlight">{{ part.text }}</mark>
+                      <template v-else>{{ part.text }}</template>
+                    </template>
+                  </span>
+                </div>
+              </div>
+
+              <div v-if="!productSuggestions.length && !storeSuggestions.length" class="suggestions-empty">
+                No matches for "{{ searchInput }}"
+              </div>
+            </template>
+          </div>
         </div>
 
         <div class="header-location" :title="address" @click="addressExpanded = !addressExpanded">
@@ -126,9 +202,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
+import { MOCK_ALL_PRODUCTS, MOCK_STORES } from '@/data/mockCatalog'
+import { splitHighlightParts } from '@/utils/textHighlight'
 
 defineProps({
   address: {
@@ -140,12 +218,7 @@ defineProps({
 const router = useRouter()
 const route = useRoute()
 
-// ==========================================================
-// AUTH STATE — the header renders for both guests and logged-in
-// consumers on routes that aren't all auth-guarded, so it reads
-// localStorage directly rather than relying on a route guard.
-// ==========================================================
-
+// Renders for both guests and logged-in consumers, so it reads localStorage directly rather than relying on a route guard.
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
 const userAvatar = computed(() => {
@@ -165,7 +238,7 @@ const handleLogout = async () => {
   try {
     await api.post('/logout')
   } catch {
-    // Token may already be invalid
+    // Token may already be invalid.
   }
 
   localStorage.removeItem('auth_token')
@@ -180,25 +253,132 @@ const goToLogin = () => {
 }
 
 const goToSignup = () => {
-  // LoginPage.vue opens the Consumer/Vendor registration-choice dialog
-  // automatically when it sees this query param — see the addition there.
+  // LoginPage.vue opens the registration-choice dialog when it sees this query param.
   router.push({ path: '/login', query: { register: '1' } })
 }
 
-// ==========================================================
-// SEARCH
-// ==========================================================
+// searchInput is the user's live draft (bound to the field); searchQuery only changes on submit,
+// and is the sole trigger for actually navigating/searching.
+const searchInput = ref(route.query.q || '')
+const searchQuery = ref(route.query.q || '')
+const suggestionsOpen = ref(false)
+const activeSuggestionIndex = ref(-1)
 
-const searchQuery = ref('')
+const RECENT_SEARCHES_KEY = 'recent_searches'
+const MAX_RECENT_SEARCHES = 6
 
-const handleSearch = () => {
-  // TODO: wire to real /products or /stores search endpoint once it exists
-  console.log('Search:', searchQuery.value)
+function loadRecentSearches() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || '[]')
+    return Array.isArray(raw) ? raw : []
+  } catch {
+    return []
+  }
 }
 
-// ==========================================================
-// SUBNAV TABS
-// ==========================================================
+const recentSearches = ref(loadRecentSearches())
+
+function saveRecentSearch(term) {
+  const next = [term, ...recentSearches.value.filter((s) => s.toLowerCase() !== term.toLowerCase())].slice(0, MAX_RECENT_SEARCHES)
+  recentSearches.value = next
+  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next))
+}
+
+const clearRecentSearches = () => {
+  recentSearches.value = []
+  localStorage.removeItem(RECENT_SEARCHES_KEY)
+}
+
+// The autocomplete dropdown is a lightweight typeahead — it's fine for it to live-filter off the
+// draft input. It's the actual page search/navigation below that's submit-only.
+const productSuggestions = computed(() => {
+  const q = searchInput.value.trim().toLowerCase()
+  if (!q) return []
+  return MOCK_ALL_PRODUCTS.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 4)
+})
+
+const storeSuggestions = computed(() => {
+  const q = searchInput.value.trim().toLowerCase()
+  if (!q) return []
+  return MOCK_STORES.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 3)
+})
+
+// Flat list backing arrow-key navigation — recent searches when empty, live matches once typing.
+const suggestionTerms = computed(() => {
+  if (!searchInput.value.trim()) return recentSearches.value
+  return [...productSuggestions.value.map((p) => p.name), ...storeSuggestions.value.map((s) => s.name)]
+})
+
+const openSuggestions = () => {
+  suggestionsOpen.value = true
+  activeSuggestionIndex.value = -1
+}
+
+const closeSuggestions = () => {
+  suggestionsOpen.value = false
+  activeSuggestionIndex.value = -1
+}
+
+const moveActiveSuggestion = (delta) => {
+  if (!suggestionsOpen.value) {
+    openSuggestions()
+    return
+  }
+  const len = suggestionTerms.value.length
+  if (!len) return
+  activeSuggestionIndex.value = (activeSuggestionIndex.value + delta + len) % len
+}
+
+function navigateToSearchPage(q) {
+  const alreadyThere = route.path === '/consumer/search' && (route.query.q || '') === q
+  if (alreadyThere) return
+
+  const target = { path: '/consumer/search', query: q ? { q } : {} }
+  if (route.path === '/consumer/search') {
+    router.replace(target)
+  } else {
+    router.push(target)
+  }
+}
+
+// The only place a search is actually performed — fires on submit (searchQuery change), never while typing.
+watch(searchQuery, (q) => {
+  if (q) saveRecentSearch(q)
+  closeSuggestions()
+  navigateToSearchPage(q)
+})
+
+const selectSuggestion = (term) => {
+  searchInput.value = term
+  searchQuery.value = term
+}
+
+// Enter, the search button, or a mobile keyboard's search key all land here.
+const submitSearch = () => {
+  if (activeSuggestionIndex.value >= 0 && suggestionTerms.value[activeSuggestionIndex.value]) {
+    selectSuggestion(suggestionTerms.value[activeSuggestionIndex.value])
+    return
+  }
+  const q = searchInput.value.trim()
+  searchInput.value = q
+  searchQuery.value = q
+}
+
+// Just opens/refreshes the suggestions dropdown — typing never triggers a search on its own.
+const onSearchInput = (val) => {
+  // Quasar's clearable "x" emits null (not ''), which would break every .trim() call downstream.
+  searchInput.value = val || ''
+  activeSuggestionIndex.value = -1
+  suggestionsOpen.value = true
+}
+
+// Keeps the input synced when ?q= changes from outside this component (browser back/forward, a
+// recent-search chip clicked on the search page itself) without remounting this component.
+watch(() => route.query.q, (q) => {
+  const next = q || ''
+  searchInput.value = next
+  searchQuery.value = next
+})
 
 const tabs = [
   { label: 'Home', value: 'home', to: '/consumer/home' },
@@ -215,11 +395,7 @@ const goToTab = (tab) => {
   if (tab.to) router.push(tab.to)
 }
 
-// ==========================================================
-// ADDRESS EXPAND/COLLAPSE (desktop-only interaction, see media
-// queries below)
-// ==========================================================
-
+// Desktop-only interaction; see media queries below.
 const addressExpanded = ref(false)
 </script>
 
@@ -386,21 +562,38 @@ const addressExpanded = ref(false)
   color: #ffffff;
 }
 
-.account-menu :deep(.q-item__section) {
+/* The teleported .q-menu root doesn't carry this component's scope attribute, so :deep(.account-menu ...) can't reach it — target q-item/q-item-section directly instead. */
+.q-item__section {
   font-size: 13px;
 }
 
-/* =========================
-   HEADER — SEARCH BAR
-========================= */
+.q-item__section--avatar {
+  min-width: 0;
+  padding-right: 12px;
 
-.header-search {
-  display: flex;
-  align-items: center;
+  color: #000000;
+}
+
+.q-item {
+  min-height: 40px;
+  padding: 8px 14px;
+}
+
+/* HEADER — SEARCH BAR */
+
+.header-search-wrap {
+  position: relative;
 
   flex: 1 1 auto;
   min-width: 140px;
   max-width: 400px;
+
+  transition: max-width 0.25s ease, min-width 0.25s ease;
+}
+
+.header-search {
+  display: flex;
+  align-items: center;
 
   height: 38px;
 
@@ -413,7 +606,7 @@ const addressExpanded = ref(false)
 
   overflow: hidden;
 
-  transition: max-width 0.25s ease, min-width 0.25s ease, box-shadow 0.15s;
+  transition: box-shadow 0.15s;
 }
 
 .header-search:focus-within {
@@ -464,6 +657,114 @@ const addressExpanded = ref(false)
   color: #9ca3af;
 }
 
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+
+  max-height: 360px;
+  overflow-y: auto;
+
+  border-radius: 10px;
+  border: 1px solid #f0f0f0;
+
+  background: #ffffff;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+
+  padding: 8px 0;
+
+  z-index: 20;
+}
+
+.suggestions-section + .suggestions-section {
+  margin-top: 4px;
+  padding-top: 4px;
+
+  border-top: 1px solid #f4f4f4;
+}
+
+.suggestions-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 6px 14px;
+
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  color: #9ca3af;
+}
+
+.suggestions-clear {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+
+  color: #bd2427;
+
+  cursor: pointer;
+}
+
+.suggestions-clear:hover {
+  text-decoration: underline;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+  min-width: 0;
+  padding: 9px 14px;
+
+  font-size: 13px;
+  color: #333333;
+
+  cursor: pointer;
+
+  transition: background-color 0.1s;
+}
+
+.suggestion-item:hover,
+.suggestion-item.suggestion-item-active {
+  background: #fdecec;
+}
+
+.suggestion-icon {
+  flex-shrink: 0;
+
+  color: #9ca3af;
+}
+
+.suggestion-text {
+  overflow: hidden;
+  min-width: 0;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.suggestion-highlight {
+  background: transparent;
+  color: #bd2427;
+  font-weight: 700;
+}
+
+.suggestions-empty {
+  padding: 14px;
+
+  font-size: 12.5px;
+  text-align: center;
+
+  color: #9ca3af;
+}
+
 .header-search-btn {
   width: 38px;
   height: 30px;
@@ -478,16 +779,33 @@ const addressExpanded = ref(false)
 
   flex-shrink: 0;
 
-  transition: background-color 0.15s;
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
 .header-search-btn:hover {
   background: #a91e21;
+
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+
+  transform: translateY(-1px);
 }
 
-/* =========================
-   HEADER — NAV (inline, next to logo)
-========================= */
+.header-search-btn:active {
+  background: #8f1a1c;
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.header-search-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
+}
+
+/* HEADER — NAV (inline, next to logo) */
 
 .header-nav {
   flex-shrink: 0;
@@ -542,9 +860,7 @@ const addressExpanded = ref(false)
   height: 2px;
 }
 
-/* =========================
-   HEADER — LOCATION
-========================= */
+/* HEADER — LOCATION */
 
 .header-location {
   display: flex;
@@ -592,13 +908,8 @@ const addressExpanded = ref(false)
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* =========================
-   RESPONSIVE
-========================= */
+/* RESPONSIVE — header stacks well before the content grids do; it has more inline content and gets cramped sooner. */
 
-/* Header needs to stack well before the content grids do — it has a lot
-   of inline content (logo, nav, search, full address, account/cart) that
-   gets cramped long before a 3-column product grid would. */
 @media (max-width: 1024px) {
   .header-bar-inner {
     flex-wrap: wrap;
@@ -632,7 +943,7 @@ const addressExpanded = ref(false)
     background: rgba(255, 255, 255, 0.12);
   }
 
-  .header-search {
+  .header-search-wrap {
     order: 3;
 
     width: 100%;
@@ -654,16 +965,15 @@ const addressExpanded = ref(false)
   }
 }
 
-/* Click-to-expand address / focus-to-grow search only makes sense on the
-   single-row desktop header — on the stacked mobile/tablet layout both
-   already show full-width, so the interaction is disabled there. */
+/* Click-to-expand address / focus-to-grow search only makes sense on the single-row desktop header. */
+
 @media (min-width: 1025px) {
   .header-search-compact {
     min-width: 0;
     max-width: 140px;
   }
 
-  .header-search:focus-within {
+  .header-search-wrap:focus-within {
     max-width: 640px;
   }
 
@@ -671,7 +981,7 @@ const addressExpanded = ref(false)
     max-width: 480px;
   }
 
-  .header-search:focus-within ~ .header-location .header-location-pill {
+  .header-search-wrap:focus-within ~ .header-location .header-location-pill {
     max-width: 34px;
   }
 }
