@@ -74,6 +74,9 @@ class Store extends Model
     public function getStorePictureUrlAttribute()
     {
         if ($this->store_picture) {
+            if (str_starts_with($this->store_picture, 'http')) {
+                return $this->store_picture;
+            }
             return asset('storage/' . $this->store_picture);
         }
         return null;

@@ -215,7 +215,7 @@
     <div class="footer">
         <table style="width: 100%;">
             <tr>
-                <td>Tindahan E-Commerce System &bull; Official Vendor Report</td>
+                <td>Tindahan E-Commerce System &bull; Official Vendor Inventory Management Report</td>
                 <td style="text-align: right;" class="page-number"></td>
             </tr>
         </table>

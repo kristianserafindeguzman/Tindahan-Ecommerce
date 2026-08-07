@@ -170,11 +170,16 @@ class ProfileController extends Controller
 
             if ($request->hasFile('store_picture')) {
                 $file = $request->file('store_picture');
-                $path = $file->store('store_images', 'public');
-                $store->store_picture = asset('storage/' . $path);
+                $path = $file->store('stores', 'public');
+                $store->store_picture = $path;
             }
 
             $store->save();
+            
+            return response()->json([
+                'message' => 'Store info updated successfully',
+                'store_picture_url' => $store->store_picture_url
+            ]);
         }
 
         return response()->json(['message' => 'Store info updated successfully']);

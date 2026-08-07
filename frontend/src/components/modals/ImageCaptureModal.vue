@@ -4,7 +4,7 @@
       
       <!-- HEADER -->
       <q-card-section class="row items-center q-pb-sm bg-black">
-        <div class="text-h6 text-weight-bold">Add Product Photo</div>
+        <div class="text-h6 text-weight-bold">{{ title }}</div> <!-- title prop; for reusability -->
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup @click="stopCamera" />
       </q-card-section>
@@ -58,6 +58,10 @@ const props = defineProps({
   initialImage: {
     type: String,
     default: null
+  },
+  title: {
+    type: String,
+    default: 'Add Product Photo'
   }
 })
 const emit = defineEmits(['update:modelValue', 'captured'])
