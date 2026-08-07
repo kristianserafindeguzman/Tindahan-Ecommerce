@@ -31,7 +31,11 @@ class InventoryController extends Controller
         // Ensure image_url is generated for the frontend
         $inventory->transform(function ($item) {
             if ($item->product_picture) {
-                $item->image_url = url('storage/' . $item->product_picture);
+                if (str_starts_with($item->product_picture, 'seed-images/')) {
+                    $item->image_url = url($item->product_picture);
+                } else {
+                    $item->image_url = url('storage/' . $item->product_picture);
+                }
             } else {
                 $item->image_url = null;
             }
