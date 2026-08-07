@@ -24,6 +24,21 @@ class Inventory extends Model
         'status',
     ];
 
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute()
+    {
+        if (empty($this->product_picture)) {
+            return null;
+        }
+
+        if (str_starts_with($this->product_picture, 'seed-images/')) {
+            return asset($this->product_picture);
+        }
+
+        return asset('storage/' . $this->product_picture);
+    }
+
     public function getAvailableQuantityAttribute()
     {
         return $this->stock_quantity - $this->reserved_quantity;

@@ -178,20 +178,7 @@ class VendorController extends Controller
             // Fetch products with category relationship
             $products = \App\Models\Inventory::where('store_id', $store->store_id)->with('category')->get();
             
-            // Compute image_url for each product (mirrors InventoryController::index)
-            $products->transform(function ($item) {
-                if ($item->product_picture) {
-                    if (str_starts_with($item->product_picture, 'seed-images/')) {
-                        $item->image_url = url($item->product_picture);
-                    } else {
-                        $item->image_url = url('storage/' . $item->product_picture);
-                    }
-                } else {
-                    $item->image_url = null;
-                }
-                return $item;
-            });
-            
+
             // Calculate Summary
             $summary = [
                 'total_products' => $products->count(),
@@ -254,20 +241,7 @@ class VendorController extends Controller
             // Fetch products with category relationship
             $products = \App\Models\Inventory::where('store_id', $store->store_id)->with('category')->get();
             
-            // Compute image_url for each product
-            $products->transform(function ($item) {
-                if ($item->product_picture) {
-                    if (str_starts_with($item->product_picture, 'seed-images/')) {
-                        $item->image_url = url($item->product_picture);
-                    } else {
-                        $item->image_url = url('storage/' . $item->product_picture);
-                    }
-                } else {
-                    $item->image_url = null;
-                }
-                return $item;
-            });
-            
+
             // Calculate Summary
             $summary = [
                 'total_products' => $products->count(),

@@ -28,19 +28,6 @@ class InventoryController extends Controller
             ->orderBy('inventory_id', 'desc')
             ->get();
 
-        // Ensure image_url is generated for the frontend
-        $inventory->transform(function ($item) {
-            if ($item->product_picture) {
-                if (str_starts_with($item->product_picture, 'seed-images/')) {
-                    $item->image_url = url($item->product_picture);
-                } else {
-                    $item->image_url = url('storage/' . $item->product_picture);
-                }
-            } else {
-                $item->image_url = null;
-            }
-            return $item;
-        });
 
         return response()->json($inventory);
     }
