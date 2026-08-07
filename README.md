@@ -1,6 +1,6 @@
 # Tindahan: Machine Learning-Driven Multi-Vendor E-Commerce Platform
 
-A comprehensive multi-vendor web application designed to optimize localized sari-sari store operations, digitalize physical sales workflows, and streamline livelihood monitoring. The system integrates predictive modeling via a Random Forest algorithm and interactive geospatial tracking to support cooperative stakeholders and local administrators.
+A comprehensive multi-vendor web application designed to optimize localized sari-sari store operations, digitalize physical sales workflows, and streamline livelihood monitoring. The system integrates predictive modeling via a Random Forest algorithm and interactive geospatial tracking to support stakeholders.
 
 ---
 
@@ -296,7 +296,7 @@ http://127.0.0.1:8000
 
 ## Branch Structure
 
-- **main** — Production-ready code.
+- **angelog** — Production-ready code.
 - **dev** — Shared development branch.
 
 Never commit directly to `main` or `dev`.
@@ -357,4 +357,4 @@ Once reviewed and approved, merge into `dev`.
 
 # 📄 License
 
-This project is developed for academic and capstone purposes.
+This project is developed for academic and capstone project purposes.
