@@ -181,7 +181,11 @@ class VendorController extends Controller
             // Compute image_url for each product (mirrors InventoryController::index)
             $products->transform(function ($item) {
                 if ($item->product_picture) {
-                    $item->image_url = url('storage/' . $item->product_picture);
+                    if (str_starts_with($item->product_picture, 'seed-images/')) {
+                        $item->image_url = url($item->product_picture);
+                    } else {
+                        $item->image_url = url('storage/' . $item->product_picture);
+                    }
                 } else {
                     $item->image_url = null;
                 }
@@ -253,7 +257,11 @@ class VendorController extends Controller
             // Compute image_url for each product
             $products->transform(function ($item) {
                 if ($item->product_picture) {
-                    $item->image_url = url('storage/' . $item->product_picture);
+                    if (str_starts_with($item->product_picture, 'seed-images/')) {
+                        $item->image_url = url($item->product_picture);
+                    } else {
+                        $item->image_url = url('storage/' . $item->product_picture);
+                    }
                 } else {
                     $item->image_url = null;
                 }
