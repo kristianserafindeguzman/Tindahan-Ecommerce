@@ -97,7 +97,7 @@ const sort = defineModel('sort')
   border-radius: 50%;
 
   background: transparent;
-  color: #767676;
+  color: #666666;
 
   cursor: pointer;
 
@@ -158,7 +158,7 @@ const sort = defineModel('sort')
   width: 100%;
   height: 40px;
 
-  border-radius: 10px;
+  border-radius: 6px;
 
   background: #bd2427;
   color: #ffffff;
@@ -209,7 +209,7 @@ const sort = defineModel('sort')
 }
 
 .clear-filters-link:hover {
-  color: #8f1c1e;
+  color: #8f1a1c;
   text-decoration: underline;
 }
 </style>

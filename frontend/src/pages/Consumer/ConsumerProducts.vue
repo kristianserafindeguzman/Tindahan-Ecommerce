@@ -78,7 +78,7 @@
 
         <div class="products-main">
           <div class="products-grid">
-            <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" />
+            <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
           </div>
 
           <p v-if="!filteredProducts.length" class="products-empty">
@@ -130,6 +130,8 @@
 
     <SiteFooter />
 
+    <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
+
   </q-page>
 </template>
 
@@ -142,17 +144,37 @@ import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import ProductFilters from '@/components/consumer/ProductFilters.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
+import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
 import { useCategories } from '@/composables/useCategories'
 import { useProducts } from '@/composables/useProducts'
+import { useCart } from '@/composables/useCart'
 
 const $q = useQuasar()
 const route = useRoute()
+
+const showProductModal = ref(false)
+const selectedProduct = ref(null)
+
+const openProductModal = (product) => {
+  selectedProduct.value = product
+  showProductModal.value = true
+}
 
 // Placeholder until real geolocation/address selection is wired up.
 const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
 
 const { categories, fetchCategories } = useCategories()
 const { products, fetchProducts } = useProducts()
+const { addToCart } = useCart()
+
+const handleAddToCart = async (product) => {
+  try {
+    await addToCart(product.id)
+    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+  }
+}
 
 onMounted(() => {
   fetchCategories()
@@ -364,7 +386,7 @@ const clearFilters = () => {
   padding: 0 14px;
 
   border: 1px solid #e2e2e2;
-  border-radius: 10px;
+  border-radius: 6px;
   outline: none !important;
 
   background: #ffffff;
@@ -376,8 +398,7 @@ const clearFilters = () => {
   transition: border-color 0.15s, background-color 0.15s;
 }
 
-/* Quasar's QBtn renders its own focus/ripple overlay via this internal element — hide it so it
-   can't paint a stray ring on top of our own border/hover treatment. */
+/* Hides Quasar's own focus/ripple overlay so it can't paint a stray ring over our border/hover treatment. */
 .filters-toggle-btn :deep(.q-focus-helper) {
   display: none;
 }
@@ -442,7 +463,7 @@ const clearFilters = () => {
   padding: 0 20px;
 
   border: 1px solid #e2e2e2;
-  border-radius: 10px;
+  border-radius: 12px;
 
   background: #ffffff;
   color: #333333;
@@ -495,8 +516,7 @@ const clearFilters = () => {
   min-width: 0;
 }
 
-/* auto-fill/minmax instead of fixed column counts — card size shrinks smoothly as the viewport (or
-   the filters sidebar taking up space) narrows, rather than jumping at fixed breakpoints. */
+/* auto-fill/minmax instead of fixed column counts, so card size shrinks smoothly as available width narrows. */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -520,8 +540,8 @@ const clearFilters = () => {
 
   width: 260px;
 
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
 
   background: #ffffff;
 
@@ -532,7 +552,7 @@ const clearFilters = () => {
   width: 100%;
   max-width: 380px;
 
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 /* RESPONSIVE */

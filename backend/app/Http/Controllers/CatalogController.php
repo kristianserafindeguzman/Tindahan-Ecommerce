@@ -34,6 +34,8 @@ class CatalogController extends Controller
                     'store' => $item->store->store_name ?? null,
                     'storeId' => $item->store_id,
                     'inStock' => $item->available_quantity > 0,
+                    'availableQuantity' => $item->available_quantity,
+                    'variants' => $item->variants,
                 ];
             });
 

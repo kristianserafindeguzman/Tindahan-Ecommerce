@@ -60,6 +60,8 @@
                 :key="product.id"
                 :product="product"
                 :highlight-query="query"
+                @add-to-cart="handleAddToCart"
+                @view-product="openProductModal"
               />
             </div>
 
@@ -97,7 +99,7 @@
           <div v-if="!isSearching && showRelatedProducts" class="related-section">
             <h2 class="results-section-title">You May Also Like</h2>
             <div class="products-grid">
-              <ProductCard v-for="product in relatedProducts" :key="`related-${product.id}`" :product="product" />
+              <ProductCard v-for="product in relatedProducts" :key="`related-${product.id}`" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
             </div>
           </div>
         </template>
@@ -106,7 +108,7 @@
         <div v-else class="results-empty">
           <q-icon name="search_off" size="32px" class="results-empty-icon" />
           <p class="results-empty-title">No results found for "{{ query }}".</p>
-          <p class="results-empty-text">Try another keyword or adjust your filters.</p>
+          <p class="results-empty-text">Try searching for a different keyword.</p>
         </div>
 
       </template>
@@ -114,6 +116,8 @@
     </div>
 
     <SiteFooter />
+
+    <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
 
   </q-page>
 </template>
@@ -127,9 +131,11 @@ import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import StoreCard from '@/components/consumer/StoreCard.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
+import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
 import { useCategories } from '@/composables/useCategories'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
+import { useCart } from '@/composables/useCart'
 
 const $q = useQuasar()
 const route = useRoute()
@@ -143,6 +149,24 @@ const query = computed(() => (route.query.q || '').toString().trim())
 const { categories, fetchCategories } = useCategories()
 const { products, fetchProducts } = useProducts()
 const { stores, fetchStores } = useStores()
+const { addToCart } = useCart()
+
+const handleAddToCart = async (product) => {
+  try {
+    await addToCart(product.id)
+    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+  }
+}
+
+const showProductModal = ref(false)
+const selectedProduct = ref(null)
+
+const openProductModal = (product) => {
+  selectedProduct.value = product
+  showProductModal.value = true
+}
 
 onMounted(() => {
   fetchCategories()
@@ -267,8 +291,7 @@ const goToRecentSearch = (term) => {
 </script>
 
 <style scoped>
-/* Sticky footer — .page-content grows via flex:1 to fill any leftover viewport height, so the footer
-   never rides up under a short (1-2 result) page. */
+/* Sticky footer — .page-content grows via flex:1 so the footer never rides up on a short results page. */
 .storefront-page {
   min-height: 100vh;
 
@@ -413,8 +436,7 @@ const goToRecentSearch = (term) => {
   color: #111111;
 }
 
-/* auto-fill/minmax instead of fixed column counts — card size shrinks smoothly as the viewport
-   narrows, rather than jumping at fixed breakpoints. */
+/* auto-fill/minmax instead of fixed column counts, so card size shrinks smoothly as the viewport narrows. */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -422,10 +444,7 @@ const goToRecentSearch = (term) => {
   gap: 16px;
 }
 
-/* Same card gap as .products-grid — Products and Stores share one grid rhythm on this page. */
-/* Fixed 4 columns on desktop (unchanged); auto-fill/minmax only kicks in below the tablet
-   breakpoint (see RESPONSIVE), so card size shrinks smoothly on smaller screens instead of
-   jumping at fixed breakpoints, without changing anything at desktop widths. */
+/* Same card gap as .products-grid; fixed 4 columns on desktop, auto-fill/minmax below the tablet breakpoint. */
 .stores-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -437,7 +456,7 @@ const goToRecentSearch = (term) => {
   margin-top: 32px;
   padding-top: 8px;
 
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #e8e8e8;
 }
 
 .related-section .results-section-title {
@@ -482,15 +501,15 @@ const goToRecentSearch = (term) => {
 .skeleton-card {
   overflow: hidden;
 
-  border-radius: 8px;
-  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
 
   background: #ffffff;
 }
 
 .skeleton-image,
 .skeleton-line {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 37%, #f0f0f0 63%);
+  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
   background-size: 400% 100%;
 
   animation: skeleton-pulse 1.4s ease infinite;

@@ -9,9 +9,11 @@
       <!-- HERO BANNER -->
       <div class="hero-banner">
         <div class="hero-content">
-          <h1 class="hero-title">Everyday essentials made easy</h1>
-          <p class="hero-subtitle">Find products from trusted sari-sari stores near you.</p>
-          <q-btn unelevated no-caps label="Browse Products" class="hero-cta" @click="router.push('/consumer/products')" />
+          <h1 class="hero-title hero-title-lg">Explore sari-sari stores around you</h1>
+          <!-- Not wired up yet — no map feature/route exists yet, intentionally not clickable. -->
+          <q-btn unelevated no-caps label="Show Map" class="hero-cta">
+            <q-icon name="arrow_forward" size="16px" class="q-ml-xs" />
+          </q-btn>
         </div>
         <div class="hero-logo-wrap">
           <img
@@ -30,7 +32,7 @@
       <!-- RECOMMENDED / POPULAR PRODUCTS -->
       <SectionBlock :title="resultsSectionTitle" view-all @view-all="router.push('/consumer/personalize')">
         <div class="products-grid">
-          <ProductCard v-for="product in recommendedProducts" :key="product.id" :product="product" />
+          <ProductCard v-for="product in recommendedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
         </div>
       </SectionBlock>
 
@@ -44,7 +46,7 @@
       <!-- DISCOVER PRODUCTS -->
       <SectionBlock title="Discover Products" view-all @view-all="router.push('/consumer/products')">
         <div class="products-grid">
-          <ProductCard v-for="product in visibleDiscoverProducts" :key="product.id" :product="product" />
+          <ProductCard v-for="product in visibleDiscoverProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
         </div>
 
         <q-btn
@@ -61,23 +63,38 @@
 
     <SiteFooter />
 
+    <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
+
   </q-page>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import SectionBlock from '@/components/consumer/SectionBlock.vue'
 import CategoryCarousel from '@/components/consumer/CategoryCarousel.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import StoreCard from '@/components/consumer/StoreCard.vue'
+import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
 import { useCategories } from '@/composables/useCategories'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
+import { useCart } from '@/composables/useCart'
 
 const router = useRouter()
+const $q = useQuasar()
+const { addToCart } = useCart()
+
+const showProductModal = ref(false)
+const selectedProduct = ref(null)
+
+const openProductModal = (product) => {
+  selectedProduct.value = product
+  showProductModal.value = true
+}
 
 // This page renders for guests and logged-in consumers alike, so SiteHeader reads localStorage directly instead of route-guarding.
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
@@ -97,6 +114,15 @@ onMounted(() => {
 
 const goToCategory = (category) => {
   router.push({ path: '/consumer/products', query: { category: category.label } })
+}
+
+const handleAddToCart = async (product) => {
+  try {
+    await addToCart(product.id)
+    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+  }
 }
 
 const resultsSectionTitle = computed(() =>
@@ -206,7 +232,7 @@ const visibleDiscoverProducts = computed(() =>
   position: relative;
   z-index: 1;
 
-  max-width: 480px;
+  max-width: 640px;
 }
 
 .hero-title {
@@ -219,20 +245,18 @@ const visibleDiscoverProducts = computed(() =>
   color: #ffffff;
 }
 
-.hero-subtitle {
-  margin: 0 0 20px;
+/* Bigger now that the subtitle is gone — the only line of copy left in the hero. */
+.hero-title-lg {
+  margin: 0 0 24px;
 
-  font-size: 14px;
-  line-height: 1.5;
-
-  color: rgba(255, 255, 255, 0.85);
+  font-size: 32px;
 }
 
 .hero-cta {
   height: 40px;
   padding: 0 22px;
 
-  border-radius: 10px;
+  border-radius: 6px;
 
   background: #ffffff;
   color: #bd2427;
@@ -240,6 +264,7 @@ const visibleDiscoverProducts = computed(() =>
   font-size: 13.5px;
   font-weight: 700;
 
+  /* Neutral (not brand-red) shadow — a red-tinted shadow would disappear against this red banner. */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 
   transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
@@ -250,6 +275,18 @@ const visibleDiscoverProducts = computed(() =>
 
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
   transform: translateY(-1px);
+}
+
+.hero-cta:active {
+  background: #ececec;
+
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+  transform: translateY(0);
+}
+
+.hero-cta:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
 }
 
 .hero-logo-wrap {
@@ -274,8 +311,7 @@ const visibleDiscoverProducts = computed(() =>
 
 /* PRODUCTS GRID */
 
-/* auto-fill/minmax instead of fixed column counts — card size shrinks smoothly as the viewport
-   narrows, rather than jumping at fixed breakpoints. */
+/* auto-fill/minmax instead of fixed column counts, so card size shrinks smoothly as the viewport narrows. */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -289,7 +325,7 @@ const visibleDiscoverProducts = computed(() =>
   padding: 12px;
 
   border: 1px solid #e2e2e2;
-  border-radius: 8px;
+  border-radius: 6px;
 
   background: #ffffff;
   color: #bd2427;
@@ -310,9 +346,7 @@ const visibleDiscoverProducts = computed(() =>
 
 /* STORES ROW */
 
-/* Fixed 4 columns on desktop (unchanged); auto-fill/minmax only kicks in below the tablet
-   breakpoint (see RESPONSIVE), so card size shrinks smoothly on smaller screens instead of
-   jumping at fixed breakpoints, without changing anything at desktop widths. */
+/* Fixed 4 columns on desktop; auto-fill/minmax only kicks in below the tablet breakpoint (see RESPONSIVE). */
 .stores-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

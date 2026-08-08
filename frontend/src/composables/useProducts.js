@@ -17,7 +17,9 @@ export function useProducts() {
         image: product.image,
         store: product.store,
         storeId: product.storeId,
-        inStock: product.inStock
+        inStock: product.inStock,
+        availableQuantity: product.availableQuantity,
+        variants: product.variants
       }))
     } catch (error) {
       console.error('Failed to load products', error)

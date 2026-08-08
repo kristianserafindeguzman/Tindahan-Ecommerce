@@ -1,5 +1,5 @@
 <template>
-  <q-card flat class="product-card" :class="{ 'product-card-oos': !product.inStock }">
+  <q-card flat class="product-card" :class="{ 'product-card-oos': !product.inStock }" @click="$emit('view-product', product)">
     <div class="product-card-image">
       <img
         v-if="product.image && !imageFailed"
@@ -21,7 +21,7 @@
         icon="add"
         aria-label="Add to cart"
         class="product-add-btn"
-        @click="$emit('add-to-cart', product)"
+        @click.stop="$emit('add-to-cart', product)"
       />
     </div>
     <q-card-section class="product-card-body">
@@ -55,10 +55,14 @@ const props = defineProps({
   }
 })
 
-defineEmits(['add-to-cart'])
+defineEmits(['add-to-cart', 'view-product'])
 
 const nameParts = computed(() => splitHighlightParts(props.product.name, props.highlightQuery))
 const imageFailed = ref(false)
+
+const goToProduct = () => {
+  router.push(`/consumer/product/${props.product.id}`)
+}
 </script>
 
 <style scoped>
@@ -68,7 +72,7 @@ const imageFailed = ref(false)
   font-family: 'Roboto', Arial, sans-serif;
 
   border-radius: 10px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #e8e8e8;
 
   background: #ffffff;
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProfileController;
@@ -112,5 +113,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // ----- Consumer Routes -----
     Route::middleware('role:Consumer')->prefix('consumer')->group(function () {
         Route::get('/home', fn () => response()->json(['message' => 'Welcome to the Consumer Home']));
+
+        // Cart
+        Route::get('/cart', [CartController::class, 'index']);
+        Route::post('/cart', [CartController::class, 'store']);
+        Route::patch('/cart/{id}', [CartController::class, 'update']);
+        Route::delete('/cart/{id}', [CartController::class, 'destroy']);
     });
 });

@@ -142,7 +142,40 @@
 
             <q-btn flat dense :ripple="false" class="icon-btn">
               <q-icon name="shopping_cart" size="20px" />
-              <span v-if="cartCount" class="icon-badge-count">{{ cartCount }}</span>
+              <span v-if="cartItemCount" class="icon-badge-count">{{ cartItemCount }}</span>
+
+              <q-menu anchor="bottom right" self="top right" content-class="cart-menu-panel" @show="fetchCart">
+                <div class="cart-menu-inner">
+                  <div class="cart-menu-title">My Cart</div>
+
+                  <div v-if="!cartItems.length" class="cart-menu-empty">Your cart is empty.</div>
+
+                  <template v-else>
+                    <div v-for="item in cartItems.slice(0, 4)" :key="item.cartId" class="cart-menu-item">
+                      <div class="cart-menu-item-image">
+                        <img v-if="item.image" :src="item.image" :alt="item.name" />
+                        <q-icon v-else name="inventory_2" size="16px" />
+                      </div>
+                      <div class="cart-menu-item-info">
+                        <div class="cart-menu-item-name">{{ item.name }}</div>
+                        <div class="cart-menu-item-meta">Qty {{ item.quantity }} · ₱{{ item.price.toFixed(2) }}</div>
+                      </div>
+                    </div>
+                    <div v-if="cartItems.length > 4" class="cart-menu-more">
+                      +{{ cartItems.length - 4 }} more item{{ cartItems.length - 4 === 1 ? '' : 's' }}
+                    </div>
+                  </template>
+
+                  <q-btn
+                    unelevated
+                    no-caps
+                    label="View All Cart"
+                    class="cart-menu-view-all"
+                    v-close-popup
+                    @click="router.push('/consumer/cart')"
+                  />
+                </div>
+              </q-menu>
             </q-btn>
 
             <q-btn flat dense no-caps :ripple="false" class="account-btn">
@@ -189,9 +222,8 @@
               @click="goToSignup"
             />
 
-            <q-btn flat dense :ripple="false" class="icon-btn">
+            <q-btn flat dense :ripple="false" class="icon-btn" @click="goToLogin">
               <q-icon name="shopping_cart" size="20px" />
-              <span v-if="cartCount" class="icon-badge-count">{{ cartCount }}</span>
             </q-btn>
           </template>
 
@@ -207,6 +239,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
+import { useCart } from '@/composables/useCart'
 import { splitHighlightParts } from '@/utils/textHighlight'
 
 defineProps({
@@ -221,14 +254,17 @@ const route = useRoute()
 
 const { products, fetchProducts } = useProducts()
 const { stores, fetchStores } = useStores()
+const { items: cartItems, itemCount: cartItemCount, fetchCart } = useCart()
+
+// Renders for both guests and logged-in consumers, so it reads localStorage directly rather than relying on a route guard.
+const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
 onMounted(() => {
   fetchProducts()
   fetchStores()
+  // Cart routes are auth-gated — an unconditional fetch would 401 for guests.
+  if (isLoggedIn.value) fetchCart()
 })
-
-// Renders for both guests and logged-in consumers, so it reads localStorage directly rather than relying on a route guard.
-const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
 const userAvatar = computed(() => {
   try {
@@ -239,9 +275,8 @@ const userAvatar = computed(() => {
   }
 })
 
-// TODO: back with real notification/cart endpoints once they exist
+// TODO: back with a real notifications endpoint once it exists
 const hasNotifications = ref(true)
-const cartCount = ref(2)
 
 const handleLogout = async () => {
   try {
@@ -513,6 +548,144 @@ const addressExpanded = ref(false)
   line-height: 1;
 }
 
+/* MINI CART DROPDOWN — the teleported panel needs :deep() + content-class to reach, matching .search-suggestions. */
+
+:deep(.cart-menu-panel) {
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.cart-menu-inner {
+  width: 280px;
+  padding: 14px;
+
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+.cart-menu-title {
+  margin-bottom: 10px;
+
+  font-size: 13.5px;
+  font-weight: 700;
+
+  color: #111111;
+}
+
+.cart-menu-empty {
+  padding: 16px 0;
+
+  text-align: center;
+
+  font-size: 12.5px;
+
+  color: #8992a2;
+}
+
+.cart-menu-item {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.cart-menu-item-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 36px;
+  height: 36px;
+
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+
+  background: linear-gradient(145deg, #f7f7f8 0%, #ececee 100%);
+  color: #bd2427;
+
+  overflow: hidden;
+}
+
+.cart-menu-item-image img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.cart-menu-item-info {
+  min-width: 0;
+}
+
+.cart-menu-item-name {
+  font-size: 12.5px;
+  font-weight: 600;
+
+  color: #222222;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cart-menu-item-meta {
+  margin-top: 1px;
+
+  font-size: 11.5px;
+
+  color: #8992a2;
+}
+
+.cart-menu-more {
+  margin-top: 4px;
+
+  font-size: 11.5px;
+
+  color: #8992a2;
+}
+
+.cart-menu-view-all {
+  width: 100%;
+  height: 44px;
+  margin-top: 12px;
+
+  border-radius: 6px;
+
+  background: #bd2427;
+  color: #ffffff;
+
+  font-size: 12.5px;
+  font-weight: 500;
+
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+
+.cart-menu-view-all:hover {
+  background: #a91e21;
+
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+
+  transform: translateY(-1px);
+}
+
+.cart-menu-view-all:active {
+  background: #8f1a1c;
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.cart-menu-view-all:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
 .auth-btn {
   height: 38px;
 
@@ -676,7 +849,7 @@ const addressExpanded = ref(false)
   overflow-y: auto;
 
   border-radius: 10px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #e8e8e8;
 
   background: #ffffff;
 

@@ -58,7 +58,7 @@ const imageFailed = ref(false)
   font-family: 'Roboto', Arial, sans-serif;
 
   border-radius: 10px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #e8e8e8;
 
   background: #ffffff;
 
@@ -123,7 +123,7 @@ const imageFailed = ref(false)
   border-radius: 999px;
 
   background: rgba(255, 255, 255, 0.92);
-  color: #2e9e5b;
+  color: #16a34a;
 
   font-size: 11px;
   font-weight: 700;
@@ -134,7 +134,7 @@ const imageFailed = ref(false)
 }
 
 .store-status-tag-closed {
-  color: #c02226;
+  color: #b91c1c;
 }
 
 .store-card-body {
@@ -171,11 +171,11 @@ const imageFailed = ref(false)
   font-weight: 500;
   line-height: 1.3;
 
-  color: #2e9e5b;
+  color: #16a34a;
 }
 
 .store-card-hours-closed {
-  color: #c02226;
+  color: #b91c1c;
 }
 
 .status-dot {
@@ -185,11 +185,11 @@ const imageFailed = ref(false)
 
   border-radius: 50%;
 
-  background: #2e9e5b;
+  background: #16a34a;
 }
 
 .status-dot-closed {
-  background: #c02226;
+  background: #b91c1c;
 }
 
 .store-card-distance {

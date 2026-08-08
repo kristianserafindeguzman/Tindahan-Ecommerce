@@ -283,7 +283,7 @@ const clearFilters = () => {
   padding: 0 14px;
 
   border: 1px solid #e2e2e2;
-  border-radius: 10px;
+  border-radius: 6px;
   outline: none !important;
 
   background: #ffffff;
@@ -295,8 +295,7 @@ const clearFilters = () => {
   transition: border-color 0.15s, background-color 0.15s;
 }
 
-/* Quasar's QBtn renders its own focus/ripple overlay via this internal element — hide it so it
-   can't paint a stray ring on top of our own border/hover treatment. */
+/* Hides Quasar's own focus/ripple overlay so it can't paint a stray ring over our border/hover treatment. */
 .filters-toggle-btn :deep(.q-focus-helper) {
   display: none;
 }
@@ -346,9 +345,7 @@ const clearFilters = () => {
   min-width: 0;
 }
 
-/* Fixed 4 columns on desktop (unchanged); auto-fill/minmax only kicks in below the tablet
-   breakpoint (see RESPONSIVE), so card size shrinks smoothly on smaller screens instead of
-   jumping at fixed breakpoints, without changing anything at desktop widths. */
+/* Fixed 4 columns on desktop; auto-fill/minmax only kicks in below the tablet breakpoint (see RESPONSIVE). */
 .stores-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -372,8 +369,8 @@ const clearFilters = () => {
 
   width: 260px;
 
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
 
   background: #ffffff;
 
@@ -384,7 +381,7 @@ const clearFilters = () => {
   width: 100%;
   max-width: 380px;
 
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 /* RESPONSIVE */

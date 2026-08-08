@@ -33,8 +33,8 @@ defineEmits(['click'])
 
   font-family: 'Roboto', Arial, sans-serif;
 
-  border-radius: 14px;
-  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
 
   background: #ffffff;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -45,10 +45,9 @@ defineEmits(['click'])
 }
 
 .category-tile:hover {
-  border-color: transparent;
-  background: #bd2427;
+  border-color: #f3c6c7;
 
-  box-shadow: 0 10px 24px rgba(189, 36, 39, 0.28);
+  box-shadow: 0 10px 24px rgba(189, 36, 39, 0.14);
   transform: translateY(-3px);
 }
 
@@ -66,12 +65,11 @@ defineEmits(['click'])
   background: linear-gradient(145deg, #fdecec 0%, #fbdbdc 100%);
   color: #bd2427;
 
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .category-tile:hover .category-tile-icon {
-  background: rgba(255, 255, 255, 0.22);
-  color: #ffffff;
+  transform: scale(1.08);
 }
 
 .category-tile-label {
@@ -89,11 +87,5 @@ defineEmits(['click'])
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-
-  transition: color 0.2s ease;
-}
-
-.category-tile:hover .category-tile-label {
-  color: #ffffff;
 }
 </style>

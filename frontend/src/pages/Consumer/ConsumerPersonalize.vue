@@ -14,7 +14,7 @@
       </div>
 
       <div class="products-grid">
-        <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" />
+        <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
       </div>
 
       <p v-if="!products.length" class="products-empty">
@@ -30,23 +30,48 @@
 
     <SiteFooter />
 
+    <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
+
   </q-page>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
+import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
 import { useProducts } from '@/composables/useProducts'
+import { useCart } from '@/composables/useCart'
+
+const $q = useQuasar()
 
 // Placeholder until real geolocation/address selection is wired up.
 const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
 
 const { products, fetchProducts } = useProducts()
+const { addToCart } = useCart()
 
 onMounted(fetchProducts)
+
+const showProductModal = ref(false)
+const selectedProduct = ref(null)
+
+const openProductModal = (product) => {
+  selectedProduct.value = product
+  showProductModal.value = true
+}
+
+const handleAddToCart = async (product) => {
+  try {
+    await addToCart(product.id)
+    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+  }
+}
 
 // hasHistory checks a signal nothing currently writes, so it resolves to false until a real history source exists.
 
@@ -131,8 +156,7 @@ const paginatedProducts = computed(() => {
 
 /* PRODUCTS GRID */
 
-/* auto-fill/minmax instead of fixed column counts — card size shrinks smoothly as the viewport
-   narrows, rather than jumping at fixed breakpoints. */
+/* auto-fill/minmax instead of fixed column counts, so card size shrinks smoothly as the viewport narrows. */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
