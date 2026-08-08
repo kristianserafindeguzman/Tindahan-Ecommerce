@@ -1,8 +1,20 @@
 <template>
-  <q-card flat class="product-card">
+  <q-card flat class="product-card" :class="{ 'product-card-oos': !product.inStock }">
     <div class="product-card-image">
-      <q-icon name="inventory_2" size="32px" />
+      <img
+        v-if="product.image && !imageFailed"
+        :src="product.image"
+        :alt="product.name"
+        class="product-card-img"
+        @error="imageFailed = true"
+      />
+      <q-icon v-else name="inventory_2" size="36px" />
+
+      <span v-if="product.category" class="product-category-tag">{{ product.category }}</span>
+      <span v-if="!product.inStock" class="product-oos-tag">Out of Stock</span>
+
       <q-btn
+        v-if="product.inStock"
         round
         unelevated
         dense
@@ -21,7 +33,7 @@
         </template>
       </div>
       <div class="product-meta">
-        <q-icon name="location_on" size="13px" class="product-meta-icon" />
+        <q-icon name="storefront" size="13px" class="product-meta-icon" />
         <span class="product-meta-text">{{ product.store }}</span>
       </div>
     </q-card-section>
@@ -29,7 +41,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { splitHighlightParts } from '@/utils/textHighlight'
 
 const props = defineProps({
@@ -46,13 +58,16 @@ const props = defineProps({
 defineEmits(['add-to-cart'])
 
 const nameParts = computed(() => splitHighlightParts(props.product.name, props.highlightQuery))
+const imageFailed = ref(false)
 </script>
 
 <style scoped>
 .product-card {
   overflow: hidden;
 
-  border-radius: 8px;
+  font-family: 'Roboto', Arial, sans-serif;
+
+  border-radius: 10px;
   border: 1px solid #f0f0f0;
 
   background: #ffffff;
@@ -78,7 +93,7 @@ const nameParts = computed(() => splitHighlightParts(props.product.name, props.h
   align-items: center;
   justify-content: center;
 
-  height: 110px;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
 
   background: linear-gradient(145deg, #f7f7f8 0%, #ececee 100%);
@@ -91,19 +106,77 @@ const nameParts = computed(() => splitHighlightParts(props.product.name, props.h
   background: linear-gradient(145deg, #fdecec 0%, #fbdbdc 100%);
 }
 
+.product-card-img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-card-img {
+  transform: scale(1.06);
+}
+
+.product-card-oos .product-card-img {
+  filter: grayscale(40%);
+  opacity: 0.55;
+}
+
+.product-category-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+
+  padding: 3px 8px;
+
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.92);
+  color: #4a4a4a;
+
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.product-oos-tag {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  padding: 5px 12px;
+
+  border-radius: 6px;
+
+  background: rgba(17, 17, 17, 0.78);
+  color: #ffffff;
+
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
 .product-card-body {
-  padding: 12px;
+  padding: 14px;
 }
 
 .product-add-btn {
   position: absolute;
-  right: 6px;
-  bottom: 6px;
+  right: 8px;
+  bottom: 8px;
 
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  min-height: 26px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
   padding: 0;
 
   background: #bd2427;
@@ -120,17 +193,17 @@ const nameParts = computed(() => splitHighlightParts(props.product.name, props.h
 
 .product-add-btn:hover {
   background: #9c171b;
-  transform: scale(1.08);
+  transform: scale(1.1);
 }
 
 .product-price {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.3;
 
-  color: #111111;
+  color: #bd2427;
 
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .product-name {
@@ -140,7 +213,7 @@ const nameParts = computed(() => splitHighlightParts(props.product.name, props.h
 
   color: #333333;
 
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 
   min-height: calc(1.35em * 2);
 
@@ -163,8 +236,11 @@ const nameParts = computed(() => splitHighlightParts(props.product.name, props.h
   display: flex;
   align-items: center;
 
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
+  padding-top: 10px;
+
+  border-top: 1px solid #f4f4f4;
 
   font-size: 12px;
   line-height: 1.3;

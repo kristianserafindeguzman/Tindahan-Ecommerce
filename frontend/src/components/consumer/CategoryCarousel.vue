@@ -82,7 +82,7 @@ const scrollNext = () => {
   align-self: center;
 
   border: 1px solid #eceef1;
-  border-radius: 50%;
+  border-radius: 10px;
 
   background: #ffffff;
   color: #bd2427;

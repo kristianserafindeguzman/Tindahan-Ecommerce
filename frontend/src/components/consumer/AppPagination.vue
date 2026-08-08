@@ -5,6 +5,9 @@
       :max="max"
       :max-pages="maxPages"
       direction-links
+      flat
+      color="grey"
+      active-color="primary"
       @update:model-value="$emit('update:modelValue', $event)"
     />
   </div>

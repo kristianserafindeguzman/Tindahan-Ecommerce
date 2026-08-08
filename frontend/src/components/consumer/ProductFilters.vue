@@ -2,7 +2,6 @@
   <div class="product-filters">
     <div class="filters-panel-header">
       <div class="filters-panel-title-group">
-        <div class="filters-panel-icon"><q-icon name="tune" size="16px" /></div>
         <span class="filters-panel-title">Filters</span>
       </div>
       <button type="button" class="filters-close-btn" aria-label="Close filters" @click="$emit('close')">
@@ -47,9 +46,9 @@
       />
     </div>
 
-    <div class="filter-group">
-      <label class="filter-label">Availability</label>
-      <q-checkbox v-model="inStock" label="In Stock Only" dense />
+    <div class="filter-group filter-group-row">
+      <label class="filter-label filter-label-inline">In Stock Only</label>
+      <q-toggle v-model="inStock" dense color="primary" />
     </div>
 
     <div class="filter-group">
@@ -128,21 +127,6 @@ const sort = defineModel('sort')
   gap: 10px;
 }
 
-.filters-panel-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  width: 28px;
-  height: 28px;
-
-  border-radius: 8px;
-
-  background: linear-gradient(145deg, #fdecec 0%, #fbdbdc 100%);
-  color: #bd2427;
-}
-
 .filters-panel-title {
   font-size: 16px;
   font-weight: 700;
@@ -177,6 +161,12 @@ const sort = defineModel('sort')
   margin-bottom: 16px;
 }
 
+.filter-group-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .filter-label {
   display: block;
 
@@ -186,6 +176,13 @@ const sort = defineModel('sort')
   font-weight: 600;
 
   color: #4a4a4a;
+}
+
+.filter-label-inline {
+  margin-bottom: 0;
+
+  font-size: 13px;
+  color: #333333;
 }
 
 .price-range-row {
@@ -200,7 +197,17 @@ const sort = defineModel('sort')
 }
 
 .product-filters :deep(.q-field--outlined .q-field__control) {
-  border-radius: 8px;
+  border-radius: 10px;
+}
+
+/* Same red hover/focus fill as the page-level Sort/Filters controls, for consistency across every field. */
+.product-filters :deep(.q-field--outlined .q-field__control:hover),
+.product-filters :deep(.q-field--outlined.q-field--focused .q-field__control) {
+  background: #fdecec;
+}
+
+.product-filters :deep(.q-field--outlined .q-field__control:hover):before {
+  border-color: #bd2427;
 }
 
 .filters-divider {
@@ -211,7 +218,7 @@ const sort = defineModel('sort')
   width: 100%;
   height: 40px;
 
-  border-radius: 8px;
+  border-radius: 10px;
 
   background: #bd2427;
   color: #ffffff;

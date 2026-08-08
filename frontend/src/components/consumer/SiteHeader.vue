@@ -202,10 +202,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
-import { MOCK_ALL_PRODUCTS, MOCK_STORES } from '@/data/mockCatalog'
+import { useProducts } from '@/composables/useProducts'
+import { useStores } from '@/composables/useStores'
 import { splitHighlightParts } from '@/utils/textHighlight'
 
 defineProps({
@@ -217,6 +218,14 @@ defineProps({
 
 const router = useRouter()
 const route = useRoute()
+
+const { products, fetchProducts } = useProducts()
+const { stores, fetchStores } = useStores()
+
+onMounted(() => {
+  fetchProducts()
+  fetchStores()
+})
 
 // Renders for both guests and logged-in consumers, so it reads localStorage directly rather than relying on a route guard.
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
@@ -294,13 +303,13 @@ const clearRecentSearches = () => {
 const productSuggestions = computed(() => {
   const q = searchInput.value.trim().toLowerCase()
   if (!q) return []
-  return MOCK_ALL_PRODUCTS.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 4)
+  return products.value.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 4)
 })
 
 const storeSuggestions = computed(() => {
   const q = searchInput.value.trim().toLowerCase()
   if (!q) return []
-  return MOCK_STORES.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 3)
+  return stores.value.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 3)
 })
 
 // Flat list backing arrow-key navigation — recent searches when empty, live matches once typing.

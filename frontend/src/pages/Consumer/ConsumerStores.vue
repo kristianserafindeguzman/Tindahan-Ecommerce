@@ -25,11 +25,15 @@
               hide-bottom-space
               behavior="menu"
               class="sort-select"
-            />
+            >
+              <template #prepend>
+                <q-icon name="swap_vert" size="16px" />
+              </template>
+            </q-select>
           </div>
 
           <q-btn
-            outline
+            unelevated
             no-caps
             dense
             icon="tune"
@@ -90,23 +94,26 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import StoreCard from '@/components/consumer/StoreCard.vue'
 import StoreFilters from '@/components/consumer/StoreFilters.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
-import { MOCK_STORES } from '@/data/mockCatalog'
+import { useStores } from '@/composables/useStores'
 
 const $q = useQuasar()
 
 // Placeholder until real geolocation/address selection is wired up.
 const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
 
+const { stores, fetchStores } = useStores()
+
+onMounted(fetchStores)
+
 const SORT_OPTIONS = [
   { label: 'Popular', value: 'popular' },
-  { label: 'Distance: Nearest', value: 'distance' },
   { label: 'Name: A-Z', value: 'name' }
 ]
 
@@ -125,18 +132,17 @@ const mobileFiltersOpen = computed({
 const hasActiveFilters = computed(() => openNowOnly.value || sortBy.value !== 'popular')
 
 const filteredStores = computed(() => {
-  const list = MOCK_STORES.filter((store) => {
+  const list = stores.value.filter((store) => {
     if (openNowOnly.value && !store.isOpen) return false
     return true
   })
 
-  if (sortBy.value === 'distance') return [...list].sort((a, b) => a.distanceMeters - b.distanceMeters)
   if (sortBy.value === 'name') return [...list].sort((a, b) => a.name.localeCompare(b.name))
   return list
 })
 
 // Client-side pagination, same convention as ConsumerProducts.vue.
-const PAGE_SIZE = 4
+const PAGE_SIZE = 16
 const currentPage = ref(1)
 
 const totalPages = computed(() =>
@@ -249,12 +255,24 @@ const clearFilters = () => {
 }
 
 .sort-select :deep(.q-field__control) {
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
-/* Quasar's unstyled focus defaults to brand red, which reads as an error state here — tone it down to neutral grey. */
+.sort-select :deep(.q-field__prepend) {
+  color: #9ca3af;
+}
+
+/* Same red hover/focus treatment as .filters-toggle-btn, so the two paired controls feel consistent. */
+.sort-select:hover :deep(.q-field__control) {
+  background: #fdecec;
+}
+
+.sort-select:hover :deep(.q-field__control):before {
+  border-color: #bd2427;
+}
+
 .sort-select.q-field--focused :deep(.q-field__control:after) {
-  border-color: #9a9a9a;
+  border-color: #bd2427;
 }
 
 .filters-toggle-btn {
@@ -265,7 +283,8 @@ const clearFilters = () => {
   padding: 0 14px;
 
   border: 1px solid #e2e2e2;
-  border-radius: 8px;
+  border-radius: 10px;
+  outline: none !important;
 
   background: #ffffff;
   color: #333333;
@@ -274,6 +293,12 @@ const clearFilters = () => {
   font-weight: 500;
 
   transition: border-color 0.15s, background-color 0.15s;
+}
+
+/* Quasar's QBtn renders its own focus/ripple overlay via this internal element — hide it so it
+   can't paint a stray ring on top of our own border/hover treatment. */
+.filters-toggle-btn :deep(.q-focus-helper) {
+  display: none;
 }
 
 .filters-active-dot {
@@ -301,7 +326,7 @@ const clearFilters = () => {
 
 /* Swaps the browser's default focus ring for a red glow matching the app's hover/focus treatment. */
 .filters-toggle-btn:focus-visible {
-  outline: none;
+  outline: none !important;
 
   box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.25);
 }
@@ -321,6 +346,9 @@ const clearFilters = () => {
   min-width: 0;
 }
 
+/* Fixed 4 columns on desktop (unchanged); auto-fill/minmax only kicks in below the tablet
+   breakpoint (see RESPONSIVE), so card size shrinks smoothly on smaller screens instead of
+   jumping at fixed breakpoints, without changing anything at desktop widths. */
 .stores-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -363,13 +391,7 @@ const clearFilters = () => {
 
 @media (max-width: 1024px) {
   .stores-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .stores-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 }
 
@@ -384,10 +406,6 @@ const clearFilters = () => {
 
   .page-subtitle {
     display: none;
-  }
-
-  .stores-grid {
-    grid-template-columns: repeat(1, 1fr);
   }
 }
 </style>

@@ -1,9 +1,9 @@
 <template>
-  <q-card flat class="category-card" @click="$emit('click', category)">
-    <div class="category-icon-wrap q--avoid-card-border">
-      <q-icon :name="category.icon" size="24px" />
+  <q-card flat class="category-tile" @click="$emit('click', category)">
+    <div class="category-tile-icon">
+      <q-icon :name="category.icon" size="22px" />
     </div>
-    <span class="category-label">{{ category.label }}</span>
+    <span class="category-tile-label">{{ category.label }}</span>
   </q-card>
 </template>
 
@@ -19,67 +19,81 @@ defineEmits(['click'])
 </script>
 
 <style scoped>
-.category-card {
+.category-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 
   gap: 10px;
 
-  width: 112px;
-  min-width: 112px;
-  padding: 20px 10px;
+  width: 132px;
+  padding: 20px 12px;
 
-  border-radius: 8px;
+  font-family: 'Roboto', Arial, sans-serif;
+
+  border-radius: 14px;
   border: 1px solid #f0f0f0;
 
   background: #ffffff;
-  color: #bd2427;
-
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 
-  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 
   cursor: pointer;
 }
 
-.category-card:hover {
-  border-color: #f3c6c7;
+.category-tile:hover {
+  border-color: transparent;
+  background: #bd2427;
 
-  box-shadow: 0 10px 24px rgba(189, 36, 39, 0.14);
+  box-shadow: 0 10px 24px rgba(189, 36, 39, 0.28);
   transform: translateY(-3px);
 }
 
-.category-icon-wrap {
+.category-tile-icon {
   display: flex;
   align-items: center;
   justify-content: center;
 
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
 
-  border-radius: 50%;
+  /* !important: QCard rounds a direct first-child's top corners to match its own radius by default. */
+  border-radius: 50% !important;
 
   background: linear-gradient(145deg, #fdecec 0%, #fbdbdc 100%);
   color: #bd2427;
 
-  transition: background 0.2s, color 0.2s, transform 0.2s;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.category-card:hover .category-icon-wrap {
-  background: linear-gradient(145deg, #c02226 0%, #8f1417 100%);
+.category-tile:hover .category-tile-icon {
+  background: rgba(255, 255, 255, 0.22);
   color: #ffffff;
-
-  transform: scale(1.08);
 }
 
-.category-label {
+.category-tile-label {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
+  line-height: 1.3;
 
-  color: #333333;
-
+  color: #111111;
   text-align: center;
+
+  min-height: calc(1.3em * 2);
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  transition: color 0.2s ease;
+}
+
+.category-tile:hover .category-tile-label {
+  color: #ffffff;
 }
 </style>

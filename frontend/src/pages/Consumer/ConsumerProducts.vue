@@ -25,11 +25,15 @@
               hide-bottom-space
               behavior="menu"
               class="sort-select"
-            />
+            >
+              <template #prepend>
+                <q-icon name="swap_vert" size="16px" />
+              </template>
+            </q-select>
           </div>
 
           <q-btn
-            outline
+            unelevated
             no-caps
             dense
             icon="tune"
@@ -73,7 +77,7 @@
       <div class="products-layout">
 
         <div class="products-main">
-          <div class="products-grid" :class="{ 'products-grid-narrow': sidebarVisible }">
+          <div class="products-grid">
             <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" />
           </div>
 
@@ -132,22 +136,28 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import { useRoute } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import ProductFilters from '@/components/consumer/ProductFilters.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
 import { useCategories } from '@/composables/useCategories'
-import { MOCK_ALL_PRODUCTS } from '@/data/mockCatalog'
+import { useProducts } from '@/composables/useProducts'
 
 const $q = useQuasar()
+const route = useRoute()
 
 // Placeholder until real geolocation/address selection is wired up.
 const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
 
 const { categories, fetchCategories } = useCategories()
+const { products, fetchProducts } = useProducts()
 
-onMounted(fetchCategories)
+onMounted(() => {
+  fetchCategories()
+  fetchProducts()
+})
 
 const VISIBLE_CATEGORIES = computed(() => categories.value.slice(0, 7))
 
@@ -156,10 +166,10 @@ const CATEGORY_SELECT_OPTIONS = computed(() => [
   ...categories.value.map((category) => ({ label: category.label, value: category.label }))
 ])
 
-const STORE_SELECT_OPTIONS = [
+const STORE_SELECT_OPTIONS = computed(() => [
   { label: 'All Stores', value: 'All' },
-  ...[...new Set(MOCK_ALL_PRODUCTS.map((product) => product.store))].map((store) => ({ label: store, value: store }))
-]
+  ...[...new Set(products.value.map((product) => product.store))].map((store) => ({ label: store, value: store }))
+])
 
 const SORT_OPTIONS = [
   { label: 'Popular', value: 'popular' },
@@ -168,7 +178,8 @@ const SORT_OPTIONS = [
 ]
 
 const filtersOpen = ref(false)
-const selectedCategory = ref('All')
+// Lets a category card/pill link straight here pre-filtered, e.g. /consumer/products?category=Beverages.
+const selectedCategory = ref(route.query.category || 'All')
 const selectedStore = ref('All')
 const priceMin = ref(null)
 const priceMax = ref(null)
@@ -183,9 +194,6 @@ const mobileFiltersOpen = computed({
   set: (val) => { filtersOpen.value = val }
 })
 
-// 6 columns squeeze too narrow once the filters sidebar takes up space, so drop to 5 then.
-const sidebarVisible = computed(() => filtersOpen.value && !isMobileFilters.value)
-
 const hasActiveFilters = computed(() =>
   selectedCategory.value !== 'All' ||
   selectedStore.value !== 'All' ||
@@ -196,7 +204,7 @@ const hasActiveFilters = computed(() =>
 )
 
 const filteredProducts = computed(() => {
-  const list = MOCK_ALL_PRODUCTS.filter((product) => {
+  const list = products.value.filter((product) => {
     if (selectedCategory.value !== 'All' && product.category !== selectedCategory.value) return false
     if (selectedStore.value !== 'All' && product.store !== selectedStore.value) return false
     if (inStockOnly.value && !product.inStock) return false
@@ -211,7 +219,7 @@ const filteredProducts = computed(() => {
 })
 
 // Client-side pagination, same convention as ConsumerPersonalize.vue.
-const PAGE_SIZE = 10
+const PAGE_SIZE = 60
 const currentPage = ref(1)
 
 const totalPages = computed(() =>
@@ -328,12 +336,24 @@ const clearFilters = () => {
 }
 
 .sort-select :deep(.q-field__control) {
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
-/* Quasar's unstyled focus defaults to brand red, which reads as an error state here — tone it down to neutral grey. */
+.sort-select :deep(.q-field__prepend) {
+  color: #9ca3af;
+}
+
+/* Same red hover/focus treatment as .filters-toggle-btn, so the two paired controls feel consistent. */
+.sort-select:hover :deep(.q-field__control) {
+  background: #fdecec;
+}
+
+.sort-select:hover :deep(.q-field__control):before {
+  border-color: #bd2427;
+}
+
 .sort-select.q-field--focused :deep(.q-field__control:after) {
-  border-color: #9a9a9a;
+  border-color: #bd2427;
 }
 
 .filters-toggle-btn {
@@ -344,7 +364,8 @@ const clearFilters = () => {
   padding: 0 14px;
 
   border: 1px solid #e2e2e2;
-  border-radius: 8px;
+  border-radius: 10px;
+  outline: none !important;
 
   background: #ffffff;
   color: #333333;
@@ -353,6 +374,12 @@ const clearFilters = () => {
   font-weight: 500;
 
   transition: border-color 0.15s, background-color 0.15s;
+}
+
+/* Quasar's QBtn renders its own focus/ripple overlay via this internal element — hide it so it
+   can't paint a stray ring on top of our own border/hover treatment. */
+.filters-toggle-btn :deep(.q-focus-helper) {
+  display: none;
 }
 
 .filters-toggle-btn :deep(.q-btn__content) {
@@ -366,7 +393,7 @@ const clearFilters = () => {
 
 /* Swaps the browser's default focus ring for a red glow matching the app's hover/focus treatment. */
 .filters-toggle-btn:focus-visible {
-  outline: none;
+  outline: none !important;
 
   box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.25);
 }
@@ -411,11 +438,11 @@ const clearFilters = () => {
   flex-shrink: 0;
   margin: 0;
 
-  height: 34px;
-  padding: 0 18px;
+  height: 36px;
+  padding: 0 20px;
 
   border: 1px solid #e2e2e2;
-  border-radius: 8px;
+  border-radius: 10px;
 
   background: #ffffff;
   color: #333333;
@@ -468,16 +495,13 @@ const clearFilters = () => {
   min-width: 0;
 }
 
-/* 6 columns, matching ConsumerHome.vue; drops to 5 via .products-grid-narrow when the filters sidebar is visible. */
+/* auto-fill/minmax instead of fixed column counts — card size shrinks smoothly as the viewport (or
+   the filters sidebar taking up space) narrows, rather than jumping at fixed breakpoints. */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
 
-  gap: 12px;
-}
-
-.products-grid.products-grid-narrow {
-  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
 }
 
 .products-empty {
@@ -513,18 +537,6 @@ const clearFilters = () => {
 
 /* RESPONSIVE */
 
-@media (max-width: 1024px) {
-  .products-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .products-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
 @media (max-width: 600px) {
   .page-content {
     padding: 16px;
@@ -536,10 +548,6 @@ const clearFilters = () => {
 
   .page-subtitle {
     display: none;
-  }
-
-  .products-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

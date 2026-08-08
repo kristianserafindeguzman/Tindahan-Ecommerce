@@ -39,8 +39,8 @@
 
           <!-- PRODUCTS -->
           <template v-if="isSearching || hasProducts">
-            <div class="results-section-header">
-              <h2 class="results-section-title">Products ({{ filteredProducts.length }})</h2>
+            <div v-if="productsSectionLabel" class="results-section-header">
+              <h2 class="results-section-title">{{ productsSectionLabel }}</h2>
             </div>
 
             <div v-if="isSearching" class="products-grid">
@@ -68,8 +68,8 @@
 
           <!-- STORES -->
           <template v-if="isSearching || hasStores">
-            <div class="results-section-header">
-              <h2 class="results-section-title">Stores ({{ matchedStores.length }})</h2>
+            <div v-if="storesSectionLabel" class="results-section-header">
+              <h2 class="results-section-title">{{ storesSectionLabel }}</h2>
             </div>
 
             <div v-if="isSearching" class="stores-grid">
@@ -120,6 +120,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
@@ -127,8 +128,10 @@ import ProductCard from '@/components/consumer/ProductCard.vue'
 import StoreCard from '@/components/consumer/StoreCard.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
 import { useCategories } from '@/composables/useCategories'
-import { MOCK_ALL_PRODUCTS, MOCK_STORES } from '@/data/mockCatalog'
+import { useProducts } from '@/composables/useProducts'
+import { useStores } from '@/composables/useStores'
 
+const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()
 
@@ -138,8 +141,14 @@ const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong Ci
 const query = computed(() => (route.query.q || '').toString().trim())
 
 const { categories, fetchCategories } = useCategories()
+const { products, fetchProducts } = useProducts()
+const { stores, fetchStores } = useStores()
 
-onMounted(fetchCategories)
+onMounted(() => {
+  fetchCategories()
+  fetchProducts()
+  fetchStores()
+})
 
 // A query that exactly names a category (e.g. "Beverages") browses that whole category instead of
 // name-matching, since no product literally has the category word in its own name.
@@ -155,7 +164,7 @@ const filteredProducts = computed(() => {
   const q = query.value.toLowerCase()
   const categoryMatch = matchedCategory.value
 
-  return MOCK_ALL_PRODUCTS.filter((product) => {
+  return products.value.filter((product) => {
     if (categoryMatch) return product.category === categoryMatch.label
     return q ? product.name.toLowerCase().includes(q) : false
   })
@@ -164,12 +173,27 @@ const filteredProducts = computed(() => {
 const matchedStores = computed(() => {
   const q = query.value.toLowerCase()
   if (!q) return []
-  return MOCK_STORES.filter((store) => store.name.toLowerCase().includes(q))
+  return stores.value.filter((store) => store.name.toLowerCase().includes(q))
 })
 
 const hasProducts = computed(() => filteredProducts.value.length > 0)
 const hasStores = computed(() => matchedStores.value.length > 0)
 const hasAnyResults = computed(() => hasProducts.value || hasStores.value)
+
+// Same breakpoint as the page's own @media (max-width: 600px) rules.
+const isMobileScreen = computed(() => $q.screen.width < 600)
+
+// Mobile: only label a section when both are present (to tell them apart) — drop the count too.
+// Desktop keeps the full "Products (N)" / "Stores (N)" heading regardless.
+const productsSectionLabel = computed(() => {
+  if (!isMobileScreen.value) return `Products (${filteredProducts.value.length})`
+  return hasProducts.value && hasStores.value ? 'Products' : ''
+})
+
+const storesSectionLabel = computed(() => {
+  if (!isMobileScreen.value) return `Stores (${matchedStores.value.length})`
+  return hasProducts.value && hasStores.value ? 'Stores' : ''
+})
 
 const subtitleText = computed(() => {
   if (!query.value) return 'Search for products and stores near you.'
@@ -189,7 +213,7 @@ const relatedProducts = computed(() => {
   if (!showRelatedProducts.value) return []
   const shownIds = new Set(filteredProducts.value.map((p) => p.id))
   const preferredCategory = filteredProducts.value[0]?.category
-  const pool = MOCK_ALL_PRODUCTS.filter((p) => !shownIds.has(p.id))
+  const pool = products.value.filter((p) => !shownIds.has(p.id))
   const sameCategory = preferredCategory ? pool.filter((p) => p.category === preferredCategory) : []
   const sameCategoryIds = new Set(sameCategory.map((p) => p.id))
   const rest = pool.filter((p) => !sameCategoryIds.has(p.id))
@@ -389,15 +413,19 @@ const goToRecentSearch = (term) => {
   color: #111111;
 }
 
-/* 6 columns, matching ConsumerHome.vue / the All Products grid — full width now that there's no filters sidebar. */
+/* auto-fill/minmax instead of fixed column counts — card size shrinks smoothly as the viewport
+   narrows, rather than jumping at fixed breakpoints. */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
 
   gap: 16px;
 }
 
 /* Same card gap as .products-grid — Products and Stores share one grid rhythm on this page. */
+/* Fixed 4 columns on desktop (unchanged); auto-fill/minmax only kicks in below the tablet
+   breakpoint (see RESPONSIVE), so card size shrinks smoothly on smaller screens instead of
+   jumping at fixed breakpoints, without changing anything at desktop widths. */
 .stores-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -498,22 +526,8 @@ const goToRecentSearch = (term) => {
 /* RESPONSIVE */
 
 @media (max-width: 1024px) {
-  .products-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
   .stores-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .products-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .stores-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 }
 
@@ -522,12 +536,8 @@ const goToRecentSearch = (term) => {
     padding: 16px;
   }
 
-  .products-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .stores-grid {
-    grid-template-columns: repeat(1, 1fr);
+  .page-header-row {
+    display: none;
   }
 }
 </style>
