@@ -81,7 +81,7 @@ const currentYear = computed(() => new Date().getFullYear())
 }
 
 .footer-link {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 400;
 
   color: #1a1a1a;

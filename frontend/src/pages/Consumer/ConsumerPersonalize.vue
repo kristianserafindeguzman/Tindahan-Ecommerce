@@ -14,10 +14,10 @@
       </div>
 
       <div class="products-grid">
-        <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" />
+        <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
       </div>
 
-      <p v-if="!MOCK_RECOMMENDED_PRODUCTS.length" class="products-empty">
+      <p v-if="!products.length" class="products-empty">
         {{ hasHistory
           ? "No recommendations yet — check back after you've browsed a few products."
           : 'No popular products to show near you right now.'
@@ -30,18 +30,48 @@
 
     <SiteFooter />
 
+    <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
+
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
+import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
+import { useProducts } from '@/composables/useProducts'
+import { useCart } from '@/composables/useCart'
+
+const $q = useQuasar()
 
 // Placeholder until real geolocation/address selection is wired up.
 const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
+
+const { products, fetchProducts } = useProducts()
+const { addToCart } = useCart()
+
+onMounted(fetchProducts)
+
+const showProductModal = ref(false)
+const selectedProduct = ref(null)
+
+const openProductModal = (product) => {
+  selectedProduct.value = product
+  showProductModal.value = true
+}
+
+const handleAddToCart = async (product) => {
+  try {
+    await addToCart(product.id)
+    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+  }
+}
 
 // hasHistory checks a signal nothing currently writes, so it resolves to false until a real history source exists.
 
@@ -53,38 +83,18 @@ const pageSubtitle = computed(() => hasHistory.value
   : "Popular picks from sari-sari stores near you."
 )
 
-// Mock data — replace with a real /recommendations endpoint; pagination below is already data-driven.
-
-const MOCK_RECOMMENDED_PRODUCTS = [
-  { id: 1, name: 'Lucky Me Pancit Canton Kalamansi 80g', price: 18, distance: '5 m', store: 'Leslie Store' },
-  { id: 2, name: 'Piattos Sour Cream & Onion', price: 15, distance: '5 m', store: 'Leslie Store' },
-  { id: 3, name: 'Coca-Cola 1.5L', price: 75, distance: '2 m', store: 'Leslie Store' },
-  { id: 4, name: 'Del Monte Tuna 155g', price: 38, distance: '3 m', store: 'Leslie Store' },
-  { id: 5, name: 'Gardenia Bread', price: 46, distance: '4 m', store: 'Sol A Sari Sari Store' },
-  { id: 6, name: 'Alaska Evaporada 370ml', price: 25, distance: '2 m', store: 'Leslie Store' },
-  { id: 7, name: 'Kopiko Blanca Twin Pack', price: 22, distance: '5 m', store: 'Sol A Sari Sari Store' },
-  { id: 8, name: 'Sanicare Bath Soap', price: 15, distance: '3 m', store: 'Jmzhai Sari Sari Store' },
-  { id: 9, name: 'Jasmine Rice 1kg', price: 52, distance: '2 m', store: 'Leslie Store' },
-  { id: 10, name: 'Selecta Ice Cream 1.3L', price: 99, distance: '5 m', store: 'Sol A Sari Sari Store' },
-  { id: 11, name: 'Datu Puti Soy Sauce 1L', price: 42, distance: '3 m', store: 'Jmzhai Sari Sari Store' },
-  { id: 12, name: 'Century Tuna Flakes in Oil 155g', price: 35, distance: '3 m', store: 'Jmzhai Sari Sari Store' },
-  { id: 13, name: 'Safeguard Bar Soap 90g', price: 25, distance: '4 m', store: 'Sol A Sari Sari Store' },
-  { id: 14, name: 'Nescafe 3-in-1 Original 20g', price: 9, distance: '4 m', store: 'Sol A Sari Sari Store' },
-  { id: 15, name: 'Silver Swan Soy Sauce 385ml', price: 22, distance: '5 m', store: 'Leslie Store' },
-  { id: 16, name: 'Kopiko Brown Coffee 3-in-1 25g', price: 10, distance: '5 m', store: 'Leslie Store' }
-]
-
-// Client-side pagination, same convention as the other Consumer pages.
-const PAGE_SIZE = 8
+// No real /recommendations endpoint yet — same full catalog as ConsumerHome.vue's "Discover" section,
+// just paginated here instead of "See More"-revealed.
+const PAGE_SIZE = 60
 const currentPage = ref(1)
 
 const totalPages = computed(() =>
-  Math.max(1, Math.ceil(MOCK_RECOMMENDED_PRODUCTS.length / PAGE_SIZE))
+  Math.max(1, Math.ceil(products.value.length / PAGE_SIZE))
 )
 
 const paginatedProducts = computed(() => {
   const start = (currentPage.value - 1) * PAGE_SIZE
-  return MOCK_RECOMMENDED_PRODUCTS.slice(start, start + PAGE_SIZE)
+  return products.value.slice(start, start + PAGE_SIZE)
 })
 </script>
 
@@ -146,12 +156,12 @@ const paginatedProducts = computed(() => {
 
 /* PRODUCTS GRID */
 
-/* 6 columns, matching ConsumerHome.vue/ConsumerProducts.vue; no filters sidebar here, so no narrower fallback needed. */
+/* auto-fill/minmax instead of fixed column counts, so card size shrinks smoothly as the viewport narrows. */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
 
-  gap: 12px;
+  gap: 16px;
 }
 
 .products-empty {
@@ -165,25 +175,9 @@ const paginatedProducts = computed(() => {
 
 /* RESPONSIVE */
 
-@media (max-width: 1024px) {
-  .products-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .products-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
 @media (max-width: 600px) {
   .page-content {
     padding: 16px;
-  }
-
-  .products-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

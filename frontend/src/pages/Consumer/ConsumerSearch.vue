@@ -39,8 +39,8 @@
 
           <!-- PRODUCTS -->
           <template v-if="isSearching || hasProducts">
-            <div class="results-section-header">
-              <h2 class="results-section-title">Products ({{ filteredProducts.length }})</h2>
+            <div v-if="productsSectionLabel" class="results-section-header">
+              <h2 class="results-section-title">{{ productsSectionLabel }}</h2>
             </div>
 
             <div v-if="isSearching" class="products-grid">
@@ -60,6 +60,8 @@
                 :key="product.id"
                 :product="product"
                 :highlight-query="query"
+                @add-to-cart="handleAddToCart"
+                @view-product="openProductModal"
               />
             </div>
 
@@ -68,8 +70,8 @@
 
           <!-- STORES -->
           <template v-if="isSearching || hasStores">
-            <div class="results-section-header">
-              <h2 class="results-section-title">Stores ({{ matchedStores.length }})</h2>
+            <div v-if="storesSectionLabel" class="results-section-header">
+              <h2 class="results-section-title">{{ storesSectionLabel }}</h2>
             </div>
 
             <div v-if="isSearching" class="stores-grid">
@@ -97,7 +99,7 @@
           <div v-if="!isSearching && showRelatedProducts" class="related-section">
             <h2 class="results-section-title">You May Also Like</h2>
             <div class="products-grid">
-              <ProductCard v-for="product in relatedProducts" :key="`related-${product.id}`" :product="product" />
+              <ProductCard v-for="product in relatedProducts" :key="`related-${product.id}`" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
             </div>
           </div>
         </template>
@@ -106,7 +108,7 @@
         <div v-else class="results-empty">
           <q-icon name="search_off" size="32px" class="results-empty-icon" />
           <p class="results-empty-title">No results found for "{{ query }}".</p>
-          <p class="results-empty-text">Try another keyword or adjust your filters.</p>
+          <p class="results-empty-text">Try searching for a different keyword.</p>
         </div>
 
       </template>
@@ -115,20 +117,27 @@
 
     <SiteFooter />
 
+    <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
+
   </q-page>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import StoreCard from '@/components/consumer/StoreCard.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
+import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
 import { useCategories } from '@/composables/useCategories'
-import { MOCK_ALL_PRODUCTS, MOCK_STORES } from '@/data/mockCatalog'
+import { useProducts } from '@/composables/useProducts'
+import { useStores } from '@/composables/useStores'
+import { useCart } from '@/composables/useCart'
 
+const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()
 
@@ -138,8 +147,32 @@ const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong Ci
 const query = computed(() => (route.query.q || '').toString().trim())
 
 const { categories, fetchCategories } = useCategories()
+const { products, fetchProducts } = useProducts()
+const { stores, fetchStores } = useStores()
+const { addToCart } = useCart()
 
-onMounted(fetchCategories)
+const handleAddToCart = async (product) => {
+  try {
+    await addToCart(product.id)
+    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+  }
+}
+
+const showProductModal = ref(false)
+const selectedProduct = ref(null)
+
+const openProductModal = (product) => {
+  selectedProduct.value = product
+  showProductModal.value = true
+}
+
+onMounted(() => {
+  fetchCategories()
+  fetchProducts()
+  fetchStores()
+})
 
 // A query that exactly names a category (e.g. "Beverages") browses that whole category instead of
 // name-matching, since no product literally has the category word in its own name.
@@ -155,7 +188,7 @@ const filteredProducts = computed(() => {
   const q = query.value.toLowerCase()
   const categoryMatch = matchedCategory.value
 
-  return MOCK_ALL_PRODUCTS.filter((product) => {
+  return products.value.filter((product) => {
     if (categoryMatch) return product.category === categoryMatch.label
     return q ? product.name.toLowerCase().includes(q) : false
   })
@@ -164,12 +197,27 @@ const filteredProducts = computed(() => {
 const matchedStores = computed(() => {
   const q = query.value.toLowerCase()
   if (!q) return []
-  return MOCK_STORES.filter((store) => store.name.toLowerCase().includes(q))
+  return stores.value.filter((store) => store.name.toLowerCase().includes(q))
 })
 
 const hasProducts = computed(() => filteredProducts.value.length > 0)
 const hasStores = computed(() => matchedStores.value.length > 0)
 const hasAnyResults = computed(() => hasProducts.value || hasStores.value)
+
+// Same breakpoint as the page's own @media (max-width: 600px) rules.
+const isMobileScreen = computed(() => $q.screen.width < 600)
+
+// Mobile: only label a section when both are present (to tell them apart) — drop the count too.
+// Desktop keeps the full "Products (N)" / "Stores (N)" heading regardless.
+const productsSectionLabel = computed(() => {
+  if (!isMobileScreen.value) return `Products (${filteredProducts.value.length})`
+  return hasProducts.value && hasStores.value ? 'Products' : ''
+})
+
+const storesSectionLabel = computed(() => {
+  if (!isMobileScreen.value) return `Stores (${matchedStores.value.length})`
+  return hasProducts.value && hasStores.value ? 'Stores' : ''
+})
 
 const subtitleText = computed(() => {
   if (!query.value) return 'Search for products and stores near you.'
@@ -189,7 +237,7 @@ const relatedProducts = computed(() => {
   if (!showRelatedProducts.value) return []
   const shownIds = new Set(filteredProducts.value.map((p) => p.id))
   const preferredCategory = filteredProducts.value[0]?.category
-  const pool = MOCK_ALL_PRODUCTS.filter((p) => !shownIds.has(p.id))
+  const pool = products.value.filter((p) => !shownIds.has(p.id))
   const sameCategory = preferredCategory ? pool.filter((p) => p.category === preferredCategory) : []
   const sameCategoryIds = new Set(sameCategory.map((p) => p.id))
   const rest = pool.filter((p) => !sameCategoryIds.has(p.id))
@@ -243,8 +291,7 @@ const goToRecentSearch = (term) => {
 </script>
 
 <style scoped>
-/* Sticky footer — .page-content grows via flex:1 to fill any leftover viewport height, so the footer
-   never rides up under a short (1-2 result) page. */
+/* Sticky footer — .page-content grows via flex:1 so the footer never rides up on a short results page. */
 .storefront-page {
   min-height: 100vh;
 
@@ -389,15 +436,15 @@ const goToRecentSearch = (term) => {
   color: #111111;
 }
 
-/* 6 columns, matching ConsumerHome.vue / the All Products grid — full width now that there's no filters sidebar. */
+/* auto-fill/minmax instead of fixed column counts, so card size shrinks smoothly as the viewport narrows. */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
 
   gap: 16px;
 }
 
-/* Same card gap as .products-grid — Products and Stores share one grid rhythm on this page. */
+/* Same card gap as .products-grid; fixed 4 columns on desktop, auto-fill/minmax below the tablet breakpoint. */
 .stores-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -409,7 +456,7 @@ const goToRecentSearch = (term) => {
   margin-top: 32px;
   padding-top: 8px;
 
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #e8e8e8;
 }
 
 .related-section .results-section-title {
@@ -454,15 +501,15 @@ const goToRecentSearch = (term) => {
 .skeleton-card {
   overflow: hidden;
 
-  border-radius: 8px;
-  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
 
   background: #ffffff;
 }
 
 .skeleton-image,
 .skeleton-line {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 37%, #f0f0f0 63%);
+  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
   background-size: 400% 100%;
 
   animation: skeleton-pulse 1.4s ease infinite;
@@ -498,22 +545,8 @@ const goToRecentSearch = (term) => {
 /* RESPONSIVE */
 
 @media (max-width: 1024px) {
-  .products-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
   .stores-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .products-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .stores-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 }
 
@@ -522,12 +555,8 @@ const goToRecentSearch = (term) => {
     padding: 16px;
   }
 
-  .products-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .stores-grid {
-    grid-template-columns: repeat(1, 1fr);
+  .page-header-row {
+    display: none;
   }
 }
 </style>

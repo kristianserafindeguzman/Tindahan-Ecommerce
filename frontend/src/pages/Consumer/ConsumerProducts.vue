@@ -25,11 +25,15 @@
               hide-bottom-space
               behavior="menu"
               class="sort-select"
-            />
+            >
+              <template #prepend>
+                <q-icon name="swap_vert" size="16px" />
+              </template>
+            </q-select>
           </div>
 
           <q-btn
-            outline
+            unelevated
             no-caps
             dense
             icon="tune"
@@ -73,8 +77,8 @@
       <div class="products-layout">
 
         <div class="products-main">
-          <div class="products-grid" :class="{ 'products-grid-narrow': sidebarVisible }">
-            <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" />
+          <div class="products-grid">
+            <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
           </div>
 
           <p v-if="!filteredProducts.length" class="products-empty">
@@ -126,28 +130,56 @@
 
     <SiteFooter />
 
+    <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
+
   </q-page>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import { useRoute } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import ProductFilters from '@/components/consumer/ProductFilters.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
+import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
 import { useCategories } from '@/composables/useCategories'
-import { MOCK_ALL_PRODUCTS } from '@/data/mockCatalog'
+import { useProducts } from '@/composables/useProducts'
+import { useCart } from '@/composables/useCart'
 
 const $q = useQuasar()
+const route = useRoute()
+
+const showProductModal = ref(false)
+const selectedProduct = ref(null)
+
+const openProductModal = (product) => {
+  selectedProduct.value = product
+  showProductModal.value = true
+}
 
 // Placeholder until real geolocation/address selection is wired up.
 const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
 
 const { categories, fetchCategories } = useCategories()
+const { products, fetchProducts } = useProducts()
+const { addToCart } = useCart()
 
-onMounted(fetchCategories)
+const handleAddToCart = async (product) => {
+  try {
+    await addToCart(product.id)
+    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+  }
+}
+
+onMounted(() => {
+  fetchCategories()
+  fetchProducts()
+})
 
 const VISIBLE_CATEGORIES = computed(() => categories.value.slice(0, 7))
 
@@ -156,10 +188,10 @@ const CATEGORY_SELECT_OPTIONS = computed(() => [
   ...categories.value.map((category) => ({ label: category.label, value: category.label }))
 ])
 
-const STORE_SELECT_OPTIONS = [
+const STORE_SELECT_OPTIONS = computed(() => [
   { label: 'All Stores', value: 'All' },
-  ...[...new Set(MOCK_ALL_PRODUCTS.map((product) => product.store))].map((store) => ({ label: store, value: store }))
-]
+  ...[...new Set(products.value.map((product) => product.store))].map((store) => ({ label: store, value: store }))
+])
 
 const SORT_OPTIONS = [
   { label: 'Popular', value: 'popular' },
@@ -168,7 +200,8 @@ const SORT_OPTIONS = [
 ]
 
 const filtersOpen = ref(false)
-const selectedCategory = ref('All')
+// Lets a category card/pill link straight here pre-filtered, e.g. /consumer/products?category=Beverages.
+const selectedCategory = ref(route.query.category || 'All')
 const selectedStore = ref('All')
 const priceMin = ref(null)
 const priceMax = ref(null)
@@ -183,9 +216,6 @@ const mobileFiltersOpen = computed({
   set: (val) => { filtersOpen.value = val }
 })
 
-// 6 columns squeeze too narrow once the filters sidebar takes up space, so drop to 5 then.
-const sidebarVisible = computed(() => filtersOpen.value && !isMobileFilters.value)
-
 const hasActiveFilters = computed(() =>
   selectedCategory.value !== 'All' ||
   selectedStore.value !== 'All' ||
@@ -196,7 +226,7 @@ const hasActiveFilters = computed(() =>
 )
 
 const filteredProducts = computed(() => {
-  const list = MOCK_ALL_PRODUCTS.filter((product) => {
+  const list = products.value.filter((product) => {
     if (selectedCategory.value !== 'All' && product.category !== selectedCategory.value) return false
     if (selectedStore.value !== 'All' && product.store !== selectedStore.value) return false
     if (inStockOnly.value && !product.inStock) return false
@@ -211,7 +241,7 @@ const filteredProducts = computed(() => {
 })
 
 // Client-side pagination, same convention as ConsumerPersonalize.vue.
-const PAGE_SIZE = 10
+const PAGE_SIZE = 60
 const currentPage = ref(1)
 
 const totalPages = computed(() =>
@@ -328,12 +358,24 @@ const clearFilters = () => {
 }
 
 .sort-select :deep(.q-field__control) {
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
-/* Quasar's unstyled focus defaults to brand red, which reads as an error state here — tone it down to neutral grey. */
+.sort-select :deep(.q-field__prepend) {
+  color: #9ca3af;
+}
+
+/* Same red hover/focus treatment as .filters-toggle-btn, so the two paired controls feel consistent. */
+.sort-select:hover :deep(.q-field__control) {
+  background: #fdecec;
+}
+
+.sort-select:hover :deep(.q-field__control):before {
+  border-color: #bd2427;
+}
+
 .sort-select.q-field--focused :deep(.q-field__control:after) {
-  border-color: #9a9a9a;
+  border-color: #bd2427;
 }
 
 .filters-toggle-btn {
@@ -344,7 +386,8 @@ const clearFilters = () => {
   padding: 0 14px;
 
   border: 1px solid #e2e2e2;
-  border-radius: 8px;
+  border-radius: 6px;
+  outline: none !important;
 
   background: #ffffff;
   color: #333333;
@@ -353,6 +396,11 @@ const clearFilters = () => {
   font-weight: 500;
 
   transition: border-color 0.15s, background-color 0.15s;
+}
+
+/* Hides Quasar's own focus/ripple overlay so it can't paint a stray ring over our border/hover treatment. */
+.filters-toggle-btn :deep(.q-focus-helper) {
+  display: none;
 }
 
 .filters-toggle-btn :deep(.q-btn__content) {
@@ -366,7 +414,7 @@ const clearFilters = () => {
 
 /* Swaps the browser's default focus ring for a red glow matching the app's hover/focus treatment. */
 .filters-toggle-btn:focus-visible {
-  outline: none;
+  outline: none !important;
 
   box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.25);
 }
@@ -411,11 +459,11 @@ const clearFilters = () => {
   flex-shrink: 0;
   margin: 0;
 
-  height: 34px;
-  padding: 0 18px;
+  height: 36px;
+  padding: 0 20px;
 
   border: 1px solid #e2e2e2;
-  border-radius: 8px;
+  border-radius: 12px;
 
   background: #ffffff;
   color: #333333;
@@ -468,16 +516,12 @@ const clearFilters = () => {
   min-width: 0;
 }
 
-/* 6 columns, matching ConsumerHome.vue; drops to 5 via .products-grid-narrow when the filters sidebar is visible. */
+/* auto-fill/minmax instead of fixed column counts, so card size shrinks smoothly as available width narrows. */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
 
-  gap: 12px;
-}
-
-.products-grid.products-grid-narrow {
-  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
 }
 
 .products-empty {
@@ -496,8 +540,8 @@ const clearFilters = () => {
 
   width: 260px;
 
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
 
   background: #ffffff;
 
@@ -508,22 +552,10 @@ const clearFilters = () => {
   width: 100%;
   max-width: 380px;
 
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 /* RESPONSIVE */
-
-@media (max-width: 1024px) {
-  .products-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .products-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
 
 @media (max-width: 600px) {
   .page-content {
@@ -536,10 +568,6 @@ const clearFilters = () => {
 
   .page-subtitle {
     display: none;
-  }
-
-  .products-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

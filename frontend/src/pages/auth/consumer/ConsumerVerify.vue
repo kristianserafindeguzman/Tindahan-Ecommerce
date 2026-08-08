@@ -23,8 +23,7 @@
           <h1>Verify your account</h1>
 
           <p class="subtitle">
-            We've sent a 6-digit verification code via SMS to
-            <strong>{{ displayPhone }}</strong>. Enter the code below to continue.
+            We sent a 6-digit verification code to <strong>{{ displayPhone }}</strong>.
           </p>
 
           <!-- OTP INPUT BOXES -->
@@ -50,17 +49,6 @@
             {{ otpError }}
           </div>
 
-          <!-- VERIFY BUTTON -->
-          <q-btn
-            label="Verify"
-            no-caps
-            unelevated
-            class="login-button full-width"
-            :loading="loading"
-            :disable="!otpComplete"
-            @click="verifyOtp"
-          />
-
           <!-- RESEND -->
           <div class="resend-section">
             <span>Didn't receive a code?</span>
@@ -78,6 +66,17 @@
               }}
             </button>
           </div>
+
+          <!-- VERIFY BUTTON -->
+          <q-btn
+            label="Verify"
+            no-caps
+            unelevated
+            class="login-button full-width"
+            :loading="loading"
+            :disable="!otpComplete"
+            @click="verifyOtp"
+          />
 
           <q-separator class="separator" />
 
@@ -363,7 +362,8 @@ const resendCode = async () => {
   align-items: center;
   justify-content: center;
 
-  padding: 24px;
+  /* Left/right padding matches ConsumerRegister.vue's login-panel for consistency across auth pages. */
+  padding: 24px 45px;
 
   background: #ffffff;
   border-radius: 4px;
@@ -518,7 +518,7 @@ const resendCode = async () => {
 /* RESEND */
 
 .resend-section {
-  margin-top: 16px;
+  margin-bottom: 16px;
 
   display: flex;
   align-items: center;
@@ -603,7 +603,7 @@ const resendCode = async () => {
   .login-panel {
     width: 380px;
 
-    padding: 32px 24px;
+    padding: 32px 35px;
   }
 
   .tindahan-logo {
@@ -667,7 +667,7 @@ const resendCode = async () => {
     max-width: 100%;
     flex: none;
 
-    padding: 20px 16px 24px;
+    padding: 20px 24px 24px;
 
     background: #ffffff;
     border-radius: 0;

@@ -162,7 +162,7 @@
             <div class="text-h6">Edit Personal Information</div>
             <div class="section-subtitle">Update your personal details below.</div>
           </div>
-          <q-btn flat round dense icon="close" color="grey-7" :disable="savingPersonal" @click="attemptCloseEditPersonal" />
+          <q-btn flat round dense icon="close" class="dialog-close-btn" :disable="savingPersonal" @click="attemptCloseEditPersonal" />
         </q-card-section>
 
         <q-form ref="editPersonalFormRef">
@@ -275,7 +275,7 @@
             <div class="text-h6">Crop Profile Photo</div>
             <div class="section-subtitle">Drag to select a square crop area.</div>
           </div>
-          <q-btn flat round dense icon="close" color="grey-7" @click="showCropModal = false" />
+          <q-btn flat round dense icon="close" class="dialog-close-btn" @click="showCropModal = false" />
         </q-card-section>
         <q-card-section class="dialog-body text-center">
           <canvas
@@ -302,7 +302,7 @@
             <div class="text-h6">Change Password</div>
             <div class="section-subtitle">Keep your account secure with a strong password.</div>
           </div>
-          <q-btn flat round dense icon="close" color="grey-7" :disable="savingPassword" @click="attemptClosePasswordModal" />
+          <q-btn flat round dense icon="close" class="dialog-close-btn" :disable="savingPassword" @click="attemptClosePasswordModal" />
         </q-card-section>
 
         <q-form ref="passwordFormRef">
@@ -404,21 +404,22 @@
             <div class="text-h6">Verify New Phone</div>
             <div class="section-subtitle">Enter the 6-digit verification code sent to {{ maskedPhone }}. Sent via SMS.</div>
           </div>
-          <q-btn flat round dense icon="close" color="grey-7" :disable="verifyingOtp" @click="cancelOtp" />
+          <q-btn flat round dense icon="close" class="dialog-close-btn" :disable="verifyingOtp" @click="cancelOtp" />
         </q-card-section>
         <q-card-section class="dialog-body text-center">
-          <div class="row justify-center q-gutter-sm">
-            <q-input
+          <!-- Same boxed OTP pattern as ConsumerVerify.vue / LoginPage.vue's forgot-password flow -->
+          <div class="otp-row">
+            <input
               v-for="(digit, i) in otpInput"
               :key="i"
               v-model="otpInput[i]"
-              outlined
-              dense
-              no-error-icon
-              :class="['otp-box', { 'otp-box-success': otpVerifiedFlash }]"
+              type="text"
+              inputmode="numeric"
               maxlength="1"
-              :disable="otpVerifiedFlash"
-              @update:model-value="val => onOtpInput(val, i)"
+              class="otp-box"
+              :class="{ 'otp-box-error': otpError, 'otp-box-success': otpVerifiedFlash }"
+              :disabled="otpVerifiedFlash"
+              @input="onOtpInput(i)"
               @keydown.backspace="onOtpBackspace(i)"
               @paste="onOtpPaste"
               :ref="el => { otpRefs[i] = el }"
@@ -456,7 +457,7 @@
             <div class="text-h6">Delete Account</div>
             <div class="section-subtitle">This action cannot be undone.</div>
           </div>
-          <q-btn flat round dense icon="close" color="grey-7" :disable="deletingAccount" @click="cancelDeleteModal" />
+          <q-btn flat round dense icon="close" class="dialog-close-btn" :disable="deletingAccount" @click="cancelDeleteModal" />
         </q-card-section>
 
         <q-card-section class="dialog-body">
@@ -1012,7 +1013,16 @@ const resendOtpCode = async () => {
   }
 }
 
-const onOtpInput = (val, index) => {
+const onOtpInput = (index) => {
+  const val = otpInput.value[index]
+
+  if (val && !/^\d$/.test(val)) {
+    otpInput.value[index] = ''
+    return
+  }
+
+  otpError.value = ''
+
   if (val && index < 5) {
     otpRefs.value[index + 1]?.focus()
   }
@@ -1203,23 +1213,23 @@ const goHomeAfterDelete = () => {
 }
 
 .profile-card {
-  border: 1px solid #f0f0f0;
-  border-radius: 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
 
   background: #ffffff;
 
-  /* !important beats Quasar's `flat` prop, which adds a no-shadow !important utility class. */
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+  /* !important beats Quasar's `flat` prop, which adds its own no-shadow !important utility class. */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
 
   transition: box-shadow 0.2s, border-color 0.2s;
 }
 
-/* No hover lift, unlike ProductCard/StoreCard — this card isn't a single clickable unit. */
+/* No hover lift/red-tint, unlike ProductCard/StoreCard — this card isn't a single clickable unit. */
 
 .profile-card:hover {
-  border-color: #e0e0e0;
+  border-color: #cccccc;
 
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06) !important;
 }
 
 .profile-card :deep(.q-card__section) {
@@ -1290,7 +1300,7 @@ const goHomeAfterDelete = () => {
   min-height: 32px;
   padding: 0 14px;
 
-  border-radius: 8px;
+  border-radius: 6px;
 
   font-size: 12.5px;
   font-weight: 600;
@@ -1318,7 +1328,12 @@ const goHomeAfterDelete = () => {
 
 /* Excludes round buttons (photo camera badge) so it doesn't flatten Quasar's .q-btn--round. */
 .profile-container :deep(.q-btn:not(.q-btn--round)) {
-  border-radius: 8px;
+  border-radius: 6px;
+}
+
+/* Same close-icon grey used everywhere else a dialog has an X (Terms/Privacy/Support/ProductDetailModal). */
+.dialog-close-btn {
+  color: #666666;
 }
 
 .profile-container :deep(.q-btn) {
@@ -1410,7 +1425,7 @@ const goHomeAfterDelete = () => {
   margin: 0 -10px;
   padding: 14px 10px;
 
-  /* Softer than the card's #f0f0f0 border so rows read as a subtle rhythm. */
+  /* Softer than the card's #e8e8e8 border so rows read as a subtle rhythm. */
   border-bottom: 1px solid #f6f6f6;
   border-radius: 12px;
 
@@ -1484,7 +1499,7 @@ const goHomeAfterDelete = () => {
 .photo-avatar {
   box-shadow:
     0 0 0 4px #ffffff,
-    0 0 0 5px #f0f0f0,
+    0 0 0 5px #e0e0e0,
     0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
@@ -1571,7 +1586,7 @@ const goHomeAfterDelete = () => {
   gap: 14px;
   padding: 10px;
 
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid #fecaca;
 
   background: #ffffff;
@@ -1692,7 +1707,7 @@ const goHomeAfterDelete = () => {
   font-weight: 600;
   line-height: 1;
 
-  color: #16803c;
+  color: #16a34a;
 }
 
 .pending-badge {
@@ -1782,26 +1797,55 @@ const goHomeAfterDelete = () => {
   }
 }
 
+/* Same boxed OTP pattern as ConsumerVerify.vue / LoginPage.vue's forgot-password flow */
+
+.otp-row {
+  display: flex;
+  justify-content: center;
+
+  gap: 10px;
+}
+
 .otp-box {
   width: 48px;
-  text-align: center;
-  font-size: 20px;
-}
-.otp-box :deep(.q-field__control) {
   height: 48px;
-}
-.otp-box :deep(.q-field__native) {
+  padding: 0;
+
+  border: 1px solid #d6d6da;
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+
   text-align: center;
+
+  color: #222222;
+
+  outline: none;
+
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.2s;
+}
+
+.otp-box:focus {
+  border-color: #bd2427;
+
+  box-shadow: 0 0 0 1px rgba(189, 36, 39, 0.1);
+}
+
+.otp-box-error {
+  border-color: #ef4444;
 }
 
 /* Brief green flash on the digit boxes before handoff to the success screen. */
-.otp-box-success :deep(.q-field__control) {
-  border-color: #16a34a !important;
+.otp-box-success {
+  border-color: #16a34a;
 
   background: #f0fdf4;
   color: #16a34a;
-
-  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .otp-error {
@@ -1816,7 +1860,7 @@ const goHomeAfterDelete = () => {
   gap: 6px;
   margin-top: 16px;
 
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .otp-expiry {
@@ -1848,7 +1892,7 @@ const goHomeAfterDelete = () => {
 /* q-dialog content is teleported to <body>, so :deep() scoping must anchor on .profile-dialog-card itself, not an ancestor like .profile-container. */
 
 .profile-dialog-card {
-  border-radius: 16px;
+  border-radius: 12px;
 
   /* Tightens Quasar's default 300ms "scale" transition down to ~200ms. */
   --q-transition-duration: 200ms;
@@ -1904,12 +1948,12 @@ const goHomeAfterDelete = () => {
   min-width: 130px !important;
 }
 
-/* Buttons — 44px tall everywhere except the round close (×) button. */
+/* Buttons — 48px tall everywhere except the round close (×) button, matching the canonical .login-button/.btn-gradient recipe. */
 .profile-dialog-card :deep(.q-btn:not(.q-btn--round)) {
-  height: 44px;
-  min-height: 44px;
+  height: 48px;
+  min-height: 48px;
 
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 13px;
 }
 
@@ -2068,7 +2112,7 @@ const goHomeAfterDelete = () => {
     margin-right: 0 !important;
   }
 
-  /* 44px everywhere, including mobile, to meet the platform's touch-target guidance. */
+  /* Slightly shorter than desktop's 48px — still comfortably above the 44px minimum touch-target guidance. */
   .profile-dialog-card :deep(.q-btn:not(.q-btn--round)) {
     height: 44px;
     min-height: 44px;

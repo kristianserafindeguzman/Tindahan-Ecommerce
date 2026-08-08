@@ -2,9 +2,12 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\StoreController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,6 +21,8 @@ Route::get('/test', fn () => response()->json(['message' => 'Laravel API is work
 
 // ----- Public Application Data Routes -----
 Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/products', [CatalogController::class, 'products']);
+Route::get('/stores', [StoreController::class, 'index']);
 
 // ----- Public Authentication Routes -----
 Route::post('/register/consumer', [AuthController::class, 'registerConsumer']);
@@ -108,5 +113,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // ----- Consumer Routes -----
     Route::middleware('role:Consumer')->prefix('consumer')->group(function () {
         Route::get('/home', fn () => response()->json(['message' => 'Welcome to the Consumer Home']));
+
+        // Cart
+        Route::get('/cart', [CartController::class, 'index']);
+        Route::post('/cart', [CartController::class, 'store']);
+        Route::patch('/cart/{id}', [CartController::class, 'update']);
+        Route::delete('/cart/{id}', [CartController::class, 'destroy']);
     });
 });

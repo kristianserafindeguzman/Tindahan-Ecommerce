@@ -13,7 +13,7 @@ class InventorySeeder extends Seeder
     public function run(): void
     {
         $catalog = [
-            1 => [ // Cooking Essentials
+            'Cooking Essentials' => [
                 ['name' => 'Rice 1kg', 'price' => 50, 'pic' => 'seed-images/products/rice.jpg'],
                 ['name' => 'Cooking Oil', 'price' => 120, 'pic' => 'seed-images/products/cooking-oil.jpg', 'variants' => [['quantity' => 20, 'price' => 60, 'name' => '500ml'], ['quantity' => 15, 'price' => 120, 'name' => '1L']]],
                 ['name' => 'Soy Sauce', 'price' => 45, 'pic' => 'seed-images/products/soy-sauce.jpg'],
@@ -23,7 +23,7 @@ class InventorySeeder extends Seeder
                 ['name' => 'Rock Salt', 'price' => 20, 'pic' => 'seed-images/products/salt.jpg'],
                 ['name' => 'Black Pepper', 'price' => 5, 'pic' => 'seed-images/products/pepper.jpg'],
             ],
-            2 => [ // Beverages
+            'Beverages' => [
                 ['name' => 'Coca-Cola', 'price' => 75, 'pic' => 'seed-images/products/coke.jpg', 'variants' => [['quantity' => 10, 'price' => 75, 'name' => '1.5L'], ['quantity' => 20, 'price' => 25, 'name' => 'Mismo']]],
                 ['name' => 'Sprite', 'price' => 75, 'pic' => 'seed-images/products/sprite.jpg'],
                 ['name' => 'Royal', 'price' => 75, 'pic' => 'seed-images/products/royal.jpg'],
@@ -32,7 +32,7 @@ class InventorySeeder extends Seeder
                 ['name' => 'Bear Brand Powdered Milk', 'price' => 95, 'pic' => 'seed-images/products/milk.jpg'],
                 ['name' => 'Tang Orange Juice', 'price' => 22, 'pic' => 'seed-images/products/juice.jpg'],
             ],
-            3 => [ // Snacks & Sweets
+            'Snacks & Sweets' => [
                 ['name' => 'Piattos Cheese', 'price' => 18, 'pic' => 'seed-images/products/piattos.jpg'],
                 ['name' => 'Nova Multigrain', 'price' => 18, 'pic' => 'seed-images/products/nova.jpg'],
                 ['name' => 'SkyFlakes Crackers', 'price' => 60, 'pic' => 'seed-images/products/skyflakes.jpg'],
@@ -40,21 +40,21 @@ class InventorySeeder extends Seeder
                 ['name' => 'Gardenia White Bread', 'price' => 75, 'pic' => 'seed-images/products/bread.jpg'],
                 ['name' => 'Cloud 9 Chocolate', 'price' => 12, 'pic' => 'seed-images/products/chocolate.jpg'],
             ],
-            4 => [ // Personal Care
+            'Personal Care' => [
                 ['name' => 'Safeguard White', 'price' => 40, 'pic' => 'seed-images/products/safeguard.jpg'],
                 ['name' => 'Palmolive Naturals', 'price' => 35, 'pic' => 'seed-images/products/palmolive.jpg'],
                 ['name' => 'Sunsilk Shampoo', 'price' => 7, 'pic' => 'seed-images/products/shampoo.jpg'],
                 ['name' => 'Colgate Toothpaste', 'price' => 85, 'pic' => 'seed-images/products/toothpaste.jpg'],
                 ['name' => 'Oral-B Toothbrush', 'price' => 65, 'pic' => 'seed-images/products/toothbrush.jpg'],
             ],
-            5 => [ // Laundry & Cleaning
+            'Laundry & Cleaning' => [
                 ['name' => 'Surf Cherry Blossom', 'price' => 15, 'pic' => 'seed-images/products/surf.jpg', 'variants' => [['quantity' => 50, 'price' => 15, 'name' => '500g'], ['quantity' => 10, 'price' => 120, 'name' => '1kg']]],
                 ['name' => 'Ariel Sunrise Fresh', 'price' => 20, 'pic' => 'seed-images/products/ariel.jpg', 'variants' => [['quantity' => 30, 'price' => 20, 'name' => '500g'], ['quantity' => 15, 'price' => 130, 'name' => '1kg']]],
                 ['name' => 'Joy Dishwashing Liquid', 'price' => 12, 'pic' => 'seed-images/products/joy.jpg'],
                 ['name' => 'Zonrox Bleach', 'price' => 30, 'pic' => 'seed-images/products/zonrox.jpg'],
                 ['name' => 'Downy Antibac', 'price' => 8, 'pic' => 'seed-images/products/fabric-conditioner.jpg'],
             ],
-            6 => [ // Others
+            'Others' => [
                 ['name' => 'Green Cross Alcohol', 'price' => 50, 'pic' => 'seed-images/products/alcohol.jpg'],
                 ['name' => 'Face Mask 50pcs', 'price' => 45, 'pic' => 'seed-images/products/face-mask.jpg'],
                 ['name' => 'Hard Copy Bond Paper A4', 'price' => 180, 'pic' => 'seed-images/products/bond-paper.jpg'],
@@ -63,10 +63,18 @@ class InventorySeeder extends Seeder
             ],
         ];
 
+        // Resolve real category_id values by name instead of assuming CategorySeeder's insert order.
+        $categoryIds = DB::table('categories')->pluck('category_id', 'category_name');
+
         $flatCatalog = [];
-        foreach ($catalog as $categoryId => $products) {
+        foreach ($catalog as $categoryName => $products) {
+            if (!$categoryIds->has($categoryName)) {
+                $this->command->warn("Category \"{$categoryName}\" not found. Please run CategorySeeder first.");
+                continue;
+            }
+
             foreach ($products as $product) {
-                $product['category_id'] = $categoryId;
+                $product['category_id'] = $categoryIds[$categoryName];
                 $flatCatalog[] = $product;
             }
         }
