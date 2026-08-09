@@ -69,8 +69,8 @@
                 <template #append>
                   <q-icon
                     :name="showPassword
-                      ? 'visibility'
-                      : 'visibility_off'"
+                      ? 'o_visibility'
+                      : 'o_visibility_off'"
                     class="password-icon cursor-pointer"
                     @click="showPassword = !showPassword"
                   />
@@ -183,7 +183,7 @@
         <q-form ref="forgotPhoneForm" @submit.prevent="requestResetOTP">
           <q-card-section class="status-content">
             <div class="status-icon-wrap" style="background: #bd2427;">
-              <q-icon name="lock_reset" size="36px" color="white" />
+              <q-icon name="o_lock_reset" size="36px" color="white" />
             </div>
             <div class="status-title">Reset Password</div>
             <p class="status-message">
@@ -220,7 +220,7 @@
       <q-card class="status-dialog">
         <q-card-section class="status-content">
           <div class="status-icon-wrap" style="background: #bd2427;">
-            <q-icon name="sms" size="36px" color="white" />
+            <q-icon name="o_sms" size="36px" color="white" />
           </div>
           <div class="status-title">Verify Phone Number</div>
           <p class="status-message">
@@ -278,7 +278,7 @@
         <q-form ref="forgotResetForm" @submit.prevent="submitNewPassword">
           <q-card-section class="status-content">
             <div class="status-icon-wrap" style="background: #bd2427;">
-              <q-icon name="lock_reset" size="36px" color="white" />
+              <q-icon name="o_lock_reset" size="36px" color="white" />
             </div>
             <div class="status-title">Create New Password</div>
             <p class="status-message">
@@ -303,7 +303,7 @@
               >
                 <template #append>
                   <q-icon
-                    :name="showNewPassword ? 'visibility' : 'visibility_off'"
+                    :name="showNewPassword ? 'o_visibility' : 'o_visibility_off'"
                     class="password-icon cursor-pointer"
                     @click="showNewPassword = !showNewPassword"
                   />
@@ -325,14 +325,14 @@
               >
                 <template #append>
                   <q-icon
-                    :name="showConfirmNewPassword ? 'visibility' : 'visibility_off'"
+                    :name="showConfirmNewPassword ? 'o_visibility' : 'o_visibility_off'"
                     class="password-icon cursor-pointer"
                     @click="showConfirmNewPassword = !showConfirmNewPassword"
                   />
                 </template>
               </q-input>
               <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
-                <q-icon v-if="confirmPasswordMessage.type === 'success'" name="check_circle" size="12px" />
+                <q-icon v-if="confirmPasswordMessage.type === 'success'" name="o_check_circle" size="12px" />
                 {{ confirmPasswordMessage.text }}
               </div>
             </div>
@@ -352,7 +352,7 @@
       <q-card class="status-dialog">
         <q-card-section class="status-content">
           <div class="status-icon-wrap" style="background: #22c55e;">
-            <q-icon name="check" size="36px" color="white" />
+            <q-icon name="o_check" size="36px" color="white" />
           </div>
           <div class="status-title">Password Reset Successful</div>
           <p class="status-message">You can now log in with your new password.</p>
@@ -368,7 +368,7 @@
       <q-card class="status-dialog">
         <q-card-section class="status-content">
           <div class="status-icon-wrap bg-red-1 text-red-6">
-            <q-icon name="block" size="36px" />
+            <q-icon name="o_block" size="36px" />
           </div>
           <div class="modal-title">Account Suspended</div>
           <p class="modal-subtitle">Your account has been temporarily suspended.</p>
@@ -401,7 +401,7 @@
       <q-card class="status-dialog">
         <q-card-section class="status-content">
           <div class="status-icon-wrap bg-orange-1 text-orange-6">
-            <q-icon name="warning" size="36px" />
+            <q-icon name="o_warning" size="36px" />
           </div>
           <div class="modal-title">Account Inactive</div>
           <p class="modal-subtitle">Your account is currently inactive.</p>

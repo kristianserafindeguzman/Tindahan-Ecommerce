@@ -8,7 +8,7 @@
         class="product-card-img"
         @error="imageFailed = true"
       />
-      <q-icon v-else name="inventory_2" size="36px" />
+      <q-icon v-else name="o_inventory_2" size="36px" />
 
       <span v-if="product.category" class="product-category-tag">{{ product.category }}</span>
       <span v-if="!product.inStock" class="product-oos-tag">Out of Stock</span>
@@ -18,7 +18,7 @@
         round
         unelevated
         dense
-        icon="add"
+        icon="o_add"
         aria-label="Add to cart"
         class="product-add-btn"
         @click.stop="$emit('add-to-cart', product)"
@@ -33,7 +33,7 @@
         </template>
       </div>
       <div class="product-meta">
-        <q-icon name="storefront" size="13px" class="product-meta-icon" />
+        <q-icon name="o_storefront" size="13px" class="product-meta-icon" />
         <span class="product-meta-text">{{ product.store }}</span>
       </div>
     </q-card-section>

@@ -5,7 +5,7 @@
         <span class="filters-panel-title">Filters</span>
       </div>
       <button type="button" class="filters-close-btn" aria-label="Close filters" @click="$emit('close')">
-        <q-icon name="close" size="18px" />
+        <q-icon name="o_close" size="18px" />
       </button>
     </div>
 

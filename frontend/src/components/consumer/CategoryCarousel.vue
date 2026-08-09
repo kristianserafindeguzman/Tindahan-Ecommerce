@@ -10,7 +10,7 @@
     </div>
 
     <button type="button" class="categories-next" aria-label="More categories" @click="scrollNext">
-      <q-icon name="chevron_right" size="20px" />
+      <q-icon name="o_chevron_right" size="20px" />
     </button>
   </div>
 </template>

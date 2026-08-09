@@ -36,7 +36,7 @@
             unelevated
             no-caps
             dense
-            icon="tune"
+            icon="o_tune"
             label="Filters"
             class="filters-toggle-btn"
             @click="filtersOpen = !filtersOpen"

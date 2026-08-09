@@ -5,7 +5,7 @@
       <q-card-section class="support-header">
         <div class="support-title">Contact Support</div>
         <q-btn
-          icon="close"
+          icon="o_close"
           flat
           round
           dense
@@ -20,17 +20,17 @@
         <div class="support-org">DTI Negosyo Center - Mandaluyong</div>
 
         <div class="support-row">
-          <q-icon name="location_on" class="support-icon" />
+          <q-icon name="o_location_on" class="support-icon" />
           <span>3rd Floor, City Hall of Mandaluyong, Maysilo Circle, Plainview, Mandaluyong City</span>
         </div>
 
         <div class="support-row">
-          <q-icon name="phone" class="support-icon" />
+          <q-icon name="o_phone" class="support-icon" />
           <span>(02) 8532-4846</span>
         </div>
 
         <div class="support-row">
-          <q-icon name="email" class="support-icon" />
+          <q-icon name="o_email" class="support-icon" />
           <span>mandaluyong@dti.gov.ph</span>
         </div>
       </q-card-section>

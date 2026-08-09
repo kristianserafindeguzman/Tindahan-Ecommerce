@@ -2,7 +2,7 @@
   <q-dialog v-model="isOpen" @hide="resetLocalState">
     <q-card v-if="product" flat class="detail-card">
 
-      <q-btn icon="close" flat round dense class="close-btn" v-close-popup />
+      <q-btn icon="o_close" flat round dense class="close-btn" v-close-popup />
 
       <div class="detail-scroll">
 
@@ -16,7 +16,7 @@
               class="detail-image"
               @error="imageFailed = true"
             />
-            <q-icon v-else name="inventory_2" size="48px" />
+            <q-icon v-else name="o_inventory_2" size="48px" />
 
             <span v-if="product.category" class="detail-category-tag">{{ product.category }}</span>
             <span v-if="!product.inStock" class="detail-oos-tag">Out of Stock</span>
@@ -58,7 +58,7 @@
               <span class="quantity-label">Quantity</span>
               <div class="quantity-stepper">
                 <button type="button" class="stepper-btn" :disabled="quantity <= 1" @click="quantity--">
-                  <q-icon name="remove" size="16px" />
+                  <q-icon name="o_remove" size="16px" />
                 </button>
                 <span class="stepper-value">{{ quantity }}</span>
                 <button
@@ -67,7 +67,7 @@
                   :disabled="quantity >= maxQuantity"
                   @click="quantity++"
                 >
-                  <q-icon name="add" size="16px" />
+                  <q-icon name="o_add" size="16px" />
                 </button>
               </div>
             </div>
@@ -89,20 +89,20 @@
         <div v-if="store" class="store-section">
           <div class="store-section-label">About this Store</div>
 
-          <div class="store-row" v-close-popup @click="router.push('/consumer/stores')">
+          <div class="store-row" v-close-popup @click="router.push(`/consumer/stores/${store.id}`)">
             <div class="store-row-info">
               <div class="store-row-name">{{ store.name }}</div>
               <div class="store-row-status" :class="{ 'store-row-status-closed': !store.isOpen }">
                 {{ store.isOpen ? `Open until ${store.closesAt}` : 'Closed now' }}
               </div>
               <div v-if="store.address" class="store-row-address">
-                <q-icon name="location_on" size="12px" />
+                <q-icon name="o_location_on" size="12px" />
                 {{ store.address }}
               </div>
             </div>
             <div class="store-row-link">
               View Store
-              <q-icon name="chevron_right" size="16px" />
+              <q-icon name="o_chevron_right" size="16px" />
             </div>
           </div>
         </div>

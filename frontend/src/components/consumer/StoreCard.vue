@@ -1,5 +1,5 @@
 <template>
-  <q-card flat class="store-card">
+  <q-card flat class="store-card" @click="router.push(`/consumer/stores/${store.id}`)">
     <div class="store-card-image">
       <img
         v-if="store.image && !imageFailed"
@@ -8,7 +8,7 @@
         class="store-card-img"
         @error="imageFailed = true"
       />
-      <q-icon v-else name="storefront" size="36px" />
+      <q-icon v-else name="o_storefront" size="36px" />
 
       <span class="store-status-tag" :class="{ 'store-status-tag-closed': !store.isOpen }">
         <span class="status-dot" :class="{ 'status-dot-closed': !store.isOpen }" />
@@ -25,7 +25,7 @@
       <div v-if="store.isOpen" class="store-card-hours">Open until {{ store.closesAt }}</div>
       <div v-else class="store-card-hours store-card-hours-closed">Closed now</div>
       <div v-if="store.address" class="store-card-distance">
-        <q-icon name="location_on" size="13px" />
+        <q-icon name="o_location_on" size="13px" />
         {{ store.address }}
       </div>
     </q-card-section>
@@ -34,7 +34,10 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { splitHighlightParts } from '@/utils/textHighlight'
+
+const router = useRouter()
 
 const props = defineProps({
   store: {

@@ -77,6 +77,11 @@ const routes = [
         meta: { requiresAuth: true, role: 'Consumer' }
       },
       {
+        path: 'consumer/stores/:id',
+        component: () => import('@/pages/Consumer/ConsumerStoreDetail.vue'),
+        meta: { requiresAuth: true, role: 'Consumer' }
+      },
+      {
         path: 'consumer/search',
         component: () => import('@/pages/Consumer/ConsumerSearch.vue'),
         meta: { requiresAuth: true, role: 'Consumer' }

@@ -126,8 +126,8 @@
                 <template #append>
                   <q-icon
                     :name="showPassword
-                      ? 'visibility'
-                      : 'visibility_off'"
+                      ? 'o_visibility'
+                      : 'o_visibility_off'"
                     class="password-icon cursor-pointer"
                     @click="showPassword = !showPassword"
                   />
@@ -151,15 +151,15 @@
                 <template #append>
                   <q-icon
                     :name="showConfirmPassword
-                      ? 'visibility'
-                      : 'visibility_off'"
+                      ? 'o_visibility'
+                      : 'o_visibility_off'"
                     class="password-icon cursor-pointer"
                     @click="showConfirmPassword = !showConfirmPassword"
                   />
                 </template>
               </q-input>
               <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
-                <q-icon v-if="confirmPasswordMessage.type === 'success'" name="check_circle" size="12px" />
+                <q-icon v-if="confirmPasswordMessage.type === 'success'" name="o_check_circle" size="12px" />
                 {{ confirmPasswordMessage.text }}
               </div>
             </div>

@@ -5,7 +5,7 @@
       <q-card-section class="legal-header">
         <div class="legal-title">Terms and Conditions</div>
         <q-btn
-          icon="close"
+          icon="o_close"
           flat
           round
           dense

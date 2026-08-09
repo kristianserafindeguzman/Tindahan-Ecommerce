@@ -5,7 +5,7 @@
         <span class="filters-panel-title">Filters</span>
       </div>
       <button type="button" class="filters-close-btn" aria-label="Close filters" @click="$emit('close')">
-        <q-icon name="close" size="18px" />
+        <q-icon name="o_close" size="18px" />
       </button>
     </div>
 
@@ -32,7 +32,7 @@
       </div>
     </div>
 
-    <div class="filter-group">
+    <div v-if="!hideStore" class="filter-group">
       <label class="filter-label">Store</label>
       <q-select
         v-model="store"
@@ -89,11 +89,15 @@ defineProps({
   },
   storeOptions: {
     type: Array,
-    required: true
+    default: () => []
   },
   sortOptions: {
     type: Array,
     required: true
+  },
+  hideStore: {
+    type: Boolean,
+    default: false
   }
 })
 

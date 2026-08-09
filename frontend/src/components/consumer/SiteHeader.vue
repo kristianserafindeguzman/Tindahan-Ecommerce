@@ -29,7 +29,7 @@
 
         <div class="header-search-wrap" :class="{ 'header-search-compact': addressExpanded }">
           <div class="header-search">
-            <q-icon name="search" size="17px" class="header-search-icon" />
+            <q-icon name="o_search" size="17px" class="header-search-icon" />
             <q-input
               :model-value="searchInput"
               dense
@@ -50,7 +50,7 @@
               round
               unelevated
               dense
-              icon="search"
+              icon="o_search"
               aria-label="Search"
               class="header-search-btn"
               @click="submitSearch"
@@ -71,7 +71,7 @@
                   :class="{ 'suggestion-item-active': activeSuggestionIndex === i }"
                   @click="selectSuggestion(term)"
                 >
-                  <q-icon name="history" size="16px" class="suggestion-icon" />
+                  <q-icon name="o_history" size="16px" class="suggestion-icon" />
                   <span class="suggestion-text">{{ term }}</span>
                 </div>
               </div>
@@ -88,7 +88,7 @@
                   :class="{ 'suggestion-item-active': activeSuggestionIndex === i }"
                   @click="selectSuggestion(product.name)"
                 >
-                  <q-icon name="inventory_2" size="16px" class="suggestion-icon" />
+                  <q-icon name="o_inventory_2" size="16px" class="suggestion-icon" />
                   <span class="suggestion-text">
                     <template v-for="(part, pi) in splitHighlightParts(product.name, searchInput)" :key="pi">
                       <mark v-if="part.match" class="suggestion-highlight">{{ part.text }}</mark>
@@ -107,7 +107,7 @@
                   :class="{ 'suggestion-item-active': activeSuggestionIndex === productSuggestions.length + i }"
                   @click="selectSuggestion(store.name)"
                 >
-                  <q-icon name="storefront" size="16px" class="suggestion-icon" />
+                  <q-icon name="o_storefront" size="16px" class="suggestion-icon" />
                   <span class="suggestion-text">
                     <template v-for="(part, pi) in splitHighlightParts(store.name, searchInput)" :key="pi">
                       <mark v-if="part.match" class="suggestion-highlight">{{ part.text }}</mark>
@@ -126,7 +126,7 @@
 
         <div class="header-location" :title="address" @click="addressExpanded = !addressExpanded">
           <span class="header-location-pill" :class="{ 'header-location-expanded': addressExpanded }">
-            <q-icon name="location_on" size="15px" />
+            <q-icon name="o_location_on" size="15px" />
             <span>{{ address }}</span>
           </span>
         </div>
@@ -136,12 +136,12 @@
           <!-- LOGGED IN -->
           <template v-if="isLoggedIn">
             <q-btn flat dense :ripple="false" class="icon-btn">
-              <q-icon name="notifications" size="20px" />
+              <q-icon name="o_notifications" size="20px" />
               <span v-if="hasNotifications" class="icon-badge-dot" />
             </q-btn>
 
             <q-btn flat dense :ripple="false" class="icon-btn">
-              <q-icon name="shopping_cart" size="20px" />
+              <q-icon name="o_shopping_cart" size="20px" />
               <span v-if="cartItemCount" class="icon-badge-count">{{ cartItemCount }}</span>
 
               <q-menu anchor="bottom right" self="top right" content-class="cart-menu-panel" @show="fetchCart">
@@ -154,7 +154,7 @@
                     <div v-for="item in cartItems.slice(0, 4)" :key="item.cartId" class="cart-menu-item">
                       <div class="cart-menu-item-image">
                         <img v-if="item.image" :src="item.image" :alt="item.name" />
-                        <q-icon v-else name="inventory_2" size="16px" />
+                        <q-icon v-else name="o_inventory_2" size="16px" />
                       </div>
                       <div class="cart-menu-item-info">
                         <div class="cart-menu-item-name">{{ item.name }}</div>
@@ -181,9 +181,9 @@
             <q-btn flat dense no-caps :ripple="false" class="account-btn">
               <q-avatar size="24px" class="account-avatar">
                 <img v-if="userAvatar" :src="userAvatar" />
-                <q-icon v-else name="person" size="16px" />
+                <q-icon v-else name="o_person" size="16px" />
               </q-avatar>
-              <q-icon name="expand_more" size="16px" class="q-ml-xs" />
+              <q-icon name="o_expand_more" size="16px" class="q-ml-xs" />
 
               <q-menu anchor="bottom right" self="top right" class="account-menu">
                 <q-list style="min-width: 160px">
@@ -223,7 +223,7 @@
             />
 
             <q-btn flat dense :ripple="false" class="icon-btn" @click="goToLogin">
-              <q-icon name="shopping_cart" size="20px" />
+              <q-icon name="o_shopping_cart" size="20px" />
             </q-btn>
           </template>
 
