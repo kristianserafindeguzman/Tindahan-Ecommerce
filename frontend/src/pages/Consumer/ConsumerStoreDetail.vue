@@ -6,10 +6,43 @@
     <!-- MAIN CONTENT -->
     <div class="page-content">
 
+      <!-- STORE BANNER -->
+      <div v-if="store" class="store-banner">
+        <img v-if="store.image" :src="store.image" :alt="store.name" class="store-banner-img" />
+        <div v-else class="store-banner-placeholder">
+          <q-icon name="o_storefront" size="56px" />
+        </div>
+
+        <div class="store-banner-overlay" />
+
+        <div class="store-banner-content">
+          <h1 class="store-banner-name">{{ store.name }}</h1>
+          <div class="store-banner-meta">
+            <span v-if="store.address" class="store-banner-meta-item">
+              <q-icon name="o_location_on" size="14px" />
+              {{ store.address }}
+            </span>
+            <span v-if="store.address" class="store-banner-meta-sep">•</span>
+            <span class="store-banner-meta-item store-banner-status" :class="{ 'store-banner-status-closed': !store.isOpen }">
+              <span class="store-banner-status-dot" :class="{ 'store-banner-status-dot-closed': !store.isOpen }" />
+              {{ store.isOpen ? `Open until ${store.closesAt}` : 'Closed now' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Not wired up yet — no directions/maps feature exists yet, intentionally not clickable. -->
+        <q-btn unelevated no-caps icon="o_directions" label="Directions" class="store-banner-directions" />
+      </div>
+
+      <p v-else-if="!storesLoading" class="store-not-found">
+        Store not found.
+        <span class="store-not-found-link" @click="router.push('/consumer/stores')">Back to Stores</span>
+      </p>
+
       <div class="page-header-row">
         <div>
-          <h1 class="page-title">All Products</h1>
-          <p class="page-subtitle">Browse all products from sari-sari stores near you.</p>
+          <h2 class="page-title">Products</h2>
+          <p class="page-subtitle">Browse everything this store has to offer.</p>
         </div>
 
         <div class="page-header-actions">
@@ -47,7 +80,7 @@
       </div>
 
       <!-- CATEGORY PILLS -->
-      <div class="category-pills-row">
+      <div v-if="VISIBLE_CATEGORIES.length" class="category-pills-row">
         <q-chip
           clickable
           dense
@@ -68,10 +101,6 @@
         >
           {{ category.label }}
         </q-chip>
-        <q-chip clickable dense class="category-pill category-pill-more" @click="filtersOpen = true">
-          More
-          <q-icon name="o_expand_more" size="16px" />
-        </q-chip>
       </div>
 
       <div class="products-layout">
@@ -90,14 +119,13 @@
         <aside v-if="filtersOpen && !isMobileFilters" class="filters-panel">
           <ProductFilters
             v-model:category="selectedCategory"
-            v-model:store="selectedStore"
             v-model:price-min="priceMin"
             v-model:price-max="priceMax"
             v-model:in-stock="inStockOnly"
             v-model:sort="sortBy"
             :category-options="CATEGORY_SELECT_OPTIONS"
-            :store-options="STORE_SELECT_OPTIONS"
             :sort-options="SORT_OPTIONS"
+            hide-store
             @close="filtersOpen = false"
             @clear="clearFilters"
           />
@@ -112,14 +140,13 @@
         <q-card class="filters-dialog-card">
           <ProductFilters
             v-model:category="selectedCategory"
-            v-model:store="selectedStore"
             v-model:price-min="priceMin"
             v-model:price-max="priceMax"
             v-model:in-stock="inStockOnly"
             v-model:sort="sortBy"
             :category-options="CATEGORY_SELECT_OPTIONS"
-            :store-options="STORE_SELECT_OPTIONS"
             :sort-options="SORT_OPTIONS"
+            hide-store
             @close="filtersOpen = false"
             @clear="clearFilters"
           />
@@ -138,7 +165,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
@@ -147,10 +174,12 @@ import AppPagination from '@/components/consumer/AppPagination.vue'
 import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
 import { useCategories } from '@/composables/useCategories'
 import { useProducts } from '@/composables/useProducts'
+import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'
 
 const $q = useQuasar()
 const route = useRoute()
+const router = useRouter()
 
 const showProductModal = ref(false)
 const selectedProduct = ref(null)
@@ -165,7 +194,13 @@ const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong Ci
 
 const { categories, fetchCategories } = useCategories()
 const { products, fetchProducts } = useProducts()
+const { stores, loading: storesLoading, fetchStores } = useStores()
 const { addToCart } = useCart()
+
+const storeId = computed(() => Number(route.params.id))
+const store = computed(() => stores.value.find((s) => s.id === storeId.value) || null)
+
+const storeProducts = computed(() => products.value.filter((product) => product.storeId === storeId.value))
 
 const handleAddToCart = async (product) => {
   try {
@@ -179,18 +214,18 @@ const handleAddToCart = async (product) => {
 onMounted(() => {
   fetchCategories()
   fetchProducts()
+  fetchStores()
 })
 
-const VISIBLE_CATEGORIES = computed(() => categories.value.slice(0, 7))
+// Only categories this store actually carries, not the full catalog list.
+const VISIBLE_CATEGORIES = computed(() => {
+  const storeCategoryLabels = new Set(storeProducts.value.map((product) => product.category))
+  return categories.value.filter((category) => storeCategoryLabels.has(category.label))
+})
 
 const CATEGORY_SELECT_OPTIONS = computed(() => [
   { label: 'All Categories', value: 'All' },
-  ...categories.value.map((category) => ({ label: category.label, value: category.label }))
-])
-
-const STORE_SELECT_OPTIONS = computed(() => [
-  { label: 'All Stores', value: 'All' },
-  ...[...new Set(products.value.map((product) => product.store))].map((store) => ({ label: store, value: store }))
+  ...VISIBLE_CATEGORIES.value.map((category) => ({ label: category.label, value: category.label }))
 ])
 
 const SORT_OPTIONS = [
@@ -200,9 +235,7 @@ const SORT_OPTIONS = [
 ]
 
 const filtersOpen = ref(false)
-// Lets a category card/pill link straight here pre-filtered, e.g. /consumer/products?category=Beverages.
-const selectedCategory = ref(route.query.category || 'All')
-const selectedStore = ref('All')
+const selectedCategory = ref('All')
 const priceMin = ref(null)
 const priceMax = ref(null)
 const inStockOnly = ref(false)
@@ -218,7 +251,6 @@ const mobileFiltersOpen = computed({
 
 const hasActiveFilters = computed(() =>
   selectedCategory.value !== 'All' ||
-  selectedStore.value !== 'All' ||
   inStockOnly.value ||
   priceMin.value != null ||
   priceMax.value != null ||
@@ -226,9 +258,8 @@ const hasActiveFilters = computed(() =>
 )
 
 const filteredProducts = computed(() => {
-  const list = products.value.filter((product) => {
+  const list = storeProducts.value.filter((product) => {
     if (selectedCategory.value !== 'All' && product.category !== selectedCategory.value) return false
-    if (selectedStore.value !== 'All' && product.store !== selectedStore.value) return false
     if (inStockOnly.value && !product.inStock) return false
     if (priceMin.value != null && product.price < priceMin.value) return false
     if (priceMax.value != null && product.price > priceMax.value) return false
@@ -240,7 +271,7 @@ const filteredProducts = computed(() => {
   return list
 })
 
-// Client-side pagination, same convention as ConsumerPersonalize.vue.
+// Client-side pagination, same convention as ConsumerProducts.vue.
 const PAGE_SIZE = 60
 const currentPage = ref(1)
 
@@ -258,7 +289,6 @@ watch(filteredProducts, () => { currentPage.value = 1 })
 
 const clearFilters = () => {
   selectedCategory.value = 'All'
-  selectedStore.value = 'All'
   priceMin.value = null
   priceMax.value = null
   inStockOnly.value = false
@@ -279,12 +309,12 @@ const clearFilters = () => {
 }
 
 /* flex column + pagination's own margin-top:auto keeps it pinned to the bottom even on a short last page. */
-/* width:100% needed: margin:0 auto on a flex item shrinks it to content width otherwise. */
 .page-content {
   flex: 1;
   display: flex;
   flex-direction: column;
 
+  /* width:100% needed: margin:0 auto on a flex item shrinks it to content width otherwise. */
   width: 100%;
   max-width: 1200px;
   box-sizing: border-box;
@@ -297,6 +327,167 @@ const clearFilters = () => {
 .page-content :deep(.app-pagination-row) {
   margin-top: auto;
   padding-top: 32px;
+}
+
+/* STORE BANNER */
+
+.store-banner {
+  position: relative;
+  overflow: hidden;
+
+  height: 230px;
+  margin-bottom: 24px;
+
+  border-radius: 14px;
+
+  background: linear-gradient(145deg, #f7f7f8 0%, #ececee 100%);
+}
+
+.store-banner-img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+  object-position: center;
+}
+
+.store-banner-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 100%;
+
+  color: #bd2427;
+}
+
+/* Darkens the bottom of the photo so the white name/meta text stays legible over any image. */
+.store-banner-overlay {
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.3) 40%, rgba(0, 0, 0, 0) 68%);
+}
+
+.store-banner-content {
+  position: absolute;
+  z-index: 1;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+}
+
+.store-banner-name {
+  margin: 0 0 8px;
+
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1.25;
+
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+.store-banner-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  gap: 6px;
+
+  font-size: 12px;
+  font-weight: 400;
+
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.store-banner-meta-item {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+}
+
+.store-banner-meta-sep {
+  opacity: 0.6;
+}
+
+/* Brighter than StoreCard's #16a34a/#b91c1c — these read better against the dark photo overlay here. */
+.store-banner-status {
+  color: #4ade80;
+}
+
+.store-banner-status-closed {
+  color: #f87171;
+}
+
+.store-banner-status-dot {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: #4ade80;
+}
+
+.store-banner-status-dot-closed {
+  background: #f87171;
+}
+
+/* Same white-on-photo CTA recipe as .hero-cta (ConsumerHome.vue). No @click — no directions/maps feature yet. */
+.store-banner-directions {
+  position: absolute;
+  z-index: 1;
+  top: 14px;
+  right: 14px;
+
+  height: 34px;
+  padding: 0 14px;
+
+  border-radius: 6px;
+
+  background: #ffffff;
+  color: #bd2427;
+
+  font-size: 12.5px;
+  font-weight: 700;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+
+.store-banner-directions:hover {
+  background: #f4f4f4;
+
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  transform: translateY(-1px);
+}
+
+.store-banner-directions:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+}
+
+.store-not-found {
+  margin: 0 0 24px;
+
+  font-size: 14px;
+
+  color: #8992a2;
+}
+
+.store-not-found-link {
+  margin-left: 6px;
+
+  color: #bd2427;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.store-not-found-link:hover {
+  text-decoration: underline;
 }
 
 /* PAGE HEADER */
@@ -354,7 +545,7 @@ const clearFilters = () => {
 }
 
 .sort-select {
-  width: 150px;
+  width: 170px;
 }
 
 .sort-select :deep(.q-field__control) {
@@ -494,13 +685,6 @@ const clearFilters = () => {
   background: #a91e21;
 }
 
-.category-pill-more {
-  display: flex;
-  align-items: center;
-
-  gap: 2px;
-}
-
 /* LAYOUT — MAIN + FILTERS SIDEBAR */
 
 .products-layout {
@@ -560,6 +744,21 @@ const clearFilters = () => {
 @media (max-width: 600px) {
   .page-content {
     padding: 16px;
+  }
+
+  .store-banner {
+    height: 170px;
+  }
+
+  .store-banner-name {
+    font-size: 17px;
+  }
+
+  .store-banner-directions {
+    height: 30px;
+    padding: 0 10px;
+
+    font-size: 12px;
   }
 
   .page-header-row {

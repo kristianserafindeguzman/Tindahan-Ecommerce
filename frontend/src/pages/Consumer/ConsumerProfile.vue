@@ -24,7 +24,7 @@
                   outline
                   no-caps
                   color="primary"
-                  icon="edit"
+                  icon="o_edit"
                   label="Edit"
                   class="card-action-btn"
                   @click="startEditPersonal"
@@ -32,7 +32,7 @@
               </div>
 
               <div class="info-row">
-                <div class="info-icon"><q-icon name="person" size="18px" /></div>
+                <div class="info-icon"><q-icon name="o_person" size="18px" /></div>
                 <div class="info-body">
                   <div class="info-label">Name</div>
                   <div class="info-value">{{ user.full_name }}</div>
@@ -40,7 +40,7 @@
               </div>
 
               <div class="info-row">
-                <div class="info-icon"><q-icon name="phone" size="18px" /></div>
+                <div class="info-icon"><q-icon name="o_phone" size="18px" /></div>
                 <div class="info-body">
                   <div class="info-label">Phone Number</div>
                   <div class="info-value-row">
@@ -50,7 +50,7 @@
               </div>
 
               <div class="info-row">
-                <div class="info-icon"><q-icon name="mail" size="18px" /></div>
+                <div class="info-icon"><q-icon name="o_mail" size="18px" /></div>
                 <div class="info-body">
                   <div class="info-label">Email Address</div>
                   <div class="info-value-row">
@@ -81,7 +81,7 @@
 
                   <input type="file" id="photoUpload" accept="image/*" class="hidden" @change="onFileSelected" style="display: none;" />
                   <q-btn round unelevated color="primary" class="photo-camera-btn" @click="triggerUpload">
-                    <q-icon name="photo_camera" size="14px" />
+                    <q-icon name="o_photo_camera" size="14px" />
                   </q-btn>
                 </div>
 
@@ -113,7 +113,7 @@
               </div>
 
               <div class="info-row info-row-last">
-                <div class="info-icon"><q-icon name="lock" size="18px" /></div>
+                <div class="info-icon"><q-icon name="o_lock" size="18px" /></div>
                 <div class="info-body">
                   <div class="info-label">Password</div>
                   <div class="info-value">••••••••••••</div>
@@ -122,7 +122,7 @@
                   outline
                   no-caps
                   color="primary"
-                  icon="lock"
+                  icon="o_lock"
                   label="Change Password"
                   class="card-action-btn"
                   @click="showPasswordModal = true"
@@ -138,12 +138,12 @@
               <div class="section-subtitle q-mb-md">Actions here are permanent and cannot be undone.</div>
 
               <div class="danger-row" @click="confirmDeleteAccount">
-                <div class="info-icon danger-icon"><q-icon name="delete" size="18px" /></div>
+                <div class="info-icon danger-icon"><q-icon name="o_delete" size="18px" /></div>
                 <div class="info-body">
                   <div class="danger-title">Delete My Account</div>
                   <div class="danger-desc">Permanently delete your account and all data.</div>
                 </div>
-                <q-icon name="chevron_right" size="20px" color="red-4" />
+                <q-icon name="o_chevron_right" size="20px" color="red-4" />
               </div>
             </q-card-section>
           </q-card>
@@ -162,7 +162,7 @@
             <div class="text-h6">Edit Personal Information</div>
             <div class="section-subtitle">Update your personal details below.</div>
           </div>
-          <q-btn flat round dense icon="close" class="dialog-close-btn" :disable="savingPersonal" @click="attemptCloseEditPersonal" />
+          <q-btn flat round dense icon="o_close" class="dialog-close-btn" :disable="savingPersonal" @click="attemptCloseEditPersonal" />
         </q-card-section>
 
         <q-form ref="editPersonalFormRef">
@@ -195,7 +195,7 @@
                 @paste="onPhoneNumberPaste"
               />
               <div v-if="phoneMessage" class="edit-field-hint" :class="`edit-field-hint-${phoneMessage.type}`">
-                <q-icon v-if="phoneMessage.type === 'success'" name="check_circle" size="12px" />
+                <q-icon v-if="phoneMessage.type === 'success'" name="o_check_circle" size="12px" />
                 {{ phoneMessage.text }}
               </div>
             </div>
@@ -214,7 +214,7 @@
                 :error="emailMessage?.type === 'error'"
               />
               <div v-if="emailMessage" class="edit-field-hint" :class="`edit-field-hint-${emailMessage.type}`">
-                <q-icon v-if="emailMessage.type === 'success'" name="check_circle" size="12px" />
+                <q-icon v-if="emailMessage.type === 'success'" name="o_check_circle" size="12px" />
                 {{ emailMessage.text }}
               </div>
             </div>
@@ -258,7 +258,7 @@
       <q-card class="profile-dialog-card success-card" style="width: 500px; max-width: 90vw;">
         <q-card-section class="text-center">
           <div class="success-icon">
-            <q-icon name="check" size="32px" />
+            <q-icon name="o_check" size="32px" />
           </div>
           <div class="text-h6 q-mt-sm">{{ successModal.title }}</div>
           <p class="section-subtitle q-mt-sm">{{ successModal.message }}</p>
@@ -275,7 +275,7 @@
             <div class="text-h6">Crop Profile Photo</div>
             <div class="section-subtitle">Drag to select a square crop area.</div>
           </div>
-          <q-btn flat round dense icon="close" class="dialog-close-btn" @click="showCropModal = false" />
+          <q-btn flat round dense icon="o_close" class="dialog-close-btn" @click="showCropModal = false" />
         </q-card-section>
         <q-card-section class="dialog-body text-center">
           <canvas
@@ -302,7 +302,7 @@
             <div class="text-h6">Change Password</div>
             <div class="section-subtitle">Keep your account secure with a strong password.</div>
           </div>
-          <q-btn flat round dense icon="close" class="dialog-close-btn" :disable="savingPassword" @click="attemptClosePasswordModal" />
+          <q-btn flat round dense icon="o_close" class="dialog-close-btn" :disable="savingPassword" @click="attemptClosePasswordModal" />
         </q-card-section>
 
         <q-form ref="passwordFormRef">
@@ -320,7 +320,7 @@
               >
                 <template #append>
                   <q-icon
-                    :name="showCurrentPassword ? 'visibility' : 'visibility_off'"
+                    :name="showCurrentPassword ? 'o_visibility' : 'o_visibility_off'"
                     class="password-icon cursor-pointer"
                     @click="showCurrentPassword = !showCurrentPassword"
                   />
@@ -341,14 +341,14 @@
               >
                 <template #append>
                   <q-icon
-                    :name="showNewPassword ? 'visibility' : 'visibility_off'"
+                    :name="showNewPassword ? 'o_visibility' : 'o_visibility_off'"
                     class="password-icon cursor-pointer"
                     @click="showNewPassword = !showNewPassword"
                   />
                 </template>
               </q-input>
               <div v-if="newPasswordMessage" class="edit-field-hint" :class="`edit-field-hint-${newPasswordMessage.type}`">
-                <q-icon v-if="newPasswordMessage.type === 'success'" name="check_circle" size="12px" />
+                <q-icon v-if="newPasswordMessage.type === 'success'" name="o_check_circle" size="12px" />
                 {{ newPasswordMessage.text }}
               </div>
             </div>
@@ -366,14 +366,14 @@
               >
                 <template #append>
                   <q-icon
-                    :name="showConfirmPassword ? 'visibility' : 'visibility_off'"
+                    :name="showConfirmPassword ? 'o_visibility' : 'o_visibility_off'"
                     class="password-icon cursor-pointer"
                     @click="showConfirmPassword = !showConfirmPassword"
                   />
                 </template>
               </q-input>
               <div v-if="confirmPasswordMessage" class="edit-field-hint" :class="`edit-field-hint-${confirmPasswordMessage.type}`">
-                <q-icon v-if="confirmPasswordMessage.type === 'success'" name="check_circle" size="12px" />
+                <q-icon v-if="confirmPasswordMessage.type === 'success'" name="o_check_circle" size="12px" />
                 {{ confirmPasswordMessage.text }}
               </div>
             </div>
@@ -404,7 +404,7 @@
             <div class="text-h6">Verify New Phone</div>
             <div class="section-subtitle">Enter the 6-digit verification code sent to {{ maskedPhone }}. Sent via SMS.</div>
           </div>
-          <q-btn flat round dense icon="close" class="dialog-close-btn" :disable="verifyingOtp" @click="cancelOtp" />
+          <q-btn flat round dense icon="o_close" class="dialog-close-btn" :disable="verifyingOtp" @click="cancelOtp" />
         </q-card-section>
         <q-card-section class="dialog-body text-center">
           <!-- Same boxed OTP pattern as ConsumerVerify.vue / LoginPage.vue's forgot-password flow -->
@@ -457,7 +457,7 @@
             <div class="text-h6">Delete Account</div>
             <div class="section-subtitle">This action cannot be undone.</div>
           </div>
-          <q-btn flat round dense icon="close" class="dialog-close-btn" :disable="deletingAccount" @click="cancelDeleteModal" />
+          <q-btn flat round dense icon="o_close" class="dialog-close-btn" :disable="deletingAccount" @click="cancelDeleteModal" />
         </q-card-section>
 
         <q-card-section class="dialog-body">
@@ -498,7 +498,7 @@
       <q-card class="profile-dialog-card success-card" style="width: 500px; max-width: 90vw;">
         <q-card-section class="text-center">
           <div class="success-icon">
-            <q-icon name="check" size="32px" />
+            <q-icon name="o_check" size="32px" />
           </div>
           <div class="text-h6 q-mt-sm">Account Deleted!</div>
           <p class="section-subtitle q-mt-sm">Your account has been permanently deleted. Thank you for being part of Tindahan.</p>

@@ -22,7 +22,7 @@
 
           <div class="success-wrapper">
             <div class="success-icon-wrap">
-              <q-icon name="check" size="42px" color="white" />
+              <q-icon name="o_check" size="42px" color="white" />
             </div>
 
             <h1>Verification Successful</h1>

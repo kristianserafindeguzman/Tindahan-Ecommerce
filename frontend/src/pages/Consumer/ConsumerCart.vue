@@ -11,7 +11,7 @@
       <div v-if="loading" class="cart-loading">Loading your cart…</div>
 
       <div v-else-if="!items.length" class="cart-empty">
-        <q-icon name="shopping_cart" size="40px" class="cart-empty-icon" />
+        <q-icon name="o_shopping_cart" size="40px" class="cart-empty-icon" />
         <p class="cart-empty-text">Your cart is empty.</p>
         <q-btn
           unelevated
@@ -28,14 +28,14 @@
           <div v-for="group in groupedByStore" :key="group.storeId" class="store-group">
 
             <div class="store-group-header">
-              <q-icon name="storefront" size="15px" />
+              <q-icon name="o_storefront" size="15px" />
               <span>{{ group.store }}</span>
             </div>
 
             <div v-for="item in group.items" class="cart-item" :key="item.cartId" :class="{ 'cart-item-oos': !item.inStock }">
               <div class="cart-item-image">
                 <img v-if="item.image" :src="item.image" :alt="item.name" />
-                <q-icon v-else name="inventory_2" size="26px" />
+                <q-icon v-else name="o_inventory_2" size="26px" />
               </div>
 
               <div class="cart-item-info">
@@ -51,7 +51,7 @@
                   :disabled="item.quantity <= 1"
                   @click="changeQuantity(item, item.quantity - 1)"
                 >
-                  <q-icon name="remove" size="14px" />
+                  <q-icon name="o_remove" size="14px" />
                 </button>
                 <span class="stepper-value">{{ item.quantity }}</span>
                 <button
@@ -60,14 +60,14 @@
                   :disabled="item.quantity >= item.availableQuantity"
                   @click="changeQuantity(item, item.quantity + 1)"
                 >
-                  <q-icon name="add" size="14px" />
+                  <q-icon name="o_add" size="14px" />
                 </button>
               </div>
 
               <div class="cart-item-line-total">₱{{ (item.price * item.quantity).toFixed(2) }}</div>
 
               <button type="button" class="remove-btn" aria-label="Remove item" @click="removeItem(item)">
-                <q-icon name="delete_outline" size="18px" />
+                <q-icon name="o_delete" size="18px" />
               </button>
             </div>
 

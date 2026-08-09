@@ -13,7 +13,7 @@
 
       <!-- EMPTY QUERY STATE -->
       <div v-if="!query" class="search-prompt">
-        <q-icon name="search" size="40px" class="search-prompt-icon" />
+        <q-icon name="o_search" size="40px" class="search-prompt-icon" />
         <p class="search-prompt-text">Start typing to search products and stores.</p>
 
         <div v-if="recentSearches.length" class="search-prompt-recent">
@@ -106,7 +106,7 @@
 
         <!-- EMPTY RESULTS STATE -->
         <div v-else class="results-empty">
-          <q-icon name="search_off" size="32px" class="results-empty-icon" />
+          <q-icon name="o_search_off" size="32px" class="results-empty-icon" />
           <p class="results-empty-title">No results found for "{{ query }}".</p>
           <p class="results-empty-text">Try searching for a different keyword.</p>
         </div>

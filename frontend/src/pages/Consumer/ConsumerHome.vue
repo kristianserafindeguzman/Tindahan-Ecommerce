@@ -12,7 +12,7 @@
           <h1 class="hero-title hero-title-lg">Explore sari-sari stores around you</h1>
           <!-- Not wired up yet — no map feature/route exists yet, intentionally not clickable. -->
           <q-btn unelevated no-caps label="Show Map" class="hero-cta">
-            <q-icon name="arrow_forward" size="16px" class="q-ml-xs" />
+            <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
           </q-btn>
         </div>
         <div class="hero-logo-wrap">
