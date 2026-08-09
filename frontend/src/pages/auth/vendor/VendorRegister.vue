@@ -698,6 +698,18 @@ const handleVendorRegister = async () => {
   registerError.value = ''
 
   try {
+    const dayMap = { 'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday', 'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday' }
+    const schedule = {}
+    
+    Object.values(dayMap).forEach(fullDay => {
+      const isDaySelected = form.operatingDays.some(shortDay => dayMap[shortDay] === fullDay)
+      schedule[fullDay] = {
+        is_open: isDaySelected,
+        opening_time: isDaySelected ? form.openingTime : null,
+        closing_time: isDaySelected ? form.closingTime : null
+      }
+    })
+
     const formData = new FormData()
     formData.append('store_name', form.storeName)
     formData.append('full_name', form.ownerName)
@@ -707,7 +719,7 @@ const handleVendorRegister = async () => {
     formData.append('password_confirmation', form.confirmPassword)
     formData.append('opening_time', form.openingTime)
     formData.append('closing_time', form.closingTime)
-    formData.append('operating_days', JSON.stringify(form.operatingDays))
+    formData.append('operating_days', JSON.stringify(schedule))
 
     // Use placeholder coordinates if map is not wired
     // formData.append('latitude', form.latitude || '14.5764')

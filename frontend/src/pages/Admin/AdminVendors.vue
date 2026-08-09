@@ -156,7 +156,7 @@
               <div class="insights-cell print-hide">
                 <span class="insight-chip-glass orders-chip">
                   <q-icon name="receipt_long" size="14px" />
-                  {{ props.row.completed_orders }} orders
+                  {{ props.row.orders_count }} orders
                 </span>
                 <span class="insight-chip-glass products-chip">
                   <q-icon name="inventory_2" size="14px" />
@@ -164,7 +164,7 @@
                 </span>
               </div>
               <div class="print-only text-grey-8" style="display: none;">
-                {{ props.row.completed_orders }} Orders, {{ props.row.active_products }} Products
+                {{ props.row.orders_count }} Orders, {{ props.row.active_products }} Products
               </div>
             </q-td>
           </template>
@@ -263,13 +263,15 @@
           </div>
 
           <div class="row q-col-gutter-y-md q-col-gutter-x-xl q-mb-lg info-grid-glass q-pa-md">
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-red-4 text-uppercase text-weight-bold">Operating Days</div>
-              <div class="text-subtitle2 text-weight-bold text-dark">{{ formatOperatingDays(selectedVendor.operating_days) }}</div>
-            </div>
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-red-4 text-uppercase text-weight-bold">Business Hours</div>
-              <div class="text-subtitle2 text-weight-bold text-dark">{{ selectedVendor.opening_time || 'N/A' }} - {{ selectedVendor.closing_time || 'N/A' }}</div>
+            <div class="col-12">
+              <div class="text-caption text-red-4 text-uppercase text-weight-bold q-mb-sm">Operating Schedule</div>
+              <div class="bg-grey-1 rounded-borders q-pa-sm custom-glass-input">
+                <div v-for="day in getFormattedSchedule(selectedVendor)" :key="day.day" class="row justify-between items-center q-py-xs" :class="day.isOpen ? 'text-dark' : 'text-blue-grey-4'">
+                  <span class="text-weight-medium text-body2">{{ day.day }}</span>
+                  <span v-if="day.isOpen" class="text-caption text-weight-bold">{{ day.hours }}</span>
+                  <span v-else class="text-caption text-italic">Closed</span>
+                </div>
+              </div>
             </div>
             <div class="col-12">
               <div class="text-caption text-red-4 text-uppercase text-weight-bold">Map Coordinates</div>
@@ -352,7 +354,7 @@ const columns = [
   { name: 'email', label: 'Email', field: 'email', align: 'left', sortable: true },
   { name: 'phone_number', label: 'Mobile', field: 'phone_number', align: 'left' },
   { name: 'account_status', label: 'Status', field: 'account_status', align: 'left' },
-  { name: 'products_count', label: 'Products Count', field: row => row.store?.inventory_count || 0, align: 'left', sortable: true },
+  { name: 'products_count', label: 'Products Count', field: 'active_products', align: 'left', sortable: true },
   { name: 'last_activity_at', label: 'Last Activity', field: 'last_activity_at', align: 'left', sortable: true },
   { name: 'insights', label: 'Quick Insights', field: '', align: 'left' },
 ]
@@ -374,14 +376,50 @@ const fetchVendors = async () => {
   }
 }
 
-const formatOperatingDays = (days) => {
-  if (!days) return 'N/A'
-  try {
-    const parsed = typeof days === 'string' ? JSON.parse(days) : days
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed.join(', ') : 'N/A'
-  } catch (e) {
-    return 'N/A'
+const formatTime = (timeStr) => {
+  if (!timeStr) return 'Not set'
+  const [h, m] = timeStr.split(':')
+  const hour = parseInt(h)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const formattedHour = hour % 12 || 12
+  return `${formattedHour.toString().padStart(2, '0')}:${m} ${ampm}`
+}
+
+const getFormattedSchedule = (vendor) => {
+  if (!vendor) return []
+  const days = vendor.operating_days
+  if (!days) return []
+  
+  let parsed = days
+  if (typeof days === 'string') {
+    try { parsed = JSON.parse(days) } catch(e) { return [] }
   }
+
+  const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  
+  if (Array.isArray(parsed)) {
+    const openTime = formatTime(vendor.opening_time)
+    const closeTime = formatTime(vendor.closing_time)
+    return allDays.map(day => {
+      const isOpen = parsed.some(d => typeof d === 'string' && d.startsWith(day.substring(0, 3)))
+      return {
+        day,
+        isOpen,
+        hours: isOpen ? `${openTime} - ${closeTime}` : 'Closed'
+      }
+    })
+  } else if (typeof parsed === 'object' && parsed !== null) {
+    return allDays.map(day => {
+      const schedule = parsed[day]
+      const isOpen = schedule?.is_open || false
+      return {
+        day,
+        isOpen,
+        hours: isOpen ? `${formatTime(schedule.opening_time)} - ${formatTime(schedule.closing_time)}` : 'Closed'
+      }
+    })
+  }
+  return []
 }
 
 const isValidLocation = (vendor) => {

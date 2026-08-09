@@ -127,29 +127,50 @@ class ProfileController extends Controller
         ]);
 
         $days = $request->operatingDays;
-        $activeDays = [];
-        $openingTime = null;
-        $closingTime = null;
+        $validDayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        $schedule = [];
+        $earliestOpen = null;
+        $latestClose = null;
 
         foreach ($days as $day) {
-            if (isset($day['isOpen']) && $day['isOpen']) {
-                $activeDays[] = substr($day['name'], 0, 3); // e.g. "Mon"
-                // Pick the first valid time found as the global store time
-                if (!$openingTime && isset($day['openTime'])) {
-                    $openingTime = $day['openTime'] . ':00'; // Append seconds
+            $name = $day['name'] ?? null;
+            if (!$name || !in_array($name, $validDayNames)) {
+                continue;
+            }
+
+            $isOpen = !empty($day['isOpen']);
+            if ($isOpen) {
+                $openTime = $day['openTime'] ?? null;
+                $closeTime = $day['closeTime'] ?? null;
+
+                $schedule[$name] = [
+                    'is_open' => true,
+                    'opening_time' => $openTime,
+                    'closing_time' => $closeTime,
+                ];
+
+                // Track global opening/closing for backward compatibility
+                if ($openTime && ($earliestOpen === null || $openTime < $earliestOpen)) {
+                    $earliestOpen = $openTime;
                 }
-                if (!$closingTime && isset($day['closeTime'])) {
-                    $closingTime = $day['closeTime'] . ':00';
+                if ($closeTime && ($latestClose === null || $closeTime > $latestClose)) {
+                    $latestClose = $closeTime;
                 }
+            } else {
+                $schedule[$name] = [
+                    'is_open' => false,
+                    'opening_time' => null,
+                    'closing_time' => null,
+                ];
             }
         }
 
         $user = $request->user();
         if ($user->role === 'Vendor' && $user->store) {
             $user->store->update([
-                'operating_days' => $activeDays,
-                'opening_time' => $openingTime,
-                'closing_time' => $closingTime,
+                'operating_days' => $schedule,
+                'opening_time' => $earliestOpen ? $earliestOpen . ':00' : null,
+                'closing_time' => $latestClose ? $latestClose . ':00' : null,
             ]);
         }
 

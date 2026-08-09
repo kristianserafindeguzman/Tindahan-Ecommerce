@@ -68,17 +68,52 @@
                     <tr>
                         <td class="label">Operating Schedule:</td>
                         <td class="val">
-                            @if(is_array($store->operating_days))
-                                {{ implode(', ', $store->operating_days) }}
-                            @elseif(is_string($store->operating_days))
+                            <table style="width: 100%; border-collapse: collapse; margin-top: -2px;">
                                 @php
-                                    $decodedDays = json_decode($store->operating_days, true);
-                                    echo is_array($decodedDays) ? implode(', ', $decodedDays) : $store->operating_days;
+                                    $days = $store->operating_days;
+                                    if (is_string($days)) {
+                                        $days = json_decode($days, true);
+                                    }
+                                    if (is_array($days) && count($days) > 0) {
+                                        $allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                                        if (array_keys($days) === range(0, count($days) - 1)) {
+                                            // Legacy format
+                                            $globalOpen = $store->opening_time ? date('h:i A', strtotime($store->opening_time)) : 'N/A';
+                                            $globalClose = $store->closing_time ? date('h:i A', strtotime($store->closing_time)) : 'N/A';
+                                            foreach ($allDays as $dayName) {
+                                                $isOpen = false;
+                                                foreach ($days as $d) {
+                                                    if (is_string($d) && str_starts_with(strtolower($dayName), strtolower(substr($d, 0, 3)))) {
+                                                        $isOpen = true;
+                                                        break;
+                                                    }
+                                                }
+                                                if ($isOpen) {
+                                                    echo "<tr><td style='padding:2px 0; width:70px;'>$dayName</td><td style='padding:2px 0;'>$globalOpen - $globalClose</td></tr>";
+                                                } else {
+                                                    echo "<tr><td style='padding:2px 0; width:70px;'>$dayName</td><td style='padding:2px 0; color: #64748b; font-style: italic;'>Closed</td></tr>";
+                                                }
+                                            }
+                                        } else {
+                                            // New canonical object format
+                                            foreach ($allDays as $dayName) {
+                                                if (isset($days[$dayName])) {
+                                                    $schedule = $days[$dayName];
+                                                    if (!empty($schedule['is_open'])) {
+                                                        $open = !empty($schedule['opening_time']) ? date('h:i A', strtotime($schedule['opening_time'])) : 'N/A';
+                                                        $close = !empty($schedule['closing_time']) ? date('h:i A', strtotime($schedule['closing_time'])) : 'N/A';
+                                                        echo "<tr><td style='padding:2px 0; width:70px;'>$dayName</td><td style='padding:2px 0;'>$open - $close</td></tr>";
+                                                    } else {
+                                                        echo "<tr><td style='padding:2px 0; width:70px;'>$dayName</td><td style='padding:2px 0; color: #64748b; font-style: italic;'>Closed</td></tr>";
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        echo "<tr><td>N/A</td></tr>";
+                                    }
                                 @endphp
-                            @else
-                                {{ $store->operating_days ?? 'N/A' }}
-                            @endif
-                            | {{ $store->opening_time ? date('h:i A', strtotime($store->opening_time)) : 'N/A' }} - {{ $store->closing_time ? date('h:i A', strtotime($store->closing_time)) : 'N/A' }}
+                            </table>
                         </td>
                     </tr>
                     <tr>

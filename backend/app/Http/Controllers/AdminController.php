@@ -158,7 +158,14 @@ class AdminController extends Controller
             if ($request->tab === 'deleted') {
                 $q->withTrashed();
             }
-            $q->withCount('inventory')->with('approvalStatus');
+            $q->withCount([
+                'inventory as active_products_count' => function ($q2) {
+                    $q2->where('status', 'active');
+                },
+                'orders as orders_count' => function ($q2) {
+                    $q2->where('status', '!=', 'cancelled');
+                },
+            ])->with('approvalStatus');
         }]);
 
         // Search by name or email
@@ -179,22 +186,6 @@ class AdminController extends Controller
             $store = $vendor->store;
             $approvalStatus = $store?->approvalStatus;
 
-            // Quick insights: count completed orders and active products
-            $completedOrders = 0;
-            $activeProducts = 0;
-
-            if ($store) {
-                $completedOrders = \DB::table('orders')
-                    ->where('store_id', $store->store_id)
-                    ->where('status', 'completed')
-                    ->count();
-
-                $activeProducts = \DB::table('inventory')
-                    ->where('store_id', $store->store_id)
-                    ->where('status', 'active')
-                    ->count();
-            }
-
             return [
                 'user_id'          => $vendor->user_id,
                 'full_name'        => $vendor->full_name,
@@ -212,8 +203,8 @@ class AdminController extends Controller
                 'closing_time'     => $store?->closing_time,
                 'latitude'         => $store?->latitude,
                 'longitude'        => $store?->longitude,
-                'completed_orders' => $completedOrders,
-                'active_products'  => $activeProducts,
+                'active_products'  => $store?->active_products_count ?? 0,
+                'orders_count'     => $store?->orders_count ?? 0,
             ];
         });
 
