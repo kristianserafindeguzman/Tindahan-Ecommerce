@@ -35,25 +35,55 @@ class StoreController extends Controller
     /**
      * Whether a store is open right now, based on its operating hours/days.
      *
-     * Note: seeded stores store `operating_days` as full day names (e.g. "Monday"),
-     * while the vendor profile UI saves 3-letter abbreviations (e.g. "Mon") — matching
-     * on the first 3 characters (case-insensitively) handles both.
+     * Supports both the new per-day schedule format (object with day keys)
+     * and the legacy flat array format (["Monday", "Tue", ...]).
      */
     private function isOpenNow(Store $store): bool
     {
+        $days = $store->operating_days;
+        $todayFull = now()->format('l'); // e.g. "Monday"
+
+        // New per-day schedule format: { "Monday": { "is_open": true, "opening_time": "07:00", "closing_time": "21:00" }, ... }
+        if (is_array($days) && isset($days[$todayFull])) {
+            $todaySchedule = $days[$todayFull];
+            if (empty($todaySchedule['is_open'])) {
+                return false;
+            }
+
+            $openTime = $todaySchedule['opening_time'] ?? null;
+            $closeTime = $todaySchedule['closing_time'] ?? null;
+            if (!$openTime || !$closeTime) {
+                return true; // Day is marked open but no specific times
+            }
+
+            $now = now()->format('H:i');
+            $opens = Carbon::parse($openTime)->format('H:i');
+            $closes = Carbon::parse($closeTime)->format('H:i');
+
+            if ($opens <= $closes) {
+                return $now >= $opens && $now <= $closes;
+            }
+            // Overnight range
+            return $now >= $opens || $now <= $closes;
+        }
+
+        // Legacy flat array format: ["Monday", "Mon", ...]
         if (!$store->opening_time || !$store->closing_time) {
             return false;
         }
 
-        $days = $store->operating_days;
-        if (!empty($days)) {
-            $today = strtolower(substr(now()->format('D'), 0, 3));
-            $opensToday = collect($days)->contains(
-                fn ($day) => strtolower(substr($day, 0, 3)) === $today
-            );
+        if (!empty($days) && is_array($days)) {
+            // Check if array values are strings (legacy format)
+            $firstValue = reset($days);
+            if (is_string($firstValue)) {
+                $today = strtolower(substr(now()->format('D'), 0, 3));
+                $opensToday = collect($days)->contains(
+                    fn ($day) => strtolower(substr($day, 0, 3)) === $today
+                );
 
-            if (!$opensToday) {
-                return false;
+                if (!$opensToday) {
+                    return false;
+                }
             }
         }
 
@@ -65,7 +95,7 @@ class StoreController extends Controller
             return $now >= $opens && $now <= $closes;
         }
 
-        // Overnight range, e.g. 8:00 pm - 2:00 am.
+        // Overnight range
         return $now >= $opens || $now <= $closes;
     }
 }

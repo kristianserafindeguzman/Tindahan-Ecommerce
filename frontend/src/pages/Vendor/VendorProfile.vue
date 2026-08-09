@@ -479,6 +479,15 @@ const handleCapturedImage = ({ file }) => {
 
 const submitStoreHours = async () => {
   try {
+    for (const day of operatingDays) {
+      if (day.isOpen && day.openTime && day.closeTime) {
+        if (day.closeTime <= day.openTime) {
+          $q.notify({ type: 'warning', message: `Invalid times for ${day.name}. Closing time must be later than opening time.` })
+          return
+        }
+      }
+    }
+
     await api.put('/vendor/profile/hours', { operatingDays })
     $q.notify({ type: 'positive', message: 'Store Hours saved successfully.', color: 'green' })
   } catch (error) {
@@ -556,6 +565,42 @@ const fetchProfile = async () => {
         addressForm.fullAddress = data.store.address || ''
         addressForm.latitude = data.store.latitude || null
         addressForm.longitude = data.store.longitude || null
+        
+        if (data.store.operating_days) {
+          let dbDays = data.store.operating_days;
+          if (typeof dbDays === 'string') {
+            try { dbDays = JSON.parse(dbDays); } catch (e) { dbDays = {}; }
+          }
+          
+          if (Array.isArray(dbDays)) {
+            // Legacy flat array format: ["Monday", "Tuesday"]
+            operatingDays.forEach(day => {
+              // Match abbreviated or full names
+              day.isOpen = dbDays.some(d => typeof d === 'string' && d.startsWith(day.name.substring(0, 3)));
+              if (day.isOpen) {
+                day.openTime = data.store.opening_time ? data.store.opening_time.substring(0, 5) : '08:00';
+                day.closeTime = data.store.closing_time ? data.store.closing_time.substring(0, 5) : '17:00';
+              } else {
+                day.openTime = '08:00';
+                day.closeTime = '17:00';
+              }
+            });
+          } else if (typeof dbDays === 'object' && dbDays !== null) {
+            // New canonical format: { "Monday": { is_open: true, opening_time: "08:00", ... } }
+            operatingDays.forEach(day => {
+              const schedule = dbDays[day.name];
+              if (schedule) {
+                day.isOpen = schedule.is_open || false;
+                day.openTime = schedule.opening_time ? schedule.opening_time.substring(0, 5) : '08:00';
+                day.closeTime = schedule.closing_time ? schedule.closing_time.substring(0, 5) : '17:00';
+              } else {
+                day.isOpen = false;
+                day.openTime = '08:00';
+                day.closeTime = '17:00';
+              }
+            });
+          }
+        }
       }
     }
   } catch (error) { console.error('Failed to load profile data', error) }

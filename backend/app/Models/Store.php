@@ -67,6 +67,14 @@ class Store extends Model
     }
 
     /**
+     * The orders placed at this store.
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'store_id', 'store_id');
+    }
+
+    /**
      * Append custom attributes.
      */
     protected $appends = ['store_picture_url'];
