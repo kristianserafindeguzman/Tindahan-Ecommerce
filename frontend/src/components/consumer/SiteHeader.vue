@@ -124,10 +124,10 @@
           </div>
         </div>
 
-        <div ref="headerLocationRef" class="header-location" :title="address" @click="toggleAddressMenu">
+        <div ref="headerLocationRef" class="header-location" :title="address || 'Enter Address'" @click="toggleAddressMenu">
           <span class="header-location-pill" :class="{ 'header-location-expanded': addressMenuOpen }">
             <q-icon name="o_location_on" size="15px" />
-            <span>{{ address }}</span>
+            <span>{{ address || 'Enter Address' }}</span>
           </span>
 
           <div v-if="addressMenuOpen" class="address-menu-panel" @click.stop>
