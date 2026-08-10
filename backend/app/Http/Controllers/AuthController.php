@@ -133,6 +133,8 @@ class AuthController extends Controller
         $photoPath = $request->file('store_picture')
             ->store('stores', 'public');
 
+        // The frontend VendorRegister now sends the canonical per-day schedule format directly,
+        // so we don't need to convert a flat array anymore. We just decode it.
         $operatingDays = $request->input('operating_days');
         if (is_string($operatingDays)) {
             $operatingDays = json_decode($operatingDays, true);

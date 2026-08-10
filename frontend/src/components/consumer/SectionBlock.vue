@@ -2,7 +2,7 @@
   <section class="section-block">
     <div class="section-heading-row">
       <span class="section-heading">{{ title }}</span>
-      <span v-if="viewAll" class="section-link">View All</span>
+      <span v-if="viewAll" class="section-link" @click="$emit('view-all')">View All</span>
     </div>
 
     <slot />
@@ -20,6 +20,8 @@ defineProps({
     default: false
   }
 })
+
+defineEmits(['view-all'])
 </script>
 
 <style scoped>
@@ -32,7 +34,7 @@ defineProps({
   align-items: center;
   justify-content: space-between;
 
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .section-heading {

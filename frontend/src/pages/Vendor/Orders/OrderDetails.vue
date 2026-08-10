@@ -23,7 +23,7 @@
         </div>
         
         <div class="row q-gutter-sm">
-          <q-btn outline icon="print" label="Print" color="dark" no-caps class="btn-3d-outline" />
+          <q-btn outline icon="print" label="Print" color="dark" no-caps class="btn-3d-outline" :loading="isExporting" @click="printOrder" />
           
           <template v-if="order.status !== 'picked_up' && order.status !== 'cancelled' && order.status !== 'completed'">
             <q-btn-dropdown :loading="isUpdating" outline color="dark" label="Update Status" no-caps class="btn-3d-outline bg-grey-2">
@@ -279,6 +279,7 @@ const route = useRoute()
 const $q = useQuasar()
 const order = ref(null)
 const isUpdating = ref(false)
+const isExporting = ref(false)
 
 const showCancelDialog = ref(false)
 const cancelReasonOutOfStock = ref(false)
@@ -298,7 +299,28 @@ const promptCancelOrder = () => {
   showCancelDialog.value = true
 }
 
-const confirmCancelOrder = () => {
+const printOrder = async () => {
+  if (!order.value) return
+  
+  try {
+    isExporting.value = true
+    const response = await api.get(`/vendor/orders/${order.value.order_id}/export`, { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `Tindahan-Customer-Order-#${order.value.order_id}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (error) {
+    console.error('Print failed:', error)
+    $q.notify({ type: 'negative', message: 'Failed to generate print document' })
+  } finally {
+    isExporting.value = false
+  }
+}
+
+const confirmCancelOrder = async () => {
   if (!cancelReasonText.value) {
     $q.notify({ type: 'warning', message: 'Please provide a cancellation reason.' })
     return

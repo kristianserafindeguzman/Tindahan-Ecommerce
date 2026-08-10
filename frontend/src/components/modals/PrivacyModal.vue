@@ -5,7 +5,7 @@
       <q-card-section class="legal-header">
         <div class="legal-title">Privacy Policy</div>
         <q-btn
-          icon="close"
+          icon="o_close"
           flat
           round
           dense
@@ -86,7 +86,7 @@ defineEmits(['update:modelValue'])
 .legal-dialog {
   width: 520px;
   max-width: 90vw;
-  border-radius: 10px;
+  border-radius: 12px;
   font-family: 'Roboto', Arial, sans-serif;
 }
 
@@ -104,7 +104,7 @@ defineEmits(['update:modelValue'])
 }
 
 .close-btn {
-  color: #888888;
+  color: #666666;
 }
 
 .legal-body {
@@ -138,16 +138,31 @@ defineEmits(['update:modelValue'])
 }
 
 .close-button {
-  height: 38px;
+  height: 48px;
   padding: 0 24px;
   border-radius: 6px;
   background: #bd2427;
   color: #ffffff;
   font-size: 13px;
   font-weight: 500;
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
 .close-button:hover {
   background: #a91e21;
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+  transform: translateY(-1px);
+}
+
+.close-button:active {
+  background: #8f1a1c;
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+  transform: translateY(0);
+}
+
+.close-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
 }
 </style>

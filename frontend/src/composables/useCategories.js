@@ -5,15 +5,15 @@ import { api } from '@/boot/axios'
 // category_name. Anything not in this list (e.g. a category added later
 // through the admin/vendor UI) falls back to a generic icon.
 const CATEGORY_ICONS = {
-  'Cooking Essentials': 'kitchen',
-  'Beverages': 'local_drink',
-  'Snacks & Sweets': 'fastfood',
-  'Personal Care': 'spa',
-  'Laundry & Cleaning': 'local_laundry_service',
-  'Others': 'category'
+  'Cooking Essentials': 'o_kitchen',
+  'Beverages': 'o_local_drink',
+  'Snacks & Sweets': 'o_fastfood',
+  'Personal Care': 'o_spa',
+  'Laundry & Cleaning': 'o_local_laundry_service',
+  'Others': 'o_category'
 }
 
-const DEFAULT_ICON = 'category'
+const DEFAULT_ICON = 'o_category'
 
 export function useCategories() {
   const categories = ref([])

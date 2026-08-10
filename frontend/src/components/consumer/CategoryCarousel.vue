@@ -10,7 +10,7 @@
     </div>
 
     <button type="button" class="categories-next" aria-label="More categories" @click="scrollNext">
-      <q-icon name="chevron_right" size="20px" />
+      <q-icon name="o_chevron_right" size="20px" />
     </button>
   </div>
 </template>
@@ -28,11 +28,7 @@ defineProps({
 
 defineEmits(['select'])
 
-// ==========================================================
-// SCROLL — the ">" button nudges the track forward by roughly one
-// "page" of cards instead of jumping straight to the end.
-// ==========================================================
-
+// The ">" button nudges the track forward by roughly one "page" of cards.
 const track = ref(null)
 
 const scrollNext = () => {
@@ -86,7 +82,7 @@ const scrollNext = () => {
   align-self: center;
 
   border: 1px solid #eceef1;
-  border-radius: 50%;
+  border-radius: 10px;
 
   background: #ffffff;
   color: #bd2427;

@@ -57,13 +57,33 @@ const routes = [
         meta: { requiresAuth: true, role: 'Consumer' }
       },
       {
+        path: 'consumer/personalize',
+        component: () => import('@/pages/Consumer/ConsumerPersonalize.vue'),
+        meta: { requiresAuth: true, role: 'Consumer' }
+      },
+      {
         path: 'consumer/products',
         component: () => import('@/pages/Consumer/ConsumerProducts.vue'),
         meta: { requiresAuth: true, role: 'Consumer' }
       },
       {
+        path: 'consumer/cart',
+        component: () => import('@/pages/Consumer/ConsumerCart.vue'),
+        meta: { requiresAuth: true, role: 'Consumer' }
+      },
+      {
         path: 'consumer/stores',
         component: () => import('@/pages/Consumer/ConsumerStores.vue'),
+        meta: { requiresAuth: true, role: 'Consumer' }
+      },
+      {
+        path: 'consumer/stores/:id',
+        component: () => import('@/pages/Consumer/ConsumerStoreDetail.vue'),
+        meta: { requiresAuth: true, role: 'Consumer' }
+      },
+      {
+        path: 'consumer/search',
+        component: () => import('@/pages/Consumer/ConsumerSearch.vue'),
         meta: { requiresAuth: true, role: 'Consumer' }
       },
       {

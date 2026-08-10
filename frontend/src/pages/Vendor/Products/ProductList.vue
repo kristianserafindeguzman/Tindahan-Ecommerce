@@ -383,7 +383,14 @@ const executeFinalExport = async () => {
             const response = await api.get('/vendor/inventory/export', { responseType: 'blob' })
             const blob = new Blob([response.data], { type: 'application/pdf' })
             const url = window.URL.createObjectURL(blob)
-            window.open(url, '_blank')
+            
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `Tindahan-Inventory-Report-${Date.now()}.pdf`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            
             setTimeout(() => window.URL.revokeObjectURL(url), 1000)
             showExportModal.value = false
         } catch (error) {
@@ -407,44 +414,97 @@ const executeFinalExport = async () => {
             container.style.position = 'absolute'
             container.style.left = '-9999px'
             container.style.top = '0'
-            container.style.width = '800px'
-            container.style.padding = '40px' // Generous margin padding around the whole report
-            container.style.backgroundColor = '#ffffff'
-            container.style.boxSizing = 'border-box'
+            container.style.width = '840px' // Slightly wider to accommodate box shadow and gaps
             document.body.appendChild(container)
             
             await nextTick()
             
-            // Wait for all images in the container to finish loading
+            // Wait for all images in the container to finish loading and decoding
             const images = container.querySelectorAll('img')
-            const imagePromises = Array.from(images).map(img => {
-                return new Promise((resolve) => {
-                    if (img.complete) {
-                        resolve()
-                    } else {
+            const imagePromises = Array.from(images).map(async (img) => {
+                if (!img.complete) {
+                    await new Promise((resolve) => {
                         img.onload = resolve
                         img.onerror = resolve
+                    })
+                }
+                // Ensure base64 map data URI is decoded into memory before html2canvas
+                if (img.decode) {
+                    try {
+                        await img.decode()
+                    } catch (e) {
+                        // ignore decode errors for unsupported images
                     }
-                })
+                }
             })
             await Promise.all([
                 ...imagePromises,
                 document.fonts ? document.fonts.ready : Promise.resolve()
             ])
             
-            // 3. Render canvas via html2canvas
-            const canvas = await html2canvas(container, {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                logging: false
-            })
+            // Bulletproof workaround for html2canvas blank map bug:
+            // Convert data URI images into native canvas elements before capture.
+            const allImages = container.querySelectorAll('img');
+            allImages.forEach(img => {
+                if (img.src && img.src.startsWith('data:image')) {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        // Use natural dimensions to ensure crisp rendering, fallback to explicitly set width/height
+                        canvas.width = img.naturalWidth || img.width || 240;
+                        canvas.height = img.naturalHeight || img.height || 160;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        // Copy styling exactly to prevent layout shifts
+                        canvas.style.cssText = img.style.cssText;
+                        canvas.className = img.className;
+                        // Enforce explicit inline dimensions if they were present as attributes
+                        if (img.hasAttribute('width')) canvas.style.width = img.getAttribute('width') + 'px';
+                        if (img.hasAttribute('height')) canvas.style.height = img.getAttribute('height') + 'px';
+                        
+                        // Swap the img node for the canvas node
+                        img.parentNode.replaceChild(canvas, img);
+                    } catch (e) {
+                        console.warn('Failed to convert image to canvas for export', e);
+                    }
+                }
+            });
             
-            // 4. Trigger download
-            const imageLink = document.createElement('a')
-            imageLink.download = `inventory-report-${Date.now()}.png`
-            imageLink.href = canvas.toDataURL('image/png')
-            imageLink.click()
+            // 3. Render canvas via html2canvas
+            const pages = container.querySelectorAll('.page')
+            if (pages.length > 0) {
+                // Generate one image per PDF page
+                for (let i = 0; i < pages.length; i++) {
+                    const canvas = await html2canvas(pages[i], {
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        logging: false,
+                        backgroundColor: '#ffffff'
+                    })
+                    
+                    const imageLink = document.createElement('a')
+                    imageLink.download = `inventory-report-page-${i + 1}-${Date.now()}.png`
+                    imageLink.href = canvas.toDataURL('image/png')
+                    imageLink.click()
+                    
+                    // Small delay to allow browser to process downloads sequentially
+                    await new Promise(r => setTimeout(r, 500))
+                }
+            } else {
+                // Fallback
+                const canvas = await html2canvas(container, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false
+                })
+                
+                const imageLink = document.createElement('a')
+                imageLink.download = `inventory-report-${Date.now()}.png`
+                imageLink.href = canvas.toDataURL('image/png')
+                imageLink.click()
+            }
             
             // 5. Cleanup DOM
             document.body.removeChild(container)

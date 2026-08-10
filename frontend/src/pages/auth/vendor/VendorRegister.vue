@@ -37,12 +37,14 @@
                   v-model="form.storeName"
                   outlined
                   dense
+                  no-error-icon
                   hide-bottom-space
                   label="Store name"
                   class="login-input"
                   :rules="[
-                    val => !!val || 'Store name is required'
+                    val => !storeNameTouched || !!val || 'Store name is required.'
                   ]"
+                  @blur="storeNameTouched = true"
                 />
               </div>
 
@@ -51,13 +53,15 @@
                   v-model="form.ownerName"
                   outlined
                   dense
+                  no-error-icon
                   hide-bottom-space
                   label="Store owner name"
                   class="login-input"
                   :rules="[
-                    val => !!val || 'Store owner name is required',
-                    nameRule
+                    val => !ownerNameTouched || !!val || 'Store owner name is required.',
+                    val => !ownerNameTouched || nameRule(val)
                   ]"
+                  @blur="ownerNameTouched = true"
                 />
               </div>
             </div>
@@ -112,14 +116,16 @@
                   v-model="form.email"
                   outlined
                   dense
+                  no-error-icon
                   hide-bottom-space
                   type="email"
                   label="Email address"
                   class="login-input"
                   :rules="[
-                    val => !!val || 'Email is required',
-                    emailRule
+                    val => !emailTouched || !!val || 'Email is required.',
+                    val => !emailTouched || emailRule(val)
                   ]"
+                  @blur="emailTouched = true"
                 />
               </div>
 
@@ -128,13 +134,15 @@
                   v-model="form.phoneNumber"
                   outlined
                   dense
+                  no-error-icon
                   hide-bottom-space
                   label="Phone number"
                   class="login-input phone-input"
                   :rules="[
-                    val => !!val || 'Phone number is required',
-                    phoneRule
+                    val => !phoneTouched || !!val || 'Phone number is required.',
+                    val => !phoneTouched || phoneRule(val)
                   ]"
+                  @blur="phoneTouched = true"
                 >
                   <template #prepend>
                     <q-icon name="phone" class="phone-prefix" />
@@ -147,14 +155,16 @@
                   v-model="form.password"
                   outlined
                   dense
+                  no-error-icon
                   hide-bottom-space
                   :type="showPassword ? 'text' : 'password'"
                   label="Create a password"
                   class="login-input"
                   :rules="[
-                    val => !!val || 'Password is required',
-                    passwordRule
+                    val => !passwordTouched || !!val || 'Password is required.',
+                    val => !passwordTouched || passwordRule(val)
                   ]"
+                  @blur="passwordTouched = true"
                 >
                   <template #append>
                     <q-icon
@@ -173,14 +183,12 @@
                   v-model="form.confirmPassword"
                   outlined
                   dense
+                  no-error-icon
                   hide-bottom-space
                   :type="showConfirmPassword ? 'text' : 'password'"
                   label="Retype password"
                   class="login-input"
-                  :rules="[
-                    val => !!val || 'Please confirm your password',
-                    val => val === form.password || 'Passwords do not match'
-                  ]"
+                  :error="confirmPasswordMessage?.type === 'error'"
                 >
                   <template #append>
                     <q-icon
@@ -192,6 +200,10 @@
                     />
                   </template>
                 </q-input>
+                <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
+                  <q-icon v-if="confirmPasswordMessage.type === 'success'" name="check_circle" size="12px" />
+                  {{ confirmPasswordMessage.text }}
+                </div>
               </div>
             </div>
 
@@ -293,6 +305,7 @@
                 v-model="form.manualAddress"
                 outlined
                 dense
+                no-error-icon
                 hide-bottom-space
                 label="Manual address entry"
                 class="login-input"
@@ -310,14 +323,13 @@
         <!-- SUBMIT BUTTON -->
         <q-btn
           type="submit"
+          label="Register Store"
           no-caps
           unelevated
           class="login-button full-width"
           :loading="loading"
-        >
-          Register Store
-          <q-icon name="arrow_forward" class="q-ml-xs" />
-        </q-btn>
+          :disable="!canRegister"
+        />
 
       </q-form>
 
@@ -419,7 +431,7 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import TermsModal from '@/components/modals/TermsModal.vue'
@@ -437,6 +449,13 @@ const photoPreview = ref(null)
 const photoFile = ref(null)
 const originalPhotoUrl = ref(null)
 const registerError = ref('')
+
+// Gates each field's rules until touched, so rules stay silent on page load — same pattern as ConsumerRegister.vue.
+const storeNameTouched = ref(false)
+const ownerNameTouched = ref(false)
+const emailTouched = ref(false)
+const phoneTouched = ref(false)
+const passwordTouched = ref(false)
 
 // Dialogs
 const showSuccess = ref(false)
@@ -488,6 +507,24 @@ const nameRule = val =>
 const emailRule = val => /.+@.+\..+/.test(val) || 'Enter a valid email'
 const phoneRule = val => /^09\d{9}$/.test(val) || 'Phone must be exactly 11 digits starting with 09'
 const passwordRule = val => val.length >= 8 || 'Minimum 8 characters'
+
+// Confirm Password uses its own message (not Quasar's :rules) to show a positive "Passwords match" state — same pattern as ConsumerRegister.vue.
+const confirmPasswordMessage = computed(() => {
+  if (!form.confirmPassword) return null
+  if (form.confirmPassword !== form.password) return { type: 'error', text: 'Passwords do not match.' }
+  return { type: 'success', text: 'Passwords match.' }
+})
+
+const canRegister = computed(() =>
+  !!form.storeName &&
+  !!form.ownerName && nameRule(form.ownerName) === true &&
+  !!form.email && emailRule(form.email) === true &&
+  !!form.phoneNumber && phoneRule(form.phoneNumber) === true &&
+  !!form.password && passwordRule(form.password) === true &&
+  !!form.confirmPassword && form.confirmPassword === form.password &&
+  !!photoFile.value &&
+  !!form.latitude && !!form.longitude
+)
 
 const toggleDay = (day) => {
   const index = form.operatingDays.indexOf(day)
@@ -646,13 +683,33 @@ const removePhoto = () => {
 }
 
 const handleVendorRegister = async () => {
+  storeNameTouched.value = true
+  ownerNameTouched.value = true
+  emailTouched.value = true
+  phoneTouched.value = true
+  passwordTouched.value = true
+
   const isValid = await vendorForm.value.validate()
-  if (!isValid || !photoFile.value) return
+
+  // Confirm Password isn't part of the form's own :rules, so it needs its own guard here.
+  if (!isValid || !form.confirmPassword || form.confirmPassword !== form.password || !photoFile.value) return
 
   loading.value = true
   registerError.value = ''
 
   try {
+    const dayMap = { 'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday', 'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday' }
+    const schedule = {}
+    
+    Object.values(dayMap).forEach(fullDay => {
+      const isDaySelected = form.operatingDays.some(shortDay => dayMap[shortDay] === fullDay)
+      schedule[fullDay] = {
+        is_open: isDaySelected,
+        opening_time: isDaySelected ? form.openingTime : null,
+        closing_time: isDaySelected ? form.closingTime : null
+      }
+    })
+
     const formData = new FormData()
     formData.append('store_name', form.storeName)
     formData.append('full_name', form.ownerName)
@@ -662,7 +719,7 @@ const handleVendorRegister = async () => {
     formData.append('password_confirmation', form.confirmPassword)
     formData.append('opening_time', form.openingTime)
     formData.append('closing_time', form.closingTime)
-    formData.append('operating_days', JSON.stringify(form.operatingDays))
+    formData.append('operating_days', JSON.stringify(schedule))
 
     // Use placeholder coordinates if map is not wired
     // formData.append('latitude', form.latitude || '14.5764')
@@ -877,7 +934,7 @@ function handleLocationSelected(location) {
 ========================= */
 
 .field-group {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .hours-row {
@@ -890,6 +947,16 @@ function handleLocationSelected(location) {
   flex: 1;
 
   min-width: 0;
+}
+
+/* hide-bottom-space removes this area entirely when there's no message, so padding only applies once one shows — same as ConsumerRegister.vue. */
+.login-input :deep(.q-field__bottom) {
+  padding-top: 6px;
+  padding-bottom: 0;
+}
+
+.login-input :deep(.q-field__messages) {
+  line-height: 1.4;
 }
 
 .login-input :deep(.q-field__control) {
@@ -940,6 +1007,26 @@ function handleLocationSelected(location) {
   color: #333333;
 
   border-right: 1px solid #d6d6da;
+}
+
+/* Confirm Password's live match/mismatch message — same look as ConsumerRegister.vue's. */
+.field-message {
+  margin-top: 6px;
+
+  font-size: 12px;
+  line-height: 1.4;
+
+  color: #dc2626;
+}
+
+.field-message-success {
+  display: flex;
+  align-items: center;
+
+  gap: 3px;
+
+  color: #16a34a;
+  font-weight: 600;
 }
 
 /* =========================
@@ -1227,10 +1314,37 @@ function handleLocationSelected(location) {
 
   font-size: 13px;
   font-weight: 500;
+
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
 .login-button:hover {
   background: #a91e21;
+
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+
+  transform: translateY(-1px);
+}
+
+.login-button:active {
+  background: #8f1a1c;
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.login-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+.login-button:disabled,
+.login-button.disabled {
+  background: #bd2427;
+  opacity: 0.45;
 }
 
 /* =========================

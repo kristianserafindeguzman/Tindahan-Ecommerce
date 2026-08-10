@@ -1,37 +1,73 @@
 <template>
-  <q-card flat class="store-card">
+  <q-card flat class="store-card" @click="router.push(`/consumer/stores/${store.id}`)">
     <div class="store-card-image">
-      <q-icon name="storefront" size="32px" />
+      <img
+        v-if="store.image && !imageFailed"
+        :src="store.image"
+        :alt="store.name"
+        class="store-card-img"
+        @error="imageFailed = true"
+      />
+      <q-icon v-else name="o_storefront" size="36px" />
+
+      <span class="store-status-tag" :class="{ 'store-status-tag-closed': !store.isOpen }">
+        <span class="status-dot" :class="{ 'status-dot-closed': !store.isOpen }" />
+        {{ store.isOpen ? 'Open' : 'Closed' }}
+      </span>
     </div>
     <q-card-section class="store-card-body">
-      <div class="store-card-name">{{ store.name }}</div>
-      <div class="store-card-status" :class="{ 'store-card-status-closed': !store.isOpen }">
-        <span class="status-dot" :class="{ 'status-dot-closed': !store.isOpen }" />
-        {{ store.isOpen ? `Open until ${store.closesAt}` : 'Closed' }}
+      <div class="store-card-name">
+        <template v-for="(part, i) in nameParts" :key="i">
+          <mark v-if="part.match" class="highlight-mark">{{ part.text }}</mark>
+          <template v-else>{{ part.text }}</template>
+        </template>
       </div>
-      <div class="store-card-distance">
-        <q-icon name="location_on" size="13px" />
-        {{ store.distance }} away
+      <div v-if="store.isOpen" class="store-card-hours">Open until {{ store.closesAt }}</div>
+      <div v-else class="store-card-hours store-card-hours-closed">Closed now</div>
+      <div v-if="store.address || store.distance_meters" class="store-card-distance">
+        <q-icon name="o_location_on" size="13px" />
+        {{ store.distance_meters != null ? formatDistance(store.distance_meters) : store.address }}
       </div>
     </q-card-section>
   </q-card>
 </template>
 
 <script setup>
-defineProps({
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { splitHighlightParts } from '@/utils/textHighlight'
+
+const router = useRouter()
+
+const props = defineProps({
   store: {
     type: Object,
     required: true
+  },
+  highlightQuery: {
+    type: String,
+    default: ''
   }
 })
+
+const nameParts = computed(() => splitHighlightParts(props.store.name, props.highlightQuery))
+const imageFailed = ref(false)
+
+const formatDistance = (meters) => {
+  if (meters == null) return ''
+  if (meters < 1000) return `${Math.round(meters)} m away`
+  return `${(meters / 1000).toFixed(1)} km away`
+}
 </script>
 
 <style scoped>
 .store-card {
   overflow: hidden;
 
-  border-radius: 8px;
-  border: 1px solid #f0f0f0;
+  font-family: 'Roboto', Arial, sans-serif;
+
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
 
   background: #ffffff;
 
@@ -50,11 +86,13 @@ defineProps({
 }
 
 .store-card-image {
+  position: relative;
+
   display: flex;
   align-items: center;
   justify-content: center;
 
-  height: 110px;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
 
   background: linear-gradient(145deg, #f7f7f8 0%, #ececee 100%);
@@ -67,18 +105,59 @@ defineProps({
   background: linear-gradient(145deg, #fdecec 0%, #fbdbdc 100%);
 }
 
+.store-card-img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  transition: transform 0.3s ease;
+}
+
+.store-card:hover .store-card-img {
+  transform: scale(1.06);
+}
+
+.store-status-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+  padding: 3px 9px;
+
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.92);
+  color: #16a34a;
+
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.store-status-tag-closed {
+  color: #b91c1c;
+}
+
 .store-card-body {
-  padding: 12px;
+  padding: 14px;
 }
 
 .store-card-name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.3;
 
   color: #222222;
 
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 
   overflow: hidden;
 
@@ -86,43 +165,50 @@ defineProps({
   text-overflow: ellipsis;
 }
 
-.store-card-status {
-  display: flex;
-  align-items: center;
+.highlight-mark {
+  background: #fdecec;
+  color: #9c171b;
+  font-weight: 700;
 
-  gap: 4px;
-  margin-bottom: 4px;
+  border-radius: 2px;
+}
+
+.store-card-hours {
+  margin-bottom: 12px;
 
   font-size: 12.5px;
   font-weight: 500;
   line-height: 1.3;
 
-  color: #2e9e5b;
+  color: #16a34a;
 }
 
-.store-card-status-closed {
-  color: #c02226;
+.store-card-hours-closed {
+  color: #b91c1c;
 }
 
 .status-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   flex-shrink: 0;
 
   border-radius: 50%;
 
-  background: #2e9e5b;
+  background: #16a34a;
 }
 
 .status-dot-closed {
-  background: #c02226;
+  background: #b91c1c;
 }
 
 .store-card-distance {
   display: flex;
   align-items: center;
 
-  gap: 4px;
+  gap: 5px;
+  padding-top: 10px;
+
+  border-top: 1px solid #f4f4f4;
 
   font-size: 12px;
   line-height: 1.3;

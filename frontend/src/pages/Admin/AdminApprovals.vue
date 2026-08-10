@@ -206,13 +206,15 @@
               <div class="text-caption text-grey-6 text-uppercase text-weight-bold">Contact Phone</div>
               <div class="text-subtitle2 text-weight-bold text-dark">{{ selectedVendor.phone || 'N/A' }}</div>
             </div>
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-grey-6 text-uppercase text-weight-bold">Operating Days</div>
-              <div class="text-subtitle2 text-weight-bold text-dark">{{ formatOperatingDays(selectedVendor.store?.operating_days) }}</div>
-            </div>
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-grey-6 text-uppercase text-weight-bold">Business Hours</div>
-              <div class="text-subtitle2 text-weight-bold text-dark">{{ selectedVendor.store?.opening_time || 'N/A' }} - {{ selectedVendor.store?.closing_time || 'N/A' }}</div>
+            <div class="col-12">
+              <div class="text-caption text-grey-6 text-uppercase text-weight-bold q-mb-sm">Operating Schedule</div>
+              <div class="bg-grey-1 rounded-borders q-pa-sm custom-glass-input">
+                <div v-for="day in getFormattedSchedule(selectedVendor.store)" :key="day.day" class="row justify-between items-center q-py-xs" :class="day.isOpen ? 'text-dark' : 'text-grey-5'">
+                  <span class="text-weight-medium text-body2">{{ day.day }}</span>
+                  <span v-if="day.isOpen" class="text-caption text-weight-bold">{{ day.hours }}</span>
+                  <span v-else class="text-caption text-italic">Closed</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -381,14 +383,50 @@ const fetchPending = async () => {
   }
 }
 
-const formatOperatingDays = (days) => {
-  if (!days) return 'N/A'
-  try {
-    const parsed = typeof days === 'string' ? JSON.parse(days) : days
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed.join(', ') : 'N/A'
-  } catch (e) {
-    return 'N/A'
+const formatTime = (timeStr) => {
+  if (!timeStr) return 'Not set'
+  const [h, m] = timeStr.split(':')
+  const hour = parseInt(h)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const formattedHour = hour % 12 || 12
+  return `${formattedHour.toString().padStart(2, '0')}:${m} ${ampm}`
+}
+
+const getFormattedSchedule = (vendor) => {
+  if (!vendor) return []
+  const days = vendor.operating_days
+  if (!days) return []
+  
+  let parsed = days
+  if (typeof days === 'string') {
+    try { parsed = JSON.parse(days) } catch(e) { return [] }
   }
+
+  const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  
+  if (Array.isArray(parsed)) {
+    const openTime = formatTime(vendor.opening_time)
+    const closeTime = formatTime(vendor.closing_time)
+    return allDays.map(day => {
+      const isOpen = parsed.some(d => typeof d === 'string' && d.startsWith(day.substring(0, 3)))
+      return {
+        day,
+        isOpen,
+        hours: isOpen ? `${openTime} - ${closeTime}` : 'Closed'
+      }
+    })
+  } else if (typeof parsed === 'object' && parsed !== null) {
+    return allDays.map(day => {
+      const schedule = parsed[day]
+      const isOpen = schedule?.is_open || false
+      return {
+        day,
+        isOpen,
+        hours: isOpen ? `${formatTime(schedule.opening_time)} - ${formatTime(schedule.closing_time)}` : 'Closed'
+      }
+    })
+  }
+  return []
 }
 
 const isValidLocation = (vendor) => {

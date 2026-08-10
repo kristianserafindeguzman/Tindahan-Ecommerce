@@ -22,7 +22,7 @@
 
           <div class="success-wrapper">
             <div class="success-icon-wrap">
-              <q-icon name="check" size="42px" color="white" />
+              <q-icon name="o_check" size="42px" color="white" />
             </div>
 
             <h1>Verification Successful</h1>
@@ -58,9 +58,7 @@ const goToLogin = () => {
 </script>
 
 <style scoped>
-/* =========================
-   PAGE
-========================= */
+/* PAGE */
 
 .login-page {
   min-height: 100vh;
@@ -84,9 +82,7 @@ const goToLogin = () => {
   font-family: 'Roboto', Arial, sans-serif;
 }
 
-/* =========================
-   LOGIN CARD (layout row, no visual chrome of its own)
-========================= */
+/* LOGIN CARD (layout row, no visual chrome of its own) */
 
 .login-card {
   width: 100%;
@@ -109,9 +105,7 @@ const goToLogin = () => {
   overflow: visible;
 }
 
-/* =========================
-   LEFT BRANDING PANEL
-========================= */
+/* LEFT BRANDING PANEL */
 
 .branding-panel {
   flex: 0 0 auto;
@@ -140,9 +134,7 @@ const goToLogin = () => {
   display: none;
 }
 
-/* =========================
-   RIGHT SUCCESS PANEL
-========================= */
+/* RIGHT SUCCESS PANEL */
 
 .login-panel {
   width: 420px;
@@ -169,9 +161,7 @@ const goToLogin = () => {
   max-width: 390px;
 }
 
-/* =========================
-   SUCCESS CONTENT
-========================= */
+/* SUCCESS CONTENT */
 
 .success-wrapper {
   text-align: center;
@@ -211,9 +201,7 @@ const goToLogin = () => {
   color: #8992a2;
 }
 
-/* =========================
-   BUTTON
-========================= */
+/* BUTTON */
 
 .login-button {
   height: 48px;
@@ -227,15 +215,34 @@ const goToLogin = () => {
 
   font-size: 13px;
   font-weight: 500;
+
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
 .login-button:hover {
   background: #a91e21;
+
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+
+  transform: translateY(-1px);
 }
 
-/* =========================
-   TABLET
-========================= */
+.login-button:active {
+  background: #8f1a1c;
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.login-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+/* TABLET */
 
 @media (max-width: 768px) {
   .login-card {
@@ -257,9 +264,7 @@ const goToLogin = () => {
   }
 }
 
-/* =========================
-   MOBILE
-========================= */
+/* MOBILE */
 
 @media (max-width: 600px) {
   .login-page {

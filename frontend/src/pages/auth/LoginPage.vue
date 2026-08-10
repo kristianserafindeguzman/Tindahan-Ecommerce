@@ -38,12 +38,15 @@
                 v-model="form.identifier"
                 outlined
                 dense
+                no-error-icon
+                hide-bottom-space
                 label="Email or Mobile Number"
                 class="login-input"
                 :rules="[
-                  val => !!val || 'Email or mobile number is required',
-                  identifierRule
+                  val => !identifierTouched || !!val || 'Email or mobile number is required.',
+                  val => !identifierTouched || identifierRule(val)
                 ]"
+                @blur="identifierTouched = true"
               />
             </div>
 
@@ -53,18 +56,21 @@
                 v-model="form.password"
                 outlined
                 dense
+                no-error-icon
+                hide-bottom-space
                 :type="showPassword ? 'text' : 'password'"
                 label="Password"
                 class="login-input"
                 :rules="[
-                  val => !!val || 'Password is required'
+                  val => !passwordTouched || !!val || 'Password is required.'
                 ]"
+                @blur="passwordTouched = true"
               >
                 <template #append>
                   <q-icon
                     :name="showPassword
-                      ? 'visibility'
-                      : 'visibility_off'"
+                      ? 'o_visibility'
+                      : 'o_visibility_off'"
                     class="password-icon cursor-pointer"
                     @click="showPassword = !showPassword"
                   />
@@ -95,6 +101,7 @@
               unelevated
               class="login-button full-width"
               :loading="loading"
+              :disable="!canLogin"
             />
 
           </q-form>
@@ -135,7 +142,7 @@
     <q-dialog v-model="showRegistrationOptions">
       <q-card class="registration-dialog">
 
-        <q-card-section>
+        <q-card-section class="registration-header">
           <div class="registration-title">
             Create an account
           </div>
@@ -151,7 +158,7 @@
             label="Register as Consumer"
             no-caps
             unelevated
-            class="registration-button"
+            class="login-button full-width"
             @click="goToConsumerRegister"
           />
 
@@ -159,7 +166,7 @@
             label="Register as Vendor"
             no-caps
             outline
-            class="vendor-registration-button"
+            class="vendor-registration-button full-width"
             @click="goToVendorRegister"
           />
 
@@ -173,28 +180,38 @@
     <!-- Step 1: Request OTP -->
     <q-dialog v-model="showForgotWarning">
       <q-card class="status-dialog">
-        <q-card-section class="status-content">
-          <div class="status-icon-wrap" style="background: #bd2427;">
-            <q-icon name="lock_reset" size="36px" color="white" />
-          </div>
-          <div class="status-title">Reset Password</div>
-          <p class="status-message">
-            Enter your registered mobile number. We will send an SMS with a 6-digit verification code.
-          </p>
-          <q-input
-            v-model="forgotPhone"
-            outlined
-            dense
-            hide-bottom-space
-            placeholder="09..."
-            label="Mobile Number"
-          />
-          <div v-if="forgotError" class="error-message q-mt-sm">{{ forgotError }}</div>
-        </q-card-section>
-        <q-card-actions class="status-actions" vertical>
-          <q-btn label="Send Code" no-caps unelevated class="status-btn primary-btn" :loading="forgotLoading" @click="requestResetOTP" />
-          <q-btn label="Cancel" no-caps flat class="status-btn flat-btn" @click="showForgotWarning = false" />
-        </q-card-actions>
+        <q-form ref="forgotPhoneForm" @submit.prevent="requestResetOTP">
+          <q-card-section class="status-content">
+            <div class="status-icon-wrap" style="background: #bd2427;">
+              <q-icon name="o_lock_reset" size="36px" color="white" />
+            </div>
+            <div class="status-title">Reset Password</div>
+            <p class="status-message">
+              Enter your registered mobile number. We will send an SMS with a 6-digit verification code.
+            </p>
+            <div class="field-group reset-phone-group">
+              <q-input
+                v-model="forgotPhone"
+                outlined
+                dense
+                no-error-icon
+                hide-bottom-space
+                label="Mobile number"
+                class="login-input"
+                :rules="[
+                  val => !forgotPhoneTouched || !!val || 'Mobile number is required.',
+                  val => !forgotPhoneTouched || phoneRule(val)
+                ]"
+                @blur="forgotPhoneTouched = true"
+              />
+            </div>
+            <div v-if="forgotError" class="error-message">{{ forgotError }}</div>
+          </q-card-section>
+          <q-card-actions class="status-actions" vertical>
+            <q-btn type="submit" label="Send Code" no-caps unelevated class="login-button full-width" :loading="forgotLoading" :disable="!canRequestReset" />
+            <button type="button" class="text-button cancel-link" @click="showForgotWarning = false">Cancel</button>
+          </q-card-actions>
+        </q-form>
       </q-card>
     </q-dialog>
 
@@ -202,24 +219,55 @@
     <q-dialog v-model="showForgotOtp" persistent>
       <q-card class="status-dialog">
         <q-card-section class="status-content">
+          <div class="status-icon-wrap" style="background: #bd2427;">
+            <q-icon name="o_sms" size="36px" color="white" />
+          </div>
           <div class="status-title">Verify Phone Number</div>
           <p class="status-message">
-            Enter the 6-digit code sent to {{ forgotPhone }}
+            We sent a 6-digit verification code to <strong>{{ maskedForgotPhone }}</strong>.
           </p>
-          <q-input
-            v-model="forgotOtpCode"
-            outlined
-            dense
-            hide-bottom-space
-            placeholder="123456"
-            label="Verification Code"
-            mask="######"
-          />
-          <div v-if="forgotError" class="error-message q-mt-sm">{{ forgotError }}</div>
+
+          <!-- Same boxed OTP pattern as ConsumerVerify.vue -->
+          <div class="otp-row">
+            <input
+              v-for="(digit, index) in forgotOtp"
+              :key="index"
+              :ref="el => { forgotOtpRefs[index] = el }"
+              v-model="forgotOtp[index]"
+              type="text"
+              inputmode="numeric"
+              maxlength="1"
+              class="otp-box"
+              :class="{ 'otp-error': forgotError }"
+              @input="handleForgotOtpInput(index)"
+              @keydown="handleForgotOtpKeydown(index, $event)"
+              @paste="handleForgotOtpPaste"
+            />
+          </div>
+
+          <div v-if="forgotError" class="error-message">{{ forgotError }}</div>
+
+          <!-- Same resend/countdown pattern as ConsumerVerify.vue -->
+          <div class="resend-section">
+            <span>Didn't receive a code?</span>
+
+            <button
+              type="button"
+              class="text-button resend-btn"
+              :class="{ 'resend-disabled': forgotResendTimer > 0 }"
+              :disabled="forgotResendTimer > 0"
+              @click="resendForgotOtp"
+            >
+              {{ forgotResendTimer > 0
+                ? `Resend in ${formattedForgotResendTimer}`
+                : 'Resend Code'
+              }}
+            </button>
+          </div>
         </q-card-section>
         <q-card-actions class="status-actions" vertical>
-          <q-btn label="Verify Code" no-caps unelevated class="status-btn primary-btn" :loading="forgotLoading" @click="verifyResetOTP" />
-          <q-btn label="Cancel" no-caps flat class="status-btn flat-btn" @click="showForgotOtp = false" />
+          <q-btn label="Verify Code" no-caps unelevated class="login-button full-width" :loading="forgotLoading" :disable="!forgotOtpComplete" @click="verifyResetOTP" />
+          <button type="button" class="text-button cancel-link" @click="showForgotOtp = false">Cancel</button>
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -227,33 +275,75 @@
     <!-- Step 3: New Password -->
     <q-dialog v-model="showForgotReset" persistent>
       <q-card class="status-dialog">
-        <q-card-section class="status-content">
-          <div class="status-title">Create New Password</div>
-          <p class="status-message">
-            Your new password must be at least 8 characters long.
-          </p>
-          <q-input
-            v-model="forgotPassword1"
-            outlined
-            dense
-            hide-bottom-space
-            type="password"
-            label="New Password"
-            class="q-mb-sm"
-          />
-          <q-input
-            v-model="forgotPassword2"
-            outlined
-            dense
-            hide-bottom-space
-            type="password"
-            label="Confirm New Password"
-          />
-          <div v-if="forgotError" class="error-message q-mt-sm">{{ forgotError }}</div>
-        </q-card-section>
-        <q-card-actions class="status-actions" vertical>
-          <q-btn label="Reset Password" no-caps unelevated class="status-btn primary-btn" :loading="forgotLoading" @click="submitNewPassword" />
-        </q-card-actions>
+        <q-form ref="forgotResetForm" @submit.prevent="submitNewPassword">
+          <q-card-section class="status-content">
+            <div class="status-icon-wrap" style="background: #bd2427;">
+              <q-icon name="o_lock_reset" size="36px" color="white" />
+            </div>
+            <div class="status-title">Create New Password</div>
+            <p class="status-message">
+              Your new password must be at least 8 characters long.
+            </p>
+
+            <div class="field-group">
+              <q-input
+                v-model="forgotPassword1"
+                outlined
+                dense
+                no-error-icon
+                hide-bottom-space
+                :type="showNewPassword ? 'text' : 'password'"
+                label="New Password"
+                class="login-input"
+                :rules="[
+                  val => !newPasswordTouched || !!val || 'Password is required.',
+                  val => !newPasswordTouched || passwordRule(val)
+                ]"
+                @blur="newPasswordTouched = true"
+              >
+                <template #append>
+                  <q-icon
+                    :name="showNewPassword ? 'o_visibility' : 'o_visibility_off'"
+                    class="password-icon cursor-pointer"
+                    @click="showNewPassword = !showNewPassword"
+                  />
+                </template>
+              </q-input>
+            </div>
+
+            <div class="field-group">
+              <q-input
+                v-model="forgotPassword2"
+                outlined
+                dense
+                no-error-icon
+                hide-bottom-space
+                :type="showConfirmNewPassword ? 'text' : 'password'"
+                label="Confirm New Password"
+                class="login-input"
+                :error="confirmPasswordMessage?.type === 'error'"
+              >
+                <template #append>
+                  <q-icon
+                    :name="showConfirmNewPassword ? 'o_visibility' : 'o_visibility_off'"
+                    class="password-icon cursor-pointer"
+                    @click="showConfirmNewPassword = !showConfirmNewPassword"
+                  />
+                </template>
+              </q-input>
+              <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
+                <q-icon v-if="confirmPasswordMessage.type === 'success'" name="o_check_circle" size="12px" />
+                {{ confirmPasswordMessage.text }}
+              </div>
+            </div>
+
+            <div v-if="forgotError" class="error-message">{{ forgotError }}</div>
+          </q-card-section>
+          <q-card-actions class="status-actions" vertical>
+            <q-btn type="submit" label="Reset Password" no-caps unelevated class="login-button full-width" :loading="forgotLoading" :disable="!canSubmitNewPassword" />
+            <button type="button" class="text-button cancel-link" @click="showForgotReset = false">Cancel</button>
+          </q-card-actions>
+        </q-form>
       </q-card>
     </q-dialog>
 
@@ -262,13 +352,13 @@
       <q-card class="status-dialog">
         <q-card-section class="status-content">
           <div class="status-icon-wrap" style="background: #22c55e;">
-            <q-icon name="check" size="36px" color="white" />
+            <q-icon name="o_check" size="36px" color="white" />
           </div>
           <div class="status-title">Password Reset Successful</div>
           <p class="status-message">You can now log in with your new password.</p>
         </q-card-section>
         <q-card-actions class="status-actions" vertical>
-          <q-btn label="Login Now" no-caps unelevated class="status-btn primary-btn" @click="showResetSuccess = false" />
+          <q-btn label="Login Now" no-caps unelevated class="login-button full-width" @click="showResetSuccess = false" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -278,7 +368,7 @@
       <q-card class="status-dialog">
         <q-card-section class="status-content">
           <div class="status-icon-wrap bg-red-1 text-red-6">
-            <q-icon name="block" size="36px" />
+            <q-icon name="o_block" size="36px" />
           </div>
           <div class="modal-title">Account Suspended</div>
           <p class="modal-subtitle">Your account has been temporarily suspended.</p>
@@ -311,7 +401,7 @@
       <q-card class="status-dialog">
         <q-card-section class="status-content">
           <div class="status-icon-wrap bg-orange-1 text-orange-6">
-            <q-icon name="warning" size="36px" />
+            <q-icon name="o_warning" size="36px" />
           </div>
           <div class="modal-title">Account Inactive</div>
           <p class="modal-subtitle">Your account is currently inactive.</p>
@@ -348,7 +438,7 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { computed, nextTick, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import TermsModal from '@/components/modals/TermsModal.vue'
@@ -363,6 +453,15 @@ const loading = ref(false)
 const loginError = ref('')
 const showRegistrationOptions = ref(false)
 
+// Gates each field's own rules until it's been touched (blurred once,
+// or a submit attempt was made) — Quasar's `lazy-rules` only
+// re-validates on the NEXT blur once triggered, not on every
+// keystroke in between, which left stale error text on screen after
+// the field became valid. This keeps rules permanently reactive
+// (default lazy-rules behavior) while suppressing them pre-touch.
+const identifierTouched = ref(false)
+const passwordTouched = ref(false)
+
 // Vendor status modals (Under Review / Rejected now live on their own pages)
 const showSuspended = ref(false)
 const showInactive = ref(false)
@@ -375,13 +474,76 @@ const showForgotWarning = ref(false)
 const showForgotOtp = ref(false)
 const showForgotReset = ref(false)
 const showResetSuccess = ref(false)
+const forgotPhoneForm = ref(null)
 const forgotPhone = ref('')
-const forgotOtpCode = ref('')
+const forgotPhoneTouched = ref(false)
+const forgotOtp = ref(['', '', '', '', '', ''])
+const forgotOtpRefs = ref([])
+const forgotOtpComplete = computed(() => forgotOtp.value.every(digit => digit !== ''))
+
+// Same 60s resend countdown as ConsumerVerify.vue's OTP screen.
+const forgotResendTimer = ref(60)
+let forgotResendInterval = null
+
+const formattedForgotResendTimer = computed(() => {
+  const mins = Math.floor(forgotResendTimer.value / 60)
+  const secs = forgotResendTimer.value % 60
+  return `${mins}:${String(secs).padStart(2, '0')}`
+})
+
+const startForgotResendTimer = () => {
+  clearInterval(forgotResendInterval)
+  forgotResendTimer.value = 60
+
+  forgotResendInterval = setInterval(() => {
+    if (forgotResendTimer.value > 0) {
+      forgotResendTimer.value--
+    } else {
+      clearInterval(forgotResendInterval)
+    }
+  }, 1000)
+}
+
+onUnmounted(() => {
+  clearInterval(forgotResendInterval)
+})
+
+const forgotResetForm = ref(null)
 const forgotPassword1 = ref('')
 const forgotPassword2 = ref('')
+const showNewPassword = ref(false)
+const showConfirmNewPassword = ref(false)
+const newPasswordTouched = ref(false)
 const forgotResetToken = ref('')
 const forgotLoading = ref(false)
 const forgotError = ref('')
+
+// Same rules as ConsumerRegister.vue's phone/password fields.
+const phoneRule = val => /^09\d{9}$/.test(val) || 'Mobile number must start with 09 and contain 11 digits.'
+const passwordRule = val => val.length >= 8 || 'Minimum 8 characters'
+const canRequestReset = computed(() => phoneRule(forgotPhone.value) === true)
+
+// Same masking as ConsumerVerify.vue's displayPhone.
+const maskedForgotPhone = computed(() => {
+  const phone = forgotPhone.value
+  if (!phone) return 'your mobile number'
+  if (phone.length >= 10) {
+    return phone.slice(0, 4) + '***' + phone.slice(-4)
+  }
+  return phone
+})
+
+// Same live match/mismatch message as ConsumerRegister.vue's Confirm Password field.
+const confirmPasswordMessage = computed(() => {
+  if (!forgotPassword2.value) return null
+  if (forgotPassword2.value !== forgotPassword1.value) return { type: 'error', text: 'Passwords do not match.' }
+  return { type: 'success', text: 'Passwords match.' }
+})
+
+const canSubmitNewPassword = computed(() =>
+  !!forgotPassword1.value && passwordRule(forgotPassword1.value) === true &&
+  !!forgotPassword2.value && forgotPassword2.value === forgotPassword1.value
+)
 
 // Legal modals
 const showTerms = ref(false)
@@ -403,7 +565,12 @@ const identifierRule = val => {
   )
 }
 
+const canLogin = computed(() => identifierRule(form.identifier) === true && !!form.password)
+
 const handleLogin = async () => {
+  identifierTouched.value = true
+  passwordTouched.value = true
+
   const isValid = await loginForm.value.validate()
 
   if (!isValid) {
@@ -506,21 +673,25 @@ const handleStatusLogout = async () => {
 const handleForgotPassword = () => {
   forgotError.value = ''
   forgotPhone.value = ''
+  forgotPhoneTouched.value = false
   showForgotWarning.value = true
 }
 
 const requestResetOTP = async () => {
-  if (!forgotPhone.value) {
-    forgotError.value = 'Please enter your mobile number.'
-    return
-  }
+  forgotPhoneTouched.value = true
+
+  const isValid = await forgotPhoneForm.value.validate()
+  if (!isValid) return
+
   forgotError.value = ''
   forgotLoading.value = true
   try {
     await api.post('/forgot-password', { phone_number: forgotPhone.value })
     showForgotWarning.value = false
-    forgotOtpCode.value = ''
+    forgotOtp.value = ['', '', '', '', '', '']
     showForgotOtp.value = true
+    startForgotResendTimer()
+    nextTick(() => forgotOtpRefs.value[0]?.focus())
   } catch (error) {
     forgotError.value = error.response?.data?.message || 'Failed to send OTP.'
   } finally {
@@ -528,9 +699,64 @@ const requestResetOTP = async () => {
   }
 }
 
+// Same auto-advance/backspace/paste behavior as ConsumerVerify.vue's OTP boxes.
+const handleForgotOtpInput = (index) => {
+  const val = forgotOtp.value[index]
+
+  if (val && !/^\d$/.test(val)) {
+    forgotOtp.value[index] = ''
+    return
+  }
+
+  forgotError.value = ''
+
+  if (val && index < 5) {
+    forgotOtpRefs.value[index + 1]?.focus()
+  }
+}
+
+const handleForgotOtpKeydown = (index, event) => {
+  if (event.key === 'Backspace' && !forgotOtp.value[index] && index > 0) {
+    forgotOtpRefs.value[index - 1]?.focus()
+  }
+}
+
+const handleForgotOtpPaste = (event) => {
+  event.preventDefault()
+
+  const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+
+  for (let i = 0; i < 6; i++) {
+    forgotOtp.value[i] = pasted[i] || ''
+  }
+
+  const lastIndex = Math.min(pasted.length, 5)
+  forgotOtpRefs.value[lastIndex]?.focus()
+
+  forgotError.value = ''
+}
+
+// Same resend behavior/endpoint as ConsumerVerify.vue's resendCode.
+const resendForgotOtp = async () => {
+  if (forgotResendTimer.value > 0) return
+
+  forgotError.value = ''
+  try {
+    await api.post('/otp/resend', {
+      phone_number: forgotPhone.value,
+      type: 'password_reset'
+    })
+    forgotOtp.value = ['', '', '', '', '', '']
+    forgotOtpRefs.value[0]?.focus()
+    startForgotResendTimer()
+  } catch (error) {
+    forgotError.value = error.response?.data?.message || 'Failed to resend code.'
+  }
+}
+
 const verifyResetOTP = async () => {
-  if (!forgotOtpCode.value || forgotOtpCode.value.length < 6) {
-    forgotError.value = 'Please enter the 6-digit code.'
+  if (!forgotOtpComplete.value) {
+    forgotError.value = 'Please enter the complete 6-digit code.'
     return
   }
   forgotError.value = ''
@@ -538,30 +764,36 @@ const verifyResetOTP = async () => {
   try {
     const res = await api.post('/otp/verify', {
       phone_number: forgotPhone.value,
-      code: forgotOtpCode.value,
+      code: forgotOtp.value.join(''),
       type: 'password_reset'
     })
     forgotResetToken.value = res.data.reset_token
     showForgotOtp.value = false
     forgotPassword1.value = ''
     forgotPassword2.value = ''
+    newPasswordTouched.value = false
+    showNewPassword.value = false
+    showConfirmNewPassword.value = false
     showForgotReset.value = true
   } catch (error) {
     forgotError.value = error.response?.data?.message || 'Invalid OTP code.'
+    forgotOtp.value = ['', '', '', '', '', '']
+    forgotOtpRefs.value[0]?.focus()
   } finally {
     forgotLoading.value = false
   }
 }
 
 const submitNewPassword = async () => {
-  if (!forgotPassword1.value || forgotPassword1.value.length < 8) {
-    forgotError.value = 'Password must be at least 8 characters.'
+  newPasswordTouched.value = true
+
+  const isValid = await forgotResetForm.value.validate()
+
+  // Confirm Password isn't part of the form's own :rules, so it needs its own guard here.
+  if (!isValid || !canSubmitNewPassword.value) {
     return
   }
-  if (forgotPassword1.value !== forgotPassword2.value) {
-    forgotError.value = 'Passwords do not match.'
-    return
-  }
+
   forgotError.value = ''
   forgotLoading.value = true
   try {
@@ -592,9 +824,7 @@ const goToVendorRegister = () => {
 </script>
 
 <style scoped>
-/* =========================
-   PAGE
-========================= */
+/* PAGE */
 
 .login-page {
   min-height: 100vh;
@@ -618,9 +848,7 @@ const goToVendorRegister = () => {
   font-family: 'Roboto', Arial, sans-serif;
 }
 
-/* =========================
-   LOGIN CARD (layout row, no visual chrome of its own)
-========================= */
+/* LOGIN CARD (layout row, no visual chrome of its own) */
 
 .login-card {
   width: 100%;
@@ -643,9 +871,7 @@ const goToVendorRegister = () => {
   overflow: hidden;
 }
 
-/* =========================
-   LEFT BRANDING PANEL
-========================= */
+/* LEFT BRANDING PANEL */
 
 .branding-panel {
   flex: 0 0 auto;
@@ -674,9 +900,7 @@ const goToVendorRegister = () => {
   display: none;
 }
 
-/* =========================
-   RIGHT LOGIN PANEL
-========================= */
+/* RIGHT LOGIN PANEL */
 
 .login-panel {
   width: 420px;
@@ -702,9 +926,7 @@ const goToVendorRegister = () => {
   max-width: 390px;
 }
 
-/* =========================
-   HEADING
-========================= */
+/* HEADING */
 
 .login-content h1 {
   margin: 0 0 6px;
@@ -724,20 +946,25 @@ const goToVendorRegister = () => {
   color: #8992a2;
 }
 
-/* =========================
-   FORM
-========================= */
+/* FORM */
 
 .login-form {
   width: 100%;
 }
 
 .field-group {
-  margin-bottom: 2px;
+  margin-bottom: 16px;
 }
 
+/* Exceeds .status-message's 8px margin-bottom since adjacent block margins collapse rather than sum. */
+.reset-phone-group {
+  margin-top: 14px;
+}
+
+/* hide-bottom-space removes this area entirely until a field message actually has something to show. */
 .login-input :deep(.q-field__bottom) {
-  padding-bottom: 8px;
+  padding-top: 6px;
+  padding-bottom: 0;
 }
 
 .login-input :deep(.q-field__control) {
@@ -773,9 +1000,7 @@ const goToVendorRegister = () => {
   color: #777777;
 }
 
-/* =========================
-   ERROR MESSAGE
-========================= */
+/* ERROR MESSAGE */
 
 .error-message {
   margin-bottom: 14px;
@@ -792,15 +1017,13 @@ const goToVendorRegister = () => {
   color: #b91c1c;
 }
 
-/* =========================
-   FORGOT PASSWORD
-========================= */
+/* FORGOT PASSWORD */
 
 .forgot-container {
   display: flex;
   justify-content: flex-end;
 
-  margin-top: 7px;
+  margin-top: 8px;
 }
 
 .text-button {
@@ -825,14 +1048,13 @@ const goToVendorRegister = () => {
   text-decoration: underline;
 }
 
-/* =========================
-   LOGIN BUTTON
-========================= */
+/* LOGIN BUTTON */
 
 .login-button {
   height: 48px;
 
-  margin-top: 2px;
+  /* field-group's own 16px margin-bottom is the only spacing above this button. */
+  margin-top: 0;
 
   border-radius: 6px;
 
@@ -843,18 +1065,43 @@ const goToVendorRegister = () => {
 
   font-size: 13px;
   font-weight: 500;
+
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
 .login-button:hover {
   background: #a91e21;
+
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+
+  transform: translateY(-1px);
 }
 
-/* =========================
-   REGISTER
-========================= */
+.login-button:active {
+  background: #8f1a1c;
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.login-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+.login-button:disabled,
+.login-button.disabled {
+  background: #bd2427;
+  opacity: 0.45;
+}
+
+/* REGISTER */
 
 .register-section {
-  margin-top: 17px;
+  margin-top: 16px;
 
   display: flex;
   align-items: center;
@@ -879,17 +1126,13 @@ const goToVendorRegister = () => {
   text-decoration: underline;
 }
 
-/* =========================
-   SEPARATOR
-========================= */
+/* SEPARATOR */
 
 .separator {
   margin: 28px 0 18px;
 }
 
-/* =========================
-   TERMS
-========================= */
+/* TERMS */
 
 .terms {
   margin: 0;
@@ -908,59 +1151,78 @@ const goToVendorRegister = () => {
   text-decoration: underline;
 }
 
-/* =========================
-   REGISTRATION DIALOG
-========================= */
+/* REGISTRATION DIALOG */
 
 .registration-dialog {
-  width: 380px;
+  width: 400px;
   max-width: 90vw;
 
-  padding: 12px;
-
-  border-radius: 10px;
+  border-radius: 8px;
 
   font-family: 'Roboto', Arial, sans-serif;
 }
 
+/* Same padding rhythm as .status-content across the other LoginPage.vue dialogs. */
+.registration-header {
+  padding: 28px 28px 4px;
+}
+
 .registration-title {
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 700;
 
   color: #222222;
 }
 
 .registration-subtitle {
-  margin-top: 5px;
+  margin-top: 6px;
 
   font-size: 13px;
 
-  color: #777777;
+  color: #666666;
 }
 
+/* Same padding rhythm as .status-actions. */
 .registration-buttons {
   display: flex;
   flex-direction: column;
 
   gap: 12px;
+
+  padding: 20px 28px 28px;
 }
 
-.registration-button {
-  height: 45px;
-
-  background: #bd2427;
-  color: #ffffff;
-}
-
+/* Outline counterpart to .login-button; Quasar's `outline` prop draws the border via `color` alone. */
 .vendor-registration-button {
-  height: 45px;
+  height: 48px;
 
+  border-radius: 6px;
+
+  background: #ffffff;
   color: #bd2427;
+
+  font-family: 'Roboto', Arial, sans-serif;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  transition: background-color 0.15s, border-color 0.15s;
 }
 
-/* =========================
-   VENDOR STATUS DIALOGS
-========================= */
+.vendor-registration-button:hover {
+  background: #fdecec;
+}
+
+.vendor-registration-button:active {
+  background: #f8d7d8;
+}
+
+.vendor-registration-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+/* VENDOR STATUS DIALOGS */
 
 .status-dialog {
   width: 400px;
@@ -1005,40 +1267,133 @@ const goToVendorRegister = () => {
 
   color: #666666;
 
-  margin: 0 0 16px;
+  margin: 0 0 8px;
 }
 
 .status-actions {
-  padding: 14px 28px 24px;
+  padding: 0 28px 24px;
 }
 
-.status-btn {
-  width: 100%;
+/* OTP BOXES — same pattern as ConsumerVerify.vue */
 
-  height: 42px;
+.otp-row {
+  display: flex;
+  justify-content: center;
 
+  gap: 10px;
+
+  margin-bottom: 8px;
+}
+
+.otp-box {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+
+  border: 1px solid #d6d6da;
   border-radius: 8px;
 
+  background: #ffffff;
+
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+
+  text-align: center;
+
+  color: #222222;
+
+  outline: none;
+
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.otp-box:focus {
+  border-color: #bd2427;
+
+  box-shadow: 0 0 0 1px rgba(189, 36, 39, 0.1);
+}
+
+.otp-box.otp-error {
+  border-color: #ef4444;
+}
+
+/* RESEND — same pattern as ConsumerVerify.vue */
+
+.resend-section {
+  margin-top: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
+
+  font-size: 12px;
+}
+
+.resend-section span {
+  color: #8e97a6;
+}
+
+.resend-btn {
+  font-size: 12px;
+  font-weight: 600;
+
+  color: #bd2427;
+}
+
+.resend-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.resend-disabled {
+  color: #aaaaaa;
+
+  cursor: default;
+}
+
+/* Confirm Password's live match/mismatch message — same look as ConsumerRegister.vue's. */
+.field-message {
+  margin-top: 6px;
+
+  font-size: 12px;
+  line-height: 1.4;
+
+  color: #dc2626;
+}
+
+.field-message-success {
+  display: flex;
+  align-items: center;
+
+  gap: 3px;
+
+  color: #16a34a;
+  font-weight: 600;
+}
+
+/* Matches .forgot-password / .create-account's plain-text link treatment. */
+.cancel-link {
+  display: block;
+
+  width: 100%;
+  margin-top: 12px;
+  padding: 6px 0;
+
   font-size: 13px;
-  font-weight: 500;
-}
 
-.primary-btn {
-  background: #bd2427;
-  color: #ffffff;
-}
+  text-align: center;
 
-.primary-btn:hover {
-  background: #a91e21;
-}
-
-.flat-btn {
   color: #666666;
 }
 
-/* =========================
-   TABLET
-========================= */
+.cancel-link:hover {
+  text-decoration: underline;
+}
+
+/* TABLET */
 
 @media (max-width: 768px) {
   .login-card {
@@ -1060,9 +1415,7 @@ const goToVendorRegister = () => {
   }
 }
 
-/* =========================
-   MOBILE
-========================= */
+/* MOBILE */
 
 @media (max-width: 600px) {
   .login-page {

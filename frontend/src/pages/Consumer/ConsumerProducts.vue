@@ -1,7 +1,7 @@
 <template>
   <q-page class="storefront-page">
 
-    <SiteHeader :address="address" />
+    <SiteHeader />
 
     <!-- MAIN CONTENT -->
     <div class="page-content">
@@ -25,18 +25,24 @@
               hide-bottom-space
               behavior="menu"
               class="sort-select"
-            />
+            >
+              <template #prepend>
+                <q-icon name="swap_vert" size="16px" />
+              </template>
+            </q-select>
           </div>
 
           <q-btn
-            outline
+            unelevated
             no-caps
             dense
-            icon="tune"
+            icon="o_tune"
             label="Filters"
             class="filters-toggle-btn"
             @click="filtersOpen = !filtersOpen"
-          />
+          >
+            <span v-if="hasActiveFilters" class="filters-active-dot" />
+          </q-btn>
         </div>
       </div>
 
@@ -64,7 +70,7 @@
         </q-chip>
         <q-chip clickable dense class="category-pill category-pill-more" @click="filtersOpen = true">
           More
-          <q-icon name="expand_more" size="16px" />
+          <q-icon name="o_expand_more" size="16px" />
         </q-chip>
       </div>
 
@@ -72,7 +78,7 @@
 
         <div class="products-main">
           <div class="products-grid">
-            <ProductCard v-for="product in filteredProducts" :key="product.id" :product="product" />
+            <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
           </div>
 
           <p v-if="!filteredProducts.length" class="products-empty">
@@ -80,111 +86,97 @@
           </p>
         </div>
 
-        <!-- FILTERS SIDEBAR -->
-        <aside v-if="filtersOpen" class="filters-panel">
-          <div class="filters-panel-header">
-            <span class="filters-panel-title">Filters</span>
-            <button type="button" class="filters-close-btn" aria-label="Close filters" @click="filtersOpen = false">
-              <q-icon name="close" size="18px" />
-            </button>
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">Categories</label>
-            <q-select
-              v-model="selectedCategory"
-              :options="CATEGORY_SELECT_OPTIONS"
-              dense
-              outlined
-              emit-value
-              map-options
-              hide-bottom-space
-              behavior="menu"
-            />
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">Price Range</label>
-            <div class="price-range-row">
-              <q-input v-model.number="priceMin" type="number" dense outlined hide-bottom-space placeholder="Min" />
-              <span class="price-range-sep">–</span>
-              <q-input v-model.number="priceMax" type="number" dense outlined hide-bottom-space placeholder="Max" />
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">Store</label>
-            <q-select
-              v-model="selectedStore"
-              :options="STORE_SELECT_OPTIONS"
-              dense
-              outlined
-              emit-value
-              map-options
-              hide-bottom-space
-              behavior="menu"
-            />
-          </div>
-
-          <div class="filter-group">
-            <q-checkbox v-model="inStockOnly" label="In Stock Only" dense />
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">Sort by</label>
-            <q-select
-              v-model="sortBy"
-              :options="SORT_OPTIONS"
-              dense
-              outlined
-              emit-value
-              map-options
-              hide-bottom-space
-              behavior="menu"
-            />
-          </div>
-
-          <q-btn
-            label="Apply Filters"
-            unelevated
-            no-caps
-            class="apply-filters-btn"
-            @click="filtersOpen = false"
+        <!-- FILTERS SIDEBAR (desktop) -->
+        <aside v-if="filtersOpen && !isMobileFilters" class="filters-panel">
+          <ProductFilters
+            v-model:category="selectedCategory"
+            v-model:store="selectedStore"
+            v-model:price-min="priceMin"
+            v-model:price-max="priceMax"
+            v-model:in-stock="inStockOnly"
+            v-model:sort="sortBy"
+            :category-options="CATEGORY_SELECT_OPTIONS"
+            :store-options="STORE_SELECT_OPTIONS"
+            :sort-options="SORT_OPTIONS"
+            @close="filtersOpen = false"
+            @clear="clearFilters"
           />
-
-          <div class="clear-filters-row">
-            <span class="clear-filters-link" @click="clearFilters">Clear</span>
-          </div>
         </aside>
 
       </div>
 
+      <AppPagination v-model="currentPage" :max="totalPages" />
+
+      <!-- FILTERS POPUP (mobile) -->
+      <q-dialog v-model="mobileFiltersOpen">
+        <q-card class="filters-dialog-card">
+          <ProductFilters
+            v-model:category="selectedCategory"
+            v-model:store="selectedStore"
+            v-model:price-min="priceMin"
+            v-model:price-max="priceMax"
+            v-model:in-stock="inStockOnly"
+            v-model:sort="sortBy"
+            :category-options="CATEGORY_SELECT_OPTIONS"
+            :store-options="STORE_SELECT_OPTIONS"
+            :sort-options="SORT_OPTIONS"
+            @close="filtersOpen = false"
+            @clear="clearFilters"
+          />
+        </q-card>
+      </q-dialog>
+
     </div>
+
+    <SiteFooter />
+
+    <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
 
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
+import { useRoute } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
+import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
+import ProductFilters from '@/components/consumer/ProductFilters.vue'
+import AppPagination from '@/components/consumer/AppPagination.vue'
+import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
 import { useCategories } from '@/composables/useCategories'
+import { useProducts } from '@/composables/useProducts'
+import { useCart } from '@/composables/useCart'
 
-// ==========================================================
-// ADDRESS — placeholder until real geolocation/address selection
-// is wired up. Matches the address shown in the reference screenshots.
-// ==========================================================
+const $q = useQuasar()
+const route = useRoute()
 
-const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
+const showProductModal = ref(false)
+const selectedProduct = ref(null)
 
-// ==========================================================
-// CATEGORIES — fetched from /categories (backed by the real
-// `categories` table). See useCategories.js for the icon mapping.
-// ==========================================================
+const openProductModal = (product) => {
+  selectedProduct.value = product
+  showProductModal.value = true
+}
 
 const { categories, fetchCategories } = useCategories()
+const { products, fetchProducts } = useProducts()
+const { addToCart } = useCart()
 
-onMounted(fetchCategories)
+const handleAddToCart = async (product) => {
+  try {
+    await addToCart(product.id)
+    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+  }
+}
+
+onMounted(() => {
+  fetchCategories()
+  fetchProducts()
+})
 
 const VISIBLE_CATEGORIES = computed(() => categories.value.slice(0, 7))
 
@@ -193,31 +185,10 @@ const CATEGORY_SELECT_OPTIONS = computed(() => [
   ...categories.value.map((category) => ({ label: category.label, value: category.label }))
 ])
 
-// ==========================================================
-// MOCK DATA — replace with a real /products endpoint once it exists.
-// Category names below match the real `categories` table
-// (see backend/database/seeders/CategorySeeder.php).
-// ==========================================================
-
-const MOCK_ALL_PRODUCTS = [
-  { id: 1, name: 'Coca-Cola 1.5L', category: 'Beverages', price: 75, distance: '2 m', store: 'Leslie Store', inStock: true },
-  { id: 2, name: 'Lucky Me Pancit Canton Kalamansi 80g', category: 'Cooking Essentials', price: 12, distance: '3 m', store: 'Jmzhai Sari Sari Store', inStock: true },
-  { id: 3, name: 'Del Monte Tuna 155g', category: 'Cooking Essentials', price: 38, distance: '3 m', store: 'Leslie Store', inStock: true },
-  { id: 4, name: 'Gardenia Bread', category: 'Snacks & Sweets', price: 46, distance: '4 m', store: 'Sol A Sari Sari Store', inStock: true },
-  { id: 5, name: 'Surf Powder Detergent', category: 'Laundry & Cleaning', price: 65, distance: '4 m', store: 'Jmzhai Sari Sari Store', inStock: false },
-  { id: 6, name: 'Alaska Evaporada 370ml', category: 'Cooking Essentials', price: 25, distance: '2 m', store: 'Leslie Store', inStock: true },
-  { id: 7, name: 'Kopiko Blanca Twin Pack', category: 'Beverages', price: 22, distance: '5 m', store: 'Sol A Sari Sari Store', inStock: true },
-  { id: 8, name: 'Sanicare Bath Soap', category: 'Personal Care', price: 15, distance: '3 m', store: 'Jmzhai Sari Sari Store', inStock: true },
-  { id: 9, name: 'Jasmine Rice 1kg', category: 'Cooking Essentials', price: 52, distance: '2 m', store: 'Leslie Store', inStock: true },
-  { id: 10, name: 'Selecta Ice Cream 1.3L', category: 'Snacks & Sweets', price: 99, distance: '5 m', store: 'Sol A Sari Sari Store', inStock: true },
-  { id: 11, name: 'Piattos Sour Cream & Onion', category: 'Snacks & Sweets', price: 15, distance: '4 m', store: 'Jmzhai Sari Sari Store', inStock: true },
-  { id: 12, name: 'Century Tuna Flakes in Oil 155g', category: 'Cooking Essentials', price: 35, distance: '3 m', store: 'Leslie Store', inStock: true }
-]
-
-const STORE_SELECT_OPTIONS = [
+const STORE_SELECT_OPTIONS = computed(() => [
   { label: 'All Stores', value: 'All' },
-  ...[...new Set(MOCK_ALL_PRODUCTS.map((product) => product.store))].map((store) => ({ label: store, value: store }))
-]
+  ...[...new Set(products.value.map((product) => product.store))].map((store) => ({ label: store, value: store }))
+])
 
 const SORT_OPTIONS = [
   { label: 'Popular', value: 'popular' },
@@ -225,20 +196,34 @@ const SORT_OPTIONS = [
   { label: 'Price: High to Low', value: 'price_desc' }
 ]
 
-// ==========================================================
-// FILTER / SORT STATE
-// ==========================================================
-
 const filtersOpen = ref(false)
-const selectedCategory = ref('All')
+// Lets a category card/pill link straight here pre-filtered, e.g. /consumer/products?category=Beverages.
+const selectedCategory = ref(route.query.category || 'All')
 const selectedStore = ref('All')
 const priceMin = ref(null)
 const priceMax = ref(null)
 const inStockOnly = ref(false)
 const sortBy = ref('popular')
 
+// Below this width the sidebar doesn't fit, so filtersOpen opens a popup dialog instead.
+const isMobileFilters = computed(() => $q.screen.width < 900)
+
+const mobileFiltersOpen = computed({
+  get: () => filtersOpen.value && isMobileFilters.value,
+  set: (val) => { filtersOpen.value = val }
+})
+
+const hasActiveFilters = computed(() =>
+  selectedCategory.value !== 'All' ||
+  selectedStore.value !== 'All' ||
+  inStockOnly.value ||
+  priceMin.value != null ||
+  priceMax.value != null ||
+  sortBy.value !== 'popular'
+)
+
 const filteredProducts = computed(() => {
-  const list = MOCK_ALL_PRODUCTS.filter((product) => {
+  const list = products.value.filter((product) => {
     if (selectedCategory.value !== 'All' && product.category !== selectedCategory.value) return false
     if (selectedStore.value !== 'All' && product.store !== selectedStore.value) return false
     if (inStockOnly.value && !product.inStock) return false
@@ -251,6 +236,22 @@ const filteredProducts = computed(() => {
   if (sortBy.value === 'price_desc') return [...list].sort((a, b) => b.price - a.price)
   return list
 })
+
+// Client-side pagination, same convention as ConsumerPersonalize.vue.
+const PAGE_SIZE = 60
+const currentPage = ref(1)
+
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(filteredProducts.value.length / PAGE_SIZE))
+)
+
+const paginatedProducts = computed(() => {
+  const start = (currentPage.value - 1) * PAGE_SIZE
+  return filteredProducts.value.slice(start, start + PAGE_SIZE)
+})
+
+// Jump back to page 1 when filters change shape, otherwise the user could be stranded on a now-empty page.
+watch(filteredProducts, () => { currentPage.value = 1 })
 
 const clearFilters = () => {
   selectedCategory.value = 'All'
@@ -266,22 +267,36 @@ const clearFilters = () => {
 .storefront-page {
   min-height: 100vh;
 
+  display: flex;
+  flex-direction: column;
+
   background: #ffffff;
 
   font-family: 'Roboto', Arial, sans-serif;
 }
 
+/* flex column + pagination's own margin-top:auto keeps it pinned to the bottom even on a short last page. */
+/* width:100% needed: margin:0 auto on a flex item shrinks it to content width otherwise. */
 .page-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  width: 100%;
   max-width: 1200px;
+  box-sizing: border-box;
 
   margin: 0 auto;
 
   padding: 24px;
 }
 
-/* =========================
-   PAGE HEADER
-========================= */
+.page-content :deep(.app-pagination-row) {
+  margin-top: auto;
+  padding-top: 32px;
+}
+
+/* PAGE HEADER */
 
 .page-header-row {
   display: flex;
@@ -339,13 +354,37 @@ const clearFilters = () => {
   width: 150px;
 }
 
+.sort-select :deep(.q-field__control) {
+  border-radius: 10px;
+}
+
+.sort-select :deep(.q-field__prepend) {
+  color: #9ca3af;
+}
+
+/* Same red hover/focus treatment as .filters-toggle-btn, so the two paired controls feel consistent. */
+.sort-select:hover :deep(.q-field__control) {
+  background: #fdecec;
+}
+
+.sort-select:hover :deep(.q-field__control):before {
+  border-color: #bd2427;
+}
+
+.sort-select.q-field--focused :deep(.q-field__control:after) {
+  border-color: #bd2427;
+}
+
 .filters-toggle-btn {
+  position: relative;
+
   height: 36px;
   min-height: 36px;
   padding: 0 14px;
 
   border: 1px solid #e2e2e2;
-  border-radius: 8px;
+  border-radius: 6px;
+  outline: none !important;
 
   background: #ffffff;
   color: #333333;
@@ -354,6 +393,11 @@ const clearFilters = () => {
   font-weight: 500;
 
   transition: border-color 0.15s, background-color 0.15s;
+}
+
+/* Hides Quasar's own focus/ripple overlay so it can't paint a stray ring over our border/hover treatment. */
+.filters-toggle-btn :deep(.q-focus-helper) {
+  display: none;
 }
 
 .filters-toggle-btn :deep(.q-btn__content) {
@@ -365,9 +409,28 @@ const clearFilters = () => {
   background: #fdecec;
 }
 
-/* =========================
-   CATEGORY PILLS
-========================= */
+/* Swaps the browser's default focus ring for a red glow matching the app's hover/focus treatment. */
+.filters-toggle-btn:focus-visible {
+  outline: none !important;
+
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.25);
+}
+
+.filters-active-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+
+  background: #bd2427;
+}
+
+/* CATEGORY PILLS */
 
 .category-pills-row {
   display: flex;
@@ -393,11 +456,11 @@ const clearFilters = () => {
   flex-shrink: 0;
   margin: 0;
 
-  height: 34px;
-  padding: 0 16px;
+  height: 36px;
+  padding: 0 20px;
 
   border: 1px solid #e2e2e2;
-  border-radius: 8px;
+  border-radius: 6px;
 
   background: #ffffff;
   color: #333333;
@@ -405,7 +468,7 @@ const clearFilters = () => {
   font-size: 13px;
   font-weight: 500;
 
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
 .category-pill:hover {
@@ -414,13 +477,17 @@ const clearFilters = () => {
 }
 
 .category-pill-active {
-  border-color: #bd2427;
+  border-color: transparent;
   background: #bd2427;
   color: #ffffff;
+  font-weight: 600;
+
+  /* !important: q-chip carries its own default elevation shadow otherwise. */
+  box-shadow: none !important;
 }
 
 .category-pill-active:hover {
-  border-color: #bd2427;
+  border-color: transparent;
   background: #a91e21;
 }
 
@@ -431,9 +498,7 @@ const clearFilters = () => {
   gap: 2px;
 }
 
-/* =========================
-   LAYOUT — MAIN + FILTERS SIDEBAR
-========================= */
+/* LAYOUT — MAIN + FILTERS SIDEBAR */
 
 .products-layout {
   display: flex;
@@ -444,12 +509,14 @@ const clearFilters = () => {
 
 .products-main {
   flex: 1;
+  width: 100%;
   min-width: 0;
 }
 
+/* auto-fill/minmax instead of fixed column counts, so card size shrinks smoothly as available width narrows. */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
 
   gap: 16px;
 }
@@ -463,139 +530,29 @@ const clearFilters = () => {
   text-align: center;
 }
 
-/* =========================
-   FILTERS SIDEBAR
-========================= */
+/* FILTERS SIDEBAR (desktop) / POPUP (mobile) — see ProductFilters.vue for shared inner content styling */
 
 .filters-panel {
   flex-shrink: 0;
 
   width: 260px;
-  padding: 18px;
 
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
 
   background: #ffffff;
 
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-.filters-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  margin-bottom: 16px;
-}
-
-.filters-panel-title {
-  font-size: 16px;
-  font-weight: 700;
-
-  color: #111111;
-}
-
-.filters-close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 28px;
-  height: 28px;
-
-  border: none;
-  border-radius: 50%;
-
-  background: transparent;
-  color: #767676;
-
-  cursor: pointer;
-
-  transition: background-color 0.15s;
-}
-
-.filters-close-btn:hover {
-  background: #f4f4f4;
-}
-
-.filter-group {
-  margin-bottom: 16px;
-}
-
-.filter-label {
-  display: block;
-
-  margin-bottom: 6px;
-
-  font-size: 12.5px;
-  font-weight: 600;
-
-  color: #4a4a4a;
-}
-
-.price-range-row {
-  display: flex;
-  align-items: center;
-
-  gap: 8px;
-}
-
-.price-range-sep {
-  color: #9ca3af;
-}
-
-.apply-filters-btn {
+.filters-dialog-card {
   width: 100%;
-  margin-top: 4px;
+  max-width: 380px;
 
-  border-radius: 8px;
-
-  background: #bd2427;
-  color: #ffffff;
-
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 10px;
 }
 
-.clear-filters-row {
-  margin-top: 10px;
-
-  text-align: center;
-}
-
-.clear-filters-link {
-  font-size: 13px;
-  font-weight: 500;
-
-  color: #bd2427;
-
-  cursor: pointer;
-}
-
-/* =========================
-   RESPONSIVE
-========================= */
-
-@media (max-width: 1024px) {
-  .products-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .products-layout {
-    flex-direction: column;
-  }
-
-  .filters-panel {
-    width: 100%;
-  }
-
-  .products-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
+/* RESPONSIVE */
 
 @media (max-width: 600px) {
   .page-content {
@@ -608,10 +565,6 @@ const clearFilters = () => {
 
   .page-subtitle {
     display: none;
-  }
-
-  .products-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

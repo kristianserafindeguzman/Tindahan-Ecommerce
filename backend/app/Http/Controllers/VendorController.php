@@ -178,47 +178,30 @@ class VendorController extends Controller
             // Fetch products with category relationship
             $products = \App\Models\Inventory::where('store_id', $store->store_id)->with('category')->get();
             
-            // Compute image_url for each product (mirrors InventoryController::index)
-            $products->transform(function ($item) {
-                if ($item->product_picture) {
-                    $item->image_url = url('storage/' . $item->product_picture);
-                } else {
-                    $item->image_url = null;
-                }
-                return $item;
-            });
-            
+
             // Calculate Summary
             $summary = [
                 'total_products' => $products->count(),
-                'available_products' => $products->where('status', 'active')->count(),
+                'available_products' => $products->where('status', 'active')->sum(function($prod) {
+                    if (is_array($prod->variants) && count($prod->variants) > 0) {
+                        return collect($prod->variants)->sum('quantity');
+                    }
+                    return $prod->stock_quantity ?? 0;
+                }),
                 'archived_products' => $products->where('status', 'archived')->count(),
                 'inventory_value' => $products->where('status', 'active')->sum(function($prod) {
-                    $stock = $prod->stock_quantity ?? $prod->quantity ?? $prod->stock ?? 0;
+                    if (is_array($prod->variants) && count($prod->variants) > 0) {
+                        return collect($prod->variants)->sum(function($v) {
+                            return ($v['price'] ?? 0) * ($v['quantity'] ?? 0);
+                        });
+                    }
+                    $stock = $prod->stock_quantity ?? 0;
                     return $prod->price * $stock;
                 })
             ];
             
-            // Generate Static Map URL (Base64 encoded to avoid remote fetching issues in both DomPDF and html2canvas)
-            $mapUrl = null;
-            if ($store->latitude && $store->longitude) {
-                $remoteUrl = "https://static-maps.yandex.ru/1.x/?ll={$store->longitude},{$store->latitude}&z=15&l=map&pt={$store->longitude},{$store->latitude},pm2rdm";
-                try {
-                    $opts = [
-                        "http" => [
-                            "method" => "GET",
-                            "header" => "User-Agent: Mozilla/5.0\r\n"
-                        ]
-                    ];
-                    $context = stream_context_create($opts);
-                    $mapData = file_get_contents($remoteUrl, false, $context);
-                    if ($mapData) {
-                        $mapUrl = 'data:image/png;base64,' . base64_encode($mapData);
-                    }
-                } catch (\Exception $e) {
-                    \Log::warning("Could not fetch map image for PDF export: " . $e->getMessage());
-                }
-            }
+            // Generate Static Map URL using the centralized helper
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
             
             $pdf = Pdf::loadView('pdf.inventory-report', [
                 'store' => $store,
@@ -227,7 +210,8 @@ class VendorController extends Controller
                 'summary' => $summary,
                 'mapUrl' => $mapUrl,
                 'date' => now()->setTimezone('Asia/Manila')->format('F d, Y h:i A'),
-                'render_mode' => 'pdf'
+                'render_mode' => 'pdf',
+                'isPdf' => true
             ]);
             
             // Use A4 Portrait and Enable Remote Images
@@ -250,47 +234,30 @@ class VendorController extends Controller
             // Fetch products with category relationship
             $products = \App\Models\Inventory::where('store_id', $store->store_id)->with('category')->get();
             
-            // Compute image_url for each product
-            $products->transform(function ($item) {
-                if ($item->product_picture) {
-                    $item->image_url = url('storage/' . $item->product_picture);
-                } else {
-                    $item->image_url = null;
-                }
-                return $item;
-            });
-            
+
             // Calculate Summary
             $summary = [
                 'total_products' => $products->count(),
-                'available_products' => $products->where('status', 'active')->count(),
+                'available_products' => $products->where('status', 'active')->sum(function($prod) {
+                    if (is_array($prod->variants) && count($prod->variants) > 0) {
+                        return collect($prod->variants)->sum('quantity');
+                    }
+                    return $prod->stock_quantity ?? 0;
+                }),
                 'archived_products' => $products->where('status', 'archived')->count(),
                 'inventory_value' => $products->where('status', 'active')->sum(function($prod) {
-                    $stock = $prod->stock_quantity ?? $prod->quantity ?? $prod->stock ?? 0;
+                    if (is_array($prod->variants) && count($prod->variants) > 0) {
+                        return collect($prod->variants)->sum(function($v) {
+                            return ($v['price'] ?? 0) * ($v['quantity'] ?? 0);
+                        });
+                    }
+                    $stock = $prod->stock_quantity ?? 0;
                     return $prod->price * $stock;
                 })
             ];
             
-            // Generate Static Map URL (Base64 encoded to avoid remote fetching issues in both DomPDF and html2canvas)
-            $mapUrl = null;
-            if ($store->latitude && $store->longitude) {
-                $remoteUrl = "https://static-maps.yandex.ru/1.x/?ll={$store->longitude},{$store->latitude}&z=15&l=map&pt={$store->longitude},{$store->latitude},pm2rdm";
-                try {
-                    $opts = [
-                        "http" => [
-                            "method" => "GET",
-                            "header" => "User-Agent: Mozilla/5.0\r\n"
-                        ]
-                    ];
-                    $context = stream_context_create($opts);
-                    $mapData = file_get_contents($remoteUrl, false, $context);
-                    if ($mapData) {
-                        $mapUrl = 'data:image/png;base64,' . base64_encode($mapData);
-                    }
-                } catch (\Exception $e) {
-                    \Log::warning("Could not fetch map image for HTML export: " . $e->getMessage());
-                }
-            }
+            // Generate Static Map URL using the centralized helper
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
             
             $date = now()->setTimezone('Asia/Manila')->format('F d, Y h:i A');
             // In the PDF export we passed 'owner' => $user. I'll do the same to match the blade template.
@@ -301,6 +268,205 @@ class VendorController extends Controller
         } catch (\Exception $e) {
             \Log::error('HTML Export Error: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to generate HTML: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Helper to generate a statically stitched map image centered precisely on the vendor coordinates.
+     */
+    private function generateMapImage($lat, $lon)
+    {
+        if (!is_numeric($lat) || !is_numeric($lon)) {
+            return null;
+        }
+
+        try {
+            $zoom = 16;
+            $width = 440;
+            $height = 260;
+
+            $n = pow(2, $zoom);
+            $x_p = (($lon + 180) / 360) * $n;
+            $y_p = (1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) / 2 * $n;
+
+            $pixelX = $x_p * 256;
+            $pixelY = $y_p * 256;
+
+            $minX = $pixelX - $width / 2;
+            $minY = $pixelY - $height / 2;
+            $maxX = $pixelX + $width / 2;
+            $maxY = $pixelY + $height / 2;
+
+            $startTileX = (int) floor($minX / 256);
+            $startTileY = (int) floor($minY / 256);
+            $endTileX = (int) floor($maxX / 256);
+            $endTileY = (int) floor($maxY / 256);
+
+            $canvas = imagecreatetruecolor($width, $height);
+            $bg = imagecolorallocate($canvas, 248, 250, 252);
+            imagefill($canvas, 0, 0, $bg);
+
+            $osmFailed = false;
+
+            for ($x = $startTileX; $x <= $endTileX; $x++) {
+                if ($osmFailed) break;
+                for ($y = $startTileY; $y <= $endTileY; $y++) {
+                    if ($osmFailed) break;
+                    $tileUrl = "https://tile.openstreetmap.org/{$zoom}/{$x}/{$y}.png";
+                    try {
+                        $response = \Illuminate\Support\Facades\Http::timeout(1.5)
+                            ->withHeaders(['User-Agent' => 'TindahanApp/1.0'])
+                            ->get($tileUrl);
+                        $tileData = $response->successful() ? $response->body() : false;
+                    } catch (\Exception $e) {
+                        $tileData = false;
+                        $osmFailed = true; // Abort further tiles if OSM is unreachable
+                    }
+                    if ($tileData) {
+                        $img = @imagecreatefromstring($tileData);
+                        if ($img) {
+                            $destX = (int) round(($x * 256) - $minX);
+                            $destY = (int) round(($y * 256) - $minY);
+                            imagecopy($canvas, $img, $destX, $destY, 0, 0, 256, 256);
+                            imagedestroy($img);
+                        }
+                    }
+                }
+            }
+
+            // Draw Pin at Center
+            $centerX = (int) round($width / 2);
+            $centerY = (int) round($height / 2);
+
+            $red = imagecolorallocate($canvas, 189, 36, 39); // Tindahan Red #bd2427
+            $dark = imagecolorallocate($canvas, 15, 23, 42); // #0f172a
+            $white = imagecolorallocate($canvas, 255, 255, 255);
+
+            // Shadow
+            imagefilledellipse($canvas, $centerX, $centerY + 2, 16, 6, imagecolorallocatealpha($canvas, 0, 0, 0, 80));
+
+            // Pin styling
+            $r = 12;
+            $pinY = $centerY - 16;
+
+            // Pin Triangle
+            $points = [
+                (int) round($centerX - $r * 0.8), (int) round($pinY + $r * 0.4),
+                (int) round($centerX + $r * 0.8), (int) round($pinY + $r * 0.4),
+                $centerX, $centerY
+            ];
+            imagefilledpolygon($canvas, $points, $red);
+            imagefilledellipse($canvas, $centerX, $pinY, $r * 2, $r * 2, $red);
+            imagefilledellipse($canvas, $centerX, $pinY, $r, $r, $white);
+
+            ob_start();
+            imagepng($canvas);
+            $pngData = ob_get_clean();
+            imagedestroy($canvas);
+
+            return 'data:image/png;base64,' . base64_encode($pngData);
+
+        } catch (\Exception $e) {
+            \Log::warning("Could not fetch map image for export: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function exportOrderListReport(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $store = $user->store;
+            
+            $orders = \App\Models\Order::with('consumer', 'items.inventory', 'store')
+                ->where('store_id', $store->store_id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            $groupedOrders = [
+                'placed' => $orders->where('status', 'placed')->values(),
+                'preparing' => $orders->where('status', 'preparing')->values(),
+                'ready_for_pickup' => $orders->where('status', 'ready_for_pickup')->values(),
+                'picked_up' => $orders->where('status', 'picked_up')->values(),
+                'cancelled' => $orders->where('status', 'cancelled')->values(),
+            ];
+
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
+            
+            $pdf = Pdf::loadView('pdf.vendor-order-list-report', [
+                'store' => $store,
+                'owner' => $user,
+                'groupedOrders' => $groupedOrders,
+                'mapUrl' => $mapUrl,
+                'date' => now()->setTimezone('Asia/Manila')->format('F d, Y h:i A')
+            ]);
+            
+            $pdf->setPaper('a4', 'portrait')->setOption(['isRemoteEnabled' => true]);
+            
+            return $pdf->stream('Tindahan-Order-List-Report.pdf');
+        } catch (\Exception $e) {
+            \Log::error('PDF Export Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function exportCustomerOrderReport(Request $request, $id)
+    {
+        try {
+            $user = auth()->user();
+            $store = $user->store;
+            
+            $order = \App\Models\Order::with(['consumer', 'items.inventory', 'store'])
+                ->where('store_id', $store->store_id)
+                ->where('order_id', $id)
+                ->firstOrFail();
+
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
+            
+            $pdf = Pdf::loadView('pdf.vendor-customer-order-report', [
+                'store' => $store,
+                'owner' => $user,
+                'order' => $order,
+                'mapUrl' => $mapUrl,
+                'date' => now()->setTimezone('Asia/Manila')->format('F d, Y h:i A')
+            ]);
+            
+            $pdf->setPaper('a4', 'portrait')->setOption(['isRemoteEnabled' => true]);
+            
+            return $pdf->stream('Tindahan-Customer-Order-#' . $id . '.pdf');
+        } catch (\Exception $e) {
+            \Log::error('PDF Export Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function exportProductCategoryReport(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $store = $user->store;
+            
+            $categories = \App\Models\Category::withCount(['products' => function ($query) use ($store) {
+                $query->where('store_id', $store->store_id)
+                      ->where('status', '!=', 'archived');
+            }])->orderBy('category_name')->get();
+
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
+            
+            $pdf = Pdf::loadView('pdf.vendor-product-category-report', [
+                'store' => $store,
+                'owner' => $user,
+                'categories' => $categories,
+                'mapUrl' => $mapUrl,
+                'date' => now()->setTimezone('Asia/Manila')->format('F d, Y h:i A')
+            ]);
+            
+            $pdf->setPaper('a4', 'portrait')->setOption(['isRemoteEnabled' => true]);
+            
+            return $pdf->stream('Tindahan-Product-Categories-Report.pdf');
+        } catch (\Exception $e) {
+            \Log::error('PDF Export Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
         }
     }
 }

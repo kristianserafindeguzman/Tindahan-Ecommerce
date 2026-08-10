@@ -1,7 +1,7 @@
 <template>
   <q-page class="storefront-page">
 
-    <SiteHeader :address="address" />
+    <SiteHeader />
 
     <!-- MAIN CONTENT -->
     <div class="page-content">
@@ -25,18 +25,24 @@
               hide-bottom-space
               behavior="menu"
               class="sort-select"
-            />
+            >
+              <template #prepend>
+                <q-icon name="swap_vert" size="16px" />
+              </template>
+            </q-select>
           </div>
 
           <q-btn
-            outline
+            unelevated
             no-caps
             dense
-            icon="tune"
+            icon="o_tune"
             label="Filters"
             class="filters-toggle-btn"
             @click="filtersOpen = !filtersOpen"
-          />
+          >
+            <span v-if="hasActiveFilters" class="filters-active-dot" />
+          </q-btn>
         </div>
       </div>
 
@@ -44,7 +50,7 @@
 
         <div class="stores-main">
           <div class="stores-grid">
-            <StoreCard v-for="store in filteredStores" :key="store.id" :store="store" />
+            <StoreCard v-for="store in paginatedStores" :key="store.id" :store="store" />
           </div>
 
           <p v-if="!filteredStores.length" class="stores-empty">
@@ -52,106 +58,101 @@
           </p>
         </div>
 
-        <!-- FILTERS SIDEBAR -->
-        <aside v-if="filtersOpen" class="filters-panel">
-          <div class="filters-panel-header">
-            <span class="filters-panel-title">Filters</span>
-            <button type="button" class="filters-close-btn" aria-label="Close filters" @click="filtersOpen = false">
-              <q-icon name="close" size="18px" />
-            </button>
-          </div>
-
-          <div class="filter-group">
-            <q-checkbox v-model="openNowOnly" label="Open Now" dense />
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">Sort by</label>
-            <q-select
-              v-model="sortBy"
-              :options="SORT_OPTIONS"
-              dense
-              outlined
-              emit-value
-              map-options
-              hide-bottom-space
-              behavior="menu"
-            />
-          </div>
-
-          <q-btn
-            label="Apply Filters"
-            unelevated
-            no-caps
-            class="apply-filters-btn"
-            @click="filtersOpen = false"
+        <!-- FILTERS SIDEBAR (desktop) -->
+        <aside v-if="filtersOpen && !isMobileFilters" class="filters-panel">
+          <StoreFilters
+            v-model:open-now="openNowOnly"
+            v-model:sort="sortBy"
+            :sort-options="SORT_OPTIONS"
+            @close="filtersOpen = false"
+            @clear="clearFilters"
           />
-
-          <div class="clear-filters-row">
-            <span class="clear-filters-link" @click="clearFilters">Clear</span>
-          </div>
         </aside>
 
       </div>
 
+      <AppPagination v-model="currentPage" :max="totalPages" />
+
     </div>
+
+    <!-- FILTERS POPUP (mobile) -->
+    <q-dialog v-model="mobileFiltersOpen">
+      <q-card class="filters-dialog-card">
+        <StoreFilters
+          v-model:open-now="openNowOnly"
+          v-model:sort="sortBy"
+          :sort-options="SORT_OPTIONS"
+          @close="filtersOpen = false"
+          @clear="clearFilters"
+        />
+      </q-card>
+    </q-dialog>
+
+    <SiteFooter />
 
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
+import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import StoreCard from '@/components/consumer/StoreCard.vue'
+import StoreFilters from '@/components/consumer/StoreFilters.vue'
+import AppPagination from '@/components/consumer/AppPagination.vue'
+import { useStores } from '@/composables/useStores'
 
-// ==========================================================
-// ADDRESS — placeholder until real geolocation/address selection
-// is wired up. Matches the address shown in the reference screenshots.
-// ==========================================================
+const $q = useQuasar()
 
-const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
+const { stores, fetchStores } = useStores()
 
-// ==========================================================
-// MOCK DATA — replace with a real /stores endpoint once it exists.
-// distanceMeters backs the "Distance: Nearest" sort; StoreCard only
-// reads the formatted `distance` string.
-// ==========================================================
-
-const MOCK_STORES = [
-  { id: 1, name: 'Leslie Store', isOpen: true, closesAt: '10:00 pm', distance: '5 m', distanceMeters: 5 },
-  { id: 2, name: 'Jmzhai Sari Sari Store', isOpen: true, closesAt: '9:00 pm', distance: '3 m', distanceMeters: 3 },
-  { id: 3, name: 'Sol A Sari Sari Store', isOpen: false, closesAt: '8:00 pm', distance: '4 m', distanceMeters: 4 },
-  { id: 4, name: "David's Sari-Sari Store", isOpen: true, closesAt: '9:30 pm', distance: '6 m', distanceMeters: 6 },
-  { id: 5, name: "Ate Liza's Store", isOpen: true, closesAt: '9:00 pm', distance: '2 m', distanceMeters: 2 },
-  { id: 6, name: 'Kuya Pedro Store', isOpen: true, closesAt: '8:30 pm', distance: '4 m', distanceMeters: 4 },
-  { id: 7, name: 'Mang Dindo Store', isOpen: false, closesAt: '7:00 pm', distance: '7 m', distanceMeters: 7 },
-  { id: 8, name: "Nena's Store", isOpen: true, closesAt: '10:00 pm', distance: '8 m', distanceMeters: 8 }
-]
+onMounted(fetchStores)
 
 const SORT_OPTIONS = [
   { label: 'Popular', value: 'popular' },
-  { label: 'Distance: Nearest', value: 'distance' },
   { label: 'Name: A-Z', value: 'name' }
 ]
-
-// ==========================================================
-// FILTER / SORT STATE
-// ==========================================================
 
 const filtersOpen = ref(false)
 const openNowOnly = ref(false)
 const sortBy = ref('popular')
 
+// Below this width the sidebar doesn't fit, so filtersOpen opens a popup dialog instead.
+const isMobileFilters = computed(() => $q.screen.width < 900)
+
+const mobileFiltersOpen = computed({
+  get: () => filtersOpen.value && isMobileFilters.value,
+  set: (val) => { filtersOpen.value = val }
+})
+
+const hasActiveFilters = computed(() => openNowOnly.value || sortBy.value !== 'popular')
+
 const filteredStores = computed(() => {
-  const list = MOCK_STORES.filter((store) => {
+  const list = stores.value.filter((store) => {
     if (openNowOnly.value && !store.isOpen) return false
     return true
   })
 
-  if (sortBy.value === 'distance') return [...list].sort((a, b) => a.distanceMeters - b.distanceMeters)
   if (sortBy.value === 'name') return [...list].sort((a, b) => a.name.localeCompare(b.name))
   return list
 })
+
+// Client-side pagination, same convention as ConsumerProducts.vue.
+const PAGE_SIZE = 16
+const currentPage = ref(1)
+
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(filteredStores.value.length / PAGE_SIZE))
+)
+
+const paginatedStores = computed(() => {
+  const start = (currentPage.value - 1) * PAGE_SIZE
+  return filteredStores.value.slice(start, start + PAGE_SIZE)
+})
+
+// Jump back to page 1 when filters change shape, otherwise the user could be stranded on a now-empty page.
+watch(filteredStores, () => { currentPage.value = 1 })
 
 const clearFilters = () => {
   openNowOnly.value = false
@@ -163,22 +164,36 @@ const clearFilters = () => {
 .storefront-page {
   min-height: 100vh;
 
+  display: flex;
+  flex-direction: column;
+
   background: #ffffff;
 
   font-family: 'Roboto', Arial, sans-serif;
 }
 
+/* flex column + pagination's own margin-top:auto keeps it pinned to the bottom even on a short last page. */
 .page-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  /* width:100% needed: margin:0 auto on a flex item shrinks it to content width otherwise. */
+  width: 100%;
   max-width: 1200px;
+  box-sizing: border-box;
 
   margin: 0 auto;
 
   padding: 24px;
 }
 
-/* =========================
-   PAGE HEADER
-========================= */
+.page-content :deep(.app-pagination-row) {
+  margin-top: auto;
+  padding-top: 32px;
+}
+
+/* PAGE HEADER */
 
 .page-header-row {
   display: flex;
@@ -236,13 +251,37 @@ const clearFilters = () => {
   width: 170px;
 }
 
+.sort-select :deep(.q-field__control) {
+  border-radius: 10px;
+}
+
+.sort-select :deep(.q-field__prepend) {
+  color: #9ca3af;
+}
+
+/* Same red hover/focus treatment as .filters-toggle-btn, so the two paired controls feel consistent. */
+.sort-select:hover :deep(.q-field__control) {
+  background: #fdecec;
+}
+
+.sort-select:hover :deep(.q-field__control):before {
+  border-color: #bd2427;
+}
+
+.sort-select.q-field--focused :deep(.q-field__control:after) {
+  border-color: #bd2427;
+}
+
 .filters-toggle-btn {
+  position: relative;
+
   height: 36px;
   min-height: 36px;
   padding: 0 14px;
 
   border: 1px solid #e2e2e2;
-  border-radius: 8px;
+  border-radius: 6px;
+  outline: none !important;
 
   background: #ffffff;
   color: #333333;
@@ -251,6 +290,25 @@ const clearFilters = () => {
   font-weight: 500;
 
   transition: border-color 0.15s, background-color 0.15s;
+}
+
+/* Hides Quasar's own focus/ripple overlay so it can't paint a stray ring over our border/hover treatment. */
+.filters-toggle-btn :deep(.q-focus-helper) {
+  display: none;
+}
+
+.filters-active-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+
+  background: #bd2427;
 }
 
 .filters-toggle-btn :deep(.q-btn__content) {
@@ -262,9 +320,14 @@ const clearFilters = () => {
   background: #fdecec;
 }
 
-/* =========================
-   LAYOUT — MAIN + FILTERS SIDEBAR
-========================= */
+/* Swaps the browser's default focus ring for a red glow matching the app's hover/focus treatment. */
+.filters-toggle-btn:focus-visible {
+  outline: none !important;
+
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.25);
+}
+
+/* LAYOUT — MAIN + FILTERS SIDEBAR */
 
 .stores-layout {
   display: flex;
@@ -275,9 +338,11 @@ const clearFilters = () => {
 
 .stores-main {
   flex: 1;
+  width: 100%;
   min-width: 0;
 }
 
+/* Fixed 4 columns on desktop; auto-fill/minmax only kicks in below the tablet breakpoint (see RESPONSIVE). */
 .stores-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -294,126 +359,33 @@ const clearFilters = () => {
   text-align: center;
 }
 
-/* =========================
-   FILTERS SIDEBAR
-========================= */
+/* FILTERS SIDEBAR */
 
 .filters-panel {
   flex-shrink: 0;
 
   width: 260px;
-  padding: 18px;
 
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
 
   background: #ffffff;
 
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-.filters-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  margin-bottom: 16px;
-}
-
-.filters-panel-title {
-  font-size: 16px;
-  font-weight: 700;
-
-  color: #111111;
-}
-
-.filters-close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 28px;
-  height: 28px;
-
-  border: none;
-  border-radius: 50%;
-
-  background: transparent;
-  color: #767676;
-
-  cursor: pointer;
-
-  transition: background-color 0.15s;
-}
-
-.filters-close-btn:hover {
-  background: #f4f4f4;
-}
-
-.filter-group {
-  margin-bottom: 16px;
-}
-
-.filter-label {
-  display: block;
-
-  margin-bottom: 6px;
-
-  font-size: 12.5px;
-  font-weight: 600;
-
-  color: #4a4a4a;
-}
-
-.apply-filters-btn {
+.filters-dialog-card {
   width: 100%;
-  margin-top: 4px;
+  max-width: 380px;
 
-  border-radius: 8px;
-
-  background: #bd2427;
-  color: #ffffff;
-
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 10px;
 }
 
-.clear-filters-row {
-  margin-top: 10px;
-
-  text-align: center;
-}
-
-.clear-filters-link {
-  font-size: 13px;
-  font-weight: 500;
-
-  color: #bd2427;
-
-  cursor: pointer;
-}
-
-/* =========================
-   RESPONSIVE
-========================= */
+/* RESPONSIVE */
 
 @media (max-width: 1024px) {
   .stores-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .stores-layout {
-    flex-direction: column;
-  }
-
-  .filters-panel {
-    width: 100%;
-  }
-
-  .stores-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 }
 
@@ -428,10 +400,6 @@ const clearFilters = () => {
 
   .page-subtitle {
     display: none;
-  }
-
-  .stores-grid {
-    grid-template-columns: repeat(1, 1fr);
   }
 }
 </style>

@@ -20,7 +20,7 @@
         </div>
         <div class="row q-gutter-sm q-mt-sm q-mt-md-none">
           <q-btn outline icon="filter_list" label="Filter" color="blue-grey-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" />
-          <q-btn outline icon="download" label="Export" color="red-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" />
+          <q-btn outline icon="download" label="Export" color="red-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" :loading="isExporting" @click="exportOrders" />
         </div>
       </div>
 
@@ -144,6 +144,7 @@ const search = ref('')
 const activeStatus = ref('All')
 const statuses = ['All', 'Placed', 'Preparing', 'Ready for Pickup', 'Picked up', 'Cancelled']
 const loading = ref(true)
+const isExporting = ref(false)
 
 const orders = ref([])
 
@@ -198,6 +199,25 @@ const goToOrder = (id) => {
 
 const onRowClick = (evt, row) => {
   goToOrder(row.order_id)
+}
+
+const exportOrders = async () => {
+  try {
+    isExporting.value = true
+    const response = await api.get('/vendor/orders/export', { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    const dateStr = new Date().toISOString().split('T')[0]
+    link.setAttribute('download', `Tindahan-Order-List-Report-${dateStr}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (error) {
+    console.error('Export failed:', error)
+  } finally {
+    isExporting.value = false
+  }
 }
 
 onMounted(async () => {
