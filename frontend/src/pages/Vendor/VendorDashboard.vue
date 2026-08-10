@@ -310,7 +310,7 @@
                     >
                       <span class="text-weight-medium text-body2">{{ day.name }}</span>
                       <span v-if="day.isOpen" class="text-caption text-weight-bold">
-                        {{ formatTime(vendorStore?.opening_time) }} - {{ formatTime(vendorStore?.closing_time) }}
+                        {{ formatTime(day.openTime) }} - {{ formatTime(day.closeTime) }}
                       </span>
                       <span v-else class="text-caption text-italic">Closed</span>
                     </div>
@@ -462,22 +462,42 @@ const weekDays = computed(() => {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const fullDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
   
-  // Try to parse stringified JSON if it comes as a string, or use the array directly
-  let operating = []
+  // Try to parse stringified JSON if it comes as a string, or use the array/object directly
+  let operating = {}
   if (typeof vendorStore.value?.operating_days === 'string') {
     try {
       operating = JSON.parse(vendorStore.value.operating_days)
     } catch(e) {}
-  } else if (Array.isArray(vendorStore.value?.operating_days)) {
+  } else if (vendorStore.value?.operating_days) {
     operating = vendorStore.value.operating_days
   }
 
   return fullDays.map((fullDay, index) => {
     const short = days[index]
-    const isOpen = operating.some(d => typeof d === 'string' && d.substring(0,3).toLowerCase() === short.toLowerCase())
+    let isOpen = false
+    let openTime = vendorStore.value?.opening_time
+    let closeTime = vendorStore.value?.closing_time
+
+    if (Array.isArray(operating)) {
+      // Legacy format
+      isOpen = operating.some(d => typeof d === 'string' && d.substring(0,3).toLowerCase() === short.toLowerCase())
+    } else if (typeof operating === 'object' && operating !== null) {
+      // New format
+      const schedule = operating[fullDay]
+      if (schedule) {
+        isOpen = schedule.is_open || false
+        if (isOpen) {
+          openTime = schedule.opening_time || openTime
+          closeTime = schedule.closing_time || closeTime
+        }
+      }
+    }
+
     return {
       name: fullDay,
-      isOpen
+      isOpen,
+      openTime,
+      closeTime
     }
   })
 })
@@ -485,25 +505,38 @@ const weekDays = computed(() => {
 const isStoreOpen = computed(() => {
   if (!vendorStore.value?.operating_days) return false
 
-  // Parse operating_days (could be string or array)
-  let operating = []
+  let operating = {}
   if (typeof vendorStore.value.operating_days === 'string') {
     try { operating = JSON.parse(vendorStore.value.operating_days) } catch(e) {}
-  } else if (Array.isArray(vendorStore.value.operating_days)) {
+  } else if (vendorStore.value.operating_days) {
     operating = vendorStore.value.operating_days
   }
-  if (!operating.length) return false
 
-  // Check if today's day abbreviation is in operating_days
+  const fullDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   const dayAbbreviations = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const now = new Date()
   const todayAbbr = dayAbbreviations[now.getDay()]
-  const isDayOpen = operating.some(d => typeof d === 'string' && d.substring(0,3).toLowerCase() === todayAbbr.toLowerCase())
+  const todayFull = fullDays[now.getDay()]
+
+  let isDayOpen = false
+  let openTime = vendorStore.value.opening_time
+  let closeTime = vendorStore.value.closing_time
+
+  if (Array.isArray(operating)) {
+    if (!operating.length) return false
+    isDayOpen = operating.some(d => typeof d === 'string' && d.substring(0,3).toLowerCase() === todayAbbr.toLowerCase())
+  } else if (typeof operating === 'object' && operating !== null) {
+    if (Object.keys(operating).length === 0) return false
+    const schedule = operating[todayFull]
+    if (schedule) {
+      isDayOpen = schedule.is_open || false
+      openTime = schedule.opening_time || openTime
+      closeTime = schedule.closing_time || closeTime
+    }
+  }
+
   if (!isDayOpen) return false
 
-  // Check if current time is within opening_time - closing_time
-  const openTime = vendorStore.value.opening_time
-  const closeTime = vendorStore.value.closing_time
   if (!openTime || !closeTime) return isDayOpen // If no times set, just rely on the day
 
   const currentMinutes = now.getHours() * 60 + now.getMinutes()
@@ -512,7 +545,11 @@ const isStoreOpen = computed(() => {
   const openMinutes = openH * 60 + openM
   const closeMinutes = closeH * 60 + closeM
 
-  return currentMinutes >= openMinutes && currentMinutes <= closeMinutes
+  if (openMinutes <= closeMinutes) {
+    return currentMinutes >= openMinutes && currentMinutes <= closeMinutes
+  }
+  // Overnight
+  return currentMinutes >= openMinutes || currentMinutes <= closeMinutes
 })
 
 // ==========================================

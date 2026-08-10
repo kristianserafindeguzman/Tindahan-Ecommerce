@@ -182,29 +182,67 @@ class VendorController extends Controller
             // Calculate Summary
             $summary = [
                 'total_products' => $products->count(),
-                'available_products' => $products->where('status', 'active')->count(),
+                'available_products' => $products->where('status', 'active')->sum(function($prod) {
+                    if (is_array($prod->variants) && count($prod->variants) > 0) {
+                        return collect($prod->variants)->sum('quantity');
+                    }
+                    return $prod->stock_quantity ?? 0;
+                }),
                 'archived_products' => $products->where('status', 'archived')->count(),
                 'inventory_value' => $products->where('status', 'active')->sum(function($prod) {
-                    $stock = $prod->stock_quantity ?? $prod->quantity ?? $prod->stock ?? 0;
+                    if (is_array($prod->variants) && count($prod->variants) > 0) {
+                        return collect($prod->variants)->sum(function($v) {
+                            return ($v['price'] ?? 0) * ($v['quantity'] ?? 0);
+                        });
+                    }
+                    $stock = $prod->stock_quantity ?? 0;
                     return $prod->price * $stock;
                 })
             ];
             
             // Generate Static Map URL (Base64 encoded to avoid remote fetching issues in both DomPDF and html2canvas)
             $mapUrl = null;
-            if ($store->latitude && $store->longitude) {
-                $remoteUrl = "https://static-maps.yandex.ru/1.x/?ll={$store->longitude},{$store->latitude}&z=15&l=map&pt={$store->longitude},{$store->latitude},pm2rdm";
+            if (is_numeric($store->latitude) && is_numeric($store->longitude)) {
                 try {
+                    $lat = (float) $store->latitude;
+                    $lon = (float) $store->longitude;
+                    $zoom = 15;
+                    $xtile = floor((($lon + 180) / 360) * pow(2, $zoom));
+                    $ytile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) / 2 * pow(2, $zoom));
+                    
+                    $tileUrl = "https://tile.openstreetmap.org/{$zoom}/{$xtile}/{$ytile}.png";
+                    
                     $opts = [
                         "http" => [
                             "method" => "GET",
-                            "header" => "User-Agent: Mozilla/5.0\r\n"
+                            "header" => "User-Agent: TindahanApp/1.0\r\n"
                         ]
                     ];
                     $context = stream_context_create($opts);
-                    $mapData = file_get_contents($remoteUrl, false, $context);
-                    if ($mapData) {
-                        $mapUrl = 'data:image/png;base64,' . base64_encode($mapData);
+                    $tileData = file_get_contents($tileUrl, false, $context);
+                    
+                    if ($tileData) {
+                        $img = imagecreatefromstring($tileData);
+                        if ($img) {
+                            $n = pow(2, $zoom);
+                            $x_p = ((($lon + 180) / 360) * $n);
+                            $y_p = ((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) / 2 * $n);
+                            
+                            $pixelX = round(($x_p - $xtile) * 256);
+                            $pixelY = round(($y_p - $ytile) * 256);
+                            
+                            $red = imagecolorallocate($img, 220, 38, 38);
+                            $white = imagecolorallocate($img, 255, 255, 255);
+                            imagefilledellipse($img, $pixelX, $pixelY, 16, 16, $white);
+                            imagefilledellipse($img, $pixelX, $pixelY, 10, 10, $red);
+                            
+                            ob_start();
+                            imagepng($img);
+                            $pngData = ob_get_clean();
+                            imagedestroy($img);
+                            
+                            $mapUrl = 'data:image/png;base64,' . base64_encode($pngData);
+                        }
                     }
                 } catch (\Exception $e) {
                     \Log::warning("Could not fetch map image for PDF export: " . $e->getMessage());
@@ -245,29 +283,67 @@ class VendorController extends Controller
             // Calculate Summary
             $summary = [
                 'total_products' => $products->count(),
-                'available_products' => $products->where('status', 'active')->count(),
+                'available_products' => $products->where('status', 'active')->sum(function($prod) {
+                    if (is_array($prod->variants) && count($prod->variants) > 0) {
+                        return collect($prod->variants)->sum('quantity');
+                    }
+                    return $prod->stock_quantity ?? 0;
+                }),
                 'archived_products' => $products->where('status', 'archived')->count(),
                 'inventory_value' => $products->where('status', 'active')->sum(function($prod) {
-                    $stock = $prod->stock_quantity ?? $prod->quantity ?? $prod->stock ?? 0;
+                    if (is_array($prod->variants) && count($prod->variants) > 0) {
+                        return collect($prod->variants)->sum(function($v) {
+                            return ($v['price'] ?? 0) * ($v['quantity'] ?? 0);
+                        });
+                    }
+                    $stock = $prod->stock_quantity ?? 0;
                     return $prod->price * $stock;
                 })
             ];
             
             // Generate Static Map URL (Base64 encoded to avoid remote fetching issues in both DomPDF and html2canvas)
             $mapUrl = null;
-            if ($store->latitude && $store->longitude) {
-                $remoteUrl = "https://static-maps.yandex.ru/1.x/?ll={$store->longitude},{$store->latitude}&z=15&l=map&pt={$store->longitude},{$store->latitude},pm2rdm";
+            if (is_numeric($store->latitude) && is_numeric($store->longitude)) {
                 try {
+                    $lat = (float) $store->latitude;
+                    $lon = (float) $store->longitude;
+                    $zoom = 15;
+                    $xtile = floor((($lon + 180) / 360) * pow(2, $zoom));
+                    $ytile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) / 2 * pow(2, $zoom));
+                    
+                    $tileUrl = "https://tile.openstreetmap.org/{$zoom}/{$xtile}/{$ytile}.png";
+                    
                     $opts = [
                         "http" => [
                             "method" => "GET",
-                            "header" => "User-Agent: Mozilla/5.0\r\n"
+                            "header" => "User-Agent: TindahanApp/1.0\r\n"
                         ]
                     ];
                     $context = stream_context_create($opts);
-                    $mapData = file_get_contents($remoteUrl, false, $context);
-                    if ($mapData) {
-                        $mapUrl = 'data:image/png;base64,' . base64_encode($mapData);
+                    $tileData = file_get_contents($tileUrl, false, $context);
+                    
+                    if ($tileData) {
+                        $img = imagecreatefromstring($tileData);
+                        if ($img) {
+                            $n = pow(2, $zoom);
+                            $x_p = ((($lon + 180) / 360) * $n);
+                            $y_p = ((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) / 2 * $n);
+                            
+                            $pixelX = round(($x_p - $xtile) * 256);
+                            $pixelY = round(($y_p - $ytile) * 256);
+                            
+                            $red = imagecolorallocate($img, 220, 38, 38);
+                            $white = imagecolorallocate($img, 255, 255, 255);
+                            imagefilledellipse($img, $pixelX, $pixelY, 16, 16, $white);
+                            imagefilledellipse($img, $pixelX, $pixelY, 10, 10, $red);
+                            
+                            ob_start();
+                            imagepng($img);
+                            $pngData = ob_get_clean();
+                            imagedestroy($img);
+                            
+                            $mapUrl = 'data:image/png;base64,' . base64_encode($pngData);
+                        }
                     }
                 } catch (\Exception $e) {
                     \Log::warning("Could not fetch map image for HTML export: " . $e->getMessage());

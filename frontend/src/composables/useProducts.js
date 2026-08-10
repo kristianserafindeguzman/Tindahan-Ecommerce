@@ -8,7 +8,11 @@ export function useProducts() {
   const fetchProducts = async () => {
     loading.value = true
     try {
-      const { data } = await api.get('/products')
+      const lat = localStorage.getItem('consumer_lat')
+      const lng = localStorage.getItem('consumer_lng')
+      const params = (lat && lng) ? { lat, lng } : {}
+      
+      const { data } = await api.get('/products', { params })
       products.value = (data || []).map((product) => ({
         id: product.id,
         name: product.name,
@@ -19,7 +23,8 @@ export function useProducts() {
         storeId: product.storeId,
         inStock: product.inStock,
         availableQuantity: product.availableQuantity,
-        variants: product.variants
+        variants: product.variants,
+        distance_meters: product.distance_meters
       }))
     } catch (error) {
       console.error('Failed to load products', error)

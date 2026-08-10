@@ -68,17 +68,52 @@
                     <tr>
                         <td class="label">Operating Schedule:</td>
                         <td class="val">
-                            @if(is_array($store->operating_days))
-                                {{ implode(', ', $store->operating_days) }}
-                            @elseif(is_string($store->operating_days))
+                            <table style="width: 100%; border-collapse: collapse; margin-top: -2px;">
                                 @php
-                                    $decodedDays = json_decode($store->operating_days, true);
-                                    echo is_array($decodedDays) ? implode(', ', $decodedDays) : $store->operating_days;
+                                    $days = $store->operating_days;
+                                    if (is_string($days)) {
+                                        $days = json_decode($days, true);
+                                    }
+                                    if (is_array($days) && count($days) > 0) {
+                                        $allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                                        if (array_keys($days) === range(0, count($days) - 1)) {
+                                            // Legacy format
+                                            $globalOpen = $store->opening_time ? date('h:i A', strtotime($store->opening_time)) : 'N/A';
+                                            $globalClose = $store->closing_time ? date('h:i A', strtotime($store->closing_time)) : 'N/A';
+                                            foreach ($allDays as $dayName) {
+                                                $isOpen = false;
+                                                foreach ($days as $d) {
+                                                    if (is_string($d) && str_starts_with(strtolower($dayName), strtolower(substr($d, 0, 3)))) {
+                                                        $isOpen = true;
+                                                        break;
+                                                    }
+                                                }
+                                                if ($isOpen) {
+                                                    echo "<tr><td style='padding:2px 0; width:70px;'>$dayName</td><td style='padding:2px 0;'>$globalOpen - $globalClose</td></tr>";
+                                                } else {
+                                                    echo "<tr><td style='padding:2px 0; width:70px;'>$dayName</td><td style='padding:2px 0; color: #64748b; font-style: italic;'>Closed</td></tr>";
+                                                }
+                                            }
+                                        } else {
+                                            // New canonical object format
+                                            foreach ($allDays as $dayName) {
+                                                if (isset($days[$dayName])) {
+                                                    $schedule = $days[$dayName];
+                                                    if (!empty($schedule['is_open'])) {
+                                                        $open = !empty($schedule['opening_time']) ? date('h:i A', strtotime($schedule['opening_time'])) : 'N/A';
+                                                        $close = !empty($schedule['closing_time']) ? date('h:i A', strtotime($schedule['closing_time'])) : 'N/A';
+                                                        echo "<tr><td style='padding:2px 0; width:70px;'>$dayName</td><td style='padding:2px 0;'>$open - $close</td></tr>";
+                                                    } else {
+                                                        echo "<tr><td style='padding:2px 0; width:70px;'>$dayName</td><td style='padding:2px 0; color: #64748b; font-style: italic;'>Closed</td></tr>";
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        echo "<tr><td>N/A</td></tr>";
+                                    }
                                 @endphp
-                            @else
-                                {{ $store->operating_days ?? 'N/A' }}
-                            @endif
-                            | {{ $store->opening_time ? date('h:i A', strtotime($store->opening_time)) : 'N/A' }} - {{ $store->closing_time ? date('h:i A', strtotime($store->closing_time)) : 'N/A' }}
+                            </table>
                         </td>
                     </tr>
                     <tr>
@@ -86,7 +121,7 @@
                         <td class="val">{{ $store->address ?? 'N/A' }}</td>
                     </tr>
                     <tr>
-                        <td class="label">Coordinates:</td>
+                        <td class="label">Location Coordinates:</td>
                         <td class="val">{{ $store->latitude ?? 'N/A' }}, {{ $store->longitude ?? 'N/A' }}</td>
                     </tr>
                     <tr>
@@ -98,6 +133,7 @@
             <td class="map-box" style="width: 45%;">
                 @if($mapUrl)
                     <img src="{{ $mapUrl }}" alt="Store Location Map">
+                    <div style="font-size: 8px; color: #64748b; margin-top: 2px;">&copy; OpenStreetMap contributors</div>
                 @else
                     <div style="font-style: italic; color: #94a3b8; padding: 40px; border: 1px dashed #cbd5e1;">Map unavailable (No coordinates)</div>
                 @endif
@@ -158,52 +194,73 @@
         </thead>
         <tbody>
             @forelse($products as $product)
-                <tr>
-                    <td style="padding: 6px; text-align: center;">
-                        @php
-                            $pic = $product->product_picture;
-                            $imageSource = null;
-                            if ($pic) {
-                                $relativePath = parse_url($pic, PHP_URL_PATH);
-                                if (!str_starts_with($relativePath, '/storage') && !str_starts_with($relativePath, 'storage')) {
-                                    $relativePath = 'storage/' . ltrim($relativePath, '/');
-                                }
-                                
-                                $renderMode = $render_mode ?? 'pdf';
-                                $localPath = public_path(ltrim($relativePath, '/'));
-                                
-                                if (file_exists($localPath)) {
-                                    if ($renderMode === 'pdf') {
-                                        $imageSource = $localPath;
-                                    } else {
-                                        // Base64 encode for HTML to avoid PHP built-in server static file CORS issues
-                                        $ext = pathinfo($localPath, PATHINFO_EXTENSION);
-                                        $data = file_get_contents($localPath);
-                                        $imageSource = 'data:image/' . $ext . ';base64,' . base64_encode($data);
-                                    }
-                                }
+                @php
+                    $pic = $product->product_picture;
+                    $imageSource = null;
+                    if ($pic) {
+                        $relativePath = parse_url($pic, PHP_URL_PATH);
+                        if (str_starts_with($relativePath, 'seed-images/')) {
+                            $localPath = public_path($relativePath);
+                        } else {
+                            if (!str_starts_with($relativePath, '/storage') && !str_starts_with($relativePath, 'storage')) {
+                                $relativePath = 'storage/' . ltrim($relativePath, '/');
                             }
-                        @endphp
+                            $localPath = public_path(ltrim($relativePath, '/'));
+                        }
                         
-                        @if($imageSource)
-                            <img src="{{ $imageSource }}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px;" crossorigin="anonymous" />
-                        @else
-                            <div style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background-color: #f1f5f9; border-radius: 4px; border: 1px dashed #cbd5e1;">
-                                <span style="color: #94a3b8; font-size: 8px; line-height: 1; text-align: center;">No<br>Img</span>
-                            </div>
-                        @endif
-                    </td>
-                    <td style="font-weight: bold;">{{ $product->product_name ?? $product->name }}</td>
-                    <td>{{ $product->category->category_name ?? $product->category->name ?? 'N/A' }}</td>
-                    <td>PHP {{ number_format($product->price, 2) }}</td>
-                    <td>{{ $product->stock_quantity ?? $product->quantity ?? $product->stock ?? 0 }}</td>
-                    <td>
-                        @php $status = strtolower($product->status ?? 'active'); @endphp
-                        <span class="badge {{ $status === 'active' ? 'badge-active' : 'badge-archived' }}">
-                            {{ ucfirst($status) }}
-                        </span>
-                    </td>
-                </tr>
+                        $renderMode = $render_mode ?? 'pdf';
+                        if (file_exists($localPath)) {
+                            if ($renderMode === 'pdf') {
+                                $imageSource = $localPath;
+                            } else {
+                                $ext = pathinfo($localPath, PATHINFO_EXTENSION);
+                                $data = file_get_contents($localPath);
+                                $imageSource = 'data:image/' . $ext . ';base64,' . base64_encode($data);
+                            }
+                        }
+                    }
+                    $status = strtolower($product->status ?? 'active');
+                    $badgeClass = $status === 'active' ? 'badge-active' : 'badge-archived';
+                    $statusBadge = '<span class="badge ' . $badgeClass . '">' . ucfirst($status) . '</span>';
+                @endphp
+                
+                @if(is_array($product->variants) && count($product->variants) > 0)
+                    @foreach($product->variants as $variant)
+                        <tr>
+                            <td style="padding: 6px; text-align: center;">
+                                @if($imageSource)
+                                    <img src="{{ $imageSource }}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px;" crossorigin="anonymous" />
+                                @else
+                                    <div style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background-color: #f1f5f9; border-radius: 4px; border: 1px dashed #cbd5e1;">
+                                        <span style="color: #94a3b8; font-size: 8px; line-height: 1; text-align: center;">No<br>Img</span>
+                                    </div>
+                                @endif
+                            </td>
+                            <td style="font-weight: bold;">{{ $product->product_name ?? $product->name }} <br><span style="color: #475569; font-weight: normal; font-size: 9px;">Variant: {{ $variant['name'] ?? 'Variant' }}</span></td>
+                            <td>{{ $product->category->category_name ?? $product->category->name ?? 'N/A' }}</td>
+                            <td>PHP {{ number_format($variant['price'] ?? 0, 2) }}</td>
+                            <td>{{ $variant['quantity'] ?? 0 }}</td>
+                            <td>{!! $statusBadge !!}</td>
+                        </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td style="padding: 6px; text-align: center;">
+                            @if($imageSource)
+                                <img src="{{ $imageSource }}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px;" crossorigin="anonymous" />
+                            @else
+                                <div style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background-color: #f1f5f9; border-radius: 4px; border: 1px dashed #cbd5e1;">
+                                    <span style="color: #94a3b8; font-size: 8px; line-height: 1; text-align: center;">No<br>Img</span>
+                                </div>
+                            @endif
+                        </td>
+                        <td style="font-weight: bold;">{{ $product->product_name ?? $product->name }}</td>
+                        <td>{{ $product->category->category_name ?? $product->category->name ?? 'N/A' }}</td>
+                        <td>PHP {{ number_format($product->price, 2) }}</td>
+                        <td>{{ $product->stock_quantity ?? $product->quantity ?? $product->stock ?? 0 }}</td>
+                        <td>{!! $statusBadge !!}</td>
+                    </tr>
+                @endif
             @empty
                 <tr>
                     <td colspan="6" style="text-align: center; color: #94a3b8; padding: 20px;">No products found in this inventory.</td>
