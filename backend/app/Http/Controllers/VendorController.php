@@ -200,54 +200,8 @@ class VendorController extends Controller
                 })
             ];
             
-            // Generate Static Map URL (Base64 encoded to avoid remote fetching issues in both DomPDF and html2canvas)
-            $mapUrl = null;
-            if (is_numeric($store->latitude) && is_numeric($store->longitude)) {
-                try {
-                    $lat = (float) $store->latitude;
-                    $lon = (float) $store->longitude;
-                    $zoom = 15;
-                    $xtile = floor((($lon + 180) / 360) * pow(2, $zoom));
-                    $ytile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) / 2 * pow(2, $zoom));
-                    
-                    $tileUrl = "https://tile.openstreetmap.org/{$zoom}/{$xtile}/{$ytile}.png";
-                    
-                    $opts = [
-                        "http" => [
-                            "method" => "GET",
-                            "header" => "User-Agent: TindahanApp/1.0\r\n"
-                        ]
-                    ];
-                    $context = stream_context_create($opts);
-                    $tileData = file_get_contents($tileUrl, false, $context);
-                    
-                    if ($tileData) {
-                        $img = imagecreatefromstring($tileData);
-                        if ($img) {
-                            $n = pow(2, $zoom);
-                            $x_p = ((($lon + 180) / 360) * $n);
-                            $y_p = ((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) / 2 * $n);
-                            
-                            $pixelX = round(($x_p - $xtile) * 256);
-                            $pixelY = round(($y_p - $ytile) * 256);
-                            
-                            $red = imagecolorallocate($img, 220, 38, 38);
-                            $white = imagecolorallocate($img, 255, 255, 255);
-                            imagefilledellipse($img, $pixelX, $pixelY, 16, 16, $white);
-                            imagefilledellipse($img, $pixelX, $pixelY, 10, 10, $red);
-                            
-                            ob_start();
-                            imagepng($img);
-                            $pngData = ob_get_clean();
-                            imagedestroy($img);
-                            
-                            $mapUrl = 'data:image/png;base64,' . base64_encode($pngData);
-                        }
-                    }
-                } catch (\Exception $e) {
-                    \Log::warning("Could not fetch map image for PDF export: " . $e->getMessage());
-                }
-            }
+            // Generate Static Map URL using the centralized helper
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
             
             $pdf = Pdf::loadView('pdf.inventory-report', [
                 'store' => $store,
@@ -256,7 +210,8 @@ class VendorController extends Controller
                 'summary' => $summary,
                 'mapUrl' => $mapUrl,
                 'date' => now()->setTimezone('Asia/Manila')->format('F d, Y h:i A'),
-                'render_mode' => 'pdf'
+                'render_mode' => 'pdf',
+                'isPdf' => true
             ]);
             
             // Use A4 Portrait and Enable Remote Images
@@ -301,54 +256,8 @@ class VendorController extends Controller
                 })
             ];
             
-            // Generate Static Map URL (Base64 encoded to avoid remote fetching issues in both DomPDF and html2canvas)
-            $mapUrl = null;
-            if (is_numeric($store->latitude) && is_numeric($store->longitude)) {
-                try {
-                    $lat = (float) $store->latitude;
-                    $lon = (float) $store->longitude;
-                    $zoom = 15;
-                    $xtile = floor((($lon + 180) / 360) * pow(2, $zoom));
-                    $ytile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) / 2 * pow(2, $zoom));
-                    
-                    $tileUrl = "https://tile.openstreetmap.org/{$zoom}/{$xtile}/{$ytile}.png";
-                    
-                    $opts = [
-                        "http" => [
-                            "method" => "GET",
-                            "header" => "User-Agent: TindahanApp/1.0\r\n"
-                        ]
-                    ];
-                    $context = stream_context_create($opts);
-                    $tileData = file_get_contents($tileUrl, false, $context);
-                    
-                    if ($tileData) {
-                        $img = imagecreatefromstring($tileData);
-                        if ($img) {
-                            $n = pow(2, $zoom);
-                            $x_p = ((($lon + 180) / 360) * $n);
-                            $y_p = ((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) / 2 * $n);
-                            
-                            $pixelX = round(($x_p - $xtile) * 256);
-                            $pixelY = round(($y_p - $ytile) * 256);
-                            
-                            $red = imagecolorallocate($img, 220, 38, 38);
-                            $white = imagecolorallocate($img, 255, 255, 255);
-                            imagefilledellipse($img, $pixelX, $pixelY, 16, 16, $white);
-                            imagefilledellipse($img, $pixelX, $pixelY, 10, 10, $red);
-                            
-                            ob_start();
-                            imagepng($img);
-                            $pngData = ob_get_clean();
-                            imagedestroy($img);
-                            
-                            $mapUrl = 'data:image/png;base64,' . base64_encode($pngData);
-                        }
-                    }
-                } catch (\Exception $e) {
-                    \Log::warning("Could not fetch map image for HTML export: " . $e->getMessage());
-                }
-            }
+            // Generate Static Map URL using the centralized helper
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
             
             $date = now()->setTimezone('Asia/Manila')->format('F d, Y h:i A');
             // In the PDF export we passed 'owner' => $user. I'll do the same to match the blade template.
@@ -359,6 +268,107 @@ class VendorController extends Controller
         } catch (\Exception $e) {
             \Log::error('HTML Export Error: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to generate HTML: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Helper to generate a statically stitched map image centered precisely on the vendor coordinates.
+     */
+    private function generateMapImage($lat, $lon)
+    {
+        if (!is_numeric($lat) || !is_numeric($lon)) {
+            return null;
+        }
+
+        try {
+            $zoom = 16;
+            $width = 440;
+            $height = 260;
+
+            $n = pow(2, $zoom);
+            $x_p = (($lon + 180) / 360) * $n;
+            $y_p = (1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) / 2 * $n;
+
+            $pixelX = $x_p * 256;
+            $pixelY = $y_p * 256;
+
+            $minX = $pixelX - $width / 2;
+            $minY = $pixelY - $height / 2;
+            $maxX = $pixelX + $width / 2;
+            $maxY = $pixelY + $height / 2;
+
+            $startTileX = (int) floor($minX / 256);
+            $startTileY = (int) floor($minY / 256);
+            $endTileX = (int) floor($maxX / 256);
+            $endTileY = (int) floor($maxY / 256);
+
+            $canvas = imagecreatetruecolor($width, $height);
+            $bg = imagecolorallocate($canvas, 248, 250, 252);
+            imagefill($canvas, 0, 0, $bg);
+
+            $osmFailed = false;
+
+            for ($x = $startTileX; $x <= $endTileX; $x++) {
+                if ($osmFailed) break;
+                for ($y = $startTileY; $y <= $endTileY; $y++) {
+                    if ($osmFailed) break;
+                    $tileUrl = "https://tile.openstreetmap.org/{$zoom}/{$x}/{$y}.png";
+                    try {
+                        $response = \Illuminate\Support\Facades\Http::timeout(1.5)
+                            ->withHeaders(['User-Agent' => 'TindahanApp/1.0'])
+                            ->get($tileUrl);
+                        $tileData = $response->successful() ? $response->body() : false;
+                    } catch (\Exception $e) {
+                        $tileData = false;
+                        $osmFailed = true; // Abort further tiles if OSM is unreachable
+                    }
+                    if ($tileData) {
+                        $img = @imagecreatefromstring($tileData);
+                        if ($img) {
+                            $destX = (int) round(($x * 256) - $minX);
+                            $destY = (int) round(($y * 256) - $minY);
+                            imagecopy($canvas, $img, $destX, $destY, 0, 0, 256, 256);
+                            imagedestroy($img);
+                        }
+                    }
+                }
+            }
+
+            // Draw Pin at Center
+            $centerX = (int) round($width / 2);
+            $centerY = (int) round($height / 2);
+
+            $red = imagecolorallocate($canvas, 189, 36, 39); // Tindahan Red #bd2427
+            $dark = imagecolorallocate($canvas, 15, 23, 42); // #0f172a
+            $white = imagecolorallocate($canvas, 255, 255, 255);
+
+            // Shadow
+            imagefilledellipse($canvas, $centerX, $centerY + 2, 16, 6, imagecolorallocatealpha($canvas, 0, 0, 0, 80));
+
+            // Pin styling
+            $r = 12;
+            $pinY = $centerY - 16;
+
+            // Pin Triangle
+            $points = [
+                (int) round($centerX - $r * 0.8), (int) round($pinY + $r * 0.4),
+                (int) round($centerX + $r * 0.8), (int) round($pinY + $r * 0.4),
+                $centerX, $centerY
+            ];
+            imagefilledpolygon($canvas, $points, $red);
+            imagefilledellipse($canvas, $centerX, $pinY, $r * 2, $r * 2, $red);
+            imagefilledellipse($canvas, $centerX, $pinY, $r, $r, $white);
+
+            ob_start();
+            imagepng($canvas);
+            $pngData = ob_get_clean();
+            imagedestroy($canvas);
+
+            return 'data:image/png;base64,' . base64_encode($pngData);
+
+        } catch (\Exception $e) {
+            \Log::warning("Could not fetch map image for export: " . $e->getMessage());
+            return null;
         }
     }
 }
