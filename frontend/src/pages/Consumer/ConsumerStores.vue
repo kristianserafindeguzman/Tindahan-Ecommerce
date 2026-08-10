@@ -1,7 +1,7 @@
 <template>
   <q-page class="storefront-page">
 
-    <SiteHeader :address="address" />
+    <SiteHeader />
 
     <!-- MAIN CONTENT -->
     <div class="page-content">
@@ -104,9 +104,6 @@ import AppPagination from '@/components/consumer/AppPagination.vue'
 import { useStores } from '@/composables/useStores'
 
 const $q = useQuasar()
-
-// Placeholder until real geolocation/address selection is wired up.
-const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
 
 const { stores, fetchStores } = useStores()
 

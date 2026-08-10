@@ -1,7 +1,7 @@
 <template>
   <q-page class="profile-page">
 
-    <SiteHeader :address="address" />
+    <SiteHeader />
 
     <div class="profile-container">
       <div class="page-header-block">
@@ -522,8 +522,6 @@ import SiteFooter from '@/components/consumer/SiteFooter.vue'
 const $q = useQuasar()
 const router = useRouter()
 const { logout } = useAuth()
-
-const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
 
 // QAvatar's size is an inline style, so it needs $q.screen instead of a media query.
 const avatarSize = computed(() => ($q.screen.lt.sm ? '96px' : '120px'))

@@ -27,7 +27,7 @@
           />
         </q-tabs>
 
-        <div class="header-search-wrap" :class="{ 'header-search-compact': addressExpanded }">
+        <div class="header-search-wrap">
           <div class="header-search">
             <q-icon name="o_search" size="17px" class="header-search-icon" />
             <q-input
@@ -124,11 +124,51 @@
           </div>
         </div>
 
-        <div class="header-location" :title="address" @click="addressExpanded = !addressExpanded">
-          <span class="header-location-pill" :class="{ 'header-location-expanded': addressExpanded }">
+        <div ref="headerLocationRef" class="header-location" :title="address" @click="toggleAddressMenu">
+          <span class="header-location-pill" :class="{ 'header-location-expanded': addressMenuOpen }">
             <q-icon name="o_location_on" size="15px" />
             <span>{{ address }}</span>
           </span>
+
+          <div v-if="addressMenuOpen" class="address-menu-panel" @click.stop>
+            <div class="address-menu-title">
+              Address
+            </div>
+
+            <div class="address-menu-input-row">
+              <q-input
+                v-model="draftAddress"
+                dense
+                outlined
+                hide-bottom-space
+                placeholder="Enter your address"
+                class="address-menu-input"
+                @keyup.enter="mapExpanded = true"
+              />
+              <q-btn
+                v-if="!mapExpanded"
+                unelevated
+                icon="o_arrow_forward"
+                aria-label="Pick on map"
+                class="address-menu-next"
+                :disable="!draftAddress.trim()"
+                @click="mapExpanded = true"
+              />
+            </div>
+
+            <template v-if="mapExpanded">
+              <VendorLocationMap class="address-menu-map" @location-selected="onLocationSelected" />
+
+              <q-btn
+                unelevated
+                no-caps
+                label="Confirm Address"
+                class="address-menu-confirm"
+                :disable="!draftAddress.trim()"
+                @click="confirmAddress"
+              />
+            </template>
+          </div>
         </div>
 
         <div class="header-actions">
@@ -234,23 +274,53 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'
+import { useAddress } from '@/composables/useAddress'
 import { splitHighlightParts } from '@/utils/textHighlight'
-
-defineProps({
-  address: {
-    type: String,
-    required: true
-  }
-})
+import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 
 const router = useRouter()
 const route = useRoute()
+
+const { address, setAddress } = useAddress()
+const draftAddress = ref('')
+const mapExpanded = ref(false)
+const addressMenuOpen = ref(false)
+const headerLocationRef = ref(null)
+
+const toggleAddressMenu = () => {
+  addressMenuOpen.value = !addressMenuOpen.value
+  if (addressMenuOpen.value) {
+    draftAddress.value = address.value
+    mapExpanded.value = false
+    closeSuggestions()
+  }
+}
+
+// Same plain-div dropdown pattern as .search-suggestions, so clicking outside closes it.
+const closeAddressMenuOnOutsideClick = (event) => {
+  if (addressMenuOpen.value && !headerLocationRef.value?.contains(event.target)) {
+    addressMenuOpen.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('click', closeAddressMenuOnOutsideClick))
+onBeforeUnmount(() => document.removeEventListener('click', closeAddressMenuOnOutsideClick))
+
+const onLocationSelected = (location) => {
+  draftAddress.value = location.address
+}
+
+const confirmAddress = () => {
+  if (!draftAddress.value.trim()) return
+  setAddress(draftAddress.value.trim())
+  addressMenuOpen.value = false
+}
 
 const { products, fetchProducts } = useProducts()
 const { stores, fetchStores } = useStores()
@@ -356,6 +426,7 @@ const suggestionTerms = computed(() => {
 const openSuggestions = () => {
   suggestionsOpen.value = true
   activeSuggestionIndex.value = -1
+  addressMenuOpen.value = false
 }
 
 const closeSuggestions = () => {
@@ -438,9 +509,6 @@ const activeTab = computed(() => {
 const goToTab = (tab) => {
   if (tab.to) router.push(tab.to)
 }
-
-// Desktop-only interaction; see media queries below.
-const addressExpanded = ref(false)
 </script>
 
 <style scoped>
@@ -684,6 +752,149 @@ const addressExpanded = ref(false)
 .cart-menu-view-all:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+/* ADDRESS PICKER DROPDOWN — same teleported-panel recipe as .cart-menu-panel. */
+
+/* Same plain-div dropdown recipe/positioning as .search-suggestions, not a q-menu — sidesteps Quasar's menu
+   positioning engine entirely, and sized generously like the search dropdown rather than tied to the pill's width. */
+.address-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+
+  width: 460px;
+  padding: 16px;
+  box-sizing: border-box;
+
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
+
+  background: #ffffff;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+.address-menu-title {
+  margin-bottom: 10px;
+
+  font-size: 13.5px;
+  font-weight: 700;
+
+  color: #111111;
+}
+
+.address-menu-input-row {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.address-menu-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.address-menu-input :deep(.q-field__control) {
+  height: 46px;
+
+  border-radius: 10px;
+}
+
+/* CTA that reveals the map step — same brand-red button language as .address-menu-confirm. */
+.address-menu-next {
+  flex-shrink: 0;
+
+  width: 46px;
+  height: 46px;
+
+  border-radius: 12px;
+
+  background: #bd2427;
+  color: #ffffff;
+
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+
+.address-menu-next:hover {
+  background: #a91e21;
+
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+
+  transform: translateY(-1px);
+}
+
+.address-menu-next:active {
+  background: #8f1a1c;
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.address-menu-next:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+.address-menu-next:disabled {
+  opacity: 0.45;
+}
+
+.address-menu-map {
+  height: 260px;
+  margin-bottom: 12px;
+
+  border: 1px solid #e8e8e8;
+}
+
+.address-menu-confirm {
+  width: 100%;
+  height: 48px;
+
+  border-radius: 6px;
+
+  background: #bd2427;
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+
+.address-menu-confirm:hover {
+  background: #a91e21;
+
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+
+  transform: translateY(-1px);
+}
+
+.address-menu-confirm:active {
+  background: #8f1a1c;
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.address-menu-confirm:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+.address-menu-confirm:disabled {
+  opacity: 0.45;
 }
 
 .auth-btn {
@@ -1044,7 +1255,12 @@ const addressExpanded = ref(false)
 
 /* HEADER — LOCATION */
 
+/* position:relative anchors .address-menu-panel below it, same pattern as .header-search-wrap/.search-suggestions.
+   The search bar no longer shrinks when this pill expands (see .header-search-wrap above) — that shrink, not the
+   pill's own growth, was what pulled this whole block leftward and made the panel appear to "slide". */
 .header-location {
+  position: relative;
+
   display: flex;
   align-items: center;
 
@@ -1084,6 +1300,13 @@ const addressExpanded = ref(false)
   text-overflow: ellipsis;
 }
 
+/* Matches .address-menu-panel's own width, so the pill and the card below it line up edge to edge.
+   No animated transition on this — the reflow it causes happens instantly instead of visibly sliding. */
+.header-location-expanded {
+  width: 460px;
+  max-width: 460px;
+}
+
 .header-location-pill .q-icon {
   flex-shrink: 0;
 
@@ -1113,8 +1336,6 @@ const addressExpanded = ref(false)
 
     width: 100%;
     justify-content: center;
-
-    cursor: default;
   }
 
   .header-location-pill {
@@ -1123,6 +1344,14 @@ const addressExpanded = ref(false)
 
   .header-location:hover .header-location-pill {
     background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Fixed 460px overflows a phone screen — center it under the pill and cap it to the viewport instead. */
+  .address-menu-panel {
+    left: 50%;
+    transform: translateX(-50%);
+
+    width: calc(100vw - 32px);
   }
 
   .header-search-wrap {
@@ -1147,20 +1376,11 @@ const addressExpanded = ref(false)
   }
 }
 
-/* Click-to-expand address / focus-to-grow search only makes sense on the single-row desktop header. */
+/* Focus-to-grow search only makes sense on the single-row desktop header. */
 
 @media (min-width: 1025px) {
-  .header-search-compact {
-    min-width: 0;
-    max-width: 140px;
-  }
-
   .header-search-wrap:focus-within {
     max-width: 640px;
-  }
-
-  .header-location-expanded {
-    max-width: 480px;
   }
 
   .header-search-wrap:focus-within ~ .header-location .header-location-pill {

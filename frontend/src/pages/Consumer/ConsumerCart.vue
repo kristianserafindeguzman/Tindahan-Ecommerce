@@ -1,7 +1,7 @@
 <template>
   <q-page class="storefront-page">
 
-    <SiteHeader :address="address" />
+    <SiteHeader />
 
     <!-- MAIN CONTENT -->
     <div class="page-content">
@@ -109,9 +109,6 @@ import { useCart } from '@/composables/useCart'
 
 const $q = useQuasar()
 const router = useRouter()
-
-// Placeholder until real geolocation/address selection is wired up.
-const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
 
 const { items, loading, itemCount, subtotal, fetchCart, updateQuantity, removeFromCart } = useCart()
 
