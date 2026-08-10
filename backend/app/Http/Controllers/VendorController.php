@@ -371,4 +371,102 @@ class VendorController extends Controller
             return null;
         }
     }
+
+    public function exportOrderListReport(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $store = $user->store;
+            
+            $orders = \App\Models\Order::with('consumer', 'items.inventory', 'store')
+                ->where('store_id', $store->store_id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            $groupedOrders = [
+                'placed' => $orders->where('status', 'placed')->values(),
+                'preparing' => $orders->where('status', 'preparing')->values(),
+                'ready_for_pickup' => $orders->where('status', 'ready_for_pickup')->values(),
+                'picked_up' => $orders->where('status', 'picked_up')->values(),
+                'cancelled' => $orders->where('status', 'cancelled')->values(),
+            ];
+
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
+            
+            $pdf = Pdf::loadView('pdf.vendor-order-list-report', [
+                'store' => $store,
+                'owner' => $user,
+                'groupedOrders' => $groupedOrders,
+                'mapUrl' => $mapUrl,
+                'date' => now()->setTimezone('Asia/Manila')->format('F d, Y h:i A')
+            ]);
+            
+            $pdf->setPaper('a4', 'portrait')->setOption(['isRemoteEnabled' => true]);
+            
+            return $pdf->stream('Tindahan-Order-List-Report.pdf');
+        } catch (\Exception $e) {
+            \Log::error('PDF Export Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function exportCustomerOrderReport(Request $request, $id)
+    {
+        try {
+            $user = auth()->user();
+            $store = $user->store;
+            
+            $order = \App\Models\Order::with(['consumer', 'items.inventory', 'store'])
+                ->where('store_id', $store->store_id)
+                ->where('order_id', $id)
+                ->firstOrFail();
+
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
+            
+            $pdf = Pdf::loadView('pdf.vendor-customer-order-report', [
+                'store' => $store,
+                'owner' => $user,
+                'order' => $order,
+                'mapUrl' => $mapUrl,
+                'date' => now()->setTimezone('Asia/Manila')->format('F d, Y h:i A')
+            ]);
+            
+            $pdf->setPaper('a4', 'portrait')->setOption(['isRemoteEnabled' => true]);
+            
+            return $pdf->stream('Tindahan-Customer-Order-#' . $id . '.pdf');
+        } catch (\Exception $e) {
+            \Log::error('PDF Export Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function exportProductCategoryReport(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $store = $user->store;
+            
+            $categories = \App\Models\Category::withCount(['products' => function ($query) use ($store) {
+                $query->where('store_id', $store->store_id)
+                      ->where('status', '!=', 'archived');
+            }])->orderBy('category_name')->get();
+
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
+            
+            $pdf = Pdf::loadView('pdf.vendor-product-category-report', [
+                'store' => $store,
+                'owner' => $user,
+                'categories' => $categories,
+                'mapUrl' => $mapUrl,
+                'date' => now()->setTimezone('Asia/Manila')->format('F d, Y h:i A')
+            ]);
+            
+            $pdf->setPaper('a4', 'portrait')->setOption(['isRemoteEnabled' => true]);
+            
+            return $pdf->stream('Tindahan-Product-Categories-Report.pdf');
+        } catch (\Exception $e) {
+            \Log::error('PDF Export Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+        }
+    }
 }
