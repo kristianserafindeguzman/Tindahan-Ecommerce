@@ -15,9 +15,9 @@
         <div class="status-title">Application Not Approved</div>
 
         <p class="status-message">
-          We reviewed your merchant application for Tindahan. Unfortunately,
-          we cannot approve your request at this time due to specific
-          compliance requirements.
+          We reviewed your merchant application for Tindahan. Unfortunately, we
+          cannot approve your request at this time due to specific compliance
+          requirements.
         </p>
 
         <div v-if="rejectionReason" class="reason-box">
@@ -62,6 +62,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { api } from '@/boot/axios'
 import { useAuth } from '@/composables/useAuth'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
 
@@ -71,11 +72,23 @@ const { logout } = useAuth()
 const showContactSupport = ref(false)
 const rejectionReason = ref('')
 const rejectedBy = ref('')
+const loading = ref(true)
 
-onMounted(() => {
-  rejectionReason.value = route.query.reason || ''
-  rejectedBy.value = route.query.rejected_by || ''
-})
+const fetchReason = async () => {
+  try {
+    const { data } = await api.get('/user')
+    rejectionReason.value = data.rejection_reason || route.query.reason || ''
+    rejectedBy.value = data.rejected_by || route.query.rejected_by || ''
+  } catch (error) {
+    if (error.response?.status === 401) {
+      logout(true)
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchReason)
 </script>
 
 <style scoped>
