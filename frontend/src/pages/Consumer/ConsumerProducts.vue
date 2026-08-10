@@ -460,7 +460,7 @@ const clearFilters = () => {
   padding: 0 20px;
 
   border: 1px solid #e2e2e2;
-  border-radius: 12px;
+  border-radius: 6px;
 
   background: #ffffff;
   color: #333333;
