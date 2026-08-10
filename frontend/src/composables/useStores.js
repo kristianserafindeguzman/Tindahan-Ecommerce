@@ -8,14 +8,19 @@ export function useStores() {
   const fetchStores = async () => {
     loading.value = true
     try {
-      const { data } = await api.get('/stores')
+      const lat = localStorage.getItem('consumer_lat')
+      const lng = localStorage.getItem('consumer_lng')
+      const params = (lat && lng) ? { lat, lng } : {}
+      
+      const { data } = await api.get('/stores', { params })
       stores.value = (data || []).map((store) => ({
         id: store.id,
         name: store.name,
         address: store.address,
         image: store.image,
         isOpen: store.isOpen,
-        closesAt: store.closesAt
+        closesAt: store.closesAt,
+        distance_meters: store.distance_meters
       }))
     } catch (error) {
       console.error('Failed to load stores', error)

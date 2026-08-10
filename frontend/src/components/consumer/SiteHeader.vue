@@ -289,6 +289,7 @@ const route = useRoute()
 
 const { address, setAddress } = useAddress()
 const draftAddress = ref('')
+const draftLocation = ref(null)
 const mapExpanded = ref(false)
 const addressMenuOpen = ref(false)
 const headerLocationRef = ref(null)
@@ -297,6 +298,7 @@ const toggleAddressMenu = () => {
   addressMenuOpen.value = !addressMenuOpen.value
   if (addressMenuOpen.value) {
     draftAddress.value = address.value
+    draftLocation.value = null
     mapExpanded.value = false
     closeSuggestions()
   }
@@ -314,12 +316,21 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAddressMenuOnOu
 
 const onLocationSelected = (location) => {
   draftAddress.value = location.address
+  draftLocation.value = location
 }
 
 const confirmAddress = () => {
   if (!draftAddress.value.trim()) return
-  setAddress(draftAddress.value.trim())
+  if (draftLocation.value) {
+    setAddress(draftAddress.value.trim(), draftLocation.value.latitude, draftLocation.value.longitude)
+  } else {
+    setAddress(draftAddress.value.trim())
+  }
   addressMenuOpen.value = false
+  
+  // Refresh stores and products to apply new distance sorting
+  fetchStores()
+  fetchProducts()
 }
 
 const { products, fetchProducts } = useProducts()
@@ -358,6 +369,9 @@ const handleLogout = async () => {
   localStorage.removeItem('auth_token')
   localStorage.removeItem('auth_user')
   localStorage.removeItem('auth_role')
+
+  // Clear address & coordinates upon logout
+  setAddress('')
 
   router.push('/login')
 }
