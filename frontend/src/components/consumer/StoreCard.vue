@@ -24,9 +24,9 @@
       </div>
       <div v-if="store.isOpen" class="store-card-hours">Open until {{ store.closesAt }}</div>
       <div v-else class="store-card-hours store-card-hours-closed">Closed now</div>
-      <div v-if="store.address" class="store-card-distance">
+      <div v-if="store.address || store.distance_meters" class="store-card-distance">
         <q-icon name="o_location_on" size="13px" />
-        {{ store.address }}
+        {{ store.distance_meters != null ? formatDistance(store.distance_meters) : store.address }}
       </div>
     </q-card-section>
   </q-card>
@@ -52,6 +52,12 @@ const props = defineProps({
 
 const nameParts = computed(() => splitHighlightParts(props.store.name, props.highlightQuery))
 const imageFailed = ref(false)
+
+const formatDistance = (meters) => {
+  if (meters == null) return ''
+  if (meters < 1000) return `${Math.round(meters)} m away`
+  return `${(meters / 1000).toFixed(1)} km away`
+}
 </script>
 
 <style scoped>

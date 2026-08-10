@@ -32,9 +32,14 @@
           <template v-else>{{ part.text }}</template>
         </template>
       </div>
-      <div class="product-meta">
-        <q-icon name="o_storefront" size="13px" class="product-meta-icon" />
-        <span class="product-meta-text">{{ product.store }}</span>
+      <div class="product-meta-wrapper">
+        <div v-if="product.distance_meters != null" class="product-distance">
+          {{ formatDistance(product.distance_meters) }}
+        </div>
+        <div class="product-meta">
+          <q-icon name="o_storefront" size="13px" class="product-meta-icon" />
+          <span class="product-meta-text">{{ product.store }}</span>
+        </div>
       </div>
     </q-card-section>
   </q-card>
@@ -59,6 +64,12 @@ defineEmits(['add-to-cart', 'view-product'])
 
 const nameParts = computed(() => splitHighlightParts(props.product.name, props.highlightQuery))
 const imageFailed = ref(false)
+
+const formatDistance = (meters) => {
+  if (meters == null) return ''
+  if (meters < 1000) return `${Math.round(meters)} m away`
+  return `${(meters / 1000).toFixed(1)} km away`
+}
 
 const goToProduct = () => {
   router.push(`/consumer/product/${props.product.id}`)
@@ -236,15 +247,27 @@ const goToProduct = () => {
   border-radius: 2px;
 }
 
+.product-meta-wrapper {
+  padding-top: 10px;
+  border-top: 1px solid #f4f4f4;
+  
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.product-distance {
+  font-size: 12px;
+  font-weight: 500;
+  color: #bd2427;
+}
+
 .product-meta {
   display: flex;
   align-items: center;
 
   gap: 5px;
   min-width: 0;
-  padding-top: 10px;
-
-  border-top: 1px solid #f4f4f4;
 
   font-size: 12px;
   line-height: 1.3;

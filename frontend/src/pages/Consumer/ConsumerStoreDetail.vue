@@ -20,7 +20,7 @@
           <div class="store-banner-meta">
             <span v-if="store.address" class="store-banner-meta-item">
               <q-icon name="o_location_on" size="14px" />
-              {{ store.address }}
+              {{ store.address }} <span v-if="store.distance_meters != null" class="q-ml-xs">({{ formatDistance(store.distance_meters) }})</span>
             </span>
             <span v-if="store.address" class="store-banner-meta-sep">•</span>
             <span class="store-banner-meta-item store-banner-status" :class="{ 'store-banner-status-closed': !store.isOpen }">
@@ -184,6 +184,12 @@ const router = useRouter()
 const showProductModal = ref(false)
 const selectedProduct = ref(null)
 
+const formatDistance = (meters) => {
+  if (meters == null) return ''
+  if (meters < 1000) return `${Math.round(meters)} m away`
+  return `${(meters / 1000).toFixed(1)} km away`
+}
+
 const openProductModal = (product) => {
   selectedProduct.value = product
   showProductModal.value = true
@@ -207,6 +213,7 @@ const handleAddToCart = async (product) => {
     $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
   }
 }
+
 
 onMounted(() => {
   fetchCategories()

@@ -40,14 +40,31 @@ export function useCart() {
     await fetchCart()
   }
 
+  // Updates the local item immediately instead of waiting on a mutation + a full re-fetch round-trip —
+  // rolled back if the request fails, since the server is still the source of truth.
   const updateQuantity = async (cartId, quantity) => {
-    await api.patch(`/consumer/cart/${cartId}`, { quantity })
-    await fetchCart()
+    const item = items.value.find((i) => i.cartId === cartId)
+    const previousQuantity = item?.quantity
+    if (item) item.quantity = quantity
+
+    try {
+      await api.patch(`/consumer/cart/${cartId}`, { quantity })
+    } catch (error) {
+      if (item) item.quantity = previousQuantity
+      throw error
+    }
   }
 
   const removeFromCart = async (cartId) => {
-    await api.delete(`/consumer/cart/${cartId}`)
-    await fetchCart()
+    const index = items.value.findIndex((i) => i.cartId === cartId)
+    const removed = index !== -1 ? items.value.splice(index, 1)[0] : null
+
+    try {
+      await api.delete(`/consumer/cart/${cartId}`)
+    } catch (error) {
+      if (removed) items.value.splice(index, 0, removed)
+      throw error
+    }
   }
 
   return { items, loading, itemCount, subtotal, fetchCart, addToCart, updateQuantity, removeFromCart }

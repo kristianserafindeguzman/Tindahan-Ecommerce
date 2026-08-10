@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Store;
 use Carbon\Carbon;
+use App\Services\DistanceService;
+use Illuminate\Http\Request;
 
 class StoreController extends Controller
 {
@@ -12,13 +14,21 @@ class StoreController extends Controller
      *
      * GET /api/stores
      */
-    public function index()
+    public function index(Request $request, DistanceService $distanceService)
     {
+        $lat = $request->query('lat');
+        $lng = $request->query('lng');
+
         $stores = Store::whereHas('approvalStatus', function ($query) {
             $query->where('status', 'approved');
         })
             ->get()
-            ->map(function ($store) {
+            ->map(function ($store) use ($lat, $lng, $distanceService) {
+                $distance = null;
+                if ($lat !== null && $lng !== null) {
+                    $distance = $distanceService->calculateDistance($lat, $lng, $store->latitude, $store->longitude);
+                }
+
                 return [
                     'id' => $store->store_id,
                     'name' => $store->store_name,
@@ -26,8 +36,14 @@ class StoreController extends Controller
                     'image' => $store->store_picture_url,
                     'isOpen' => $this->isOpenNow($store),
                     'closesAt' => $store->closing_time ? Carbon::parse($store->closing_time)->format('g:i a') : null,
+                    'distance_meters' => $distance,
                 ];
             });
+
+        // If consumer coordinates exist, sort by nearest distance first
+        if ($lat !== null && $lng !== null) {
+            $stores = $stores->sortBy('distance_meters', SORT_REGULAR, false)->values();
+        }
 
         return response()->json($stores);
     }
