@@ -7,6 +7,7 @@
     <div class="page-content">
 
       <h1 class="page-title">My Cart</h1>
+      <p v-if="items.length" class="page-subtitle">Choose a store to checkout.</p>
 
       <div v-if="loading" class="cart-loading">Loading your cart…</div>
 
@@ -25,17 +26,32 @@
       <div v-else class="cart-layout">
 
         <div class="cart-main">
-          <div v-for="group in groupedByStore" :key="group.storeId" class="store-group">
+          <div
+            v-for="group in groupedByStore"
+            :key="group.storeId"
+            class="store-card"
+            :class="{ 'store-card-selected': selectedStoreId === group.storeId }"
+          >
 
-            <div class="store-group-header">
-              <q-icon name="o_storefront" size="15px" />
-              <span>{{ group.store }}</span>
+            <div class="store-card-header">
+              <div class="store-card-header-info">
+                <q-checkbox
+                  :model-value="selectedStoreId === group.storeId"
+                  :disable="!!selectedGroup && selectedStoreId !== group.storeId"
+                  color="primary"
+                  dense
+                  class="store-card-checkbox"
+                  @update:model-value="toggleStoreSelection(group.storeId)"
+                />
+                <q-icon name="o_storefront" size="15px" />
+                <span>{{ group.store }}</span>
+              </div>
             </div>
 
             <div v-for="item in group.items" class="cart-item" :key="item.cartId" :class="{ 'cart-item-oos': !item.inStock }">
               <div class="cart-item-image">
                 <img v-if="item.image" :src="item.image" :alt="item.name" />
-                <q-icon v-else name="o_inventory_2" size="26px" />
+                <q-icon v-else name="o_inventory_2" size="22px" />
               </div>
 
               <div class="cart-item-info">
@@ -71,23 +87,33 @@
               </button>
             </div>
 
-            <div class="store-group-subtotal">
-              Store subtotal: <strong>₱{{ group.subtotal.toFixed(2) }}</strong>
+            <div class="store-card-subtotal">
+              <span>Subtotal</span>
+              <strong>₱{{ group.subtotal.toFixed(2) }}</strong>
             </div>
           </div>
         </div>
 
         <aside class="cart-summary">
           <div class="summary-title">Order Summary</div>
-          <div class="summary-row">
-            <span>Items ({{ itemCount }})</span>
-            <span>₱{{ subtotal.toFixed(2) }}</span>
-          </div>
-          <q-separator class="summary-separator" />
-          <div class="summary-row summary-total">
-            <span>Total</span>
-            <span>₱{{ subtotal.toFixed(2) }}</span>
-          </div>
+
+          <p v-if="!selectedGroup" class="summary-empty-hint">Select a store from your cart to continue to checkout.</p>
+
+          <template v-else>
+            <div class="summary-row">
+              <span>{{ selectedGroup.store }} ({{ selectedItemCount }})</span>
+              <span>₱{{ selectedGroup.subtotal.toFixed(2) }}</span>
+            </div>
+            <q-separator class="summary-separator" />
+            <div class="summary-row summary-total">
+              <span>Total</span>
+              <span>₱{{ selectedGroup.subtotal.toFixed(2) }}</span>
+            </div>
+          </template>
+
+          <!-- Not wired up yet — no checkout flow exists yet, intentionally not clickable. -->
+          <q-btn unelevated no-caps label="Proceed to Checkout" class="checkout-btn" :disable="!selectedGroup" />
+          <p class="summary-pickup-note">You'll pay and pick up your order at the store.</p>
         </aside>
 
       </div>
@@ -110,9 +136,16 @@ import { useCart } from '@/composables/useCart'
 const $q = useQuasar()
 const router = useRouter()
 
-const { items, loading, itemCount, subtotal, fetchCart, updateQuantity, removeFromCart } = useCart()
+const { items, loading, fetchCart, updateQuantity, removeFromCart } = useCart()
 
 onMounted(fetchCart)
+
+// Only one store can be checked out from at a time — the checkout flow is per-store pickup, not a combined order.
+const selectedStoreId = ref(null)
+
+const toggleStoreSelection = (storeId) => {
+  selectedStoreId.value = selectedStoreId.value === storeId ? null : storeId
+}
 
 // Grouped client-side, same "fetch flat, derive in the frontend" convention used elsewhere.
 const groupedByStore = computed(() => {
@@ -129,6 +162,15 @@ const groupedByStore = computed(() => {
 
   return Array.from(groups.values())
 })
+
+// Drives the Order Summary — null whenever nothing is selected or the selected store's items are gone.
+const selectedGroup = computed(() =>
+  groupedByStore.value.find((group) => group.storeId === selectedStoreId.value) || null
+)
+
+const selectedItemCount = computed(() =>
+  selectedGroup.value ? selectedGroup.value.items.reduce((sum, item) => sum + item.quantity, 0) : 0
+)
 
 const changeQuantity = async (item, newQuantity) => {
   if (newQuantity < 1 || newQuantity > item.availableQuantity) return
@@ -174,13 +216,21 @@ const removeItem = async (item) => {
 }
 
 .page-title {
-  margin: 0 0 20px;
+  margin: 0 0 4px;
 
   font-size: 22px;
   font-weight: 700;
   line-height: 1.3;
 
   color: #111111;
+}
+
+.page-subtitle {
+  margin: 0 0 20px;
+
+  font-size: 13px;
+
+  color: #767676;
 }
 
 /* LOADING / EMPTY */
@@ -261,32 +311,57 @@ const removeItem = async (item) => {
 
 .cart-layout {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: 1fr 280px;
 
-  gap: 24px;
+  gap: 20px;
 
   align-items: start;
 }
 
-/* STORE GROUPS */
+/* STORE CARDS — each store is its own card, matching the app's canonical card recipe. */
 
-.store-group {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+.store-card {
+  margin-bottom: 14px;
+  padding: 14px 16px;
 
-  border-bottom: 1px solid #e8e8e8;
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
+
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+
+  transition: border-color 0.15s, background-color 0.15s;
 }
 
-.store-group:last-child {
-  border-bottom: none;
+.store-card:last-child {
+  margin-bottom: 0;
 }
 
-.store-group-header {
+.store-card-selected {
+  border-color: #f3c6c7;
+  background: #fdf6f6;
+}
+
+.store-card-checkbox {
+  margin: -6px 0;
+}
+
+.store-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+
+  border-bottom: 1px solid #f4f4f4;
+}
+
+.store-card-header-info {
   display: flex;
   align-items: center;
 
   gap: 6px;
-  margin-bottom: 12px;
 
   font-size: 13.5px;
   font-weight: 700;
@@ -294,17 +369,21 @@ const removeItem = async (item) => {
   color: #333333;
 }
 
-.store-group-header .q-icon {
+.store-card-header-info .q-icon {
   color: #bd2427;
 }
 
 .cart-item {
   display: grid;
-  grid-template-columns: 56px 1fr auto auto auto;
+  grid-template-columns: 46px 1fr auto auto auto;
   align-items: center;
 
-  gap: 14px;
-  padding: 10px 0;
+  gap: 6px;
+  padding: 8px 0;
+}
+
+.cart-item + .cart-item {
+  border-top: 1px solid #f8f8f8;
 }
 
 .cart-item-oos {
@@ -316,8 +395,8 @@ const removeItem = async (item) => {
   align-items: center;
   justify-content: center;
 
-  width: 56px;
-  height: 56px;
+  width: 46px;
+  height: 46px;
 
   border-radius: 8px;
   border: 1px solid #e8e8e8;
@@ -452,18 +531,26 @@ const removeItem = async (item) => {
   color: #bd2427;
 }
 
-.store-group-subtotal {
-  margin-top: 8px;
+.store-card-subtotal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
-  text-align: right;
+  margin-top: 6px;
+  padding-top: 10px;
+
+  border-top: 1px solid #f4f4f4;
 
   font-size: 12.5px;
 
   color: #666666;
 }
 
-.store-group-subtotal strong {
-  color: #222222;
+.store-card-subtotal strong {
+  font-size: 14px;
+  font-weight: 700;
+
+  color: #111111;
 }
 
 /* SUMMARY */
@@ -490,6 +577,15 @@ const removeItem = async (item) => {
   color: #111111;
 }
 
+.summary-empty-hint {
+  margin: 0;
+
+  font-size: 12.5px;
+  line-height: 1.5;
+
+  color: #8992a2;
+}
+
 .summary-row {
   display: flex;
   justify-content: space-between;
@@ -512,6 +608,60 @@ const removeItem = async (item) => {
   color: #111111;
 }
 
+.checkout-btn {
+  width: 100%;
+  height: 48px;
+  margin-top: 14px;
+
+  border-radius: 6px;
+
+  background: #bd2427;
+  color: #ffffff;
+
+  font-size: 13.5px;
+  font-weight: 600;
+
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+
+.checkout-btn:hover {
+  background: #a91e21;
+
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+
+  transform: translateY(-1px);
+}
+
+.checkout-btn:active {
+  background: #8f1a1c;
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.checkout-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+.checkout-btn:disabled {
+  background: #bd2427;
+  opacity: 0.45;
+}
+
+.summary-pickup-note {
+  margin: 10px 0 0;
+
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+
+  color: #8992a2;
+}
+
 /* RESPONSIVE */
 
 @media (max-width: 800px) {
@@ -527,6 +677,10 @@ const removeItem = async (item) => {
 @media (max-width: 600px) {
   .page-content {
     padding: 16px;
+  }
+
+  .store-card {
+    padding: 12px 14px;
   }
 
   .cart-item {
