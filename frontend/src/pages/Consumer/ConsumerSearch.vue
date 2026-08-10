@@ -22,7 +22,7 @@
             <q-chip
               v-for="term in recentSearches"
               :key="term"
-              clickable
+              clickablev
               dense
               class="recent-chip"
               @click="goToRecentSearch(term)"
