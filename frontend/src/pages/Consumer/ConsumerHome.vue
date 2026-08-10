@@ -1,7 +1,7 @@
 <template>
   <q-page class="storefront-page">
 
-    <SiteHeader :address="address" />
+    <SiteHeader />
 
     <!-- MAIN CONTENT -->
     <div class="home-content">
@@ -98,9 +98,6 @@ const openProductModal = (product) => {
 
 // This page renders for guests and logged-in consumers alike, so SiteHeader reads localStorage directly instead of route-guarding.
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
-
-// Placeholder until real geolocation/address selection is wired up.
-const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
 
 const { categories, fetchCategories } = useCategories()
 const { products, fetchProducts } = useProducts()

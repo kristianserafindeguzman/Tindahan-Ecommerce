@@ -1,7 +1,7 @@
 <template>
   <q-page class="storefront-page">
 
-    <SiteHeader :address="address" />
+    <SiteHeader />
 
     <!-- MAIN CONTENT -->
     <div class="page-content">
@@ -188,9 +188,6 @@ const openProductModal = (product) => {
   selectedProduct.value = product
   showProductModal.value = true
 }
-
-// Placeholder until real geolocation/address selection is wired up.
-const address = ref('123 Shaw Boulevard, Barangay Pleasant Hills, Mandaluyong City')
 
 const { categories, fetchCategories } = useCategories()
 const { products, fetchProducts } = useProducts()
