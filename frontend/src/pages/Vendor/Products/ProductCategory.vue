@@ -34,7 +34,7 @@
 
           <!-- Actions -->
           <div class="col-12 col-md-7 text-right flex justify-end q-gutter-md">
-            <q-btn outline icon="download" label="Export" color="red-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" />
+            <q-btn outline icon="download" label="Export" color="red-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" :loading="isExporting" @click="exportCategories" />
             <q-btn unelevated icon="add" label="Add Category" color="red-9" no-caps class="btn-premium text-white text-weight-bold q-px-md" @click="showAddModal = true" />
           </div>
         </q-card-section>
@@ -242,6 +242,7 @@ const showAddModal = ref(false)
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const submitting = ref(false)
+const isExporting = ref(false)
 
 const categoryToDelete = ref(null)
 
@@ -295,6 +296,26 @@ const submitCategory = async () => {
     $q.notify({ type: 'negative', message: 'Failed to add category', position: 'top-right' })
   } finally {
     submitting.value = false
+  }
+}
+
+const exportCategories = async () => {
+  try {
+    isExporting.value = true
+    const response = await api.get('/vendor/categories/export', { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    const dateStr = new Date().toISOString().split('T')[0]
+    link.setAttribute('download', `Tindahan-Product-Categories-Report-${dateStr}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (error) {
+    console.error('Export failed:', error)
+    $q.notify({ type: 'negative', message: 'Failed to generate category report', position: 'top-right' })
+  } finally {
+    isExporting.value = false
   }
 }
 

@@ -75,6 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/products/{id}', [InventoryController::class, 'update']);
         Route::delete('/products/{id}', [InventoryController::class, 'destroy']);
         Route::get('/products/categories', [InventoryController::class, 'categories']);
+        Route::get('/categories/export', [\App\Http\Controllers\VendorController::class, 'exportProductCategoryReport']);
         Route::get('/stats', [\App\Http\Controllers\VendorController::class, 'stats']);
         Route::get('/stats/chart', [\App\Http\Controllers\VendorController::class, 'chartStats']);
         Route::get('/inventory/export', [\App\Http\Controllers\VendorController::class, 'exportInventoryReport']);
@@ -93,7 +94,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/sales/manual', [\App\Http\Controllers\SalesController::class, 'storeManual']);
         
         Route::get('/orders', [\App\Http\Controllers\VendorOrderController::class, 'index']);
+        Route::get('/orders/export', [\App\Http\Controllers\VendorController::class, 'exportOrderListReport']);
         Route::get('/orders/{id}', [\App\Http\Controllers\VendorOrderController::class, 'show']);
+        Route::get('/orders/{id}/export', [\App\Http\Controllers\VendorController::class, 'exportCustomerOrderReport']);
         Route::patch('/orders/{id}/status', [\App\Http\Controllers\VendorOrderController::class, 'updateStatus']);
         Route::get('/customers', [\App\Http\Controllers\VendorOrderController::class, 'customers']);
         Route::get('/customers/{id}/orders', [\App\Http\Controllers\VendorOrderController::class, 'customerOrders']);
