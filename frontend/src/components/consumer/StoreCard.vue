@@ -24,9 +24,9 @@
       </div>
       <div v-if="store.isOpen" class="store-card-hours">Open until {{ store.closesAt }}</div>
       <div v-else class="store-card-hours store-card-hours-closed">Closed now</div>
-      <div v-if="store.address || store.distance_meters" class="store-card-distance">
+      <div v-if="storeCardDistanceText" class="store-card-distance">
         <q-icon name="o_location_on" size="13px" />
-        {{ store.distance_meters != null ? formatDistance(store.distance_meters) : store.address }}
+        <span class="store-card-distance-text">{{ storeCardDistanceText }}</span>
       </div>
     </q-card-section>
   </q-card>
@@ -55,9 +55,17 @@ const imageFailed = ref(false)
 
 const formatDistance = (meters) => {
   if (meters == null) return ''
-  if (meters < 1000) return `${Math.round(meters)} m away`
+  const rounded = Math.round(meters)
+  if (rounded < 1000) return `${rounded} m away`
   return `${(meters / 1000).toFixed(1)} km away`
 }
+
+const storeCardDistanceText = computed(() => {
+  const parts = []
+  if (props.store.distance_meters != null) parts.push(formatDistance(props.store.distance_meters))
+  if (props.store.address) parts.push(props.store.address)
+  return parts.join(' • ')
+})
 </script>
 
 <style scoped>
@@ -214,5 +222,18 @@ const formatDistance = (meters) => {
   line-height: 1.3;
 
   color: #8992a2;
+}
+
+.store-card-distance .q-icon {
+  flex-shrink: 0;
+}
+
+.store-card-distance-text {
+  min-width: 0;
+
+  overflow: hidden;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 </style>

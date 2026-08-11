@@ -428,9 +428,6 @@
           <div v-if="otpError" class="text-red otp-error q-mt-sm">{{ otpError }}</div>
 
           <div class="otp-meta">
-            <span v-if="!otpExpired" class="otp-expiry">Code expires in {{ otpExpiryDisplay }}</span>
-            <span v-else class="otp-expiry otp-expiry-expired">Code expired</span>
-
             <span class="otp-resend">
               <template v-if="canResendOtp">
                 Didn't receive the code?
@@ -716,12 +713,6 @@ const otpSecondsLeft = ref(OTP_EXPIRY_SECONDS)
 const resendSecondsLeft = ref(OTP_RESEND_COOLDOWN)
 let otpTimerHandle = null
 
-const otpExpiryDisplay = computed(() => {
-  const m = Math.floor(otpSecondsLeft.value / 60)
-  const s = otpSecondsLeft.value % 60
-  return `${m}:${String(s).padStart(2, '0')}`
-})
-const otpExpired = computed(() => otpSecondsLeft.value <= 0)
 const canResendOtp = computed(() => resendSecondsLeft.value <= 0)
 
 const startOtpTimers = () => {
@@ -731,7 +722,12 @@ const startOtpTimers = () => {
   otpTimerHandle = setInterval(() => {
     if (otpSecondsLeft.value > 0) otpSecondsLeft.value -= 1
     if (resendSecondsLeft.value > 0) resendSecondsLeft.value -= 1
-    if (otpSecondsLeft.value <= 0) clearInterval(otpTimerHandle)
+    if (otpSecondsLeft.value <= 0) {
+      clearInterval(otpTimerHandle)
+      // The countdown UI was removed, but the user still needs to know why
+      // their code stopped working instead of getting a generic "invalid code".
+      if (!otpVerifiedFlash.value) otpError.value = 'Code expired. Please resend a new code.'
+    }
   }, 1000)
 }
 
@@ -1857,18 +1853,9 @@ const goHomeAfterDelete = () => {
 
   gap: 6px;
   margin-top: 16px;
+  margin-bottom: 12px;
 
   font-size: 13px;
-}
-
-.otp-expiry {
-  font-weight: 600;
-
-  color: #767676;
-}
-
-.otp-expiry-expired {
-  color: #dc2626;
 }
 
 .otp-resend {

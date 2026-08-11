@@ -95,9 +95,9 @@
               <div class="store-row-status" :class="{ 'store-row-status-closed': !store.isOpen }">
                 {{ store.isOpen ? `Open until ${store.closesAt}` : 'Closed now' }}
               </div>
-              <div v-if="store.address" class="store-row-address">
+              <div v-if="storeAddressText" class="store-row-address">
                 <q-icon name="o_location_on" size="12px" />
-                {{ store.address }}
+                <span class="store-row-address-text">{{ storeAddressText }}</span>
               </div>
             </div>
             <div class="store-row-link">
@@ -145,6 +145,20 @@ watch(isOpen, (val) => emit('update:modelValue', val))
 const store = computed(() =>
   props.product ? stores.value.find((s) => s.id === props.product.storeId) || null : null
 )
+
+const formatDistance = (meters) => {
+  if (meters == null) return ''
+  const rounded = Math.round(meters)
+  if (rounded < 1000) return `${rounded} m away`
+  return `${(meters / 1000).toFixed(1)} km away`
+}
+
+const storeAddressText = computed(() => {
+  if (!store.value) return ''
+  const dist = store.value.distance_meters != null ? formatDistance(store.value.distance_meters) : ''
+  if (store.value.address && dist) return `${store.value.address} (${dist})`
+  return store.value.address || dist
+})
 
 const hasVariants = computed(() => Array.isArray(props.product?.variants) && props.product.variants.length > 0)
 
@@ -601,13 +615,23 @@ const handleAddToCart = async () => {
   align-items: center;
 
   gap: 4px;
+  min-width: 0;
   margin-top: 3px;
 
   font-size: 11.5px;
 
   color: #8992a2;
+}
+
+.store-row-address .q-icon {
+  flex-shrink: 0;
+}
+
+.store-row-address-text {
+  min-width: 0;
 
   overflow: hidden;
+
   white-space: nowrap;
   text-overflow: ellipsis;
 }

@@ -135,39 +135,26 @@
               Address
             </div>
 
-            <div class="address-menu-input-row">
-              <q-input
-                v-model="draftAddress"
-                dense
-                outlined
-                hide-bottom-space
-                placeholder="Enter your address"
-                class="address-menu-input"
-                @keyup.enter="mapExpanded = true"
-              />
-              <q-btn
-                v-if="!mapExpanded"
-                unelevated
-                icon="o_arrow_forward"
-                aria-label="Pick on map"
-                class="address-menu-next"
-                :disable="!draftAddress.trim()"
-                @click="mapExpanded = true"
-              />
-            </div>
+            <q-input
+              v-model="draftAddress"
+              dense
+              outlined
+              hide-bottom-space
+              placeholder="Enter your address"
+              class="address-menu-input"
+              @keyup.enter="confirmAddress"
+            />
 
-            <template v-if="mapExpanded">
-              <VendorLocationMap class="address-menu-map" @location-selected="onLocationSelected" />
+            <VendorLocationMap class="address-menu-map" @location-selected="onLocationSelected" />
 
-              <q-btn
-                unelevated
-                no-caps
-                label="Confirm Address"
-                class="address-menu-confirm"
-                :disable="!draftAddress.trim()"
-                @click="confirmAddress"
-              />
-            </template>
+            <q-btn
+              unelevated
+              no-caps
+              label="Confirm Address"
+              class="address-menu-confirm"
+              :disable="!draftAddress.trim()"
+              @click="confirmAddress"
+            />
           </div>
         </div>
 
@@ -290,7 +277,6 @@ const route = useRoute()
 const { address, setAddress } = useAddress()
 const draftAddress = ref('')
 const draftLocation = ref(null)
-const mapExpanded = ref(false)
 const addressMenuOpen = ref(false)
 const headerLocationRef = ref(null)
 
@@ -299,7 +285,6 @@ const toggleAddressMenu = () => {
   if (addressMenuOpen.value) {
     draftAddress.value = address.value
     draftLocation.value = null
-    mapExpanded.value = false
     closeSuggestions()
   }
 }
@@ -801,65 +786,15 @@ const goToTab = (tab) => {
   color: #111111;
 }
 
-.address-menu-input-row {
-  display: flex;
-  align-items: center;
-
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
 .address-menu-input {
-  flex: 1;
   min-width: 0;
+  margin-bottom: 10px;
 }
 
 .address-menu-input :deep(.q-field__control) {
   height: 46px;
 
   border-radius: 10px;
-}
-
-/* CTA that reveals the map step — same brand-red button language as .address-menu-confirm. */
-.address-menu-next {
-  flex-shrink: 0;
-
-  width: 46px;
-  height: 46px;
-
-  border-radius: 12px;
-
-  background: #bd2427;
-  color: #ffffff;
-
-  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
-
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
-}
-
-.address-menu-next:hover {
-  background: #a91e21;
-
-  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
-
-  transform: translateY(-1px);
-}
-
-.address-menu-next:active {
-  background: #8f1a1c;
-
-  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
-
-  transform: translateY(0);
-}
-
-.address-menu-next:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
-}
-
-.address-menu-next:disabled {
-  opacity: 0.45;
 }
 
 .address-menu-map {

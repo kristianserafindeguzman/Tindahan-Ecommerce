@@ -29,6 +29,7 @@ const mapContainer = ref(null)
 
 let map = null
 let marker = null
+let unmounted = false
 
 const loadingLocation = ref(false)
 
@@ -149,6 +150,12 @@ const selectLocation = async (
   longitude
 ) => {
 
+  // Bail out if the map was unmounted (e.g. address menu closed) while an
+  // async geolocation/reverse-geocode call was still in flight — calling
+  // Leaflet methods on a removed map, or emitting into a stale panel, would
+  // otherwise silently corrupt state or throw.
+  if (unmounted) return
+
   // Move map
   map.setView(
     [latitude, longitude],
@@ -175,6 +182,7 @@ const selectLocation = async (
       longitude
     )
 
+  if (unmounted) return
 
   // Send data to VendorRegistration
   emit(
@@ -300,6 +308,8 @@ const formatAddress = (data) => {
 // =========================
 
 onBeforeUnmount(() => {
+
+  unmounted = true
 
   if (map) {
     map.remove()
