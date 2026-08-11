@@ -16,9 +16,9 @@
         <div class="status-title">Application Under Review</div>
 
         <p class="status-message">
-          Our administrators are currently reviewing your store details
-          and business credentials to ensure everything meets our
-          community standards.
+          Our administrators are currently reviewing your store details and
+          business credentials to ensure everything meets our community
+          standards.
         </p>
 
         <div class="next-steps-box">
@@ -27,9 +27,9 @@
             Next Steps
           </div>
           <p class="next-steps-text">
-            The verification process typically takes 1-2 business days.
-            You will receive an email notification once your account has
-            been approved and your store is ready for setup.
+            The verification process typically takes 1-2 business days. You will
+            receive an email notification once your account has been approved
+            and your store is ready for setup.
           </p>
         </div>
       </q-card-section>
@@ -56,7 +56,9 @@
 
       <div class="support-link">
         Need help?
-        <a href="#" @click.prevent="showContactSupport = true">Contact Support</a>
+        <a href="#" @click.prevent="showContactSupport = true"
+          >Contact Support</a
+        >
       </div>
     </q-card>
 
@@ -81,6 +83,10 @@ const checkStatus = async () => {
   try {
     const { data } = await api.get('/user')
 
+    if (data.vendor_status) {
+      localStorage.setItem('vendor_status', data.vendor_status)
+    }
+
     if (data.vendor_status === 'approved') {
       router.push('/vendor/dashboard')
     } else if (data.vendor_status === 'rejected') {
@@ -92,7 +98,7 @@ const checkStatus = async () => {
     // still pending — stay on this page
   } catch (error) {
     if (error.response?.status === 401) {
-      logout()
+      logout(true) // Force logout without confirmation dialog
     }
   } finally {
     loading.value = false

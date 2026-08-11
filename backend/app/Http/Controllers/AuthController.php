@@ -414,32 +414,11 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // ----- Vendor Approval Gate (BEFORE issuing token) -----
+        // ----- Vendor Approval Gate (Handled by frontend router) -----
         if ($user->role === 'Vendor') {
             $store = $user->store()->with('approvalStatus')->first();
             $approval = $store?->approvalStatus;
             $vendorStatus = $approval?->status ?? 'pending';
-
-            if ($vendorStatus === 'rejected') {
-                $adminName = null;
-                if ($approval->admin_id) {
-                    $admin = User::find($approval->admin_id);
-                    $adminName = $admin?->full_name;
-                }
-                return response()->json([
-                    'message' => 'Your vendor application has been rejected.',
-                    'error_code' => 'ACCOUNT_REJECTED',
-                    'rejection_reason' => $approval->rejection_reason,
-                    'rejected_by' => $adminName,
-                ], 401);
-            }
-
-            if ($vendorStatus === 'pending') {
-                return response()->json([
-                    'message' => 'Your vendor application is still under review.',
-                    'error_code' => 'ACCOUNT_PENDING',
-                ], 401);
-            }
         }
 
         // Revoke any existing tokens for security
