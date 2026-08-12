@@ -9,11 +9,7 @@ use Illuminate\Http\Request;
 
 class StoreController extends Controller
 {
-    /**
-     * List approved stores, for consumer browsing.
-     *
-     * GET /api/stores
-     */
+    // GET /api/stores — list approved stores for consumer browsing.
     public function index(Request $request, DistanceService $distanceService)
     {
         $lat = $request->query('lat');
@@ -37,6 +33,8 @@ class StoreController extends Controller
                     'isOpen' => $this->isOpenNow($store),
                     'closesAt' => $store->closing_time ? Carbon::parse($store->closing_time)->format('g:i a') : null,
                     'distance_meters' => $distance,
+                    'latitude' => $store->latitude,
+                    'longitude' => $store->longitude,
                 ];
             });
 
@@ -48,12 +46,7 @@ class StoreController extends Controller
         return response()->json($stores);
     }
 
-    /**
-     * Whether a store is open right now, based on its operating hours/days.
-     *
-     * Supports both the new per-day schedule format (object with day keys)
-     * and the legacy flat array format (["Monday", "Tue", ...]).
-     */
+    // Whether a store is open right now — supports both the per-day schedule format and the legacy flat-array format.
     private function isOpenNow(Store $store): bool
     {
         $days = $store->operating_days;
