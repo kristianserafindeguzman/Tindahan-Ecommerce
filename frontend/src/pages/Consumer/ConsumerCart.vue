@@ -111,8 +111,14 @@
             </div>
           </template>
 
-          <!-- Not wired up yet — no checkout flow exists yet, intentionally not clickable. -->
-          <q-btn unelevated no-caps label="Proceed to Checkout" class="checkout-btn" :disable="!selectedGroup" />
+          <q-btn
+            unelevated
+            no-caps
+            label="Proceed to Checkout"
+            class="checkout-btn"
+            :disable="!selectedGroup"
+            @click="router.push({ path: '/consumer/checkout', query: { storeId: selectedGroup.storeId } })"
+          />
           <p class="summary-pickup-note">You'll pay and pick up your order at the store.</p>
         </aside>
 
@@ -328,7 +334,7 @@ const removeItem = async (item) => {
   border: 1px solid #e8e8e8;
 
   background: #ffffff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 
   transition: border-color 0.15s, background-color 0.15s;
 }
@@ -565,7 +571,7 @@ const removeItem = async (item) => {
   border: 1px solid #e8e8e8;
 
   background: #ffffff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .summary-title {
