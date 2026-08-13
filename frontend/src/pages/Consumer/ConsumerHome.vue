@@ -10,8 +10,7 @@
       <div class="hero-banner">
         <div class="hero-content">
           <h1 class="hero-title hero-title-lg">Explore sari-sari stores around you</h1>
-          <!-- Not wired up yet — no map feature/route exists yet, intentionally not clickable. -->
-          <q-btn unelevated no-caps label="Show Map" class="hero-cta">
+          <q-btn unelevated no-caps label="Show Map" class="hero-cta" @click="showMapDialog = true">
             <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
           </q-btn>
         </div>
@@ -64,6 +63,7 @@
     <SiteFooter />
 
     <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
+    <ConsumerMap v-model="showMapDialog" />
 
   </q-page>
 </template>
@@ -79,6 +79,7 @@ import CategoryCarousel from '@/components/consumer/CategoryCarousel.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import StoreCard from '@/components/consumer/StoreCard.vue'
 import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
+import ConsumerMap from '@/pages/Consumer/ConsumerMap.vue'
 import { useCategories } from '@/composables/useCategories'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
@@ -90,6 +91,7 @@ const { addToCart } = useCart()
 
 const showProductModal = ref(false)
 const selectedProduct = ref(null)
+const showMapDialog = ref(false)
 
 const openProductModal = (product) => {
   selectedProduct.value = product

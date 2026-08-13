@@ -20,7 +20,9 @@ export function useStores() {
         image: store.image,
         isOpen: store.isOpen,
         closesAt: store.closesAt,
-        distance_meters: store.distance_meters
+        distance_meters: store.distance_meters,
+        latitude: store.latitude != null ? Number(store.latitude) : null,
+        longitude: store.longitude != null ? Number(store.longitude) : null
       }))
     } catch (error) {
       console.error('Failed to load stores', error)
