@@ -94,6 +94,7 @@
           class="btn-glass export-btn q-ml-auto"
           color="red-7"
           @click="handleExport"
+          :loading="isExporting"
         />
       </div>
 
@@ -707,8 +708,35 @@ const formatActivity = timestamp => {
   return then.toLocaleDateString()
 }
 
-const handleExport = () => {
-  window.print()
+const isExporting = ref(false)
+
+const handleExport = async () => {
+  if (isExporting.value) return
+  isExporting.value = true
+  try {
+    const response = await api.get('/admin/vendors/export', {
+      params: {
+        tab: currentTab.value,
+        search: search.value,
+        status: statusFilter.value
+      },
+      responseType: 'blob'
+    })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    const dateStr = new Date().toISOString().split('T')[0]
+    link.setAttribute('download', `Tindahan_Admin_Vendors_Export_${dateStr}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    $q.notify({ type: 'positive', message: 'Report exported successfully.', color: 'green-7' })
+  } catch (err) {
+    console.error('Export failed:', err)
+    $q.notify({ type: 'negative', message: 'Failed to export report. Please try again.', color: 'red-7' })
+  } finally {
+    isExporting.value = false
+  }
 }
 
 onMounted(() => {

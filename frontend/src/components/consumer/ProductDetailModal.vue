@@ -93,7 +93,7 @@
             <div class="store-row-info">
               <div class="store-row-name">{{ store.name }}</div>
               <div class="store-row-status" :class="{ 'store-row-status-closed': !store.isOpen }">
-                {{ store.isOpen ? `Open until ${store.closesAt}` : 'Closed now' }}
+                {{ store.scheduleStatusText || (store.isOpen ? `Open until ${store.closesAt}` : 'Closed now') }}
               </div>
               <div v-if="storeAddressText" class="store-row-address">
                 <q-icon name="o_location_on" size="12px" />

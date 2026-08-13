@@ -118,6 +118,7 @@ class AuthController extends Controller
             'closing_time'  => 'required|date_format:H:i',
             'latitude'      => 'required|numeric|between:-90,90',
             'longitude'     => 'required|numeric|between:-180,180',
+            'address'       => 'nullable|string|max:500',
         ]);
 
         // 1. Create the vendor user
@@ -150,6 +151,7 @@ class AuthController extends Controller
             'closing_time'  => $validated['closing_time'],
             'latitude'      => $validated['latitude'],
             'longitude'     => $validated['longitude'],
+            'address'       => $validated['address'] ?? null,
         ]);
 
         // 4. Create a pending approval status (admin_id is NULL — no reviewer yet)

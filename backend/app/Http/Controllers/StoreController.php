@@ -25,13 +25,16 @@ class StoreController extends Controller
                     $distance = $distanceService->calculateDistance($lat, $lng, $store->latitude, $store->longitude);
                 }
 
+                $scheduleInfo = $this->getScheduleInfo($store);
+
                 return [
                     'id' => $store->store_id,
                     'name' => $store->store_name,
                     'address' => $store->address,
                     'image' => $store->store_picture_url,
-                    'isOpen' => $this->isOpenNow($store),
-                    'closesAt' => $store->closing_time ? Carbon::parse($store->closing_time)->format('g:i a') : null,
+                    'isOpen' => $scheduleInfo['isOpen'],
+                    'closesAt' => $scheduleInfo['closesAt'],
+                    'scheduleStatusText' => $scheduleInfo['statusText'],
                     'distance_meters' => $distance,
                     'latitude' => $store->latitude,
                     'longitude' => $store->longitude,
@@ -46,65 +49,140 @@ class StoreController extends Controller
         return response()->json($stores);
     }
 
-    // Whether a store is open right now — supports both the per-day schedule format and the legacy flat-array format.
-    private function isOpenNow(Store $store): bool
+    private function getScheduleInfo(Store $store): array
     {
         $days = $store->operating_days;
-        $todayFull = now()->format('l'); // e.g. "Monday"
+        $timezone = 'Asia/Manila';
+        $now = now()->setTimezone($timezone);
+        $todayFull = $now->format('l'); // e.g. "Monday"
+        $currentTime = $now->format('H:i');
 
-        // New per-day schedule format: { "Monday": { "is_open": true, "opening_time": "07:00", "closing_time": "21:00" }, ... }
-        if (is_array($days) && isset($days[$todayFull])) {
-            $todaySchedule = $days[$todayFull];
-            if (empty($todaySchedule['is_open'])) {
-                return false;
+        $isOpen = false;
+        $statusText = 'Closed now';
+        $closesAt = null;
+
+        // New per-day schedule format
+        if (is_array($days) && count(array_filter(array_keys($days), 'is_string')) > 0) {
+            $todaySchedule = $days[$todayFull] ?? null;
+
+            if ($todaySchedule && !empty($todaySchedule['is_open'])) {
+                $openTime = $todaySchedule['opening_time'] ?? null;
+                $closeTime = $todaySchedule['closing_time'] ?? null;
+
+                if ($openTime && $closeTime) {
+                    $opens = Carbon::parse($openTime, $timezone)->format('H:i');
+                    $closes = Carbon::parse($closeTime, $timezone)->format('H:i');
+
+                    if ($opens <= $closes) {
+                        if ($currentTime >= $opens && $currentTime <= $closes) {
+                            $isOpen = true;
+                            $closesAt = Carbon::parse($closeTime, $timezone)->format('g:i A');
+                            $statusText = 'Open until ' . $closesAt;
+                        } elseif ($currentTime < $opens) {
+                            $statusText = 'Closed till ' . Carbon::parse($openTime, $timezone)->format('g:i A');
+                        }
+                    } else {
+                        // Overnight logic
+                        if ($currentTime >= $opens || $currentTime <= $closes) {
+                            $isOpen = true;
+                            $closesAt = Carbon::parse($closeTime, $timezone)->format('g:i A');
+                            $statusText = 'Open until ' . $closesAt;
+                        } elseif ($currentTime > $closes && $currentTime < $opens) {
+                            $statusText = 'Closed till ' . Carbon::parse($openTime, $timezone)->format('g:i A');
+                        }
+                    }
+                } else {
+                    $isOpen = true;
+                    $statusText = 'Open today';
+                }
             }
 
-            $openTime = $todaySchedule['opening_time'] ?? null;
-            $closeTime = $todaySchedule['closing_time'] ?? null;
-            if (!$openTime || !$closeTime) {
-                return true; // Day is marked open but no specific times
-            }
+            // Find next opening time if currently closed and not already determined for later today
+            if (!$isOpen && $statusText === 'Closed now') {
+                for ($i = 1; $i <= 7; $i++) {
+                    $nextDate = $now->copy()->addDays($i);
+                    $nextDayName = $nextDate->format('l');
+                    $nextSchedule = $days[$nextDayName] ?? null;
 
-            $now = now()->format('H:i');
-            $opens = Carbon::parse($openTime)->format('H:i');
-            $closes = Carbon::parse($closeTime)->format('H:i');
-
-            if ($opens <= $closes) {
-                return $now >= $opens && $now <= $closes;
+                    if ($nextSchedule && !empty($nextSchedule['is_open'])) {
+                        $nextOpenTime = $nextSchedule['opening_time'] ?? null;
+                        if ($nextOpenTime) {
+                            $dayStr = ($i === 1) ? '' : $nextDayName . ' ';
+                            $statusText = 'Closed till ' . $dayStr . Carbon::parse($nextOpenTime, $timezone)->format('g:i A');
+                            break;
+                        }
+                    }
+                }
             }
-            // Overnight range
-            return $now >= $opens || $now <= $closes;
+            
+            return [
+                'isOpen' => $isOpen,
+                'statusText' => $statusText,
+                'closesAt' => $closesAt
+            ];
         }
 
-        // Legacy flat array format: ["Monday", "Mon", ...]
+        // Legacy flat array format fallback
         if (!$store->opening_time || !$store->closing_time) {
-            return false;
+            return ['isOpen' => false, 'statusText' => 'Closed now', 'closesAt' => null];
         }
+
+        $opens = Carbon::parse($store->opening_time, $timezone)->format('H:i');
+        $closes = Carbon::parse($store->closing_time, $timezone)->format('H:i');
+        $todayShort = strtolower(substr($now->format('D'), 0, 3));
+        $opensToday = false;
 
         if (!empty($days) && is_array($days)) {
-            // Check if array values are strings (legacy format)
             $firstValue = reset($days);
             if (is_string($firstValue)) {
-                $today = strtolower(substr(now()->format('D'), 0, 3));
                 $opensToday = collect($days)->contains(
-                    fn ($day) => strtolower(substr($day, 0, 3)) === $today
+                    fn ($day) => strtolower(substr($day, 0, 3)) === $todayShort
                 );
+            }
+        }
 
-                if (!$opensToday) {
-                    return false;
+        if ($opensToday) {
+            if ($opens <= $closes) {
+                if ($currentTime >= $opens && $currentTime <= $closes) {
+                    $isOpen = true;
+                    $closesAt = Carbon::parse($closes, $timezone)->format('g:i A');
+                    $statusText = 'Open until ' . $closesAt;
+                } elseif ($currentTime < $opens) {
+                    $statusText = 'Closed till ' . Carbon::parse($opens, $timezone)->format('g:i A');
+                }
+            } else {
+                if ($currentTime >= $opens || $currentTime <= $closes) {
+                    $isOpen = true;
+                    $closesAt = Carbon::parse($closes, $timezone)->format('g:i A');
+                    $statusText = 'Open until ' . $closesAt;
+                } elseif ($currentTime > $closes && $currentTime < $opens) {
+                    $statusText = 'Closed till ' . Carbon::parse($opens, $timezone)->format('g:i A');
                 }
             }
         }
 
-        $now = now()->format('H:i:s');
-        $opens = Carbon::parse($store->opening_time)->format('H:i:s');
-        $closes = Carbon::parse($store->closing_time)->format('H:i:s');
+        if (!$isOpen && $statusText === 'Closed now') {
+            if (!empty($days) && is_array($days) && is_string(reset($days))) {
+                for ($i = 1; $i <= 7; $i++) {
+                    $nextDate = $now->copy()->addDays($i);
+                    $nextDayShort = strtolower(substr($nextDate->format('D'), 0, 3));
+                    $opensThatDay = collect($days)->contains(
+                        fn ($day) => strtolower(substr($day, 0, 3)) === $nextDayShort
+                    );
 
-        if ($opens <= $closes) {
-            return $now >= $opens && $now <= $closes;
+                    if ($opensThatDay) {
+                        $dayStr = ($i === 1) ? '' : $nextDate->format('l') . ' ';
+                        $statusText = 'Closed till ' . $dayStr . Carbon::parse($store->opening_time, $timezone)->format('g:i A');
+                        break;
+                    }
+                }
+            }
         }
 
-        // Overnight range
-        return $now >= $opens || $now <= $closes;
+        return [
+            'isOpen' => $isOpen,
+            'statusText' => $statusText,
+            'closesAt' => $closesAt
+        ];
     }
 }
