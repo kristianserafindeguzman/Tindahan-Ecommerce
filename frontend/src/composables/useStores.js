@@ -20,6 +20,7 @@ export function useStores() {
         image: store.image,
         isOpen: store.isOpen,
         closesAt: store.closesAt,
+        scheduleStatusText: store.scheduleStatusText,
         distance_meters: store.distance_meters,
         latitude: store.latitude != null ? Number(store.latitude) : null,
         longitude: store.longitude != null ? Number(store.longitude) : null

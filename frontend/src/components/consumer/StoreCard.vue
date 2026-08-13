@@ -22,8 +22,9 @@
           <template v-else>{{ part.text }}</template>
         </template>
       </div>
-      <div v-if="store.isOpen" class="store-card-hours">Open until {{ store.closesAt }}</div>
-      <div v-else class="store-card-hours store-card-hours-closed">Closed now</div>
+      <div class="store-card-hours" :class="{ 'store-card-hours-closed': !store.isOpen }">
+        {{ store.scheduleStatusText || (store.isOpen ? `Open until ${store.closesAt}` : 'Closed now') }}
+      </div>
       <div v-if="storeCardDistanceText" class="store-card-distance">
         <q-icon name="o_location_on" size="13px" />
         <span class="store-card-distance-text">{{ storeCardDistanceText }}</span>
