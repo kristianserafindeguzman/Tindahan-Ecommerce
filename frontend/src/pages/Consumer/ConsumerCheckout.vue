@@ -193,8 +193,14 @@
             <span>₱{{ subtotal.toFixed(2) }}</span>
           </div>
 
-          <!-- Not wired up yet — no order-placement backend exists yet, intentionally not clickable. -->
-          <q-btn unelevated no-caps label="Place Order" class="place-order-btn" />
+          <q-btn
+            unelevated
+            no-caps
+            label="Place Order"
+            class="place-order-btn"
+            :loading="placingOrder"
+            @click="placeOrder"
+          />
           <p class="summary-terms-note">
             By placing your order, you agree to our
             <a href="#" class="summary-terms-link" @click.prevent="showTerms = true">Terms of Service</a>
@@ -222,17 +228,39 @@ import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
+import { useQuasar } from 'quasar'
 import { useCart } from '@/composables/useCart'
 import { useStores } from '@/composables/useStores'
 import { api } from '@/boot/axios'
 
 const route = useRoute()
 const router = useRouter()
+const $q = useQuasar()
 
-const { items, loading, fetchCart } = useCart()
+const { items, loading, fetchCart, checkout } = useCart()
 const { stores, fetchStores } = useStores()
 
 const user = ref({})
+const placingOrder = ref(false)
+
+const placeOrder = async () => {
+  placingOrder.value = true
+  try {
+    const data = await checkout(storeId.value)
+    $q.notify({
+      type: 'positive',
+      message: 'Order placed successfully!'
+    })
+    router.push('/consumer/orders')
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: error.response?.data?.message || 'Failed to place order.'
+    })
+  } finally {
+    placingOrder.value = false
+  }
+}
 
 onMounted(async () => {
   fetchCart()

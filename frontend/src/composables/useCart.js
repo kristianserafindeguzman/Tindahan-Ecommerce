@@ -67,5 +67,18 @@ export function useCart() {
     }
   }
 
-  return { items, loading, itemCount, subtotal, fetchCart, addToCart, updateQuantity, removeFromCart }
+  const checkout = async (storeId) => {
+    const lat = localStorage.getItem('consumer_lat')
+    const lng = localStorage.getItem('consumer_lng')
+    
+    const payload = { store_id: storeId }
+    if (lat && !isNaN(lat)) payload.consumer_latitude = parseFloat(lat)
+    if (lng && !isNaN(lng)) payload.consumer_longitude = parseFloat(lng)
+    
+    const { data } = await api.post('/consumer/checkout', payload)
+    await fetchCart() // Refresh cart to remove checked-out items
+    return data
+  }
+
+  return { items, loading, itemCount, subtotal, fetchCart, addToCart, updateQuantity, removeFromCart, checkout }
 }

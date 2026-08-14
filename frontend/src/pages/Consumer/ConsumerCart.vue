@@ -60,24 +60,29 @@
                 <div class="cart-item-price">₱{{ item.price.toFixed(2) }}</div>
               </div>
 
-              <div class="quantity-stepper">
-                <button
-                  type="button"
-                  class="stepper-btn"
-                  :disabled="item.quantity <= 1"
-                  @click="changeQuantity(item, item.quantity - 1)"
-                >
-                  <q-icon name="o_remove" size="14px" />
-                </button>
-                <span class="stepper-value">{{ item.quantity }}</span>
-                <button
-                  type="button"
-                  class="stepper-btn"
-                  :disabled="item.quantity >= item.availableQuantity"
-                  @click="changeQuantity(item, item.quantity + 1)"
-                >
-                  <q-icon name="o_add" size="14px" />
-                </button>
+              <div class="stepper-wrapper" style="display: flex; flex-direction: column; align-items: center;">
+                <div class="quantity-stepper">
+                  <button
+                    type="button"
+                    class="stepper-btn"
+                    :disabled="item.quantity <= 1"
+                    @click="changeQuantity(item, item.quantity - 1)"
+                  >
+                    <q-icon name="o_remove" size="14px" />
+                  </button>
+                  <span class="stepper-value">{{ item.quantity }}</span>
+                  <button
+                    type="button"
+                    class="stepper-btn"
+                    :disabled="item.quantity >= item.availableQuantity"
+                    @click="changeQuantity(item, item.quantity + 1)"
+                  >
+                    <q-icon name="o_add" size="14px" />
+                  </button>
+                </div>
+                <div v-if="item.quantity >= item.availableQuantity" class="text-caption text-red-7 q-mt-xs text-center" style="font-size: 10px; line-height: 1.1; max-width: 90px;">
+                  Max ({{ item.availableQuantity }} limit)
+                </div>
               </div>
 
               <div class="cart-item-line-total">₱{{ (item.price * item.quantity).toFixed(2) }}</div>

@@ -164,7 +164,27 @@
           <template v-if="isLoggedIn">
             <q-btn flat dense :ripple="false" class="icon-btn">
               <q-icon name="o_notifications" size="20px" />
-              <span v-if="hasNotifications" class="icon-badge-dot" />
+              <span v-if="unreadNotificationCount" class="icon-badge-count">{{ unreadNotificationCount }}</span>
+
+              <q-menu anchor="bottom right" self="top right" content-class="cart-menu-panel" @show="fetchNotifications">
+                <div class="cart-menu-inner" style="width: 320px;">
+                  <div class="cart-menu-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    Notifications
+                    <q-btn v-if="unreadNotificationCount" flat dense no-caps label="Mark all read" color="primary" size="sm" @click="markAllAsRead" />
+                  </div>
+
+                  <div v-if="!notifications.length" class="cart-menu-empty">No notifications yet.</div>
+
+                  <template v-else>
+                    <div v-for="notif in notifications.slice(0, 10)" :key="notif.notification_id" class="cart-menu-item" style="cursor:pointer;" @click="handleNotificationClick(notif)">
+                      <div class="cart-menu-item-info" :style="notif.is_read ? 'opacity: 0.7;' : 'font-weight: bold;'">
+                        <div class="cart-menu-item-name">{{ notif.title }}</div>
+                        <div class="cart-menu-item-meta" style="white-space: normal; line-height: 1.3;">{{ notif.message }}</div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </q-menu>
             </q-btn>
 
             <q-btn flat dense :ripple="false" class="icon-btn">
@@ -325,11 +345,53 @@ const { items: cartItems, itemCount: cartItemCount, fetchCart } = useCart()
 // Renders for both guests and logged-in consumers, so it reads localStorage directly rather than relying on a route guard.
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
+const notifications = ref([])
+const unreadNotificationCount = computed(() => notifications.value.filter(n => !n.is_read).length)
+
+const fetchNotifications = async () => {
+  if (!isLoggedIn.value) return
+  try {
+    const res = await api.get('/consumer/notifications')
+    notifications.value = res.data
+  } catch (err) {
+    console.error('Failed to fetch notifications', err)
+  }
+}
+
+const markAsRead = async (id) => {
+  const notif = notifications.value.find(n => n.notification_id === id)
+  if (notif && !notif.is_read) {
+    notif.is_read = true
+    try {
+      await api.patch(`/consumer/notifications/${id}/read`)
+    } catch (err) {}
+  }
+}
+
+const handleNotificationClick = async (notif) => {
+  if (!notif.is_read) {
+    await markAsRead(notif.notification_id)
+  }
+  if (notif.order_id) {
+    localStorage.setItem('consumer_selected_order_id', notif.order_id)
+    router.push('/consumer/orders/details')
+  }
+}
+
+const markAllAsRead = async () => {
+  notifications.value.forEach(n => n.is_read = true)
+  try {
+    await api.post('/consumer/notifications/read-all')
+  } catch (err) {}
+}
+
 onMounted(() => {
   fetchProducts()
   fetchStores()
-  // Cart routes are auth-gated — an unconditional fetch would 401 for guests.
-  if (isLoggedIn.value) fetchCart()
+  if (isLoggedIn.value) {
+    fetchCart()
+    fetchNotifications()
+  }
 })
 
 const userAvatar = computed(() => {
@@ -340,9 +402,6 @@ const userAvatar = computed(() => {
     return null
   }
 })
-
-// TODO: back with a real notifications endpoint once it exists
-const hasNotifications = ref(true)
 
 const handleLogout = async () => {
   try {
