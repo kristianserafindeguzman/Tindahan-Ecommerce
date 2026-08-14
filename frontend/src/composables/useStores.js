@@ -15,6 +15,7 @@ export function useStores() {
       const { data } = await api.get('/stores', { params })
       stores.value = (data || []).map((store) => ({
         id: store.id,
+        slug: store.slug,
         name: store.name,
         address: store.address,
         image: store.image,

@@ -125,6 +125,30 @@ class VendorOrderController extends Controller
 
             DB::commit();
 
+            // Create notification for consumer AFTER successful commit
+            $statusTitles = [
+                'preparing' => 'Order Preparing',
+                'ready_for_pickup' => 'Order Ready',
+                'picked_up' => 'Order Picked Up',
+                'cancelled' => 'Order Cancelled'
+            ];
+            
+            $statusMessages = [
+                'preparing' => "Store '{$store->store_name}' is now preparing your order #{$order->order_id}.",
+                'ready_for_pickup' => "Your order #{$order->order_id} is ready for pickup at '{$store->store_name}'.",
+                'picked_up' => "Your order #{$order->order_id} has been picked up. Thank you!",
+                'cancelled' => "Your order #{$order->order_id} at '{$store->store_name}' was cancelled."
+            ];
+
+            if (isset($statusTitles[$newStatus])) {
+                \App\Models\Notification::create([
+                    'user_id' => $order->consumer_id,
+                    'order_id' => $order->order_id,
+                    'title' => $statusTitles[$newStatus],
+                    'message' => $statusMessages[$newStatus],
+                ]);
+            }
+
             return response()->json([
                 'message' => 'Order status updated successfully',
                 'order' => $order

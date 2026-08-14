@@ -172,6 +172,17 @@
             </q-td>
           </template>
           
+          <template #body-cell-quantity="props">
+            <q-td :props="props">
+              <div class="text-weight-bold" :class="props.row.available_quantity > 0 ? 'text-dark' : 'text-red-7'">
+                Available: {{ props.row.available_quantity }}
+              </div>
+              <div class="text-caption text-grey-6">
+                Total Stock: {{ props.row.stock_quantity }}
+              </div>
+            </q-td>
+          </template>
+          
           <template #body-cell-status="props">
             <q-td :props="props">
               <q-chip size="sm" :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bold shadow-1 status-chip">

@@ -150,7 +150,7 @@ const buildStorePopup = (store) => {
       <div class="store-popup-body">
         <div class="store-popup-name">${name}</div>
         ${store.distance_meters != null ? `<div class="store-popup-distance">${formatDistance(store.distance_meters)}</div>` : ''}
-        <a href="#/consumer/stores/${Number(store.id)}" class="store-popup-link">View Store →</a>
+        <a href="#/consumer/stores/${store.slug || store.id}" class="store-popup-link">View Store →</a>
       </div>
     </div>
   `
@@ -175,7 +175,7 @@ const focusStore = (store) => {
   const marker = markersById[store.id]
   if (!marker) {
     closeDialog()
-    router.push(`/consumer/stores/${store.id}`)
+    router.push(`/consumer/stores/${store.slug || store.id}`)
     return
   }
   map.setView(marker.getLatLng(), 16)

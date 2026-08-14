@@ -164,6 +164,13 @@
             </div>
         </div>
 
+        @if($order->status === 'cancelled')
+        <div class="section-title" style="color: #dc2626; border-bottom-color: #e2e8f0;">Cancellation Reason</div>
+        <div style="margin-bottom: 25px; color: #0f172a; font-weight: 500;">
+            {{ $order->cancellation_reason ? $order->cancellation_reason : 'No cancellation reason provided.' }}
+        </div>
+        @endif
+
         <div class="section-title">Order Items</div>
         <table class="data-table">
             <thead>

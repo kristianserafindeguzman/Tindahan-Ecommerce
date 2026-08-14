@@ -1,5 +1,5 @@
 <template>
-  <q-card flat class="store-card" @click="router.push(`/consumer/stores/${store.id}`)">
+  <q-card flat class="store-card" @click="router.push(`/consumer/stores/${store.slug || store.id}`)">
     <div class="store-card-image">
       <img
         v-if="store.image && !imageFailed"

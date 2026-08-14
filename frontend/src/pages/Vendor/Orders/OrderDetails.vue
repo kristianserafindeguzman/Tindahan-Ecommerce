@@ -95,12 +95,15 @@
             </div>
             
             <div class="col-12 col-md-6">
-              <q-card class="premium-glass-card h-full overflow-hidden flex flex-center bg-grey-2" style="min-height: 300px;">
-                <div class="text-center text-grey-6 q-pa-md">
-                  <q-icon name="map" size="48px" class="q-mb-md opacity-50" />
-                  <div class="text-subtitle1 text-weight-bold">Tracking Map Placeholder</div>
-                  <div class="text-caption">Map integration will be rendered here.</div>
-                </div>
+              <q-card class="premium-glass-card h-full overflow-hidden bg-grey-2" style="min-height: 300px; padding: 0;">
+                <OrderTrackingMap 
+                  :storeLat="order.store?.latitude"
+                  :storeLng="order.store?.longitude"
+                  :consumerLat="order.consumer_latitude"
+                  :consumerLng="order.consumer_longitude"
+                  :storeName="order.store?.store_name"
+                  :consumerName="order.consumer?.full_name || 'Customer'"
+                />
               </q-card>
             </div>
           </div>
@@ -156,6 +159,17 @@
         <!-- ================= RIGHT COLUMN ================= -->
         <div class="col-12 col-md-4">
           
+          <!-- Cancellation Reason -->
+          <q-card class="premium-glass-card q-mb-lg" v-if="order.status === 'cancelled'">
+            <q-card-section class="q-pa-lg bg-red-50" style="border-radius: 16px;">
+              <div class="text-h6 text-weight-bold text-red-8 q-mb-sm row items-center">
+                <q-icon name="warning" class="q-mr-sm" size="20px" />
+                Cancellation Reason
+              </div>
+              <div class="text-dark">{{ order.cancellation_reason || 'No cancellation reason provided.' }}</div>
+            </q-card-section>
+          </q-card>
+
           <!-- Customer Info -->
           <q-card class="premium-glass-card q-mb-lg">
             <q-card-section class="q-pa-lg">
@@ -209,7 +223,16 @@
                 </div>
               </div>
 
-              <q-btn outline icon="directions" label="Get Directions" color="dark" class="full-width btn-3d-outline" no-caps />
+              <q-btn 
+                outline 
+                icon="directions" 
+                label="Get Directions" 
+                color="dark" 
+                class="full-width btn-3d-outline" 
+                no-caps 
+                :disable="!order.consumer_latitude || !order.store?.latitude"
+                @click="openDirections"
+              />
             </q-card-section>
           </q-card>
 
@@ -261,6 +284,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
+import OrderTrackingMap from '@/components/shared/OrderTrackingMap.vue'
 
 const props = defineProps({
   orderId: {
@@ -379,6 +403,18 @@ const updateStatus = async (newStatus, reason = null) => {
     } finally {
       isUpdating.value = false
     }
+  }
+}
+
+const openDirections = () => {
+  if (!order.value) return
+  const oLat = order.value.consumer_latitude
+  const oLng = order.value.consumer_longitude
+  const dLat = order.value.store?.latitude
+  const dLng = order.value.store?.longitude
+  
+  if (oLat && oLng && dLat && dLng) {
+    window.open(`https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}`, '_blank')
   }
 }
 

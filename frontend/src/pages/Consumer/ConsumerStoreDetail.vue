@@ -200,10 +200,13 @@ const { products, fetchProducts } = useProducts()
 const { stores, loading: storesLoading, fetchStores } = useStores()
 const { addToCart } = useCart()
 
-const storeId = computed(() => Number(route.params.id))
-const store = computed(() => stores.value.find((s) => s.id === storeId.value) || null)
+const storeParam = computed(() => route.params.id)
+const store = computed(() => stores.value.find((s) => s.slug === storeParam.value || String(s.id) === String(storeParam.value)) || null)
 
-const storeProducts = computed(() => products.value.filter((product) => product.storeId === storeId.value))
+const storeProducts = computed(() => {
+  if (!store.value) return []
+  return products.value.filter((product) => product.storeId === store.value.id)
+})
 
 const handleAddToCart = async (product) => {
   try {

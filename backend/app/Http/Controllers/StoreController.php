@@ -29,6 +29,7 @@ class StoreController extends Controller
 
                 return [
                     'id' => $store->store_id,
+                    'slug' => $store->slug,
                     'name' => $store->store_name,
                     'address' => $store->address,
                     'image' => $store->store_picture_url,
