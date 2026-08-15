@@ -185,6 +185,18 @@
           hide-bottom
           :pagination="{ rowsPerPage: 5 }"
         >
+          <!-- Order ID Column -->
+          <template #body-cell-id="props">
+            <q-td :props="props">
+              <span
+                class="text-weight-bold text-red-8 font-monospace q-px-sm q-py-xs bg-red-1"
+                style="border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 6px;"
+              >
+                #{{ props.row.id }}
+              </span>
+            </q-td>
+          </template>
+
           <template #body-cell-customer="props">
             <q-td :props="props">
               <div class="row items-center no-wrap">
@@ -210,10 +222,10 @@
           <template #body-cell-status="props">
             <q-td :props="props">
               <q-chip
-                size="sm"
+                dense
                 :color="getStatusColor(props.row.status)"
                 text-color="white"
-                class="text-weight-bold shadow-soft q-px-md"
+                class="text-weight-bold shadow-soft q-px-sm q-py-xs"
               >
                 {{ props.row.status }}
               </q-chip>
@@ -272,21 +284,23 @@
               </q-btn-group>
             </q-card-section>
 
-            <q-card-section class="flex flex-center chart-container">
+            <q-card-section class="chart-container relative-position q-pa-none">
+              <div
+                v-if="chartLoading"
+                class="absolute-full flex flex-center z-top"
+                style="background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(2px); border-radius: 0 0 12px 12px;"
+              >
+                <q-spinner-dots size="40px" color="red-8" />
+              </div>
               <VueApexCharts
-                v-if="!chartLoading"
+                class="full-width"
+                style="width: 100%; display: block;"
                 type="area"
                 height="250"
                 width="100%"
                 :options="chartOptions"
                 :series="chartSeries"
               />
-              <div
-                v-else
-                class="column items-center text-blue-grey-4 text-center z-top"
-              >
-                <q-spinner-dots size="40px" color="red-8" />
-              </div>
             </q-card-section>
           </q-card>
         </div>
@@ -570,7 +584,12 @@ const chartOptions = ref({
   yaxis: {
     labels: {
       style: { colors: '#78909c' },
-      formatter: value => '₱' + value.toLocaleString()
+      formatter: value => {
+        return '₱' + Number(value).toLocaleString('en-PH', { 
+          minimumFractionDigits: 2, 
+          maximumFractionDigits: 2 
+        })
+      }
     }
   },
   grid: {
@@ -720,13 +739,15 @@ const isStoreOpen = computed(() => {
 // 3. HELPER FUNCTIONS
 // ==========================================
 const getStatusColor = status => {
-  switch (status.toLowerCase()) {
+  const normalizedStatus = status.toLowerCase().replace(/\s+/g, '_')
+
+  switch (normalizedStatus) {
     case 'placed':
       return 'blue-5'
     case 'preparing':
       return 'amber-6'
     case 'picked_up':
-      return 'emerald-5'
+      return 'green-6'
     case 'cancelled':
       return 'red-5'
     default:
@@ -763,7 +784,7 @@ const fetchChartData = async () => {
         ...chartOptions.value,
         xaxis: {
           ...chartOptions.value.xaxis,
-          categories: res.data.map(item => item.period)
+          categories: [...res.data.map(item => item.period)]
         }
       }
     }
@@ -1122,6 +1143,9 @@ watch(activeRevenueFilter, () => {
 .chart-container {
   height: 250px;
   padding: 0;
+  width: 100%;       /* Siguraduhing sakop ang buong width */
+  display: block;    /* Tanggalin ang flex behavior na nagpapa-shrink */
+  overflow: hidden;  /* Iwas lumagpas ang SVG lines */
 }
 .chart-placeholder-bg {
   background-image:

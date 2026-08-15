@@ -15,11 +15,13 @@ export function useStores() {
       const { data } = await api.get('/stores', { params })
       stores.value = (data || []).map((store) => ({
         id: store.id,
+        slug: store.slug,
         name: store.name,
         address: store.address,
         image: store.image,
         isOpen: store.isOpen,
         closesAt: store.closesAt,
+        scheduleStatusText: store.scheduleStatusText,
         distance_meters: store.distance_meters,
         latitude: store.latitude != null ? Number(store.latitude) : null,
         longitude: store.longitude != null ? Number(store.longitude) : null

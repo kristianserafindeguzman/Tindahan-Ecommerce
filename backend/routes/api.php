@@ -7,6 +7,7 @@ use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\SearchLogController;
 use Illuminate\Support\Facades\Route;
@@ -55,16 +56,19 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Vendor Approvals
         Route::get('/vendors/pending', [AdminController::class, 'pendingVendors']);
+        Route::get('/vendors/pending/export', [AdminController::class, 'exportPendingVendors']);
         Route::post('/vendors/{storeId}/approve', [AdminController::class, 'approveVendor']);
         Route::post('/vendors/{storeId}/reject', [AdminController::class, 'rejectVendor']);
 
-        // Manage Vendors
+        // Vendors Management
         Route::get('/vendors', [AdminController::class, 'listVendors']);
+        Route::get('/vendors/export', [AdminController::class, 'exportVendors']);
         Route::patch('/vendors/{userId}/status', [AdminController::class, 'updateVendorStatus']);
         Route::delete('/vendors/{userId}', [AdminController::class, 'deleteVendor']);
 
-        // Manage Consumers
+        // Consumers Management
         Route::get('/consumers', [AdminController::class, 'listConsumers']);
+        Route::get('/consumers/export', [AdminController::class, 'exportConsumers']);
         Route::patch('/consumers/{userId}/status', [AdminController::class, 'updateConsumerStatus']);
         Route::delete('/consumers/{userId}', [AdminController::class, 'deleteConsumer']);
     });
@@ -124,5 +128,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/cart', [CartController::class, 'store']);
         Route::patch('/cart/{id}', [CartController::class, 'update']);
         Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+
+        // Checkout
+        Route::post('/checkout', [CartController::class, 'checkout']);
+
+        // Consumer Orders
+        Route::get('/orders', [OrderController::class, 'index']);
+        Route::get('/orders/{id}', [OrderController::class, 'show']);
+        Route::patch('/orders/{id}/cancel', [OrderController::class, 'cancel']);
+
+        // Consumer Notifications
+        Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+        Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
     });
 });

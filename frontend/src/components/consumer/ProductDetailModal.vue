@@ -56,19 +56,22 @@
 
             <div v-if="product.inStock" class="quantity-row">
               <span class="quantity-label">Quantity</span>
-              <div class="quantity-stepper">
-                <button type="button" class="stepper-btn" :disabled="quantity <= 1" @click="quantity--">
-                  <q-icon name="o_remove" size="16px" />
-                </button>
-                <span class="stepper-value">{{ quantity }}</span>
-                <button
-                  type="button"
-                  class="stepper-btn"
-                  :disabled="quantity >= maxQuantity"
-                  @click="quantity++"
-                >
-                  <q-icon name="o_add" size="16px" />
-                </button>
+              <div class="stepper-wrapper">
+                <div class="quantity-stepper">
+                  <button type="button" class="stepper-btn" :disabled="quantity <= 1" @click="quantity--">
+                    <q-icon name="o_remove" size="16px" />
+                  </button>
+                  <span class="stepper-value">{{ quantity }}</span>
+                  <button
+                    type="button"
+                    class="stepper-btn"
+                    :disabled="quantity >= maxQuantity"
+                    @click="quantity++"
+                  >
+                    <q-icon name="o_add" size="16px" />
+                  </button>
+                </div>
+                <div v-if="quantity >= maxQuantity" class="max-qty-msg text-caption text-red-7 q-mt-xs font-medium">Maximum available quantity reached ({{ maxQuantity }} available).</div>
               </div>
             </div>
 
@@ -89,11 +92,11 @@
         <div v-if="store" class="store-section">
           <div class="store-section-label">About this Store</div>
 
-          <div class="store-row" v-close-popup @click="router.push(`/consumer/stores/${store.id}`)">
+          <div class="store-row" v-close-popup @click="router.push(`/consumer/stores/${store.slug || store.id}`)">
             <div class="store-row-info">
               <div class="store-row-name">{{ store.name }}</div>
               <div class="store-row-status" :class="{ 'store-row-status-closed': !store.isOpen }">
-                {{ store.isOpen ? `Open until ${store.closesAt}` : 'Closed now' }}
+                {{ store.scheduleStatusText || (store.isOpen ? `Open until ${store.closesAt}` : 'Closed now') }}
               </div>
               <div v-if="storeAddressText" class="store-row-address">
                 <q-icon name="o_location_on" size="12px" />

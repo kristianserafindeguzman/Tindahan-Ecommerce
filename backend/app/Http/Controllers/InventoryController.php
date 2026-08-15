@@ -26,7 +26,8 @@ class InventoryController extends Controller
         $inventory = Inventory::where('store_id', $store->store_id)
             ->with('category')
             ->orderBy('inventory_id', 'desc')
-            ->get();
+            ->get()
+            ->each->setAppends(['image_url', 'available_quantity']);
 
 
         return response()->json($inventory);

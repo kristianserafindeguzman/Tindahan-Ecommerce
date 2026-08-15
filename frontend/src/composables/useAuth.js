@@ -43,6 +43,7 @@ export function useAuth() {
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_user')
     localStorage.removeItem('auth_role')
+    localStorage.removeItem('consumer_selected_order_id')
 
     router.push('/login')
   }

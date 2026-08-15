@@ -138,16 +138,28 @@
                 </div>
               </template>
 
+              <!-- Order ID Formatter -->
+              <template #body-cell-order_id="props">
+                <q-td :props="props">
+                  <span
+                    class="order-id-badge text-weight-bold text-red-8 q-px-sm q-py-xs bg-red-1 transition-ease"
+                    style="border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 6px;"
+                  >
+                    #{{ props.row.order_id }}
+                  </span>
+                </q-td>
+              </template>
+
               <!-- Status Formatter -->
               <template #body-cell-status="props">
                 <q-td :props="props">
                   <q-chip 
-                    size="sm" 
-                    :color="getStatusColor(props.row.status).bg" 
-                    :text-color="getStatusColor(props.row.status).text" 
-                    class="text-weight-bold shadow-1"
+                    :color="getStatusColor(props.row.status)" 
+                    text-color="white" 
+                    class="text-weight-bolder status-chip q-px-md shadow-1"
+                    style="font-size: 13px;"
                   >
-                    {{ props.row.status }}
+                    {{ formatStatus(props.row.status) }}
                   </q-chip>
                 </q-td>
               </template>
@@ -326,14 +338,25 @@ const columns = computed(() => {
   ]
 })
 
-// Enhanced Status Colors returning background and text colors
+// Unified Status Colors mapping to Quasar brand colors
 const getStatusColor = (status) => {
-  switch (String(status).toLowerCase()) {
-    case 'picked_up': return { bg: 'green-6', text: 'white' }
-    case 'cancelled': return { bg: 'red-8', text: 'white' }
-    case 'pending': return { bg: 'orange-8', text: 'white' }
-    default: return { bg: 'grey-6', text: 'white' }
+  const normalizedStatus = String(status).toLowerCase().replace(/\s+/g, '_')
+  
+  switch (normalizedStatus) {
+    case 'placed': return 'blue-6'
+    case 'preparing': return 'purple-5'
+    case 'ready_for_pickup': return 'orange-6'
+    case 'picked_up': return 'green-6'
+    case 'cancelled': return 'red-6'
+    case 'pending': return 'orange-8'
+    default: return 'grey-6'
   }
+}
+
+// Format status nicely for UI
+const formatStatus = (status) => {
+  if (!status) return ''
+  return String(status).split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
 const formatNumber = (num) => {

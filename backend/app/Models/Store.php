@@ -33,6 +33,7 @@ class Store extends Model
         'latitude',
         'longitude',
         'address',
+        'slug',
     ];
 
     /**

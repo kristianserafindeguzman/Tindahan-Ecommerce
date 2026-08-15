@@ -98,48 +98,53 @@
             </div>
           </div>
 
-          <!-- Controls (Aligned to standard module styles) -->
+          <!-- Controls: Unified Toolbar -->
           <div class="row items-center justify-between q-col-gutter-sm">
-            <div class="row q-gutter-md items-center col-12 col-sm-auto">
-              <q-input v-model="search" outlined dense class="custom-glass-input" placeholder="Search products..." style="width: 280px; max-width: 100%;">
+            
+            <!-- Search & Filter Area -->
+            <div class="col-12 col-md-6 row items-center no-wrap q-gutter-x-sm">
+              <q-input v-model="search" outlined dense class="custom-glass-input exact-height col-grow" placeholder="Search products...">
                 <template v-slot:prepend>
                   <q-icon name="search" color="blue-grey-4" size="20px" />
                 </template>
               </q-input>
-              <q-btn outline icon="filter_list" label="Filter" color="blue-grey-9" no-caps class="btn-glass-outline text-weight-bold q-px-md">
-                <q-menu class="q-pa-md" style="min-width: 250px;">
-                  <div class="text-subtitle2 text-weight-bold q-mb-sm">Filters</div>
-                  
-                  <div class="q-mb-md">
-                    <div class="text-caption text-grey-7 q-mb-xs">Category</div>
-                    <q-select v-model="filters.category" :options="[{label: 'All Categories', value: 'all'}, ...categoryOptions]" emit-value map-options dense outlined options-dense />
-                  </div>
+              
+              <q-btn outline icon="filter_list" label="Filter" color="blue-grey-4" text-color="blue-grey-8" no-caps class="btn-glass-outline exact-height text-weight-bold q-px-md">
+                <q-menu class="premium-dropdown-list shadow-4 q-mt-xs" style="min-width: 280px; border-radius: 12px; padding: 8px;">
+                  <div class="q-pa-md">
+                    <div class="row items-center justify-between q-mb-md">
+                      <div class="text-subtitle1 text-weight-bolder text-slate-800">Filters</div>
+                      <q-btn flat label="Clear" color="red-9" size="sm" class="text-weight-bold" @click="resetFilters" v-close-popup no-caps />
+                    </div>
+                    
+                    <div class="q-mb-md">
+                      <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Category</div>
+                      <q-select v-model="filters.category" :options="[{label: 'All Categories', value: 'all'}, ...categoryOptions]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                    </div>
 
-                  <div class="q-mb-md">
-                    <div class="text-caption text-grey-7 q-mb-xs">Stock Level</div>
-                    <q-select v-model="filters.stock" :options="[{label: 'All', value: 'all'}, {label: 'Low Stock (< 10)', value: 'low_stock'}]" emit-value map-options dense outlined options-dense />
-                  </div>
+                    <div class="q-mb-md">
+                      <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Stock Level</div>
+                      <q-select v-model="filters.stock" :options="[{label: 'All', value: 'all'}, {label: 'Low Stock (< 10)', value: 'low_stock'}]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                    </div>
 
-                  <div class="q-mb-md">
-                    <div class="text-caption text-grey-7 q-mb-xs">Status</div>
-                    <q-select v-model="filters.status" :options="[{label: 'All', value: 'all'}, {label: 'Active', value: 'active'}, {label: 'Archived', value: 'archived'}]" emit-value map-options dense outlined options-dense />
-                  </div>
+                    <div class="q-mb-md">
+                      <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Status</div>
+                      <q-select v-model="filters.status" :options="[{label: 'All', value: 'all'}, {label: 'Active', value: 'active'}, {label: 'Archived', value: 'archived'}]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                    </div>
 
-                  <div class="q-mb-md">
-                    <div class="text-caption text-grey-7 q-mb-xs">Price</div>
-                    <q-select v-model="filters.priceSort" :options="[{label: 'Default', value: 'default'}, {label: 'Low to High', value: 'low_to_high'}, {label: 'High to Low', value: 'high_to_low'}]" emit-value map-options dense outlined options-dense />
-                  </div>
-
-                  <div class="row justify-end q-mt-md">
-                    <q-btn flat label="Clear Filters" color="negative" size="sm" @click="resetFilters" v-close-popup />
+                    <div class="q-mb-sm">
+                      <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Price</div>
+                      <q-select v-model="filters.priceSort" :options="[{label: 'Default', value: 'default'}, {label: 'Low to High', value: 'low_to_high'}, {label: 'High to Low', value: 'high_to_low'}]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                    </div>
                   </div>
                 </q-menu>
               </q-btn>
             </div>
 
-            <div class="row q-gutter-md col-12 col-sm-auto">
-              <q-btn outline icon="download" label="Export" color="red-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" @click="openExportWizard" />
-              <q-btn unelevated icon="add" label="Add Product" color="red-9" no-caps class="btn-premium text-white text-weight-bold q-px-md" @click="showAddModal = true" />
+            <!-- Action Area -->
+            <div class="row q-gutter-md col-12 col-md-auto q-mt-sm q-md-none justify-end">
+              <q-btn outline icon="download" label="Export" color="blue-grey-4" text-color="blue-grey-8" no-caps class="btn-glass-outline exact-height text-weight-bold q-px-md" @click="openExportWizard" />
+              <q-btn unelevated icon="add" label="Add Product" color="red-9" no-caps class="btn-premium exact-height text-white text-weight-bold q-px-md" @click="showAddModal = true" />
             </div>
           </div>
         </q-card-section>
@@ -153,49 +158,73 @@
           row-key="inventory_id"
           :loading="loading"
         >
+          <!-- Empty State -->
           <template #no-data>
             <div class="full-width row flex-center text-grey-6 q-pa-xl empty-state-glass">
               <div class="text-center">
                 <q-icon name="inventory_2" size="48px" class="q-mb-md opacity-50 drop-shadow-icon" />
                 <div class="text-subtitle1 text-weight-bold text-blue-grey-8">No products found</div>
-                <div class="text-caption text-blue-grey-5">Your inventory is currently empty.</div>
+                <div class="text-caption text-blue-grey-5">Your inventory is currently empty or no items match your filter.</div>
               </div>
             </div>
           </template>
 
+          <!-- Image Cell -->
           <template #body-cell-image="props">
             <q-td :props="props">
-              <q-avatar size="40px" square class="bg-grey-2 shadow-1" style="border-radius: 8px;">
-                <img v-if="props.row.image_url" :src="props.row.image_url" />
-                <q-icon v-else name="image" color="grey-5" size="20px" />
+              <q-avatar size="44px" square class="bg-slate-100 shadow-soft" style="border-radius: 8px; border: 1px solid #e2e8f0;">
+                <img v-if="props.row.image_url" :src="props.row.image_url" style="object-fit: cover;" />
+                <q-icon v-else name="image" color="blue-grey-3" size="24px" />
               </q-avatar>
             </q-td>
           </template>
           
-          <template #body-cell-status="props">
+          <!-- Quantity Cell -->
+          <template #body-cell-quantity="props">
             <q-td :props="props">
-              <q-chip size="sm" :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bold shadow-1 status-chip">
-                {{ props.row.status || 'Active' }}
+              <div class="text-weight-bold" :class="props.row.available_quantity > 0 ? 'text-blue-grey-9' : 'text-red-7'">
+                Avail: {{ props.row.available_quantity }}
+              </div>
+              <div class="text-caption text-blue-grey-4 font-medium">
+                Total: {{ props.row.stock_quantity }}
+              </div>
+            </q-td>
+          </template>
+
+          <!-- Price Cell (With generous right padding to separate from status) -->
+          <template #body-cell-price="props">
+            <q-td :props="props" class="text-weight-bold text-blue-grey-9 q-pr-xl">
+              <span v-if="props.row.variants && props.row.variants.length > 0" class="text-caption text-blue-grey-4 font-medium q-mr-xs">from</span>
+              ₱{{ formatNumber(props.row.price) }}
+            </q-td>
+          </template>
+          
+          <!-- Status Cell (Bigger & Bolder with Left padding protection) -->
+          <template #body-cell-status="props">
+            <q-td :props="props" class="q-pl-lg">
+              <q-chip :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bolder shadow-1 q-px-md" style="font-size: 12.5px; min-height: 26px;">
+                {{ formatStatus(props.row.status) }}
               </q-chip>
             </q-td>
           </template>
 
+          <!-- Action Menu Cell (Three Dots) -->
           <template #body-cell-action="props">
-            <q-td :props="props" class="text-right">
-              <q-btn-dropdown flat round dense icon="more_vert" color="grey-7">
-                <q-list class="premium-dropdown-list" style="min-width: 150px">
-                  <q-item clickable v-close-popup @click="openDetails(props.row)" class="hover-grey">
-                    <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="visibility" size="20px" color="blue-6" /></q-item-section>
-                    <q-item-section class="text-weight-medium">View & Edit</q-item-section>
-                  </q-item>
-                  <q-item clickable v-close-popup v-if="props.row.status !== 'archived'" @click="deactivateProduct(props.row)" class="hover-red">
-                    <q-item-section avatar class="min-w-0 q-pr-sm">
-                      <q-icon name="archive" size="20px" color="red-9" />
-                    </q-item-section>
-                    <q-item-section class="text-weight-medium text-red-9">Archive</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-btn-dropdown>
+            <q-td :props="props" class="text-right q-pr-lg">
+              <q-btn flat round dense icon="more_vert" color="blue-grey-4" class="hover-action-btn">
+                <q-menu class="premium-dropdown-list shadow-10 q-mt-xs" anchor="bottom right" self="top right" auto-close transition-show="scale" transition-hide="scale">
+                  <q-list style="min-width: 160px; padding: 4px;">
+                    <q-item clickable @click="openDetails(props.row)" class="hover-grey rounded-borders">
+                      <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="visibility" size="20px" color="blue-6" /></q-item-section>
+                      <q-item-section class="text-weight-medium text-slate-700">View & Edit</q-item-section>
+                    </q-item>
+                    <q-item clickable v-if="props.row.status !== 'archived'" @click="deactivateProduct(props.row)" class="hover-red rounded-borders q-mt-xs">
+                      <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="archive" size="20px" color="red-9" /></q-item-section>
+                      <q-item-section class="text-weight-bold text-red-9">Archive</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-menu>
+              </q-btn>
             </q-td>
           </template>
         </q-table>
@@ -203,64 +232,62 @@
 
     </div>
 
-
-
     <!-- Modals -->
     <AddProductModal v-model="showAddModal" @refresh="fetchProducts" />
     <ProductDetailsModal v-model="showDetailsModal" :product="selectedProduct" @refresh="fetchProducts" />
 
     <!-- Export Wizard Modal -->
     <q-dialog v-model="showExportModal" persistent transition-show="scale" transition-hide="scale">
-      <q-card style="width: 500px; max-width: 90vw; border-radius: 16px;" class="premium-glass-card">
-        <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6 text-weight-bold text-dark">Export Inventory</div>
+      <q-card style="width: 500px; max-width: 90vw; border-radius: 16px;" class="bg-white shadow-4">
+        <q-card-section class="row items-center q-pb-none q-pt-lg q-px-lg">
+          <div class="text-h6 text-weight-bolder text-slate-800">Export Inventory</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup color="grey-6" />
         </q-card-section>
 
-        <q-card-section class="q-pt-md">
+        <q-card-section class="q-pt-md q-px-lg q-pb-lg">
           <!-- Step 1: Format Selection -->
           <div v-if="exportStep === 1">
-            <p class="text-body2 text-grey-8 q-mb-md">Choose your preferred export format for the inventory report.</p>
+            <p class="text-body2 text-slate-500 q-mb-lg font-medium">Choose your preferred export format for the inventory report.</p>
             
             <div class="row q-col-gutter-md">
               <div class="col-6">
-                <q-card class="cursor-pointer format-card text-center q-pa-md" :class="exportFormat === 'pdf' ? 'bg-red-50 border-red' : 'bg-grey-1'" @click="exportFormat = 'pdf'" flat bordered>
-                  <q-icon name="picture_as_pdf" size="40px" :color="exportFormat === 'pdf' ? 'red-9' : 'grey-5'" class="q-mb-sm" />
-                  <div class="text-weight-bold" :class="exportFormat === 'pdf' ? 'text-red-9' : 'text-grey-7'">PDF Document</div>
-                  <div class="text-caption text-grey-6 q-mt-xs">Professional A4 format</div>
+                <q-card class="cursor-pointer format-card text-center q-pa-md" :class="exportFormat === 'pdf' ? 'bg-red-50 border-red-light' : 'bg-slate-50 border-slate-light'" @click="exportFormat = 'pdf'" flat bordered>
+                  <q-icon name="picture_as_pdf" size="40px" :color="exportFormat === 'pdf' ? 'red-9' : 'blue-grey-3'" class="q-mb-sm transition-ease" />
+                  <div class="text-weight-bold" :class="exportFormat === 'pdf' ? 'text-red-9' : 'text-slate-700'">PDF Document</div>
+                  <div class="text-caption text-slate-500 q-mt-xs">Professional A4 format</div>
                 </q-card>
               </div>
               <div class="col-6">
-                <q-card class="cursor-pointer format-card text-center q-pa-md" :class="exportFormat === 'image' ? 'bg-red-50 border-red' : 'bg-grey-1'" @click="exportFormat = 'image'" flat bordered>
-                  <q-icon name="image" size="40px" :color="exportFormat === 'image' ? 'red-9' : 'grey-5'" class="q-mb-sm" />
-                  <div class="text-weight-bold" :class="exportFormat === 'image' ? 'text-red-9' : 'text-grey-7'">Image Snapshot</div>
-                  <div class="text-caption text-grey-6 q-mt-xs">Quick shareable image</div>
+                <q-card class="cursor-pointer format-card text-center q-pa-md" :class="exportFormat === 'image' ? 'bg-red-50 border-red-light' : 'bg-slate-50 border-slate-light'" @click="exportFormat = 'image'" flat bordered>
+                  <q-icon name="image" size="40px" :color="exportFormat === 'image' ? 'red-9' : 'blue-grey-3'" class="q-mb-sm transition-ease" />
+                  <div class="text-weight-bold" :class="exportFormat === 'image' ? 'text-red-9' : 'text-slate-700'">Image Snapshot</div>
+                  <div class="text-caption text-slate-500 q-mt-xs">Quick shareable image</div>
                 </q-card>
               </div>
             </div>
 
-            <div class="row justify-end q-mt-lg">
-              <q-btn unelevated label="Next" color="red-9" class="q-px-xl text-weight-bold" no-caps @click="proceedToPreview(exportFormat)" />
+            <div class="row justify-end q-mt-xl">
+              <q-btn unelevated label="Next" color="red-9" class="q-px-xl text-weight-bold btn-premium" no-caps @click="proceedToPreview(exportFormat)" />
             </div>
           </div>
 
           <!-- Step 2: Preview -->
           <div v-else-if="exportStep === 2">
-            <q-banner rounded class="bg-blue-grey-1 q-mb-md" style="border: 1px solid #cbd5e1;">
+            <q-banner rounded class="bg-slate-50 q-mb-lg border-slate-light q-pa-md">
               <template v-slot:avatar>
-                <q-icon name="info" color="blue-grey-6" />
+                <q-icon name="info" color="blue-grey-4" size="28px" />
               </template>
-              <div class="text-weight-medium text-dark">Ready to Generate</div>
-              <div class="text-caption text-grey-7">
-                Format: <strong>{{ exportFormat.toUpperCase() }}</strong><br>
-                Total Items: <strong>{{ filteredProducts.length }}</strong>
+              <div class="text-weight-bolder text-slate-800 text-subtitle1">Ready to Generate</div>
+              <div class="text-body2 text-slate-600 q-mt-xs">
+                Format: <strong class="text-slate-800">{{ exportFormat.toUpperCase() }}</strong><br>
+                Total Items: <strong class="text-slate-800">{{ filteredProducts.length }}</strong>
               </div>
             </q-banner>
 
             <div class="row justify-end q-mt-lg q-gutter-sm">
-              <q-btn flat label="Back" color="grey-7" no-caps @click="exportStep = 1" :disable="isExporting" />
-              <q-btn unelevated label="Confirm & Download" color="red-9" class="q-px-md text-weight-bold" no-caps :loading="isExporting" @click="executeFinalExport" />
+              <q-btn flat label="Back" color="blue-grey-6" no-caps @click="exportStep = 1" :disable="isExporting" class="text-weight-bold" />
+              <q-btn unelevated label="Confirm & Download" color="red-9" class="q-px-lg text-weight-bold btn-premium" no-caps :loading="isExporting" @click="executeFinalExport" />
             </div>
           </div>
         </q-card-section>
@@ -303,19 +330,15 @@ const mlInsights = ref({
   topCategory: null
 })
 
+// Columns redefined with explicit padding classes to separate Price, Status, and Action
 const columns = [
   { name: 'image', label: 'Image', field: 'image', align: 'left' },
   { name: 'product_name', label: 'Name', field: 'product_name', align: 'left', sortable: true },
   { name: 'category', label: 'Category', field: row => row.category?.category_name || 'Uncategorized', align: 'left', sortable: true },
   { name: 'quantity', label: 'QTY', field: 'stock_quantity', align: 'left', sortable: true },
-  { name: 'price', label: 'Price (₱)', field: row => {
-      if (row.variants && row.variants.length > 0) {
-        return `${formatNumber(row.price)} (starts at)`
-      }
-      return formatNumber(row.price)
-    }, align: 'left', sortable: true },
-  { name: 'status', label: 'Status', field: 'status', align: 'left' },
-  { name: 'action', label: '', field: 'action', align: 'right' }
+  { name: 'price', label: 'Price (₱)', field: 'price', align: 'right', sortable: true, headerClasses: 'q-pr-xl' },
+  { name: 'status', label: 'Status', field: 'status', align: 'left', headerClasses: 'q-pl-lg' },
+  { name: 'action', label: '', field: 'action', align: 'right', headerClasses: 'q-pr-lg' }
 ]
 
 const filteredProducts = computed(() => {
@@ -361,9 +384,8 @@ const resetFilters = () => {
 
 const isExporting = ref(false)
 const showExportModal = ref(false)
-const exportStep = ref(1) // 1: Select Format, 2: Preview
-const exportFormat = ref('pdf') // 'pdf' or 'image'
-const exportDom = ref(null)
+const exportStep = ref(1)
+const exportFormat = ref('pdf')
 
 const openExportWizard = () => {
     exportStep.value = 1
@@ -404,22 +426,19 @@ const executeFinalExport = async () => {
         try {
             isExporting.value = true
             
-            // 1. Fetch the exact same HTML template used by the PDF
             const response = await api.get('/vendor/inventory/export-html')
             const htmlContent = response.data.html
             
-            // 2. Create a temporary off-screen container
             const container = document.createElement('div')
             container.innerHTML = htmlContent
             container.style.position = 'absolute'
             container.style.left = '-9999px'
             container.style.top = '0'
-            container.style.width = '840px' // Slightly wider to accommodate box shadow and gaps
+            container.style.width = '840px'
             document.body.appendChild(container)
             
             await nextTick()
             
-            // Wait for all images in the container to finish loading and decoding
             const images = container.querySelectorAll('img')
             const imagePromises = Array.from(images).map(async (img) => {
                 if (!img.complete) {
@@ -428,12 +447,11 @@ const executeFinalExport = async () => {
                         img.onerror = resolve
                     })
                 }
-                // Ensure base64 map data URI is decoded into memory before html2canvas
                 if (img.decode) {
                     try {
                         await img.decode()
                     } catch (e) {
-                        // ignore decode errors for unsupported images
+                        // ignore decode errors
                     }
                 }
             })
@@ -442,27 +460,21 @@ const executeFinalExport = async () => {
                 document.fonts ? document.fonts.ready : Promise.resolve()
             ])
             
-            // Bulletproof workaround for html2canvas blank map bug:
-            // Convert data URI images into native canvas elements before capture.
             const allImages = container.querySelectorAll('img');
             allImages.forEach(img => {
                 if (img.src && img.src.startsWith('data:image')) {
                     try {
                         const canvas = document.createElement('canvas');
-                        // Use natural dimensions to ensure crisp rendering, fallback to explicitly set width/height
                         canvas.width = img.naturalWidth || img.width || 240;
                         canvas.height = img.naturalHeight || img.height || 160;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         
-                        // Copy styling exactly to prevent layout shifts
                         canvas.style.cssText = img.style.cssText;
                         canvas.className = img.className;
-                        // Enforce explicit inline dimensions if they were present as attributes
                         if (img.hasAttribute('width')) canvas.style.width = img.getAttribute('width') + 'px';
                         if (img.hasAttribute('height')) canvas.style.height = img.getAttribute('height') + 'px';
                         
-                        // Swap the img node for the canvas node
                         img.parentNode.replaceChild(canvas, img);
                     } catch (e) {
                         console.warn('Failed to convert image to canvas for export', e);
@@ -470,10 +482,8 @@ const executeFinalExport = async () => {
                 }
             });
             
-            // 3. Render canvas via html2canvas
             const pages = container.querySelectorAll('.page')
             if (pages.length > 0) {
-                // Generate one image per PDF page
                 for (let i = 0; i < pages.length; i++) {
                     const canvas = await html2canvas(pages[i], {
                         scale: 2,
@@ -488,11 +498,9 @@ const executeFinalExport = async () => {
                     imageLink.href = canvas.toDataURL('image/png')
                     imageLink.click()
                     
-                    // Small delay to allow browser to process downloads sequentially
                     await new Promise(r => setTimeout(r, 500))
                 }
             } else {
-                // Fallback
                 const canvas = await html2canvas(container, {
                     scale: 2,
                     useCORS: true,
@@ -506,7 +514,6 @@ const executeFinalExport = async () => {
                 imageLink.click()
             }
             
-            // 5. Cleanup DOM
             document.body.removeChild(container)
             showExportModal.value = false
         } catch (error) {
@@ -528,10 +535,17 @@ const categoryOptions = computed(() => {
   return Array.from(cats, ([value, label]) => ({ value, label }))
 })
 
+// Ensures first letter capitalization
+const formatStatus = (status) => {
+  if (!status) return 'Active'
+  return String(status).charAt(0).toUpperCase() + String(status).slice(1).toLowerCase()
+}
+
 const getStatusColor = (status) => {
   switch (String(status || 'active').toLowerCase()) {
     case 'active': return 'green-6'
     case 'inactive': return 'grey-6'
+    case 'archived': return 'grey-8'
     case 'out of stock': return 'red-9'
     default: return 'blue-grey-4'
   }
@@ -560,7 +574,8 @@ const deactivateProduct = async (product) => {
     title: 'Archive Product',
     message: `Are you sure you want to archive "${product.product_name}"? It will no longer be available for sale.`,
     cancel: true,
-    persistent: true
+    persistent: true,
+    color: 'red-9'
   }).onOk(async () => {
     try {
       await api.delete(`/vendor/products/${product.inventory_id}`)
@@ -589,10 +604,19 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-/* Strictly Dark Red Brand Colors */
+/* Brand Colors */
 .text-brand-red { color: #B91C1C !important; }
+.bg-red-50 { background-color: #fef2f2 !important; }
+.border-red-light { border: 1px solid #fca5a5 !important; }
 
-/* Subtle Ambient Glows (Fixed to Dark Red & Slate) */
+.bg-slate-50 { background-color: #f8fafc; }
+.bg-slate-100 { background-color: #f1f5f9; }
+.text-slate-500 { color: #64748b; }
+.text-slate-700 { color: #334155; }
+.text-slate-800 { color: #1e293b; }
+.border-slate-light { border: 1px solid #e2e8f0; }
+
+/* Subtle Ambient Glows */
 .bg-glow {
   position: absolute;
   width: 500px;
@@ -621,20 +645,7 @@ onMounted(() => {
 .font-medium { font-weight: 500; }
 .z-top { z-index: 1; }
 
-/* Hidden Image Export Layout */
-.print-image-layout {
-  position: absolute;
-  left: -9999px;
-  top: 0;
-  width: 800px;
-  background: white;
-  color: #1e293b;
-  padding: 40px;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  z-index: -1;
-}
-
-/* Beautiful Header Glass Icon Box */
+/* Header Glass Icon Box */
 .glass-icon-box {
   width: 48px;
   height: 48px;
@@ -648,7 +659,7 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(185, 28, 28, 0.1); 
 }
 
-/* Unified Brand Accent (The Red Vertical Line) */
+/* Header Accent */
 .header-accent-red {
   width: 6px; height: 24px; background: linear-gradient(180deg, #B91C1C 0%, #450A0A 100%); border-radius: 6px; 
 }
@@ -684,14 +695,6 @@ onMounted(() => {
 
 .h-full { height: 100%; }
 
-/* ML Card Accents */
-.bg-red-50 { background-color: rgba(254, 242, 242, 0.8); } 
-.border-red-light { border: 1px solid rgba(254, 226, 226, 1); }
-.bg-blue-50 { background-color: rgba(239, 246, 255, 0.8); } 
-.border-blue-light { border: 1px solid rgba(219, 234, 254, 1); }
-.bg-amber-50 { background-color: rgba(255, 251, 235, 0.8); } 
-.border-amber-light { border: 1px solid rgba(254, 243, 199, 1); }
-
 .insight-badge {
   display: inline-flex;
   align-items: center;
@@ -702,12 +705,17 @@ onMounted(() => {
   width: fit-content;
 }
 
-/* Custom Inputs & Buttons */
+/* Exact Height Alignment for Toolbar */
+.exact-height :deep(.q-field__control) {
+  height: 40px !important;
+  min-height: 40px !important;
+}
+
+/* Custom Inputs & Outline Buttons */
 .custom-glass-input :deep(.q-field__control) {
   background: rgba(248, 250, 252, 0.8); 
   border-radius: 8px;
   transition: all 0.3s ease;
-  height: 40px;
 }
 .custom-glass-input :deep(.q-field__control:before) { border: 1px solid rgba(226, 232, 240, 0.8); }
 .custom-glass-input :deep(.q-field__control:hover) { background: #ffffff; }
@@ -717,7 +725,6 @@ onMounted(() => {
   border-color: #B91C1C;
 }
 
-/* Clean Outline Buttons */
 .btn-glass-outline {
   border-radius: 8px !important;
   background: rgba(255, 255, 255, 0.9) !important;
@@ -727,7 +734,7 @@ onMounted(() => {
 .btn-glass-outline:hover {
   background: #ffffff !important;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 /* Solid Action Button */
@@ -738,7 +745,7 @@ onMounted(() => {
   transition: all 0.2s ease;
 }
 .btn-premium:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   box-shadow: 0 6px 15px rgba(185, 28, 28, 0.4);
 }
 
@@ -749,6 +756,8 @@ onMounted(() => {
   border-bottom: 1px solid rgba(226, 232, 240, 0.8);
   border-radius: 16px 16px 0 0;
 }
+.transition-ease { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.shadow-soft { box-shadow: 0 2px 8px rgba(15,23,42,0.06); }
 
 /* Custom Premium Table Styling */
 :deep(.custom-premium-table thead tr th) {
@@ -782,6 +791,20 @@ onMounted(() => {
   border-bottom-color: transparent;
 }
 
+/* Enhanced 3-dots action button hover effect */
+.hover-action-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+:deep(.custom-premium-table tbody tr:hover .hover-action-btn) {
+  color: #B91C1C !important; 
+  background: rgba(185, 28, 28, 0.08);
+  transform: scale(1.05);
+}
+.hover-action-btn:active, .hover-action-btn:focus {
+  background: rgba(185, 28, 28, 0.15) !important;
+  transform: scale(0.95) !important;
+}
+
 .status-chip { 
   border: 1px solid rgba(255,255,255,0.4); 
   letter-spacing: 0.3px;
@@ -792,10 +815,11 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 12px;
+  border-radius: 8px;
 }
 .hover-grey:hover { background: rgba(241, 245, 249, 0.8); }
-.hover-red:hover { background: rgba(254, 242, 242, 0.8); }
+.hover-red:hover { background: rgba(254, 242, 242, 0.8); color: #B91C1C; }
+.rounded-borders { border-radius: 6px; }
 
 /* Empty State Styling */
 .empty-state-glass {
@@ -807,4 +831,12 @@ onMounted(() => {
   min-height: 300px;
 }
 .drop-shadow-icon { filter: drop-shadow(0 4px 6px rgba(15, 23, 42, 0.05)); }
+.format-card {
+  transition: all 0.2s ease;
+  border-radius: 12px;
+}
+.format-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
 </style>

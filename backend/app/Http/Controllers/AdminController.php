@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ApprovalStatus;
 use App\Models\SystemAuditLog;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
@@ -73,6 +75,40 @@ class AdminController extends Controller
         });
 
         return response()->json($pending);
+    }
+
+    /**
+     * Export pending and rejected vendor applications as a PDF.
+     *
+     * GET /api/admin/vendors/pending/export
+     */
+    public function exportPendingVendors(Request $request)
+    {
+        $query = ApprovalStatus::with(['store.owner'])
+            ->whereIn('status', ['pending', 'rejected']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('store.owner', function ($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $approvals = $query->get();
+
+        // Build report metadata from the currently authenticated Admin
+        // so exported reports are traceable to the user who generated them.
+        $admin = auth()->user();
+        $date = Carbon::now('Asia/Manila')->format('F j, Y \a\t g:i A');
+
+        $pdf = Pdf::loadView('pdf.admin-approvals-report', [
+            'approvals' => $approvals,
+            'admin'     => $admin,
+            'date'      => $date
+        ]);
+
+        return $pdf->download('Tindahan_Admin_Approvals_Export_' . Carbon::now('Asia/Manila')->format('Y-m-d') . '.pdf');
     }
 
     /**
@@ -212,6 +248,60 @@ class AdminController extends Controller
     }
 
     /**
+     * Export registered vendors as a PDF.
+     *
+     * GET /api/admin/vendors/export
+     */
+    public function exportVendors(Request $request)
+    {
+        if ($request->tab === 'deleted') {
+            $query = User::onlyTrashed()->where('role', 'Vendor');
+        } else {
+            $query = User::where('role', 'Vendor');
+        }
+
+        $query->whereHas('store', function ($q) use ($request) {
+            if ($request->tab === 'deleted') {
+                $q->withTrashed();
+            }
+            $q->whereHas('approvalStatus', function ($q2) {
+                $q2->where('status', 'approved');
+            });
+        })->with(['store' => function ($q) use ($request) {
+            if ($request->tab === 'deleted') {
+                $q->withTrashed();
+            }
+        }]);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('account_status', $request->status);
+        }
+
+        $vendors = $query->get();
+
+        // Build report metadata from the currently authenticated Admin
+        // so exported reports are traceable to the user who generated them.
+        $admin = auth()->user();
+        $date = Carbon::now('Asia/Manila')->format('F j, Y \a\t g:i A');
+
+        $pdf = Pdf::loadView('pdf.admin-vendors-report', [
+            'vendors' => $vendors,
+            'admin'   => $admin,
+            'date'    => $date
+        ]);
+
+        return $pdf->download('Tindahan_Admin_Vendors_Export_' . Carbon::now('Asia/Manila')->format('Y-m-d') . '.pdf');
+    }
+
+    /**
      * Update a vendor's account status (active/inactive/suspended).
      *
      * PATCH /api/admin/vendors/{userId}/status
@@ -308,6 +398,46 @@ class AdminController extends Controller
                                    'profile_picture', 'account_status', 'last_activity_at', 'created_at']);
 
         return response()->json($consumers);
+    }
+
+    /**
+     * Export registered consumers as a PDF.
+     *
+     * GET /api/admin/consumers/export
+     */
+    public function exportConsumers(Request $request)
+    {
+        // Handle Active/Deleted Tab
+        if ($request->tab === 'deleted') {
+            $query = User::onlyTrashed()->where('role', 'Consumer');
+        } else {
+            $query = User::where('role', 'Consumer');
+        }
+
+        // Search by name or email
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $consumers = $query->get(['user_id', 'full_name', 'email', 'phone_number',
+                                   'account_status', 'created_at', 'deleted_at']);
+
+        // Build report metadata from the currently authenticated Admin
+        // so exported reports are traceable to the user who generated them.
+        $admin = auth()->user();
+        $date = Carbon::now('Asia/Manila')->format('F j, Y \a\t g:i A');
+
+        $pdf = Pdf::loadView('pdf.admin-consumers-report', [
+            'consumers' => $consumers,
+            'admin'     => $admin,
+            'date'      => $date
+        ]);
+
+        return $pdf->download('Tindahan_Admin_Consumers_Export_' . Carbon::now('Asia/Manila')->format('Y-m-d') . '.pdf');
     }
 
     /**

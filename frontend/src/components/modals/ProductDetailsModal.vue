@@ -1,24 +1,39 @@
 <template>
   <q-dialog v-model="isOpen" persistent>
-    <q-card style="width: 700px; max-width: 90vw;" class="premium-glass-card">
-      <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6 text-weight-bold">Product Details</div>
+    <q-card style="width: 850px; max-width: 95vw; border-radius: 12px;" class="bg-white overflow-hidden shadow-4">
+      
+      <!-- ================= MODAL HEADER ================= -->
+      <q-card-section class="row items-center q-px-xl q-py-md header-gradient text-white">
+        <div class="text-h6 text-weight-bolder tracking-tight">Product Details</div>
         <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
+        <q-btn icon="close" flat round dense v-close-popup color="white" size="sm" class="opacity-80 hover-opacity-100" />
       </q-card-section>
 
-      <q-card-section class="q-pt-md">
+      <!-- ================= FORM AREA ================= -->
+      <q-card-section class="q-pt-xl q-px-xl q-pb-xl">
         <q-form @submit.prevent="submitForm">
-          <div class="row q-col-gutter-md">
-            <!-- Left Column: Details -->
+          <div class="row q-col-gutter-xl">
+            
+            <!-- LEFT COLUMN: DETAILS -->
             <div class="col-12 col-md-7">
+              
+              <!-- Product Name -->
               <div class="q-mb-md">
-                <div class="text-subtitle2 q-mb-xs">Product Name</div>
-                <q-input v-model="form.product_name" outlined dense :rules="[val => !!val || 'Product name is required']" />
+                <div class="input-label q-mb-xs">Product Name</div>
+                <q-input 
+                  v-model="form.product_name" 
+                  outlined 
+                  dense 
+                  placeholder="e.g., Classic T-Shirt"
+                  :rules="[val => !!val || 'Product name is required']" 
+                  hide-bottom-space 
+                  class="custom-input" 
+                />
               </div>
 
+              <!-- Category -->
               <div class="q-mb-md">
-                <div class="text-subtitle2 q-mb-xs">Category</div>
+                <div class="input-label q-mb-xs">Category</div>
                 <q-select
                   v-model="form.category_id"
                   :options="categories"
@@ -28,89 +43,119 @@
                   map-options
                   outlined
                   dense
+                  placeholder="Select a category"
                   :rules="[val => !!val || 'Category is required']"
+                  hide-bottom-space
+                  class="custom-input"
                 />
-                <div v-if="form.category_id" class="text-caption text-blue-grey-6 q-mt-xs">
-                    <q-icon name="info" class="q-mr-xs" />
-                    {{ selectedEditCategoryGuide }}
-                </div>
+                <q-slide-transition>
+                  <q-banner v-if="form.category_id && selectedEditCategoryGuide" class="bg-grey-1 text-grey-8 q-mt-sm rounded-borders" dense>
+                    <template v-slot:avatar>
+                      <q-icon name="info" color="grey-6" size="20px" />
+                    </template>
+                    <span class="text-caption">{{ selectedEditCategoryGuide }}</span>
+                  </q-banner>
+                </q-slide-transition>
               </div>
 
-              <div class="q-mb-md">
-                <q-toggle v-model="isActive" label="Available for Sale (Active)" color="green-6" />
+              <!-- Active Status Toggle -->
+              <div class="q-mb-md q-mt-md">
+                <q-toggle 
+                  v-model="isActive" 
+                  label="Available for Sale (Active)" 
+                  color="green-6" 
+                  class="text-weight-bold text-slate-700 custom-toggle" 
+                />
               </div>
 
+              <!-- Variants Checkbox -->
               <div class="q-mb-md">
-                <q-checkbox v-model="hasVariants" label="This product has different sizes/variants" color="red-8" />
+                <q-checkbox 
+                  v-model="hasVariants" 
+                  label="This product has different sizes/variants" 
+                  color="red-9" 
+                  class="custom-checkbox text-weight-bold text-slate-700" 
+                />
               </div>
 
               <!-- Single Size Pricing/Qty -->
-              <div v-if="!hasVariants" class="row q-col-gutter-sm q-mb-md">
+              <div v-if="!hasVariants" class="row q-col-gutter-md q-mt-xs">
                 <div class="col-6">
-                  <div class="text-subtitle2 q-mb-xs">Price (₱)</div>
-                  <q-input v-model.number="form.price" type="number" outlined dense min="0" step="0.01" />
+                  <div class="input-label q-mb-xs">Price (₱)</div>
+                  <q-input v-model.number="form.price" type="number" outlined dense min="0" step="0.01" hide-bottom-space class="custom-input" />
                 </div>
                 <div class="col-6">
-                  <div class="text-subtitle2 q-mb-xs">Quantity</div>
-                  <q-input v-model.number="form.stock_quantity" type="number" outlined dense min="0" />
+                  <div class="input-label q-mb-xs">Quantity</div>
+                  <q-input v-model.number="form.stock_quantity" type="number" outlined dense min="0" hide-bottom-space class="custom-input" />
                 </div>
               </div>
 
               <!-- Variants Pricing/Qty -->
-              <div v-else class="q-mb-md">
-                <div class="text-subtitle2 q-mb-xs">Variants (Sizes)</div>
-                <div v-for="(variant, index) in form.variants" :key="index" class="row q-col-gutter-sm items-center q-mb-sm">
-                  <div class="col-4">
-                    <q-input v-model="variant.size" outlined dense placeholder="Size" :rules="[val => !!val || 'Required']" />
+              <q-slide-transition>
+                <div v-if="hasVariants" class="variants-card q-mt-sm q-pa-md">
+                  <div class="text-subtitle2 text-weight-bold text-slate-700 q-mb-md">Variants (Sizes)</div>
+                  <div v-for="(variant, index) in form.variants" :key="index" class="row q-col-gutter-sm items-start q-mb-sm">
+                    <div class="col-4">
+                      <q-input v-model="variant.size" outlined dense placeholder="Size" :rules="[val => !!val || 'Required']" hide-bottom-space class="variant-input bg-white" />
+                    </div>
+                    <div class="col-3">
+                      <q-input v-model.number="variant.price" type="number" outlined dense min="0" step="0.01" placeholder="Price" hide-bottom-space class="variant-input bg-white" />
+                    </div>
+                    <div class="col-3">
+                      <q-input v-model.number="variant.quantity" type="number" outlined dense min="0" placeholder="Qty" hide-bottom-space class="variant-input bg-white" />
+                    </div>
+                    <div class="col-2 flex flex-center" style="padding-top: 4px;">
+                      <q-btn icon="delete" flat round color="grey-5" size="sm" @click="removeVariant(index)" :disable="form.variants.length === 1" class="hover-red" />
+                    </div>
                   </div>
-                  <div class="col-3">
-                    <q-input v-model.number="variant.price" type="number" outlined dense min="0" step="0.01" placeholder="Price" />
-                  </div>
-                  <div class="col-3">
-                    <q-input v-model.number="variant.quantity" type="number" outlined dense min="0" placeholder="Qty" />
-                  </div>
-                  <div class="col-2 text-right">
-                    <q-btn icon="delete" flat color="red-6" dense @click="removeVariant(index)" :disable="form.variants.length === 1" />
-                  </div>
+                  <q-btn outline icon="add" label="Add Variant" size="sm" class="btn-add-variant q-mt-xs" no-caps @click="addVariant" />
                 </div>
-                <q-btn outline label="Add Variant" icon="add" size="sm" color="grey-8" no-caps @click="addVariant" />
-              </div>
+              </q-slide-transition>
             </div>
 
-            <!-- Right Column: Image -->
-            <div class="col-12 col-md-5">
-              <div class="text-subtitle2 q-mb-xs">Product Image</div>
-              <div class="image-upload-box" @click="showOptionMenu = true">
+            <!-- RIGHT COLUMN: IMAGE -->
+            <div class="col-12 col-md-5 flex column">
+              <div class="input-label q-mb-xs">Product Image</div>
+              
+              <!-- Image Upload Zone -->
+              <div class="image-upload-box flex-1 relative-position" @click="showOptionMenu = true">
                 <img v-if="imagePreview" :src="imagePreview" class="preview-img" />
-                <div v-else class="text-center text-grey-6">
-                  <q-icon name="cloud_upload" size="48px" />
-                  <div>Click to update</div>
+                <div v-else class="flex column flex-center full-height w-full q-pa-lg text-center cursor-pointer">
+                  <q-icon name="cloud_upload" size="64px" color="blue-grey-3" class="q-mb-sm opacity-80" />
+                  <div class="text-subtitle1 text-weight-bolder text-slate-700">Update Product Image</div>
+                  <div class="text-caption text-slate-500">Click to add a photo</div>
                 </div>
                 <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="handleImageUpload" />
               </div>
-              <div v-if="imagePreview" class="row q-gutter-sm q-mt-sm justify-center">
-                <q-btn outline color="negative" icon="delete" label="Remove" @click="removeEditImage" />
-                <q-btn outline color="primary" icon="crop" label="Crop Photo" @click="openCropperForEdit" />
-              </div>
+
+              <!-- Action buttons for existing image -->
+              <q-slide-transition>
+                <div v-if="imagePreview" class="row q-gutter-sm q-mt-md justify-center">
+                  <q-btn outline color="blue-grey-7" icon="crop" label="Crop Photo" no-caps class="btn-glass-outline text-weight-bold flex-1" @click="openCropperForEdit" />
+                  <q-btn outline color="red-9" icon="delete" label="Remove" no-caps class="btn-glass-outline text-weight-bold flex-1" @click="removeEditImage" />
+                </div>
+              </q-slide-transition>
             </div>
           </div>
 
-          <div class="row justify-end q-mt-lg q-gutter-sm">
-            <q-btn flat label="Cancel" color="grey-8" no-caps v-close-popup />
-            <q-btn type="submit" unelevated label="Save Changes" color="red-8" class="btn-premium" :loading="saving" />
+          <!-- FOOTER ACTIONS -->
+          <div class="row justify-end q-mt-xl q-pt-md border-top-light">
+            <q-btn flat label="Cancel" color="grey-8" no-caps v-close-popup class="text-weight-bold q-mr-md" />
+            <q-btn type="submit" unelevated label="SAVE CHANGES" class="btn-save text-white text-weight-bold" no-caps :loading="saving" />
           </div>
+
         </q-form>
       </q-card-section>
     </q-card>
   </q-dialog>
 
-  <!-- OPTION MENU MODAL -->
+  <!-- ================= OPTION MENU MODAL ================= -->
   <q-dialog v-model="showOptionMenu">
-    <q-card style="width: 400px; max-width: 90vw; border-radius: 12px;" class="bg-white q-pa-sm">
+    <q-card style="width: 400px; max-width: 90vw; border-radius: 12px;" class="bg-white q-pa-sm shadow-4">
       <q-card-section class="row items-center q-pb-none">
         <div class="text-h6 text-weight-bolder text-slate-700">Add Product Photo</div>
         <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
+        <q-btn icon="close" flat round dense v-close-popup color="grey-7" />
       </q-card-section>
 
       <q-card-section class="q-pt-lg q-pb-lg">
@@ -129,7 +174,7 @@
     </q-card>
   </q-dialog>
 
-  <!-- CAMERA VIEWFINDER MODAL -->
+  <!-- ================= CAMERA VIEWFINDER MODAL ================= -->
   <q-dialog v-model="showCameraLens" persistent @show="startCamera" @hide="stopCamera">
     <q-card style="width: 650px; max-width: 95vw; border-radius: 12px;" class="bg-white overflow-hidden shadow-4">
       <q-card-section class="row items-center q-px-lg q-py-md bg-slate-50 border-bottom-light">
@@ -143,12 +188,12 @@
       </q-card-section>
 
       <q-card-actions align="center" class="q-pa-md bg-white">
-        <q-btn unelevated icon="camera" label="CAPTURE PHOTO" class="btn-save text-white text-weight-bold" no-caps @click="capturePhoto" />
+        <q-btn unelevated icon="camera" label="CAPTURE PHOTO" class="btn-save text-white text-weight-bold q-px-xl" no-caps @click="capturePhoto" />
       </q-card-actions>
     </q-card>
   </q-dialog>
 
-  <!-- CROPPER MODAL (ImageCaptureModal) -->
+  <!-- ================= CROPPER MODAL ================= -->
   <ImageCaptureModal v-model="showCropper" :initialImage="imagePreview" :aspectRatio="1" @captured="handleEditImageCaptured" />
 
 </template>
@@ -366,51 +411,149 @@ const submitForm = async () => {
 </script>
 
 <style scoped>
-.premium-glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 16px;
+/* Gradient Header Styling */
+.header-gradient { background: linear-gradient(135deg, #B91C1C 0%, #7F1D1D 100%); }
+.tracking-tight { letter-spacing: -0.02em; }
+.opacity-80 { opacity: 0.8; transition: opacity 0.2s ease; }
+.hover-opacity-100:hover { opacity: 1; }
+
+/* Colors & Typography */
+.text-brand-red { color: #cc3333; }
+.text-slate-700 { color: #334155; }
+.text-slate-500 { color: #64748b; }
+.text-slate-400 { color: #94a3b8; }
+.bg-slate-50 { background-color: #f8fafc; }
+.bg-grey-1 { background-color: #f1f5f9; }
+.input-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2F3C4D; 
 }
+.hover-underline:hover { text-decoration: underline; }
+
+/* Standard Inputs - Fixed Native Input Color */
+.custom-input :deep(.q-field__control) {
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+.custom-input :deep(.q-field__control:before) { border: 1px solid #e2e8f0; }
+.custom-input :deep(.q-field--focused .q-field__control) {
+  box-shadow: 0 0 0 1px rgba(185, 28, 28, 0.15); 
+  border-color: #B91C1C;
+}
+.custom-input :deep(.q-placeholder) { color: #94a3b8; }
+.custom-input :deep(.q-field__native),
+.custom-input :deep(input) { 
+  color: #1e293b !important; 
+  font-weight: 500; 
+}
+
+/* Checkbox & Toggle */
+.custom-checkbox :deep(.q-checkbox__bg) {
+  border: 1.5px solid #94a3b8;
+  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+}
+.custom-checkbox :deep(.q-checkbox__inner--truthy .q-checkbox__bg) {
+  background: #cc3333;
+  border-color: #cc3333;
+}
+.custom-toggle :deep(.q-toggle__inner) {
+  color: #16a34a;
+}
+
+/* ================= VARIANTS SECTION ================= */
+.variants-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+.variant-input :deep(.q-field__control) {
+  border-radius: 6px;
+  height: 38px;
+}
+.variant-input :deep(.q-field__control:before) { border: 1px solid #e2e8f0; }
+.variant-input :deep(.q-field--focused .q-field__control) {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 1px #3b82f6 !important;
+}
+.variant-input :deep(.q-field--error .q-field__control) {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 1px #ef4444 !important;
+}
+.variant-input :deep(.q-field__native),
+.variant-input :deep(input) { 
+  color: #1e293b !important; 
+  font-weight: 500; 
+}
+.btn-add-variant {
+  border-radius: 6px;
+  color: #475569 !important;
+  border-color: #cbd5e1 !important;
+  font-weight: 600;
+  padding: 4px 12px;
+}
+
+/* ================= IMAGE UPLOAD BOX ================= */
 .image-upload-box {
-  border: 2px dashed #CBD5E1;
+  border: 2px dashed #94a3b8;
   border-radius: 12px;
-  height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  background: #F8FAFC;
+  background-color: #f1f5f9;
+  min-height: 280px;
   overflow: hidden;
-  position: relative;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 .image-upload-box:hover {
-  border-color: #94A3B8;
-  background: #F1F5F9;
+  border-color: #64748b;
+  background-color: #e2e8f0;
 }
 .preview-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 10px;
 }
-.hidden {
-  display: none;
-}
-.btn-premium {
-  border-radius: 8px;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.3);
-}
-.btn-save {
-  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
-}
+.hidden { display: none; }
+
+/* Buttons & Footer */
 .btn-outline-dark {
-  color: #334155;
-  border-color: #cbd5e1;
+  color: #334155 !important;
+  border-color: #334155 !important;
 }
+.btn-glass-outline {
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  transition: all 0.2s ease;
+}
+.btn-glass-outline:hover {
+  background: #f8fafc !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  transform: translateY(-1px);
+}
+.border-top-light { border-top: 1px solid #f1f5f9; }
+.border-bottom-light { border-bottom: 1px solid #e2e8f0; }
+
+.btn-save {
+  background-color: #cc3333 !important; 
+  border-radius: 8px;
+  padding: 8px 28px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-save:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(204, 51, 51, 0.3);
+}
+
+.w-full { width: 100%; }
+.hover-red:hover { color: #cc3333 !important; }
 .camera-feed {
   width: 100%;
-  max-width: 600px;
+  max-height: 400px;
+  object-fit: cover;
   border-radius: 8px;
   background-color: #000;
 }

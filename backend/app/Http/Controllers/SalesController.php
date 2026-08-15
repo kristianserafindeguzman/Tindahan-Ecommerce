@@ -26,18 +26,10 @@ class SalesController extends Controller
         $cancelQuery = Order::where('store_id', $storeId);
 
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $formattedStart = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d');
-            $formattedEnd = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d');
-            
-            if ($formattedStart === $formattedEnd) {
-                $query->whereDate('updated_at', $formattedStart);
-                $cancelQuery->whereDate('updated_at', $formattedStart);
-            } else {
-                $start = \Carbon\Carbon::parse($formattedStart)->startOfDay();
-                $end = \Carbon\Carbon::parse($formattedEnd)->endOfDay();
-                $query->whereBetween('updated_at', [$start, $end]);
-                $cancelQuery->whereBetween('updated_at', [$start, $end]);
-            }
+            $start = \Carbon\Carbon::parse($request->start_date, 'Asia/Manila')->startOfDay()->setTimezone('UTC');
+            $end = \Carbon\Carbon::parse($request->end_date, 'Asia/Manila')->endOfDay()->setTimezone('UTC');
+            $query->whereBetween('updated_at', [$start, $end]);
+            $cancelQuery->whereBetween('updated_at', [$start, $end]);
         }
         
         \Illuminate\Support\Facades\Log::info("Sales Metrics Query: " . $query->toSql(), $query->getBindings());
@@ -48,14 +40,16 @@ class SalesController extends Controller
 
         $revenueGrowth = null;
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $formattedStart = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d');
-            $formattedEnd = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d');
+            $startManila = \Carbon\Carbon::parse($request->start_date, 'Asia/Manila')->startOfDay();
+            $endManila = \Carbon\Carbon::parse($request->end_date, 'Asia/Manila')->endOfDay();
             
-            if ($formattedStart === $formattedEnd) {
-                $yesterday = \Carbon\Carbon::parse($formattedStart)->subDay()->toDateString();
+            if ($startManila->isSameDay($endManila)) {
+                $yesterdayStart = $startManila->copy()->subDay()->setTimezone('UTC');
+                $yesterdayEnd = $startManila->copy()->subDay()->endOfDay()->setTimezone('UTC');
+                
                 $yesterdayRevenue = Order::where('store_id', $storeId)
                     ->where('status', 'picked_up')
-                    ->whereDate('updated_at', $yesterday)
+                    ->whereBetween('updated_at', [$yesterdayStart, $yesterdayEnd])
                     ->sum('total_amount');
                     
                 if ($yesterdayRevenue == 0 && $revenue == 0) {
@@ -81,16 +75,9 @@ class SalesController extends Controller
             ->where('orders.status', 'picked_up');
 
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $formattedStart = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d');
-            $formattedEnd = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d');
-            
-            if ($formattedStart === $formattedEnd) {
-                $bestSellingQuery->whereDate('orders.updated_at', $formattedStart);
-            } else {
-                $start = \Carbon\Carbon::parse($formattedStart)->startOfDay();
-                $end = \Carbon\Carbon::parse($formattedEnd)->endOfDay();
-                $bestSellingQuery->whereBetween('orders.updated_at', [$start, $end]);
-            }
+            $start = \Carbon\Carbon::parse($request->start_date, 'Asia/Manila')->startOfDay()->setTimezone('UTC');
+            $end = \Carbon\Carbon::parse($request->end_date, 'Asia/Manila')->endOfDay()->setTimezone('UTC');
+            $bestSellingQuery->whereBetween('orders.updated_at', [$start, $end]);
         }
 
         $bestCategoryRecord = $bestSellingQuery
@@ -126,16 +113,9 @@ class SalesController extends Controller
         $query = Order::with('items.inventory')->where('store_id', $storeId)->where('status', 'picked_up');
 
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $formattedStart = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d');
-            $formattedEnd = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d');
-            
-            if ($formattedStart === $formattedEnd) {
-                $query->whereDate('updated_at', $formattedStart);
-            } else {
-                $start = \Carbon\Carbon::parse($formattedStart)->startOfDay();
-                $end = \Carbon\Carbon::parse($formattedEnd)->endOfDay();
-                $query->whereBetween('updated_at', [$start, $end]);
-            }
+            $start = \Carbon\Carbon::parse($request->start_date, 'Asia/Manila')->startOfDay()->setTimezone('UTC');
+            $end = \Carbon\Carbon::parse($request->end_date, 'Asia/Manila')->endOfDay()->setTimezone('UTC');
+            $query->whereBetween('updated_at', [$start, $end]);
 
             $transactions = $query->orderBy('updated_at', 'desc')->limit(10)->get()->map(function ($order) {
                 $firstItem = $order->items->first();
@@ -163,7 +143,7 @@ class SalesController extends Controller
                 ->get();
             
             $grouped = $orders->groupBy(function($order) {
-                return \Carbon\Carbon::parse($order->updated_at)->format('Y-m-d');
+                return \Carbon\Carbon::parse($order->updated_at)->setTimezone('Asia/Manila')->format('Y-m-d');
             });
 
             $transactions = [];
@@ -224,17 +204,22 @@ class SalesController extends Controller
         }
 
         // Create the Order inside a transaction
-        $saleDate = \Carbon\Carbon::parse($request->sale_date);
+        // Ensure manual sales save exactly the intended date by forcing UTC 
+        // since the app uses default UTC for updated_at storage but we want it
+        // to show up under that exact day in Asia/Manila.
+        $saleDateManila = \Carbon\Carbon::parse($request->sale_date, 'Asia/Manila')->startOfDay();
+        $saleDateUtc = clone $saleDateManila;
+        $saleDateUtc->setTimezone('UTC');
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($vendor, $storeId, $request, $inventory, $saleDate) {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($vendor, $storeId, $request, $inventory, $saleDateUtc) {
             $order = new Order();
             $order->consumer_id = $vendor->user_id; // Map manual sale to the vendor themselves
             $order->store_id = $storeId;
             $order->total_amount = $request->total_amount;
             $order->status = 'picked_up';
             $order->timestamps = false;
-            $order->created_at = $saleDate;
-            $order->updated_at = $saleDate;
+            $order->created_at = $saleDateUtc;
+            $order->updated_at = $saleDateUtc;
             $order->save();
 
             // Create the OrderItem

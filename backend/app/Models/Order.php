@@ -20,6 +20,8 @@ class Order extends Model
         'total_amount',
         'status',
         'cancellation_reason',
+        'consumer_latitude',
+        'consumer_longitude',
     ];
 
     /**
