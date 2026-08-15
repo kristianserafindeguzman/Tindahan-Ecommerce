@@ -8,6 +8,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\SearchLogController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -115,6 +116,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ----- Consumer Routes -----
     Route::middleware('role:Consumer')->prefix('consumer')->group(function () {
+        Route::post('/search-logs', [SearchLogController::class, 'store']);
         Route::get('/home', fn () => response()->json(['message' => 'Welcome to the Consumer Home']));
 
         // Cart

@@ -269,6 +269,7 @@ import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'
 import { useAddress } from '@/composables/useAddress'
 import { splitHighlightParts } from '@/utils/textHighlight'
+import { useCategories } from '@/composables/useCategories'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 
 const router = useRouter()
@@ -320,6 +321,7 @@ const confirmAddress = () => {
 
 const { products, fetchProducts } = useProducts()
 const { stores, fetchStores } = useStores()
+const { categories, fetchCategories } = useCategories()
 const { items: cartItems, itemCount: cartItemCount, fetchCart } = useCart()
 
 // Renders for both guests and logged-in consumers, so it reads localStorage directly rather than relying on a route guard.
@@ -328,6 +330,7 @@ const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 onMounted(() => {
   fetchProducts()
   fetchStores()
+  fetchCategories()
   // Cart routes are auth-gated — an unconditional fetch would 401 for guests.
   if (isLoggedIn.value) fetchCart()
 })
@@ -456,11 +459,96 @@ function navigateToSearchPage(q) {
 }
 
 // The only place a search is actually performed — fires on submit (searchQuery change), never while typing.
+// watch(searchQuery, (q) => {
+//   if (q) saveRecentSearch(q)
+//   closeSuggestions()
+//   navigateToSearchPage(q)
+// })
+
+const logSearch = async (query) => {
+  const token = localStorage.getItem('auth_token')
+
+  // Don't log guest searches
+  if (!token || !query) return
+
+  try {
+    const latitude = localStorage.getItem('consumer_lat')
+    const longitude = localStorage.getItem('consumer_lng')
+
+    // Location is required by search_logs
+    if (!latitude || !longitude) {
+      console.warn('Search log skipped: consumer location is not available.')
+      return
+    }
+
+    const normalizedQuery = query.trim().toLowerCase()
+
+    // Find the searched product
+    const matchedProduct = products.value.find(
+      (product) =>
+        product.name?.trim().toLowerCase() === normalizedQuery
+    )
+
+    if (!matchedProduct) {
+      console.warn(
+        'Search log skipped: product could not be matched.',
+        query
+      )
+      return
+    }
+
+    // Product has category NAME, not category_id
+    const matchedCategory = categories.value.find(
+      (category) =>
+        category.label?.trim().toLowerCase() ===
+        matchedProduct.category?.trim().toLowerCase()
+    )
+
+    if (!matchedCategory) {
+      console.warn(
+        'Search log skipped: category could not be matched.',
+        matchedProduct.category
+      )
+      return
+    }
+
+    const categoryId = matchedCategory.category_id ?? matchedCategory.id
+
+    console.log('Search log data:', {
+      query,
+      product: matchedProduct.name,
+      category: matchedCategory.label,
+      category_id: categoryId,
+      latitude,
+      longitude
+    })
+
+    await api.post('/consumer/search-logs', {
+      search_query: query,
+      category_id: categoryId,
+      search_lat: Number(latitude),
+      search_lng: Number(longitude),
+    })
+
+    console.log('Search log saved successfully.')
+  } catch (error) {
+    console.error(
+      'Failed to save search log:',
+      error.response?.data || error
+    )
+  }
+}
+
+
 watch(searchQuery, (q) => {
-  if (q) saveRecentSearch(q)
+  if (q) {
+    saveRecentSearch(q)
+  }
+
   closeSuggestions()
-  navigateToSearchPage(q)
 })
+
+
 
 const selectSuggestion = (term) => {
   searchInput.value = term
@@ -468,14 +556,27 @@ const selectSuggestion = (term) => {
 }
 
 // Enter, the search button, or a mobile keyboard's search key all land here.
-const submitSearch = () => {
-  if (activeSuggestionIndex.value >= 0 && suggestionTerms.value[activeSuggestionIndex.value]) {
+const submitSearch = async () => {
+  if (
+    activeSuggestionIndex.value >= 0 &&
+    suggestionTerms.value[activeSuggestionIndex.value]
+  ) {
     selectSuggestion(suggestionTerms.value[activeSuggestionIndex.value])
     return
   }
+
   const q = searchInput.value.trim()
+
+  if (!q) return
+
   searchInput.value = q
   searchQuery.value = q
+
+  // Save the search to the database
+  await logSearch(q)
+
+  // Navigate to search results
+  navigateToSearchPage(q)
 }
 
 // Just opens/refreshes the suggestions dropdown — typing never triggers a search on its own.
