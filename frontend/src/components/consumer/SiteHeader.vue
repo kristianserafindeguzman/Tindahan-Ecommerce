@@ -176,7 +176,7 @@
                   <div v-if="!notifications.length" class="cart-menu-empty">No notifications yet.</div>
 
                   <template v-else>
-                    <div v-for="notif in notifications.slice(0, 10)" :key="notif.notification_id" class="cart-menu-item" style="cursor:pointer;" @click="handleNotificationClick(notif)">
+                    <div v-for="notif in notifications.slice(0, 10)" :key="notif.notification_id" class="cart-menu-item notification-item" style="cursor:pointer;" @click="handleNotificationClick(notif)">
                       <div class="cart-menu-item-info" :style="notif.is_read ? 'opacity: 0.7;' : 'font-weight: bold;'">
                         <div class="cart-menu-item-name">{{ notif.title }}</div>
                         <div class="cart-menu-item-meta" style="white-space: normal; line-height: 1.3;">{{ notif.message }}</div>
@@ -715,6 +715,16 @@ const goToTab = (tab) => {
 
   gap: 10px;
   padding: 6px 0;
+}
+
+.notification-item {
+  align-items: flex-start;
+
+  padding: 10px 0;
+}
+
+.notification-item + .notification-item {
+  border-top: 1px solid #f0f0f0;
 }
 
 .cart-menu-item-image {

@@ -6,15 +6,77 @@
     <!-- MAIN CONTENT -->
     <div class="page-content">
 
-      <span class="back-link" @click="router.push('/consumer/cart')">
-        <q-icon name="o_arrow_back" size="15px" />
-        Back to Cart
-      </span>
+      <template v-if="!orderPlaced">
+        <span class="back-link" @click="router.push('/consumer/cart')">
+          <q-icon name="o_arrow_back" size="15px" />
+          Back to Cart
+        </span>
 
-      <h1 class="page-title">Checkout</h1>
-      <p class="page-subtitle">Review your order before confirming.</p>
+        <h1 class="page-title">Checkout</h1>
+        <p class="page-subtitle">Review your order before confirming.</p>
+      </template>
 
       <div v-if="loading" class="checkout-loading">Loading your order…</div>
+
+      <div v-else-if="orderPlaced" class="success-view">
+        <div class="success-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <h2 class="success-title">Order Placed!</h2>
+
+        <p class="success-subtitle">
+          Your order at <strong>{{ placedOrder.store?.store_name }}</strong> has been confirmed.<br class="subtitle-break" />
+          We'll notify you when it's ready for pickup.
+        </p>
+
+        <div class="success-actions">
+          <q-btn unelevated no-caps outline label="Continue Shopping" class="continue-btn" @click="router.push('/consumer/home')" />
+          <q-btn unelevated no-caps label="View Order Details" class="view-order-btn" @click="viewOrderDetails" />
+        </div>
+
+        <div class="order-ref-card">
+          <div class="order-ref-header">
+            <div class="order-ref-header-info">
+              <div class="order-ref-label">Order Reference</div>
+              <div class="order-ref-id">#{{ placedOrder.order_id }}</div>
+            </div>
+            <div class="order-ref-pickup">
+              <div class="order-ref-pickup-label">
+                <q-icon name="o_schedule" size="12px" />
+                Estimated Pickup
+              </div>
+              <div class="order-ref-pickup-value">{{ pickupTimeText }}</div>
+            </div>
+          </div>
+
+          <q-separator class="card-divider order-ref-card-divider" />
+
+          <div class="order-ref-body">
+            <div v-for="item in placedOrder.items" :key="item.order_item_id" class="order-ref-item">
+              <div class="order-ref-item-image">
+                <img v-if="item.inventory?.image_url" :src="item.inventory.image_url" :alt="item.inventory?.product_name" />
+                <q-icon v-else name="o_inventory_2" size="16px" />
+              </div>
+              <span class="order-ref-item-name"><strong class="order-ref-item-qty">{{ item.quantity }}x</strong> {{ item.inventory?.product_name || 'Item' }}</span>
+              <span class="order-ref-item-price">₱{{ Number(item.subtotal).toFixed(2) }}</span>
+            </div>
+
+            <q-separator class="order-ref-separator" />
+
+            <div class="order-ref-total">
+              <span>Total</span>
+              <span class="order-ref-total-amount">₱{{ Number(placedOrder.total_amount).toFixed(2) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <span class="need-help-link" @click="showContactSupport = true">
+          <q-icon name="o_help" size="13px" />
+          Need help with this order?
+        </span>
+      </div>
 
       <div v-else-if="!checkoutItems.length" class="checkout-empty">
         <q-icon name="o_shopping_cart" size="40px" class="checkout-empty-icon" />
@@ -28,6 +90,10 @@
 
           <!-- STORE INFO -->
           <div class="store-info-card">
+            <div class="checkout-items-title">Pickup Location</div>
+            <q-separator class="card-divider" />
+
+            <div v-if="storeDetails?.latitude && storeDetails?.longitude" ref="storeMapEl" class="store-map-preview" />
             <div class="store-info-header">
               <q-icon name="o_location_on" size="20px" />
               <span class="store-info-name">{{ storeName }}</span>
@@ -217,17 +283,21 @@
 
     <TermsModal v-model="showTerms" />
     <PrivacyModal v-model="showPrivacy" />
+    <ContactSupportModal v-model="showContactSupport" />
 
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
+import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
 import { useQuasar } from 'quasar'
 import { useCart } from '@/composables/useCart'
 import { useStores } from '@/composables/useStores'
@@ -242,16 +312,16 @@ const { stores, fetchStores } = useStores()
 
 const user = ref({})
 const placingOrder = ref(false)
+const orderPlaced = ref(false)
+const placedOrder = ref(null)
+const showContactSupport = ref(false)
 
 const placeOrder = async () => {
   placingOrder.value = true
   try {
     const data = await checkout(storeId.value)
-    $q.notify({
-      type: 'positive',
-      message: 'Order placed successfully!'
-    })
-    router.push('/consumer/orders')
+    placedOrder.value = data.order
+    orderPlaced.value = true
   } catch (error) {
     $q.notify({
       type: 'negative',
@@ -260,6 +330,12 @@ const placeOrder = async () => {
   } finally {
     placingOrder.value = false
   }
+}
+
+const viewOrderDetails = () => {
+  if (!placedOrder.value) return
+  localStorage.setItem('consumer_selected_order_id', placedOrder.value.order_id)
+  router.push('/consumer/orders/details')
 }
 
 onMounted(async () => {
@@ -361,6 +437,91 @@ const confirmSchedule = () => {
   confirmedSlotLabel.value = selectedSlot.value
   showScheduler.value = false
 }
+
+const pickupTimeText = computed(() => {
+  if (pickupOption.value === 'schedule' && scheduledSlotText.value) return scheduledSlotText.value
+  return 'ASAP (10 - 15 mins)'
+})
+
+// STORE MAP PREVIEW — a small, non-interactive Leaflet "photo" pinning the store's location.
+const storeMapEl = ref(null)
+let storeMap = null
+let storeMapMarker = null
+let storeMapUnmounted = false
+
+const storeMapIcon = L.divIcon({
+  className: 'store-map-marker',
+  html: `
+    <svg width="30" height="40" viewBox="0 0 30 40">
+      <path d="M15 0C6.7 0 0 6.7 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.7 23.3 0 15 0z" fill="#bd2427" stroke="#ffffff" stroke-width="1.5"/>
+      <circle cx="15" cy="15" r="6.5" fill="#ffffff"/>
+    </svg>
+  `,
+  iconSize: [30, 40],
+  iconAnchor: [15, 40]
+})
+
+const initStoreMap = async () => {
+  if (!storeDetails.value?.latitude || !storeDetails.value?.longitude) return
+
+  const center = [storeDetails.value.latitude, storeDetails.value.longitude]
+
+  // Map already live and its container still mounted — just move it to the (possibly new) store.
+  if (storeMap && storeMapEl.value) {
+    storeMap.setView(center, 16)
+    if (storeMapMarker) storeMap.removeLayer(storeMapMarker)
+    storeMapMarker = L.marker(center, { icon: storeMapIcon }).addTo(storeMap)
+    return
+  }
+
+  // Container was removed (v-if toggled off) out from under a live map — tear it down before rebuilding.
+  if (storeMap && !storeMapEl.value) {
+    storeMap.remove()
+    storeMap = null
+    storeMapMarker = null
+  }
+
+  await nextTick()
+  if (storeMapUnmounted || !storeMapEl.value) return
+
+  storeMap = L.map(storeMapEl.value, {
+    zoomControl: false,
+    dragging: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    touchZoom: false,
+    boxZoom: false,
+    keyboard: false
+  }).setView(center, 16)
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(storeMap)
+
+  storeMapMarker = L.marker(center, { icon: storeMapIcon }).addTo(storeMap)
+}
+
+watch(storeDetails, () => initStoreMap())
+
+// The success view replaces the form (v-if branch switch, not a component unmount), so the map's
+// container is torn down without onBeforeUnmount ever firing — clean it up here instead.
+watch(orderPlaced, (value) => {
+  if (value && storeMap) {
+    storeMap.remove()
+    storeMap = null
+    storeMapMarker = null
+  }
+})
+
+onBeforeUnmount(() => {
+  storeMapUnmounted = true
+  if (storeMap) {
+    storeMap.remove()
+    storeMap = null
+    storeMapMarker = null
+  }
+})
 </script>
 
 <style scoped>
@@ -436,6 +597,315 @@ const confirmSchedule = () => {
   color: #8992a2;
 
   font-size: 14px;
+}
+
+/* SUCCESS VIEW */
+
+.success-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 40px 16px 56px;
+
+  text-align: center;
+}
+
+.success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 84px;
+  height: 84px;
+  margin-bottom: 12px;
+
+  border-radius: 50%;
+
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.success-title {
+  margin: 0 0 8px;
+
+  font-size: 27px;
+  font-weight: 700;
+
+  color: #111111;
+}
+
+.success-subtitle {
+  margin: 0 0 20px;
+
+  font-size: 15px;
+  line-height: 1.5;
+
+  color: #767676;
+}
+
+.success-subtitle strong {
+  color: #111111;
+}
+
+.success-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.continue-btn {
+  height: 48px;
+  padding: 0 24px;
+
+  border-radius: 6px;
+  border: 1px solid #bd2427;
+
+  background: #ffffff;
+  color: #bd2427;
+
+  font-size: 13.5px;
+  font-weight: 600;
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+
+.continue-btn:hover {
+  background: #fdecec;
+
+  transform: translateY(-1px);
+}
+
+.continue-btn:active {
+  background: #fbdbdc;
+
+  transform: translateY(0);
+}
+
+.continue-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+.view-order-btn {
+  height: 48px;
+  padding: 0 24px;
+
+  border-radius: 6px;
+
+  background: #bd2427;
+  color: #ffffff;
+
+  font-size: 13.5px;
+  font-weight: 600;
+
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+
+.view-order-btn:hover {
+  background: #a91e21;
+
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+
+  transform: translateY(-1px);
+}
+
+.view-order-btn:active {
+  background: #8f1a1c;
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.view-order-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+.order-ref-card {
+  width: 100%;
+  box-sizing: border-box;
+
+  margin-bottom: 20px;
+  padding: 18px 24px;
+
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
+
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+
+  text-align: left;
+}
+
+.order-ref-header {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 12px;
+}
+
+.order-ref-header-info {
+  flex: 1;
+}
+
+.order-ref-card-divider {
+  margin: 16px 0 14px;
+
+  background: #f0f0f0;
+}
+
+.order-ref-body {
+  padding: 0;
+}
+
+.order-ref-label {
+  margin-bottom: 4px;
+
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  color: #8992a2;
+}
+
+.order-ref-id {
+  font-size: 17px;
+  font-weight: 700;
+
+  color: #111111;
+}
+
+.order-ref-pickup {
+  text-align: right;
+
+  white-space: nowrap;
+}
+
+.order-ref-pickup-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 4px;
+
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  color: #8992a2;
+}
+
+.order-ref-pickup-value {
+  margin-top: 4px;
+
+  font-size: 13.5px;
+  font-weight: 700;
+
+  color: #bd2427;
+}
+
+.order-ref-separator {
+  margin: 14px 0;
+
+  background: #f0f0f0;
+}
+
+.order-ref-item {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+
+  gap: 10px;
+  padding: 7px 0;
+}
+
+.order-ref-item-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 40px;
+  height: 40px;
+
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+
+  background: linear-gradient(145deg, #f7f7f8 0%, #ececee 100%);
+  color: #bd2427;
+
+  overflow: hidden;
+}
+
+.order-ref-item-image img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.order-ref-item-name {
+  font-size: 13.5px;
+
+  color: #555555;
+}
+
+.order-ref-item-price {
+  font-size: 13.5px;
+  font-weight: 600;
+
+  color: #555555;
+}
+
+.order-ref-item-qty {
+  margin-right: 4px;
+
+  color: #bd2427;
+}
+
+.order-ref-total {
+  display: flex;
+  justify-content: space-between;
+
+  padding-top: 8px;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  color: #111111;
+}
+
+.order-ref-total-amount {
+  color: #bd2427;
+}
+
+.need-help-link {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 5px;
+
+  font-size: 13px;
+
+  color: #8992a2;
+
+  cursor: pointer;
+
+  transition: color 0.15s;
+}
+
+.need-help-link:hover {
+  color: #bd2427;
 }
 
 .checkout-empty {
@@ -519,6 +989,24 @@ const confirmSchedule = () => {
 
   background: #ffffff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.store-map-preview {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+
+  width: 100%;
+  height: 140px;
+  margin-bottom: 12px;
+
+  border-radius: 8px;
+
+  overflow: hidden;
+}
+
+.store-map-preview :deep(.store-map-marker) {
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
 }
 
 .store-info-header {
@@ -1112,6 +1600,22 @@ const confirmSchedule = () => {
   }
 
   .contact-field-divider {
+    display: none;
+  }
+
+  .success-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .continue-btn,
+  .view-order-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .subtitle-break {
     display: none;
   }
 }
