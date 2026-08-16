@@ -140,6 +140,7 @@ import { useCart } from '@/composables/useCart'
 const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()
+const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
 const query = computed(() => (route.query.q || '').toString().trim())
 
@@ -149,6 +150,11 @@ const { stores, fetchStores } = useStores()
 const { addToCart } = useCart()
 
 const handleAddToCart = async (product) => {
+  if (!isLoggedIn.value) {
+    router.push('/login')
+    return
+  }
+
   try {
     await addToCart(product.id)
     $q.notify({ type: 'positive', message: `${product.name} added to cart.` })

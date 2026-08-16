@@ -268,10 +268,6 @@
               class="auth-btn auth-btn-primary"
               @click="goToSignup"
             />
-
-            <q-btn flat dense :ripple="false" class="icon-btn" @click="goToLogin">
-              <q-icon name="o_shopping_cart" size="20px" />
-            </q-btn>
           </template>
 
         </div>
@@ -714,7 +710,7 @@ const goToTab = (tab) => {
   display: flex;
   align-items: center;
 
-  gap: 2px;
+  gap: 10px;
 
   margin-left: auto;
 

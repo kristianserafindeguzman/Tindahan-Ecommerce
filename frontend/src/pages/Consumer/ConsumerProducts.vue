@@ -138,7 +138,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
@@ -151,6 +151,8 @@ import { useCart } from '@/composables/useCart'
 
 const $q = useQuasar()
 const route = useRoute()
+const router = useRouter()
+const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
 const showProductModal = ref(false)
 const selectedProduct = ref(null)
@@ -165,6 +167,11 @@ const { products, fetchProducts } = useProducts()
 const { addToCart } = useCart()
 
 const handleAddToCart = async (product) => {
+  if (!isLoggedIn.value) {
+    router.push('/login')
+    return
+  }
+
   try {
     await addToCart(product.id)
     $q.notify({ type: 'positive', message: `${product.name} added to cart.` })

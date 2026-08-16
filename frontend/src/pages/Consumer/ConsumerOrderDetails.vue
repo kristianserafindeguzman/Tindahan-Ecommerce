@@ -1405,7 +1405,7 @@ onMounted(() => {
 }
 
 .receipt-total-amount {
-  color: #bd2427;
+  color: #111111;
 }
 
 .receipt-download-btn {

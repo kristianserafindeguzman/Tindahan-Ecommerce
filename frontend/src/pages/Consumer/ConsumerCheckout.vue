@@ -812,7 +812,7 @@ onBeforeUnmount(() => {
   font-size: 13.5px;
   font-weight: 700;
 
-  color: #bd2427;
+  color: #111111;
 }
 
 .order-ref-separator {
@@ -886,7 +886,7 @@ onBeforeUnmount(() => {
 }
 
 .order-ref-total-amount {
-  color: #bd2427;
+  color: #111111;
 }
 
 .need-help-link {
