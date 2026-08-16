@@ -1,5 +1,5 @@
 <template>
-  <div class="store-filters">
+  <div class="store-filters" :class="{ 'store-filters-sheet': isSheet }">
     <div class="filters-panel-header">
       <div class="filters-panel-title-group">
         <span class="filters-panel-title">Filters</span>
@@ -9,37 +9,41 @@
       </button>
     </div>
 
-    <div class="filter-group filter-group-row">
-      <label class="filter-label filter-label-inline">Open Now</label>
-      <q-toggle v-model="openNow" dense color="primary" />
+    <div class="filters-scroll">
+      <div class="filter-group filter-group-row">
+        <label class="filter-label filter-label-inline">Open Now</label>
+        <q-toggle v-model="openNow" dense color="primary" />
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Sort by</label>
+        <q-select
+          v-model="sort"
+          :options="sortOptions"
+          dense
+          outlined
+          emit-value
+          map-options
+          hide-bottom-space
+          behavior="menu"
+        />
+      </div>
     </div>
 
-    <div class="filter-group">
-      <label class="filter-label">Sort by</label>
-      <q-select
-        v-model="sort"
-        :options="sortOptions"
-        dense
-        outlined
-        emit-value
-        map-options
-        hide-bottom-space
-        behavior="menu"
+    <div class="filters-footer">
+      <q-separator class="filters-divider" />
+
+      <q-btn
+        label="Apply Filters"
+        unelevated
+        no-caps
+        class="apply-filters-btn"
+        @click="$emit('close')"
       />
-    </div>
 
-    <q-separator class="filters-divider" />
-
-    <q-btn
-      label="Apply Filters"
-      unelevated
-      no-caps
-      class="apply-filters-btn"
-      @click="$emit('close')"
-    />
-
-    <div class="clear-filters-row">
-      <span class="clear-filters-link" @click="$emit('clear')">Clear all filters</span>
+      <div class="clear-filters-row">
+        <span class="clear-filters-link" @click="$emit('clear')">Clear all filters</span>
+      </div>
     </div>
   </div>
 </template>
@@ -49,6 +53,10 @@ defineProps({
   sortOptions: {
     type: Array,
     required: true
+  },
+  isSheet: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -61,6 +69,38 @@ const sort = defineModel('sort')
 <style scoped>
 .store-filters {
   padding: 18px;
+}
+
+/* Sheet mode splits the panel into a fixed header, a scrollable field list, and a fixed footer (Apply/Clear). */
+.store-filters-sheet {
+  display: flex;
+  flex-direction: column;
+
+  flex: 1;
+  min-height: 0;
+
+  padding: 18px 0 0;
+}
+
+.store-filters-sheet .filters-panel-header {
+  flex-shrink: 0;
+
+  padding: 0 18px;
+}
+
+.store-filters-sheet .filters-scroll {
+  flex: 1;
+  min-height: 0;
+
+  overflow-y: auto;
+
+  padding: 0 18px;
+}
+
+.store-filters-sheet .filters-footer {
+  flex-shrink: 0;
+
+  padding: 4px 18px 18px;
 }
 
 .filters-panel-header {

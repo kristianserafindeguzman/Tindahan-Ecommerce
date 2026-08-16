@@ -1,5 +1,5 @@
 <template>
-  <q-page class="storefront-page">
+  <q-page class="storefront-page" :style="showActionsBar ? { paddingBottom: actionsBarHeight + 'px' } : null">
     <SiteHeader />
 
     <div v-if="order" class="page-content">
@@ -26,7 +26,7 @@
 
             <q-separator class="card-divider" />
 
-            <div v-if="order.status !== 'cancelled'" class="status-steps">
+            <div v-if="order.status !== 'cancelled'" class="status-steps" :class="{ 'status-steps-done': order.status === 'picked_up' }">
               <template v-for="(step, i) in statusSteps" :key="step.key">
                 <div class="status-step">
                   <div class="status-step-circle" :class="{ 'status-step-circle-active': isStatusActive(step.key) }">
@@ -80,7 +80,8 @@
 
             <q-separator class="card-divider" />
 
-            <div class="order-actions-row">
+            <!-- Desktop: in-flow with the rest of the store info card. -->
+            <div v-if="!showActionsBar" class="order-actions-row">
               <q-btn
                 v-if="order.status !== 'cancelled'"
                 unelevated
@@ -137,43 +138,72 @@
 
       </div>
 
+      <!-- Mobile: fixed bottom bar, same buttons/styling as the desktop in-card row. -->
+      <div v-if="showActionsBar" ref="actionsBarEl" class="order-actions-fixed">
+        <q-btn
+          v-if="order.status !== 'cancelled'"
+          unelevated
+          no-caps
+          icon="o_cancel"
+          label="Cancel Order"
+          class="cancel-order-btn"
+          :disable="order.status !== 'placed'"
+          @click="showCancelDialog = true"
+        >
+          <q-tooltip v-if="order.status !== 'placed'">Cancellation is no longer allowed at this stage.</q-tooltip>
+        </q-btn>
+        <q-btn
+          unelevated
+          no-caps
+          icon="o_directions"
+          label="Get Directions"
+          class="get-directions-btn"
+          :disable="!hasDirections"
+          @click="openDirections"
+        />
+      </div>
+
     </div>
 
     <div v-else class="order-loading">Loading order…</div>
 
     <SiteFooter />
 
-    <q-dialog v-model="showCancelDialog">
-      <q-card class="cancel-dialog-card">
+    <q-dialog v-model="showCancelDialog" :position="$q.screen.lt.sm ? 'bottom' : 'standard'">
+      <q-card class="cancel-dialog-card" :class="{ 'cancel-dialog-card-sheet': $q.screen.lt.sm }">
+        <div v-if="$q.screen.lt.sm" class="cancel-dialog-drag-handle" />
+
         <q-btn flat round dense icon="close" class="cancel-dialog-close-btn" v-close-popup />
 
-        <div class="cancel-dialog-title">Cancel Order?</div>
-        <p class="cancel-dialog-text">Please select a reason for cancelling your order.</p>
+        <div class="cancel-dialog-scroll">
+          <div class="cancel-dialog-title">Cancel Order?</div>
+          <p class="cancel-dialog-text">Please select a reason for cancelling your order.</p>
 
-        <q-separator class="card-divider" />
+          <q-separator class="card-divider" />
 
-        <div class="cancel-reason-list">
-          <div
-            v-for="reason in cancellationReasonOptions"
-            :key="reason"
-            class="cancel-reason-option"
-            :class="{ 'cancel-reason-option-selected': selectedCancelReason === reason }"
-            @click="selectedCancelReason = reason"
-          >
-            <span class="cancel-reason-radio" />
-            <span class="cancel-reason-label">{{ reason }}</span>
+          <div class="cancel-reason-list">
+            <div
+              v-for="reason in cancellationReasonOptions"
+              :key="reason"
+              class="cancel-reason-option"
+              :class="{ 'cancel-reason-option-selected': selectedCancelReason === reason }"
+              @click="selectedCancelReason = reason"
+            >
+              <span class="cancel-reason-radio" />
+              <span class="cancel-reason-label">{{ reason }}</span>
+            </div>
           </div>
-        </div>
 
-        <q-input
-          v-if="selectedCancelReason === 'Other'"
-          v-model="customCancelReason"
-          type="textarea"
-          placeholder="Tell us more…"
-          outlined
-          autogrow
-          class="cancel-dialog-input"
-        />
+          <q-input
+            v-if="selectedCancelReason === 'Other'"
+            v-model="customCancelReason"
+            type="textarea"
+            placeholder="Tell us more…"
+            outlined
+            autogrow
+            class="cancel-dialog-input"
+          />
+        </div>
 
         <div class="cancel-dialog-actions">
           <q-btn unelevated no-caps flat label="Keep Order" class="keep-order-btn" v-close-popup />
@@ -245,7 +275,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
@@ -337,8 +367,7 @@ const formatReceiptDateParts = (dateString) => {
   return `${datePart} • ${timePart}`
 }
 
-// Haversine distance — same formula as the backend's DistanceService, computed client-side since
-// this endpoint doesn't return a precomputed distance_meters for a single order.
+// Haversine distance, same formula as the backend's DistanceService — this endpoint doesn't return a precomputed distance_meters.
 const calculateDistanceMeters = (lat1, lng1, lat2, lng2) => {
   const R = 6371000
   const toRad = (deg) => (deg * Math.PI) / 180
@@ -396,6 +425,32 @@ const openDirections = () => {
 
   window.open(`https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}`, '_blank')
 }
+
+// Mobile: fixed bottom bar, replaces the in-card actions row.
+const showActionsBar = computed(() => !!order.value && $q.screen.lt.sm)
+
+// Reserves exactly the bar's measured height (not a guessed px value) as bottom padding, so SiteFooter sits flush against it with no gap or overlap.
+const actionsBarEl = ref(null)
+const actionsBarHeight = ref(0)
+let actionsBarObserver = null
+
+watch(actionsBarEl, (el) => {
+  actionsBarObserver?.disconnect()
+  actionsBarObserver = null
+
+  if (!el) {
+    actionsBarHeight.value = 0
+    return
+  }
+
+  actionsBarHeight.value = el.offsetHeight
+  actionsBarObserver = new ResizeObserver(() => {
+    actionsBarHeight.value = el.offsetHeight
+  })
+  actionsBarObserver.observe(el)
+})
+
+onBeforeUnmount(() => actionsBarObserver?.disconnect())
 
 const fetchOrderDetails = async () => {
   const id = localStorage.getItem('consumer_selected_order_id')
@@ -665,6 +720,16 @@ onMounted(() => {
 
 .status-step-line-current {
   background: linear-gradient(to right, #bd2427 50%, #e2e2e2 50%);
+}
+
+/* Picked up = done, so the stepper switches to the same green as .status-title-done. */
+.status-steps-done .status-step-circle-active {
+  border-color: #16a34a;
+  background: #16a34a;
+}
+
+.status-steps-done .status-step-line-active {
+  background: #16a34a;
 }
 
 .cancellation-note {
@@ -1059,12 +1124,61 @@ onMounted(() => {
   border-radius: 12px;
 }
 
+/* Sheet mode: fixed header, scrollable reason list, fixed footer — same flex-column split as ProductFilters.vue's sheet mode. */
+.cancel-dialog-card-sheet {
+  display: flex;
+  flex-direction: column;
+
+  width: 100%;
+  max-width: 100%;
+  max-height: 88vh;
+
+  padding: 0;
+
+  border-radius: 16px 16px 0 0;
+}
+
+.cancel-dialog-drag-handle {
+  flex-shrink: 0;
+
+  width: 36px;
+  height: 4px;
+  margin: 10px auto 0;
+
+  border-radius: 999px;
+
+  background: #d6d6da;
+}
+
+.cancel-dialog-card-sheet .cancel-dialog-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+
+  overflow-y: auto;
+
+  padding: 20px 24px 16px;
+}
+
+.cancel-dialog-card-sheet .cancel-dialog-actions {
+  flex-shrink: 0;
+
+  margin-top: 0;
+  padding: 14px 24px calc(14px + env(safe-area-inset-bottom, 0px));
+
+  border-top: 1px solid #f0f0f0;
+}
+
 .cancel-dialog-close-btn {
   position: absolute;
   top: 12px;
   right: 12px;
+  z-index: 1;
 
   color: #666666;
+}
+
+.cancel-dialog-card-sheet .cancel-dialog-close-btn {
+  top: 20px;
 }
 
 .cancel-dialog-title {
@@ -1445,11 +1559,7 @@ onMounted(() => {
   display: none;
 }
 
-/* PRINT — isolate just the receipt card as a clean, centered document; hide the rest of
-   the page and Quasar's dialog chrome. Positions are forced to `static` (rather than
-   `fixed`) because Quasar's dialog transition leaves a `transform` on an ancestor, which
-   would otherwise turn `position: fixed` into "fixed relative to that ancestor" instead
-   of the page. */
+/* PRINT — isolates the receipt card; positions are forced to `static` because Quasar's dialog transition leaves a `transform` on an ancestor that would break `position: fixed`. */
 
 @media print {
   @page {
@@ -1538,9 +1648,23 @@ onMounted(() => {
   .store-info-card {
     padding: 16px 16px;
   }
+}
 
-  .order-actions-row {
-    flex-direction: column;
-  }
+/* Mobile fixed action bar — rendering is gated by the same $q.screen.lt.sm check used in the template, not a separate media query. */
+.order-actions-fixed {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+
+  display: flex;
+
+  gap: 10px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
 }
 </style>

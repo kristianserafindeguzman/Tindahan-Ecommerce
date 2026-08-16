@@ -1,5 +1,5 @@
 <template>
-  <q-page class="storefront-page">
+  <q-page class="storefront-page" :style="showCheckoutBar ? { paddingBottom: checkoutBarHeight + 'px' } : null">
 
     <SiteHeader />
 
@@ -23,7 +23,8 @@
         />
       </div>
 
-      <div v-else class="cart-layout">
+      <template v-else>
+      <div class="cart-layout">
 
         <div class="cart-main">
           <div
@@ -99,7 +100,7 @@
           </div>
         </div>
 
-        <aside class="cart-summary">
+        <aside v-if="!$q.screen.lt.md" class="cart-summary">
           <div class="summary-title">Order Summary</div>
 
           <p v-if="!selectedGroup" class="summary-empty-hint">Select a store from your cart to continue to checkout.</p>
@@ -129,6 +130,30 @@
 
       </div>
 
+      <!-- Mobile/tablet: sticky checkout bar replaces the Order Summary sidebar. -->
+      <div v-if="showCheckoutBar" ref="checkoutBarEl" class="cart-checkout-bar">
+        <div class="cart-checkout-bar-top">
+          <div class="cart-checkout-bar-info">
+            <div class="cart-checkout-bar-title">{{ selectedGroup ? 'Total' : 'Select a store to checkout' }}</div>
+            <div class="cart-checkout-bar-subtitle">
+              <template v-if="selectedGroup">{{ selectedItemCount }} item{{ selectedItemCount === 1 ? '' : 's' }} · {{ selectedGroup.store }}</template>
+              <template v-else>Choose a store above to view your total.</template>
+            </div>
+          </div>
+          <div class="cart-checkout-bar-price">₱{{ (selectedGroup ? selectedGroup.subtotal : 0).toFixed(2) }}</div>
+        </div>
+
+        <q-btn
+          unelevated
+          no-caps
+          label="Proceed to Checkout"
+          class="checkout-btn"
+          :disable="!selectedGroup"
+          @click="router.push({ path: '/consumer/checkout', query: { storeId: selectedGroup.storeId } })"
+        />
+      </div>
+      </template>
+
     </div>
 
     <SiteFooter />
@@ -137,7 +162,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
@@ -150,6 +175,32 @@ const router = useRouter()
 const { items, loading, fetchCart, updateQuantity, removeFromCart } = useCart()
 
 onMounted(fetchCart)
+
+// Mobile/tablet: sticky checkout bar replaces the Order Summary sidebar.
+const showCheckoutBar = computed(() => $q.screen.lt.md && items.value.length > 0)
+
+// Reserves exactly the bar's measured height (not a guessed px value) as bottom padding, so SiteFooter sits flush against it with no gap or overlap.
+const checkoutBarEl = ref(null)
+const checkoutBarHeight = ref(0)
+let checkoutBarObserver = null
+
+watch(checkoutBarEl, (el) => {
+  checkoutBarObserver?.disconnect()
+  checkoutBarObserver = null
+
+  if (!el) {
+    checkoutBarHeight.value = 0
+    return
+  }
+
+  checkoutBarHeight.value = el.offsetHeight
+  checkoutBarObserver = new ResizeObserver(() => {
+    checkoutBarHeight.value = el.offsetHeight
+  })
+  checkoutBarObserver.observe(el)
+})
+
+onBeforeUnmount(() => checkoutBarObserver?.disconnect())
 
 // Only one store can be checked out from at a time — the checkout flow is per-store pickup, not a combined order.
 const selectedStoreId = ref(null)
@@ -673,30 +724,75 @@ const removeItem = async (item) => {
   color: #8992a2;
 }
 
+/* MOBILE STICKY CHECKOUT BAR — replaces the Order Summary sidebar below 600px. */
+
+.cart-checkout-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+
+  /* Same padding/border/shadow recipe as .order-actions-fixed (ConsumerOrderDetails.vue), this app's one fixed-bottom-bar convention. */
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.cart-checkout-bar-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cart-checkout-bar-info {
+  min-width: 0;
+}
+
+.cart-checkout-bar-title {
+  font-size: 14px;
+  font-weight: 700;
+
+  color: #111111;
+}
+
+.cart-checkout-bar-subtitle {
+  margin-top: 2px;
+
+  font-size: 12px;
+  line-height: 1.4;
+
+  color: #8992a2;
+}
+
+.cart-checkout-bar-price {
+  flex-shrink: 0;
+
+  /* Matches .order-ref-total-amount / .receipt-total-amount — this app's one "grand total" size. */
+  font-size: 16px;
+  font-weight: 700;
+
+  color: #bd2427;
+}
+
+/* .checkout-btn already carries margin-top: 14px, so no override is needed here. */
+
 /* RESPONSIVE */
 
 @media (max-width: 800px) {
   .cart-layout {
     grid-template-columns: 1fr;
   }
-
-  .cart-summary {
-    position: static;
-  }
 }
 
-@media (max-width: 600px) {
-  .page-content {
-    padding: 16px;
-  }
-
-  .store-card {
-    padding: 12px 14px;
-  }
-
+/* max-width: 1023px (not 1024px) matches $q.screen.lt.md exactly, since Quasar's md tier starts AT 1024px. */
+@media (max-width: 1023px) {
   .cart-item {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 44px 1fr auto auto;
     align-items: center;
 
     gap: 10px;
@@ -708,8 +804,27 @@ const removeItem = async (item) => {
   }
 
   .cart-item-info {
-    flex: 1 1 auto;
-    min-width: 120px;
+    min-width: 0;
+  }
+
+  .cart-item-price {
+    font-weight: 700;
+    color: #bd2427;
+  }
+
+  /* Redundant next to the per-unit price now shown in red, so the line-item math stays desktop-only. */
+  .cart-item-line-total {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .page-content {
+    padding: 16px;
+  }
+
+  .store-card {
+    padding: 12px 14px;
   }
 }
 </style>

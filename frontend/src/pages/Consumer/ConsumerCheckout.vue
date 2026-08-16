@@ -1,5 +1,5 @@
 <template>
-  <q-page class="storefront-page">
+  <q-page class="storefront-page" :style="showCheckoutBar ? { paddingBottom: checkoutBarHeight + 'px' } : null">
 
     <SiteHeader />
 
@@ -84,7 +84,8 @@
         <q-btn unelevated no-caps label="Back to Cart" class="browse-btn" @click="router.push('/consumer/cart')" />
       </div>
 
-      <div v-else class="checkout-layout">
+      <template v-else>
+      <div class="checkout-layout">
 
         <div class="checkout-main">
 
@@ -236,7 +237,7 @@
 
         </div>
 
-        <aside class="checkout-summary">
+        <aside v-if="!$q.screen.lt.md" class="checkout-summary">
           <div class="summary-title">Order Summary</div>
           <div class="summary-store">{{ storeName }}</div>
 
@@ -276,6 +277,27 @@
         </aside>
 
       </div>
+
+      <!-- Mobile/tablet: sticky checkout bar replaces the Order Summary sidebar, same pattern as ConsumerCart.vue. -->
+      <div v-if="showCheckoutBar" ref="checkoutBarEl" class="checkout-sticky-bar">
+        <div class="checkout-sticky-bar-top">
+          <div class="checkout-sticky-bar-info">
+            <div class="checkout-sticky-bar-title">Total</div>
+            <div class="checkout-sticky-bar-subtitle">{{ checkoutItemCount }} item{{ checkoutItemCount === 1 ? '' : 's' }}</div>
+          </div>
+          <div class="checkout-sticky-bar-price">₱{{ subtotal.toFixed(2) }}</div>
+        </div>
+
+        <q-btn
+          unelevated
+          no-caps
+          label="Place Order"
+          class="place-order-btn"
+          :loading="placingOrder"
+          @click="placeOrder"
+        />
+      </div>
+      </template>
 
     </div>
 
@@ -361,6 +383,31 @@ const storeName = computed(() => checkoutItems.value[0]?.store || '')
 const storeDetails = computed(() => stores.value.find((s) => s.id === storeId.value) || null)
 
 const subtotal = computed(() => checkoutItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0))
+const checkoutItemCount = computed(() => checkoutItems.value.reduce((sum, item) => sum + item.quantity, 0))
+
+// Mobile/tablet: sticky checkout bar replaces the Order Summary sidebar.
+const showCheckoutBar = computed(() => $q.screen.lt.md && !loading.value && !orderPlaced.value && checkoutItems.value.length > 0)
+
+// Reserves exactly the bar's measured height (not a guessed px value) as bottom padding, so SiteFooter sits flush against it with no gap or overlap.
+const checkoutBarEl = ref(null)
+const checkoutBarHeight = ref(0)
+let checkoutBarObserver = null
+
+watch(checkoutBarEl, (el) => {
+  checkoutBarObserver?.disconnect()
+  checkoutBarObserver = null
+
+  if (!el) {
+    checkoutBarHeight.value = 0
+    return
+  }
+
+  checkoutBarHeight.value = el.offsetHeight
+  checkoutBarObserver = new ResizeObserver(() => {
+    checkoutBarHeight.value = el.offsetHeight
+  })
+  checkoutBarObserver.observe(el)
+})
 
 const formatDistance = (meters) => {
   if (meters == null) return ''
@@ -504,8 +551,7 @@ const initStoreMap = async () => {
 
 watch(storeDetails, () => initStoreMap())
 
-// The success view replaces the form (v-if branch switch, not a component unmount), so the map's
-// container is torn down without onBeforeUnmount ever firing — clean it up here instead.
+// The success view replaces the form via v-if (not a component unmount), so clean up the map here since onBeforeUnmount won't fire.
 watch(orderPlaced, (value) => {
   if (value && storeMap) {
     storeMap.remove()
@@ -521,6 +567,7 @@ onBeforeUnmount(() => {
     storeMap = null
     storeMapMarker = null
   }
+  checkoutBarObserver?.disconnect()
 })
 </script>
 
@@ -1563,15 +1610,63 @@ onBeforeUnmount(() => {
   text-decoration: underline;
 }
 
+/* MOBILE STICKY CHECKOUT BAR — same recipe as ConsumerCart.vue's .cart-checkout-bar. */
+
+.checkout-sticky-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.checkout-sticky-bar-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.checkout-sticky-bar-info {
+  min-width: 0;
+}
+
+.checkout-sticky-bar-title {
+  font-size: 14px;
+  font-weight: 700;
+
+  color: #111111;
+}
+
+.checkout-sticky-bar-subtitle {
+  margin-top: 2px;
+
+  font-size: 12px;
+  line-height: 1.4;
+
+  color: #8992a2;
+}
+
+.checkout-sticky-bar-price {
+  flex-shrink: 0;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  color: #bd2427;
+}
+
 /* RESPONSIVE */
 
 @media (max-width: 800px) {
   .checkout-layout {
     grid-template-columns: 1fr;
-  }
-
-  .checkout-summary {
-    position: static;
   }
 }
 
@@ -1596,7 +1691,11 @@ onBeforeUnmount(() => {
     flex-direction: column;
     align-items: stretch;
 
-    gap: 12px;
+    gap: 10px;
+  }
+
+  .contact-field {
+    gap: 10px;
   }
 
   .contact-field-divider {

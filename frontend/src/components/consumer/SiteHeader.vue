@@ -130,31 +130,40 @@
             <span>{{ address || 'Enter Address' }}</span>
           </span>
 
-          <div v-if="addressMenuOpen" class="address-menu-panel" @click.stop>
-            <div class="address-menu-title">
-              Address
+          <div v-if="addressMenuOpen && isAddressSheet" class="address-menu-backdrop" @click.stop="addressMenuOpen = false" />
+
+          <div v-if="addressMenuOpen" class="address-menu-panel" :class="{ 'address-menu-panel-sheet': isAddressSheet }" @click.stop>
+            <div v-if="isAddressSheet" class="address-menu-drag-handle" />
+
+            <div class="address-menu-scroll">
+              <div class="address-menu-title">
+                <q-icon name="o_location_on" size="16px" class="address-menu-title-icon" />
+                <span>Address</span>
+              </div>
+
+              <q-input
+                v-model="draftAddress"
+                dense
+                outlined
+                hide-bottom-space
+                placeholder="Enter your address"
+                class="address-menu-input"
+                @keyup.enter="confirmAddress"
+              />
+
+              <VendorLocationMap class="address-menu-map" @location-selected="onLocationSelected" />
             </div>
 
-            <q-input
-              v-model="draftAddress"
-              dense
-              outlined
-              hide-bottom-space
-              placeholder="Enter your address"
-              class="address-menu-input"
-              @keyup.enter="confirmAddress"
-            />
-
-            <VendorLocationMap class="address-menu-map" @location-selected="onLocationSelected" />
-
-            <q-btn
-              unelevated
-              no-caps
-              label="Confirm Address"
-              class="address-menu-confirm"
-              :disable="!draftAddress.trim()"
-              @click="confirmAddress"
-            />
+            <div class="address-menu-footer">
+              <q-btn
+                unelevated
+                no-caps
+                label="Confirm Address"
+                class="address-menu-confirm"
+                :disable="!draftAddress.trim()"
+                @click="confirmAddress"
+              />
+            </div>
           </div>
         </div>
 
@@ -187,11 +196,12 @@
               </q-menu>
             </q-btn>
 
-            <q-btn flat dense :ripple="false" class="icon-btn">
+            <q-btn flat dense :ripple="false" class="icon-btn" @click="handleCartIconClick">
               <q-icon name="o_shopping_cart" size="20px" />
               <span v-if="cartItemCount" class="icon-badge-count">{{ cartItemCount }}</span>
 
-              <q-menu anchor="bottom right" self="top right" content-class="cart-menu-panel" @show="fetchCart">
+              <!-- Desktop only — mobile/tablet skip the preview and go straight to the Cart page. -->
+              <q-menu v-if="!$q.screen.lt.md" anchor="bottom right" self="top right" content-class="cart-menu-panel" @show="fetchCart">
                 <div class="cart-menu-inner">
                   <div class="cart-menu-title">My Cart</div>
 
@@ -279,6 +289,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
@@ -290,12 +301,16 @@ import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 
 const router = useRouter()
 const route = useRoute()
+const $q = useQuasar()
 
 const { address, setAddress } = useAddress()
 const draftAddress = ref('')
 const draftLocation = ref(null)
 const addressMenuOpen = ref(false)
 const headerLocationRef = ref(null)
+
+// Tablet and mobile both get the bottom sheet, same breakpoint as the Products/Stores filter sheets.
+const isAddressSheet = computed(() => $q.screen.width < 900)
 
 const toggleAddressMenu = () => {
   addressMenuOpen.value = !addressMenuOpen.value
@@ -339,6 +354,13 @@ const { products, fetchProducts } = useProducts()
 const { stores, fetchStores } = useStores()
 const { categories, fetchCategories } = useCategories()
 const { items: cartItems, itemCount: cartItemCount, fetchCart } = useCart()
+
+// Mobile/tablet have no dropdown preview (see the q-menu's v-if) — the icon just navigates straight to the Cart page.
+const handleCartIconClick = () => {
+  if ($q.screen.lt.md) {
+    router.push('/consumer/cart')
+  }
+}
 
 // Renders for both guests and logged-in consumers, so it reads localStorage directly rather than relying on a route guard.
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
@@ -429,8 +451,7 @@ const goToSignup = () => {
   router.push({ path: '/login', query: { register: '1' } })
 }
 
-// searchInput is the user's live draft (bound to the field); searchQuery only changes on submit,
-// and is the sole trigger for actually navigating/searching.
+// searchInput is the user's live draft; searchQuery only changes on submit and is what actually triggers navigation.
 const searchInput = ref(route.query.q || '')
 const searchQuery = ref(route.query.q || '')
 const suggestionsOpen = ref(false)
@@ -461,8 +482,7 @@ const clearRecentSearches = () => {
   localStorage.removeItem(RECENT_SEARCHES_KEY)
 }
 
-// The autocomplete dropdown is a lightweight typeahead — it's fine for it to live-filter off the
-// draft input. It's the actual page search/navigation below that's submit-only.
+// The autocomplete dropdown is a lightweight typeahead, so it's fine to live-filter off the draft input — only the actual navigation below is submit-only.
 const productSuggestions = computed(() => {
   const q = searchInput.value.trim().toLowerCase()
   if (!q) return []
@@ -513,13 +533,6 @@ function navigateToSearchPage(q) {
     router.push(target)
   }
 }
-
-// The only place a search is actually performed — fires on submit (searchQuery change), never while typing.
-// watch(searchQuery, (q) => {
-//   if (q) saveRecentSearch(q)
-//   closeSuggestions()
-//   navigateToSearchPage(q)
-// })
 
 const logSearch = async (query) => {
   const token = localStorage.getItem('auth_token')
@@ -595,7 +608,7 @@ const logSearch = async (query) => {
   }
 }
 
-
+// The only place a search is actually saved — fires on submit (searchQuery change), never while typing.
 watch(searchQuery, (q) => {
   if (q) {
     saveRecentSearch(q)
@@ -603,8 +616,6 @@ watch(searchQuery, (q) => {
 
   closeSuggestions()
 })
-
-
 
 const selectSuggestion = (term) => {
   searchInput.value = term
@@ -643,8 +654,7 @@ const onSearchInput = (val) => {
   suggestionsOpen.value = true
 }
 
-// Keeps the input synced when ?q= changes from outside this component (browser back/forward, a
-// recent-search chip clicked on the search page itself) without remounting this component.
+// Keeps the input synced when ?q= changes from outside this component (browser back/forward, a recent-search chip).
 watch(() => route.query.q, (q) => {
   const next = q || ''
   searchInput.value = next
@@ -671,7 +681,8 @@ const goToTab = (tab) => {
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 100;
+  /* Higher than any page-level fixed-bottom bar (all z-index: 100), so this stacking context always wins and its dropdowns never end up underneath one. */
+  z-index: 200;
 
   background:
     linear-gradient(
@@ -921,8 +932,7 @@ const goToTab = (tab) => {
 
 /* ADDRESS PICKER DROPDOWN — same teleported-panel recipe as .cart-menu-panel. */
 
-/* Same plain-div dropdown recipe/positioning as .search-suggestions, not a q-menu — sidesteps Quasar's menu
-   positioning engine entirely, and sized generously like the search dropdown rather than tied to the pill's width. */
+/* Same plain-div dropdown recipe as .search-suggestions, not a q-menu — sidesteps Quasar's menu positioning engine entirely. */
 .address-menu-panel {
   position: absolute;
   top: calc(100% + 8px);
@@ -944,6 +954,9 @@ const goToTab = (tab) => {
 }
 
 .address-menu-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 10px;
 
   font-size: 13.5px;
@@ -952,9 +965,13 @@ const goToTab = (tab) => {
   color: #111111;
 }
 
+.address-menu-title-icon {
+  color: #bd2427;
+}
+
 .address-menu-input {
   min-width: 0;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .address-menu-input :deep(.q-field__control) {
@@ -964,10 +981,14 @@ const goToTab = (tab) => {
 }
 
 .address-menu-map {
-  height: 260px;
-  margin-bottom: 12px;
+  height: 280px;
 
   border: 1px solid #e8e8e8;
+}
+
+/* Desktop: panel's own 16px padding already wraps title/input/map/footer, so the map needs no margin-bottom of its own. */
+.address-menu-footer {
+  padding-top: 20px;
 }
 
 .address-menu-confirm {
@@ -1370,9 +1391,7 @@ const goToTab = (tab) => {
 
 /* HEADER — LOCATION */
 
-/* position:relative anchors .address-menu-panel below it, same pattern as .header-search-wrap/.search-suggestions.
-   The search bar no longer shrinks when this pill expands (see .header-search-wrap above) — that shrink, not the
-   pill's own growth, was what pulled this whole block leftward and made the panel appear to "slide". */
+/* position:relative anchors .address-menu-panel below it, same pattern as .header-search-wrap/.search-suggestions. */
 .header-location {
   position: relative;
 
@@ -1415,8 +1434,7 @@ const goToTab = (tab) => {
   text-overflow: ellipsis;
 }
 
-/* Matches .address-menu-panel's own width, so the pill and the card below it line up edge to edge.
-   No animated transition on this — the reflow it causes happens instantly instead of visibly sliding. */
+/* Matches .address-menu-panel's own width, so the pill and the card below it line up edge to edge. */
 .header-location-expanded {
   width: 460px;
   max-width: 460px;
@@ -1501,5 +1519,68 @@ const goToTab = (tab) => {
   .header-search-wrap:focus-within ~ .header-location .header-location-pill {
     max-width: 34px;
   }
+}
+
+/* Bottom sheet variant of the address picker, gated by the same isAddressSheet check driving the backdrop/handle — placed last in the file so it wins the specificity tie. */
+.address-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.address-menu-panel-sheet {
+  position: fixed;
+  top: auto;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transform: none;
+  z-index: 1000;
+
+  display: flex;
+  flex-direction: column;
+
+  width: 100%;
+  max-width: 100%;
+  max-height: 85vh;
+  padding: 0;
+
+  border: none;
+  border-radius: 16px 16px 0 0;
+
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
+}
+
+.address-menu-drag-handle {
+  flex-shrink: 0;
+
+  width: 36px;
+  height: 4px;
+  margin: 10px auto 0;
+
+  border-radius: 999px;
+
+  background: #d6d6da;
+}
+
+/* flex: 1 1 auto (not flex: 1) — sizes to content first, only scrolls when it actually overflows. */
+.address-menu-panel-sheet .address-menu-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+
+  /* Bottom padding kept small — the footer below already adds its own top padding, so a full 20px here would double the gap. */
+  padding: 16px 20px 5px;
+
+  overflow-y: auto;
+}
+
+.address-menu-panel-sheet .address-menu-footer {
+  flex-shrink: 0;
+
+  padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+
+  border-top: 1px solid #f0f0f0;
 }
 </style>

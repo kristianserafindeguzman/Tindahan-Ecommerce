@@ -230,10 +230,10 @@ const subtitleText = computed(() => {
   return `Showing ${total} result${total === 1 ? '' : 's'} for "${query.value}".`
 })
 
-// A search with only a couple of hits reads as sparse on its own, so pad it out with related picks.
+// Shows for any non-empty search — zero results gets its own empty state instead.
 const showRelatedProducts = computed(() => {
   const total = filteredProducts.value.length + matchedStores.value.length
-  return total >= 1 && total <= 2
+  return total >= 1
 })
 
 const relatedProducts = computed(() => {
