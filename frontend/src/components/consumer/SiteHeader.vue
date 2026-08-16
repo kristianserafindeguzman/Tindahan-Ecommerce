@@ -347,6 +347,26 @@ const { items: cartItems, itemCount: cartItemCount, fetchCart } = useCart()
 // Renders for both guests and logged-in consumers, so it reads localStorage directly rather than relying on a route guard.
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
+onMounted(() => {
+  fetchProducts()
+  fetchStores()
+  fetchCategories()
+  // Cart routes are auth-gated — an unconditional fetch would 401 for guests.
+  if (isLoggedIn.value) {
+    fetchCart()
+    fetchNotifications()
+  }
+})
+
+const userAvatar = computed(() => {
+  try {
+    const user = JSON.parse(localStorage.getItem('auth_user') || '{}')
+    return user.profile_picture_url || null
+  } catch {
+    return null
+  }
+})
+
 const notifications = ref([])
 const unreadNotificationCount = computed(() => notifications.value.filter(n => !n.is_read).length)
 
@@ -386,24 +406,6 @@ const markAllAsRead = async () => {
     await api.post('/consumer/notifications/read-all')
   } catch (err) {}
 }
-
-onMounted(() => {
-  fetchProducts()
-  fetchStores()
-  if (isLoggedIn.value) {
-    fetchCart()
-    fetchNotifications()
-  }
-})
-
-const userAvatar = computed(() => {
-  try {
-    const user = JSON.parse(localStorage.getItem('auth_user') || '{}')
-    return user.profile_picture_url || null
-  } catch {
-    return null
-  }
-})
 
 const handleLogout = async () => {
   try {
@@ -819,7 +821,6 @@ const goToTab = (tab) => {
 
 .notification-item {
   align-items: flex-start;
-
   padding: 10px 0;
 }
 
