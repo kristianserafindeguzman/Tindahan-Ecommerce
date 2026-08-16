@@ -137,6 +137,7 @@ const $q = useQuasar()
 const router = useRouter()
 const { stores, fetchStores } = useStores()
 const { addToCart } = useCart()
+const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
 const isOpen = ref(props.modelValue)
 watch(() => props.modelValue, (val) => {
@@ -197,6 +198,12 @@ const resetLocalState = () => {
 
 const handleAddToCart = async () => {
   if (!props.product) return
+
+  if (!isLoggedIn.value) {
+    isOpen.value = false
+    router.push('/login')
+    return
+  }
 
   adding.value = true
   try {

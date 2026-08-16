@@ -116,6 +116,11 @@ const goToCategory = (category) => {
 }
 
 const handleAddToCart = async (product) => {
+  if (!isLoggedIn.value) {
+    router.push('/login')
+    return
+  }
+
   try {
     await addToCart(product.id)
     $q.notify({ type: 'positive', message: `${product.name} added to cart.` })

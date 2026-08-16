@@ -200,15 +200,24 @@
           </div>
 
           <div class="receipt-store-name">{{ order?.store?.store_name }}</div>
-          <div v-if="order?.store?.address" class="receipt-store-address">{{ order.store.address }}</div>
-
-          <div class="receipt-ref-row">
-            <span class="receipt-ref-badge">ORD-{{ order?.order_id }}</span>
+          <div v-if="order?.store?.address" class="receipt-store-address">
+            <q-icon name="o_location_on" size="12px" />
+            {{ order.store.address }}
           </div>
 
-          <q-separator class="receipt-divider" />
+          <div class="receipt-ref-row">
+            <span class="receipt-ref-badge">ORDER <strong class="receipt-ref-number">#{{ order?.order_id }}</strong></span>
+          </div>
 
-          <div class="receipt-date">{{ formatReceiptDate(order?.created_at) }}</div>
+          <div class="receipt-date-banner">
+            <q-icon name="o_calendar_month" size="14px" />
+            <span>{{ formatReceiptDateParts(order?.created_at) }}</span>
+          </div>
+
+          <div class="receipt-items-header">
+            <span>Items</span>
+            <span>Amount</span>
+          </div>
 
           <div class="receipt-items">
             <div v-for="item in order?.items" :key="item.order_item_id" class="receipt-item-row">
@@ -220,7 +229,7 @@
 
           <q-separator class="receipt-divider" />
 
-          <div class="receipt-total-row">
+          <div class="receipt-total-band">
             <span>Total</span>
             <span class="receipt-total-amount">₱{{ formatNumber(order?.total_amount) }}</span>
           </div>
@@ -320,10 +329,12 @@ const formatDate = (dateString) => {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-const formatReceiptDate = (dateString) => {
+const formatReceiptDateParts = (dateString) => {
   if (!dateString) return ''
   const d = new Date(dateString)
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  const datePart = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  return `${datePart} • ${timePart}`
 }
 
 // Haversine distance — same formula as the backend's DistanceService, computed client-side since
@@ -1262,6 +1273,11 @@ onMounted(() => {
 }
 
 .receipt-store-address {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
   margin-top: 4px;
 
   font-size: 12.5px;
@@ -1280,7 +1296,7 @@ onMounted(() => {
 .receipt-ref-badge {
   padding: 4px 12px;
 
-  border-radius: 999px;
+  border-radius: 6px;
 
   background: #f4f4f4;
   color: #333333;
@@ -1290,18 +1306,52 @@ onMounted(() => {
   letter-spacing: 0.03em;
 }
 
+.receipt-ref-number {
+  color: #bd2427;
+}
+
 .receipt-divider {
-  margin: 18px 0;
+  margin: 16px 0;
 
   background: #f0f0f0;
 }
 
-.receipt-date {
-  margin-bottom: 12px;
+.receipt-date-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 14px;
+
+  border-radius: 10px;
+
+  background: #f7f7f8;
+  color: #333333;
 
   font-size: 12px;
+  font-weight: 600;
 
-  color: #8992a2;
+  text-align: center;
+}
+
+.receipt-date-banner .q-icon {
+  color: #bd2427;
+}
+
+.receipt-items-header {
+  display: flex;
+  justify-content: space-between;
+
+  margin: 16px 0 10px;
+
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+
+  color: #9ca3af;
 }
 
 .receipt-items {
@@ -1324,9 +1374,9 @@ onMounted(() => {
 }
 
 .receipt-item-qty {
-  font-weight: 600;
+  font-weight: 700;
 
-  color: #222222;
+  color: #bd2427;
 }
 
 .receipt-item-name {
@@ -1341,9 +1391,10 @@ onMounted(() => {
   color: #222222;
 }
 
-.receipt-total-row {
+.receipt-total-band {
   display: flex;
   justify-content: space-between;
+  align-items: center;
 
   margin-top: 4px;
 
@@ -1354,7 +1405,7 @@ onMounted(() => {
 }
 
 .receipt-total-amount {
-  color: #bd2427;
+  color: #111111;
 }
 
 .receipt-download-btn {
@@ -1372,6 +1423,16 @@ onMounted(() => {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 
   transition: background-color 0.15s, transform 0.2s;
+}
+
+.receipt-download-btn :deep(.q-icon) {
+  margin-right: 0;
+
+  font-size: 18px;
+}
+
+.receipt-download-btn :deep(.q-btn__content) {
+  gap: 8px;
 }
 
 .receipt-download-btn:hover {
@@ -1415,9 +1476,12 @@ onMounted(() => {
 
   .receipt-dialog-wrap {
     position: static !important;
-    display: block !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
 
     width: 100% !important;
+    min-height: 100vh;
   }
 
   .receipt-dialog-card {
