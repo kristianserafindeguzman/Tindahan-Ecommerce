@@ -73,20 +73,22 @@
 
       <AppPagination v-model="currentPage" :max="totalPages" />
 
-    </div>
+      <!-- FILTERS POPUP (tablet: centered dialog, mobile: bottom sheet) -->
+      <q-dialog v-model="mobileFiltersOpen" :position="isSheetFilters ? 'bottom' : undefined">
+        <q-card class="filters-dialog-card" :class="{ 'filters-dialog-card-sheet': isSheetFilters }">
+          <div v-if="isSheetFilters" class="filters-drag-handle" />
+          <StoreFilters
+            v-model:open-now="openNowOnly"
+            v-model:sort="sortBy"
+            :sort-options="SORT_OPTIONS"
+            :is-sheet="isSheetFilters"
+            @close="filtersOpen = false"
+            @clear="clearFilters"
+          />
+        </q-card>
+      </q-dialog>
 
-    <!-- FILTERS POPUP (mobile) -->
-    <q-dialog v-model="mobileFiltersOpen">
-      <q-card class="filters-dialog-card">
-        <StoreFilters
-          v-model:open-now="openNowOnly"
-          v-model:sort="sortBy"
-          :sort-options="SORT_OPTIONS"
-          @close="filtersOpen = false"
-          @clear="clearFilters"
-        />
-      </q-card>
-    </q-dialog>
+    </div>
 
     <SiteFooter />
 
@@ -120,6 +122,9 @@ const sortBy = ref('popular')
 
 // Below this width the sidebar doesn't fit, so filtersOpen opens a popup dialog instead.
 const isMobileFilters = computed(() => $q.screen.width < 900)
+
+// Tablet and mobile (the whole range below the sidebar breakpoint) both get the bottom sheet.
+const isSheetFilters = computed(() => isMobileFilters.value)
 
 const mobileFiltersOpen = computed({
   get: () => filtersOpen.value && isMobileFilters.value,
@@ -374,11 +379,35 @@ const clearFilters = () => {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
+/* Tablet: centered dialog, same as before this page had a bottom sheet at all. */
 .filters-dialog-card {
   width: 100%;
   max-width: 380px;
 
   border-radius: 10px;
+}
+
+/* Mobile only: the same dialog restyled as a bottom sheet. */
+.filters-dialog-card-sheet {
+  display: flex;
+  flex-direction: column;
+
+  max-width: 100%;
+  max-height: 88vh;
+
+  border-radius: 16px 16px 0 0;
+}
+
+.filters-drag-handle {
+  flex-shrink: 0;
+
+  width: 36px;
+  height: 4px;
+  margin: 10px auto 0;
+
+  border-radius: 999px;
+
+  background: #d6d6da;
 }
 
 /* RESPONSIVE */

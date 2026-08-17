@@ -1,5 +1,5 @@
 <template>
-  <div class="product-filters">
+  <div class="product-filters" :class="{ 'product-filters-sheet': isSheet }">
     <div class="filters-panel-header">
       <div class="filters-panel-title-group">
         <span class="filters-panel-title">Filters</span>
@@ -9,74 +9,78 @@
       </button>
     </div>
 
-    <div class="filter-group">
-      <label class="filter-label">Categories</label>
-      <q-select
-        v-model="category"
-        :options="categoryOptions"
-        dense
-        outlined
-        emit-value
-        map-options
-        hide-bottom-space
-        behavior="menu"
-      />
-    </div>
+    <div class="filters-scroll">
+      <div class="filter-group">
+        <label class="filter-label">Categories</label>
+        <q-select
+          v-model="category"
+          :options="categoryOptions"
+          dense
+          outlined
+          emit-value
+          map-options
+          hide-bottom-space
+          behavior="menu"
+        />
+      </div>
 
-    <div class="filter-group">
-      <label class="filter-label">Price Range</label>
-      <div class="price-range-row">
-        <q-input v-model.number="priceMin" type="number" dense outlined hide-bottom-space placeholder="Min" />
-        <span class="price-range-sep">–</span>
-        <q-input v-model.number="priceMax" type="number" dense outlined hide-bottom-space placeholder="Max" />
+      <div class="filter-group">
+        <label class="filter-label">Price Range</label>
+        <div class="price-range-row">
+          <q-input v-model.number="priceMin" type="number" dense outlined hide-bottom-space placeholder="Min" />
+          <span class="price-range-sep">–</span>
+          <q-input v-model.number="priceMax" type="number" dense outlined hide-bottom-space placeholder="Max" />
+        </div>
+      </div>
+
+      <div v-if="!hideStore" class="filter-group">
+        <label class="filter-label">Store</label>
+        <q-select
+          v-model="store"
+          :options="storeOptions"
+          dense
+          outlined
+          emit-value
+          map-options
+          hide-bottom-space
+          behavior="menu"
+        />
+      </div>
+
+      <div class="filter-group filter-group-row">
+        <label class="filter-label filter-label-inline">In Stock Only</label>
+        <q-toggle v-model="inStock" dense color="primary" />
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Sort by</label>
+        <q-select
+          v-model="sort"
+          :options="sortOptions"
+          dense
+          outlined
+          emit-value
+          map-options
+          hide-bottom-space
+          behavior="menu"
+        />
       </div>
     </div>
 
-    <div v-if="!hideStore" class="filter-group">
-      <label class="filter-label">Store</label>
-      <q-select
-        v-model="store"
-        :options="storeOptions"
-        dense
-        outlined
-        emit-value
-        map-options
-        hide-bottom-space
-        behavior="menu"
+    <div class="filters-footer">
+      <q-separator class="filters-divider" />
+
+      <q-btn
+        label="Apply Filters"
+        unelevated
+        no-caps
+        class="apply-filters-btn"
+        @click="$emit('close')"
       />
-    </div>
 
-    <div class="filter-group filter-group-row">
-      <label class="filter-label filter-label-inline">In Stock Only</label>
-      <q-toggle v-model="inStock" dense color="primary" />
-    </div>
-
-    <div class="filter-group">
-      <label class="filter-label">Sort by</label>
-      <q-select
-        v-model="sort"
-        :options="sortOptions"
-        dense
-        outlined
-        emit-value
-        map-options
-        hide-bottom-space
-        behavior="menu"
-      />
-    </div>
-
-    <q-separator class="filters-divider" />
-
-    <q-btn
-      label="Apply Filters"
-      unelevated
-      no-caps
-      class="apply-filters-btn"
-      @click="$emit('close')"
-    />
-
-    <div class="clear-filters-row">
-      <span class="clear-filters-link" @click="$emit('clear')">Clear all filters</span>
+      <div class="clear-filters-row">
+        <span class="clear-filters-link" @click="$emit('clear')">Clear all filters</span>
+      </div>
     </div>
   </div>
 </template>
@@ -98,6 +102,10 @@ defineProps({
   hideStore: {
     type: Boolean,
     default: false
+  },
+  isSheet: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -114,6 +122,38 @@ const sort = defineModel('sort')
 <style scoped>
 .product-filters {
   padding: 18px;
+}
+
+/* Sheet mode splits the panel into a fixed header, a scrollable field list, and a fixed footer (Apply/Clear). */
+.product-filters-sheet {
+  display: flex;
+  flex-direction: column;
+
+  flex: 1;
+  min-height: 0;
+
+  padding: 18px 0 0;
+}
+
+.product-filters-sheet .filters-panel-header {
+  flex-shrink: 0;
+
+  padding: 0 18px;
+}
+
+.product-filters-sheet .filters-scroll {
+  flex: 1;
+  min-height: 0;
+
+  overflow-y: auto;
+
+  padding: 0 18px;
+}
+
+.product-filters-sheet .filters-footer {
+  flex-shrink: 0;
+
+  padding: 4px 18px 18px;
 }
 
 .filters-panel-header {

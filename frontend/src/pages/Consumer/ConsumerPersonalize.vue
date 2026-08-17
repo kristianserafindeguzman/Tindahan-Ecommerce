@@ -18,8 +18,8 @@
       </div>
 
       <p v-if="!products.length" class="products-empty">
-        {{ hasHistory
-          ? "No recommendations yet — check back after you've browsed a few products."
+        {{ isLoggedIn
+          ? 'No recommendations yet — check back soon.'
           : 'No popular products to show near you right now.'
         }}
       </p>
@@ -70,12 +70,10 @@ const handleAddToCart = async (product) => {
   }
 }
 
-// hasHistory checks a signal nothing currently writes, so it resolves to false until a real history source exists.
+const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
-const hasHistory = computed(() => !!localStorage.getItem('recent_products'))
-
-const pageTitle = computed(() => hasHistory.value ? 'Recommended for You' : 'Popular Products Near You')
-const pageSubtitle = computed(() => hasHistory.value
+const pageTitle = computed(() => isLoggedIn.value ? 'Recommended for You' : 'Popular Products Near You')
+const pageSubtitle = computed(() => isLoggedIn.value
   ? "Products picked based on your activity and preferences."
   : "Popular picks from sari-sari stores near you."
 )
