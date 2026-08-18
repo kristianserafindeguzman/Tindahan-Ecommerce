@@ -16,6 +16,7 @@ export function useProducts() {
       products.value = (data || []).map((product) => ({
         id: product.id,
         name: product.name,
+        description: product.description,
         category: product.category,
         price: Number(product.price),
         image: product.image,

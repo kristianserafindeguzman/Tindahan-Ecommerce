@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
 import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
@@ -47,8 +47,20 @@ import { useProducts } from '@/composables/useProducts'
 import { useCart } from '@/composables/useCart'
 
 const $q = useQuasar()
-
-const { products, fetchProducts } = useProducts()
+const api = inject('api') // Need to inject api for custom fetch
+const products = ref([])
+const fetchProducts = async () => {
+  try {
+    const lat = localStorage.getItem('consumer_lat')
+    const lng = localStorage.getItem('consumer_lng')
+    const params = lat && lng ? { lat, lng } : {}
+    
+    const response = await api.get('/consumer/personalized-feed', { params })
+    products.value = response.data
+  } catch (error) {
+    console.error('Failed to fetch personalized feed:', error)
+  }
+}
 const { addToCart } = useCart()
 
 onMounted(fetchProducts)

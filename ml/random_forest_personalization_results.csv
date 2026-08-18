@@ -1,0 +1,2 @@
+category_id,search_lat,search_lng,hour,day_of_week,actual_demand,predicted_demand,prediction_error
+3.0,14.305803,121.07197991,20,5,1,1.0,0.0
