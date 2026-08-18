@@ -31,6 +31,11 @@
                 </div>
               </div>
 
+              <div class="q-mb-md">
+                <div class="input-label q-mb-xs">Description (Optional)</div>
+                <q-input v-model="form.description" type="textarea" outlined dense placeholder="e.g., Description of the product" hide-bottom-space class="custom-input" />
+              </div>
+
               <div class="q-mb-md q-mt-md">
                 <q-checkbox v-model="hasVariants" label="This product has different sizes/variants" color="red-9" class="custom-checkbox text-weight-bold text-slate-700" />
               </div>
@@ -200,6 +205,7 @@ const selectedAddCategoryGuide = computed(() => {
 
 const form = ref({
   product_name: '',
+  description: '',
   category_id: null,
   price: null,
   stock_quantity: null,
@@ -302,7 +308,7 @@ const addVariant = () => { form.value.variants.push({ size: '', price: null, qua
 const removeVariant = (index) => { if (form.value.variants.length > 1) form.value.variants.splice(index, 1) }
 
 const resetForm = () => {
-  form.value = { product_name: '', category_id: null, price: null, stock_quantity: null, product_picture: null, variants: [{ size: '', price: null, quantity: null }] }
+  form.value = { product_name: '', description: '', category_id: null, price: null, stock_quantity: null, product_picture: null, variants: [{ size: '', price: null, quantity: null }] }
   hasVariants.value = false
   removePhoto()
 }
@@ -312,6 +318,7 @@ const submitForm = async () => {
   try {
     const formData = new FormData()
     formData.append('product_name', form.value.product_name)
+    if (form.value.description) formData.append('description', form.value.description)
     formData.append('category_id', form.value.category_id)
     if (form.value.product_picture) formData.append('product_picture', form.value.product_picture)
     if (hasVariants.value) {

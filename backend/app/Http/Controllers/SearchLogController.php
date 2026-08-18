@@ -11,7 +11,7 @@ class SearchLogController extends Controller
     {
         $validated = $request->validate([
             'search_query' => 'required|string|max:255',
-            'category_id' => 'required|integer|exists:categories,category_id',
+            'category_id' => 'nullable|integer|exists:categories,category_id',
             'search_lat' => 'required|numeric|between:-90,90',
             'search_lng' => 'required|numeric|between:-180,180',
         ]);

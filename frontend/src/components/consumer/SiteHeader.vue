@@ -531,56 +531,53 @@ const logSearch = async (query) => {
     const latitude = localStorage.getItem('consumer_lat')
     const longitude = localStorage.getItem('consumer_lng')
 
-    // Location is required by search_logs
     if (!latitude || !longitude) {
       console.warn('Search log skipped: consumer location is not available.')
       return
     }
 
     const normalizedQuery = query.trim().toLowerCase()
-
-    // Find the searched product
-    const matchedProduct = products.value.find(
-      (product) =>
-        product.name?.trim().toLowerCase() === normalizedQuery
+    
+    // 1. Match against product names (partial, case-insensitive)
+    let matchedProducts = products.value.filter(p => 
+        p.name?.toLowerCase().includes(normalizedQuery)
     )
-
-    if (!matchedProduct) {
-      console.warn(
-        'Search log skipped: product could not be matched.',
-        query
-      )
-      return
+    
+    // 2. If no product name match, try descriptions
+    if (matchedProducts.length === 0) {
+        matchedProducts = products.value.filter(p =>
+            p.description?.toLowerCase().includes(normalizedQuery)
+        )
     }
-
-    // Product has category NAME, not category_id
-    const matchedCategory = categories.value.find(
-      (category) =>
-        category.label?.trim().toLowerCase() ===
-        matchedProduct.category?.trim().toLowerCase()
-    )
-
-    if (!matchedCategory) {
-      console.warn(
-        'Search log skipped: category could not be matched.',
-        matchedProduct.category
-      )
-      return
+    
+    let categoryId = null;
+    
+    // 3. If products matched, use the first match's category
+    if (matchedProducts.length > 0) {
+        const firstMatch = matchedProducts[0]
+        const matchedCategory = categories.value.find(c => 
+            c.label?.toLowerCase() === firstMatch.category?.toLowerCase()
+        )
+        categoryId = matchedCategory?.id ?? matchedCategory?.category_id ?? null
+    } else {
+        // 4. Try direct category name match
+        const matchedCategory = categories.value.find(c =>
+            c.label?.toLowerCase().includes(normalizedQuery) || c.category_name?.toLowerCase().includes(normalizedQuery)
+        )
+        if (matchedCategory) {
+            categoryId = matchedCategory.id ?? matchedCategory.category_id
+        }
     }
-
-    const categoryId = matchedCategory.category_id ?? matchedCategory.id
 
     console.log('Search log data:', {
       query,
-      product: matchedProduct.name,
-      category: matchedCategory.label,
       category_id: categoryId,
       latitude,
       longitude
     })
 
     await api.post('/consumer/search-logs', {
-      search_query: query,
+      search_query: query.trim(),
       category_id: categoryId,
       search_lat: Number(latitude),
       search_lng: Number(longitude),
@@ -609,15 +606,21 @@ watch(searchQuery, (q) => {
 const selectSuggestion = (term) => {
   searchInput.value = term
   searchQuery.value = term
+  // Trigger submission on select
+  submitSearch()
 }
 
 // Enter, the search button, or a mobile keyboard's search key all land here.
 const submitSearch = async () => {
+  // If the user presses enter while a suggestion is highlighted, use that suggestion.
+  // We temporarily clear the active index so the next call to submitSearch won't loop.
   if (
     activeSuggestionIndex.value >= 0 &&
     suggestionTerms.value[activeSuggestionIndex.value]
   ) {
-    selectSuggestion(suggestionTerms.value[activeSuggestionIndex.value])
+    const term = suggestionTerms.value[activeSuggestionIndex.value]
+    activeSuggestionIndex.value = -1
+    selectSuggestion(term)
     return
   }
 
@@ -628,11 +631,16 @@ const submitSearch = async () => {
   searchInput.value = q
   searchQuery.value = q
 
+  // Navigate to search results synchronously to avoid UI delay
+  navigateToSearchPage(q)
+  closeSuggestions()
+  
+  if (q) {
+    saveRecentSearch(q)
+  }
+
   // Save the search to the database
   await logSearch(q)
-
-  // Navigate to search results
-  navigateToSearchPage(q)
 }
 
 // Just opens/refreshes the suggestions dropdown — typing never triggers a search on its own.
