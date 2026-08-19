@@ -1,6 +1,7 @@
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
+import { clearAuthStorage } from '@/utils/authStorage'
 
 export function useAuth() {
   const router = useRouter()
@@ -40,10 +41,7 @@ export function useAuth() {
       // Token may already be invalid/expired
     }
 
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('auth_user')
-    localStorage.removeItem('auth_role')
-    localStorage.removeItem('consumer_selected_order_id')
+    clearAuthStorage()
 
     router.push('/login')
   }

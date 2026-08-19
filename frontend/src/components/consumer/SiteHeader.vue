@@ -297,13 +297,14 @@ import { useCart } from '@/composables/useCart'
 import { useAddress } from '@/composables/useAddress'
 import { splitHighlightParts } from '@/utils/textHighlight'
 import { useCategories } from '@/composables/useCategories'
+import { clearAuthStorage } from '@/utils/authStorage'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 
 const router = useRouter()
 const route = useRoute()
 const $q = useQuasar()
 
-const { address, setAddress } = useAddress()
+const { address, setAddress, autoDetectAddress } = useAddress()
 const draftAddress = ref('')
 const draftLocation = ref(null)
 const addressMenuOpen = ref(false)
@@ -369,6 +370,7 @@ onMounted(() => {
   fetchProducts()
   fetchStores()
   fetchCategories()
+  autoDetectAddress()
   // Cart routes are auth-gated — an unconditional fetch would 401 for guests.
   if (isLoggedIn.value) {
     fetchCart()
@@ -432,12 +434,7 @@ const handleLogout = async () => {
     // Token may already be invalid.
   }
 
-  localStorage.removeItem('auth_token')
-  localStorage.removeItem('auth_user')
-  localStorage.removeItem('auth_role')
-
-  // Clear address & coordinates upon logout
-  setAddress('')
+  clearAuthStorage()
 
   router.push('/login')
 }

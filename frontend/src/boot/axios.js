@@ -1,5 +1,6 @@
 import { boot } from 'quasar/wrappers'
 import axios from 'axios'
+import { clearAuthStorage } from '@/utils/authStorage'
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/api'
@@ -29,7 +30,7 @@ api.interceptors.response.use(
         errorCode === 'VENDOR_NOT_APPROVED'
 
       if (status === 401 || (status === 403 && isAccountError)) {
-        localStorage.clear()
+        clearAuthStorage()
 
         // Only redirect if not already on a public page
         const publicPaths = ['/login', '/consumer/register', '/vendor/register', '/consumer/verify', '/consumer/success']

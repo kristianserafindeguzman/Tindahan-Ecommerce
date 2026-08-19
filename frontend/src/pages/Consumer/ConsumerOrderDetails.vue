@@ -311,11 +311,12 @@ watch(showCancelDialog, (isOpen) => {
   }
 })
 
+// Same icon set as the vendor's Order Timeline (OrderDetails.vue), for consistency across both sides.
 const statusSteps = [
-  { key: 'placed', label: 'Placed', icon: 'o_check' },
-  { key: 'preparing', label: 'Preparing', icon: 'o_soup_kitchen' },
-  { key: 'ready_for_pickup', label: 'Ready', icon: 'o_inventory_2' },
-  { key: 'picked_up', label: 'Picked Up', icon: 'o_home' }
+  { key: 'placed', label: 'Placed', icon: 'o_shopping_cart' },
+  { key: 'preparing', label: 'Preparing', icon: 'o_inventory_2' },
+  { key: 'ready_for_pickup', label: 'Ready', icon: 'o_storefront' },
+  { key: 'picked_up', label: 'Picked Up', icon: 'o_task_alt' }
 ]
 
 const statusTitleClass = computed(() => {
