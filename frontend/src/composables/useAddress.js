@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { getCurrentPosition, reverseGeocode } from '@/utils/geolocation'
 
 const STORAGE_KEY = 'consumer_address'
 const LAT_KEY = 'consumer_lat'
@@ -7,6 +8,10 @@ const LNG_KEY = 'consumer_lng'
 // Module-level singleton, like useCart, so every page and the header pill share one address.
 // Empty until the user actually confirms one — SiteHeader.vue shows an "Enter Address" placeholder for this state.
 const address = ref(localStorage.getItem(STORAGE_KEY) || '')
+
+// Module-level guard so the auto-detect prompt only ever fires once per app session,
+// no matter how many pages/SiteHeader instances mount while no address is saved yet.
+let autoDetectAttempted = false
 
 export function useAddress() {
   const setAddress = (value, lat = null, lng = null) => {
@@ -29,5 +34,20 @@ export function useAddress() {
     }
   }
 
-  return { address, setAddress }
+  // Silently detects and saves the browser's location on first load, skipping the
+  // open-panel-then-confirm flow entirely for anyone who hasn't set an address yet.
+  const autoDetectAddress = async () => {
+    if (autoDetectAttempted || address.value) return
+    autoDetectAttempted = true
+
+    try {
+      const { latitude, longitude } = await getCurrentPosition()
+      const resolvedAddress = await reverseGeocode(latitude, longitude)
+      setAddress(resolvedAddress, latitude, longitude)
+    } catch (error) {
+      console.warn('Automatic location detection skipped:', error.message)
+    }
+  }
+
+  return { address, setAddress, autoDetectAddress }
 }
