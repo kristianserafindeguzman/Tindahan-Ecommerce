@@ -31,7 +31,6 @@
                 />
               </div>
 
-              <!-- Category -->
               <div class="q-mb-md">
                 <div class="input-label q-mb-xs">Category</div>
                 <q-select
@@ -56,6 +55,20 @@
                     <span class="text-caption">{{ selectedEditCategoryGuide }}</span>
                   </q-banner>
                 </q-slide-transition>
+              </div>
+
+              <!-- Description -->
+              <div class="q-mb-md">
+                <div class="input-label q-mb-xs">Description (Optional)</div>
+                <q-input 
+                  v-model="form.description" 
+                  type="textarea"
+                  outlined 
+                  dense 
+                  placeholder="e.g., Description of the product"
+                  hide-bottom-space 
+                  class="custom-input" 
+                />
               </div>
 
               <!-- Active Status Toggle -->
@@ -229,6 +242,7 @@ const imagePreview = ref(null)
 
 const form = ref({
   product_name: '',
+  description: '',
   category_id: null,
   price: null,
   stock_quantity: null,
@@ -257,6 +271,7 @@ const selectedEditCategoryGuide = computed(() => {
 const populateForm = () => {
   const p = props.product
   form.value.product_name = p.product_name
+  form.value.description = p.description || ''
   form.value.category_id = p.category_id
   isActive.value = p.status !== 'archived'
   
@@ -378,6 +393,7 @@ const submitForm = async () => {
     const formData = new FormData()
     formData.append('_method', 'PATCH')
     formData.append('product_name', form.value.product_name)
+    formData.append('description', form.value.description || '')
     formData.append('category_id', form.value.category_id)
     formData.append('status', isActive.value ? 'active' : 'archived')
     
