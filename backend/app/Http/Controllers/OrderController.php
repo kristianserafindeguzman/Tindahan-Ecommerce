@@ -94,4 +94,36 @@ class OrderController extends Controller
             return response()->json(['message' => 'Failed to cancel order: ' . $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Export a receipt for a completed order.
+     *
+     * GET /api/consumer/orders/{id}/receipt
+     */
+    public function exportReceipt(Request $request, $id)
+    {
+        $order = Order::with(['consumer', 'items.inventory', 'store'])
+            ->where('consumer_id', $request->user()->user_id)
+            ->where('order_id', $id)
+            ->firstOrFail();
+
+        if ($order->status !== 'picked_up') {
+            return response()->json(['message' => 'Receipt only available for completed orders.'], 403);
+        }
+
+        $store = $order->store;
+        // Get the vendor/owner of the store to display their contact info
+        $owner = $store->owner;
+        
+        $date = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.consumer-order-receipt', [
+            'order' => $order,
+            'store' => $store,
+            'owner' => $owner,
+            'date' => $date
+        ]);
+
+        return $pdf->download("receipt-order-{$order->order_id}.pdf");
+    }
 }

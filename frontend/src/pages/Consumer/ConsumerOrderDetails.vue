@@ -267,7 +267,7 @@
           <div class="receipt-print-footer">Thank you for shopping with Tindahan!</div>
         </q-card>
 
-        <q-btn unelevated no-caps icon="o_download" label="Download" class="receipt-download-btn" @click="printOrder" />
+        <q-btn v-if="order?.status === 'picked_up'" unelevated no-caps icon="o_download" label="Download PDF" class="receipt-download-btn" :loading="isExporting" @click="downloadReceipt" />
       </div>
     </q-dialog>
 
@@ -289,6 +289,7 @@ const order = ref(null)
 const showCancelDialog = ref(false)
 const isCancelling = ref(false)
 const showReceiptDialog = ref(false)
+const isExporting = ref(false)
 
 const cancellationReasonOptions = ['I changed my mind', 'I ordered by mistake', 'Order is taking too long', 'Other']
 const selectedCancelReason = ref('')
@@ -412,6 +413,27 @@ const isStatusActive = (step) => {
 
 const printOrder = () => {
   window.print()
+}
+
+const downloadReceipt = async () => {
+  if (!order.value) return
+  
+  try {
+    isExporting.value = true
+    const response = await api.get(`/consumer/orders/${order.value.order_id}/receipt`, { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `Tindahan-Receipt-#${order.value.order_id}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (error) {
+    console.error('Download failed:', error)
+    $q.notify({ type: 'negative', message: 'Failed to download receipt' })
+  } finally {
+    isExporting.value = false
+  }
 }
 
 const hasDirections = computed(() => {

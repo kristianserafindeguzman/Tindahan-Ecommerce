@@ -228,8 +228,7 @@ class SalesController extends Controller
             $orderItem->inventory_id = $inventory->inventory_id;
             $orderItem->quantity = $request->quantity;
             $orderItem->subtotal = $request->total_amount;
-            // Note: If order_items schema is updated in future to include price, add it here:
-            // $orderItem->price = $request->unit_price; 
+            $orderItem->unit_price = $request->unit_price;
             $orderItem->save();
         });
 

@@ -23,6 +23,7 @@ class OrderItem extends Model
         'order_id',
         'inventory_id',
         'quantity',
+        'unit_price',
         'subtotal',
     ];
 
