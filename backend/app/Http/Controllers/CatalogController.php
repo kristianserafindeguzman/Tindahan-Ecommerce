@@ -67,54 +67,58 @@ class CatalogController extends Controller
     public function personalizedFeed(Request $request, DistanceService $distanceService)
     {
         $products = $this->getBaseCatalog($request, $distanceService);
+        $consumerId = $request->user()->user_id;
 
-        // 1. Get user's recent searches
-        $recentCategories = \App\Models\SearchLog::where('consumer_id', $request->user()->user_id)
-            ->whereNotNull('category_id')
-            ->orderBy('searched_at', 'desc')
-            ->limit(10)
-            ->pluck('category_id')
-            ->unique()
-            ->toArray();
+        // Check if consumer has any search history
+        $hasHistory = \App\Models\SearchLog::where('consumer_id', $consumerId)->exists();
 
-        // 2. Read ML predictions (trending categories)
-        $mlCategories = [];
-        $csvPath = base_path('../ml/random_forest_personalization_results.csv');
-        if (file_exists($csvPath)) {
-            $handle = fopen($csvPath, "r");
-            $header = fgetcsv($handle);
-            if ($header) {
-                while (($row = fgetcsv($handle)) !== false) {
-                    $data = array_combine($header, $row);
-                    if (isset($data['category_id']) && isset($data['predicted_demand'])) {
-                        $catId = (int) $data['category_id'];
-                        $mlCategories[$catId] = ($mlCategories[$catId] ?? 0) + (float) $data['predicted_demand'];
-                    }
-                }
+        $preferredCategories = [];
+        $isFallback = false;
+
+        if ($hasHistory) {
+            // PATH A: Individual Personalization
+            $preferredCategories = \App\Models\ConsumerPersonalization::where('consumer_id', $consumerId)
+                ->orderBy('predicted_future_searches', 'desc')
+                ->pluck('category_id')
+                ->toArray();
+        } else {
+            // PATH B: Localized Popular Searches / New Consumer Fallback
+            $isFallback = true;
+            $lat = $request->query('lat');
+            $lng = $request->query('lng');
+
+            if ($lat !== null && $lng !== null) {
+                $latGrid = round((float)$lat, 2);
+                $lngGrid = round((float)$lng, 2);
+
+                $preferredCategories = \App\Models\LocalizedPopularSearch::where('lat_grid', $latGrid)
+                    ->where('lng_grid', $lngGrid)
+                    ->whereNotNull('category_id')
+                    ->orderBy('search_count', 'desc')
+                    ->pluck('category_id')
+                    ->unique()
+                    ->toArray();
             }
-            fclose($handle);
         }
-        arsort($mlCategories);
-        $trendingCategories = array_keys($mlCategories);
 
-        // 3. Rank products
-        // Priority 1: User's recent searches
-        // Priority 2: ML trending categories
-        // Priority 3: Distance/Random
-        $products = $products->sortBy(function ($product) use ($recentCategories, $trendingCategories) {
+        // Rank products
+        // Priority 1: ML Preferred Categories (Path A or Path B)
+        // Priority 2: Distance
+        $products = $products->sortBy(function ($product) use ($preferredCategories) {
             $score = 1000;
             $catId = $product['category_id'];
 
-            if (in_array($catId, $recentCategories)) {
-                $score = array_search($catId, $recentCategories); // 0 is best
-            } elseif (in_array($catId, $trendingCategories)) {
-                $score = 50 + array_search($catId, $trendingCategories);
+            if (in_array($catId, $preferredCategories)) {
+                $score = array_search($catId, $preferredCategories); // 0 is best
             }
 
             // Return array for multi-level sorting (score first, then distance)
             return [$score, $product['distance_meters'] ?? 999999];
         })->values();
 
-        return response()->json($products);
+        return response()->json([
+            'is_fallback' => $isFallback,
+            'products' => $products
+        ]);
     }
 }

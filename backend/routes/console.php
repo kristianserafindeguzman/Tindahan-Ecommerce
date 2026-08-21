@@ -10,3 +10,9 @@ Artisan::command('inspire', function () {
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('orders:auto-cancel')->everyFiveMinutes();
+
+// Run ML Demand Forecast daily at midnight
+Schedule::command('ml:run-demand-forecast --train')->daily();
+
+// Run ML Personalization daily at 1 AM
+Schedule::command('ml:run-personalization --train')->dailyAt('01:00');

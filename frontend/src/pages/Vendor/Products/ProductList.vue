@@ -588,8 +588,30 @@ const deactivateProduct = async (product) => {
   })
 }
 
+const fetchMlInsights = async () => {
+  try {
+    const res = await api.get('/vendor/ml-insights')
+    if (res.data && res.data.has_insights) {
+      mlInsights.value.restockProduct = res.data.restockProduct
+      mlInsights.value.daysUntilStockout = res.data.daysUntilStockout
+      mlInsights.value.trendingCategory = res.data.trendingCategory
+      mlInsights.value.trendMultiplier = "1.5" // Hardcoded placeholder for UI purposes since RF predicts quantity, not explicitly multiplier
+      mlInsights.value.topCategory = res.data.topCategory
+    } else {
+      mlInsights.value.restockProduct = 'Awaiting more data'
+      mlInsights.value.daysUntilStockout = 'N/A'
+      mlInsights.value.trendingCategory = 'Awaiting more data'
+      mlInsights.value.trendMultiplier = 'N/A'
+      mlInsights.value.topCategory = 'Awaiting more data'
+    }
+  } catch (err) {
+    console.error('Failed to load ML insights:', err)
+  }
+}
+
 onMounted(() => {
   fetchProducts()
+  fetchMlInsights()
 })
 </script>
 
