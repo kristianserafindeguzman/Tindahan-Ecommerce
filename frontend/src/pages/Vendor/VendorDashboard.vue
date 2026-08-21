@@ -335,27 +335,56 @@
                 </q-chip>
               </div>
 
-              <p
-                class="text-indigo-1 text-body2 q-mb-lg opacity-80 relative-position z-top leading-relaxed flex-grow-1"
-              >
-                Your historical sales data is currently being analyzed by the
-                Random Forest model to predict upcoming inventory needs.
-              </p>
-
-              <div
-                class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft q-mt-auto"
-              >
-                <div class="ml-animated-bg"></div>
-
-                <div class="text-center z-top">
-                  <q-spinner-orbit size="45px" color="amber-3" />
-                  <div
-                    class="text-caption text-amber-2 q-mt-md font-monospace text-weight-bold tracking-wide"
-                  >
-                    PROCESSING BEHAVIORS...
+              <template v-if="mlForecast.loading">
+                <p class="text-indigo-1 text-body2 q-mb-lg opacity-80 relative-position z-top leading-relaxed flex-grow-1">
+                  Fetching latest demand forecast data...
+                </p>
+                <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft q-mt-auto">
+                  <div class="ml-animated-bg"></div>
+                  <div class="text-center z-top">
+                    <q-spinner-orbit size="45px" color="amber-3" />
+                    <div class="text-caption text-amber-2 q-mt-md font-monospace text-weight-bold tracking-wide">
+                      LOADING PREDICTIONS...
+                    </div>
                   </div>
                 </div>
-              </div>
+              </template>
+              
+              <template v-else-if="!mlForecast.has_forecast">
+                <p class="text-indigo-1 text-body2 q-mb-lg opacity-80 relative-position z-top leading-relaxed flex-grow-1">
+                  Insufficient historical data to generate a reliable demand forecast. The AI engine requires more completed orders to establish baseline sales patterns.
+                </p>
+                <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft q-mt-auto p-4 bg-indigo-9">
+                  <div class="text-center z-top q-pa-md">
+                    <q-icon name="analytics" size="40px" color="blue-grey-4" class="q-mb-sm" />
+                    <div class="text-caption text-blue-grey-2 font-monospace text-weight-bold tracking-wide">
+                      AWAITING MORE DATA
+                    </div>
+                  </div>
+                </div>
+              </template>
+              
+              <template v-else>
+                <p class="text-indigo-1 text-body2 q-mb-md opacity-80 relative-position z-top leading-relaxed">
+                  Based on recent trends, here are your top predicted demand items for today.
+                </p>
+                
+                <div class="text-white relative-position z-top flex-grow-1">
+                  <div v-for="(item, idx) in mlForecast.top_products" :key="idx" class="row justify-between items-center q-mb-sm bg-indigo-9 q-pa-sm rounded-borders">
+                    <div class="text-weight-bold ellipsis" style="max-width: 70%;">
+                      {{ idx + 1 }}. {{ item.product_name }}
+                    </div>
+                    <q-chip color="amber-3" text-color="indigo-10" size="sm" class="text-weight-bold shadow-1 q-ma-none">
+                      {{ item.predicted_quantity }} units
+                    </q-chip>
+                  </div>
+                </div>
+                
+                <div class="text-caption text-indigo-3 text-right q-mt-md relative-position z-top font-monospace">
+                  <q-icon name="update" class="q-mr-xs" />
+                  Last updated: {{ new Date(mlForecast.generated_at).toLocaleString() }}
+                </div>
+              </template>
             </q-card-section>
           </q-card>
         </div>
@@ -540,6 +569,14 @@ const vendorStore = ref(null)
 const vendorPhone = ref(null)
 const liveStoreModal = ref(false)
 const activeRevenueFilter = ref('Daily')
+
+const mlForecast = ref({
+  loading: true,
+  has_forecast: false,
+  summary: null,
+  top_products: [],
+  generated_at: null
+})
 
 const recentOrders = ref([])
 const stats = ref({
@@ -870,6 +907,22 @@ onMounted(async () => {
       stats.value.picked_up_orders = statsRes.data.picked_up_orders || 0
       stats.value.cancelled_orders = statsRes.data.cancelled_orders || 0
       recentOrders.value = statsRes.data.recent_orders || []
+    }
+    
+    // Fetch ML Forecast
+    try {
+      const mlRes = await api.get('/vendor/demand-forecast')
+      if (mlRes.data) {
+        mlForecast.value.has_forecast = mlRes.data.has_forecast
+        mlForecast.value.summary = mlRes.data.summary
+        mlForecast.value.top_products = mlRes.data.top_products || []
+        mlForecast.value.generated_at = mlRes.data.generated_at
+      }
+    } catch (err) {
+      console.error('Failed to load demand forecast:', err)
+      mlForecast.value.has_forecast = false
+    } finally {
+      mlForecast.value.loading = false
     }
   } catch (error) {
     console.error('Dashboard init error:', error)

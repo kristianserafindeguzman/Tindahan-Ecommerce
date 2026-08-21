@@ -18,7 +18,7 @@
       </div>
 
       <p v-if="!products.length" class="products-empty">
-        {{ isLoggedIn
+        {{ !isFallback
           ? 'No recommendations yet — check back soon.'
           : 'No popular products to show near you right now.'
         }}
@@ -49,6 +49,8 @@ import { useCart } from '@/composables/useCart'
 const $q = useQuasar()
 const api = inject('api') // Need to inject api for custom fetch
 const products = ref([])
+const isFallback = ref(false)
+
 const fetchProducts = async () => {
   try {
     const lat = localStorage.getItem('consumer_lat')
@@ -56,7 +58,8 @@ const fetchProducts = async () => {
     const params = lat && lng ? { lat, lng } : {}
     
     const response = await api.get('/consumer/personalized-feed', { params })
-    products.value = response.data
+    products.value = response.data.products
+    isFallback.value = response.data.is_fallback
   } catch (error) {
     console.error('Failed to fetch personalized feed:', error)
   }
@@ -84,8 +87,8 @@ const handleAddToCart = async (product) => {
 
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
-const pageTitle = computed(() => isLoggedIn.value ? 'Recommended for You' : 'Popular Products Near You')
-const pageSubtitle = computed(() => isLoggedIn.value
+const pageTitle = computed(() => !isFallback.value ? 'Recommended for You' : 'Popular Products Near You')
+const pageSubtitle = computed(() => !isFallback.value
   ? "Products picked based on your activity and preferences."
   : "Popular picks from sari-sari stores near you."
 )

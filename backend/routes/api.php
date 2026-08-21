@@ -105,6 +105,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/orders/{id}/status', [\App\Http\Controllers\VendorOrderController::class, 'updateStatus']);
         Route::get('/customers', [\App\Http\Controllers\VendorOrderController::class, 'customers']);
         Route::get('/customers/{id}/orders', [\App\Http\Controllers\VendorOrderController::class, 'customerOrders']);
+        
+        // ML Integrations
+        Route::get('/demand-forecast', [\App\Http\Controllers\VendorController::class, 'getDemandForecast']);
+        Route::get('/ml-insights', [\App\Http\Controllers\VendorController::class, 'getMlInsights']);
     });
 
     // ----- Profile Routes -----
