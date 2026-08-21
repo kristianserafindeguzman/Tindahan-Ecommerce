@@ -26,7 +26,8 @@ class InventoryController extends Controller
         $inventory = Inventory::where('store_id', $store->store_id)
             ->with('category')
             ->orderBy('inventory_id', 'desc')
-            ->get();
+            ->get()
+            ->each->setAppends(['image_url', 'available_quantity']);
 
 
         return response()->json($inventory);
@@ -49,6 +50,7 @@ class InventoryController extends Controller
 
         $validated = $request->validate([
             'product_name'    => 'required|string|max:100',
+            'description'     => 'nullable|string',
             'category_id'     => 'required|integer|exists:categories,category_id',
             'product_picture' => 'nullable|image|max:10240',
             // Base price/qty for single item
@@ -90,6 +92,7 @@ class InventoryController extends Controller
             'store_id'        => $store->store_id,
             'category_id'     => $validated['category_id'],
             'product_name'    => $validated['product_name'],
+            'description'     => $validated['description'] ?? null,
             'price'           => $price,
             'stock_quantity'  => $stock,
             'variants'        => empty($variants) ? null : $variants,
@@ -115,6 +118,7 @@ class InventoryController extends Controller
 
         $validated = $request->validate([
             'product_name'    => 'sometimes|string|max:100',
+            'description'     => 'nullable|string',
             'category_id'     => 'sometimes|integer|exists:categories,category_id',
             'product_picture' => 'nullable|image|max:10240',
             'price'           => 'nullable|numeric|min:0',
@@ -153,6 +157,7 @@ class InventoryController extends Controller
         }
 
         if (isset($validated['product_name'])) $item->product_name = $validated['product_name'];
+        if (array_key_exists('description', $validated)) $item->description = $validated['description'];
         if (isset($validated['category_id'])) $item->category_id = $validated['category_id'];
         if (isset($validated['status'])) $item->status = $validated['status'];
 

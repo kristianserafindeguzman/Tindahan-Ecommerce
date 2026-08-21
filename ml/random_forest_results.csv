@@ -1,0 +1,8 @@
+store_id,inventory_id,day_of_week,month,season_category_Rainy,holiday_event_Back to School,holiday_event_None,actual_demand,predicted_demand,prediction_error
+3,78,3,8,True,True,False,3.0,5,2.0
+1,20,3,8,True,True,False,2.0,2,0.0
+3,54,4,8,True,True,False,3.0,2,1.0
+1,1,4,8,True,True,False,3.0,2,1.0
+3,61,6,8,True,True,False,1.0,2,1.0
+3,59,1,8,True,True,False,2.0,2,0.0
+1,16,4,8,True,True,False,18.0,1,17.0

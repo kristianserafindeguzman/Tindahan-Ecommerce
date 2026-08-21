@@ -10,8 +10,7 @@
       <div class="hero-banner">
         <div class="hero-content">
           <h1 class="hero-title hero-title-lg">Explore sari-sari stores around you</h1>
-          <!-- Not wired up yet — no map feature/route exists yet, intentionally not clickable. -->
-          <q-btn unelevated no-caps label="Show Map" class="hero-cta">
+          <q-btn unelevated no-caps label="Show Map" class="hero-cta" @click="showMapDialog = true">
             <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
           </q-btn>
         </div>
@@ -30,8 +29,8 @@
       </SectionBlock>
 
       <!-- RECOMMENDED / POPULAR PRODUCTS -->
-      <SectionBlock :title="resultsSectionTitle" view-all @view-all="router.push('/consumer/personalize')">
-        <div class="products-grid">
+      <SectionBlock :title="resultsSectionTitle" view-all @view-all="router.push(resultsViewAllPath)">
+        <div ref="productsGridEl" class="products-grid">
           <ProductCard v-for="product in recommendedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
         </div>
       </SectionBlock>
@@ -55,7 +54,7 @@
           no-caps
           label="See More"
           class="see-more-btn"
-          @click="discoverVisibleCount += DISCOVER_PAGE_SIZE"
+          @click="discoverRowsShown += DISCOVER_ROWS_PER_PAGE"
         />
       </SectionBlock>
 
@@ -64,12 +63,13 @@
     <SiteFooter />
 
     <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
+    <ConsumerMap v-model="showMapDialog" />
 
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
@@ -79,6 +79,7 @@ import CategoryCarousel from '@/components/consumer/CategoryCarousel.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import StoreCard from '@/components/consumer/StoreCard.vue'
 import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
+import ConsumerMap from '@/pages/Consumer/ConsumerMap.vue'
 import { useCategories } from '@/composables/useCategories'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
@@ -90,6 +91,7 @@ const { addToCart } = useCart()
 
 const showProductModal = ref(false)
 const selectedProduct = ref(null)
+const showMapDialog = ref(false)
 
 const openProductModal = (product) => {
   selectedProduct.value = product
@@ -114,6 +116,11 @@ const goToCategory = (category) => {
 }
 
 const handleAddToCart = async (product) => {
+  if (!isLoggedIn.value) {
+    router.push('/login')
+    return
+  }
+
   try {
     await addToCart(product.id)
     $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
@@ -126,22 +133,47 @@ const resultsSectionTitle = computed(() =>
   isLoggedIn.value ? 'Recommended for You' : 'Popular Products Near You'
 )
 
+// Personalization is a logged-in-only route, so guests get routed to the guest-browsable catalog instead.
+const resultsViewAllPath = computed(() => isLoggedIn.value ? '/consumer/personalize' : '/consumer/products')
+
 // No real recommendation/nearby endpoint yet — these are simple slices of the same fetched
 // catalog until personalization/geolocation exist.
-const RECOMMENDED_COUNT = 6
 const NEARBY_STORES_COUNT = 4
-
-const recommendedProducts = computed(() => products.value.slice(0, RECOMMENDED_COUNT))
 const nearbyStores = computed(() => stores.value.slice(0, NEARBY_STORES_COUNT))
-const discoverProducts = computed(() => products.value.slice(RECOMMENDED_COUNT))
 
-// "See More" reveals additional products in place rather than navigating away — that's what "View All" is for.
+// Reads the grid's own live column count (auto-fill, so it varies by device) instead of guessing
+// a breakpoint, so both sections always show whole rows — no partially-filled row at any width.
+const productsGridEl = ref(null)
+const gridColumns = ref(3)
+let gridColumnsObserver = null
 
-const DISCOVER_PAGE_SIZE = 6
-const discoverVisibleCount = ref(DISCOVER_PAGE_SIZE)
+watch(productsGridEl, (el) => {
+  gridColumnsObserver?.disconnect()
+  gridColumnsObserver = null
+  if (!el) return
+
+  const measure = () => {
+    const count = getComputedStyle(el).gridTemplateColumns.split(' ').length
+    if (count > 0) gridColumns.value = count
+  }
+  measure()
+  gridColumnsObserver = new ResizeObserver(measure)
+  gridColumnsObserver.observe(el)
+})
+
+onBeforeUnmount(() => gridColumnsObserver?.disconnect())
+
+const RECOMMENDED_ROWS = 2
+const recommendedCount = computed(() => gridColumns.value * RECOMMENDED_ROWS)
+const recommendedProducts = computed(() => products.value.slice(0, recommendedCount.value))
+const discoverProducts = computed(() => products.value.slice(recommendedCount.value))
+
+// "See More" reveals additional full rows in place rather than navigating away — that's what "View All" is for.
+const DISCOVER_ROWS_PER_PAGE = 2
+const discoverRowsShown = ref(DISCOVER_ROWS_PER_PAGE)
 
 const visibleDiscoverProducts = computed(() =>
-  discoverProducts.value.slice(0, discoverVisibleCount.value)
+  discoverProducts.value.slice(0, discoverRowsShown.value * gridColumns.value)
 )
 </script>
 

@@ -18,8 +18,8 @@
       </div>
 
       <p v-if="!products.length" class="products-empty">
-        {{ hasHistory
-          ? "No recommendations yet — check back after you've browsed a few products."
+        {{ isLoggedIn
+          ? 'No recommendations yet — check back soon.'
           : 'No popular products to show near you right now.'
         }}
       </p>
@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
 import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
@@ -47,8 +47,20 @@ import { useProducts } from '@/composables/useProducts'
 import { useCart } from '@/composables/useCart'
 
 const $q = useQuasar()
-
-const { products, fetchProducts } = useProducts()
+const api = inject('api') // Need to inject api for custom fetch
+const products = ref([])
+const fetchProducts = async () => {
+  try {
+    const lat = localStorage.getItem('consumer_lat')
+    const lng = localStorage.getItem('consumer_lng')
+    const params = lat && lng ? { lat, lng } : {}
+    
+    const response = await api.get('/consumer/personalized-feed', { params })
+    products.value = response.data
+  } catch (error) {
+    console.error('Failed to fetch personalized feed:', error)
+  }
+}
 const { addToCart } = useCart()
 
 onMounted(fetchProducts)
@@ -70,12 +82,10 @@ const handleAddToCart = async (product) => {
   }
 }
 
-// hasHistory checks a signal nothing currently writes, so it resolves to false until a real history source exists.
+const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
-const hasHistory = computed(() => !!localStorage.getItem('recent_products'))
-
-const pageTitle = computed(() => hasHistory.value ? 'Recommended for You' : 'Popular Products Near You')
-const pageSubtitle = computed(() => hasHistory.value
+const pageTitle = computed(() => isLoggedIn.value ? 'Recommended for You' : 'Popular Products Near You')
+const pageSubtitle = computed(() => isLoggedIn.value
   ? "Products picked based on your activity and preferences."
   : "Popular picks from sari-sari stores near you."
 )

@@ -438,13 +438,14 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onUnmounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
 
+const route = useRoute()
 const router = useRouter()
 
 const loginForm = ref(null)
@@ -452,6 +453,14 @@ const showPassword = ref(false)
 const loading = ref(false)
 const loginError = ref('')
 const showRegistrationOptions = ref(false)
+
+// The header's guest "Sign up" button links here with ?register=1 to jump straight to the
+// registration-choice dialog instead of landing on the plain login form.
+onMounted(() => {
+  if (route.query.register === '1') {
+    showRegistrationOptions.value = true
+  }
+})
 
 // Gates each field's own rules until it's been touched (blurred once,
 // or a submit attempt was made) — Quasar's `lazy-rules` only

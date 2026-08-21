@@ -1,6 +1,8 @@
 <template>
-  <q-dialog v-model="isOpen" @hide="resetLocalState">
-    <q-card v-if="product" flat class="detail-card">
+  <q-dialog v-model="isOpen" :position="isSheet ? 'bottom' : 'standard'" @hide="resetLocalState">
+    <q-card v-if="product" flat class="detail-card" :class="{ 'detail-card-sheet': isSheet }">
+
+      <div v-if="isSheet" class="detail-drag-handle" />
 
       <q-btn icon="o_close" flat round dense class="close-btn" v-close-popup />
 
@@ -54,8 +56,69 @@
               </div>
             </div>
 
-            <div v-if="product.inStock" class="quantity-row">
-              <span class="quantity-label">Quantity</span>
+            <!-- Desktop: in-flow with the rest of the product info. -->
+            <div v-if="!isSheet" class="cart-action-row">
+              <div v-if="product.inStock" class="quantity-row">
+                <span class="quantity-label">Quantity</span>
+                <div class="stepper-wrapper">
+                  <div class="quantity-stepper">
+                    <button type="button" class="stepper-btn" :disabled="quantity <= 1" @click="quantity--">
+                      <q-icon name="o_remove" size="16px" />
+                    </button>
+                    <span class="stepper-value">{{ quantity }}</span>
+                    <button
+                      type="button"
+                      class="stepper-btn"
+                      :disabled="quantity >= maxQuantity"
+                      @click="quantity++"
+                    >
+                      <q-icon name="o_add" size="16px" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <q-btn
+                unelevated
+                no-caps
+                icon="o_shopping_cart"
+                :disable="!product.inStock"
+                :loading="adding"
+                label="Add to Cart"
+                class="add-to-cart-btn"
+                @click="handleAddToCart"
+              />
+            </div>
+          </div>
+
+        </div>
+
+        <!-- STORE INFO -->
+        <div v-if="store" class="store-section">
+          <div class="store-section-label">About this Store</div>
+
+          <div class="store-row" v-close-popup @click="router.push(`/consumer/stores/${store.slug || store.id}`)">
+            <div class="store-row-info">
+              <div class="store-row-name">{{ store.name }}</div>
+              <div class="store-row-status" :class="{ 'store-row-status-closed': !store.isOpen }">
+                {{ store.scheduleStatusText || (store.isOpen ? `Open until ${store.closesAt}` : 'Closed now') }}
+              </div>
+              <div v-if="storeAddressText" class="store-row-address">
+                <q-icon name="o_location_on" size="12px" />
+                <span class="store-row-address-text">{{ storeAddressText }}</span>
+              </div>
+            </div>
+            <div class="store-row-link">
+              View Store
+              <q-icon name="o_chevron_right" size="16px" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile: sticky at the bottom of the sheet's own scroll viewport, so content scrolls underneath it instead of pushing it away. -->
+        <div v-if="isSheet" class="cart-action-row cart-action-row-sheet">
+          <div v-if="product.inStock" class="quantity-row">
+            <div class="stepper-wrapper">
               <div class="quantity-stepper">
                 <button type="button" class="stepper-btn" :disabled="quantity <= 1" @click="quantity--">
                   <q-icon name="o_remove" size="16px" />
@@ -71,40 +134,18 @@
                 </button>
               </div>
             </div>
-
-            <q-btn
-              unelevated
-              no-caps
-              :disable="!product.inStock"
-              :loading="adding"
-              label="Add to Cart"
-              class="add-to-cart-btn"
-              @click="handleAddToCart"
-            />
           </div>
 
-        </div>
-
-        <!-- STORE INFO -->
-        <div v-if="store" class="store-section">
-          <div class="store-section-label">About this Store</div>
-
-          <div class="store-row" v-close-popup @click="router.push(`/consumer/stores/${store.id}`)">
-            <div class="store-row-info">
-              <div class="store-row-name">{{ store.name }}</div>
-              <div class="store-row-status" :class="{ 'store-row-status-closed': !store.isOpen }">
-                {{ store.isOpen ? `Open until ${store.closesAt}` : 'Closed now' }}
-              </div>
-              <div v-if="store.address" class="store-row-address">
-                <q-icon name="o_location_on" size="12px" />
-                {{ store.address }}
-              </div>
-            </div>
-            <div class="store-row-link">
-              View Store
-              <q-icon name="o_chevron_right" size="16px" />
-            </div>
-          </div>
+          <q-btn
+            unelevated
+            no-caps
+            icon="o_shopping_cart"
+            :disable="!product.inStock"
+            :loading="adding"
+            label="Add to Cart"
+            class="add-to-cart-btn"
+            @click="handleAddToCart"
+          />
         </div>
 
       </div>
@@ -134,6 +175,10 @@ const $q = useQuasar()
 const router = useRouter()
 const { stores, fetchStores } = useStores()
 const { addToCart } = useCart()
+const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
+
+// Mobile only — tablet keeps the centered dialog.
+const isSheet = computed(() => $q.screen.lt.sm)
 
 const isOpen = ref(props.modelValue)
 watch(() => props.modelValue, (val) => {
@@ -145,6 +190,20 @@ watch(isOpen, (val) => emit('update:modelValue', val))
 const store = computed(() =>
   props.product ? stores.value.find((s) => s.id === props.product.storeId) || null : null
 )
+
+const formatDistance = (meters) => {
+  if (meters == null) return ''
+  const rounded = Math.round(meters)
+  if (rounded < 1000) return `${rounded} m away`
+  return `${(meters / 1000).toFixed(1)} km away`
+}
+
+const storeAddressText = computed(() => {
+  if (!store.value) return ''
+  const dist = store.value.distance_meters != null ? formatDistance(store.value.distance_meters) : ''
+  if (store.value.address && dist) return `${store.value.address} (${dist})`
+  return store.value.address || dist
+})
 
 const hasVariants = computed(() => Array.isArray(props.product?.variants) && props.product.variants.length > 0)
 
@@ -180,6 +239,12 @@ const resetLocalState = () => {
 
 const handleAddToCart = async () => {
   if (!props.product) return
+
+  if (!isLoggedIn.value) {
+    isOpen.value = false
+    router.push('/login')
+    return
+  }
 
   adding.value = true
   try {
@@ -601,13 +666,23 @@ const handleAddToCart = async () => {
   align-items: center;
 
   gap: 4px;
+  min-width: 0;
   margin-top: 3px;
 
   font-size: 11.5px;
 
   color: #8992a2;
+}
+
+.store-row-address .q-icon {
+  flex-shrink: 0;
+}
+
+.store-row-address-text {
+  min-width: 0;
 
   overflow: hidden;
+
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -625,15 +700,74 @@ const handleAddToCart = async () => {
   color: #bd2427;
 }
 
-/* RESPONSIVE */
+/* RESPONSIVE — sheet styling is driven by the .detail-card-sheet class (same isSheet check as the dialog's position), not a separate media query, so the two can't disagree at the breakpoint. */
 
-@media (max-width: 600px) {
-  .detail-grid {
-    grid-template-columns: 1fr;
-  }
+.detail-card-sheet {
+  display: flex;
+  flex-direction: column;
 
-  .detail-scroll {
-    padding: 20px;
-  }
+  width: 100%;
+  max-width: 100%;
+  max-height: 92vh;
+
+  border-radius: 16px 16px 0 0;
+}
+
+.detail-card-sheet .detail-drag-handle {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+
+  width: 36px;
+  height: 4px;
+  margin: 10px auto 0;
+
+  border-radius: 999px;
+
+  background: #d6d6da;
+}
+
+.detail-card-sheet .close-btn {
+  top: 20px;
+}
+
+.detail-card-sheet .detail-grid {
+  grid-template-columns: 1fr;
+}
+
+.detail-card-sheet .detail-scroll {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+
+  padding: 20px;
+}
+
+.cart-action-row-sheet {
+  position: sticky;
+  bottom: -20px;
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+  margin: 0 -20px -20px;
+  padding: 14px 20px 16px;
+
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+}
+
+.cart-action-row-sheet .quantity-row {
+  flex-shrink: 0;
+
+  margin-bottom: 0;
+}
+
+.cart-action-row-sheet .add-to-cart-btn {
+  width: auto;
+
+  flex: 1;
 }
 </style>

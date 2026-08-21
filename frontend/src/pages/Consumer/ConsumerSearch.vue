@@ -22,7 +22,7 @@
             <q-chip
               v-for="term in recentSearches"
               :key="term"
-              clickable
+              clickablev
               dense
               class="recent-chip"
               @click="goToRecentSearch(term)"
@@ -140,6 +140,7 @@ import { useCart } from '@/composables/useCart'
 const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()
+const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
 const query = computed(() => (route.query.q || '').toString().trim())
 
@@ -149,6 +150,11 @@ const { stores, fetchStores } = useStores()
 const { addToCart } = useCart()
 
 const handleAddToCart = async (product) => {
+  if (!isLoggedIn.value) {
+    router.push('/login')
+    return
+  }
+
   try {
     await addToCart(product.id)
     $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
@@ -224,10 +230,10 @@ const subtitleText = computed(() => {
   return `Showing ${total} result${total === 1 ? '' : 's'} for "${query.value}".`
 })
 
-// A search with only a couple of hits reads as sparse on its own, so pad it out with related picks.
+// Shows for any non-empty search — zero results gets its own empty state instead.
 const showRelatedProducts = computed(() => {
   const total = filteredProducts.value.length + matchedStores.value.length
-  return total >= 1 && total <= 2
+  return total >= 1
 })
 
 const relatedProducts = computed(() => {

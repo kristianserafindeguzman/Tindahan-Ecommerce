@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\CartItem;
 use App\Models\Inventory;
+use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {
@@ -115,5 +118,108 @@ class CartController extends Controller
             ->delete();
 
         return response()->json(['message' => 'Removed from cart.']);
+    }
+
+    /**
+     * Checkout items in the cart for a specific store.
+     *
+     * POST /api/consumer/checkout
+     */
+    public function checkout(Request $request)
+    {
+        $request->validate([
+            'store_id' => 'required|integer|exists:stores,store_id',
+            'consumer_latitude' => 'nullable|numeric|between:-90,90',
+            'consumer_longitude' => 'nullable|numeric|between:-180,180',
+        ]);
+
+        $consumerId = $request->user()->user_id;
+        $storeId = $request->input('store_id');
+
+        // 1. Get all cart items for this consumer + store
+        $cartItems = CartItem::with('inventory')
+            ->where('consumer_id', $consumerId)
+            ->whereHas('inventory', fn ($q) => $q->where('store_id', $storeId))
+            ->get();
+
+        if ($cartItems->isEmpty()) {
+            return response()->json(['message' => 'No items in cart for this store.'], 422);
+        }
+
+        try {
+            // Begin transaction to ensure atomicity
+            DB::beginTransaction();
+
+            $totalAmount = 0;
+            $orderItemsData = [];
+
+            foreach ($cartItems as $cartItem) {
+                // Lock the inventory row to prevent concurrent modification and overselling
+                $inventory = Inventory::where('inventory_id', $cartItem->inventory_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$inventory || $inventory->status !== 'active') {
+                    throw new \Exception("Product '{$cartItem->inventory->product_name}' is no longer available.");
+                }
+
+                $availableQty = $inventory->stock_quantity - $inventory->reserved_quantity;
+
+                if ($availableQty < $cartItem->quantity) {
+                    throw new \Exception(
+                        "Insufficient stock for '{$inventory->product_name}'. "
+                        . "Available: {$availableQty}, Requested: {$cartItem->quantity}."
+                    );
+                }
+
+                // Reserve the inventory by increasing reserved_quantity
+                $inventory->reserved_quantity += $cartItem->quantity;
+                $inventory->save();
+
+                $subtotal = $inventory->price * $cartItem->quantity;
+                $totalAmount += $subtotal;
+
+                $orderItemsData[] = [
+                    'inventory_id' => $inventory->inventory_id,
+                    'quantity' => $cartItem->quantity,
+                    'subtotal' => $subtotal,
+                ];
+            }
+
+            $order = Order::create([
+                'consumer_id' => $consumerId,
+                'store_id' => $storeId,
+                'total_amount' => $totalAmount,
+                'status' => 'placed',
+                'consumer_latitude' => $request->input('consumer_latitude'),
+                'consumer_longitude' => $request->input('consumer_longitude'),
+            ]);
+
+            // Create order items
+            foreach ($orderItemsData as $itemData) {
+                $order->items()->create($itemData);
+            }
+
+            // Clear the checked-out cart items (only this store's items)
+            $cartItemIds = $cartItems->pluck('cart_id');
+            CartItem::whereIn('cart_id', $cartItemIds)->delete();
+
+            // Commit transaction and release locks
+            DB::commit();
+
+            // Load relationships for the response
+            $order->load('items.inventory', 'store');
+
+            return response()->json([
+                'message' => 'Order placed successfully.',
+                'order' => $order,
+            ], 201);
+
+        } catch (\Exception $e) {
+            // Rollback everything if any item fails or exception occurs
+            DB::rollBack();
+            Log::error('Checkout failed: ' . $e->getMessage());
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 }

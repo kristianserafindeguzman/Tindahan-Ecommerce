@@ -107,9 +107,10 @@
 
       <AppPagination v-model="currentPage" :max="totalPages" />
 
-      <!-- FILTERS POPUP (mobile) -->
-      <q-dialog v-model="mobileFiltersOpen">
-        <q-card class="filters-dialog-card">
+      <!-- FILTERS POPUP (tablet: centered dialog, mobile: bottom sheet) -->
+      <q-dialog v-model="mobileFiltersOpen" :position="isSheetFilters ? 'bottom' : undefined">
+        <q-card class="filters-dialog-card" :class="{ 'filters-dialog-card-sheet': isSheetFilters }">
+          <div v-if="isSheetFilters" class="filters-drag-handle" />
           <ProductFilters
             v-model:category="selectedCategory"
             v-model:store="selectedStore"
@@ -120,6 +121,7 @@
             :category-options="CATEGORY_SELECT_OPTIONS"
             :store-options="STORE_SELECT_OPTIONS"
             :sort-options="SORT_OPTIONS"
+            :is-sheet="isSheetFilters"
             @close="filtersOpen = false"
             @clear="clearFilters"
           />
@@ -138,7 +140,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
@@ -151,6 +153,8 @@ import { useCart } from '@/composables/useCart'
 
 const $q = useQuasar()
 const route = useRoute()
+const router = useRouter()
+const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
 const showProductModal = ref(false)
 const selectedProduct = ref(null)
@@ -165,6 +169,11 @@ const { products, fetchProducts } = useProducts()
 const { addToCart } = useCart()
 
 const handleAddToCart = async (product) => {
+  if (!isLoggedIn.value) {
+    router.push('/login')
+    return
+  }
+
   try {
     await addToCart(product.id)
     $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
@@ -207,6 +216,9 @@ const sortBy = ref('popular')
 
 // Below this width the sidebar doesn't fit, so filtersOpen opens a popup dialog instead.
 const isMobileFilters = computed(() => $q.screen.width < 900)
+
+// Tablet and mobile (the whole range below the sidebar breakpoint) both get the bottom sheet.
+const isSheetFilters = computed(() => isMobileFilters.value)
 
 const mobileFiltersOpen = computed({
   get: () => filtersOpen.value && isMobileFilters.value,
@@ -545,11 +557,35 @@ const clearFilters = () => {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
+/* Tablet: centered dialog, same as before this page had a bottom sheet at all. */
 .filters-dialog-card {
   width: 100%;
   max-width: 380px;
 
   border-radius: 10px;
+}
+
+/* Mobile only: the same dialog restyled as a bottom sheet. */
+.filters-dialog-card-sheet {
+  display: flex;
+  flex-direction: column;
+
+  max-width: 100%;
+  max-height: 88vh;
+
+  border-radius: 16px 16px 0 0;
+}
+
+.filters-drag-handle {
+  flex-shrink: 0;
+
+  width: 36px;
+  height: 4px;
+  margin: 10px auto 0;
+
+  border-radius: 999px;
+
+  background: #d6d6da;
 }
 
 /* RESPONSIVE */

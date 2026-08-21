@@ -16,6 +16,7 @@ class Inventory extends Model
         'store_id',
         'category_id',
         'product_name',
+        'description',
         'price',
         'stock_quantity',
         'reserved_quantity',

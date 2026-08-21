@@ -130,12 +130,17 @@
             <span>{{ address || 'Enter Address' }}</span>
           </span>
 
-          <div v-if="addressMenuOpen" class="address-menu-panel" @click.stop>
-            <div class="address-menu-title">
-              Address
-            </div>
+          <div v-if="addressMenuOpen && isAddressSheet" class="address-menu-backdrop" @click.stop="addressMenuOpen = false" />
 
-            <div class="address-menu-input-row">
+          <div v-if="addressMenuOpen" class="address-menu-panel" :class="{ 'address-menu-panel-sheet': isAddressSheet }" @click.stop>
+            <div v-if="isAddressSheet" class="address-menu-drag-handle" />
+
+            <div class="address-menu-scroll">
+              <div class="address-menu-title">
+                <q-icon name="o_location_on" size="16px" class="address-menu-title-icon" />
+                <span>Address</span>
+              </div>
+
               <q-input
                 v-model="draftAddress"
                 dense
@@ -143,22 +148,13 @@
                 hide-bottom-space
                 placeholder="Enter your address"
                 class="address-menu-input"
-                @keyup.enter="mapExpanded = true"
+                @keyup.enter="confirmAddress"
               />
-              <q-btn
-                v-if="!mapExpanded"
-                unelevated
-                icon="o_arrow_forward"
-                aria-label="Pick on map"
-                class="address-menu-next"
-                :disable="!draftAddress.trim()"
-                @click="mapExpanded = true"
-              />
+
+              <VendorLocationMap class="address-menu-map" @location-selected="onLocationSelected" />
             </div>
 
-            <template v-if="mapExpanded">
-              <VendorLocationMap class="address-menu-map" @location-selected="onLocationSelected" />
-
+            <div class="address-menu-footer">
               <q-btn
                 unelevated
                 no-caps
@@ -167,7 +163,7 @@
                 :disable="!draftAddress.trim()"
                 @click="confirmAddress"
               />
-            </template>
+            </div>
           </div>
         </div>
 
@@ -177,14 +173,35 @@
           <template v-if="isLoggedIn">
             <q-btn flat dense :ripple="false" class="icon-btn">
               <q-icon name="o_notifications" size="20px" />
-              <span v-if="hasNotifications" class="icon-badge-dot" />
+              <span v-if="unreadNotificationCount" class="icon-badge-count">{{ unreadNotificationCount }}</span>
+
+              <q-menu anchor="bottom right" self="top right" content-class="cart-menu-panel" @show="fetchNotifications">
+                <div class="cart-menu-inner" style="width: 320px;">
+                  <div class="cart-menu-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    Notifications
+                    <q-btn v-if="unreadNotificationCount" flat dense no-caps label="Mark all read" color="primary" size="sm" @click="markAllAsRead" />
+                  </div>
+
+                  <div v-if="!notifications.length" class="cart-menu-empty">No notifications yet.</div>
+
+                  <template v-else>
+                    <div v-for="notif in notifications.slice(0, 10)" :key="notif.notification_id" class="cart-menu-item notification-item" style="cursor:pointer;" @click="handleNotificationClick(notif)">
+                      <div class="cart-menu-item-info" :style="notif.is_read ? 'opacity: 0.7;' : 'font-weight: bold;'">
+                        <div class="cart-menu-item-name">{{ notif.title }}</div>
+                        <div class="cart-menu-item-meta" style="white-space: normal; line-height: 1.3;">{{ notif.message }}</div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </q-menu>
             </q-btn>
 
-            <q-btn flat dense :ripple="false" class="icon-btn">
+            <q-btn flat dense :ripple="false" class="icon-btn" @click="handleCartIconClick">
               <q-icon name="o_shopping_cart" size="20px" />
               <span v-if="cartItemCount" class="icon-badge-count">{{ cartItemCount }}</span>
 
-              <q-menu anchor="bottom right" self="top right" content-class="cart-menu-panel" @show="fetchCart">
+              <!-- Desktop only — mobile/tablet skip the preview and go straight to the Cart page. -->
+              <q-menu v-if="!$q.screen.lt.md" anchor="bottom right" self="top right" content-class="cart-menu-panel" @show="fetchCart">
                 <div class="cart-menu-inner">
                   <div class="cart-menu-title">My Cart</div>
 
@@ -261,10 +278,6 @@
               class="auth-btn auth-btn-primary"
               @click="goToSignup"
             />
-
-            <q-btn flat dense :ripple="false" class="icon-btn" @click="goToLogin">
-              <q-icon name="o_shopping_cart" size="20px" />
-            </q-btn>
           </template>
 
         </div>
@@ -276,30 +289,35 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'
 import { useAddress } from '@/composables/useAddress'
 import { splitHighlightParts } from '@/utils/textHighlight'
+import { useCategories } from '@/composables/useCategories'
+import { clearAuthStorage } from '@/utils/authStorage'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 
 const router = useRouter()
 const route = useRoute()
+const $q = useQuasar()
 
-const { address, setAddress } = useAddress()
+const { address, setAddress, autoDetectAddress } = useAddress()
 const draftAddress = ref('')
 const draftLocation = ref(null)
-const mapExpanded = ref(false)
 const addressMenuOpen = ref(false)
 const headerLocationRef = ref(null)
+
+// Tablet and mobile both get the bottom sheet, same breakpoint as the Products/Stores filter sheets.
+const isAddressSheet = computed(() => $q.screen.width < 900)
 
 const toggleAddressMenu = () => {
   addressMenuOpen.value = !addressMenuOpen.value
   if (addressMenuOpen.value) {
     draftAddress.value = address.value
     draftLocation.value = null
-    mapExpanded.value = false
     closeSuggestions()
   }
 }
@@ -335,7 +353,15 @@ const confirmAddress = () => {
 
 const { products, fetchProducts } = useProducts()
 const { stores, fetchStores } = useStores()
+const { categories, fetchCategories } = useCategories()
 const { items: cartItems, itemCount: cartItemCount, fetchCart } = useCart()
+
+// Mobile/tablet have no dropdown preview (see the q-menu's v-if) — the icon just navigates straight to the Cart page.
+const handleCartIconClick = () => {
+  if ($q.screen.lt.md) {
+    router.push('/consumer/cart')
+  }
+}
 
 // Renders for both guests and logged-in consumers, so it reads localStorage directly rather than relying on a route guard.
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
@@ -343,8 +369,13 @@ const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 onMounted(() => {
   fetchProducts()
   fetchStores()
+  fetchCategories()
+  autoDetectAddress()
   // Cart routes are auth-gated — an unconditional fetch would 401 for guests.
-  if (isLoggedIn.value) fetchCart()
+  if (isLoggedIn.value) {
+    fetchCart()
+    fetchNotifications()
+  }
 })
 
 const userAvatar = computed(() => {
@@ -356,8 +387,45 @@ const userAvatar = computed(() => {
   }
 })
 
-// TODO: back with a real notifications endpoint once it exists
-const hasNotifications = ref(true)
+const notifications = ref([])
+const unreadNotificationCount = computed(() => notifications.value.filter(n => !n.is_read).length)
+
+const fetchNotifications = async () => {
+  if (!isLoggedIn.value) return
+  try {
+    const res = await api.get('/consumer/notifications')
+    notifications.value = res.data
+  } catch (err) {
+    console.error('Failed to fetch notifications', err)
+  }
+}
+
+const markAsRead = async (id) => {
+  const notif = notifications.value.find(n => n.notification_id === id)
+  if (notif && !notif.is_read) {
+    notif.is_read = true
+    try {
+      await api.patch(`/consumer/notifications/${id}/read`)
+    } catch (err) {}
+  }
+}
+
+const handleNotificationClick = async (notif) => {
+  if (!notif.is_read) {
+    await markAsRead(notif.notification_id)
+  }
+  if (notif.order_id) {
+    localStorage.setItem('consumer_selected_order_id', notif.order_id)
+    router.push('/consumer/orders/details')
+  }
+}
+
+const markAllAsRead = async () => {
+  notifications.value.forEach(n => n.is_read = true)
+  try {
+    await api.post('/consumer/notifications/read-all')
+  } catch (err) {}
+}
 
 const handleLogout = async () => {
   try {
@@ -366,12 +434,7 @@ const handleLogout = async () => {
     // Token may already be invalid.
   }
 
-  localStorage.removeItem('auth_token')
-  localStorage.removeItem('auth_user')
-  localStorage.removeItem('auth_role')
-
-  // Clear address & coordinates upon logout
-  setAddress('')
+  clearAuthStorage()
 
   router.push('/login')
 }
@@ -385,8 +448,7 @@ const goToSignup = () => {
   router.push({ path: '/login', query: { register: '1' } })
 }
 
-// searchInput is the user's live draft (bound to the field); searchQuery only changes on submit,
-// and is the sole trigger for actually navigating/searching.
+// searchInput is the user's live draft; searchQuery only changes on submit and is what actually triggers navigation.
 const searchInput = ref(route.query.q || '')
 const searchQuery = ref(route.query.q || '')
 const suggestionsOpen = ref(false)
@@ -417,8 +479,7 @@ const clearRecentSearches = () => {
   localStorage.removeItem(RECENT_SEARCHES_KEY)
 }
 
-// The autocomplete dropdown is a lightweight typeahead — it's fine for it to live-filter off the
-// draft input. It's the actual page search/navigation below that's submit-only.
+// The autocomplete dropdown is a lightweight typeahead, so it's fine to live-filter off the draft input — only the actual navigation below is submit-only.
 const productSuggestions = computed(() => {
   const q = searchInput.value.trim().toLowerCase()
   if (!q) return []
@@ -470,27 +531,124 @@ function navigateToSearchPage(q) {
   }
 }
 
-// The only place a search is actually performed — fires on submit (searchQuery change), never while typing.
+const logSearch = async (query) => {
+  const token = localStorage.getItem('auth_token')
+
+  // Don't log guest searches
+  if (!token || !query) return
+
+  try {
+    const latitude = localStorage.getItem('consumer_lat')
+    const longitude = localStorage.getItem('consumer_lng')
+
+    if (!latitude || !longitude) {
+      console.warn('Search log skipped: consumer location is not available.')
+      return
+    }
+
+    const normalizedQuery = query.trim().toLowerCase()
+    
+    // 1. Match against product names (partial, case-insensitive)
+    let matchedProducts = products.value.filter(p => 
+        p.name?.toLowerCase().includes(normalizedQuery)
+    )
+    
+    // 2. If no product name match, try descriptions
+    if (matchedProducts.length === 0) {
+        matchedProducts = products.value.filter(p =>
+            p.description?.toLowerCase().includes(normalizedQuery)
+        )
+    }
+    
+    let categoryId = null;
+    
+    // 3. If products matched, use the first match's category
+    if (matchedProducts.length > 0) {
+        const firstMatch = matchedProducts[0]
+        const matchedCategory = categories.value.find(c => 
+            c.label?.toLowerCase() === firstMatch.category?.toLowerCase()
+        )
+        categoryId = matchedCategory?.id ?? matchedCategory?.category_id ?? null
+    } else {
+        // 4. Try direct category name match
+        const matchedCategory = categories.value.find(c =>
+            c.label?.toLowerCase().includes(normalizedQuery) || c.category_name?.toLowerCase().includes(normalizedQuery)
+        )
+        if (matchedCategory) {
+            categoryId = matchedCategory.id ?? matchedCategory.category_id
+        }
+    }
+
+    console.log('Search log data:', {
+      query,
+      category_id: categoryId,
+      latitude,
+      longitude
+    })
+
+    await api.post('/consumer/search-logs', {
+      search_query: query.trim(),
+      category_id: categoryId,
+      search_lat: Number(latitude),
+      search_lng: Number(longitude),
+    })
+
+    console.log('Search log saved successfully.')
+  } catch (error) {
+    console.error(
+      'Failed to save search log:',
+      error.response?.data || error
+    )
+  }
+}
+
+// The only place a search is actually saved — fires on submit (searchQuery change), never while typing.
 watch(searchQuery, (q) => {
-  if (q) saveRecentSearch(q)
+  if (q) {
+    saveRecentSearch(q)
+  }
+
   closeSuggestions()
-  navigateToSearchPage(q)
 })
 
 const selectSuggestion = (term) => {
   searchInput.value = term
   searchQuery.value = term
+  // Trigger submission on select
+  submitSearch()
 }
 
 // Enter, the search button, or a mobile keyboard's search key all land here.
-const submitSearch = () => {
-  if (activeSuggestionIndex.value >= 0 && suggestionTerms.value[activeSuggestionIndex.value]) {
-    selectSuggestion(suggestionTerms.value[activeSuggestionIndex.value])
+const submitSearch = async () => {
+  // If the user presses enter while a suggestion is highlighted, use that suggestion.
+  // We temporarily clear the active index so the next call to submitSearch won't loop.
+  if (
+    activeSuggestionIndex.value >= 0 &&
+    suggestionTerms.value[activeSuggestionIndex.value]
+  ) {
+    const term = suggestionTerms.value[activeSuggestionIndex.value]
+    activeSuggestionIndex.value = -1
+    selectSuggestion(term)
     return
   }
+
   const q = searchInput.value.trim()
+
+  if (!q) return
+
   searchInput.value = q
   searchQuery.value = q
+
+  // Navigate to search results synchronously to avoid UI delay
+  navigateToSearchPage(q)
+  closeSuggestions()
+  
+  if (q) {
+    saveRecentSearch(q)
+  }
+
+  // Save the search to the database
+  await logSearch(q)
 }
 
 // Just opens/refreshes the suggestions dropdown — typing never triggers a search on its own.
@@ -501,8 +659,7 @@ const onSearchInput = (val) => {
   suggestionsOpen.value = true
 }
 
-// Keeps the input synced when ?q= changes from outside this component (browser back/forward, a
-// recent-search chip clicked on the search page itself) without remounting this component.
+// Keeps the input synced when ?q= changes from outside this component (browser back/forward, a recent-search chip).
 watch(() => route.query.q, (q) => {
   const next = q || ''
   searchInput.value = next
@@ -529,7 +686,8 @@ const goToTab = (tab) => {
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 100;
+  /* Higher than any page-level fixed-bottom bar (all z-index: 100), so this stacking context always wins and its dropdowns never end up underneath one. */
+  z-index: 200;
 
   background:
     linear-gradient(
@@ -568,7 +726,7 @@ const goToTab = (tab) => {
   display: flex;
   align-items: center;
 
-  gap: 2px;
+  gap: 10px;
 
   margin-left: auto;
 
@@ -673,6 +831,15 @@ const goToTab = (tab) => {
   padding: 6px 0;
 }
 
+.notification-item {
+  align-items: flex-start;
+  padding: 10px 0;
+}
+
+.notification-item + .notification-item {
+  border-top: 1px solid #f0f0f0;
+}
+
 .cart-menu-item-image {
   display: flex;
   align-items: center;
@@ -770,8 +937,7 @@ const goToTab = (tab) => {
 
 /* ADDRESS PICKER DROPDOWN — same teleported-panel recipe as .cart-menu-panel. */
 
-/* Same plain-div dropdown recipe/positioning as .search-suggestions, not a q-menu — sidesteps Quasar's menu
-   positioning engine entirely, and sized generously like the search dropdown rather than tied to the pill's width. */
+/* Same plain-div dropdown recipe as .search-suggestions, not a q-menu — sidesteps Quasar's menu positioning engine entirely. */
 .address-menu-panel {
   position: absolute;
   top: calc(100% + 8px);
@@ -793,6 +959,9 @@ const goToTab = (tab) => {
 }
 
 .address-menu-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 10px;
 
   font-size: 13.5px;
@@ -801,17 +970,13 @@ const goToTab = (tab) => {
   color: #111111;
 }
 
-.address-menu-input-row {
-  display: flex;
-  align-items: center;
-
-  gap: 8px;
-  margin-bottom: 10px;
+.address-menu-title-icon {
+  color: #bd2427;
 }
 
 .address-menu-input {
-  flex: 1;
   min-width: 0;
+  margin-bottom: 20px;
 }
 
 .address-menu-input :deep(.q-field__control) {
@@ -820,53 +985,15 @@ const goToTab = (tab) => {
   border-radius: 10px;
 }
 
-/* CTA that reveals the map step — same brand-red button language as .address-menu-confirm. */
-.address-menu-next {
-  flex-shrink: 0;
-
-  width: 46px;
-  height: 46px;
-
-  border-radius: 12px;
-
-  background: #bd2427;
-  color: #ffffff;
-
-  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
-
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
-}
-
-.address-menu-next:hover {
-  background: #a91e21;
-
-  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
-
-  transform: translateY(-1px);
-}
-
-.address-menu-next:active {
-  background: #8f1a1c;
-
-  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
-
-  transform: translateY(0);
-}
-
-.address-menu-next:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
-}
-
-.address-menu-next:disabled {
-  opacity: 0.45;
-}
-
 .address-menu-map {
-  height: 260px;
-  margin-bottom: 12px;
+  height: 280px;
 
   border: 1px solid #e8e8e8;
+}
+
+/* Desktop: panel's own 16px padding already wraps title/input/map/footer, so the map needs no margin-bottom of its own. */
+.address-menu-footer {
+  padding-top: 20px;
 }
 
 .address-menu-confirm {
@@ -1269,9 +1396,7 @@ const goToTab = (tab) => {
 
 /* HEADER — LOCATION */
 
-/* position:relative anchors .address-menu-panel below it, same pattern as .header-search-wrap/.search-suggestions.
-   The search bar no longer shrinks when this pill expands (see .header-search-wrap above) — that shrink, not the
-   pill's own growth, was what pulled this whole block leftward and made the panel appear to "slide". */
+/* position:relative anchors .address-menu-panel below it, same pattern as .header-search-wrap/.search-suggestions. */
 .header-location {
   position: relative;
 
@@ -1314,8 +1439,7 @@ const goToTab = (tab) => {
   text-overflow: ellipsis;
 }
 
-/* Matches .address-menu-panel's own width, so the pill and the card below it line up edge to edge.
-   No animated transition on this — the reflow it causes happens instantly instead of visibly sliding. */
+/* Matches .address-menu-panel's own width, so the pill and the card below it line up edge to edge. */
 .header-location-expanded {
   width: 460px;
   max-width: 460px;
@@ -1400,5 +1524,68 @@ const goToTab = (tab) => {
   .header-search-wrap:focus-within ~ .header-location .header-location-pill {
     max-width: 34px;
   }
+}
+
+/* Bottom sheet variant of the address picker, gated by the same isAddressSheet check driving the backdrop/handle — placed last in the file so it wins the specificity tie. */
+.address-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.address-menu-panel-sheet {
+  position: fixed;
+  top: auto;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transform: none;
+  z-index: 1000;
+
+  display: flex;
+  flex-direction: column;
+
+  width: 100%;
+  max-width: 100%;
+  max-height: 85vh;
+  padding: 0;
+
+  border: none;
+  border-radius: 16px 16px 0 0;
+
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
+}
+
+.address-menu-drag-handle {
+  flex-shrink: 0;
+
+  width: 36px;
+  height: 4px;
+  margin: 10px auto 0;
+
+  border-radius: 999px;
+
+  background: #d6d6da;
+}
+
+/* flex: 1 1 auto (not flex: 1) — sizes to content first, only scrolls when it actually overflows. */
+.address-menu-panel-sheet .address-menu-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+
+  /* Bottom padding kept small — the footer below already adds its own top padding, so a full 20px here would double the gap. */
+  padding: 16px 20px 5px;
+
+  overflow-y: auto;
+}
+
+.address-menu-panel-sheet .address-menu-footer {
+  flex-shrink: 0;
+
+  padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+
+  border-top: 1px solid #f0f0f0;
 }
 </style>

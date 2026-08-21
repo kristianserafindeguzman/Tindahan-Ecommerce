@@ -50,20 +50,34 @@ const routes = [
         component: () => import('@/pages/auth/vendor/VendorRejected.vue')
       },
 
-      // ----- Protected Consumer Routes (MainLayout) -----
+      // ----- Guest-browsable Consumer Routes (MainLayout) -----
+      // Browsing needs no account — only actions tied to a specific consumer
+      // (cart, checkout, orders, profile, personalization) require login.
       {
         path: 'consumer/home',
-        component: () => import('@/pages/Consumer/ConsumerHome.vue'),
-        meta: { requiresAuth: true, role: 'Consumer' }
-      },
-      {
-        path: 'consumer/personalize',
-        component: () => import('@/pages/Consumer/ConsumerPersonalize.vue'),
-        meta: { requiresAuth: true, role: 'Consumer' }
+        component: () => import('@/pages/Consumer/ConsumerHome.vue')
       },
       {
         path: 'consumer/products',
-        component: () => import('@/pages/Consumer/ConsumerProducts.vue'),
+        component: () => import('@/pages/Consumer/ConsumerProducts.vue')
+      },
+      {
+        path: 'consumer/stores',
+        component: () => import('@/pages/Consumer/ConsumerStores.vue')
+      },
+      {
+        path: 'consumer/stores/:id',
+        component: () => import('@/pages/Consumer/ConsumerStoreDetail.vue')
+      },
+      {
+        path: 'consumer/search',
+        component: () => import('@/pages/Consumer/ConsumerSearch.vue')
+      },
+
+      // ----- Protected Consumer Routes (MainLayout) -----
+      {
+        path: 'consumer/personalize',
+        component: () => import('@/pages/Consumer/ConsumerPersonalize.vue'),
         meta: { requiresAuth: true, role: 'Consumer' }
       },
       {
@@ -72,23 +86,23 @@ const routes = [
         meta: { requiresAuth: true, role: 'Consumer' }
       },
       {
-        path: 'consumer/stores',
-        component: () => import('@/pages/Consumer/ConsumerStores.vue'),
-        meta: { requiresAuth: true, role: 'Consumer' }
-      },
-      {
-        path: 'consumer/stores/:id',
-        component: () => import('@/pages/Consumer/ConsumerStoreDetail.vue'),
-        meta: { requiresAuth: true, role: 'Consumer' }
-      },
-      {
-        path: 'consumer/search',
-        component: () => import('@/pages/Consumer/ConsumerSearch.vue'),
+        path: 'consumer/checkout',
+        component: () => import('@/pages/Consumer/ConsumerCheckout.vue'),
         meta: { requiresAuth: true, role: 'Consumer' }
       },
       {
         path: 'consumer/profile',
         component: () => import('@/pages/Consumer/ConsumerProfile.vue'),
+        meta: { requiresAuth: true, role: 'Consumer' }
+      },
+      {
+        path: 'consumer/orders',
+        component: () => import('@/pages/Consumer/ConsumerOrders.vue'),
+        meta: { requiresAuth: true, role: 'Consumer' }
+      },
+      {
+        path: 'consumer/orders/details',
+        component: () => import('@/pages/Consumer/ConsumerOrderDetails.vue'),
         meta: { requiresAuth: true, role: 'Consumer' }
       }
     ]
