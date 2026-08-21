@@ -136,6 +136,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Consumer Orders
         Route::get('/orders', [OrderController::class, 'index']);
         Route::get('/orders/{id}', [OrderController::class, 'show']);
+        Route::get('/orders/{id}/receipt', [OrderController::class, 'exportReceipt']);
         Route::patch('/orders/{id}/cancel', [OrderController::class, 'cancel']);
 
         // Consumer Notifications

@@ -182,6 +182,7 @@ class CartController extends Controller
                 $orderItemsData[] = [
                     'inventory_id' => $inventory->inventory_id,
                     'quantity' => $cartItem->quantity,
+                    'unit_price' => $inventory->price,
                     'subtotal' => $subtotal,
                 ];
             }
