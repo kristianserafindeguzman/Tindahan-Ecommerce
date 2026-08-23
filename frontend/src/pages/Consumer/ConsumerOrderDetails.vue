@@ -165,7 +165,10 @@
 
     </div>
 
-    <div v-else class="order-loading">Loading order…</div>
+    <div v-else class="order-loading">
+      <q-spinner size="32px" />
+      <p class="order-loading-text">Loading order…</p>
+    </div>
 
     <SiteFooter />
 
@@ -574,9 +577,19 @@ onMounted(() => {
 }
 
 .order-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 16px;
   padding: 80px 24px;
 
-  text-align: center;
+  color: #bd2427;
+}
+
+.order-loading-text {
+  margin: 0;
 
   color: #8992a2;
 

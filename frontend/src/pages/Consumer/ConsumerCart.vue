@@ -9,7 +9,10 @@
       <h1 class="page-title">My Cart</h1>
       <p v-if="items.length" class="page-subtitle">Choose a store to checkout.</p>
 
-      <div v-if="loading" class="cart-loading">Loading your cart…</div>
+      <div v-if="loading" class="cart-loading">
+        <q-spinner size="32px" />
+        <p class="cart-loading-text">Loading your cart…</p>
+      </div>
 
       <div v-else-if="!items.length" class="cart-empty">
         <q-icon name="o_shopping_cart" size="40px" class="cart-empty-icon" />
@@ -298,9 +301,19 @@ const removeItem = async (item) => {
 /* LOADING / EMPTY */
 
 .cart-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 16px;
   padding: 60px 0;
 
-  text-align: center;
+  color: #bd2427;
+}
+
+.cart-loading-text {
+  margin: 0;
 
   color: #8992a2;
 

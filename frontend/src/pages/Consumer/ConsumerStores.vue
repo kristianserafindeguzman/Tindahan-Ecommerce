@@ -49,11 +49,21 @@
       <div class="stores-layout">
 
         <div class="stores-main">
-          <div class="stores-grid">
+          <div v-if="storesLoading" class="stores-grid">
+            <div v-for="n in 8" :key="n" class="skeleton-card">
+              <div class="skeleton-image" />
+              <div class="skeleton-body">
+                <div class="skeleton-line skeleton-line-short" />
+                <div class="skeleton-line" />
+                <div class="skeleton-line skeleton-line-short" />
+              </div>
+            </div>
+          </div>
+          <div v-else class="stores-grid">
             <StoreCard v-for="store in paginatedStores" :key="store.id" :store="store" />
           </div>
 
-          <p v-if="!filteredStores.length" class="stores-empty">
+          <p v-if="!storesLoading && !filteredStores.length" class="stores-empty">
             No stores match your filters.
           </p>
         </div>
@@ -107,7 +117,7 @@ import { useStores } from '@/composables/useStores'
 
 const $q = useQuasar()
 
-const { stores, fetchStores } = useStores()
+const { stores, loading: storesLoading, fetchStores } = useStores()
 
 onMounted(fetchStores)
 
@@ -362,6 +372,52 @@ const clearFilters = () => {
 
   font-size: 14px;
   text-align: center;
+}
+
+/* SKELETON LOADING STATE */
+
+.skeleton-card {
+  overflow: hidden;
+
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
+
+  background: #ffffff;
+}
+
+.skeleton-image,
+.skeleton-line {
+  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
+  background-size: 400% 100%;
+
+  animation: skeleton-pulse 1.4s ease infinite;
+}
+
+.skeleton-image {
+  height: 110px;
+}
+
+.skeleton-body {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+  padding: 12px;
+}
+
+.skeleton-line {
+  height: 10px;
+
+  border-radius: 4px;
+}
+
+.skeleton-line-short {
+  width: 60%;
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
 }
 
 /* FILTERS SIDEBAR */
