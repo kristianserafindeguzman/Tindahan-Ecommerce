@@ -41,7 +41,10 @@
           </template>
         </q-input>
 
-        <div v-if="loading" class="sidebar-loading">Loading stores…</div>
+        <div v-if="loading" class="sidebar-loading">
+          <q-spinner size="24px" />
+          <p class="sidebar-loading-text">Loading stores…</p>
+        </div>
         <p v-else-if="!filteredStores.length" class="sidebar-empty">No stores found.</p>
 
         <div v-else class="sidebar-list">
@@ -382,7 +385,26 @@ onBeforeUnmount(() => {
   border-radius: 8px;
 }
 
-.sidebar-loading,
+.sidebar-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 12px;
+  padding: 24px 16px;
+
+  color: #bd2427;
+}
+
+.sidebar-loading-text {
+  margin: 0;
+
+  color: #8992a2;
+
+  font-size: 13px;
+}
+
 .sidebar-empty {
   padding: 24px 16px;
 

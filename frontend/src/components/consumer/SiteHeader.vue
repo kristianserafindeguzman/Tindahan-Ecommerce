@@ -171,37 +171,41 @@
 
           <!-- LOGGED IN -->
           <template v-if="isLoggedIn">
-            <q-btn flat dense :ripple="false" class="icon-btn">
-              <q-icon name="o_notifications" size="20px" />
-              <span v-if="unreadNotificationCount" class="icon-badge-count">{{ unreadNotificationCount }}</span>
+            <div ref="notificationsBtnRef" class="icon-btn-wrap">
+              <q-btn flat dense :ripple="false" class="icon-btn" @click="toggleNotificationsMenu">
+                <q-icon name="o_notifications" size="20px" />
+                <span v-if="unreadNotificationCount" class="icon-badge-count">{{ unreadNotificationCount }}</span>
+              </q-btn>
 
-              <q-menu anchor="bottom right" self="top right" content-class="cart-menu-panel" @show="fetchNotifications">
-                <div class="cart-menu-inner" style="width: 320px;">
-                  <div class="cart-menu-title" style="display:flex; justify-content:space-between; align-items:center;">
+              <div v-if="notificationsMenuOpen" class="header-dropdown-panel" @click.stop>
+                <div class="cart-menu-inner notifications-inner">
+                  <div class="cart-menu-title notifications-title">
                     Notifications
                     <q-btn v-if="unreadNotificationCount" flat dense no-caps label="Mark all read" color="primary" size="sm" @click="markAllAsRead" />
                   </div>
 
                   <div v-if="!notifications.length" class="cart-menu-empty">No notifications yet.</div>
 
-                  <template v-else>
+                  <div v-else class="notifications-scroll">
                     <div v-for="notif in notifications.slice(0, 10)" :key="notif.notification_id" class="cart-menu-item notification-item" style="cursor:pointer;" @click="handleNotificationClick(notif)">
                       <div class="cart-menu-item-info" :style="notif.is_read ? 'opacity: 0.7;' : 'font-weight: bold;'">
                         <div class="cart-menu-item-name">{{ notif.title }}</div>
                         <div class="cart-menu-item-meta" style="white-space: normal; line-height: 1.3;">{{ notif.message }}</div>
                       </div>
                     </div>
-                  </template>
+                  </div>
                 </div>
-              </q-menu>
-            </q-btn>
+              </div>
+            </div>
 
-            <q-btn flat dense :ripple="false" class="icon-btn" @click="handleCartIconClick">
-              <q-icon name="o_shopping_cart" size="20px" />
-              <span v-if="cartItemCount" class="icon-badge-count">{{ cartItemCount }}</span>
+            <div ref="cartBtnRef" class="icon-btn-wrap">
+              <q-btn flat dense :ripple="false" class="icon-btn" @click="handleCartIconClick">
+                <q-icon name="o_shopping_cart" size="20px" />
+                <span v-if="cartItemCount" class="icon-badge-count">{{ cartItemCount }}</span>
+              </q-btn>
 
-              <!-- Desktop only — mobile/tablet skip the preview and go straight to the Cart page. -->
-              <q-menu v-if="!$q.screen.lt.md" anchor="bottom right" self="top right" content-class="cart-menu-panel" @show="fetchCart">
+              <!-- Desktop only — on mobile/tablet handleCartIconClick navigates straight to the Cart page instead of opening this. -->
+              <div v-if="cartMenuOpen" class="header-dropdown-panel" @click.stop>
                 <div class="cart-menu-inner">
                   <div class="cart-menu-title">My Cart</div>
 
@@ -228,35 +232,38 @@
                     no-caps
                     label="View All Cart"
                     class="cart-menu-view-all"
-                    v-close-popup
-                    @click="router.push('/consumer/cart')"
+                    @click="cartMenuOpen = false; router.push('/consumer/cart')"
                   />
                 </div>
-              </q-menu>
-            </q-btn>
+              </div>
+            </div>
 
-            <q-btn flat dense no-caps :ripple="false" class="account-btn">
-              <q-avatar size="24px" class="account-avatar">
-                <img v-if="userAvatar" :src="userAvatar" />
-                <q-icon v-else name="o_person" size="16px" />
-              </q-avatar>
-              <q-icon name="o_expand_more" size="16px" class="q-ml-xs" />
+            <div ref="accountBtnRef" class="icon-btn-wrap">
+              <q-btn flat dense no-caps :ripple="false" class="account-btn" @click="toggleAccountMenu">
+                <q-avatar size="24px" class="account-avatar">
+                  <img v-if="userAvatar" :src="userAvatar" />
+                  <q-icon v-else name="o_person" size="16px" />
+                </q-avatar>
+                <q-icon name="o_expand_more" size="16px" class="q-ml-xs" />
+              </q-btn>
 
-              <q-menu anchor="bottom right" self="top right" class="account-menu">
-                <q-list style="min-width: 160px">
-                  <q-item clickable v-close-popup @click="router.push('/consumer/profile')">
-                    <q-item-section>My Profile</q-item-section>
-                  </q-item>
-                  <q-item clickable v-close-popup @click="router.push('/consumer/orders')">
-                    <q-item-section>My Orders</q-item-section>
-                  </q-item>
-                  <q-separator />
-                  <q-item clickable v-close-popup @click="handleLogout">
-                    <q-item-section class="text-red-9">Logout</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-menu>
-            </q-btn>
+              <div v-if="accountMenuOpen" class="header-dropdown-panel" @click.stop>
+                <div class="cart-menu-inner account-menu-inner">
+                  <q-list>
+                    <q-item clickable @click="accountMenuOpen = false; router.push('/consumer/profile')">
+                      <q-item-section>My Profile</q-item-section>
+                    </q-item>
+                    <q-item clickable @click="accountMenuOpen = false; router.push('/consumer/orders')">
+                      <q-item-section>My Orders</q-item-section>
+                    </q-item>
+                    <q-separator />
+                    <q-item clickable @click="accountMenuOpen = false; handleLogout()">
+                      <q-item-section class="text-red-9">Logout</q-item-section>
+                    </q-item>
+                  </q-list>
+                </div>
+              </div>
+            </div>
           </template>
 
           <!-- GUEST -->
@@ -356,15 +363,48 @@ const { stores, fetchStores } = useStores()
 const { categories, fetchCategories } = useCategories()
 const { items: cartItems, itemCount: cartItemCount, fetchCart } = useCart()
 
-// Mobile/tablet have no dropdown preview (see the q-menu's v-if) — the icon just navigates straight to the Cart page.
+const cartMenuOpen = ref(false)
+const cartBtnRef = ref(null)
+
+// Mobile/tablet skip the dropdown preview entirely — the icon just navigates straight to the Cart page.
 const handleCartIconClick = () => {
   if ($q.screen.lt.md) {
     router.push('/consumer/cart')
+    return
+  }
+  cartMenuOpen.value = !cartMenuOpen.value
+  if (cartMenuOpen.value) fetchCart()
+}
+
+// Same plain-div dropdown pattern as .address-menu-panel, so clicking outside closes it.
+const closeCartMenuOnOutsideClick = (event) => {
+  if (cartMenuOpen.value && !cartBtnRef.value?.contains(event.target)) {
+    cartMenuOpen.value = false
   }
 }
 
+onMounted(() => document.addEventListener('click', closeCartMenuOnOutsideClick))
+onBeforeUnmount(() => document.removeEventListener('click', closeCartMenuOnOutsideClick))
+
 // Renders for both guests and logged-in consumers, so it reads localStorage directly rather than relying on a route guard.
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
+
+const accountMenuOpen = ref(false)
+const accountBtnRef = ref(null)
+
+const toggleAccountMenu = () => {
+  accountMenuOpen.value = !accountMenuOpen.value
+}
+
+// Same plain-div dropdown pattern as .address-menu-panel, so clicking outside closes it.
+const closeAccountMenuOnOutsideClick = (event) => {
+  if (accountMenuOpen.value && !accountBtnRef.value?.contains(event.target)) {
+    accountMenuOpen.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('click', closeAccountMenuOnOutsideClick))
+onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOutsideClick))
 
 onMounted(() => {
   fetchProducts()
@@ -389,6 +429,24 @@ const userAvatar = computed(() => {
 
 const notifications = ref([])
 const unreadNotificationCount = computed(() => notifications.value.filter(n => !n.is_read).length)
+
+const notificationsMenuOpen = ref(false)
+const notificationsBtnRef = ref(null)
+
+const toggleNotificationsMenu = () => {
+  notificationsMenuOpen.value = !notificationsMenuOpen.value
+  if (notificationsMenuOpen.value) fetchNotifications()
+}
+
+// Same plain-div dropdown pattern as .address-menu-panel, so clicking outside closes it.
+const closeNotificationsMenuOnOutsideClick = (event) => {
+  if (notificationsMenuOpen.value && !notificationsBtnRef.value?.contains(event.target)) {
+    notificationsMenuOpen.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('click', closeNotificationsMenuOnOutsideClick))
+onBeforeUnmount(() => document.removeEventListener('click', closeNotificationsMenuOnOutsideClick))
 
 const fetchNotifications = async () => {
   if (!isLoggedIn.value) return
@@ -416,6 +474,7 @@ const handleNotificationClick = async (notif) => {
   }
   if (notif.order_id) {
     localStorage.setItem('consumer_selected_order_id', notif.order_id)
+    notificationsMenuOpen.value = false
     router.push('/consumer/orders/details')
   }
 }
@@ -722,7 +781,13 @@ const goToTab = (tab) => {
   cursor: pointer;
 }
 
+/* position:relative so dropdown panels (plain divs, not q-menu — see .icon-btn-wrap below) anchor
+   here instead of to their own narrow icon: this button isn't the rightmost thing in the header
+   (cart/account sit to its right), so a panel anchored to its own wrapper's right:0 can still run
+   past the viewport's left edge on narrow screens. Anchoring to the full-width row fixes that. */
 .header-actions {
+  position: relative;
+
   display: flex;
   align-items: center;
 
@@ -731,6 +796,15 @@ const goToTab = (tab) => {
   margin-left: auto;
 
   flex-shrink: 0;
+}
+
+/* Wraps each icon-btn so its dropdown panel (a plain sibling div, not a q-menu) has somewhere to
+   live — a q-btn's internal ripple wrapper can clip absolutely positioned children, so the panel
+   can't be nested inside the q-btn itself. No position:relative here on purpose — the panel's
+   position:absolute resolves against .header-actions above instead (see its comment). */
+.icon-btn-wrap {
+  display: flex;
+  align-items: center;
 }
 
 .icon-btn {
@@ -788,20 +862,27 @@ const goToTab = (tab) => {
   line-height: 1;
 }
 
-/* MINI CART DROPDOWN — the teleported panel needs :deep() + content-class to reach, matching .search-suggestions. */
-
-:deep(.cart-menu-panel) {
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
-
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
-}
+/* HEADER DROPDOWNS (notifications/cart/account) — shared plain-div panel recipe, same pattern as .address-menu-panel. */
 
 .cart-menu-inner {
   width: 280px;
   padding: 14px;
 
   font-family: 'Roboto', Arial, sans-serif;
+}
+
+/* Account's list is much shorter than Cart/Notifications' content — let it hug its own width instead of forcing the shared 280px.
+   Horizontal padding drops to 0 (unlike .cart-menu-inner's 14px) so each row's hover highlight spans the full panel width
+   edge-to-edge, like a normal menu, instead of floating inside an inset box. */
+.account-menu-inner {
+  width: auto;
+  min-width: 160px;
+  padding: 6px 0;
+}
+
+.account-menu-inner :deep(.q-item) {
+  min-height: 40px;
+  padding: 9px 14px;
 }
 
 .cart-menu-title {
@@ -838,6 +919,43 @@ const goToTab = (tab) => {
 
 .notification-item + .notification-item {
   border-top: 1px solid #f0f0f0;
+}
+
+.header-dropdown-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+
+  overflow: hidden;
+
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
+
+  background: #ffffff;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+/* Title/"Mark all read" row stays outside .notifications-scroll below, so it never scrolls out of view. */
+.notifications-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Notifications can have up to 10 items; caps at roughly 5 rows tall before scrolling. */
+.notifications-scroll {
+  max-height: 335px;
+  margin: 0 -14px;
+  padding: 0 14px;
+
+  overflow-y: auto;
 }
 
 .cart-menu-item-image {
@@ -935,7 +1053,7 @@ const goToTab = (tab) => {
   box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
 }
 
-/* ADDRESS PICKER DROPDOWN — same teleported-panel recipe as .cart-menu-panel. */
+/* ADDRESS PICKER DROPDOWN — same plain-div panel recipe as .header-dropdown-panel. */
 
 /* Same plain-div dropdown recipe as .search-suggestions, not a q-menu — sidesteps Quasar's menu positioning engine entirely. */
 .address-menu-panel {
@@ -1096,7 +1214,6 @@ const goToTab = (tab) => {
   color: #ffffff;
 }
 
-/* The teleported .q-menu root doesn't carry this component's scope attribute, so :deep(.account-menu ...) can't reach it — target q-item/q-item-section directly instead. */
 .q-item__section {
   font-size: 13px;
 }
@@ -1588,4 +1705,5 @@ const goToTab = (tab) => {
 
   border-top: 1px solid #f0f0f0;
 }
+
 </style>

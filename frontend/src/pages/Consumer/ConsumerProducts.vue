@@ -77,11 +77,21 @@
       <div class="products-layout">
 
         <div class="products-main">
-          <div class="products-grid">
+          <div v-if="productsLoading" class="products-grid">
+            <div v-for="n in 12" :key="n" class="skeleton-card">
+              <div class="skeleton-image" />
+              <div class="skeleton-body">
+                <div class="skeleton-line skeleton-line-short" />
+                <div class="skeleton-line" />
+                <div class="skeleton-line skeleton-line-short" />
+              </div>
+            </div>
+          </div>
+          <div v-else class="products-grid">
             <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
           </div>
 
-          <p v-if="!filteredProducts.length" class="products-empty">
+          <p v-if="!productsLoading && !filteredProducts.length" class="products-empty">
             No products match your filters.
           </p>
         </div>
@@ -165,7 +175,7 @@ const openProductModal = (product) => {
 }
 
 const { categories, fetchCategories } = useCategories()
-const { products, fetchProducts } = useProducts()
+const { products, loading: productsLoading, fetchProducts } = useProducts()
 const { addToCart } = useCart()
 
 const handleAddToCart = async (product) => {
@@ -540,6 +550,52 @@ const clearFilters = () => {
 
   font-size: 14px;
   text-align: center;
+}
+
+/* SKELETON LOADING STATE */
+
+.skeleton-card {
+  overflow: hidden;
+
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
+
+  background: #ffffff;
+}
+
+.skeleton-image,
+.skeleton-line {
+  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
+  background-size: 400% 100%;
+
+  animation: skeleton-pulse 1.4s ease infinite;
+}
+
+.skeleton-image {
+  height: 110px;
+}
+
+.skeleton-body {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+  padding: 12px;
+}
+
+.skeleton-line {
+  height: 10px;
+
+  border-radius: 4px;
+}
+
+.skeleton-line-short {
+  width: 60%;
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
 }
 
 /* FILTERS SIDEBAR (desktop) / POPUP (mobile) — see ProductFilters.vue for shared inner content styling */

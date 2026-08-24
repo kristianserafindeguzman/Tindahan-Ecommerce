@@ -7,7 +7,9 @@
     <div class="page-content">
 
       <!-- STORE BANNER -->
-      <div v-if="store" class="store-banner">
+      <div v-if="storesLoading" class="store-banner skeleton-banner" />
+
+      <div v-else-if="store" class="store-banner">
         <img v-if="store.image" :src="store.image" :alt="store.name" class="store-banner-img" />
         <div v-else class="store-banner-placeholder">
           <q-icon name="o_storefront" size="56px" />
@@ -34,7 +36,7 @@
         <q-btn unelevated no-caps icon="o_directions" label="Directions" class="store-banner-directions" />
       </div>
 
-      <p v-else-if="!storesLoading" class="store-not-found">
+      <p v-else class="store-not-found">
         Store not found.
         <span class="store-not-found-link" @click="router.push('/consumer/stores')">Back to Stores</span>
       </p>
@@ -106,11 +108,21 @@
       <div class="products-layout">
 
         <div class="products-main">
-          <div class="products-grid">
+          <div v-if="productsLoading" class="products-grid">
+            <div v-for="n in 8" :key="n" class="skeleton-card">
+              <div class="skeleton-image" />
+              <div class="skeleton-body">
+                <div class="skeleton-line skeleton-line-short" />
+                <div class="skeleton-line" />
+                <div class="skeleton-line skeleton-line-short" />
+              </div>
+            </div>
+          </div>
+          <div v-else class="products-grid">
             <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
           </div>
 
-          <p v-if="!filteredProducts.length" class="products-empty">
+          <p v-if="!productsLoading && !filteredProducts.length" class="products-empty">
             No products match your filters.
           </p>
         </div>
@@ -199,7 +211,7 @@ const openProductModal = (product) => {
 }
 
 const { categories, fetchCategories } = useCategories()
-const { products, fetchProducts } = useProducts()
+const { products, loading: productsLoading, fetchProducts } = useProducts()
 const { stores, loading: storesLoading, fetchStores } = useStores()
 const { addToCart } = useCart()
 
@@ -733,6 +745,59 @@ const clearFilters = () => {
 
   font-size: 14px;
   text-align: center;
+}
+
+/* SKELETON LOADING STATE */
+
+.skeleton-banner {
+  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
+  background-size: 400% 100%;
+
+  animation: skeleton-pulse 1.4s ease infinite;
+}
+
+.skeleton-card {
+  overflow: hidden;
+
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
+
+  background: #ffffff;
+}
+
+.skeleton-image,
+.skeleton-line {
+  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
+  background-size: 400% 100%;
+
+  animation: skeleton-pulse 1.4s ease infinite;
+}
+
+.skeleton-image {
+  height: 110px;
+}
+
+.skeleton-body {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+  padding: 12px;
+}
+
+.skeleton-line {
+  height: 10px;
+
+  border-radius: 4px;
+}
+
+.skeleton-line-short {
+  width: 60%;
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
 }
 
 /* FILTERS SIDEBAR (desktop) / POPUP (mobile) — see ProductFilters.vue for shared inner content styling */

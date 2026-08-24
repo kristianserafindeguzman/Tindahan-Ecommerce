@@ -16,7 +16,10 @@
         <p class="page-subtitle">Review your order before confirming.</p>
       </template>
 
-      <div v-if="loading" class="checkout-loading">Loading your order…</div>
+      <div v-if="loading" class="checkout-loading">
+        <q-spinner size="32px" />
+        <p class="checkout-loading-text">Loading your order…</p>
+      </div>
 
       <div v-else-if="orderPlaced" class="success-view">
         <div class="success-icon">
@@ -637,9 +640,19 @@ onBeforeUnmount(() => {
 /* LOADING / EMPTY */
 
 .checkout-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 16px;
   padding: 60px 0;
 
-  text-align: center;
+  color: #bd2427;
+}
+
+.checkout-loading-text {
+  margin: 0;
 
   color: #8992a2;
 

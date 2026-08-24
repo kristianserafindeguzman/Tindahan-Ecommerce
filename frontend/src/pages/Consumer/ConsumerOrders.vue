@@ -7,7 +7,18 @@
       <h1 class="page-title">My Orders</h1>
       <p class="page-subtitle">Track, manage, and view your order history.</p>
 
-      <div v-if="loading" class="orders-loading">Loading your orders…</div>
+      <div v-if="loading" class="orders-list">
+        <div v-for="n in 3" :key="n" class="order-card">
+          <div class="skeleton-order-top">
+            <div class="skeleton-line skeleton-line-short" />
+            <div class="skeleton-line skeleton-line-short" />
+          </div>
+          <div class="skeleton-order-item" />
+          <div class="skeleton-order-bottom">
+            <div class="skeleton-line skeleton-line-short" />
+          </div>
+        </div>
+      </div>
 
       <div v-else-if="!orders.length" class="orders-empty">
         <q-icon name="o_receipt_long" size="40px" class="orders-empty-icon" />
@@ -279,11 +290,47 @@ const reorderItems = async (order) => {
 }
 
 /* LOADING / EMPTY */
-.orders-loading {
-  padding: 60px 0;
-  text-align: center;
-  color: #8992a2;
-  font-size: 14px;
+/* SKELETON LOADING STATE */
+
+.skeleton-order-top {
+  display: flex;
+  justify-content: space-between;
+
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.skeleton-order-item {
+  height: 48px;
+  margin-bottom: 16px;
+
+  border-radius: 8px;
+
+  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
+  background-size: 400% 100%;
+
+  animation: skeleton-pulse 1.4s ease infinite;
+}
+
+.skeleton-line {
+  width: 45%;
+  height: 12px;
+
+  border-radius: 4px;
+
+  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
+  background-size: 400% 100%;
+
+  animation: skeleton-pulse 1.4s ease infinite;
+}
+
+.skeleton-line-short {
+  width: 30%;
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
 }
 
 .orders-empty {

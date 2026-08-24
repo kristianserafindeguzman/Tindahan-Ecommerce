@@ -30,21 +30,50 @@
 
       <!-- RECOMMENDED / POPULAR PRODUCTS -->
       <SectionBlock :title="resultsSectionTitle" view-all @view-all="router.push(resultsViewAllPath)">
-        <div ref="productsGridEl" class="products-grid">
+        <div v-if="productsLoading" class="products-grid">
+          <div v-for="n in 6" :key="n" class="skeleton-card">
+            <div class="skeleton-image" />
+            <div class="skeleton-body">
+              <div class="skeleton-line skeleton-line-short" />
+              <div class="skeleton-line" />
+              <div class="skeleton-line skeleton-line-short" />
+            </div>
+          </div>
+        </div>
+        <div v-else ref="productsGridEl" class="products-grid">
           <ProductCard v-for="product in recommendedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
         </div>
       </SectionBlock>
 
       <!-- STORES NEAR YOU -->
       <SectionBlock title="Stores near You" view-all @view-all="router.push('/consumer/stores')">
-        <div class="stores-row">
+        <div v-if="storesLoading" class="stores-row">
+          <div v-for="n in 4" :key="n" class="skeleton-card">
+            <div class="skeleton-image" />
+            <div class="skeleton-body">
+              <div class="skeleton-line skeleton-line-short" />
+              <div class="skeleton-line" />
+            </div>
+          </div>
+        </div>
+        <div v-else class="stores-row">
           <StoreCard v-for="store in nearbyStores" :key="store.id" :store="store" />
         </div>
       </SectionBlock>
 
       <!-- DISCOVER PRODUCTS -->
       <SectionBlock title="Discover Products" view-all @view-all="router.push('/consumer/products')">
-        <div class="products-grid">
+        <div v-if="productsLoading" class="products-grid">
+          <div v-for="n in 6" :key="n" class="skeleton-card">
+            <div class="skeleton-image" />
+            <div class="skeleton-body">
+              <div class="skeleton-line skeleton-line-short" />
+              <div class="skeleton-line" />
+              <div class="skeleton-line skeleton-line-short" />
+            </div>
+          </div>
+        </div>
+        <div v-else class="products-grid">
           <ProductCard v-for="product in visibleDiscoverProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
         </div>
 
@@ -102,8 +131,8 @@ const openProductModal = (product) => {
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
 const { categories, fetchCategories } = useCategories()
-const { products, fetchProducts } = useProducts()
-const { stores, fetchStores } = useStores()
+const { products, loading: productsLoading, fetchProducts } = useProducts()
+const { stores, loading: storesLoading, fetchStores } = useStores()
 
 onMounted(() => {
   fetchCategories()
@@ -214,47 +243,21 @@ const visibleDiscoverProducts = computed(() =>
   justify-content: space-between;
 
   gap: 24px;
-  padding: 32px;
+  padding: 40px;
   margin-bottom: 24px;
 
   border-radius: 14px;
   box-shadow: 0 4px 16px rgba(101, 16, 18, 0.2);
 
+  /* Dot-grid texture over the gradient, instead of the old flat gradient + two decorative circles — subtle enough not to fight the white text. */
   background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0 0 / 26px 26px,
     linear-gradient(
       145deg,
       #c02226 0%,
       #9c171b 55%,
       #651012 100%
     );
-}
-
-/* Soft decorative circles for depth — purely visual, sit behind the content/logo. */
-.hero-banner:before,
-.hero-banner:after {
-  content: '';
-  position: absolute;
-
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.hero-banner:before {
-  top: -70px;
-  right: 120px;
-
-  width: 220px;
-  height: 220px;
-}
-
-.hero-banner:after {
-  bottom: -110px;
-  right: -50px;
-
-  width: 280px;
-  height: 280px;
-
-  background: rgba(255, 255, 255, 0.045);
 }
 
 .hero-content {
@@ -276,14 +279,16 @@ const visibleDiscoverProducts = computed(() =>
 
 /* Bigger now that the subtitle is gone — the only line of copy left in the hero. */
 .hero-title-lg {
-  margin: 0 0 24px;
+  margin: 0 0 20px;
 
-  font-size: 32px;
+  font-size: 34px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 .hero-cta {
-  height: 40px;
-  padding: 0 22px;
+  height: 42px;
+  padding: 0 24px;
 
   border-radius: 6px;
 
@@ -292,6 +297,7 @@ const visibleDiscoverProducts = computed(() =>
 
   font-size: 13.5px;
   font-weight: 700;
+  letter-spacing: 0.01em;
 
   /* Neutral (not brand-red) shadow — a red-tinted shadow would disappear against this red banner. */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -383,6 +389,52 @@ const visibleDiscoverProducts = computed(() =>
   gap: 16px;
 }
 
+/* SKELETON LOADING STATE */
+
+.skeleton-card {
+  overflow: hidden;
+
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
+
+  background: #ffffff;
+}
+
+.skeleton-image,
+.skeleton-line {
+  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
+  background-size: 400% 100%;
+
+  animation: skeleton-pulse 1.4s ease infinite;
+}
+
+.skeleton-image {
+  height: 110px;
+}
+
+.skeleton-body {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+  padding: 12px;
+}
+
+.skeleton-line {
+  height: 10px;
+
+  border-radius: 4px;
+}
+
+.skeleton-line-short {
+  width: 60%;
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
 /* RESPONSIVE */
 
 @media (max-width: 1024px) {
@@ -399,8 +451,12 @@ const visibleDiscoverProducts = computed(() =>
   .hero-banner {
     flex-direction: column-reverse;
 
-    padding: 24px;
+    padding: 28px;
     text-align: center;
+  }
+
+  .hero-title-lg {
+    font-size: 28px;
   }
 
   .hero-content {
