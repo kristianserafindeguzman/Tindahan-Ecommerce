@@ -6,22 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('search_logs', function (Blueprint $table) {
             $table->increments('log_id'); // PK
 
-            $table->unsignedInteger('consumer_id'); // FK
-            $table->unsignedInteger('category_id'); // FK
+            $table->unsignedInteger('consumer_id'); // Matches users table
+            $table->unsignedInteger('category_id'); // Matches categories table
 
             $table->string('search_query', 255);
-
             $table->decimal('search_lat', 10, 8);
             $table->decimal('search_lng', 11, 8);
-
             $table->timestamp('searched_at')->useCurrent();
 
             // Foreign Key Constraints
@@ -37,9 +32,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('search_logs');
