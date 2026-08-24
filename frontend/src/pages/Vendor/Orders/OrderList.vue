@@ -1,16 +1,15 @@
 <template>
-  <q-page class="vendor-page relative-position">
-    <!-- Subtle Ambient Background Glows (STRICTLY DARK RED) -->
+  <q-page padding class="vendor-page relative-position">
+    <!-- Subtle Ambient Background Glows -->
     <div class="bg-glow bg-glow-primary"></div>
     <div class="bg-glow bg-glow-secondary"></div>
 
-    <!-- z-index: 1 applied to prevent modal stacking conflicts -->
     <div class="page-container relative-position" style="z-index: 1;">
       
-      <!-- ================= HEADER AREA ================= -->
-      <div class="page-header q-mb-xl q-mt-sm row items-center justify-between">
-        <div class="row items-center">
-          <div class="glass-icon-box q-mr-md">
+      <!-- ================= HEADER AREA (Responsive) ================= -->
+      <div class="page-header q-mb-lg row items-center justify-between">
+        <div class="row items-center no-wrap col-12 col-sm-auto">
+          <div class="glass-icon-box q-mr-md shrink-none">
             <q-icon name="receipt_long" size="26px" class="text-brand-red" />
           </div>
           <div>
@@ -18,17 +17,19 @@
             <p class="text-body1 text-blue-grey-5 q-mt-xs q-mb-none">Manage and track all neighborhood customer orders.</p>
           </div>
         </div>
-        <div class="row q-gutter-sm q-mt-sm q-mt-md-none">
-          <q-btn outline icon="download" label="Export" color="red-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" :loading="isExporting" @click="exportOrders" />
+        <div class="col-12 col-sm-auto q-mt-md q-mt-sm-none text-right">
+          <q-btn outline icon="download" label="Export Report" color="red-9" no-caps class="btn-glass-outline text-weight-bold q-px-md full-width-mobile" :loading="isExporting" @click="exportOrders" />
         </div>
       </div>
 
       <!-- ================= CONTROLS & TABLE ================= -->
       <q-card class="premium-glass-card" style="border-radius: 16px;">
-        <q-card-section class="q-pa-lg border-bottom row items-center justify-between q-col-gutter-y-md">
+        
+        <!-- Search & Filters (Side-by-side on desktop, stacked on mobile) -->
+        <q-card-section class="q-pa-md q-pa-lg-lg border-bottom row items-center justify-between q-col-gutter-y-md q-col-gutter-x-md">
           
           <!-- Search -->
-          <div class="col-12 col-lg-4 col-md-5">
+          <div class="col-12 col-md-5 col-lg-4">
             <q-input v-model="search" outlined dense class="custom-glass-input exact-height" placeholder="Search Order ID or Customer...">
               <template v-slot:prepend>
                 <q-icon name="search" />
@@ -36,8 +37,8 @@
             </q-input>
           </div>
 
-          <!-- Status Filters (Perfectly Aligned Height) -->
-          <div class="col-12 col-lg-8 col-md-7 text-right flex justify-end">
+          <!-- Filters (Connected group on desktop, swipeable on mobile) -->
+          <div class="col-12 col-md-7 col-lg-8 flex justify-md-end scroll-container">
             <q-btn-group flat class="bg-slate-50 border-slate-light rounded-borders q-pa-xs items-stretch filter-group-wrapper">
               <q-btn v-for="status in statuses" :key="status" :label="status" 
                 v-ripple
@@ -45,7 +46,7 @@
                 :flat="activeStatus !== status"
                 :class="activeStatus === status ? 'bg-gradient-red text-white shadow-3' : 'text-blue-grey-6 hover-text-dark'" 
                 no-caps 
-                class="filter-pill q-px-md text-weight-bold transition-ease" 
+                class="filter-pill q-px-md text-weight-bold transition-ease text-no-wrap" 
                 style="font-size: 13px;"
                 @click="activeStatus = status"
               />
@@ -53,17 +54,20 @@
           </div>
         </q-card-section>
 
-        <!-- Table -->
+        <!-- Table (Standard on desktop, Cards on mobile) -->
         <q-table
+          :grid="$q.screen.lt.md"
           flat
           class="custom-premium-table"
+          :class="{ 'bg-transparent': $q.screen.lt.md }"
           :rows="filteredOrders"
           :columns="columns"
           row-key="order_id"
           :loading="loading"
           @row-click="onRowClick"
+          card-container-class="q-col-gutter-md q-pa-sm"
         >
-          <!-- Perfectly Centered Premium Loading State -->
+          <!-- Loading State -->
           <template #loading>
             <q-inner-loading showing class="bg-white opacity-80" style="backdrop-filter: blur(4px); z-index: 10;">
               <q-spinner-dots size="50px" color="red-9" />
@@ -76,28 +80,20 @@
             <div class="full-width row flex-center q-pa-xl empty-state-glass" v-show="!loading">
               <div class="text-center z-top relative-position">
                 <div class="empty-icon-wrapper q-mb-lg">
-                  <q-icon name="inbox" size="56px" color="blue-grey-3" class="drop-shadow-icon" />
-                  <div class="icon-pulse"></div>
+                  <q-icon name="inbox" size="56px" color="blue-grey-3" />
                 </div>
                 <div class="text-h6 text-weight-bold text-blue-grey-8">No orders found</div>
-                <div class="text-body2 text-blue-grey-5 q-mt-xs">Orders matching your current filters will appear here.</div>
               </div>
             </div>
           </template>
 
-          <!-- Order ID Formatter -->
+          <!-- ================= DESKTOP TABLE FORMATTERS ================= -->
           <template #body-cell-order_id="props">
             <q-td :props="props">
-              <span 
-                class="order-id-badge text-weight-bold text-red-8 q-px-sm q-py-xs bg-red-1 transition-ease"
-                style="border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 6px;"
-              >
-                #{{ props.row.order_id }}
-              </span>
+              <span class="order-id-badge text-weight-bold text-red-8 q-px-sm q-py-xs bg-red-1 transition-ease">#{{ props.row.order_id }}</span>
             </q-td>
           </template>
 
-          <!-- Customer Formatter -->
           <template #body-cell-customer="props">
             <q-td :props="props">
               <div class="row items-center">
@@ -110,7 +106,6 @@
             </q-td>
           </template>
           
-          <!-- Status Formatter (Increased Size & Distinct Colors) -->
           <template #body-cell-status="props">
             <q-td :props="props">
               <q-chip :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bolder status-chip q-px-md shadow-1" style="font-size: 13px;">
@@ -119,14 +114,49 @@
             </q-td>
           </template>
 
-          <!-- Action Arrow -->
           <template #body-cell-action="props">
             <q-td :props="props" class="text-right">
-              <div class="action-btn-wrapper">
-                <q-btn flat round dense icon="chevron_right" color="blue-grey-4" class="hover-action-btn transition-ease" @click.stop="goToOrder(props.row.order_id)" />
-              </div>
+              <q-btn flat round dense icon="chevron_right" color="blue-grey-4" class="hover-action-btn transition-ease" @click.stop="goToOrder(props.row.order_id)" />
             </q-td>
           </template>
+
+          <!-- ================= MOBILE GRID CARD LAYOUT ================= -->
+          <template #item="props">
+            <div class="col-12 col-sm-6">
+              <q-card class="mobile-grid-card q-pa-md transition-ease" bordered @click="onRowClick($event, props.row)">
+                
+                <div class="row justify-between items-center q-mb-sm">
+                  <span class="order-id-badge text-weight-bold text-red-8 q-px-sm q-py-xs bg-red-1">#{{ props.row.order_id }}</span>
+                  <q-chip :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bolder shadow-1 q-ma-none" style="font-size: 11px; height: 24px;">
+                    {{ formatStatus(props.row.status) }}
+                  </q-chip>
+                </div>
+                
+                <q-separator class="q-my-sm" color="grey-2" />
+                
+                <div class="row items-center q-mb-md">
+                  <q-avatar size="40px" class="q-mr-md bg-blue-grey-1" style="border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <img v-if="props.row.consumer?.profile_picture_url" :src="props.row.consumer.profile_picture_url">
+                    <q-icon v-else name="person" color="blue-grey-6" size="24px" />
+                  </q-avatar>
+                  <div>
+                    <div class="text-weight-bolder text-blue-grey-9" style="font-size: 15px;">{{ props.row.consumer?.full_name || 'Unknown' }}</div>
+                    <div class="text-caption text-blue-grey-5">{{ formatDate(props.row.created_at) }}</div>
+                  </div>
+                </div>
+                
+                <div class="row justify-between items-end">
+                  <div>
+                    <div class="text-weight-bold text-blue-grey-4" style="text-transform: uppercase; font-size: 10px;">Total Amount</div>
+                    <div class="text-weight-bolder text-brand-red text-h6" style="line-height: 1;">₱{{ formatNumber(props.row.total_amount) }}</div>
+                  </div>
+                  <q-btn flat round dense icon="chevron_right" color="blue-grey-3" />
+                </div>
+                
+              </q-card>
+            </div>
+          </template>
+
         </q-table>
       </q-card>
 
@@ -238,7 +268,6 @@ onMounted(async () => {
 
 <style scoped>
 .vendor-page {
-  padding: 24px;
   background: #f8fafc;
   min-height: 100vh;
 }
@@ -247,90 +276,36 @@ onMounted(async () => {
   margin: 0 auto;
 }
 
-/* Strictly Dark Red Brand Colors */
+/* Brand Colors */
 .text-brand-red { color: #B91C1C !important; }
 .bg-gradient-red { background: linear-gradient(90deg, #B91C1C 0%, #450A0A 100%) !important; }
 
-/* Subtle Ambient Glows (Fixed to Dark Red, no pink) */
-.bg-glow {
-  position: absolute;
-  width: 500px;
-  height: 500px;
-  border-radius: 50%;
-  filter: blur(140px);
-  z-index: 0;
-  opacity: 0.15; 
-  pointer-events: none;
-}
-.bg-glow-primary {
-  top: -50px;
-  left: -50px;
-  background: radial-gradient(circle, rgba(185, 28, 28, 0.25) 0%, transparent 70%); 
-}
-.bg-glow-secondary {
-  bottom: 100px;
-  right: -50px;
-  background: radial-gradient(circle, rgba(69, 10, 10, 0.25) 0%, transparent 70%);
-}
+/* Background Glows */
+.bg-glow { position: absolute; width: 500px; height: 500px; border-radius: 50%; filter: blur(140px); z-index: 0; opacity: 0.15; pointer-events: none; }
+.bg-glow-primary { top: -50px; left: -50px; background: radial-gradient(circle, rgba(185, 28, 28, 0.25) 0%, transparent 70%); }
+.bg-glow-secondary { bottom: 100px; right: -50px; background: radial-gradient(circle, rgba(69, 10, 10, 0.25) 0%, transparent 70%); }
 
 .tracking-tight { letter-spacing: -0.02em; }
+.shrink-none { flex-shrink: 0; }
 
-/* Beautiful Header Glass Icon Box */
+/* Icon Box */
 .glass-icon-box {
-  width: 48px;
-  height: 48px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.1); 
+  width: 48px; height: 48px; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(185, 28, 28, 0.1); 
 }
 
-/* Clean Glassmorphism Cards */
-.premium-glass-card {
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(241, 245, 249, 1);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04); 
-}
+/* Glass Cards */
+.premium-glass-card { background: rgba(255, 255, 255, 0.98); border: 1px solid rgba(241, 245, 249, 1); box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04); }
 
-/* Perfect Height Alignment for Search and Filters */
-.exact-height :deep(.q-field__control) {
-  height: 40px !important;
-  min-height: 40px !important;
-}
-.filter-group-wrapper {
-  height: 40px; 
-}
-
-/* Custom Inputs & Buttons */
-.custom-glass-input :deep(.q-field__control) {
-  background: rgba(241, 245, 249, 0.6);
-  border-radius: 8px;
-}
+/* Inputs & Buttons */
+.exact-height :deep(.q-field__control) { height: 40px !important; min-height: 40px !important; }
+.filter-group-wrapper { height: 40px; }
+.custom-glass-input :deep(.q-field__control) { background: rgba(241, 245, 249, 0.6); border-radius: 8px; }
 .custom-glass-input :deep(.q-field__control:before) { border: 1px solid rgba(226, 232, 240, 0.8); }
-.custom-glass-input :deep(.q-field__control:hover) { background: #ffffff; }
-.custom-glass-input :deep(.q-field--focused .q-field__control) {
-  background: #ffffff;
-  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.15); 
-  border-color: #B91C1C;
-}
+.custom-glass-input :deep(.q-field--focused .q-field__control) { background: #ffffff; box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.15); border-color: #B91C1C; }
 
-.btn-glass-outline {
-  border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.9) !important;
-  border: 1px solid currentColor;
-  transition: all 0.2s ease;
-}
-.btn-glass-outline:hover {
-  background: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
-  transform: translateY(-2px);
-}
+.btn-glass-outline { border-radius: 8px !important; background: rgba(255, 255, 255, 0.9) !important; border: 1px solid currentColor; transition: all 0.2s ease; }
+.btn-glass-outline:hover { background: #ffffff !important; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05); transform: translateY(-2px); }
 
 /* Utilities */
 .border-bottom { border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
@@ -339,66 +314,44 @@ onMounted(async () => {
 .transition-ease { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
 .hover-text-dark:hover { color: #1e293b !important; }
 .opacity-80 { opacity: 0.85; }
-
-/* Filter Pills */
-.filter-pill { 
-  border-radius: 6px; 
-}
+.filter-pill { border-radius: 6px; }
 
 /* Custom Premium Table Styling */
-:deep(.custom-premium-table thead tr th) {
-  background: rgba(248, 250, 252, 0.7); backdrop-filter: blur(8px); font-weight: 700;
-  color: #64748B; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; padding: 16px 20px; border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-}
-:deep(.custom-premium-table tbody td) {
-  padding: 16px 20px; 
-  border-bottom: 1px solid rgba(241, 245, 249, 1); 
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
+:deep(.custom-premium-table thead tr th) { background: rgba(248, 250, 252, 0.7); font-weight: 700; color: #64748B; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; padding: 16px 20px; border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
+:deep(.custom-premium-table tbody td) { padding: 16px 20px; border-bottom: 1px solid rgba(241, 245, 249, 1); cursor: pointer; transition: all 0.2s ease; }
+:deep(.custom-premium-table tbody tr:hover) { background: #ffffff; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03); transform: scale(1.002); z-index: 5; position: relative; }
+:deep(.custom-premium-table tbody tr:hover td) { border-bottom-color: transparent; }
+:deep(.custom-premium-table tbody tr:hover .order-id-badge) { background: rgba(185, 28, 28, 0.1) !important; color: #B91C1C !important; border-color: rgba(185, 28, 28, 0.4) !important; }
 
-/* Enhanced Row Hover Micro-Interactions */
-:deep(.custom-premium-table tbody tr) {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
-:deep(.custom-premium-table tbody tr:hover) {
-  background: #ffffff;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-  transform: scale(1.002);
-  z-index: 5;
-  position: relative;
-}
-:deep(.custom-premium-table tbody tr:hover td) {
-  border-bottom-color: transparent;
-}
-:deep(.custom-premium-table tbody tr:hover .hover-action-btn) {
-  color: #B91C1C !important; 
-  transform: translateX(4px) scale(1.1);
-  background: rgba(185, 28, 28, 0.05);
-}
-:deep(.custom-premium-table tbody tr:hover .order-id-badge) {
-  background: rgba(185, 28, 28, 0.1) !important;
-  color: #B91C1C !important;
-  border-color: rgba(185, 28, 28, 0.4) !important;
-}
-
-/* Specific Cell Styling */
-.order-id-badge {
-  font-family: monospace;
-  font-size: 13px;
-}
+.order-id-badge { font-family: monospace; font-size: 13px; border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 6px; }
 .status-chip { border: 1px solid rgba(255,255,255,0.8); }
 
-.action-btn-wrapper {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-/* Empty State Styling */
-.empty-state-glass {
-  background: rgba(248, 250, 252, 0.5);
-  border: 1px dashed #E2E8F0;
+/* Mobile Grid Card Styling */
+.mobile-grid-card {
+  background: #ffffff;
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+}
+.mobile-grid-card:active { transform: scale(0.98); background: #f1f5f9; }
+
+/* Native Swiping for Mobile Filters */
+.scroll-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-container::-webkit-scrollbar { display: none; }
+
+/* Mobile overrides */
+@media (max-width: 767px) {
+  .full-width-mobile { width: 100%; }
+  .scroll-container {
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 8px; /* Room for shadow */
+  }
 }
 </style>
