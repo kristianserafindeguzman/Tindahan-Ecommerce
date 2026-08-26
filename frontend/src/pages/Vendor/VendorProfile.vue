@@ -1,129 +1,64 @@
 <template>
-  <q-page class="vendor-page relative-position">
+  <q-page class="vendor-page" :class="{ 'mobile-page-padding': $q.screen.lt.md }">
     <!-- Subtle Ambient Background Glows -->
-    <div class="bg-glow bg-glow-primary"></div>
-    <div class="bg-glow bg-glow-secondary"></div>
+    <div class="bg-glow bg-glow-primary desktop-only"></div>
+    <div class="bg-glow bg-glow-secondary desktop-only"></div>
 
     <div class="page-container relative-position" style="z-index: 1">
-      <div class="page-header q-mb-xl q-mt-sm">
-        <h1
-          class="text-h4 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight"
-          >Profile Settings</h1
-        >
-        <p class="text-body1 text-blue-grey-5 q-mt-xs"
-          >Manage your personal information, store details, and security.</p
-        >
+      
+      <!-- PAGE HEADER -->
+      <div class="page-header q-mb-lg q-mb-xl-md q-mt-sm">
+        <h1 class="text-h5 text-md-h4 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight">
+          Profile Settings
+        </h1>
+        <p class="text-caption text-md-body1 text-blue-grey-5 q-mt-xs q-mb-none">
+          Manage your personal information, store details, and security.
+        </p>
       </div>
 
       <div class="row q-col-gutter-lg items-stretch">
+        
         <!-- ================= MY PROFILE ================= -->
         <div class="col-12 col-md-6">
-          <q-card class="premium-glass-card profile-card q-pa-lg flex column">
-            <q-card-section class="q-pa-none col flex column full-height">
-              <div class="row items-center q-mb-xl">
-                <div class="glass-icon-box q-mr-md">
-                  <q-icon name="account_circle" size="26px" color="red-6" />
-                </div>
-                <div class="text-h5 text-weight-bold text-blue-grey-9"
-                  >My Profile</div
-                >
-              </div>
+          <q-card class="premium-glass-card profile-card flex column overflow-hidden">
+            <q-card-section class="row items-center q-pa-md text-white bg-gradient-red">
+              <q-icon name="account_circle" size="22px" class="q-mr-sm" />
+              <div class="text-subtitle1 text-weight-bold">My Profile</div>
+            </q-card-section>
 
+            <q-card-section class="q-pa-md q-pa-lg-lg col flex column full-height">
               <q-form
-                @submit.prevent="
-                  openConfirm(
-                    'Confirm Changes',
-                    'Are you sure you want to save these changes?',
-                    submitProfile
-                  )
-                "
+                @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to save these changes?', submitProfile)"
                 class="col flex column full-height"
               >
                 <div class="q-gutter-y-md">
-                  <div class="row q-col-gutter-md">
+                  <div class="row q-col-gutter-sm q-col-gutter-md-md">
                     <div class="col-12 col-sm-6">
-                      <q-input
-                        v-model="profileForm.firstName"
-                        label="First Name"
-                        outlined
-                        class="custom-glass-input"
-                      >
-                        <template v-slot:prepend
-                          ><q-icon
-                            name="person_outline"
-                            size="20px"
-                            color="blue-grey-4"
-                        /></template>
+                      <q-input v-model="profileForm.firstName" label="First Name" outlined class="custom-glass-input">
+                        <template v-slot:prepend><q-icon name="person_outline" size="20px" color="blue-grey-4" /></template>
                       </q-input>
                     </div>
                     <div class="col-12 col-sm-6">
-                      <q-input
-                        v-model="profileForm.lastName"
-                        label="Last Name"
-                        outlined
-                        class="custom-glass-input"
-                      >
-                        <template v-slot:prepend
-                          ><q-icon
-                            name="person_outline"
-                            size="20px"
-                            color="blue-grey-4"
-                        /></template>
+                      <q-input v-model="profileForm.lastName" label="Last Name" outlined class="custom-glass-input">
+                        <template v-slot:prepend><q-icon name="person_outline" size="20px" color="blue-grey-4" /></template>
                       </q-input>
                     </div>
                   </div>
 
-                  <q-input
-                    v-model="profileForm.email"
-                    label="Email Address"
-                    type="email"
-                    outlined
-                    class="custom-glass-input"
-                  >
-                    <template v-slot:prepend
-                      ><q-icon
-                        name="mail_outline"
-                        size="20px"
-                        color="blue-grey-4"
-                    /></template>
+                  <q-input v-model="profileForm.email" label="Email Address" type="email" outlined class="custom-glass-input">
+                    <template v-slot:prepend><q-icon name="mail_outline" size="20px" color="blue-grey-4" /></template>
                   </q-input>
 
-                  <div class="row items-center q-gutter-x-sm">
-                    <q-input
-                      v-model="profileForm.phoneNumber"
-                      label="Mobile Number"
-                      outlined
-                      class="custom-glass-input col"
-                    >
-                      <template v-slot:prepend
-                        ><q-icon
-                          name="phone_iphone"
-                          size="20px"
-                          color="blue-grey-4"
-                      /></template>
+                  <div class="row items-center q-gutter-sm no-wrap">
+                    <q-input v-model="profileForm.phoneNumber" label="Mobile Number" outlined class="custom-glass-input col">
+                      <template v-slot:prepend><q-icon name="phone_iphone" size="20px" color="blue-grey-4" /></template>
                     </q-input>
-                    <q-btn
-                      v-ripple
-                      label="Verify Change"
-                      outline
-                      color="red-6"
-                      no-caps
-                      class="btn-danger-outline q-px-md q-py-sm"
-                      v-if="phoneChanged"
-                      @click="verifyPhoneModal = true"
-                    />
+                    <q-btn v-if="phoneChanged" v-ripple label="Verify" outline color="red-9" no-caps class="btn-danger-outline q-px-md" style="height: 56px;" @click="verifyPhoneModal = true" />
                   </div>
                 </div>
 
                 <div class="text-right q-mt-auto pt-lg">
-                  <q-btn
-                    v-ripple
-                    type="submit"
-                    label="Save Profile"
-                    unelevated
-                    class="btn-red-gradient text-white q-px-xl q-py-sm text-weight-bold"
-                    no-caps
-                  />
+                  <q-btn v-ripple type="submit" label="Save Profile" unelevated class="btn-red-gradient text-white q-px-lg q-py-sm text-weight-bold full-width-mobile" no-caps />
                 </div>
               </q-form>
             </q-card-section>
@@ -132,226 +67,59 @@
 
         <!-- ================= STORE INFO ================= -->
         <div class="col-12 col-md-6">
-          <q-card class="premium-glass-card profile-card q-pa-lg flex column">
-            <q-card-section class="q-pa-none col flex column full-height">
-              <div class="row items-center q-mb-xl">
-                <div class="glass-icon-box q-mr-md">
-                  <q-icon name="storefront" size="26px" color="red-6" />
-                </div>
-                <div class="text-h5 text-weight-bold text-blue-grey-9"
-                  >Store Info</div
-                >
-              </div>
+          <q-card class="premium-glass-card profile-card flex column overflow-hidden">
+            <q-card-section class="row items-center q-pa-md text-white bg-gradient-red">
+              <q-icon name="storefront" size="22px" class="q-mr-sm" />
+              <div class="text-subtitle1 text-weight-bold">Store Info</div>
+            </q-card-section>
 
+            <q-card-section class="q-pa-md q-pa-lg-lg col flex column full-height">
               <q-form
-                @submit.prevent="
-                  openConfirm(
-                    'Confirm Changes',
-                    'Are you sure you want to save these changes?',
-                    submitStoreInfo
-                  )
-                "
+                @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to save these changes?', submitStoreInfo)"
                 class="col flex column full-height"
               >
                 <div class="q-gutter-y-md">
-                  <q-input
-                    v-model="storeForm.storeName"
-                    label="Store Name"
-                    outlined
-                    class="custom-glass-input"
-                  >
-                    <template v-slot:prepend
-                      ><q-icon name="store" size="20px" color="blue-grey-4"
-                    /></template>
-                    <template v-slot:hint
-                      ><span class="text-blue-grey-4"
-                        >This name will be visible to neighborhood
-                        consumers.</span
-                      ></template
-                    >
+                  <q-input v-model="storeForm.storeName" label="Store Name" outlined class="custom-glass-input">
+                    <template v-slot:prepend><q-icon name="store" size="20px" color="blue-grey-4" /></template>
+                    <template v-slot:hint><span class="text-blue-grey-4">This name will be visible to neighborhood consumers.</span></template>
                   </q-input>
 
                   <!-- Upload Controls -->
-                  <div class="store-photo-preview-container q-mb-md">
-                    <!-- Display the preview if it exists -->
+                  <div class="store-photo-preview-container q-mt-md q-mb-md">
                     <q-img
                       v-if="storePicturePreview"
                       :src="storePicturePreview"
-                      style="
-                        width: 100%;
-                        height: 180px;
-                        object-fit: cover;
-                        border-radius: 8px;
-                        border: 1px solid #e2e8f0;
-                      "
+                      :style="{ width: '100%', height: $q.screen.lt.md ? '160px' : '200px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0' }"
                       ratio="16/9"
                     >
                       <template v-slot:error>
-                        <div
-                          class="absolute-full flex flex-center bg-grey-3 text-grey-7"
-                        >
-                          Error loading image
-                        </div>
+                        <div class="absolute-full flex flex-center bg-grey-3 text-grey-7">Error loading image</div>
                       </template>
                     </q-img>
 
-                    <!-- Fallback if no photo exists in DB and no photo has been selected -->
                     <div
                       v-else
                       class="empty-preview flex flex-center bg-grey-2 text-grey-6"
-                      style="
-                        width: 100%;
-                        height: 180px;
-                        border: 2px dashed #cbd5e1;
-                        border-radius: 8px;
-                      "
+                      :style="{ width: '100%', height: $q.screen.lt.md ? '160px' : '200px', border: '2px dashed #cbd5e1', borderRadius: '8px' }"
                     >
                       <div class="text-center">
-                        <q-icon name="storefront" size="40px" />
-                        <div class="q-mt-sm text-caption"
-                          >No cover photo uploaded</div
-                        >
+                        <q-icon name="storefront" size="40px" color="blue-grey-3" />
+                        <div class="q-mt-sm text-caption text-weight-medium">No cover photo uploaded</div>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Upload Controls -->
-                  <div class="row items-center justify-between">
+                  <div class="row items-center justify-between bg-slate-50 q-pa-md rounded-borders border-slate-light">
                     <div>
-                      <div class="text-weight-bold">Store Cover Photo</div>
-                      <div class="text-caption text-grey"
-                        >Upload a crisp 16:9 rectangular photo</div
-                      >
+                      <div class="text-weight-bold text-dark" style="font-size: 14px;">Store Cover Photo</div>
+                      <div class="text-caption text-grey-6">Upload a crisp 16:9 photo</div>
                     </div>
-                    <q-btn
-                      outline
-                      color="primary"
-                      label="Update Photo"
-                      @click="showImageCaptureModal = true"
-                      :loading="uploadingImage"
-                    />
+                    <q-btn outline color="red-9" class="btn-danger-outline bg-white" label="Update Photo" no-caps @click="showImageCaptureModal = true" :loading="uploadingImage" />
                   </div>
                 </div>
 
                 <div class="text-right q-mt-auto pt-lg">
-                  <q-btn
-                    v-ripple
-                    type="submit"
-                    label="Save Store Info"
-                    unelevated
-                    class="btn-red-gradient text-white q-px-xl q-py-sm text-weight-bold"
-                    no-caps
-                  />
-                </div>
-              </q-form>
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <!-- ================= STORE HOURS ================= -->
-        <div class="col-12">
-          <q-card class="premium-glass-card q-pa-lg">
-            <q-card-section class="q-pa-none">
-              <div class="row items-center justify-between q-mb-xl">
-                <div class="row items-center">
-                  <div class="glass-icon-box q-mr-md">
-                    <q-icon name="schedule" size="26px" color="red-6" />
-                  </div>
-                  <div class="text-h5 text-weight-bold text-blue-grey-9"
-                    >Store Hours</div
-                  >
-                </div>
-                <q-btn
-                  v-ripple
-                  label="Apply Monday to All"
-                  outline
-                  color="red-6"
-                  no-caps
-                  class="btn-danger-outline q-px-md q-py-sm"
-                  @click="applyMondayToAll"
-                >
-                  <q-tooltip class="bg-red-7"
-                    >Copy Monday's schedule to all other days</q-tooltip
-                  >
-                </q-btn>
-              </div>
-
-              <q-form
-                @submit.prevent="
-                  openConfirm(
-                    'Confirm Changes',
-                    'Are you sure you want to save these changes?',
-                    submitStoreHours
-                  )
-                "
-                class="q-gutter-y-sm"
-              >
-                <div
-                  class="row items-center q-col-gutter-md schedule-row q-pa-md rounded-borders"
-                  v-for="day in operatingDays"
-                  :key="day.name"
-                >
-                  <div
-                    class="col-4 col-sm-3 text-subtitle2 text-weight-bold text-blue-grey-8"
-                    >{{ day.name }}</div
-                  >
-
-                  <div class="col-4 col-sm-2">
-                    <q-toggle
-                      v-model="day.isOpen"
-                      color="red-6"
-                      keep-color
-                      checked-icon="check"
-                      unchecked-icon="clear"
-                    />
-                    <span
-                      class="text-body2 text-weight-medium q-ml-sm"
-                      :class="day.isOpen ? 'text-red-6' : 'text-blue-grey-4'"
-                    >
-                      {{ day.isOpen ? 'Open' : 'Closed' }}
-                    </span>
-                  </div>
-
-                  <div
-                    class="col-12 col-sm-7 row q-gutter-x-sm items-center"
-                    v-if="day.isOpen"
-                  >
-                    <q-input
-                      v-model="day.openTime"
-                      type="time"
-                      outlined
-                      dense
-                      class="custom-glass-input col"
-                    />
-                    <div class="text-center text-blue-grey-3 text-weight-bold"
-                      >—</div
-                    >
-                    <q-input
-                      v-model="day.closeTime"
-                      type="time"
-                      outlined
-                      dense
-                      class="custom-glass-input col"
-                    />
-                  </div>
-                  <div class="col-12 col-sm-7 flex items-center" v-else>
-                    <div
-                      class="text-blue-grey-4 text-italic bg-slate-50 q-px-md q-py-sm rounded-borders w-full text-center border-slate-light"
-                    >
-                      Not operating on this day
-                    </div>
-                  </div>
-                </div>
-
-                <div class="text-right q-mt-lg pt-md">
-                  <q-btn
-                    v-ripple
-                    type="submit"
-                    label="Save Store Hours"
-                    unelevated
-                    class="btn-red-gradient text-white q-px-xl q-py-sm text-weight-bold"
-                    no-caps
-                  />
+                  <q-btn v-ripple type="submit" label="Save Store Info" unelevated class="btn-red-gradient text-white q-px-lg q-py-sm text-weight-bold full-width-mobile" no-caps />
                 </div>
               </q-form>
             </q-card-section>
@@ -360,96 +128,51 @@
 
         <!-- ================= MAP ADDRESS ================= -->
         <div class="col-12 col-md-6">
-          <q-card class="premium-glass-card profile-card q-pa-lg flex column">
-            <q-card-section class="q-pa-none col flex column full-height">
-              <div class="row items-center q-mb-xl">
-                <div class="glass-icon-box q-mr-md">
-                  <q-icon name="place" size="26px" color="red-6" />
-                </div>
-                <div class="text-h5 text-weight-bold text-blue-grey-9"
-                  >Address & Location</div
-                >
-              </div>
+          <q-card class="premium-glass-card profile-card flex column overflow-hidden">
+            <q-card-section class="row items-center q-pa-md text-white bg-gradient-red">
+              <q-icon name="place" size="22px" class="q-mr-sm" />
+              <div class="text-subtitle1 text-weight-bold">Address & Location</div>
+            </q-card-section>
 
+            <q-card-section class="q-pa-md q-pa-lg-lg col flex column full-height">
               <q-form
-                @submit.prevent="
-                  openConfirm(
-                    'Confirm Changes',
-                    'Are you sure you want to save these changes?',
-                    submitAddress
-                  )
-                "
+                @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to save these changes?', submitAddress)"
                 class="col flex column full-height"
               >
                 <div class="q-gutter-y-md">
-                  <q-input
-                    v-model="addressForm.fullAddress"
-                    label="Complete Address"
-                    type="textarea"
-                    rows="2"
-                    outlined
-                    class="custom-glass-input"
-                  >
-                    <template v-slot:prepend
-                      ><q-icon
-                        name="map"
-                        size="20px"
-                        color="blue-grey-4"
-                        class="q-mt-sm"
-                    /></template>
+                  <q-input v-model="addressForm.fullAddress" label="Street Name, Building, House No" type="textarea" :rows="$q.screen.lt.md ? '2' : '3'" outlined class="custom-glass-input">
+                    <template v-slot:prepend><q-icon name="map" size="20px" color="blue-grey-4" class="q-mt-sm" /></template>
                   </q-input>
 
-                  <div class="q-mb-md">
-                    <!-- Show Map if coordinates exist -->
-                    <div
-                      v-if="addressForm.latitude && addressForm.longitude"
-                      id="vendor-profile-map"
-                      class="rounded-borders shadow-1"
-                      style="height: 250px; width: 100%; z-index: 1"
-                    ></div>
+                  <div class="q-mt-md">
+                    <!-- Accurate Pin Warning Banner Fixed Layout -->
+                    <div class="bg-amber-1 rounded-borders q-pa-md q-mb-md row no-wrap items-start" style="border: 1px solid #fde68a;">
+                      <div class="bg-amber-5 text-white flex flex-center rounded-borders q-mr-md" style="width: 36px; height: 36px; min-width: 36px; border-radius: 50%; flex-shrink: 0;">
+                        <q-icon name="notifications" size="20px" />
+                      </div>
+                      <div class="col">
+                        <div class="text-subtitle2 text-weight-bold text-amber-9 q-mb-xs" style="font-size: 14px;">Place an accurate pin</div>
+                        <div class="text-caption text-blue-grey-8" style="line-height: 1.4; font-size: 12px;">
+                          This will serve as the map location for consumers. Please check if it is correct; otherwise, click on the map to adjust it.
+                        </div>
+                      </div>
+                    </div>
 
-                    <!-- Show Empty State if coordinates are null -->
-                    <div
-                      v-else
-                      class="bg-grey-3 rounded-borders flex flex-center shadow-1 full-width column"
-                      style="height: 250px; border: 1px dashed #94a3b8"
-                    >
-                      <q-icon
-                        name="location_off"
-                        size="48px"
-                        color="blue-grey-4"
-                        class="q-mb-sm"
-                      />
-                      <div class="text-weight-bold text-blue-grey-7"
-                        >No Location Detected</div
-                      >
-                      <div class="text-caption text-blue-grey-5"
-                        >Click the button below to detect and set your store
-                        coordinates.</div
-                      >
+                    <div v-if="addressForm.latitude && addressForm.longitude" id="vendor-profile-map" class="rounded-borders shadow-soft" :style="{ height: $q.screen.lt.md ? '250px' : '300px', width: '100%', zIndex: 1 }"></div>
+                    <div v-else class="bg-grey-2 rounded-borders flex flex-center shadow-soft full-width column" :style="{ height: $q.screen.lt.md ? '250px' : '300px', border: '2px dashed #cbd5e1' }">
+                      <q-icon name="location_off" size="48px" color="blue-grey-3" class="q-mb-md" />
+                      <div class="text-weight-bold text-blue-grey-7 text-body1">No Location Detected</div>
+                      <div class="text-caption text-blue-grey-5 q-mt-xs">Please detect your current location first.</div>
                     </div>
                   </div>
+
                   <div class="row justify-end q-mt-sm">
-                    <q-btn
-                      outline
-                      color="secondary"
-                      icon="my_location"
-                      label="Detect Current Location"
-                      @click="detectLocation"
-                      :loading="isDetectingLocation"
-                    />
+                    <q-btn outline color="red-9" icon="my_location" label="Detect Current Location" @click="detectLocation" :loading="isDetectingLocation" no-caps class="btn-danger-outline bg-white text-weight-bold q-px-md q-py-xs full-width-mobile" />
                   </div>
                 </div>
 
                 <div class="text-right q-mt-auto pt-lg">
-                  <q-btn
-                    v-ripple
-                    type="submit"
-                    label="Save Address"
-                    unelevated
-                    class="btn-red-gradient text-white q-px-xl q-py-sm text-weight-bold"
-                    no-caps
-                  />
+                  <q-btn v-ripple type="submit" label="Save Address" unelevated class="btn-red-gradient text-white q-px-lg q-py-sm text-weight-bold full-width-mobile" no-caps />
                 </div>
               </q-form>
             </q-card-section>
@@ -458,80 +181,86 @@
 
         <!-- ================= PASSWORD ================= -->
         <div class="col-12 col-md-6">
-          <q-card class="premium-glass-card profile-card q-pa-lg flex column">
-            <q-card-section class="q-pa-none col flex column full-height">
-              <div class="row items-center q-mb-xl">
-                <div class="glass-icon-box q-mr-md">
-                  <q-icon name="security" size="26px" color="red-6" />
-                </div>
-                <div class="text-h5 text-weight-bold text-blue-grey-9"
-                  >Security & Password</div
-                >
-              </div>
+          <q-card class="premium-glass-card profile-card flex column overflow-hidden">
+            <q-card-section class="row items-center q-pa-md text-white bg-gradient-red">
+              <q-icon name="security" size="22px" class="q-mr-sm" />
+              <div class="text-subtitle1 text-weight-bold">Security & Password</div>
+            </q-card-section>
 
+            <q-card-section class="q-pa-md q-pa-lg-lg col flex column full-height">
               <q-form
-                @submit.prevent="
-                  openConfirm(
-                    'Confirm Changes',
-                    'Are you sure you want to update your password? A change password email confirmation will be sent to your email.',
-                    submitPassword
-                  )
-                "
+                @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to update your password? A confirmation will be sent to your email.', submitPassword)"
                 class="col flex column full-height"
               >
                 <div class="q-gutter-y-md">
-                  <q-input
-                    v-model="passwordForm.current"
-                    label="Current Password"
-                    type="password"
-                    outlined
-                    class="custom-glass-input"
-                  >
-                    <template v-slot:prepend
-                      ><q-icon
-                        name="lock_outline"
-                        size="20px"
-                        color="blue-grey-4"
-                    /></template>
+                  <q-input v-model="passwordForm.current" label="Current Password" type="password" outlined class="custom-glass-input">
+                    <template v-slot:prepend><q-icon name="lock_outline" size="20px" color="blue-grey-4" /></template>
                   </q-input>
 
-                  <q-input
-                    v-model="passwordForm.new"
-                    label="New Password"
-                    type="password"
-                    outlined
-                    class="custom-glass-input"
-                  >
-                    <template v-slot:prepend
-                      ><q-icon name="key" size="20px" color="blue-grey-4"
-                    /></template>
+                  <q-input v-model="passwordForm.new" label="New Password" type="password" outlined class="custom-glass-input">
+                    <template v-slot:prepend><q-icon name="key" size="20px" color="blue-grey-4" /></template>
                   </q-input>
 
-                  <q-input
-                    v-model="passwordForm.confirm"
-                    label="Confirm New Password"
-                    type="password"
-                    outlined
-                    class="custom-glass-input"
-                  >
-                    <template v-slot:prepend
-                      ><q-icon
-                        name="verified_user"
-                        size="20px"
-                        color="blue-grey-4"
-                    /></template>
+                  <q-input v-model="passwordForm.confirm" label="Confirm New Password" type="password" outlined class="custom-glass-input">
+                    <template v-slot:prepend><q-icon name="verified_user" size="20px" color="blue-grey-4" /></template>
                   </q-input>
                 </div>
 
                 <div class="text-right q-mt-auto pt-lg">
-                  <q-btn
-                    v-ripple
-                    type="submit"
-                    label="Update Password"
-                    unelevated
-                    class="btn-red-gradient text-white q-px-xl q-py-sm text-weight-bold"
-                    no-caps
-                  />
+                  <q-btn v-ripple type="submit" label="Update Password" unelevated class="btn-red-gradient text-white q-px-lg q-py-sm text-weight-bold full-width-mobile" no-caps />
+                </div>
+              </q-form>
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <!-- ================= STORE HOURS (Full Width) ================= -->
+        <div class="col-12">
+          <q-card class="premium-glass-card flex column overflow-hidden">
+            <q-card-section class="row items-center justify-between q-pa-md text-white bg-gradient-red">
+              <div class="row items-center">
+                <q-icon name="schedule" size="22px" class="q-mr-sm" />
+                <div class="text-subtitle1 text-weight-bold">Store Hours</div>
+              </div>
+              <q-btn flat dense icon="content_copy" :label="$q.screen.lt.md ? 'Apply Mon' : 'Apply Monday to All'" class="text-white text-weight-bold bg-white-20 rounded-borders q-px-sm" no-caps @click="applyMondayToAll">
+                <q-tooltip class="bg-red-9">Copy Monday's schedule to all other days</q-tooltip>
+              </q-btn>
+            </q-card-section>
+
+            <q-card-section class="q-pa-md q-pa-lg-lg col flex column full-height">
+              <q-form @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to save these changes?', submitStoreHours)" class="col flex column full-height q-gutter-y-sm">
+                
+                <div class="row items-center q-col-gutter-sm schedule-row q-pa-sm q-pa-md-md rounded-borders border-bottom-mobile" v-for="day in operatingDays" :key="day.name">
+                  <!-- Day Name -->
+                  <div class="col-6 col-sm-3 row items-center no-wrap">
+                    <div class="text-subtitle2 text-weight-bold text-blue-grey-9 q-mr-sm">{{ day.name }}</div>
+                  </div>
+                  
+                  <!-- Toggle -->
+                  <div class="col-6 col-sm-3 text-right text-sm-left row items-center justify-end justify-sm-start no-wrap">
+                    <q-toggle v-model="day.isOpen" color="red-9" keep-color />
+                    <span class="text-body2 text-weight-bold q-ml-xs" :class="day.isOpen ? 'text-red-9' : 'text-blue-grey-4'">
+                      {{ day.isOpen ? 'Open' : 'Closed' }}
+                    </span>
+                  </div>
+
+                  <!-- Time Inputs -->
+                  <div class="col-12 col-sm-6 row q-gutter-x-sm items-center q-mt-sm q-mt-sm-none" v-if="day.isOpen">
+                    <q-input v-model="day.openTime" type="time" outlined dense class="custom-glass-input col" />
+                    <div class="text-center text-blue-grey-4 text-weight-bolder">—</div>
+                    <q-input v-model="day.closeTime" type="time" outlined dense class="custom-glass-input col" />
+                  </div>
+
+                  <!-- Closed State Placeholder -->
+                  <div class="col-12 col-sm-6 flex items-center q-mt-sm q-mt-sm-none" v-else>
+                    <div class="text-blue-grey-5 text-caption text-weight-medium bg-slate-50 q-px-sm q-py-xs rounded-borders w-full text-center border-slate-light" style="border: 1px dashed #cbd5e1;">
+                      Closed
+                    </div>
+                  </div>
+                </div>
+
+                <div class="text-right q-mt-lg pt-md">
+                  <q-btn v-ripple type="submit" label="Save Store Hours" unelevated class="btn-red-gradient text-white q-px-lg q-py-sm text-weight-bold full-width-mobile" no-caps />
                 </div>
               </q-form>
             </q-card-section>
@@ -540,160 +269,66 @@
 
         <!-- ================= DELETE ACCOUNT ================= -->
         <div class="col-12">
-          <q-card class="delete-zone-card q-pa-lg">
-            <q-card-section class="q-pa-none">
-              <div class="row no-wrap">
-                <q-icon
-                  name="warning_amber"
-                  color="red-6"
-                  size="32px"
-                  class="q-mr-md q-mt-xs"
-                />
-                <div class="column col">
-                  <div class="text-h6 text-weight-bold text-red-7"
-                    >Delete Account</div
-                  >
-                  <div class="text-blue-grey-6 text-body2 q-mt-xs q-mb-md"
-                    >Once you delete your account, there is no going back. All
-                    inventory and sales records will be permanently lost.</div
-                  >
-                  <div>
-                    <q-btn
-                      v-ripple
-                      label="Delete Account"
-                      color="red-6"
-                      outline
-                      no-caps
-                      class="btn-danger-outline q-px-lg q-py-xs text-weight-bold"
-                      @click="initiateDelete"
-                    />
-                  </div>
+          <q-card class="delete-zone-card overflow-hidden shadow-soft">
+            <q-card-section class="row items-center q-pa-md text-white bg-gradient-red">
+              <q-icon name="warning_amber" size="22px" class="q-mr-sm" />
+              <div class="text-subtitle1 text-weight-bold">Danger Zone</div>
+            </q-card-section>
+            
+            <q-card-section class="q-pa-md q-pa-lg-lg row items-center justify-between">
+              <div class="column col-12 col-md-8 q-mb-md q-mb-md-none">
+                <div class="text-h6 text-weight-bold text-red-9 q-mb-xs">Delete Account</div>
+                <div class="text-blue-grey-8 text-body2" style="max-width: 500px;">
+                  Once you delete your account, there is no going back. All inventory, data, and sales records will be permanently lost.
                 </div>
+              </div>
+              <div class="col-12 col-md-auto text-left text-md-right">
+                <q-btn v-ripple label="Delete Account" color="red-9" outline no-caps class="btn-danger-outline q-px-xl q-py-sm text-weight-bold full-width-mobile" @click="initiateDelete" />
               </div>
             </q-card-section>
           </q-card>
         </div>
+
       </div>
     </div>
 
-    <!-- ================= MODALS (CUSTOM GLASSMORPHISM) ================= -->
-
-    <!-- Generic Confirmation Modal (Save/Update) -->
-    <q-dialog
-      v-model="confirmDialog.isOpen"
-      persistent
-      backdrop-filter="blur(4px)"
-    >
-      <!-- Forced height auto to prevent stretching -->
-      <q-card
-        class="premium-glass-card q-pa-md"
-        style="
-          width: 420px;
-          max-width: 90vw;
-          border-top: 4px solid #e11d48;
-          height: auto !important;
-        "
-      >
+    <!-- ================= MODALS ================= -->
+    <q-dialog v-model="confirmDialog.isOpen" persistent backdrop-filter="blur(4px)">
+      <q-card class="premium-glass-card q-pa-md" style="width: 420px; max-width: 90vw; border-top: 4px solid #b91c1c; height: auto !important;">
         <q-card-section class="column items-center text-center q-pb-none">
-          <div class="text-h5 text-weight-bolder text-blue-grey-9 q-mb-md">{{
-            confirmDialog.title
-          }}</div>
-          <div class="text-body1 text-blue-grey-6 q-mb-md">{{
-            confirmDialog.message
-          }}</div>
+          <div class="text-h6 text-weight-bolder text-blue-grey-9 q-mb-sm">{{ confirmDialog.title }}</div>
+          <div class="text-body2 text-blue-grey-8 q-mb-md">{{ confirmDialog.message }}</div>
         </q-card-section>
-        <q-card-actions align="center" class="q-mt-sm q-mb-sm">
-          <q-btn
-            label="CANCEL"
-            flat
-            color="blue-grey-5"
-            class="text-weight-bold q-px-md q-mr-sm"
-            no-caps
-            v-close-popup
-          />
-          <q-btn
-            label="OK"
-            unelevated
-            class="btn-red-gradient text-white q-px-xl text-weight-bold"
-            no-caps
-            @click="executeConfirmAction"
-          />
+        <q-card-actions align="center" class="q-mt-sm q-mb-sm q-gutter-md">
+          <q-btn label="CANCEL" outline color="blue-grey-4" class="text-weight-bold q-px-lg text-blue-grey-7" no-caps v-close-popup />
+          <q-btn label="CONFIRM" unelevated class="btn-red-gradient text-white q-px-xl text-weight-bold" no-caps @click="executeConfirmAction" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- Camera/Cropper Modal -->
-    <ImageCaptureModal
-      v-model="showImageCaptureModal"
-      @captured="handleCapturedImage"
-      :aspectRatio="16 / 9"
-      title="Update Store Cover Photo"
-    />
+    <ImageCaptureModal v-model="showImageCaptureModal" @captured="handleCapturedImage" :aspectRatio="16 / 9" title="Update Store Cover Photo" />
 
-    <!-- Secure Delete Account Modal -->
-    <q-dialog
-      v-model="deleteDialog.isOpen"
-      persistent
-      backdrop-filter="blur(8px)"
-    >
-      <!-- Forced height auto to prevent stretching -->
-      <q-card
-        class="premium-glass-card q-pa-lg"
-        style="
-          width: 520px;
-          max-width: 95vw;
-          border-top: 4px solid #dc2626;
-          height: auto !important;
-        "
-      >
+    <q-dialog v-model="deleteDialog.isOpen" persistent backdrop-filter="blur(8px)">
+      <q-card class="premium-glass-card q-pa-lg" style="width: 520px; max-width: 95vw; border-top: 4px solid #b91c1c; height: auto !important;">
         <q-card-section class="text-center q-pb-none">
-          <div class="text-h5 text-weight-bolder text-red-7 q-mb-lg"
-            >Delete Merchant Account</div
-          >
-
-          <div class="text-subtitle1 text-weight-bold text-red-6 q-mb-sm"
-            >Do you really want to delete your Merchant Account?</div
-          >
-          <div class="text-body2 text-blue-grey-6 q-mb-lg"
-            >If yes, please type your store name to confirm.</div
-          >
-
-          <q-input
-            v-model="deleteDialog.inputName"
-            placeholder="Type your store name"
-            outlined
-            class="custom-glass-input q-mb-md center-input-text"
-          />
+          <div class="text-h5 text-weight-bolder text-red-9 q-mb-md">Delete Merchant Account</div>
+          <div class="text-body1 text-weight-bold text-red-8 q-mb-xs">Do you really want to delete your Merchant Account?</div>
+          <div class="text-body2 text-blue-grey-7 q-mb-lg">If yes, please type your store name to confirm.</div>
+          <q-input v-model="deleteDialog.inputName" placeholder="Type your store name" outlined class="custom-glass-input q-mb-lg center-input-text" />
         </q-card-section>
-
-        <q-card-actions align="center" class="q-mt-md">
-          <q-btn
-            label="Back"
-            outline
-            color="blue-grey-5"
-            class="btn-glass-outline q-px-xl q-mr-md"
-            no-caps
-            v-close-popup
-          />
-          <q-btn
-            label="Yes, Delete"
-            unelevated
-            class="btn-red-gradient text-white q-px-xl text-weight-bold"
-            no-caps
-            :disable="
-              deleteDialog.inputName !== storeForm.storeName ||
-              !storeForm.storeName
-            "
-            @click="executeDeleteAccount"
-          />
+        <q-card-actions align="center" class="q-mt-xs q-gutter-md">
+          <q-btn label="Back" outline color="blue-grey-4" class="btn-glass-outline text-blue-grey-8 q-px-xl text-weight-bold" no-caps v-close-popup />
+          <q-btn label="Yes, Delete" unelevated class="btn-red-gradient text-white q-px-xl text-weight-bold" no-caps :disable="deleteDialog.inputName !== storeForm.storeName || !storeForm.storeName" @click="executeDeleteAccount" />
         </q-card-actions>
       </q-card>
     </q-dialog>
+
   </q-page>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import ImageCaptureModal from '@/components/modals/ImageCaptureModal.vue'
@@ -703,6 +338,7 @@ import 'leaflet/dist/leaflet.css'
 
 const $q = useQuasar()
 const authStore = useAuth()
+const router = useRouter()
 
 // Form States
 const profileForm = reactive({
@@ -752,7 +388,7 @@ const applyMondayToAll = () => {
   $q.notify({
     type: 'positive',
     message: 'Monday hours applied to all days.',
-    color: 'red-6'
+    color: 'red-9'
   })
 }
 
@@ -800,7 +436,7 @@ const submitProfile = async () => {
     $q.notify({
       type: 'positive',
       message: 'Profile saved successfully.',
-      color: 'green'
+      color: 'green-7'
     })
   } catch (error) {
     $q.notify({ type: 'negative', message: 'Failed to update profile.' })
@@ -836,7 +472,7 @@ const submitStoreInfo = async () => {
     $q.notify({
       type: 'positive',
       message: 'Store Info saved successfully.',
-      color: 'green'
+      color: 'green-7'
     })
   } catch (error) {
     const errorMsg =
@@ -878,7 +514,7 @@ const submitStoreHours = async () => {
     $q.notify({
       type: 'positive',
       message: 'Store Hours saved successfully.',
-      color: 'green'
+      color: 'green-7'
     })
   } catch (error) {
     $q.notify({ type: 'negative', message: 'Failed to save store hours.' })
@@ -895,7 +531,7 @@ const submitAddress = async () => {
     $q.notify({
       type: 'positive',
       message: 'Address saved successfully.',
-      color: 'green'
+      color: 'green-7'
     })
   } catch (error) {
     $q.notify({ type: 'negative', message: 'Failed to save address.' })
@@ -912,7 +548,7 @@ const submitPassword = async () => {
     $q.notify({
       type: 'positive',
       message: 'Password updated successfully.',
-      color: 'green'
+      color: 'green-7'
     })
     passwordForm.current = ''
     passwordForm.new = ''
@@ -948,12 +584,6 @@ const fetchProfile = async () => {
       profileForm.phoneNumber = data.phone_number || ''
       originalPhone.value = profileForm.phoneNumber
       if (data.store) {
-        console.log('PROFILE LOAD - RAW STORE DATA:', data.store)
-        console.log(
-          'PROFILE LOAD - PICTURE URL:',
-          data.store?.store_picture_url
-        )
-
         storeForm.storeName = data.store.store_name || ''
 
         if (data.store && data.store.store_picture_url) {
@@ -1049,6 +679,15 @@ const initMap = () => {
   })
 
   marker.value = L.marker([lat, lng], { icon }).addTo(map.value)
+  
+  // Update pin location smoothly when map is clicked
+  map.value.on('click', function(e) {
+    const newLat = e.latlng.lat;
+    const newLng = e.latlng.lng;
+    addressForm.latitude = newLat;
+    addressForm.longitude = newLng;
+    marker.value.setLatLng([newLat, newLng]);
+  });
 }
 
 const detectLocation = () => {
@@ -1109,84 +748,44 @@ onMounted(async () => {
   max-width: 1000px;
   margin: 0 auto;
 }
-.pt-lg {
-  padding-top: 24px;
+.pt-lg { padding-top: 24px; }
+.pt-md { padding-top: 16px; }
+.w-full { width: 100%; }
+.shrink-none { flex-shrink: 0; }
+
+/* Strict Brand Red Gradient Class (No Pink) */
+.bg-gradient-red {
+  background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
 }
-.pt-xl {
-  padding-top: 32px;
+.bg-white-20 {
+  background: rgba(255, 255, 255, 0.2);
+}
+.bg-white-20:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* Subtle Ambient Glows */
 .bg-glow {
-  position: absolute;
-  width: 500px;
-  height: 500px;
-  border-radius: 50%;
-  filter: blur(140px);
-  z-index: 0;
-  opacity: 0.15;
-  pointer-events: none;
+  position: absolute; width: 500px; height: 500px; border-radius: 50%;
+  filter: blur(140px); z-index: 0; opacity: 0.15; pointer-events: none;
 }
-.bg-glow-primary {
-  top: -100px;
-  left: -100px;
-  background: radial-gradient(
-    circle,
-    rgba(225, 29, 72, 0.4) 0%,
-    transparent 70%
-  );
-}
-.bg-glow-secondary {
-  bottom: 100px;
-  right: -100px;
-  background: radial-gradient(
-    circle,
-    rgba(244, 63, 94, 0.3) 0%,
-    transparent 70%
-  );
-}
+.bg-glow-primary { top: -100px; left: -100px; background: radial-gradient(circle, rgba(185, 28, 28, 0.4) 0%, transparent 70%); }
+.bg-glow-secondary { bottom: 100px; right: -100px; background: radial-gradient(circle, rgba(69, 10, 10, 0.3) 0%, transparent 70%); }
 
-.tracking-tight {
-  letter-spacing: -0.02em;
-}
-.tracking-wide {
-  letter-spacing: 0.05em;
-}
+.tracking-tight { letter-spacing: -0.02em; }
 
-/* Clean Glassmorphism Cards - Visuals Only */
+/* Clean Glassmorphism Cards */
 .premium-glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.98);
   border: 1px solid rgba(241, 245, 249, 1);
   border-radius: 12px;
-  box-shadow: 0 2px 16px rgba(15, 23, 42, 0.04);
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 .premium-glass-card:hover {
-  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 6px 28px rgba(15, 23, 42, 0.08);
 }
-
-/* Specific rule for the grid cards to stretch perfectly */
-.profile-card {
-  height: 100%;
-}
-
-/* Beautiful Header Glass Icon Box */
-.glass-icon-box {
-  width: 48px;
-  height: 48px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.08); /* Soft red shadow */
-}
+.profile-card { height: 100%; }
 
 /* Custom Glass Inputs */
 .custom-glass-input :deep(.q-field__control) {
@@ -1194,130 +793,53 @@ onMounted(async () => {
   border-radius: 8px;
   transition: all 0.3s ease;
 }
-.custom-glass-input :deep(.q-field__control:before) {
-  border: 1px solid rgba(226, 232, 240, 0.8);
-}
-.custom-glass-input :deep(.q-field__control:hover) {
-  background: rgba(241, 245, 249, 1);
-}
+.custom-glass-input :deep(.q-field__control:before) { border: 1px solid rgba(226, 232, 240, 0.8); }
+.custom-glass-input :deep(.q-field__control:hover) { background: rgba(241, 245, 249, 1); }
 .custom-glass-input :deep(.q-field--focused .q-field__control) {
   background: #ffffff;
-  box-shadow: 0 2px 10px rgba(225, 29, 72, 0.06);
+  box-shadow: 0 2px 10px rgba(185, 28, 28, 0.06);
 }
-.custom-glass-input :deep(.q-field--focused .q-icon) {
-  color: #e11d48 !important;
-}
-.center-input-text :deep(.q-field__native) {
-  text-align: center;
-  font-weight: bold;
-  font-size: 1.1rem;
-}
+.custom-glass-input :deep(.q-field--focused .q-icon) { color: #b91c1c !important; }
+.center-input-text :deep(.q-field__native) { text-align: center; font-weight: bold; font-size: 1.1rem; }
 
-/* Primary Accent Buttons (Red Gradient) */
+/* Primary Accent Buttons (Strict Red Gradient) */
 .btn-red-gradient {
   border-radius: 8px !important;
-  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%) !important;
-  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.2);
+  background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.2) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .btn-red-gradient:hover:not(.disabled) {
-  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+  box-shadow: 0 6px 16px rgba(185, 28, 28, 0.3) !important;
   transform: translateY(-1px);
 }
 .btn-glass-outline {
-  border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.8) !important;
-  border: 1px solid currentColor;
-  transition: all 0.2s ease;
+  border-radius: 8px !important; background: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid currentColor; transition: all 0.2s ease;
 }
-.btn-glass-outline:hover {
-  background: rgba(241, 245, 249, 0.9) !important;
-  transform: translateY(-1px);
+.btn-glass-outline:hover { background: rgba(241, 245, 249, 0.9) !important; transform: translateY(-1px); }
+.btn-danger-outline {
+  border-radius: 8px !important; background: #ffffff !important;
+  border: 1px solid #b91c1c !important; color: #b91c1c !important; transition: all 0.2s ease;
 }
+.btn-danger-outline:hover { background: #fef2f2 !important; transform: translateY(-1px); }
 
 /* Delete Zone */
 .delete-zone-card {
-  background: #fffafa;
-  border: 1px solid #fee2e2;
-  border-radius: 12px;
-}
-.btn-danger-outline {
-  border-radius: 8px !important;
-  background: #ffffff !important;
-  border: 1px solid #dc2626 !important;
-  color: #dc2626 !important;
-  transition: all 0.2s ease;
-}
-.btn-danger-outline:hover {
-  background: #fef2f2 !important;
-  transform: translateY(-1px);
+  background: #fffafa; border: 1px solid #fee2e2; border-radius: 12px;
 }
 
 /* Store Hours Table */
-.schedule-row {
-  transition: background-color 0.2s ease;
-}
-.schedule-row:hover {
-  background-color: rgba(248, 250, 252, 0.8);
-}
-.bg-slate-50 {
-  background-color: #f8fafc;
-}
-.border-slate-light {
-  border: 1px solid #f1f5f9;
-}
-.w-full {
-  width: 100%;
-}
+.schedule-row { transition: background-color 0.2s ease; }
+.schedule-row:hover { background-color: rgba(248, 250, 252, 0.8); }
+.bg-slate-50 { background-color: #f8fafc; }
+.border-slate-light { border: 1px solid #f1f5f9; }
 
-/* Map Placeholder UI */
-.empty-state-glass {
-  background: rgba(248, 250, 252, 0.8);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-}
-.map-grid-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image:
-    linear-gradient(rgba(203, 213, 225, 0.4) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(203, 213, 225, 0.4) 1px, transparent 1px);
-  background-size: 24px 24px;
-  z-index: 0;
-}
-.drop-shadow-icon {
-  filter: drop-shadow(0 2px 4px rgba(225, 29, 72, 0.3));
-}
-
-/* Pulsing Map Pin */
-.pin-container {
-  position: relative;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-}
-.pin-pulse {
-  position: absolute;
-  width: 50px;
-  height: 50px;
-  background: rgba(225, 29, 72, 0.2);
-  border-radius: 50%;
-  z-index: -1;
-  animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-}
-@keyframes pulse-ring {
-  0% {
-    transform: scale(0.5);
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    transform: scale(2);
-    opacity: 0;
-  }
+/* Mobile Only Adjustments */
+@media (max-width: 767px) {
+  .vendor-page.mobile-page-padding { padding: 20px 12px !important; }
+  .desktop-only { display: none !important; }
+  .full-width-mobile { width: 100%; }
+  .border-bottom-mobile { border-bottom: 1px solid rgba(15,23,42, 0.05); }
 }
 </style>
