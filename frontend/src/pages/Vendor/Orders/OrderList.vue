@@ -1,24 +1,60 @@
 <template>
-  <q-page padding class="vendor-page relative-position">
+  <q-page padding class="vendor-page relative-position" :class="{ 'mobile-page-padding': $q.screen.lt.md }">
     <!-- Subtle Ambient Background Glows -->
-    <div class="bg-glow bg-glow-primary"></div>
-    <div class="bg-glow bg-glow-secondary"></div>
+    <div class="bg-glow bg-glow-primary desktop-only"></div>
+    <div class="bg-glow bg-glow-secondary desktop-only"></div>
 
     <div class="page-container relative-position" style="z-index: 1;">
       
       <!-- ================= HEADER AREA (Responsive) ================= -->
-      <div class="page-header q-mb-lg row items-center justify-between">
-        <div class="row items-center no-wrap col-12 col-sm-auto">
-          <div class="glass-icon-box q-mr-md shrink-none">
-            <q-icon name="receipt_long" size="26px" class="text-brand-red" />
+      <div class="page-header q-mb-lg q-mt-sm">
+        <div class="row items-center justify-between no-wrap">
+          
+          <!-- Title & Subtitle Group -->
+          <div class="row items-center no-wrap col q-pr-sm">
+            <div class="glass-icon-box q-mr-md shrink-none">
+              <q-icon name="receipt_long" size="26px" class="text-brand-red" />
+            </div>
+            <div class="col">
+              <!-- Desktop uses standard text-h4, mobile uses text-h5 -->
+              <h1 class="text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight" :class="$q.screen.lt.md ? 'text-h5' : 'text-h4'" style="line-height: 1.1;">Order List</h1>
+              <p class="text-blue-grey-5 q-mt-xs q-mb-none" :class="$q.screen.lt.md ? 'text-caption' : 'text-body1'" style="line-height: 1.3;">
+                Manage and track all neighborhood customer orders.
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 class="text-h4 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight">Order List</h1>
-            <p class="text-body1 text-blue-grey-5 q-mt-xs q-mb-none">Manage and track all neighborhood customer orders.</p>
+
+          <!-- Export Button Group -->
+          <div class="col-auto flex flex-center">
+            <!-- Desktop Export Button -->
+            <q-btn 
+              v-if="!$q.screen.lt.md"
+              outline 
+              icon="download" 
+              label="Export Report" 
+              color="red-9" 
+              no-caps 
+              class="btn-glass-outline text-weight-bold q-px-md" 
+              :loading="isExporting" 
+              @click="exportOrders" 
+            />
+            
+            <!-- Mobile Export Button with Text -->
+            <div v-else class="column items-center justify-center cursor-pointer" @click="exportOrders">
+              <q-btn 
+                outline 
+                icon="download" 
+                color="red-9" 
+                class="btn-glass-outline" 
+                style="padding: 8px;"
+                round
+                dense
+                :loading="isExporting" 
+              />
+              <span class="text-red-9 text-weight-bold q-mt-xs" style="font-size: 10px; letter-spacing: 0.5px;">EXPORT</span>
+            </div>
           </div>
-        </div>
-        <div class="col-12 col-sm-auto q-mt-md q-mt-sm-none text-right">
-          <q-btn outline icon="download" label="Export Report" color="red-9" no-caps class="btn-glass-outline text-weight-bold q-px-md full-width-mobile" :loading="isExporting" @click="exportOrders" />
+          
         </div>
       </div>
 
@@ -90,6 +126,7 @@
           <!-- ================= DESKTOP TABLE FORMATTERS ================= -->
           <template #body-cell-order_id="props">
             <q-td :props="props">
+              <!-- Reverted back to strictly #ID for desktop view -->
               <span class="order-id-badge text-weight-bold text-red-8 q-px-sm q-py-xs bg-red-1 transition-ease">#{{ props.row.order_id }}</span>
             </q-td>
           </template>
@@ -123,11 +160,13 @@
           <!-- ================= MOBILE GRID CARD LAYOUT ================= -->
           <template #item="props">
             <div class="col-12 col-sm-6">
-              <q-card class="mobile-grid-card q-pa-md transition-ease" bordered @click="onRowClick($event, props.row)">
+              <q-card class="mobile-grid-card q-pa-md transition-ease shadow-soft" bordered @click="onRowClick($event, props.row)">
                 
                 <div class="row justify-between items-center q-mb-sm">
-                  <span class="order-id-badge text-weight-bold text-red-8 q-px-sm q-py-xs bg-red-1">#{{ props.row.order_id }}</span>
-                  <q-chip :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bolder shadow-1 q-ma-none" style="font-size: 11px; height: 24px;">
+                  <!-- Kept 'Order #1' exclusively for the mobile view layout -->
+                  <span class="order-id-badge text-weight-bold text-red-8 q-px-sm bg-red-1" style="font-size: 13px; padding-top: 4px; padding-bottom: 4px;">Order #{{ props.row.order_id }}</span>
+                  
+                  <q-chip :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bold shadow-1 q-ma-none" style="font-size: 12px; height: 26px; padding: 0 12px;">
                     {{ formatStatus(props.row.status) }}
                   </q-chip>
                 </div>
@@ -135,20 +174,20 @@
                 <q-separator class="q-my-sm" color="grey-2" />
                 
                 <div class="row items-center q-mb-md">
-                  <q-avatar size="40px" class="q-mr-md bg-blue-grey-1" style="border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                  <q-avatar size="44px" class="q-mr-md bg-blue-grey-1 shadow-1 border-white">
                     <img v-if="props.row.consumer?.profile_picture_url" :src="props.row.consumer.profile_picture_url">
                     <q-icon v-else name="person" color="blue-grey-6" size="24px" />
                   </q-avatar>
                   <div>
-                    <div class="text-weight-bolder text-blue-grey-9" style="font-size: 15px;">{{ props.row.consumer?.full_name || 'Unknown' }}</div>
+                    <div class="text-weight-bold text-blue-grey-9" style="font-size: 15px;">{{ props.row.consumer?.full_name || 'Unknown' }}</div>
                     <div class="text-caption text-blue-grey-5">{{ formatDate(props.row.created_at) }}</div>
                   </div>
                 </div>
                 
                 <div class="row justify-between items-end">
                   <div>
-                    <div class="text-weight-bold text-blue-grey-4" style="text-transform: uppercase; font-size: 10px;">Total Amount</div>
-                    <div class="text-weight-bolder text-brand-red text-h6" style="line-height: 1;">₱{{ formatNumber(props.row.total_amount) }}</div>
+                    <div class="text-weight-bold text-blue-grey-4" style="text-transform: uppercase; font-size: 11px;">Total Amount</div>
+                    <div class="text-weight-bolder text-dark text-subtitle1" style="line-height: 1;">₱{{ formatNumber(props.row.total_amount) }}</div>
                   </div>
                   <q-btn flat round dense icon="chevron_right" color="blue-grey-3" />
                 </div>
@@ -159,6 +198,31 @@
 
         </q-table>
       </q-card>
+
+      <!-- ================= PREMIUM MOBILE BOTTOM NAVIGATION ================= -->
+      <div v-if="$q.screen.lt.md" class="mobile-bottom-nav row justify-around items-center">
+        <div class="nav-item-wrapper" @click="router.push('/vendor/dashboard')">
+          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
+            <q-icon name="home" size="26px" />
+          </q-btn>
+        </div>
+        <div class="nav-item-wrapper" @click="router.push('/vendor/orders/list')">
+          <!-- Active state applied to Orders -->
+          <q-btn flat round class="mobile-nav-btn nav-active shadow-3">
+            <q-icon name="receipt_long" size="24px" />
+          </q-btn>
+        </div>
+        <div class="nav-item-wrapper" @click="router.push('/vendor/products/list')">
+          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
+            <q-icon name="inventory_2" size="26px" />
+          </q-btn>
+        </div>
+        <div class="nav-item-wrapper" @click="router.push('/vendor/sales')">
+          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
+            <q-icon name="analytics" size="26px" />
+          </q-btn>
+        </div>
+      </div>
 
     </div>
   </q-page>
@@ -277,8 +341,8 @@ onMounted(async () => {
 }
 
 /* Brand Colors */
-.text-brand-red { color: #B91C1C !important; }
-.bg-gradient-red { background: linear-gradient(90deg, #B91C1C 0%, #450A0A 100%) !important; }
+.text-brand-red { color: #b91c1c !important; }
+.bg-gradient-red { background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important; }
 
 /* Background Glows */
 .bg-glow { position: absolute; width: 500px; height: 500px; border-radius: 50%; filter: blur(140px); z-index: 0; opacity: 0.15; pointer-events: none; }
@@ -302,7 +366,7 @@ onMounted(async () => {
 .filter-group-wrapper { height: 40px; }
 .custom-glass-input :deep(.q-field__control) { background: rgba(241, 245, 249, 0.6); border-radius: 8px; }
 .custom-glass-input :deep(.q-field__control:before) { border: 1px solid rgba(226, 232, 240, 0.8); }
-.custom-glass-input :deep(.q-field--focused .q-field__control) { background: #ffffff; box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.15); border-color: #B91C1C; }
+.custom-glass-input :deep(.q-field--focused .q-field__control) { background: #ffffff; box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.15); border-color: #b91c1c; }
 
 .btn-glass-outline { border-radius: 8px !important; background: rgba(255, 255, 255, 0.9) !important; border: 1px solid currentColor; transition: all 0.2s ease; }
 .btn-glass-outline:hover { background: #ffffff !important; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05); transform: translateY(-2px); }
@@ -321,19 +385,20 @@ onMounted(async () => {
 :deep(.custom-premium-table tbody td) { padding: 16px 20px; border-bottom: 1px solid rgba(241, 245, 249, 1); cursor: pointer; transition: all 0.2s ease; }
 :deep(.custom-premium-table tbody tr:hover) { background: #ffffff; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03); transform: scale(1.002); z-index: 5; position: relative; }
 :deep(.custom-premium-table tbody tr:hover td) { border-bottom-color: transparent; }
-:deep(.custom-premium-table tbody tr:hover .order-id-badge) { background: rgba(185, 28, 28, 0.1) !important; color: #B91C1C !important; border-color: rgba(185, 28, 28, 0.4) !important; }
+:deep(.custom-premium-table tbody tr:hover .order-id-badge) { background: rgba(185, 28, 28, 0.1) !important; color: #b91c1c !important; border-color: rgba(185, 28, 28, 0.4) !important; }
 
 .order-id-badge { font-family: monospace; font-size: 13px; border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 6px; }
 .status-chip { border: 1px solid rgba(255,255,255,0.8); }
+.border-white { border: 2px solid #ffffff; }
 
 /* Mobile Grid Card Styling */
 .mobile-grid-card {
   background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  border: 1px solid #f1f5f9;
+  border-radius: 16px;
   cursor: pointer;
 }
-.mobile-grid-card:active { transform: scale(0.98); background: #f1f5f9; }
+.mobile-grid-card:active { transform: scale(0.98); background: #f8fafc; }
 
 /* Native Swiping for Mobile Filters */
 .scroll-container {
@@ -345,6 +410,9 @@ onMounted(async () => {
 
 /* Mobile overrides */
 @media (max-width: 767px) {
+  .vendor-page.mobile-page-padding { padding: 16px 12px calc(80px + env(safe-area-inset-bottom)) 12px !important; }
+  .desktop-only { display: none !important; }
+  .mobile-only { display: block !important; }
   .full-width-mobile { width: 100%; }
   .scroll-container {
     margin-left: -16px;
@@ -352,6 +420,47 @@ onMounted(async () => {
     padding-left: 16px;
     padding-right: 16px;
     padding-bottom: 8px; /* Room for shadow */
+  }
+
+  /* Premium Glass Floating Bottom Navigation */
+  .mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(75px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
+    z-index: 2000;
+    box-shadow: 0 -10px 25px rgba(15, 23, 42, 0.05);
+  }
+  
+  .nav-item-wrapper {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .mobile-nav-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    padding: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .nav-active {
+    background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 8px 16px rgba(185, 28, 28, 0.35) !important;
+    transform: translateY(-4px);
+  }
+  .nav-active .q-icon {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
   }
 }
 </style>

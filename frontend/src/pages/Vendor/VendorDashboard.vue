@@ -222,8 +222,7 @@
         
         <!-- Premium Time-Synced Mobile Header -->
         <q-card class="welcome-banner q-mb-lg q-pa-md transition-theme card-rounded shadow-soft" :class="headerThemeClass">
-          <!-- Top Row: Texts and Avatar -->
-          <div class="row justify-between items-center no-wrap q-mb-md">
+          <div class="row items-center justify-between no-wrap q-mb-md">
             <div class="col" style="min-width: 0;">
               <div class="row items-center q-mb-xs">
                 <q-icon name="today" size="14px" :class="subTextClass" class="q-mr-sm opacity-80" />
@@ -231,21 +230,20 @@
                   {{ currentDate }}
                 </span>
               </div>
-              <h1 class="text-weight-bolder q-ma-none text-truncate" :class="headerTextClass" style="font-size: 24px; line-height: 1.2;">
+              <h1 class="text-weight-bolder q-ma-none" :class="headerTextClass" style="font-size: 24px; line-height: 1.2; word-wrap: break-word;">
                 {{ timeGreeting }},<br><span class="text-weight-black">{{ userName }}</span>
               </h1>
             </div>
-            <!-- Avatar fixed to the right -->
+            
             <div class="col-auto q-pl-sm">
-              <q-avatar size="50px" class="bg-red-1 text-red-9 cursor-pointer shadow-2" @click="liveStoreModal = true" style="border: 2px solid rgba(255,255,255,0.9);">
+              <q-avatar size="54px" class="bg-red-1 text-red-9 cursor-pointer shadow-3" @click="liveStoreModal = true" style="border: 2px solid rgba(255,255,255,0.9);">
                 <img v-if="vendorStore?.store_picture_url" :src="vendorStore.store_picture_url" />
                 <q-icon v-else name="storefront" size="26px" />
               </q-avatar>
             </div>
           </div>
           
-          <!-- Bottom Row: Badges -->
-          <div class="row items-center justify-between q-gutter-y-sm">
+          <div class="row items-center justify-between">
             <div class="store-status-badge row items-center q-px-sm q-py-xs border-radius-8 bg-glass" style="max-width: fit-content;">
               <q-icon name="fiber_manual_record" size="10px" :color="isStoreOpen ? 'green-4' : 'red-4'" class="q-mr-xs" :class="{ 'status-dot': isStoreOpen }" />
               <span class="text-weight-bold text-white" style="font-size: 11px;">{{ isStoreOpen ? 'Store is Open' : 'Store is Closed' }}</span>
@@ -254,69 +252,73 @@
           </div>
         </q-card>
 
-        <!-- Premium Mobile Top Metrics -->
+        <!-- Premium Mobile Top Metrics (Side-by-side icon and text layout) -->
         <div class="row q-col-gutter-sm q-mb-lg">
+          <!-- Placed -->
           <div class="col-6">
-            <q-card class="premium-glass-card card-rounded h-full">
-              <q-card-section class="q-pa-md">
-                <div class="row items-center justify-between q-mb-sm">
-                  <div class="text-weight-bold text-blue-9 text-uppercase" style="font-size: 10px;">Placed</div>
-                  <div class="icon-premium-box mobile-icon-box bg-blue-1 text-blue-7">
-                    <q-icon name="shopping_cart_checkout" size="16px" />
-                  </div>
+            <q-card class="mobile-metric-card shadow-soft h-full">
+              <q-card-section class="q-pa-md row items-center no-wrap h-full">
+                <div class="mobile-icon-box-new bg-blue-1 text-blue-7 q-mr-md flex flex-center">
+                  <q-icon name="shopping_cart_checkout" size="22px" />
                 </div>
-                <div class="text-h4 text-weight-bolder text-dark">{{ stats.placed_orders }}</div>
+                <div class="column justify-center">
+                  <div class="text-grey-8 text-weight-medium" style="font-size: 13px;">Placed</div>
+                  <div class="text-h5 text-weight-bolder text-dark" style="margin-top: 2px; line-height: 1;">{{ stats.placed_orders }}</div>
+                </div>
               </q-card-section>
             </q-card>
           </div>
+          <!-- Preparing -->
           <div class="col-6">
-            <q-card class="premium-glass-card card-rounded h-full">
-              <q-card-section class="q-pa-md">
-                <div class="row items-center justify-between q-mb-sm">
-                  <div class="text-weight-bold text-amber-9 text-uppercase" style="font-size: 10px;">Preparing</div>
-                  <div class="icon-premium-box mobile-icon-box bg-amber-1 text-amber-7">
-                    <q-icon name="inventory_2" size="16px" />
-                  </div>
+            <q-card class="mobile-metric-card shadow-soft h-full">
+              <q-card-section class="q-pa-md row items-center no-wrap h-full">
+                <div class="mobile-icon-box-new bg-amber-1 text-amber-8 q-mr-md flex flex-center">
+                  <q-icon name="inventory_2" size="22px" />
                 </div>
-                <div class="text-h4 text-weight-bolder text-dark">{{ stats.preparing_orders }}</div>
+                <div class="column justify-center">
+                  <div class="text-grey-8 text-weight-medium" style="font-size: 13px;">Preparing</div>
+                  <div class="text-h5 text-weight-bolder text-dark" style="margin-top: 2px; line-height: 1;">{{ stats.preparing_orders }}</div>
+                </div>
               </q-card-section>
             </q-card>
           </div>
+          <!-- Cancelled -->
           <div class="col-6">
-            <q-card class="premium-glass-card card-rounded h-full">
-              <q-card-section class="q-pa-md">
-                <div class="row items-center justify-between q-mb-sm">
-                  <div class="text-weight-bold text-green-9 text-uppercase" style="font-size: 10px;">Picked Up</div>
-                  <div class="icon-premium-box mobile-icon-box bg-green-1 text-green-7">
-                    <q-icon name="task_alt" size="16px" />
-                  </div>
+            <q-card class="mobile-metric-card shadow-soft h-full">
+              <q-card-section class="q-pa-md row items-center no-wrap h-full">
+                <div class="mobile-icon-box-new bg-red-1 text-red-7 q-mr-md flex flex-center">
+                  <q-icon name="block" size="22px" />
                 </div>
-                <div class="text-h4 text-weight-bolder text-dark">{{ stats.picked_up_orders }}</div>
+                <div class="column justify-center">
+                  <div class="text-grey-8 text-weight-medium" style="font-size: 13px;">Cancelled</div>
+                  <div class="text-h5 text-weight-bolder text-dark" style="margin-top: 2px; line-height: 1;">{{ stats.cancelled_orders }}</div>
+                </div>
               </q-card-section>
             </q-card>
           </div>
+          <!-- Complete / Picked Up -->
           <div class="col-6">
-            <q-card class="premium-glass-card card-rounded h-full">
-              <q-card-section class="q-pa-md">
-                <div class="row items-center justify-between q-mb-sm">
-                  <div class="text-weight-bold text-red-9 text-uppercase" style="font-size: 10px;">Cancelled</div>
-                  <div class="icon-premium-box mobile-icon-box bg-red-1 text-red-7">
-                    <q-icon name="block" size="16px" />
-                  </div>
+            <q-card class="mobile-metric-card shadow-soft h-full">
+              <q-card-section class="q-pa-md row items-center no-wrap h-full">
+                <div class="mobile-icon-box-new bg-green-1 text-green-7 q-mr-md flex flex-center">
+                  <q-icon name="task_alt" size="22px" />
                 </div>
-                <div class="text-h4 text-weight-bolder text-dark">{{ stats.cancelled_orders }}</div>
+                <div class="column justify-center">
+                  <div class="text-grey-8 text-weight-medium" style="font-size: 13px;">Complete</div>
+                  <div class="text-h5 text-weight-bolder text-dark" style="margin-top: 2px; line-height: 1;">{{ stats.picked_up_orders }}</div>
+                </div>
               </q-card-section>
             </q-card>
           </div>
         </div>
 
-        <!-- Premium Mobile Revenue Chart -->
+        <!-- Premium Mobile Revenue Chart (Red Gradient Header) -->
         <q-card class="premium-glass-card card-rounded q-mb-lg flex column overflow-hidden">
-          <q-card-section class="panel-header row items-center justify-between q-pa-md bg-transparent q-pb-none">
-            <div class="text-subtitle1 text-weight-bold text-dark row items-center">
-              <div class="header-accent-red q-mr-sm" style="height: 16px; width: 4px;"></div> Revenue
+          <q-card-section class="row items-center justify-between q-pa-md text-white" style="background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%);">
+            <div class="text-subtitle1 text-weight-bold row items-center">
+              Revenue Overview
             </div>
-            <q-btn-dropdown flat dense no-caps class="bg-slate-50 text-dark rounded-borders q-px-sm border-slate-light" size="sm" :label="activeRevenueFilter">
+            <q-btn-dropdown unelevated dense no-caps class="bg-white text-red-9 text-weight-bold rounded-borders q-px-sm shadow-1" size="sm" :label="activeRevenueFilter">
               <q-list>
                 <q-item v-for="filter in ['Daily', 'Weekly', 'Monthly']" :key="filter" clickable v-close-popup @click="activeRevenueFilter = filter">
                   <q-item-section><q-item-label>{{ filter }}</q-item-label></q-item-section>
@@ -325,14 +327,14 @@
             </q-btn-dropdown>
           </q-card-section>
           
-          <q-card-section class="q-pt-sm q-px-md z-top">
-            <div class="text-caption text-grey-6 q-mb-xs">Total Income</div>
+          <q-card-section class="q-pt-md q-px-md z-top text-center">
+            <div class="text-caption text-grey-6 text-uppercase tracking-wide q-mb-xs" style="font-size: 10px;">Total Income</div>
             <div class="text-h3 text-weight-bolder text-dark" style="letter-spacing: -1px;">₱{{ formatNumber(totalRevenue) }}</div>
           </q-card-section>
 
-          <q-card-section class="q-pa-none" style="margin-top: -20px;">
+          <q-card-section class="q-pa-none" style="margin-top: -15px;">
              <div v-if="chartLoading" class="flex flex-center q-py-lg"><q-spinner-dots size="30px" color="red-8" /></div>
-             <VueApexCharts v-else class="full-width" style="width: 100%; display: block;" type="area" height="170" width="100%" :options="chartOptions" :series="chartSeries" />
+             <VueApexCharts v-else class="full-width" style="width: 100%; display: block;" type="area" height="150" width="100%" :options="chartOptions" :series="chartSeries" />
           </q-card-section>
         </q-card>
 
@@ -342,7 +344,7 @@
             <div class="ml-glow-overlay" style="width: 120px; height: 120px;"></div>
             <div class="row items-center justify-between q-mb-md relative-position z-top">
               <div class="row items-center">
-                <q-icon name="model_training" size="22px" color="amber-3" class="q-mr-sm drop-shadow-icon" />
+                <q-icon name="model_training" size="24px" color="amber-3" class="q-mr-sm drop-shadow-icon" />
                 <div class="text-subtitle1 text-weight-bold text-white">Demand Forecast</div>
               </div>
               <q-chip color="white" text-color="indigo-10" size="sm" class="text-weight-bolder shadow-1 q-ma-none">
@@ -360,22 +362,23 @@
               </div>
             </template>
             <template v-else-if="!mlForecast.has_forecast">
-              <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft p-4" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); min-height: 120px;">
+              <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft p-4 bg-indigo-9" style="min-height: 120px; border: 1px solid rgba(255,255,255,0.1);">
                 <div class="text-center z-top q-pa-sm">
-                  <q-icon name="analytics" size="24px" color="indigo-2" class="q-mb-xs opacity-50" />
+                  <q-icon name="analytics" size="28px" color="indigo-2" class="q-mb-xs opacity-50" />
                   <div class="text-caption text-indigo-2 font-monospace text-weight-bold opacity-80" style="font-size: 10px;">AWAITING MORE DATA</div>
                 </div>
               </div>
             </template>
             <template v-else>
               <div class="text-white relative-position z-top">
-                <div v-for="(item, idx) in mlForecast.top_products.slice(0,3)" :key="idx" class="row items-center q-mb-sm q-pa-sm rounded-borders" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.05);">
-                  <div class="text-h6 text-weight-bolder text-amber-3 q-mr-md" style="width: 20px; text-align: center;">{{ idx + 1 }}</div>
-                  <div class="col ellipsis text-weight-bold text-body2 q-pr-sm">{{ item.product_name }}</div>
+                <!-- Sleek pill-style items -->
+                <div v-for="(item, idx) in mlForecast.top_products.slice(0,3)" :key="idx" class="row items-center q-mb-sm q-pa-sm rounded-borders" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(4px);">
+                  <div class="q-mr-sm bg-amber-3 text-indigo-10 flex flex-center text-weight-bolder" style="width: 24px; height: 24px; border-radius: 6px; font-size: 12px;">
+                    {{ idx + 1 }}
+                  </div>
+                  <div class="col ellipsis text-weight-bold text-body2 text-white q-pr-sm">{{ item.product_name }}</div>
                   <div class="col-auto">
-                    <q-chip color="amber-3" text-color="indigo-10" size="sm" class="text-weight-bolder shadow-1 q-ma-none" style="font-size: 11px;">
-                      {{ item.predicted_quantity }}
-                    </q-chip>
+                    <span class="text-amber-3 text-weight-bold" style="font-size: 12px;">{{ item.predicted_quantity }} units</span>
                   </div>
                 </div>
               </div>
@@ -384,35 +387,38 @@
         </q-card>
 
         <!-- Premium Mobile Recent Orders List -->
-        <q-card class="premium-glass-card card-rounded q-mb-xl">
-          <q-card-section class="panel-header row items-center justify-between q-pa-md bg-transparent border-bottom">
-            <div class="text-subtitle1 text-weight-bold text-dark row items-center">
-              <div class="header-accent-red q-mr-sm" style="height: 16px; width: 4px;"></div> Recent Orders
+        <q-card class="premium-glass-card card-rounded q-mb-xl overflow-hidden">
+          <q-card-section class="row items-center justify-between q-pa-md text-white" style="background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%);">
+            <div class="text-subtitle1 text-weight-bold row items-center">
+              Recent Orders
             </div>
-            <q-btn flat dense color="red-9" class="text-weight-bold" size="sm" label="See All" no-caps @click="router.push('/vendor/orders/list')" />
+            <q-btn unelevated dense class="bg-white text-red-9 text-weight-bold rounded-borders q-px-sm shadow-1" size="sm" label="View All" no-caps @click="router.push('/vendor/orders/list')" />
           </q-card-section>
           
-          <q-card-section class="q-pa-none">
+          <q-card-section class="q-pa-sm bg-slate-50">
             <div v-if="recentOrders.length === 0" class="text-center text-grey-5 q-py-lg">No recent orders found.</div>
-            <q-list separator v-else>
-              <q-item v-for="order in recentOrders.slice(0,3)" :key="order.id" clickable v-ripple @click="router.push('/vendor/orders/' + order.id)" class="q-pa-md">
+            
+            <q-list v-else>
+              <q-item v-for="order in recentOrders.slice(0,3)" :key="order.id" clickable v-ripple @click="router.push('/vendor/orders/' + order.id)" class="q-mb-sm bg-white shadow-soft rounded-borders" style="border: 1px solid #f1f5f9; padding: 12px;">
                 
-                <q-item-section avatar>
-                  <q-avatar size="44px" class="shadow-soft border-white bg-blue-grey-1">
+                <q-item-section avatar class="q-pr-sm">
+                  <q-avatar size="44px" class="shadow-1 border-white bg-blue-grey-1">
                     <img v-if="order.avatar" :src="order.avatar" />
                     <q-icon v-else name="person" color="blue-grey-6" size="22px" />
                   </q-avatar>
                 </q-item-section>
 
                 <q-item-section>
-                  <q-item-label class="text-weight-bold text-blue-grey-9 text-body1 ellipsis">{{ order.customer }}</q-item-label>
-                  <q-item-label caption class="text-weight-bold text-red-8 font-monospace q-mt-xs" style="font-size: 11px;">#{{ order.id }}</q-item-label>
+                  <q-item-label class="text-weight-bold text-blue-grey-9 text-body2 ellipsis">{{ order.customer }}</q-item-label>
+                  <q-item-label class="q-mt-xs">
+                    <span class="text-weight-bold text-red-8 font-monospace q-px-sm bg-red-1" style="border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 6px; font-size: 11px; padding-top: 2px; padding-bottom: 2px; display: inline-block;">#{{ order.id }}</span>
+                  </q-item-label>
                 </q-item-section>
 
                 <q-item-section side class="items-end">
                   <q-item-label class="text-weight-bolder text-dark text-subtitle1">₱{{ formatNumber(order.price) }}</q-item-label>
                   <q-item-label>
-                    <q-chip dense :color="getStatusColor(order.status)" text-color="white" class="text-weight-bold shadow-soft q-ma-none q-mt-xs" style="font-size: 9px; padding: 0 6px;">
+                    <q-chip :color="getStatusColor(order.status)" text-color="white" class="text-weight-bold shadow-soft q-ma-none q-mt-xs" style="font-size: 11px; height: 22px; padding: 0 10px;">
                       {{ order.status }}
                     </q-chip>
                   </q-item-label>
@@ -435,7 +441,6 @@
               <q-icon name="receipt_long" size="26px" />
             </q-btn>
           </div>
-          <!-- UPDATE THIS PATH IF YOUR PRODUCTS ROUTE IS DIFFERENT -->
           <div class="nav-item-wrapper" @click="router.push('/vendor/products/list')">
             <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
               <q-icon name="inventory_2" size="26px" />
@@ -873,7 +878,10 @@ watch(activeRevenueFilter, () => { fetchChartData() })
   /* Keeps the slate background and glows from desktop, adds room for navbar */
   .vendor-page.mobile-page-padding { padding: 12px 8px calc(80px + env(safe-area-inset-bottom)) 8px !important; }
   .mobile-only { display: block; }
-  .mobile-icon-box { width: 36px; height: 36px; border-radius: 10px; }
+  
+  /* Metric Icon Styling */
+  .mobile-metric-card { border: 1px solid #f1f5f9; border-radius: 16px; background: #ffffff; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03); }
+  .mobile-icon-box-new { width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; }
   
   /* Divider styling for Mobile Lists */
   .border-bottom { border-bottom: 1px solid rgba(15, 23, 42, 0.05); }
