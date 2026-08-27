@@ -1,12 +1,13 @@
 <template>
-  <q-page class="vendor-page relative-position overflow-hidden">
+  <q-page class="vendor-page relative-position overflow-hidden" :class="{ 'mobile-page-padding': $q.screen.lt.md }">
     <!-- Subtle Ambient Background Glows (Brand Aligned) -->
-    <div class="bg-glow bg-glow-primary"></div>
-    <div class="bg-glow bg-glow-secondary"></div>
+    <div class="bg-glow bg-glow-primary desktop-only"></div>
+    <div class="bg-glow bg-glow-secondary desktop-only"></div>
 
     <div class="page-container relative-position" style="z-index: 1;">      
-      <!-- ================= HEADER AREA ================= -->
-      <div class="page-header q-mb-xl q-mt-sm row items-center justify-between">
+      
+      <!-- ================= DESKTOP HEADER AREA ================= -->
+      <div v-if="!$q.screen.lt.md" class="page-header q-mb-xl q-mt-sm row items-center justify-between">
         <div class="row items-center">
           <div class="glass-icon-box q-mr-md">
             <q-icon name="inventory_2" size="26px" class="text-brand-red" />
@@ -18,9 +19,8 @@
         </div>
       </div>
 
-      <!-- ================= ML INSIGHTS (TOP ROW) ================= -->
-      <div class="row q-col-gutter-lg q-mb-xl">
-        
+      <!-- ================= ML INSIGHTS (DESKTOP) ================= -->
+      <div v-if="!$q.screen.lt.md" class="row q-col-gutter-lg q-mb-xl">
         <!-- Restock Alert Card -->
         <div class="col-12 col-md-4">
           <q-card class="premium-glass-card h-full flex column card-hover" style="border-radius: 16px;">
@@ -86,11 +86,9 @@
         </div>
       </div>
 
-      <!-- ================= CONTROLS & TABLE ================= -->
-      <q-card class="premium-glass-card card-hover" style="border-radius: 16px;">
+      <!-- ================= DESKTOP PRODUCT LIST ================= -->
+      <q-card v-if="!$q.screen.lt.md" class="premium-glass-card card-hover" style="border-radius: 16px;">
         <q-card-section class="panel-header q-pa-lg border-bottom">
-          
-          <!-- Refined Products Heading with Red Accent Line -->
           <div class="row items-center justify-between q-mb-lg">
             <div class="text-h5 text-weight-bold text-dark row items-center">
               <div class="header-accent-red q-mr-md"></div>
@@ -100,8 +98,6 @@
 
           <!-- Controls: Unified Toolbar -->
           <div class="row items-center justify-between q-col-gutter-sm">
-            
-            <!-- Search & Filter Area -->
             <div class="col-12 col-md-6 row items-center no-wrap q-gutter-x-sm">
               <q-input v-model="search" outlined dense class="custom-glass-input exact-height col-grow" placeholder="Search products...">
                 <template v-slot:prepend>
@@ -141,8 +137,7 @@
               </q-btn>
             </div>
 
-            <!-- Action Area -->
-            <div class="row q-gutter-md col-12 col-md-auto q-mt-sm q-md-none justify-end">
+            <div class="row q-gutter-md col-12 col-md-auto justify-end">
               <q-btn outline icon="download" label="Export" color="blue-grey-4" text-color="blue-grey-8" no-caps class="btn-glass-outline exact-height text-weight-bold q-px-md" @click="openExportWizard" />
               <q-btn unelevated icon="add" label="Add Product" color="red-9" no-caps class="btn-premium exact-height text-white text-weight-bold q-px-md" @click="showAddModal = true" />
             </div>
@@ -158,7 +153,6 @@
           row-key="inventory_id"
           :loading="loading"
         >
-          <!-- Empty State -->
           <template #no-data>
             <div class="full-width row flex-center text-grey-6 q-pa-xl empty-state-glass">
               <div class="text-center">
@@ -169,17 +163,15 @@
             </div>
           </template>
 
-          <!-- Image Cell -->
           <template #body-cell-image="props">
             <q-td :props="props">
-              <q-avatar size="44px" square class="bg-slate-100 shadow-soft" style="border-radius: 8px; border: 1px solid #e2e8f0;">
-                <img v-if="props.row.image_url" :src="props.row.image_url" style="object-fit: cover;" />
+              <q-avatar size="44px" square class="bg-slate-50 shadow-soft" style="border-radius: 8px; border: 1px solid #e2e8f0;">
+                <img v-if="props.row.image_url" :src="props.row.image_url" style="object-fit: contain; padding: 4px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));" />
                 <q-icon v-else name="image" color="blue-grey-3" size="24px" />
               </q-avatar>
             </q-td>
           </template>
           
-          <!-- Quantity Cell -->
           <template #body-cell-quantity="props">
             <q-td :props="props">
               <div class="text-weight-bold" :class="props.row.available_quantity > 0 ? 'text-blue-grey-9' : 'text-red-7'">
@@ -191,7 +183,6 @@
             </q-td>
           </template>
 
-          <!-- Price Cell (With generous right padding to separate from status) -->
           <template #body-cell-price="props">
             <q-td :props="props" class="text-weight-bold text-blue-grey-9 q-pr-xl">
               <span v-if="props.row.variants && props.row.variants.length > 0" class="text-caption text-blue-grey-4 font-medium q-mr-xs">from</span>
@@ -199,7 +190,6 @@
             </q-td>
           </template>
           
-          <!-- Status Cell (Bigger & Bolder with Left padding protection) -->
           <template #body-cell-status="props">
             <q-td :props="props" class="q-pl-lg">
               <q-chip :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bolder shadow-1 q-px-md" style="font-size: 12.5px; min-height: 26px;">
@@ -208,7 +198,6 @@
             </q-td>
           </template>
 
-          <!-- Action Menu Cell (Three Dots) -->
           <template #body-cell-action="props">
             <q-td :props="props" class="text-right q-pr-lg">
               <q-btn flat round dense icon="more_vert" color="blue-grey-4" class="hover-action-btn">
@@ -229,6 +218,206 @@
           </template>
         </q-table>
       </q-card>
+
+      <!-- ================= MOBILE PRODUCT LIST (MOCKUP STYLE) ================= -->
+      <div v-else class="mobile-products-layout q-pb-xl">
+        
+        <!-- Mobile Header -->
+        <div class="page-header q-mb-lg q-mt-sm row items-center justify-between">
+          <div class="row items-center">
+            <div class="glass-icon-box q-mr-md" style="width: 44px; height: 44px;">
+              <q-icon name="inventory_2" size="22px" class="text-brand-red" />
+            </div>
+            <div>
+              <h1 class="text-h5 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight leading-tight">Inventory Management</h1>
+              <p class="text-caption text-blue-grey-5 q-mt-xs q-mb-none font-medium">Monitor and update your catalog.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ML Insights (Stacked Vertically, Spaced, Proportional) -->
+        <div class="q-mb-xl q-gutter-y-md">
+          <!-- Restock Alert -->
+          <q-card class="premium-glass-card shadow-soft border-slate-light" style="border-radius: 12px;">
+            <q-card-section class="q-pa-md">
+              <div class="row items-center justify-between q-mb-xs">
+                <div class="row items-center">
+                  <q-icon name="warning_amber" size="18px" color="red-8" class="q-mr-sm" />
+                  <div class="text-weight-bold text-grey-7 text-uppercase" style="font-size: 11px;">Restock Alert</div>
+                </div>
+                <div class="text-caption text-weight-bold text-red-9 bg-red-50 q-px-sm q-py-xs rounded-borders border-red-light">
+                  {{ mlInsights.daysUntilStockout || 'N/A' }} Days
+                </div>
+              </div>
+              <div class="text-subtitle1 text-weight-bold text-dark leading-tight ellipsis q-mt-sm">{{ mlInsights.restockProduct || 'Analyzing...' }}</div>
+            </q-card-section>
+          </q-card>
+
+          <!-- Upcoming Trend -->
+          <q-card class="premium-glass-card shadow-soft border-slate-light" style="border-radius: 12px;">
+            <q-card-section class="q-pa-md">
+              <div class="row items-center justify-between q-mb-xs">
+                <div class="row items-center">
+                  <q-icon name="trending_up" size="18px" color="blue-8" class="q-mr-sm" />
+                  <div class="text-weight-bold text-grey-7 text-uppercase" style="font-size: 11px;">Upcoming Trend</div>
+                </div>
+                <div class="text-caption text-weight-bold text-blue-9 bg-blue-50 q-px-sm q-py-xs rounded-borders border-blue-light">
+                  {{ mlInsights.trendMultiplier || '0' }}x Demand
+                </div>
+              </div>
+              <div class="text-subtitle1 text-weight-bold text-dark leading-tight ellipsis q-mt-sm">{{ mlInsights.trendingCategory || 'Gathering Data...' }}</div>
+            </q-card-section>
+          </q-card>
+
+          <!-- Top Performance -->
+          <q-card class="premium-glass-card shadow-soft border-slate-light" style="border-radius: 12px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+            <q-card-section class="q-pa-md">
+              <div class="row items-center justify-between q-mb-xs">
+                <div class="row items-center">
+                  <q-icon name="emoji_events" size="18px" color="amber-4" class="q-mr-sm" />
+                  <div class="text-weight-bold text-amber-2 text-uppercase" style="font-size: 11px;">Top Performance</div>
+                </div>
+                <div class="text-caption text-weight-bold text-white bg-amber-9 q-px-sm q-py-xs rounded-borders" style="border: 1px solid rgba(255,255,255,0.2);">
+                  #1 Sales
+                </div>
+              </div>
+              <div class="text-subtitle1 text-weight-bold text-white leading-tight ellipsis q-mt-sm">{{ mlInsights.topCategory || 'Calculating...' }}</div>
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <!-- Header & Add Button -->
+        <div class="row items-center justify-between q-mb-md">
+          <div class="row items-center">
+            <!-- Restored Red Bar -->
+            <div style="width: 5px; height: 24px; background-color: #b91c1c; border-radius: 4px;" class="q-mr-sm"></div>
+            <h2 class="text-h5 text-weight-bolder text-red-9 q-ma-none tracking-tight" style="line-height: 1;">Products</h2>
+          </div>
+          <!-- Properly sized Add Product Button -->
+          <q-btn unelevated color="red-9" icon="add" label="Add Product" no-caps class="text-weight-bold shadow-2" style="border-radius: 8px; font-size: 13px; padding: 6px 16px;" @click="showAddModal = true" />
+        </div>
+
+        <!-- Search Bar -->
+        <q-input v-model="search" outlined dense placeholder="Search products..." class="q-mb-md bg-white shadow-soft" style="border-radius: 8px;">
+          <template v-slot:prepend><q-icon name="search" size="20px" color="grey-6" /></template>
+        </q-input>
+
+        <!-- Export & Filter Controls -->
+        <div class="row q-col-gutter-sm q-mb-lg">
+          <div class="col-6">
+            <q-btn outline icon="description" label="Export" color="blue-grey-3" text-color="blue-grey-8" class="full-width bg-white text-weight-medium" style="border-radius: 8px; height: 36px; font-size: 13px;" no-caps @click="openExportWizard" />
+          </div>
+          <div class="col-6">
+            <q-btn outline icon="filter_list" label="Filter" color="blue-grey-3" text-color="blue-grey-8" class="full-width bg-white text-weight-medium" style="border-radius: 8px; height: 36px; font-size: 13px;" no-caps>
+              <q-menu class="premium-dropdown-list shadow-4 q-mt-xs" style="min-width: 280px; border-radius: 12px; padding: 8px;">
+                <div class="q-pa-md">
+                  <div class="row items-center justify-between q-mb-md">
+                    <div class="text-subtitle1 text-weight-bolder text-slate-800">Filters</div>
+                    <q-btn flat label="Clear" color="red-9" size="sm" class="text-weight-bold" @click="resetFilters" v-close-popup no-caps />
+                  </div>
+                  <div class="q-mb-md">
+                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase">Category</div>
+                    <q-select v-model="filters.category" :options="[{label: 'All Categories', value: 'all'}, ...categoryOptions]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                  </div>
+                  <div class="q-mb-md">
+                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase">Stock Level</div>
+                    <q-select v-model="filters.stock" :options="[{label: 'All', value: 'all'}, {label: 'Low Stock (< 10)', value: 'low_stock'}]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                  </div>
+                  <div class="q-mb-md">
+                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase">Status</div>
+                    <q-select v-model="filters.status" :options="[{label: 'All', value: 'all'}, {label: 'Active', value: 'active'}, {label: 'Archived', value: 'archived'}]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                  </div>
+                  <div class="q-mb-sm">
+                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase">Price</div>
+                    <q-select v-model="filters.priceSort" :options="[{label: 'Default', value: 'default'}, {label: 'Low to High', value: 'low_to_high'}, {label: 'High to Low', value: 'high_to_low'}]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                  </div>
+                </div>
+              </q-menu>
+            </q-btn>
+          </div>
+        </div>
+
+        <!-- Product List Cards (Less Compact) -->
+        <div v-if="loading" class="flex flex-center q-py-xl">
+          <q-spinner-dots size="40px" color="red-9" />
+        </div>
+        <div v-else-if="filteredProducts.length === 0" class="text-center text-grey-5 q-py-xl">
+          <q-icon name="inventory_2" size="48px" class="q-mb-sm opacity-50" />
+          <div>No products found.</div>
+        </div>
+        <div v-else>
+          <div v-for="product in filteredProducts" :key="product.inventory_id" class="q-mb-md">
+            <!-- Premium Mobile List Card -->
+            <q-card flat bordered class="bg-white relative-position shadow-soft border-slate-light" style="border-radius: 12px;">
+              
+              <!-- Absolute Top Right Action Menu -->
+              <div class="absolute-top-right q-pa-sm" style="z-index: 2;">
+                <q-btn flat round dense icon="more_vert" color="grey-7">
+                  <q-menu class="premium-dropdown-list shadow-4" anchor="bottom right" self="top right">
+                    <q-list style="min-width: 150px; padding: 4px;">
+                      <q-item clickable @click="openDetails(product)" class="hover-grey rounded-borders">
+                        <q-item-section class="text-weight-medium text-slate-700">View & Edit</q-item-section>
+                      </q-item>
+                      <q-item clickable v-if="product.status !== 'archived'" @click="deactivateProduct(product)" class="hover-red rounded-borders q-mt-xs">
+                        <q-item-section class="text-weight-bold text-red-9">Archive</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-menu>
+                </q-btn>
+              </div>
+              
+              <q-card-section class="q-pa-md row items-center no-wrap">
+                <!-- Rounded Square Box Container for Image (Smaller) -->
+                <div class="q-mr-md flex flex-center bg-slate-50 shadow-soft" style="width: 64px; height: 64px; border-radius: 10px; border: 1px solid #f1f5f9; flex-shrink: 0; padding: 4px;">
+                  <!-- Drop shadow applied to image to create true depth inside the box -->
+                  <img v-if="product.image_url" :src="product.image_url" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.15));" />
+                  <q-icon v-else name="inventory_2" color="grey-4" size="28px" />
+                </div>
+                
+                <!-- Info Column -->
+                <div class="col" style="min-width: 0; padding-right: 20px;">
+                  <div class="text-weight-bold text-dark ellipsis" style="font-size: 14px;">{{ product.product_name }}</div>
+                  <div class="text-caption text-grey-6 ellipsis q-mb-xs" style="font-size: 12px;">{{ product.category?.category_name || 'Uncategorized' }}</div>
+                  
+                  <div class="row items-center justify-between q-mt-xs">
+                    <div class="text-weight-bold text-deep-orange-9" style="font-size: 14px;">₱ {{ formatNumber(product.price) }}</div>
+                    
+                    <!-- Exact Pastel Status Chips -->
+                    <q-chip v-if="product.status === 'active'" color="green-1" text-color="green-8" size="sm" class="text-weight-bold q-ma-none" style="border-radius: 4px; height: 20px;">Active</q-chip>
+                    <q-chip v-else-if="product.status === 'archived'" color="grey-2" text-color="grey-8" size="sm" class="text-weight-bold q-ma-none" style="border-radius: 4px; height: 20px;">Archived</q-chip>
+                    <q-chip v-else color="red-1" text-color="red-8" size="sm" class="text-weight-bold q-ma-none" style="border-radius: 4px; height: 20px;">Deactivated</q-chip>
+                  </div>
+                </div>
+              </q-card-section>
+
+            </q-card>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= PREMIUM MOBILE BOTTOM NAVIGATION ================= -->
+      <div v-if="$q.screen.lt.md" class="mobile-bottom-nav row justify-around items-center">
+        <div class="nav-item-wrapper" @click="$router.push('/vendor/dashboard')">
+          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
+            <q-icon name="home" size="26px" />
+          </q-btn>
+        </div>
+        <div class="nav-item-wrapper" @click="$router.push('/vendor/orders/list')">
+          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
+            <q-icon name="receipt_long" size="26px" />
+          </q-btn>
+        </div>
+        <div class="nav-item-wrapper" @click="$router.push('/vendor/products/list')">
+          <q-btn flat round class="mobile-nav-btn nav-active shadow-3">
+            <q-icon name="inventory_2" size="24px" />
+          </q-btn>
+        </div>
+        <div class="nav-item-wrapper" @click="$router.push('/vendor/sales')">
+          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
+            <q-icon name="analytics" size="26px" />
+          </q-btn>
+        </div>
+      </div>
 
     </div>
 
@@ -595,7 +784,7 @@ const fetchMlInsights = async () => {
       mlInsights.value.restockProduct = res.data.restockProduct
       mlInsights.value.daysUntilStockout = res.data.daysUntilStockout
       mlInsights.value.trendingCategory = res.data.trendingCategory
-      mlInsights.value.trendMultiplier = "1.5" // Hardcoded placeholder for UI purposes since RF predicts quantity, not explicitly multiplier
+      mlInsights.value.trendMultiplier = "1.5" // Placeholder
       mlInsights.value.topCategory = res.data.topCategory
     } else {
       mlInsights.value.restockProduct = 'Awaiting more data'
@@ -666,6 +855,7 @@ onMounted(() => {
 .leading-tight { line-height: 1.2; }
 .font-medium { font-weight: 500; }
 .z-top { z-index: 1; }
+.shrink-none { flex-shrink: 0; }
 
 /* Header Glass Icon Box */
 .glass-icon-box {
@@ -860,5 +1050,52 @@ onMounted(() => {
 .format-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Mobile specific styling */
+@media (max-width: 767px) {
+  .vendor-page.mobile-page-padding { padding: 16px 16px calc(90px + env(safe-area-inset-bottom)) 16px !important; }
+  .desktop-only { display: none !important; }
+  
+  /* Mobile Bottom Navigation */
+  .mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(75px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
+    z-index: 2000;
+    box-shadow: 0 -10px 25px rgba(15, 23, 42, 0.05);
+  }
+  
+  .nav-item-wrapper {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .mobile-nav-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    padding: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .nav-active {
+    background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important; /* Premium Brand Red */
+    color: #ffffff !important;
+    box-shadow: 0 8px 16px rgba(185, 28, 28, 0.35) !important;
+    transform: translateY(-4px);
+  }
+  .nav-active .q-icon {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  }
 }
 </style>
