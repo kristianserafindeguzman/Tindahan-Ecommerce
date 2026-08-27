@@ -1,19 +1,35 @@
 <template>
-  <!-- 1. MAIN FORM MODAL (Bubukas lang pag pinindot ang Add Product) -->
-  <q-dialog v-model="isOpen" persistent @hide="resetForm">
-    <q-card style="width: 850px; max-width: 95vw; border-radius: 12px;" class="bg-white overflow-hidden shadow-4">
+  <!-- 1. MAIN FORM MODAL -->
+  <q-dialog 
+    v-model="isOpen" 
+    persistent 
+    @hide="resetForm"
+    transition-show="scale"
+    transition-hide="scale"
+  >
+    <!-- 
+      FIXED: Added 'no-wrap' and 'overflow: hidden' to firmly lock the modal's shape.
+      The 'max-height: 85vh' ensures it never bleeds off the screen.
+    -->
+    <q-card 
+      class="bg-white column no-wrap shadow-4"
+      style="width: 850px; max-width: 92vw; max-height: 85vh; border-radius: 12px; overflow: hidden;"
+    >
       
-      <!-- Modal Header -->
-      <q-card-section class="row items-center q-px-xl q-py-md header-gradient text-white">
-        <div class="text-h6 text-weight-bolder tracking-tight">Add New Product</div>
+      <!-- Modal Header (Locked to Top via 'col-auto') -->
+      <q-card-section 
+        class="col-auto row items-center text-white"
+        :class="$q.screen.lt.md ? 'q-px-md q-py-sm bg-brand-red' : 'q-px-xl q-py-md header-gradient'"
+      >
+        <div class="text-subtitle1 text-md-h6 text-weight-bold tracking-tight" style="font-size: 16px;">Add New Product</div>
         <q-space />
-        <q-btn icon="close" flat round dense v-close-popup color="white" size="sm" class="opacity-80 hover-opacity-100" />
+        <q-btn icon="close" flat round dense v-close-popup color="white" :size="$q.screen.lt.md ? 'md' : 'sm'" class="opacity-80 hover-opacity-100" />
       </q-card-section>
 
-      <!-- Form Area -->
-      <q-card-section class="q-pt-xl q-px-xl q-pb-xl">
-        <q-form @submit.prevent="submitForm">
-          <div class="row q-col-gutter-xl">
+      <!-- Form Area (Scrollable body securely inside 'col scroll') -->
+      <q-card-section class="col scroll" :class="$q.screen.lt.md ? 'q-pa-md' : 'q-pt-xl q-px-xl q-pb-xl'">
+        <q-form id="addProductForm" @submit.prevent="submitForm">
+          <div class="row q-col-gutter-y-lg" :class="$q.screen.lt.md ? '' : 'q-col-gutter-x-xl'">
             
             <!-- LEFT COLUMN: DETAILS -->
             <div class="col-12 col-md-7">
@@ -22,10 +38,10 @@
                 <q-input v-model="form.product_name" outlined dense placeholder="e.g., Classic T-Shirt" :rules="[val => !!val || 'Product name is required']" hide-bottom-space class="custom-input" />
               </div>
 
-              <div class="q-mb-lg">
+              <div class="q-mb-md">
                 <div class="input-label q-mb-xs">Category</div>
                 <q-select v-model="form.category_id" :options="categories" option-value="category_id" option-label="category_name" emit-value map-options outlined dense :rules="[val => !!val || 'Category is required']" hide-bottom-space class="custom-input" placeholder="Select a category" />
-                <div v-if="form.category_id" class="text-caption text-blue-grey-6 q-mt-sm">
+                <div v-if="form.category_id && !$q.screen.lt.md" class="text-caption text-blue-grey-6 q-mt-sm">
                     <q-icon name="info" class="q-mr-xs" />
                     {{ selectedAddCategoryGuide }}
                 </div>
@@ -33,13 +49,18 @@
 
               <div class="q-mb-md">
                 <div class="input-label q-mb-xs">Description (Optional)</div>
-                <q-input v-model="form.description" type="textarea" outlined dense placeholder="e.g., Description of the product" hide-bottom-space class="custom-input" />
+                <q-input v-model="form.description" type="textarea" outlined dense placeholder="e.g., Description of the product" hide-bottom-space class="custom-input" :rows="$q.screen.lt.md ? 4 : 3" />
               </div>
 
               <div class="q-mb-md q-mt-md">
-                <q-checkbox v-model="hasVariants" label="This product has different sizes/variants" color="red-9" class="custom-checkbox text-weight-bold text-slate-700" />
+                <q-checkbox v-model="hasVariants" color="blue-grey-6" class="custom-checkbox q-ma-none">
+                  <div class="text-weight-bold text-slate-700" style="font-size: 13px; line-height: 1.4;">
+                    This product has different<br v-if="$q.screen.lt.md" />sizes/variants
+                  </div>
+                </q-checkbox>
               </div>
 
+              <!-- Price and Quantity Side-by-Side -->
               <div v-if="!hasVariants" class="row q-col-gutter-md q-mt-xs">
                 <div class="col-6">
                   <div class="input-label q-mb-xs">Price (₱)</div>
@@ -51,6 +72,7 @@
                 </div>
               </div>
 
+              <!-- Variants UI -->
               <q-slide-transition>
                 <div v-if="hasVariants" class="variants-card q-mt-sm q-pa-md">
                   <div class="text-subtitle2 text-weight-bold text-slate-700 q-mb-md">Variants (Sizes)</div>
@@ -80,56 +102,54 @@
               <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="onFileSelected" />
 
               <div v-if="imagePreview" class="q-mb-md">
-                <q-img :src="imagePreview" ratio="1" class="rounded-borders shadow-2" />
+                <q-img :src="imagePreview" ratio="1" class="rounded-borders shadow-2" style="border-radius: 12px;" />
                 <div class="row q-gutter-sm q-mt-sm justify-center">
-                  <q-btn outline color="negative" icon="delete" label="Remove" @click="removePhoto" />
-                  <q-btn outline color="primary" icon="crop" label="Crop Photo" @click="openCropperForAdd" />
+                  <q-btn outline color="negative" icon="delete" label="Remove" @click="removePhoto" no-caps size="sm" class="text-weight-bold" style="border-radius: 6px;" />
+                  <q-btn outline color="primary" icon="crop" label="Crop Photo" @click="openCropperForAdd" no-caps size="sm" class="text-weight-bold" style="border-radius: 6px;" />
                 </div>
               </div>
 
+              <!-- Upload Mockup Match Box -->
               <div v-else class="image-upload-box flex-1 relative-position">
-                <!-- Ito ang mag-tritrigger sa pagpili kung Camera o Browse -->
-                <div class="flex column flex-center full-height w-full q-pa-lg text-center cursor-pointer hover-bg-light" @click="showOptionMenu = true">
+                <div class="flex column flex-center full-height w-full q-pa-lg text-center cursor-pointer hover-bg-light" @click="showOptionMenu = true" style="min-height: 220px;">
                   <q-icon name="cloud_upload" size="64px" color="blue-grey-3" class="q-mb-sm opacity-80" />
                   <div class="text-subtitle1 text-weight-bolder text-slate-700">Upload Product Image</div>
-                  <div class="text-caption text-slate-500">Click to add a photo</div>
                 </div>
               </div>
             </div>
             
           </div>
-
-          <!-- FOOTER ACTIONS -->
-          <div class="row justify-end q-mt-xl q-pt-md border-top-light">
-            <q-btn flat label="Cancel" color="grey-8" no-caps v-close-popup class="text-weight-bold q-mr-md" />
-            <q-btn type="submit" unelevated label="SAVE PRODUCT" class="btn-save text-white text-weight-bold" no-caps :loading="saving" />
-          </div>
-
         </q-form>
       </q-card-section>
+
+      <!-- FOOTER ACTIONS (Locked to Bottom via 'col-auto') -->
+      <q-card-actions class="col-auto bg-white border-top-light" :class="$q.screen.lt.md ? 'q-pa-md justify-between' : 'q-pa-lg justify-end q-pt-md'">
+        <q-btn flat label="Cancel" color="blue-grey-8" no-caps v-close-popup class="text-weight-bold q-mr-sm" />
+        <!-- Bound to the click event so it submits perfectly without needing HTML form logic -->
+        <q-btn unelevated label="SAVE PRODUCT" color="red-9" class="btn-save text-white text-weight-bold" no-caps :loading="saving" @click="submitForm" />
+      </q-card-actions>
+      
     </q-card>
   </q-dialog>
 
   <!-- 2. OPTION MENU MODAL (Yung puting pop-up) -->
-  <q-dialog v-model="showOptionMenu">
-    <q-card style="width: 400px; max-width: 90vw; border-radius: 12px;" class="bg-white q-pa-sm">
-      <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6 text-weight-bolder text-slate-700">Add Product Photo</div>
+  <q-dialog v-model="showOptionMenu" position="bottom">
+    <q-card style="width: 100%; max-width: 500px; border-radius: 16px 16px 0 0;" class="bg-white q-pa-md q-pb-xl">
+      <q-card-section class="row items-center q-pb-sm">
+        <div class="text-subtitle1 text-weight-bolder text-slate-700">Add Product Photo</div>
         <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
+        <q-btn icon="close" flat round dense v-close-popup color="grey-6" />
       </q-card-section>
 
-      <q-card-section class="q-pt-lg q-pb-lg">
+      <q-card-section class="q-pt-sm q-pb-md">
         <div class="row q-col-gutter-md flex-center">
           <div class="col-12">
-            <!-- Pag pinindot 'to, bubukas diretso yung camera -->
             <q-btn unelevated icon="camera_alt" label="OPEN CAMERA" class="full-width text-weight-bold btn-save text-white" style="border-radius: 8px; padding: 12px;" @click="openCameraViewfinder" />
           </div>
-          <div class="col-12 text-center text-weight-bold text-slate-400 q-py-sm">
+          <div class="col-12 text-center text-weight-bold text-slate-400 q-py-xs">
             OR
           </div>
           <div class="col-12">
-            <!-- Pag pinindot 'to, bubukas folder mo -->
             <q-btn outline icon="cloud_upload" label="UPLOAD FROM DEVICE" class="full-width text-weight-bold btn-outline-dark" style="border-radius: 8px; padding: 12px; border-width: 2px;" @click="triggerDeviceUpload" />
           </div>
         </div>
@@ -137,21 +157,21 @@
     </q-card>
   </q-dialog>
 
-  <!-- 3. CAMERA VIEWFINDER MODAL (Diretso na dito. WALA NANG DARK MENU) -->
-  <q-dialog v-model="showCameraLens" persistent @show="startCamera" @hide="stopCamera">
-    <q-card style="width: 650px; max-width: 95vw; border-radius: 12px;" class="bg-white overflow-hidden shadow-4">
-      <q-card-section class="row items-center q-px-lg q-py-md bg-slate-50 border-bottom-light">
+  <!-- 3. CAMERA VIEWFINDER MODAL -->
+  <q-dialog v-model="showCameraLens" persistent @show="startCamera" @hide="stopCamera" :maximized="$q.screen.lt.md" transition-show="slide-up" transition-hide="slide-down">
+    <q-card :style="$q.screen.lt.md ? '' : 'width: 650px; max-width: 95vw; border-radius: 12px;'" class="bg-white overflow-hidden shadow-4 flex column">
+      <q-card-section class="col-auto row items-center q-px-md q-py-sm bg-slate-50 border-bottom-light shrink-none">
         <div class="text-subtitle1 text-weight-bolder text-slate-700">Take Product Photo</div>
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup color="grey-7" class="hover-red" />
       </q-card-section>
 
-      <q-card-section class="q-pa-lg flex flex-center bg-black">
+      <q-card-section class="col q-pa-none flex flex-center bg-black">
         <video ref="videoElement" autoplay playsinline class="camera-feed"></video>
       </q-card-section>
 
-      <q-card-actions align="center" class="q-pa-md bg-white">
-        <q-btn unelevated icon="camera" label="CAPTURE PHOTO" class="btn-save text-white text-weight-bold" no-caps @click="capturePhoto" />
+      <q-card-actions align="center" class="col-auto q-pa-md bg-white border-top-light shrink-none">
+        <q-btn unelevated icon="camera" label="CAPTURE PHOTO" class="btn-save text-white text-weight-bold full-width" style="max-width: 300px; padding: 12px;" no-caps @click="capturePhoto" />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -216,8 +236,8 @@ const form = ref({
 // === FUNCTIONS PARA SA OPTIONS AT CAMERA === //
 
 const openCameraViewfinder = () => {
-  showOptionMenu.value = false // Isasara yung puting menu
-  showCameraLens.value = true  // Bubuksan rekta yung camera feed
+  showOptionMenu.value = false 
+  showCameraLens.value = true 
 }
 
 const triggerDeviceUpload = () => {
@@ -244,7 +264,7 @@ const stopCamera = () => {
   }
 }
 
-// Para i-capture yung photo galing sa video feed
+// Capture Photo
 const capturePhoto = () => {
   if (!videoElement.value) return
   const canvas = document.createElement('canvas')
@@ -259,13 +279,12 @@ const capturePhoto = () => {
     form.value.product_picture = file
     imagePreview.value = dataUrl
     
-    // Isara na yung camera lens
     stopCamera()
     showCameraLens.value = false
   }, 'image/png')
 }
 
-// Para sa regular file upload (Browse)
+// Browse File
 const onFileSelected = (event) => {
   const file = event.target.files[0]
   if (file) {
@@ -347,24 +366,23 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .header-gradient { background: linear-gradient(135deg, #B91C1C 0%, #7F1D1D 100%); }
+.bg-brand-red { background-color: #b91c1c !important; }
 .tracking-tight { letter-spacing: -0.02em; }
 .opacity-80 { opacity: 0.8; transition: opacity 0.2s ease; }
 .hover-opacity-100:hover { opacity: 1; }
 
-.text-brand-red { color: #cc3333; }
 .text-slate-700 { color: #334155; }
 .text-slate-500 { color: #64748b; }
 .text-slate-400 { color: #94a3b8; }
-.input-label { font-size: 13px; font-weight: 700; color: #2F3C4D; }
-.hover-underline:hover { text-decoration: underline; }
+.input-label { font-size: 13px; font-weight: 700; color: #334155; }
 
 .custom-input :deep(.q-field__control) { border-radius: 8px; background-color: #ffffff; }
 .custom-input :deep(.q-field__control:before) { border: 1px solid #e2e8f0; }
 .custom-input :deep(.q-field--focused .q-field__control) { box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3); border-color: #3b82f6; }
-.custom-input :deep(.q-placeholder) { color: #94a3b8; }
+.custom-input :deep(.q-placeholder) { color: #94a3b8; font-weight: 400; }
 
 .custom-checkbox :deep(.q-checkbox__bg) { border: 1.5px solid #94a3b8; border-radius: 4px; width: 20px; height: 20px; }
-.custom-checkbox :deep(.q-checkbox__inner--truthy .q-checkbox__bg) { background: #cc3333; border-color: #cc3333; }
+.custom-checkbox :deep(.q-checkbox__inner--truthy .q-checkbox__bg) { background: #b91c1c; border-color: #b91c1c; }
 
 .variants-card { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
 .variant-input :deep(.q-field__control) { border-radius: 6px; height: 38px; }
@@ -372,19 +390,21 @@ onBeforeUnmount(() => {
 .variant-input :deep(.q-field--focused .q-field__control) { border-color: #3b82f6 !important; box-shadow: 0 0 0 1px #3b82f6 !important; }
 .btn-add-variant { border-radius: 6px; color: #475569 !important; border-color: #cbd5e1 !important; font-weight: 600; padding: 4px 12px; }
 
-.image-upload-box { border: 2px dashed #94a3b8; border-radius: 12px; background-color: #f1f5f9; min-height: 280px; overflow: hidden; transition: all 0.2s ease; }
-.image-upload-box:hover { border-color: #64748b; }
+/* Dashboard styled image upload box */
+.image-upload-box { border: 2px dashed #94a3b8; border-radius: 12px; background-color: #f8fafc; overflow: hidden; transition: all 0.2s ease; }
+.image-upload-box:hover { border-color: #64748b; background-color: #f1f5f9; }
 .hover-bg-light:hover { background-color: #e2e8f0; }
 .preview-img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
 .hidden { display: none; }
 
 .btn-outline-dark { color: #334155 !important; border-color: #334155 !important; }
-.border-top-light { border-top: 1px solid #f1f5f9; }
-.btn-save { background-color: #cc3333 !important; border-radius: 8px; padding: 8px 28px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-.btn-save:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(204, 51, 51, 0.3); }
+.border-top-light { border-top: 1px solid #e2e8f0; }
+.btn-save { background-color: #b91c1c !important; border-radius: 8px; padding: 8px 28px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.btn-save:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(185, 28, 28, 0.3); }
 .w-full { width: 100%; }
-.hover-red:hover { color: #cc3333 !important; }
+.hover-red:hover { color: #b91c1c !important; }
 .border-bottom-light { border-bottom: 1px solid #e2e8f0; }
 .bg-slate-50 { background-color: #f8fafc; }
-.camera-feed { width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px; background-color: #000; }
+.camera-feed { width: 100%; height: 100%; object-fit: cover; background-color: #000; }
+.shrink-none { flex-shrink: 0; }
 </style>
