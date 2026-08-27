@@ -1,13 +1,13 @@
 <template>
-  <q-page class="vendor-page relative-position">
+  <q-page class="vendor-page relative-position" :class="{ 'mobile-page-padding': $q.screen.lt.md }">
     <!-- Subtle Ambient Background Glows (Brand Aligned) -->
-    <div class="bg-glow bg-glow-primary"></div>
-    <div class="bg-glow bg-glow-secondary"></div>
+    <div class="bg-glow bg-glow-primary desktop-only"></div>
+    <div class="bg-glow bg-glow-secondary desktop-only"></div>
 
     <div class="page-container relative-position" style="z-index: 1;">
       
-      <!-- ================= HEADER AREA ================= -->
-      <div class="page-header q-mb-xl q-mt-sm row items-center justify-between">
+      <!-- ================= DESKTOP HEADER AREA ================= -->
+      <div v-if="!$q.screen.lt.md" class="page-header q-mb-xl q-mt-sm row items-center justify-between">
         <div class="row items-center">
           <div class="glass-icon-box q-mr-md">
             <q-icon name="category" size="26px" class="text-brand-red" />
@@ -19,13 +19,28 @@
         </div>
       </div>
 
+      <!-- ================= MOBILE HEADER AREA ================= -->
+      <div v-else class="page-header q-mb-lg q-mt-sm row items-center justify-between">
+        <div class="row items-center">
+          <div class="glass-icon-box q-mr-md" style="width: 44px; height: 44px;">
+            <q-icon name="category" size="22px" class="text-brand-red" />
+          </div>
+          <div>
+            <!-- Fixed title to Product Categories -->
+            <h1 class="text-h5 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight leading-tight">Product Categories</h1>
+            <p class="text-caption text-blue-grey-5 q-mt-xs q-mb-none font-medium">Manage inventory flow.</p>
+          </div>
+        </div>
+      </div>
+
       <!-- ================= CONTROLS & TABLE ================= -->
-      <q-card class="premium-glass-card" style="border-radius: 16px;">
-        <q-card-section class="q-pa-lg border-bottom row items-center justify-between q-col-gutter-y-md">
+      <q-card class="premium-glass-card" :class="{ 'border-none shadow-none bg-transparent': $q.screen.lt.md }" style="border-radius: 16px;">
+        
+        <q-card-section class="border-bottom row items-center justify-between q-col-gutter-y-md" :class="$q.screen.lt.md ? 'q-pa-none q-mb-md border-none' : 'q-pa-lg'">
           
           <!-- Search -->
           <div class="col-12 col-md-5">
-            <q-input v-model="search" outlined dense class="custom-glass-input" placeholder="Search categories...">
+            <q-input v-model="search" outlined dense class="custom-glass-input" placeholder="Search categories..." hide-bottom-space>
               <template v-slot:prepend>
                 <q-icon name="search" color="blue-grey-4" />
               </template>
@@ -33,9 +48,9 @@
           </div>
 
           <!-- Actions -->
-          <div class="col-12 col-md-7 text-right flex justify-end q-gutter-md">
-            <q-btn outline icon="download" label="Export" color="red-9" no-caps class="btn-glass-outline text-weight-bold q-px-md" :loading="isExporting" @click="exportCategories" />
-            <q-btn unelevated icon="add" label="Add Category" color="red-9" no-caps class="btn-premium text-white text-weight-bold q-px-md" @click="showAddModal = true" />
+          <div class="col-12 col-md-7 flex justify-end" :class="$q.screen.lt.md ? 'row no-wrap q-gutter-x-sm' : 'q-gutter-md'">
+            <q-btn outline icon="download" label="Export" color="red-9" no-caps class="btn-glass-outline text-weight-bold" :class="$q.screen.lt.md ? 'col' : 'q-px-md'" :loading="isExporting" @click="exportCategories" />
+            <q-btn unelevated icon="add" label="Add Category" color="red-9" no-caps class="btn-premium text-white text-weight-bold" :class="$q.screen.lt.md ? 'col' : 'q-px-md'" @click="showAddModal = true" />
           </div>
         </q-card-section>
 
@@ -48,30 +63,29 @@
           row-key="category_id"
           :loading="loading"
           :pagination="{ rowsPerPage: 10 }"
+          :grid="$q.screen.lt.md"
         >
           <!-- Empty State -->
           <template #no-data>
-            <div class="full-width row flex-center q-pa-xl empty-state-glass">
+            <div class="full-width row flex-center empty-state-glass" :class="$q.screen.lt.md ? 'q-pa-lg q-mt-md' : 'q-pa-xl'">
               <div class="text-center z-top relative-position">
                 <div class="empty-icon-wrapper q-mb-lg">
-                  <q-icon name="style" size="56px" color="blue-grey-3" class="drop-shadow-icon" />
-                  <div class="icon-pulse"></div>
+                  <q-icon name="style" :size="$q.screen.lt.md ? '48px' : '56px'" color="blue-grey-3" class="drop-shadow-icon" />
+                  <div class="icon-pulse desktop-only"></div>
                 </div>
-                <div class="text-h6 text-weight-bold text-blue-grey-8">No categories found</div>
-                <div class="text-body2 text-blue-grey-5 q-mt-xs">You haven't assigned any products to a category yet.</div>
+                <div class="text-weight-bold text-blue-grey-8" :class="$q.screen.lt.md ? 'text-subtitle1' : 'text-h6'">No categories found</div>
+                <div class="text-blue-grey-5 q-mt-xs" :class="$q.screen.lt.md ? 'text-caption' : 'text-body2'">You haven't assigned any products to a category yet.</div>
               </div>
             </div>
           </template>
 
-          <!-- Category Name Formatter with Icon -->
+          <!-- DESKTOP FORMATTERS -->
           <template #body-cell-category_name="props">
             <q-td :props="props">
               <div class="row items-center no-wrap">
-                <!-- Subtle Category Icon Box -->
                 <div class="category-icon-box q-mr-sm">
                   <q-icon name="category" size="20px" color="blue-grey-5" />
                 </div>
-                <!-- Category Text -->
                 <div>
                   <div class="text-weight-bold text-blue-grey-9 text-subtitle2 leading-tight">
                     {{ props.row.category_name }}
@@ -84,7 +98,6 @@
             </q-td>
           </template>
 
-          <!-- Item Count Formatter -->
           <template #body-cell-products_count="props">
             <q-td :props="props">
               <q-badge color="blue-grey-1" text-color="blue-grey-8" class="q-px-sm q-py-xs text-weight-bold rounded-borders border-slate-light">
@@ -93,7 +106,6 @@
             </q-td>
           </template>
 
-          <!-- Action Buttons -->
           <template #body-cell-action="props">
             <q-td :props="props" class="text-right">
               <q-btn flat round dense icon="edit" color="blue-grey-4" class="hover-action-btn q-mr-sm transition-ease" @click.stop="openEditModal(props.row)">
@@ -104,19 +116,60 @@
               </q-btn>
             </q-td>
           </template>
+
+          <!-- MOBILE GRID FORMATTER (Beautiful, Spacious Card Layout) -->
+          <template v-if="$q.screen.lt.md" v-slot:item="props">
+            <div class="col-12 q-mb-lg">
+              <q-card flat bordered class="bg-white shadow-soft" style="border-radius: 12px; border-color: #e2e8f0; overflow: hidden;">
+                
+                <!-- Card Main Body -->
+                <q-card-section class="q-pa-md">
+                  <div class="row items-center no-wrap q-mb-sm">
+                    <div class="category-icon-box q-mr-md" style="width: 44px; height: 44px; background-color: #fef2f2; border-color: #fca5a5;">
+                      <q-icon name="category" size="22px" color="red-9" />
+                    </div>
+                    <div class="col">
+                      <div class="text-weight-bolder text-slate-800 leading-tight text-subtitle1">{{ props.row.category_name }}</div>
+                    </div>
+                  </div>
+                  
+                  <!-- Styled Description Box -->
+                  <div v-if="props.row.description" class="text-body2 text-slate-600 font-medium q-mt-md leading-snug bg-slate-50 q-pa-sm rounded-borders border-slate-light" style="font-size: 13px;">
+                    {{ props.row.description }}
+                  </div>
+                </q-card-section>
+
+                <!-- Clean Footer for Actions and Details -->
+                <q-card-section class="q-pa-sm bg-slate-50 border-top row items-center justify-between">
+                  <div class="row items-center q-pl-xs">
+                    <q-badge color="white" text-color="blue-grey-8" class="q-px-sm q-py-xs text-weight-bold rounded-borders border-slate-light shadow-1" style="font-size: 11px;">
+                      <q-icon name="inventory_2" size="12px" class="q-mr-xs text-blue-grey-5" />
+                      {{ props.row.products_count || 0 }} Items
+                    </q-badge>
+                  </div>
+                  
+                  <div class="row q-gutter-x-sm">
+                    <q-btn unelevated icon="edit" color="white" text-color="blue-grey-8" size="sm" class="border-slate-light shadow-1" style="border-radius: 8px; padding: 4px 12px;" @click.stop="openEditModal(props.row)" label="Edit" no-caps />
+                    <q-btn unelevated icon="delete" color="red-50" text-color="red-8" size="sm" class="border-red-light shadow-1" style="border-radius: 8px; padding: 4px 12px;" @click.stop="openDeleteModal(props.row)" label="Delete" no-caps />
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+          </template>
+
         </q-table>
       </q-card>
 
       <!-- ================= ADD CATEGORY MODAL ================= -->
-      <q-dialog v-model="showAddModal" persistent backdrop-filter="blur(4px)">
-        <q-card class="premium-glass-card" style="width: 500px; max-width: 90vw;">
-          <q-card-section class="row items-center border-bottom q-pa-md">
+      <q-dialog v-model="showAddModal" persistent backdrop-filter="blur(4px)" :position="$q.screen.lt.md ? 'bottom' : 'standard'">
+        <q-card class="premium-glass-card" :style="$q.screen.lt.md ? 'width: 100%; border-radius: 24px 24px 0 0; padding-bottom: env(safe-area-inset-bottom);' : 'width: 500px; max-width: 90vw;'">
+          <q-card-section class="row items-center q-pa-md" :class="{ 'border-bottom': !$q.screen.lt.md }">
             <div class="text-h6 text-weight-bold text-blue-grey-9">Add New Category</div>
             <q-space />
-            <q-btn icon="close" flat round dense color="blue-grey-4" v-close-popup class="hover-text-dark transition-ease" />
+            <q-btn icon="close" flat round dense color="blue-grey-4" v-close-popup class="hover-text-dark transition-ease bg-slate-50" size="sm" />
           </q-card-section>
 
-          <q-card-section class="q-pa-lg">
+          <q-card-section :class="$q.screen.lt.md ? 'q-px-lg q-pb-lg q-pt-none' : 'q-pa-lg'">
             <q-form @submit.prevent="submitCategory" class="q-gutter-y-md">
               <div>
                 <div class="text-subtitle2 text-weight-bold text-blue-grey-8 q-mb-xs">Category Name <span class="text-red-9">*</span></div>
@@ -128,9 +181,11 @@
                 <q-input v-model="categoryForm.description" type="textarea" outlined dense class="custom-glass-input" rows="3" placeholder="Briefly describe what belongs in this category..." />
               </div>
 
-              <div class="row justify-end q-mt-xl q-gutter-sm">
-                <q-btn flat label="Cancel" color="blue-grey-5" v-close-popup no-caps class="text-weight-bold transition-ease hover-text-dark" />
-                <q-btn unelevated type="submit" label="Save Category" color="red-9" class="btn-premium text-white q-px-lg text-weight-bold" no-caps :loading="submitting" />
+              <!-- Responsive Action Buttons -->
+              <div class="row justify-end q-mt-xl" :class="$q.screen.lt.md ? 'column q-gutter-y-sm' : 'q-gutter-x-sm'">
+                <q-btn v-if="!$q.screen.lt.md" flat label="Cancel" color="blue-grey-5" v-close-popup no-caps class="text-weight-bold transition-ease hover-text-dark" />
+                <q-btn unelevated type="submit" label="Save Category" color="red-9" class="btn-premium text-white text-weight-bold" :class="$q.screen.lt.md ? 'full-width q-py-sm' : 'q-px-lg'" no-caps :loading="submitting" />
+                <q-btn v-if="$q.screen.lt.md" flat label="Cancel" color="blue-grey-6" v-close-popup no-caps class="full-width text-weight-bold transition-ease bg-slate-50" />
               </div>
             </q-form>
           </q-card-section>
@@ -138,21 +193,21 @@
       </q-dialog>
 
       <!-- ================= EDIT CATEGORY MODAL ================= -->
-      <q-dialog v-model="showEditModal" persistent backdrop-filter="blur(4px)">
-        <q-card class="premium-glass-card" style="width: 500px; max-width: 90vw; overflow: hidden;">
+      <q-dialog v-model="showEditModal" persistent backdrop-filter="blur(4px)" :position="$q.screen.lt.md ? 'bottom' : 'standard'">
+        <q-card class="premium-glass-card overflow-hidden" :style="$q.screen.lt.md ? 'width: 100%; border-radius: 24px 24px 0 0; padding-bottom: env(safe-area-inset-bottom);' : 'width: 500px; max-width: 90vw;'">
           
           <!-- Dark Red Gradient Header -->
           <q-card-section class="row items-center q-pa-md header-red-gradient text-white">
-            <q-avatar size="40px" color="white" text-color="red-9" icon="edit_note" class="q-mr-sm shadow-1" />
+            <q-avatar size="36px" color="white" text-color="red-9" icon="edit_note" class="q-mr-sm shadow-1" />
             <div>
               <div class="text-h6 text-weight-bold leading-tight">Edit Category</div>
             </div>
             <q-space />
-            <q-btn icon="close" flat round dense color="white" v-close-popup class="transition-ease" style="opacity: 0.8;" />
+            <q-btn icon="close" flat round dense color="white" v-close-popup class="transition-ease" style="opacity: 0.8;" size="sm" />
           </q-card-section>
 
           <q-card-section class="q-pa-lg">
-            <q-form @submit.prevent="submitEditCategory" class="q-gutter-y-lg">
+            <q-form @submit.prevent="submitEditCategory" class="q-gutter-y-md">
               
               <!-- Visually distinct locked field -->
               <div class="locked-field-container q-pa-md rounded-borders border-slate-light bg-slate-50">
@@ -161,7 +216,7 @@
                   <q-chip size="sm" color="blue-grey-2" text-color="blue-grey-7" icon="lock" class="q-ma-none text-weight-medium">System Protected</q-chip>
                 </div>
                 <q-input v-model="editCategoryForm.category_name" outlined dense class="custom-glass-input disabled-glass text-weight-bold" disable readonly />
-                <div class="text-caption text-blue-grey-5 q-mt-sm">
+                <div class="text-caption text-blue-grey-5 q-mt-sm leading-tight">
                   To maintain global catalog consistency, core category names cannot be modified.
                 </div>
               </div>
@@ -171,9 +226,11 @@
                 <q-input v-model="editCategoryForm.description" type="textarea" outlined dense class="custom-glass-input" rows="4" placeholder="Append specific guidelines, examples, or notes for your staff..." />
               </div>
 
-              <div class="row justify-end q-mt-md q-gutter-sm">
-                <q-btn flat label="Cancel" color="blue-grey-5" v-close-popup no-caps class="text-weight-bold transition-ease hover-text-dark" />
-                <q-btn unelevated type="submit" label="Save Changes" color="red-9" class="btn-premium text-white q-px-lg text-weight-bold" no-caps :loading="submitting" />
+              <!-- Responsive Action Buttons -->
+              <div class="row justify-end q-mt-xl" :class="$q.screen.lt.md ? 'column q-gutter-y-sm' : 'q-gutter-x-sm'">
+                <q-btn v-if="!$q.screen.lt.md" flat label="Cancel" color="blue-grey-5" v-close-popup no-caps class="text-weight-bold transition-ease hover-text-dark" />
+                <q-btn unelevated type="submit" label="Save Changes" color="red-9" class="btn-premium text-white text-weight-bold" :class="$q.screen.lt.md ? 'full-width q-py-sm' : 'q-px-lg'" no-caps :loading="submitting" />
+                <q-btn v-if="$q.screen.lt.md" flat label="Cancel" color="blue-grey-6" v-close-popup no-caps class="full-width text-weight-bold transition-ease bg-slate-50" />
               </div>
             </q-form>
           </q-card-section>
@@ -181,8 +238,8 @@
       </q-dialog>
 
       <!-- ================= SMART DELETE CATEGORY MODAL ================= -->
-      <q-dialog v-model="showDeleteModal" persistent backdrop-filter="blur(4px)">
-        <q-card class="premium-glass-card" style="width: 450px; max-width: 90vw;">
+      <q-dialog v-model="showDeleteModal" persistent backdrop-filter="blur(4px)" :position="$q.screen.lt.md ? 'bottom' : 'standard'">
+        <q-card class="premium-glass-card" :style="$q.screen.lt.md ? 'width: 100%; border-radius: 24px 24px 0 0; padding-bottom: env(safe-area-inset-bottom);' : 'width: 450px; max-width: 90vw;'">
           
           <!-- STATE 1: Cannot delete because category has products -->
           <template v-if="categoryToDelete && categoryToDelete.products_count > 0">
@@ -201,7 +258,7 @@
               </div>
             </q-card-section>
             <q-card-actions align="center" class="q-pa-md border-top">
-              <q-btn unelevated label="Understood" color="blue-grey-8" v-close-popup no-caps class="q-px-xl text-weight-bold btn-glass-outline" />
+              <q-btn unelevated label="Understood" color="blue-grey-8" v-close-popup no-caps class="full-width text-weight-bold btn-glass-outline q-py-sm" />
             </q-card-actions>
           </template>
 
@@ -216,9 +273,10 @@
                 Are you sure you want to permanently delete the <strong>{{ categoryToDelete.category_name }}</strong> category? This action cannot be undone.
               </p>
             </q-card-section>
-            <q-card-actions align="between" class="q-pa-md border-top bg-slate-50">
-              <q-btn flat label="Cancel" color="blue-grey-6" v-close-popup no-caps class="text-weight-bold" />
-              <q-btn unelevated label="Yes, Delete it" color="red-9" @click="confirmDelete" no-caps class="text-weight-bold q-px-md shadow-2" :loading="submitting" />
+            <q-card-actions align="between" class="q-pa-md border-top bg-slate-50" :class="$q.screen.lt.md ? 'column q-gutter-y-sm' : ''">
+              <q-btn v-if="!$q.screen.lt.md" flat label="Cancel" color="blue-grey-6" v-close-popup no-caps class="text-weight-bold" />
+              <q-btn unelevated label="Yes, Delete it" color="red-9" @click="confirmDelete" no-caps class="text-weight-bold shadow-2" :class="$q.screen.lt.md ? 'full-width q-py-sm' : 'q-px-md'" :loading="submitting" />
+              <q-btn v-if="$q.screen.lt.md" flat label="Cancel" color="blue-grey-6" v-close-popup no-caps class="full-width text-weight-bold bg-white border-slate-light" />
             </q-card-actions>
           </template>
 
@@ -494,6 +552,7 @@ onMounted(() => {
 .border-top { border-top: 1px solid rgba(226, 232, 240, 0.8); }
 .border-slate-light { border: 1px solid rgba(226, 232, 240, 0.8); }
 .border-orange-light { border: 1px solid rgba(253, 186, 116, 0.5); }
+.border-red-light { border: 1px solid rgba(254, 202, 202, 0.5); }
 .transition-ease { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
 .hover-text-dark:hover { color: #334155 !important; }
 
@@ -548,7 +607,6 @@ onMounted(() => {
   background: rgba(248, 250, 252, 0.6);
   border: 1px dashed rgba(203, 213, 225, 0.8);
   border-radius: 12px;
-  margin: 16px;
   width: calc(100% - 32px);
 }
 .empty-icon-wrapper {
@@ -592,9 +650,21 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
+.shadow-soft {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+.shrink-none {
+  flex-shrink: 0;
+}
+
 @keyframes pulse-ring {
   0% { transform: scale(0.8); opacity: 0; }
   50% { opacity: 1; }
   100% { transform: scale(1.5); opacity: 0; }
+}
+
+@media (max-width: 767px) {
+  .vendor-page.mobile-page-padding { padding: 16px 16px calc(90px + env(safe-area-inset-bottom)) 16px !important; }
+  .desktop-only { display: none !important; }
 }
 </style>
