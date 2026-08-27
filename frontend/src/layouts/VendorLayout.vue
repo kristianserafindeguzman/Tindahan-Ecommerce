@@ -1,8 +1,8 @@
 <template>
   <q-layout view="hHh LpR fFf" class="vendor-layout bg-slate-50">
 
-    <!-- HEADER -->
-    <q-header elevated class="premium-header border-bottom-dark">
+    <!-- ================= DESKTOP HEADER ================= -->
+    <q-header v-if="!$q.screen.lt.md" elevated class="premium-header border-bottom-dark">
       <q-toolbar class="q-px-lg" style="min-height: 70px;">
         <q-btn
           flat
@@ -15,7 +15,6 @@
         />
         
         <div class="row items-center cursor-pointer q-ml-sm transition-transform hover-scale" @click="router.push('/vendor/dashboard')">
-          <!-- Replaced hardcoded "Vendor Center" with dynamic storeName binding -->
           <q-toolbar-title class="header-title text-weight-bolder text-white tracking-tight">
             {{ storeName }}
           </q-toolbar-title>
@@ -57,10 +56,46 @@
       </q-toolbar>
     </q-header>
 
-    <!-- LEFT SIDEBAR -->
+    <!-- ================= MOBILE HEADER (Red Gradient) ================= -->
+    <q-header v-else elevated class="premium-header z-top border-bottom-dark">
+      <q-toolbar class="q-px-md" style="min-height: 64px;">
+        
+        <!-- App Logo (Left - Enclosed in white to pop against red) -->
+        <div 
+          class="bg-white flex flex-center shadow-1 cursor-pointer hover-scale" 
+          style="border-radius: 8px; padding: 6px 12px;"
+          @click="router.push('/vendor/dashboard')"
+        >
+          <img 
+            src="@/assets/tindahan-mobile.png" 
+            alt="Tindahan Logo" 
+            style="height: 24px; object-fit: contain;" 
+          />
+        </div>
+
+        <q-space />
+
+        <!-- Notifications & Profile (Right) -->
+        <div class="row items-center q-gutter-x-sm">
+          <q-btn flat round dense icon="notifications_none" color="white" class="menu-toggle-btn">
+            <q-badge color="amber-8" text-color="white" floating rounded style="padding: 3px 5px; font-weight: 800; border: 1.5px solid #991B1B;">4</q-badge>
+          </q-btn>
+          
+          <q-btn flat round dense to="/vendor/profile" class="menu-toggle-btn q-ml-xs">
+            <q-avatar size="34px" class="bg-white shadow-2" style="border: 2px solid rgba(255,255,255,0.8);">
+              <img :src="userProfilePicture" v-if="userProfilePicture" style="object-fit: cover;" />
+              <q-icon name="person" size="22px" color="red-9" v-else />
+            </q-avatar>
+          </q-btn>
+        </div>
+
+      </q-toolbar>
+    </q-header>
+
+    <!-- ================= LEFT SIDEBAR (Hidden on Mobile) ================= -->
     <q-drawer
       v-model="drawerOpen"
-      show-if-above
+      :show-if-above="!$q.screen.lt.md"
       :width="280"
       :breakpoint="1024"
       class="premium-drawer"
@@ -70,11 +105,7 @@
         <!-- LOGO -->
         <div class="sidebar-logo q-mt-md">
           <div class="logo-glass-wrapper">
-            <img
-              src="@/assets/tindahan-mobile.png"
-              alt="Tindahan"
-              class="logo-img"
-            />
+            <img src="@/assets/tindahan-mobile.png" alt="Tindahan" class="logo-img" />
           </div>
         </div>
 
@@ -83,7 +114,6 @@
           <q-list class="nav-list">
             <template v-for="(item, index) in navItems" :key="index">
               
-              <!-- Standard Link -->
               <q-item
                 v-if="!item.children"
                 :to="item.path"
@@ -100,7 +130,6 @@
                 </q-item-section>
               </q-item>
 
-              <!-- Expansion Item (Nested Menu) -->
               <q-expansion-item
                 v-else
                 :icon="item.icon"
@@ -129,14 +158,79 @@
             </template>
           </q-list>
         </div>
-        
       </div>
     </q-drawer>
 
-    <!-- MAIN CONTENT -->
-    <q-page-container>
+    <!-- ================= MAIN CONTENT ================= -->
+    <q-page-container :class="{ 'mobile-pb': $q.screen.lt.md }">
       <router-view />
     </q-page-container>
+
+    <!-- ================= MINIMALIST MOBILE BOTTOM NAVIGATION ================= -->
+    <q-footer v-if="$q.screen.lt.md" class="bg-white text-slate-500 z-top" style="box-shadow: 0 -4px 20px rgba(0,0,0,0.06);">
+      <div class="row no-wrap items-center justify-around bottom-nav-container relative-position" style="padding-bottom: env(safe-area-inset-bottom);">
+        
+        <!-- Orders (Animated Sub-menu) -->
+        <q-btn flat round dense no-caps class="nav-icon-btn no-hover" :class="$route.path.includes('/vendor/orders') ? 'text-red-9' : 'text-grey-5'">
+          <q-icon :name="$route.path.includes('/vendor/orders') ? 'receipt_long' : 'o_receipt_long'" size="28px" class="transition-transform" />
+          
+          <q-menu anchor="top middle" self="bottom middle" transition-show="jump-up" transition-hide="jump-down" class="shadow-4 menu-popup">
+            <q-list style="min-width: 180px" class="q-py-sm">
+              <q-item clickable v-ripple to="/vendor/orders/list" active-class="bg-red-50 text-red-9">
+                <q-item-section avatar style="min-width: 36px"><q-icon name="list_alt" size="sm"/></q-item-section>
+                <q-item-section class="text-weight-bold">Order List</q-item-section>
+              </q-item>
+              <q-item clickable v-ripple to="/vendor/orders/customers" active-class="bg-red-50 text-red-9">
+                <q-item-section avatar style="min-width: 36px"><q-icon name="person_outline" size="sm"/></q-item-section>
+                <q-item-section class="text-weight-bold">Customer Order</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
+
+        <!-- Products (Animated Sub-menu) -->
+        <q-btn flat round dense no-caps class="nav-icon-btn no-hover" :class="$route.path.includes('/vendor/products') ? 'text-red-9' : 'text-grey-5'">
+          <q-icon :name="$route.path.includes('/vendor/products') ? 'inventory_2' : 'o_inventory_2'" size="28px" class="transition-transform" />
+          
+          <q-menu anchor="top middle" self="bottom middle" transition-show="jump-up" transition-hide="jump-down" class="shadow-4 menu-popup">
+            <q-list style="min-width: 180px" class="q-py-sm">
+              <q-item clickable v-ripple to="/vendor/products/list" active-class="bg-red-50 text-red-9">
+                <q-item-section avatar style="min-width: 36px"><q-icon name="format_list_bulleted" size="sm"/></q-item-section>
+                <q-item-section class="text-weight-bold">Product List</q-item-section>
+              </q-item>
+              <q-item clickable v-ripple to="/vendor/products/categories" active-class="bg-red-50 text-red-9">
+                <q-item-section avatar style="min-width: 36px"><q-icon name="category" size="sm"/></q-item-section>
+                <q-item-section class="text-weight-bold">Categories</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
+
+        <!-- CENTER FLOATING HOME BUTTON (Perfect Cutout Design) -->
+        <div class="relative-position flex flex-center center-cutout">
+          <q-btn 
+            round 
+            unelevated 
+            to="/vendor/dashboard"
+            class="shadow-4 pulse-animation z-top center-home-btn"
+            :class="$route.path === '/vendor/dashboard' ? 'bg-red-10' : 'bg-brand-red'"
+          >
+            <q-icon name="o_home" size="30px" color="white" />
+          </q-btn>
+        </div>
+
+        <!-- Sales -->
+        <q-btn flat round dense no-caps class="nav-icon-btn no-hover" :class="$route.path.includes('/vendor/sales') ? 'text-red-9' : 'text-grey-5'" to="/vendor/sales">
+          <q-icon :name="$route.path.includes('/vendor/sales') ? 'pie_chart' : 'pie_chart_outline'" size="28px" class="transition-transform" />
+        </q-btn>
+
+        <!-- Profile -->
+        <q-btn flat round dense no-caps class="nav-icon-btn no-hover" :class="$route.path.includes('/vendor/profile') ? 'text-red-9' : 'text-grey-5'" to="/vendor/profile">
+          <q-icon :name="$route.path.includes('/vendor/profile') ? 'person' : 'person_outline'" size="30px" class="transition-transform" />
+        </q-btn>
+        
+      </div>
+    </q-footer>
 
   </q-layout>
 </template>
@@ -149,34 +243,20 @@ import { api } from '@/boot/axios'
 
 const router = useRouter()
 const $q = useQuasar()
-const drawerOpen = ref(true)
+const drawerOpen = ref(false)
 
 const userName = ref('Vendor')
 const userProfilePicture = ref(null)
-const storeName = ref('Loading...') // Initial state while fetching from API
+const storeName = ref('Loading...')
 
 onMounted(async () => {
   try {
     const res = await api.get('/user')
-    
-    // DEBUG: Look in your browser's Developer Console (F12) to see exactly what Laravel returns!
-    console.log('Backend Response Data:', res.data)
-
     if (res.data && res.data.user) {
       const user = res.data.user
       userName.value = user.full_name || 'Vendor'
       userProfilePicture.value = user.profile_picture_url || null
-      
-      // Dynamic matching logic. It checks various common property names.
-      // Once you check the console.log above, you can delete the checks you don't need.
-      storeName.value = user.store?.store_name
-        || user.store_name 
-        || user.store?.name 
-        || user.shop?.name 
-        || user.vendor?.store_name 
-        || user.vendor?.name
-        || res.data.store_name
-        || 'My Store' 
+      storeName.value = user.store?.store_name || user.store_name || user.shop?.name || res.data.store_name || 'My Store' 
     }
   } catch (error) {
     console.error('Error fetching user info:', error)
@@ -217,9 +297,7 @@ const handleLogout = () => {
   }).onOk(async () => {
     try {
       await api.post('/logout')
-    } catch {
-      // Token may already be invalid
-    }
+    } catch { }
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_user')
     localStorage.removeItem('auth_role')
@@ -245,16 +323,77 @@ const handleLogout = () => {
 .hover-scale:hover {
   transform: scale(1.02);
 }
+.bg-brand-red {
+  background-color: #B91C1C !important;
+}
 
 /* ==========================================================
-   HEADER 
+   MOBILE UTILITIES & ANIMATIONS
+========================================================== */
+.border-bottom-dark { border-bottom: 1px solid #3f0909; }
+
+/* Remove sticky hover effect on mobile buttons */
+.no-hover :deep(.q-focus-helper) { display: none !important; }
+
+/* Bottom Nav Container */
+.bottom-nav-container { 
+  height: 64px; 
+}
+
+/* Base Nav Icon Button */
+.nav-icon-btn {
+  width: 50px;
+  height: 50px;
+  transition: transform 0.15s ease-in-out;
+}
+.nav-icon-btn:active { 
+  transform: scale(0.85); 
+}
+
+/* Center Cutout Floating Button styling */
+.center-cutout {
+  width: 70px;
+  height: 70px;
+  margin-top: -35px; /* Pulls it up above the navbar line */
+  background: white; /* Matches the footer background */
+  border-radius: 50%;
+  box-shadow: 0 -4px 10px rgba(0,0,0,0.03); /* Subtle top shadow */
+}
+.center-home-btn {
+  width: 58px; 
+  height: 58px; 
+  border: 5px solid #ffffff; 
+}
+
+/* Bounce Animation for Home Button */
+.pulse-animation {
+  animation: entranceBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  transition: transform 0.15s ease-in-out, background-color 0.2s;
+}
+.pulse-animation:active { transform: scale(0.90); }
+
+@keyframes entranceBounce {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Popup Menu Overrides */
+.menu-popup {
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+/* Ensure page content isn't hidden behind the fixed mobile bottom nav */
+.mobile-pb {
+  padding-bottom: calc(85px + env(safe-area-inset-bottom));
+}
+
+/* ==========================================================
+   HEADER (DESKTOP & MOBILE RED GRADIENT)
 ========================================================== */
 .premium-header {
   background: linear-gradient(90deg, #991B1B 0%, #450A0A 100%) !important;
   color: #ffffff !important;
-}
-.border-bottom-dark {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
 }
 .menu-toggle-btn {
   transition: all 0.2s ease;
@@ -334,7 +473,7 @@ const handleLogout = () => {
 }
 
 /* ==========================================================
-   NAVIGATION ITEMS
+   NAVIGATION ITEMS (DESKTOP)
 ========================================================== */
 .nav-container {
   flex-grow: 1;
@@ -418,10 +557,6 @@ const handleLogout = () => {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
-.min-w-0 {
-  min-width: 0 !important;
-}
-.opacity-70 {
-  opacity: 0.7;
-}
+.min-w-0 { min-width: 0 !important; }
+.opacity-70 { opacity: 0.7; }
 </style>

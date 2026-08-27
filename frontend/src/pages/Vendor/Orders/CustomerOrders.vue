@@ -1,13 +1,13 @@
 <template>
-  <q-page class="vendor-page relative-position">
+  <q-page class="vendor-page relative-position" :class="{ 'mobile-page-padding': $q.screen.lt.md }">
     <!-- Subtle Ambient Background Glows (Strict Red, No Pink) -->
-    <div class="bg-glow bg-glow-primary"></div>
-    <div class="bg-glow bg-glow-secondary"></div>
+    <div class="bg-glow bg-glow-primary desktop-only"></div>
+    <div class="bg-glow bg-glow-secondary desktop-only"></div>
 
     <div class="page-container relative-position" style="z-index: 1;">
       
-      <!-- ================= HEADER AREA ================= -->
-      <div class="page-header q-mb-xl q-mt-sm row items-center justify-between">
+      <!-- ================= DESKTOP HEADER AREA ================= -->
+      <div v-if="!$q.screen.lt.md" class="page-header q-mb-xl q-mt-sm row items-center justify-between">
         <div class="row items-center">
           <div class="glass-icon-box q-mr-md">
             <q-icon name="people" size="26px" color="red-8" />
@@ -19,13 +19,27 @@
         </div>
       </div>
 
-      <div class="row q-col-gutter-xl h-full-container">
+      <!-- ================= MOBILE HEADER AREA ================= -->
+      <div v-else class="page-header q-mb-lg q-mt-sm">
+        <div class="row items-center q-mb-md">
+          <div class="glass-icon-box q-mr-md" style="width: 44px; height: 44px;">
+            <q-icon name="people" size="22px" class="text-brand-red" />
+          </div>
+          <div>
+            <h1 class="text-h5 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight leading-tight">Customer Orders</h1>
+            <p class="text-caption text-blue-grey-5 q-mt-xs q-mb-none font-medium">Select a customer to view their history.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Row Container: Stack naturally on mobile, fixed height on desktop -->
+      <div class="row q-col-gutter-lg q-col-gutter-md-xl" :class="{ 'h-full-container': !$q.screen.lt.md }">
         
         <!-- ================= LEFT COLUMN: CUSTOMERS ================= -->
         <div class="col-12 col-md-4">
-          <q-card class="premium-glass-card h-full flex column">
-            <q-card-section class="q-pa-lg border-bottom">
-              <div class="text-h6 text-weight-bold text-dark q-mb-md row items-center">
+          <q-card class="premium-glass-card h-full flex column" :class="{ 'shadow-soft border-slate-light': $q.screen.lt.md }">
+            <q-card-section class="q-pa-lg border-bottom" :class="{ 'q-pa-md': $q.screen.lt.md }">
+              <div class="text-h6 text-weight-bold text-dark q-mb-md row items-center" :class="{ 'text-subtitle1': $q.screen.lt.md }">
                 <div class="header-accent-red q-mr-sm"></div>
                 Customer Directory
               </div>
@@ -36,7 +50,7 @@
               </q-input>
             </q-card-section>
             
-            <q-card-section class="q-pa-none scroll" style="flex: 1; max-height: 600px; overflow-y: auto;">
+            <q-card-section class="q-pa-none scroll" :style="$q.screen.lt.md ? 'max-height: 350px; overflow-y: auto;' : 'flex: 1; max-height: 600px; overflow-y: auto;'">
               
               <div v-if="filteredCustomers.length === 0" class="full-width row flex-center q-pa-xl">
                 <div class="text-center z-top relative-position">
@@ -60,12 +74,12 @@
                   class="q-pa-md customer-item"
                 >
                   <q-item-section avatar>
-                    <q-avatar size="42px" class="shadow-1">
+                    <q-avatar size="42px" class="shadow-1 border-white" style="border: 2px solid white;">
                       <img :src="customer.profile_picture_url || 'https://cdn.quasar.dev/img/avatar.png'">
                     </q-avatar>
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label class="text-weight-bold text-blue-grey-9">{{ customer.full_name }}</q-item-label>
+                    <q-item-label class="text-weight-bold" :class="selectedCustomer?.user_id === customer.user_id ? 'text-red-9' : 'text-blue-grey-9'">{{ customer.full_name }}</q-item-label>
                     <q-item-label caption class="text-blue-grey-5 row items-center q-mt-xs">
                       <q-icon name="phone" size="14px" class="q-mr-xs" />
                       {{ customer.phone_number || 'N/A' }}
@@ -82,18 +96,19 @@
 
         <!-- ================= RIGHT COLUMN: ORDERS ================= -->
         <div class="col-12 col-md-8">
-          <q-card class="premium-glass-card h-full flex column">
-            <q-card-section class="panel-header q-pa-lg">
+          <q-card class="premium-glass-card h-full flex column" :class="{ 'bg-transparent border-none shadow-none': $q.screen.lt.md }">
+            <q-card-section class="panel-header q-pa-lg" :class="{ 'q-pa-none q-mb-md border-none bg-transparent': $q.screen.lt.md }">
               <div class="text-h6 text-weight-bold text-dark row items-center justify-between">
-                <div class="row items-center">
-                  <div class="header-accent-red q-mr-md"></div>
+                <div class="row items-center" :class="{ 'text-red-9': $q.screen.lt.md }">
+                  <div class="header-accent-red q-mr-md" v-if="!$q.screen.lt.md"></div>
+                  <div style="width: 4px; height: 20px; background-color: #b91c1c; border-radius: 2px;" class="q-mr-sm" v-else></div>
                   {{ selectedCustomer ? selectedCustomer.full_name + "'s Orders" : "Order History" }}
                 </div>
               </div>
             </q-card-section>
 
             <!-- Conditional Rendering: Details OR Table -->
-            <div v-if="selectedOrder" class="flex-1 h-full scroll q-pa-md">
+            <div v-if="selectedOrder" class="flex-1 h-full scroll" :class="{ 'q-pa-md': !$q.screen.lt.md, 'q-pa-none': $q.screen.lt.md }">
               <OrderDetails :orderId="selectedOrder.order_id" isEmbedded @back="selectedOrder = null" />
             </div>
 
@@ -108,9 +123,11 @@
               hide-bottom
               :pagination="{ rowsPerPage: 10 }"
               @row-click="onRowClick"
+              :grid="$q.screen.lt.md"
             >
+              <!-- DESKTOP EMPTY STATE -->
               <template #no-data>
-                <div class="full-width row flex-center q-pa-xl empty-state-glass">
+                <div v-if="!$q.screen.lt.md" class="full-width row flex-center q-pa-xl empty-state-glass">
                   <div class="text-center z-top relative-position">
                     <div class="empty-icon-wrapper q-mb-lg">
                       <q-icon name="receipt_long" size="56px" color="blue-grey-3" class="drop-shadow-icon" />
@@ -123,8 +140,19 @@
                     </div>
                   </div>
                 </div>
+                <!-- MOBILE EMPTY STATE -->
+                <div v-else class="full-width text-center bg-white shadow-soft q-py-xl q-px-md border-slate-light" style="border-radius: 12px; margin-top: 8px;">
+                  <q-icon name="receipt_long" size="48px" color="blue-grey-3" class="q-mb-md opacity-50 drop-shadow-icon" />
+                  <div class="text-subtitle1 text-weight-bold text-blue-grey-8">
+                    {{ selectedCustomer ? 'No orders found' : 'Select a Customer' }}
+                  </div>
+                  <div class="text-caption text-blue-grey-5 q-mt-xs">
+                    {{ selectedCustomer ? 'This customer has not placed any orders yet.' : 'Tap on a customer above to view their past orders.' }}
+                  </div>
+                </div>
               </template>
 
+              <!-- DESKTOP FORMATTERS -->
               <template #body-cell-status="props">
                 <q-td :props="props">
                   <q-chip 
@@ -149,6 +177,38 @@
                   <q-btn flat round dense icon="chevron_right" color="grey-6" @click.stop="goToOrder(props.row)" />
                 </q-td>
               </template>
+
+              <!-- MOBILE GRID FORMATTER (Card Layout) -->
+              <template v-slot:item="props">
+                <div class="col-12 q-mb-md">
+                  <q-card flat bordered class="bg-white shadow-soft cursor-pointer" style="border-radius: 10px; border-color: #e2e8f0;" @click="goToOrder(props.row)">
+                    <q-card-section class="q-pa-md">
+                      <div class="row justify-between items-center q-mb-sm">
+                        <div class="text-weight-bold text-slate-800" style="font-size: 15px;">
+                          Order #{{ props.row.order_id }}
+                        </div>
+                        <q-chip :color="getStatusColor(props.row.status)" text-color="white" size="sm" class="text-weight-bolder q-ma-none" style="border-radius: 6px; height: 24px; padding: 0 10px;">
+                          {{ formatStatus(props.row.status) }}
+                        </q-chip>
+                      </div>
+                      
+                      <div class="text-body2 text-slate-500 q-mb-sm font-medium" style="font-size: 13px;">
+                        <q-icon name="event" size="14px" class="q-mr-xs" />
+                        {{ formatDate(props.row.created_at) }}
+                      </div>
+                      
+                      <div class="row justify-between items-end q-mt-sm">
+                        <div class="text-caption text-slate-500">Total Amount</div>
+                        <div class="row items-center">
+                          <div class="text-weight-bold text-brand-red q-mr-sm" style="font-size: 16px;">₱{{ formatNumber(props.row.total_amount) }}</div>
+                          <q-icon name="chevron_right" size="20px" color="grey-5" />
+                        </div>
+                      </div>
+                    </q-card-section>
+                  </q-card>
+                </div>
+              </template>
+
             </q-table>
           </q-card>
         </div>
@@ -387,4 +447,16 @@ onMounted(() => {
   align-items: center;
 }
 .drop-shadow-icon { filter: drop-shadow(0 4px 6px rgba(15, 23, 42, 0.05)); opacity: 0.5; }
+
+/* Mobile Utilities */
+.text-brand-red { color: #b91c1c !important; }
+.border-none { border: none !important; }
+.border-slate-light { border: 1px solid #e2e8f0; }
+.shadow-soft { box-shadow: 0 2px 8px rgba(15,23,42,0.06); }
+.border-white { border: 2px solid white; }
+
+@media (max-width: 767px) {
+  .vendor-page.mobile-page-padding { padding: 16px 16px 90px 16px !important; }
+  .desktop-only { display: none !important; }
+}
 </style>
