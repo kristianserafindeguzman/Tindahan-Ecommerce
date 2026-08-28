@@ -4,8 +4,27 @@
     <div class="bg-glow bg-glow-primary"></div>
     <div class="bg-glow bg-glow-secondary"></div>
 
-    <div v-if="checkingAccess" class="checking-access flex flex-center h-full">
-      <q-spinner-puff color="red-9" size="60px" thickness="3" />
+    <!-- Warm Glassmorphic Sari-Sari Store Loading Screen -->
+    <div v-if="checkingAccess" class="checking-access absolute-full z-max flex flex-center glass-backdrop">
+      <!-- Background Ambient Glow for the Loader -->
+      <div class="bg-glow bg-glow-primary pulse-bg-glow" style="opacity: 0.4;"></div>
+      
+      <div class="loader-glass-card column flex-center shadow-soft">
+        <div class="store-icon-container relative-position flex flex-center q-mb-md">
+          <div class="soft-glow-ring"></div>
+          <q-avatar size="84px" class="bg-red-1 text-red-9 shadow-3 store-avatar" style="border: 4px solid rgba(255, 255, 255, 0.9);">
+            <q-icon name="storefront" size="42px" class="animate-bounce-soft" />
+          </q-avatar>
+        </div>
+        
+        <!-- Friendly Typeface -->
+        <div class="text-h5 text-weight-bolder text-blue-grey-9 tracking-wide q-mt-sm">
+          Opening Shop<span class="loading-dots"></span>
+        </div>
+        <div class="text-body2 text-blue-grey-5 q-mt-xs text-weight-medium">
+          Setting up your sari-sari dashboard
+        </div>
+      </div>
     </div>
 
     <div v-else class="page-container">
@@ -523,7 +542,6 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
-import { useAuth } from '@/composables/useAuth'
 import VueApexCharts from 'vue3-apexcharts'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -531,7 +549,6 @@ import 'leaflet/dist/leaflet.css'
 // ==========================================
 // 1. STATE & REFS
 // ==========================================
-const { logout } = useAuth()
 const router = useRouter()
 
 const checkingAccess = ref(true)
@@ -669,6 +686,7 @@ const isStoreOpen = computed(() => {
 // 4. HELPER FUNCTIONS
 // ==========================================
 const getStatusColor = status => {
+  if (!status) return 'blue-grey-4'
   const normalizedStatus = status.toLowerCase().replace(/\s+/g, '_')
   switch (normalizedStatus) {
     case 'placed': return 'blue-5'
@@ -685,7 +703,7 @@ const formatTime = timeString => {
 }
 
 const formatNumber = num => {
-  const cleanNum = Number(String(num).replace(/[^0-9.-]+/g,""))
+  const cleanNum = Number(String(num).replace(/[^0-9.-]+/g, ""))
   return Number(cleanNum || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
@@ -777,7 +795,10 @@ onMounted(async () => {
     console.error('Dashboard init error:', error)
     userName.value = 'Vendor'
   } finally {
-    checkingAccess.value = false
+    // Artificial delay to let the warm glassmorphic loader show nicely before dashboard rendering
+    setTimeout(() => {
+      checkingAccess.value = false
+    }, 1500)
   }
 })
 
@@ -796,6 +817,7 @@ watch(activeRevenueFilter, () => { fetchChartData() })
 .page-container { max-width: 1400px; margin: 0 auto; position: relative; z-index: 1; }
 .card-rounded { border-radius: 16px; }
 .z-top-10 { z-index: 10; }
+.z-max { z-index: 9999; }
 .h-full { height: 100%; }
 .border-radius-8 { border-radius: 8px; }
 .p-1 { padding: 4px; }
@@ -870,6 +892,80 @@ watch(activeRevenueFilter, () => { fetchChartData() })
 .status-dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 10px rgba(16, 185, 129, 0.6); animation: pulse-dot 2s infinite; }
 @keyframes pulse-dot { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
+/* ============================================================= */
+/* ========== WARM GLASSMORPHIC SARI-SARI LOADER =============== */
+/* ============================================================= */
+
+.glass-backdrop {
+  background: rgba(248, 250, 252, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.pulse-bg-glow {
+  animation: bg-pulse-glow 4s ease-in-out infinite;
+}
+
+.loader-glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 28px;
+  box-shadow: 0 16px 40px rgba(185, 28, 28, 0.08), inset 0 0 0 1px rgba(255,255,255,0.5);
+  padding: 48px 64px;
+  text-align: center;
+}
+
+.soft-glow-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(10px);
+  animation: pulse-ring 3s ease-in-out infinite;
+  z-index: 0;
+}
+
+.store-avatar {
+  z-index: 1;
+}
+
+.animate-bounce-soft {
+  animation: float-soft 3s ease-in-out infinite;
+}
+
+.loading-dots::after {
+  content: '...';
+  display: inline-block;
+  animation: typing-dots 1.5s steps(4, end) infinite;
+  width: 1em;
+  text-align: left;
+}
+
+/* Animations for Loader */
+@keyframes bg-pulse-glow {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.1); opacity: 0.6; }
+}
+
+@keyframes pulse-ring {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes typing-dots {
+  0%, 20% { content: ''; }
+  40% { content: '.'; }
+  60% { content: '..'; }
+  80%, 100% { content: '...'; }
+}
 
 /* ============================================================= */
 /* ==================== MOBILE ONLY STYLES ===================== */
@@ -879,6 +975,13 @@ watch(activeRevenueFilter, () => { fetchChartData() })
   .vendor-page.mobile-page-padding { padding: 12px 8px calc(80px + env(safe-area-inset-bottom)) 8px !important; }
   .mobile-only { display: block; }
   
+  /* Loader mobile adjustment */
+  .loader-glass-card {
+    padding: 36px 40px;
+    width: 90%;
+    max-width: 340px;
+  }
+
   /* Metric Icon Styling */
   .mobile-metric-card { border: 1px solid #f1f5f9; border-radius: 16px; background: #ffffff; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03); }
   .mobile-icon-box-new { width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; }
