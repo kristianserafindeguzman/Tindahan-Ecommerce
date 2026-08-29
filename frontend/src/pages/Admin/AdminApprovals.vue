@@ -1,7 +1,7 @@
 <template>
   <q-page class="admin-page">
     <div class="page-container">
-      <!-- ================= PAGE BANNER (Colored Processing Hub Header) ================= -->
+      <!-- ================= PAGE BANNER ================= -->
       <div
         class="approvals-header-colored q-mb-lg row items-center justify-between q-pa-lg"
       >
@@ -11,22 +11,23 @@
           class="row items-center col-12 col-md-8 relative-position"
           style="z-index: 2"
         >
+          <!-- White Block with Red Icon and Pulse Effect -->
           <div
-            class="header-icon-box-3d q-mr-lg flex flex-center relative-position"
+            class="header-white-block q-mr-lg flex flex-center relative-position"
           >
             <q-icon name="how_to_reg" size="36px" color="red-9" />
             <div class="pulse-ring"></div>
           </div>
 
           <div>
-            <div class="q-mb-sm flex items-center">
-              <span class="badge-dark-glass">
+            <div class="q-mb-xs flex items-center">
+              <span class="badge-dark-capsule">
                 <q-icon
                   name="admin_panel_settings"
                   size="14px"
                   class="q-mr-xs"
                 />
-                Administration
+                ADMINISTRATION
               </span>
               <span
                 class="text-caption text-white opacity-80 q-ml-sm text-weight-bold tracking-wide"
@@ -36,7 +37,7 @@
             </div>
 
             <h1
-              class="text-h4 text-weight-bolder text-white q-mt-none q-mb-xs line-height-tight"
+              class="header-main-title text-weight-bolder text-white q-mt-none q-mb-xs line-height-tight"
             >
               Vendor Approvals
             </h1>
@@ -49,29 +50,26 @@
           </div>
         </div>
 
+        <!-- Right Side Dynamic Tab-Specific Stat Counter Box -->
         <div
-          class="col-12 col-md-4 text-right q-mt-md q-md-mt-none flex justify-end relative-position"
+          class="col-12 col-md-auto q-mt-md q-mt-md-none flex justify-end"
           style="z-index: 2"
         >
-          <div class="stats-widget-glass q-pa-md">
-            <div
-              class="text-caption text-white opacity-70 text-weight-bold text-uppercase q-mb-xs"
-              >Pending Review</div
-            >
-            <div class="row items-baseline justify-end">
-              <span class="text-h3 text-weight-bolder text-white">{{
-                pendingCount
+          <div class="header-stat-box column flex-center text-center">
+            <span class="stat-box-label text-weight-bolder text-uppercase">
+              {{ currentTab === 'pending' ? 'PENDING REVIEW' : 'REJECTED' }}
+            </span>
+            <div class="row items-baseline no-wrap q-mt-xs">
+              <span class="stat-box-value font-mono">{{
+                currentTab === 'pending' ? pendingCount : (pending.length - pendingCount)
               }}</span>
-              <span
-                class="text-body2 text-white opacity-80 text-weight-bold q-ml-sm"
-                >applications</span
-              >
+              <span class="stat-box-unit q-ml-xs">applications</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ================= TOOLBAR (Glass) ================= -->
+      <!-- ================= TOOLBAR ================= -->
       <div
         class="toolbar glass-toolbar q-pa-md q-mb-md row items-center justify-between"
       >
@@ -82,10 +80,14 @@
             dense
             placeholder="Search by name, email, or store..."
             class="search-input-glass"
+            debounce="300"
             @update:model-value="fetchPending"
           >
             <template #prepend>
-              <q-icon name="search" color="red-8" />
+              <q-icon name="search" color="red-4" />
+            </template>
+            <template #append v-if="search">
+              <q-icon name="close" class="cursor-pointer" size="18px" @click="search = ''; fetchPending()" />
             </template>
           </q-input>
         </div>
@@ -95,14 +97,14 @@
           no-caps
           outline
           icon="print"
-          class="btn-3d-outline export-btn q-ml-auto"
-          color="red-8"
+          class="btn-glass export-btn q-ml-auto"
+          color="red-7"
           @click="handleExport"
           :loading="isExporting"
         />
       </div>
 
-      <!-- ================= MAIN CONTENT AREA (Glass Card) ================= -->
+      <!-- ================= MAIN CONTENT AREA ================= -->
       <q-card flat class="glass-card table-glass-container">
         <!-- TABS -->
         <div class="panel-header q-pt-sm">
@@ -114,7 +116,6 @@
             indicator-color="red-9"
             align="left"
             narrow-indicator
-            @update:model-value="fetchPending"
           >
             <q-tab
               name="pending"
@@ -137,19 +138,22 @@
           :columns="columns"
           row-key="approval_id"
           :loading="loading"
-          no-data-label="No applications found"
           @row-click="openVendorInfo"
         >
+          <!-- FIXED LOADING STATE -->
           <template #loading>
-            <q-inner-loading showing color="red-8" class="bg-transparent">
-              <q-spinner-dots size="40px" />
-            </q-inner-loading>
+            <div class="full-width column flex-center q-py-xl table-loading-wrapper">
+              <q-spinner-dots size="48px" color="red-7" />
+              <div class="text-subtitle2 text-weight-bold q-mt-md text-grey-7">
+                Fetching applications...
+              </div>
+            </div>
           </template>
 
-          <!-- INTERACTIVE ACTIONS -->
+          <!-- INTERACTIVE ACTIONS (CENTERED) -->
           <template #body-cell-actions="props">
-            <q-td :props="props" align="right">
-              <div class="flex items-center gap-sm justify-end">
+            <q-td :props="props" class="text-center">
+              <div class="flex items-center gap-sm justify-center no-wrap">
                 <template v-if="props.row.status === 'pending'">
                   <q-btn
                     label="Approve"
@@ -183,19 +187,21 @@
             </q-td>
           </template>
 
+          <!-- FIXED NO DATA SLOT (HIDDEN WHEN LOADING) -->
           <template #no-data>
             <div
+              v-if="!loading"
               class="full-width column flex-center q-py-xl empty-state-glass"
             >
-              <div class="empty-icon-3d q-mb-md">
-                <q-icon name="inbox" color="grey-6" size="40px" />
+              <div class="empty-icon-glass q-mb-md">
+                <q-icon name="inbox" color="red-3" size="40px" />
               </div>
-              <div class="text-h6 text-weight-bold text-grey-8"
-                >No applications found</div
-              >
-              <div class="text-body2 text-grey-6"
-                >There are currently no items matching your criteria.</div
-              >
+              <div class="text-h6 text-weight-bold">
+                No applications found
+              </div>
+              <div class="text-body2 text-grey-6">
+                There are currently no items matching your criteria.
+              </div>
             </div>
           </template>
         </q-table>
@@ -212,8 +218,8 @@
         <q-card-section
           class="row items-center justify-between q-pa-md panel-header"
         >
-          <div class="text-h6 text-weight-bold text-dark row items-center">
-            <div class="header-accent-3d q-mr-sm"></div>
+          <div class="text-h6 text-weight-bold row items-center">
+            <div class="header-accent-glass q-mr-sm"></div>
             Application Review
           </div>
           <q-btn
@@ -235,7 +241,7 @@
             <div class="info-store-name q-mb-xs">{{
               selectedVendor.store?.store_name || 'N/A'
             }}</div>
-            <div class="info-owner-name text-grey-7 q-mb-md"
+            <div class="info-owner-name text-red-7 q-mb-md"
               >Owned by:
               {{
                 selectedVendor.store?.owner?.full_name ||
@@ -243,7 +249,7 @@
               }}</div
             >
 
-            <div class="image-3d-container">
+            <div class="image-glass-container">
               <q-img
                 v-if="
                   selectedVendor.store?.store_picture_url &&
@@ -272,47 +278,47 @@
             </div>
           </div>
 
-          <div class="row q-col-gutter-y-md q-col-gutter-x-xl q-mb-lg">
+          <div class="row q-col-gutter-y-md q-col-gutter-x-xl q-mb-lg info-grid-glass q-pa-md">
             <div class="col-12 col-sm-6">
               <div
-                class="text-caption text-grey-6 text-uppercase text-weight-bold"
+                class="modal-label-sub text-caption text-uppercase text-weight-bold"
                 >Contact Email</div
               >
-              <div class="text-subtitle2 text-weight-bold text-dark">{{
+              <div class="modal-value-main text-subtitle2 text-weight-bold">{{
                 selectedVendor.email
               }}</div>
             </div>
             <div class="col-12 col-sm-6">
               <div
-                class="text-caption text-grey-6 text-uppercase text-weight-bold"
+                class="modal-label-sub text-caption text-uppercase text-weight-bold"
                 >Contact Phone</div
               >
-              <div class="text-subtitle2 text-weight-bold text-dark">{{
+              <div class="modal-value-main text-subtitle2 text-weight-bold font-mono">{{
                 selectedVendor.phone || 'N/A'
               }}</div>
             </div>
             <div class="col-12 col-sm-6">
               <div
-                class="text-caption text-grey-6 text-uppercase text-weight-bold"
+                class="modal-label-sub text-caption text-uppercase text-weight-bold"
                 >Operating Days</div
               >
-              <div class="text-subtitle2 text-weight-bold text-dark">{{
+              <div class="modal-value-main text-subtitle2 text-weight-bold">{{
                 formatOperatingDays(selectedVendor.store?.operating_days)
               }}</div>
             </div>
             <div class="col-12 col-sm-6">
               <div
-                class="text-caption text-grey-6 text-uppercase text-weight-bold"
+                class="modal-label-sub text-caption text-uppercase text-weight-bold"
                 >Business Hours</div
               >
-              <div class="text-subtitle2 text-weight-bold text-dark"
+              <div class="modal-value-main text-subtitle2 text-weight-bold"
                 >{{ selectedVendor.store?.opening_time || 'N/A' }} -
                 {{ selectedVendor.store?.closing_time || 'N/A' }}</div
               >
             </div>
           </div>
 
-          <div class="map-container-3d" v-if="isValidLocation(selectedVendor)">
+          <div class="map-container-glass" v-if="isValidLocation(selectedVendor)">
             <iframe
               :src="
                 getMapUrl(
@@ -331,8 +337,9 @@
               <q-btn
                 label="Open in Google Maps"
                 no-caps
-                class="btn-3d-outline q-px-md"
-                text-color="blue-8"
+                class="btn-glass q-px-md"
+                color="red-7"
+                outline
                 icon="map"
                 :href="`https://www.google.com/maps/dir/?api=1&destination=${selectedVendor.store.latitude},${selectedVendor.store.longitude}`"
                 target="_blank"
@@ -341,7 +348,7 @@
           </div>
         </q-card-section>
 
-        <q-separator color="grey-3" />
+        <q-separator class="modal-divider" />
 
         <q-card-actions
           align="right"
@@ -371,9 +378,8 @@
             <q-btn
               flat
               label="Close"
-              color="grey-8"
               no-caps
-              class="btn-3d-outline q-px-md"
+              class="btn-glass q-px-md"
               @click="showVendorInfoModal = false"
             />
             <q-btn
@@ -383,13 +389,7 @@
               color="white"
               no-caps
               class="btn-approve-3d q-px-md q-ml-sm"
-              style="
-                background: linear-gradient(
-                  180deg,
-                  #f97316 0%,
-                  #ea580c 100%
-                ) !important;
-              "
+              style="background: linear-gradient(180deg, #f97316 0%, #ea580c 100%) !important;"
               @click="handleApprove(selectedVendor); showVendorInfoModal = false;"
             />
           </template>
@@ -397,9 +397,8 @@
             <q-btn
               outline
               label="Close"
-              color="grey-8"
               no-caps
-              class="btn-3d-outline q-px-md"
+              class="btn-glass q-px-md"
               @click="showVendorInfoModal = false"
             />
           </template>
@@ -423,10 +422,10 @@
           <div class="action-icon-3d bg-red-1 text-red-9 q-mb-md q-mx-auto">
             <q-icon name="warning" size="36px" />
           </div>
-          <div class="text-h5 text-weight-bold text-dark q-mb-sm"
+          <div class="text-h5 text-weight-bold q-mb-sm"
             >Reject Application</div
           >
-          <p class="text-body2 text-grey-7 q-px-md">
+          <p class="text-body2 q-px-md opacity-80">
             Action requires justification. Please provide a reason for rejecting
             this application. This will be visible in records.
           </p>
@@ -445,9 +444,8 @@
           <q-btn
             flat
             label="Cancel"
-            color="grey-8"
             no-caps
-            class="btn-3d-outline q-px-md q-mr-sm"
+            class="btn-glass q-px-md q-mr-sm"
             v-close-popup
           />
           <q-btn
@@ -479,10 +477,10 @@
           <div class="action-icon-3d bg-green-1 text-green-7 q-mb-md q-mx-auto">
             <q-icon name="check_circle" size="36px" />
           </div>
-          <div class="text-h5 text-weight-bold text-dark q-mb-sm"
+          <div class="text-h5 text-weight-bold q-mb-sm"
             >Approve Vendor</div
           >
-          <p class="text-body1 text-grey-7 q-px-md">
+          <p class="text-body1 q-px-md opacity-80">
             Are you sure you want to approve this application?
             <strong>{{ approveTarget?.store_name }}</strong> will immediately
             gain full access to the Vendor Dashboard.
@@ -493,9 +491,8 @@
           <q-btn
             flat
             label="Cancel"
-            color="grey-8"
             no-caps
-            class="btn-3d-outline q-px-md q-mr-sm"
+            class="btn-glass q-px-md q-mr-sm"
             v-close-popup
           />
           <q-btn
@@ -540,43 +537,42 @@ const rejectionReason = ref('')
 const showVendorInfoModal = ref(false)
 const selectedVendor = ref(null)
 
-// FIXED: Added classes: 'print-hide' and headerClasses: 'print-hide' to the actions column
 const columns = [
   {
     name: 'owner_name',
-    label: 'Name',
+    label: 'NAME',
     field: 'owner_name',
     align: 'left',
     sortable: true
   },
   {
     name: 'email',
-    label: 'Email',
+    label: 'EMAIL',
     field: 'email',
     align: 'left',
     sortable: true
   },
-  { name: 'phone', label: 'Phone', field: 'phone', align: 'left' },
+  { name: 'phone', label: 'PHONE', field: 'phone', align: 'left' },
   {
     name: 'store_name',
-    label: 'Store Name',
+    label: 'STORE NAME',
     field: 'store_name',
     align: 'left'
   },
   {
     name: 'applied_at',
-    label: 'Applied',
+    label: 'APPLIED',
     field: 'applied_at',
     align: 'left',
-    format: val => (val ? new Date(val).toLocaleDateString() : '—')
+    format: val => (val ? new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—')
   },
   {
     name: 'actions',
-    label: 'Actions',
+    label: 'ACTIONS',
     field: 'actions',
-    align: 'right',
+    align: 'center',
     classes: 'print-hide',
-    headerClasses: 'print-hide'
+    headerClasses: 'print-hide text-center'
   }
 ]
 
@@ -588,7 +584,7 @@ const fetchPending = async () => {
         search: search.value || undefined
       }
     })
-    pending.value = res.data
+    pending.value = res.data.data || res.data || []
   } catch (error) {
     console.error('Error fetching applications:', error)
   } finally {
@@ -624,7 +620,7 @@ const formatOperatingDays = days => {
     }
 
     return 'N/A'
-  } catch (e) {
+  } catch {
     return 'N/A'
   }
 }
@@ -719,10 +715,8 @@ const handleExport = async () => {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    $q.notify({ type: 'positive', message: 'Report exported successfully.', color: 'green-7' })
   } catch (err) {
     console.error('Export failed:', err)
-    $q.notify({ type: 'negative', message: 'Failed to export report. Please try again.', color: 'red-7' })
   } finally {
     isExporting.value = false
   }
@@ -733,10 +727,8 @@ onMounted(() => {
 })
 </script>
 
-<!-- Global unscoped style block specifically for targeting layout resets during print -->
 <style>
 @media print {
-  /* Hide main application layout wrappers */
   .q-drawer,
   .q-header,
   .q-footer,
@@ -760,28 +752,15 @@ onMounted(() => {
 }
 </style>
 
-<!-- Existing scoped styles for the current component -->
 <style scoped>
 /* ==========================================================
-   AMBIENT BACKGROUND 
+   PAGE BASE
 ========================================================== */
 .admin-page {
   background-color: #f1f5f9;
-  background-image:
-    radial-gradient(
-      circle at 0% 0%,
-      rgba(220, 38, 38, 0.05) 0%,
-      transparent 500px
-    ),
-    radial-gradient(
-      circle at 100% 100%,
-      rgba(15, 23, 42, 0.03) 0%,
-      transparent 400px
-    );
-  background-attachment: fixed;
   min-height: 100vh;
-  font-family: 'Roboto', Arial, sans-serif;
   overflow-x: hidden;
+  position: relative;
 }
 
 .page-container {
@@ -796,9 +775,6 @@ onMounted(() => {
 .line-height-tight {
   line-height: 1.2;
 }
-.opacity-70 {
-  opacity: 0.7;
-}
 .opacity-80 {
   opacity: 0.8;
 }
@@ -811,30 +787,35 @@ onMounted(() => {
 .flex-1 {
   flex: 1;
 }
+.font-mono {
+  font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+}
 .text-dark {
   color: #0f172a !important;
 }
 
 /* ==========================================================
-   COLORED PROCESSING HEADER
+   HEADER BANNER & MATCHED TYPOGRAPHY
 ========================================================== */
 .approvals-header-colored {
-  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-  border-radius: 16px;
-  box-shadow:
-    0 15px 35px rgba(220, 38, 38, 0.25),
-    inset 0 2px 5px rgba(255, 255, 255, 0.2);
+  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 45%, #7f1d1d 100%);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(185, 28, 28, 0.22);
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-main-title {
+  font-size: 2.15rem;
+  letter-spacing: -0.025em;
 }
 
 .header-bg-glow {
   position: absolute;
-  top: -50px;
-  left: 10%;
-  width: 300px;
-  height: 300px;
+  top: -50%;
+  right: -10%;
+  width: 400px;
+  height: 400px;
   background: radial-gradient(
     circle,
     rgba(255, 255, 255, 0.15) 0%,
@@ -844,14 +825,12 @@ onMounted(() => {
   pointer-events: none;
 }
 
-.header-icon-box-3d {
+.header-white-block {
   width: 72px;
   height: 72px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
-  box-shadow:
-    8px 8px 20px rgba(0, 0, 0, 0.2),
-    inset 2px 2px 4px rgba(255, 255, 255, 1);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   z-index: 2;
 }
 
@@ -862,9 +841,9 @@ onMounted(() => {
   transform: translate(-50%, -50%);
   width: 100%;
   height: 100%;
-  border-radius: 16px;
+  border-radius: 18px;
   border: 2px solid rgba(255, 255, 255, 0.6);
-  animation: pulse-animation 2s infinite;
+  animation: pulse-animation 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
 
@@ -879,52 +858,68 @@ onMounted(() => {
   }
 }
 
-.badge-dark-glass {
+.badge-dark-capsule {
   display: inline-flex;
   align-items: center;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.35);
   color: #ffffff;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 24px;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
-.stats-widget-glass {
-  background: rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.1);
-  min-width: 180px;
+.header-stat-box {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  padding: 12px 24px;
+  min-width: 150px;
+}
+
+.stat-box-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #fecaca;
+  line-height: 1;
+}
+
+.stat-box-value {
+  font-size: 28px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.stat-box-unit {
+  font-size: 11px;
+  color: #fecaca;
+  font-weight: 600;
 }
 
 /* ==========================================================
-   GLASSMORPHISM CORE & TINTED TABLE
+   GLASSMORPHISM CORE & TABLES
 ========================================================== */
 .glass-toolbar {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-top: 1px solid rgba(255, 255, 255, 0.9);
-  border-left: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 18px;
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.04),
-    inset 0 -2px 5px rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.03);
 }
 
 .table-glass-container {
@@ -932,73 +927,55 @@ onMounted(() => {
 }
 
 .panel-header {
-  background: linear-gradient(
-    90deg,
-    rgba(254, 242, 242, 0.7) 0%,
-    transparent 100%
-  );
-  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.7);
 }
 
-.header-accent-3d {
+.header-accent-glass {
   width: 5px;
   height: 24px;
-  background: linear-gradient(180deg, #f87171, #dc2626);
+  background: linear-gradient(180deg, #dc2626, #f87171);
   border-radius: 4px;
-  box-shadow: 2px 2px 5px rgba(220, 38, 38, 0.3);
 }
 
-/* ==========================================================
-   TABLE & INTERACTIVE ELEMENTS
-========================================================== */
 :deep(.custom-glass-table) {
-  background: rgba(248, 250, 252, 0.4);
+  background: transparent;
 }
 
 :deep(.custom-glass-table thead tr th) {
-  background: rgba(220, 38, 38, 0.08);
-  backdrop-filter: blur(4px);
+  background: #fdf2f2;
   font-weight: 800;
   color: #991b1b;
   text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: 0.05em;
-  padding: 16px 24px;
-  border-bottom: 1px solid rgba(220, 38, 38, 0.15);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 14px 20px;
+  border-bottom: 1.5px solid #fee2e2;
 }
 
 :deep(.custom-glass-table tbody td) {
-  padding: 16px 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-  font-size: 14px;
-  color: #1e293b;
+  padding: 16px 20px;
+  font-size: 13.5px;
 }
 
 :deep(.interactive-table tbody tr) {
-  transition: all 0.2s ease;
   cursor: pointer;
 }
 
-:deep(.interactive-table tbody tr:hover) {
-  background-color: rgba(255, 255, 255, 0.95);
-  transform: scale(1.002);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  z-index: 2;
-  position: relative;
+.table-loading-wrapper {
+  background: transparent;
 }
 
 .empty-state-glass {
-  background: rgba(255, 255, 255, 0.3);
+  background: transparent;
 }
 
-.empty-icon-3d {
-  padding: 16px;
+.empty-icon-glass {
+  padding: 20px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  box-shadow:
-    4px 4px 10px rgba(0, 0, 0, 0.05),
-    -4px -4px 10px rgba(255, 255, 255, 0.8),
-    inset 1px 1px 3px rgba(255, 255, 255, 1);
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.9);
 }
 
 /* ==========================================================
@@ -1009,25 +986,24 @@ onMounted(() => {
   width: 100%;
 }
 .search-input-glass :deep(.q-field__control) {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(8px);
-  border-radius: 8px;
-  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 1);
+}
+
+.btn-glass {
+  border-radius: 10px !important;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 1) !important;
 }
 
 .btn-3d {
   border-radius: 8px !important;
   font-weight: 600;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-  transition: all 0.2s ease;
-}
-.btn-3d:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-}
-.btn-3d:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .btn-approve-3d {
@@ -1035,10 +1011,7 @@ onMounted(() => {
   color: white !important;
   border-radius: 8px !important;
   font-weight: 700;
-  box-shadow:
-    0 4px 10px rgba(22, 163, 74, 0.3),
-    inset 0 1px 1px rgba(255, 255, 255, 0.4);
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);
   border: 1px solid #15803d;
 }
 .btn-approve-3d:hover {
@@ -1053,7 +1026,6 @@ onMounted(() => {
   color: #dc2626 !important;
   border: 1px solid #ef4444 !important;
   box-shadow: 0 2px 5px rgba(220, 38, 38, 0.1);
-  transition: all 0.2s ease;
 }
 .btn-reject-3d:hover {
   background: #fef2f2 !important;
@@ -1061,43 +1033,29 @@ onMounted(() => {
   box-shadow: 0 4px 8px rgba(220, 38, 38, 0.15);
 }
 
-.btn-3d-outline {
-  border-radius: 8px !important;
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.5) !important;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-}
-.btn-3d-outline:hover {
-  background: rgba(255, 255, 255, 0.8) !important;
-  transform: translateY(-1px);
-}
-
 .rejected-chip-3d {
-  background: linear-gradient(135deg, #fef2f2, #fee2e2) !important;
-  color: #dc2626;
-  border: 1px solid rgba(220, 38, 38, 0.2);
-  box-shadow:
-    2px 2px 5px rgba(0, 0, 0, 0.05),
-    inset 1px 1px 0 rgba(255, 255, 255, 0.8);
+  background: #fee2e2 !important;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
 /* ==========================================================
-   MODALS (Solid Background for readability)
+   MODALS
 ========================================================== */
 .review-dialog-glass {
-  width: 500px;
+  width: 550px;
   max-width: 95vw;
-  border-radius: 20px !important;
-  background: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 1);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
 .vendor-info-dialog {
-  width: 650px;
+  width: 680px;
 }
 
 .dialog-bg-glow-red {
@@ -1105,13 +1063,9 @@ onMounted(() => {
   top: -80px;
   left: 50%;
   transform: translateX(-50%);
-  width: 250px;
-  height: 250px;
-  background: radial-gradient(
-    circle,
-    rgba(220, 38, 38, 0.1) 0%,
-    transparent 70%
-  );
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(220, 38, 38, 0.15) 0%, transparent 60%);
   border-radius: 50%;
   z-index: 1;
   pointer-events: none;
@@ -1122,26 +1076,22 @@ onMounted(() => {
   top: -80px;
   left: 50%;
   transform: translateX(-50%);
-  width: 250px;
-  height: 250px;
-  background: radial-gradient(
-    circle,
-    rgba(34, 197, 94, 0.15) 0%,
-    transparent 70%
-  );
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.15) 0%, transparent 60%);
   border-radius: 50%;
   z-index: 1;
   pointer-events: none;
 }
 
 .dialog-actions-glass {
-  background: rgba(248, 250, 252, 0.9);
-  border-top: 1px solid rgba(226, 232, 240, 1);
+  background: rgba(255, 255, 255, 0.85);
+  border-top: 1px solid rgba(255, 255, 255, 1);
 }
 
 .custom-glass-input :deep(.q-field__control) {
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
 }
 
 .action-icon-3d {
@@ -1151,39 +1101,77 @@ onMounted(() => {
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  box-shadow:
-    6px 6px 12px rgba(0, 0, 0, 0.08),
-    -4px -4px 10px rgba(255, 255, 255, 1),
-    inset 2px 2px 5px rgba(255, 255, 255, 0.5);
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 .info-store-name {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 800;
-  color: #111;
   line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 .info-owner-name {
   font-size: 15px;
+  font-weight: 500;
 }
 
-.image-3d-container {
-  border-radius: 8px;
-  padding: 4px;
-  background: #ffffff;
-  box-shadow:
-    0 10px 25px rgba(0, 0, 0, 0.1),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+.image-glass-container {
+  border-radius: 16px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
-.map-container-3d {
-  border-radius: 12px;
-  padding: 8px;
-  background: #ffffff;
-  box-shadow:
-    inset 2px 2px 5px rgba(0, 0, 0, 0.05),
-    inset -2px -2px 5px rgba(255, 255, 255, 1),
-    0 4px 15px rgba(0, 0, 0, 0.05);
+.info-grid-glass {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.map-container-glass {
+  border-radius: 16px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+.modal-label-sub {
+  color: #64748b;
+}
+
+.modal-value-main {
+  color: #0f172a;
+}
+
+.modal-divider {
+  border-color: #e2e8f0;
+}
+
+/* ==========================================================
+   DARK MODE OVERRIDES
+========================================================== */
+body.body--dark {
+  .modal-label-sub {
+    color: #94a3b8 !important;
+  }
+
+  .modal-value-main {
+    color: #f8fafc !important;
+  }
+
+  .modal-divider {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .rejected-chip-3d {
+    background: rgba(239, 68, 68, 0.18) !important;
+    border-color: rgba(239, 68, 68, 0.35) !important;
+    color: #fca5a5 !important;
+  }
 }
 
 /* ==========================================================
@@ -1201,7 +1189,6 @@ onMounted(() => {
     display: none !important;
   }
 
-  /* FIXED: Added targeting for our specific print-hide class */
   :deep(.print-hide) {
     display: none !important;
   }
@@ -1224,7 +1211,6 @@ onMounted(() => {
     background: white !important;
   }
 
-  /* FIXED: Force table layout to respect paper boundaries and allow wrapping */
   :deep(.custom-glass-table) {
     background: white !important;
     width: 100% !important;
@@ -1234,10 +1220,9 @@ onMounted(() => {
     width: 100% !important;
   }
 
-  /* FIXED: Dramatically reduced padding and allowed wrapping for print mode */
   :deep(.custom-glass-table thead tr th),
   :deep(.custom-glass-table tbody td) {
-    padding: 6px 4px !important;
+    padding: 8px 6px !important;
     white-space: normal !important;
     word-break: break-word !important;
     font-size: 11px !important;
@@ -1252,32 +1237,29 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .page-container {
-    padding: 20px;
+    padding: 20px 16px;
   }
-  .approvals-header-colored > .row {
+  .approvals-header-colored {
     flex-direction: column;
     align-items: flex-start;
   }
-  .stats-widget-glass {
+  .header-stat-box {
+    margin-top: 14px;
     width: 100%;
-    justify-content: flex-start;
   }
 }
 
 @media (max-width: 600px) {
-  .page-container {
-    padding: 16px;
-  }
-  .toolbar > .row {
+  .toolbar {
     flex-direction: column;
     align-items: stretch;
-    width: 100%;
+    gap: 12px;
   }
   .search-input-glass {
     max-width: 100%;
+    width: 100%;
   }
   .export-btn {
-    margin-top: 12px;
     margin-left: 0;
     width: 100%;
   }

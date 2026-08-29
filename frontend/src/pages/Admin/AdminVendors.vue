@@ -1,73 +1,74 @@
 <template>
   <q-page class="admin-page">
     <div class="page-container">
-      <!-- ================= PAGE BANNER (Colored Header) ================= -->
-      <div
-        class="management-header-color q-mb-lg row items-center justify-between q-pa-lg"
-      >
+      <!-- ================= PAGE BANNER ================= -->
+      <div class="management-header-color q-mb-lg row items-center justify-between q-pa-lg">
         <div class="header-bg-glow"></div>
 
-        <div
-          class="row items-center col-12 col-md-8 relative-position"
-          style="z-index: 2"
-        >
-          <div
-            class="header-icon-glass q-mr-lg flex flex-center relative-position"
-          >
-            <q-icon name="manage_accounts" size="36px" color="white" />
+        <div class="row items-center col-12 col-md-8 relative-position" style="z-index: 2">
+          <!-- White Block with Red Storefront Icon and Pulse Effect -->
+          <div class="header-white-block q-mr-lg flex flex-center relative-position">
+            <q-icon name="storefront" size="36px" color="red-9" />
             <div class="pulse-ring"></div>
           </div>
 
           <div>
-            <div class="q-mb-sm flex items-center">
-              <span class="badge-glass">
-                <q-icon
-                  name="admin_panel_settings"
-                  size="14px"
-                  class="q-mr-xs"
-                />
-                Administration
+            <div class="q-mb-xs flex items-center">
+              <span class="badge-dark-capsule">
+                <q-icon name="admin_panel_settings" size="14px" class="q-mr-xs" />
+                ADMINISTRATION
               </span>
-              <span
-                class="text-caption text-white opacity-80 q-ml-sm text-weight-bold tracking-wide"
-              >
+              <span class="text-caption text-white opacity-80 q-ml-sm text-weight-bold tracking-wide">
                 VENDOR DIRECTORY
               </span>
             </div>
 
-            <h1
-              class="text-h4 text-weight-bolder text-white q-mt-none q-mb-xs line-height-tight"
-            >
+            <h1 class="header-main-title text-weight-bolder text-white q-mt-none q-mb-xs line-height-tight">
               Manage Vendors
             </h1>
 
-            <div
-              class="text-white opacity-80 row items-center text-body2 text-weight-medium"
-            >
+            <div class="text-white opacity-80 row items-center text-body2 text-weight-medium">
               View all vendors, update statuses, and review quick insights.
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side Dynamic Tab-Specific Stat Counter Box -->
+        <div class="col-12 col-md-auto q-mt-md q-mt-md-none flex justify-end" style="z-index: 2">
+          <div class="header-stat-box column flex-center text-center">
+            <span class="stat-box-label text-weight-bolder text-uppercase">
+              {{ currentTab === 'active' ? 'ACTIVE VENDORS' : 'DELETED VENDORS' }}
+            </span>
+            <div class="row items-baseline no-wrap q-mt-xs">
+              <span class="stat-box-value font-mono">{{ currentTab === 'active' ? counts.active : counts.deleted }}</span>
+              <span class="stat-box-unit q-ml-xs">accounts</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ================= TOOLBAR (Glass) ================= -->
-      <div
-        class="toolbar glass-toolbar q-pa-md q-mb-md row items-center justify-between"
-      >
+      <!-- ================= TOOLBAR ================= -->
+      <div class="toolbar glass-toolbar q-pa-md q-mb-md row items-center justify-between">
         <div class="row items-center gap-md flex-1">
+          <!-- Search Input -->
           <q-input
             v-model="search"
             outlined
             dense
-            placeholder="Search by name or email..."
+            placeholder="Search by name, email, or store..."
             class="search-input-glass"
+            debounce="300"
             @update:model-value="fetchVendors"
           >
             <template #prepend>
               <q-icon name="search" color="red-4" />
             </template>
+            <template #append v-if="search">
+              <q-icon name="close" class="cursor-pointer" size="18px" @click="search = ''; fetchVendors()" />
+            </template>
           </q-input>
 
+          <!-- Status Filter -->
           <q-select
             v-model="statusFilter"
             outlined
@@ -77,7 +78,7 @@
             clearable
             placeholder="Filter by status"
             class="filter-select-glass"
-            :options="statusOptions"
+            :options="statusFilterOptions"
             @update:model-value="fetchVendors"
           >
             <template #prepend>
@@ -86,6 +87,7 @@
           </q-select>
         </div>
 
+        <!-- Export Action -->
         <q-btn
           label="Export List"
           no-caps
@@ -98,7 +100,7 @@
         />
       </div>
 
-      <!-- ================= MAIN CONTENT AREA (Glass Card) ================= -->
+      <!-- ================= MAIN CONTENT AREA ================= -->
       <q-card flat class="glass-card table-glass-container">
         <!-- TABS -->
         <div class="panel-header q-pt-sm">
@@ -106,8 +108,8 @@
             v-model="currentTab"
             dense
             class="text-grey-7"
-            active-color="red-7"
-            indicator-color="red-7"
+            active-color="red-9"
+            indicator-color="red-9"
             align="left"
             narrow-indicator
             @update:model-value="fetchVendors"
@@ -133,40 +135,41 @@
           :columns="columns"
           row-key="user_id"
           :loading="loading"
-          no-data-label="No vendors found"
           @row-click="openVendorInfo"
         >
+          <!-- FIXED LOADING STATE -->
           <template #loading>
-            <q-inner-loading showing color="red-5" class="bg-transparent">
-              <q-spinner-dots size="40px" />
-            </q-inner-loading>
+            <div class="full-width column flex-center q-py-xl table-loading-wrapper">
+              <q-spinner-dots size="48px" color="red-7" />
+              <div class="text-subtitle2 text-weight-bold q-mt-md text-grey-7">
+                Fetching vendors...
+              </div>
+            </div>
           </template>
 
-          <!-- STATUS COLUMN -->
+          <!-- STATUS COLUMN (CENTERED) -->
           <template #body-cell-account_status="props">
-            <q-td :props="props">
-              <q-select
-                v-model="props.row.account_status"
-                dense
-                borderless
-                emit-value
-                map-options
-                class="status-select-glass print-hide"
-                :class="'status-' + props.row.account_status"
-                :options="statusOptions"
-                @update:model-value="
-                  val => updateStatus(props.row.user_id, val)
-                "
-              >
-                <template v-slot:selected>
-                  <div class="text-weight-bold" @click.stop>
-                    {{
-                      props.row.account_status.charAt(0).toUpperCase() +
-                      props.row.account_status.slice(1)
-                    }}
-                  </div>
-                </template>
-              </q-select>
+            <q-td :props="props" class="text-center">
+              <div class="row items-center justify-center">
+                <q-select
+                  v-model="props.row.account_status"
+                  dense
+                  borderless
+                  emit-value
+                  map-options
+                  class="status-select-glass print-hide"
+                  :class="'status-' + props.row.account_status"
+                  :options="statusOptions"
+                  @update:model-value="val => updateStatus(props.row.user_id, val)"
+                >
+                  <template v-slot:selected>
+                    <div class="text-weight-bold row items-center no-wrap text-capitalize status-selected-label" @click.stop>
+                      <span class="status-indicator-dot q-mr-xs"></span>
+                      <span>{{ props.row.account_status }}</span>
+                    </div>
+                  </template>
+                </q-select>
+              </div>
               <span
                 class="print-only text-weight-bold text-uppercase"
                 style="display: none"
@@ -176,52 +179,56 @@
             </q-td>
           </template>
 
-          <!-- LAST ACTIVITY -->
+          <!-- LAST ACTIVITY / APPLIED -->
           <template #body-cell-last_activity_at="props">
             <q-td :props="props" class="text-grey-8 text-weight-medium">
-              <q-icon
-                name="schedule"
-                color="red-3"
-                class="q-mr-xs print-hide"
-                size="16px"
-              />
-              {{ formatActivity(props.row.last_activity_at) }}
+              <div class="row items-center no-wrap">
+                <q-icon
+                  name="schedule"
+                  color="red-4"
+                  class="q-mr-xs print-hide"
+                  size="16px"
+                />
+                <span>{{ formatActivity(props.row.last_activity_at) }}</span>
+              </div>
             </q-td>
           </template>
 
-          <!-- INSIGHTS -->
+          <!-- ACTIONS / INSIGHTS (CENTERED) -->
           <template #body-cell-insights="props">
-            <q-td :props="props">
-              <div class="insights-cell print-hide">
+            <q-td :props="props" class="text-center">
+              <div class="insights-cell print-hide justify-center">
                 <span class="insight-chip-glass orders-chip">
                   <q-icon name="receipt_long" size="14px" />
-                  {{ props.row.orders_count }} orders
+                  {{ props.row.orders_count || 0 }} orders
                 </span>
                 <span class="insight-chip-glass products-chip">
                   <q-icon name="inventory_2" size="14px" />
-                  {{ props.row.active_products }} products
+                  {{ props.row.store?.inventory_count || props.row.active_products || 0 }} products
                 </span>
               </div>
-              <div class="print-only text-grey-8" style="display: none">
-                {{ props.row.completed_orders }} Orders,
-                {{ props.row.active_products }} Products
+              <div class="print-only text-grey-8 text-center" style="display: none">
+                {{ props.row.orders_count || 0 }} Orders,
+                {{ props.row.store?.inventory_count || props.row.active_products || 0 }} Products
               </div>
             </q-td>
           </template>
 
+          <!-- FIXED NO DATA SLOT (HIDDEN WHEN LOADING) -->
           <template #no-data>
             <div
+              v-if="!loading"
               class="full-width column flex-center q-py-xl empty-state-glass"
             >
               <div class="empty-icon-glass q-mb-md">
                 <q-icon name="people_outline" color="red-3" size="40px" />
               </div>
-              <div class="text-h6 text-weight-bold text-grey-8"
-                >No vendors found</div
-              >
-              <div class="text-body2 text-grey-6"
-                >There are currently no accounts matching your criteria.</div
-              >
+              <div class="text-h6 text-weight-bold">
+                No vendors found
+              </div>
+              <div class="text-body2 text-grey-6">
+                There are currently no accounts matching your criteria.
+              </div>
             </div>
           </template>
         </q-table>
@@ -244,10 +251,10 @@
           <div class="action-icon-glass bg-red-1 text-red-8 q-mb-md q-mx-auto">
             <q-icon name="gavel" size="36px" />
           </div>
-          <div class="text-h5 text-weight-bold text-dark q-mb-sm"
-            >Suspend Vendor</div
-          >
-          <p class="text-body2 text-grey-7 q-px-md">
+          <div class="text-h5 text-weight-bold q-mb-sm">
+            Suspend Vendor
+          </div>
+          <p class="text-body2 q-px-md opacity-80">
             Please provide a reason for suspending this vendor account. This
             message will be shown to the vendor upon login.
           </p>
@@ -266,7 +273,6 @@
           <q-btn
             flat
             label="Cancel"
-            color="grey-8"
             no-caps
             class="btn-glass-flat q-px-md q-mr-sm"
             @click="cancelSuspension"
@@ -294,7 +300,7 @@
         <q-card-section
           class="row items-center justify-between q-pa-md panel-header"
         >
-          <div class="text-h6 text-weight-bold text-dark row items-center">
+          <div class="text-h6 text-weight-bold row items-center">
             <div class="header-accent-glass q-mr-sm"></div>
             Vendor Details
           </div>
@@ -316,7 +322,7 @@
         >
           <div class="text-center q-mb-lg">
             <div class="info-store-name q-mb-xs">{{
-              selectedVendor.store_name || 'N/A'
+              selectedVendor.store?.store_name || selectedVendor.store_name || 'N/A'
             }}</div>
             <div class="info-owner-name text-red-7 q-mb-md"
               >Owned by: {{ selectedVendor.full_name }}</div
@@ -325,11 +331,10 @@
             <div class="image-glass-container">
               <q-img
                 v-if="
-                  selectedVendor.store_picture_url &&
-                  selectedVendor.store_picture_url !== 'null' &&
-                  selectedVendor.store_picture_url.trim() !== ''
+                  selectedVendor.store?.store_picture_url ||
+                  selectedVendor.store_picture_url
                 "
-                :src="selectedVendor.store_picture_url"
+                :src="selectedVendor.store?.store_picture_url || selectedVendor.store_picture_url"
                 style="width: 100%; height: 220px"
                 fit="cover"
                 class="rounded-borders"
@@ -356,42 +361,42 @@
           >
             <div class="col-12 col-sm-6">
               <div
-                class="text-caption text-red-4 text-uppercase text-weight-bold"
+                class="modal-label-sub text-caption text-uppercase text-weight-bold"
                 >Operating Days</div
               >
-              <div class="text-subtitle2 text-weight-bold text-dark">{{
-                formatOperatingDays(selectedVendor.operating_days)
+              <div class="modal-value-main text-subtitle2 text-weight-bold">{{
+                formatOperatingDays(selectedVendor.store?.operating_days || selectedVendor.operating_days)
               }}</div>
             </div>
             <div class="col-12 col-sm-6">
               <div
-                class="text-caption text-red-4 text-uppercase text-weight-bold"
+                class="modal-label-sub text-caption text-uppercase text-weight-bold"
                 >Business Hours</div
               >
-              <div class="text-subtitle2 text-weight-bold text-dark"
-                >{{ selectedVendor.opening_time || 'N/A' }} -
-                {{ selectedVendor.closing_time || 'N/A' }}</div
+              <div class="modal-value-main text-subtitle2 text-weight-bold"
+                >{{ (selectedVendor.store?.opening_time || selectedVendor.opening_time) || 'N/A' }} -
+                {{ (selectedVendor.store?.closing_time || selectedVendor.closing_time) || 'N/A' }}</div
               >
             </div>
             <div class="col-12">
               <div
-                class="text-caption text-red-4 text-uppercase text-weight-bold"
+                class="modal-label-sub text-caption text-uppercase text-weight-bold"
                 >Map Coordinates</div
               >
-              <div class="text-subtitle2 text-weight-bold text-dark"
-                >{{ selectedVendor.latitude }},
-                {{ selectedVendor.longitude }}</div
+              <div class="modal-value-main text-subtitle2 text-weight-bold font-mono"
+                >{{ selectedVendor.store?.latitude || selectedVendor.latitude || 'N/A' }},
+                {{ selectedVendor.store?.longitude || selectedVendor.longitude || 'N/A' }}</div
               >
             </div>
           </div>
 
           <div
             class="map-container-glass"
-            v-if="isValidLocation(selectedVendor)"
+            v-if="isValidLocation(selectedVendor.store || selectedVendor)"
           >
             <iframe
               :src="
-                getMapUrl(selectedVendor.latitude, selectedVendor.longitude)
+                getMapUrl((selectedVendor.store?.latitude || selectedVendor.latitude), (selectedVendor.store?.longitude || selectedVendor.longitude))
               "
               width="100%"
               height="200"
@@ -408,14 +413,14 @@
                 color="red-7"
                 outline
                 icon="map"
-                :href="`https://www.google.com/maps/dir/?api=1&destination=${selectedVendor.latitude},${selectedVendor.longitude}`"
+                :href="`https://www.google.com/maps/dir/?api=1&destination=${selectedVendor.store?.latitude || selectedVendor.latitude},${selectedVendor.store?.longitude || selectedVendor.longitude}`"
                 target="_blank"
               />
             </div>
           </div>
         </q-card-section>
 
-        <q-separator color="white" style="opacity: 0.5" />
+        <q-separator class="modal-divider" />
 
         <q-card-actions
           align="right"
@@ -445,7 +450,6 @@
             <q-btn
               flat
               label="Close"
-              color="grey-8"
               no-caps
               class="btn-glass-flat q-px-md"
               @click="showVendorInfoModal = false"
@@ -464,7 +468,6 @@
             <q-btn
               outline
               label="Close"
-              color="grey-8"
               no-caps
               class="btn-glass q-px-md"
               @click="showVendorInfoModal = false"
@@ -478,7 +481,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
+
+const $q = useQuasar()
 
 const search = ref('')
 const statusFilter = ref(null)
@@ -487,6 +493,11 @@ const actionLoading = ref(false)
 const vendors = ref([])
 const currentTab = ref('active')
 
+const counts = ref({
+  active: 0,
+  deleted: 0
+})
+
 const showSuspendModal = ref(false)
 const suspensionTarget = ref(null)
 const suspensionMessage = ref('')
@@ -494,6 +505,13 @@ const originalStatus = ref(null)
 
 const showVendorInfoModal = ref(false)
 const selectedVendor = ref(null)
+
+const statusFilterOptions = [
+  { label: 'All Statuses', value: null },
+  { label: 'Active', value: 'active' },
+  { label: 'Inactive', value: 'inactive' },
+  { label: 'Suspended', value: 'suspended' }
+]
 
 const statusOptions = [
   { label: 'Active', value: 'active' },
@@ -504,45 +522,52 @@ const statusOptions = [
 const columns = [
   {
     name: 'full_name',
-    label: 'Name',
+    label: 'NAME',
     field: 'full_name',
     align: 'left',
     sortable: true
   },
   {
     name: 'email',
-    label: 'Email',
+    label: 'EMAIL',
     field: 'email',
     align: 'left',
     sortable: true
   },
   {
     name: 'phone_number',
-    label: 'Mobile',
-    field: 'phone_number',
+    label: 'PHONE',
+    field: row => row.phone_number || 'N/A',
     align: 'left'
   },
   {
-    name: 'account_status',
-    label: 'Status',
-    field: 'account_status',
-    align: 'left'
-  },
-  {
-    name: 'products_count',
-    label: 'Products Count',
-    field: row => row.store?.inventory_count || 0,
+    name: 'store_name',
+    label: 'STORE NAME',
+    field: row => row.store?.store_name || row.store_name || 'N/A',
     align: 'left',
     sortable: true
   },
   {
     name: 'last_activity_at',
-    label: 'Last Activity',
+    label: 'APPLIED',
     field: 'last_activity_at',
     align: 'left',
     sortable: true
   },
-  { name: 'insights', label: 'Quick Insights', field: '', align: 'left' }
+  {
+    name: 'account_status',
+    label: 'STATUS',
+    field: 'account_status',
+    align: 'center',
+    headerClasses: 'text-center'
+  },
+  { 
+    name: 'insights', 
+    label: 'ACTIONS', 
+    field: '', 
+    align: 'center',
+    headerClasses: 'text-center'
+  }
 ]
 
 const fetchVendors = async () => {
@@ -550,11 +575,22 @@ const fetchVendors = async () => {
     loading.value = true
     const params = {
       tab: currentTab.value,
-      search: search.value,
-      status: statusFilter.value
+      search: search.value || undefined,
+      status: statusFilter.value || undefined
     }
     const res = await api.get('/admin/vendors', { params })
-    vendors.value = res.data
+    vendors.value = res.data.data || res.data || []
+
+    if (res.data.counts) {
+      counts.value.active = res.data.counts.active || 0
+      counts.value.deleted = res.data.counts.deleted || 0
+    } else {
+      if (currentTab.value === 'active') {
+        counts.value.active = vendors.value.length
+      } else {
+        counts.value.deleted = vendors.value.length
+      }
+    }
   } catch (error) {
     console.error('Error fetching vendors:', error)
   } finally {
@@ -590,7 +626,7 @@ const formatOperatingDays = days => {
     }
 
     return 'N/A'
-  } catch (e) {
+  } catch {
     return 'N/A'
   }
 }
@@ -628,6 +664,7 @@ const updateStatus = async (userId, newStatus) => {
     await api.patch(`/admin/vendors/${userId}/status`, {
       account_status: newStatus
     })
+    $q.notify({ type: 'positive', message: 'Vendor status updated.', position: 'top-right' })
   } catch {
     fetchVendors()
   }
@@ -650,6 +687,8 @@ const confirmSuspension = async () => {
     })
     showSuspendModal.value = false
     suspensionTarget.value = null
+    fetchVendors()
+    $q.notify({ type: 'positive', message: 'Vendor suspended.', position: 'top-right' })
   } catch {
     fetchVendors()
   } finally {
@@ -671,9 +710,10 @@ const openVendorInfo = (evt, row) => {
 const approveFromInfo = async () => {
   if (!selectedVendor.value) return
   try {
-    await api.post(`/admin/vendors/${selectedVendor.value.store_id}/approve`)
+    await api.post(`/admin/vendors/${selectedVendor.value.store_id || selectedVendor.value.user_id}/approve`)
     fetchVendors()
     showVendorInfoModal.value = false
+    $q.notify({ type: 'positive', message: 'Vendor approved.', position: 'top-right' })
   } catch {
     // Error handling
   }
@@ -683,12 +723,13 @@ const rejectFromInfo = () => {
   const reason = prompt('Enter rejection reason:')
   if (reason) {
     api
-      .post(`/admin/vendors/${selectedVendor.value.store_id}/reject`, {
+      .post(`/admin/vendors/${selectedVendor.value.store_id || selectedVendor.value.user_id}/reject`, {
         rejection_reason: reason
       })
       .then(() => {
         fetchVendors()
         showVendorInfoModal.value = false
+        $q.notify({ type: 'positive', message: 'Vendor rejected.', position: 'top-right' })
       })
   }
 }
@@ -705,10 +746,8 @@ const formatActivity = timestamp => {
   if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`
   if (diff < 604800) return `${Math.floor(diff / 86400)} days ago`
 
-  return then.toLocaleDateString()
+  return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
-
-const isExporting = ref(false)
 
 const handleExport = async () => {
   if (isExporting.value) return
@@ -775,11 +814,9 @@ onMounted(() => {
 ========================================================== */
 .admin-page {
   background-color: #f1f5f9;
-  position: relative;
   min-height: 100vh;
-  font-family: 'Roboto', Arial, sans-serif;
   overflow-x: hidden;
-  z-index: 1;
+  position: relative;
 }
 
 .page-container {
@@ -803,22 +840,27 @@ onMounted(() => {
 .flex-1 {
   flex: 1;
 }
+.font-mono {
+  font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+}
 .text-dark {
   color: #0f172a !important;
 }
-.text-slate-6 {
-  color: #475569 !important;
-}
 
 /* ==========================================================
-   COLORED MANAGEMENT HEADER (Red Gradient)
+   PAGE BANNER & MATCHED TITLE TYPOGRAPHY
 ========================================================== */
 .management-header-color {
-  background: linear-gradient(135deg, #991b1b 0%, #ef4444 100%);
+  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 45%, #7f1d1d 100%);
   border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.25);
+  box-shadow: 0 10px 30px rgba(185, 28, 28, 0.22);
   position: relative;
   overflow: hidden;
+}
+
+.header-main-title {
+  font-size: 2.15rem;
+  letter-spacing: -0.025em;
 }
 
 .header-bg-glow {
@@ -836,15 +878,13 @@ onMounted(() => {
   pointer-events: none;
 }
 
-.header-icon-glass {
+/* White Block with Red Icon and Pulse Effect */
+.header-white-block {
   width: 72px;
   height: 72px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   z-index: 2;
 }
 
@@ -856,7 +896,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   border-radius: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.6);
   animation: pulse-animation 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
@@ -867,42 +907,73 @@ onMounted(() => {
     opacity: 0.8;
   }
   100% {
-    transform: translate(-50%, -50%) scale(1.5);
+    transform: translate(-50%, -50%) scale(1.4);
     opacity: 0;
   }
 }
 
-.badge-glass {
+/* Darker Administration Badge */
+.badge-dark-capsule {
   display: inline-flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.35);
   color: #ffffff;
   padding: 6px 14px;
   border-radius: 24px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.06em;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* Single Tab-Specific Stat Box */
+.header-stat-box {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  padding: 12px 24px;
+  min-width: 150px;
+}
+
+.stat-box-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #fecaca;
+  line-height: 1;
+}
+
+.stat-box-value {
+  font-size: 28px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.stat-box-unit {
+  font-size: 11px;
+  color: #fecaca;
+  font-weight: 600;
 }
 
 /* ==========================================================
    GLASSMORPHISM CORE & TABLES
 ========================================================== */
 .glass-toolbar {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.85);
   border-radius: 20px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.03);
 }
@@ -923,42 +994,33 @@ onMounted(() => {
   border-radius: 4px;
 }
 
-/* Table styling */
+/* Reference Red-Tinted Header */
 :deep(.custom-glass-table) {
   background: transparent;
 }
 
 :deep(.custom-glass-table thead tr th) {
-  background: rgba(248, 250, 252, 0.7);
-  backdrop-filter: blur(4px);
-  font-weight: 700;
-  color: #475569;
+  background: #fdf2f2;
+  font-weight: 800;
+  color: #991b1b;
   text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: 0.05em;
-  padding: 16px 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 14px 20px;
+  border-bottom: 1.5px solid #fee2e2;
 }
 
 :deep(.custom-glass-table tbody td) {
-  padding: 16px 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-  font-size: 14px;
-  color: #1e293b;
+  padding: 16px 20px;
+  font-size: 13.5px;
 }
 
 :deep(.interactive-table tbody tr) {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
 }
 
-:deep(.interactive-table tbody tr:hover) {
-  background-color: rgba(255, 255, 255, 0.9);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-  z-index: 2;
-  position: relative;
-  border-radius: 8px;
+.table-loading-wrapper {
+  background: transparent;
 }
 
 .empty-state-glass {
@@ -973,34 +1035,75 @@ onMounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.9);
 }
 
-/* STATUS SELECT */
+/* STATUS SELECT PILL (CENTERED & COMPACT) */
 .status-select-glass {
-  width: 120px;
+  width: 110px;
+  margin: 0 auto;
 }
+
 .status-select-glass :deep(.q-field__control) {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  padding: 0 10px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
+  border-radius: 999px;
+  padding: 0 10px 0 12px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
-.status-select-glass :deep(.q-field__control:hover) {
-  background: #ffffff;
-  border-color: rgba(220, 38, 38, 0.3);
+
+.status-select-glass :deep(.q-field__control-container) {
+  padding-top: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
 .status-select-glass :deep(.q-field__native) {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
+  min-height: auto;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.status-active :deep(.q-field__native) {
-  color: #10b981;
+
+.status-select-glass :deep(.q-field__append) {
+  padding-left: 2px !important;
+  min-width: auto;
+  height: 100%;
 }
-.status-inactive :deep(.q-field__native) {
-  color: #64748b;
+
+.status-select-glass :deep(.q-field__append .q-icon) {
+  font-size: 14px;
 }
-.status-suspended :deep(.q-field__native) {
-  color: #f43f5e;
+
+.status-selected-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
+
+.status-indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-active :deep(.q-field__control) { background: #f0fdf4; border-color: #bbf7d0; }
+.status-active :deep(.q-field__native) { color: #15803d; }
+.status-active .status-indicator-dot { background-color: #16a34a; }
+
+.status-inactive :deep(.q-field__control) { background: #f8fafc; border-color: #e2e8f0; }
+.status-inactive :deep(.q-field__native) { color: #64748b; }
+.status-inactive .status-indicator-dot { background-color: #94a3b8; }
+
+.status-suspended :deep(.q-field__control) { background: #fef2f2; border-color: #fecaca; }
+.status-suspended :deep(.q-field__native) { color: #b91c1c; }
+.status-suspended .status-indicator-dot { background-color: #dc2626; }
 
 /* INSIGHTS CHIPS */
 .insights-cell {
@@ -1016,76 +1119,56 @@ onMounted(() => {
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(255, 255, 255, 1);
   color: #475569;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-  transition: all 0.2s ease;
 }
 .insight-chip-glass:hover {
   background: #ffffff;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
 /* ==========================================================
-   INPUTS & BUTTONS (Modern Flat/Glass)
+   INPUTS & BUTTONS
 ========================================================== */
-.search-input-glass,
-.filter-select-glass {
+.search-input-glass {
   max-width: 320px;
   width: 100%;
 }
+
+.filter-select-glass {
+  width: 180px;
+}
+
 .search-input-glass :deep(.q-field__control),
 .filter-select-glass :deep(.q-field__control) {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(8px);
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 1);
-  transition: all 0.3s ease;
-}
-.search-input-glass :deep(.q-field--outlined .q-field__control:hover),
-.filter-select-glass :deep(.q-field--outlined .q-field__control:hover) {
-  background: #ffffff;
 }
 
 .btn-glass {
   border-radius: 10px !important;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.8) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 1) !important;
-  transition: all 0.2s ease;
-}
-.btn-glass:hover {
-  background: #ffffff !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
 .btn-glass-solid {
   border-radius: 10px !important;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-  transition: all 0.2s ease;
-}
-.btn-glass-solid:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important;
-  filter: brightness(1.05);
 }
 
 .btn-glass-flat {
   border-radius: 10px !important;
   font-weight: 600;
-  transition: all 0.2s ease;
-}
-.btn-glass-flat:hover {
-  background: rgba(0, 0, 0, 0.04) !important;
 }
 
 /* ==========================================================
-   MODALS (Clean Glass Backdrop)
+   MODALS
 ========================================================== */
 .review-dialog-glass {
   width: 550px;
@@ -1121,9 +1204,8 @@ onMounted(() => {
 }
 
 .dialog-actions-glass {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.85);
   border-top: 1px solid rgba(255, 255, 255, 1);
-  backdrop-filter: blur(10px);
 }
 
 .custom-glass-input :deep(.q-field__control) {
@@ -1146,7 +1228,6 @@ onMounted(() => {
 .info-store-name {
   font-size: 26px;
   font-weight: 800;
-  color: #0f172a;
   line-height: 1.2;
   letter-spacing: -0.02em;
 }
@@ -1179,6 +1260,69 @@ onMounted(() => {
 
 .close-btn-glass:hover {
   background: rgba(0, 0, 0, 0.05);
+}
+
+.modal-label-sub {
+  color: #64748b;
+}
+
+.modal-value-main {
+  color: #0f172a;
+}
+
+.modal-divider {
+  border-color: #e2e8f0;
+}
+
+/* ==========================================================
+   DARK MODE OVERRIDES SCOPED TO MANAGE VENDORS
+========================================================== */
+body.body--dark {
+  .modal-label-sub {
+    color: #94a3b8 !important;
+  }
+
+  .modal-value-main {
+    color: #f8fafc !important;
+  }
+
+  .modal-divider {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .status-active :deep(.q-field__control) {
+    background: rgba(22, 163, 74, 0.18) !important;
+    border-color: rgba(34, 197, 94, 0.35) !important;
+  }
+  .status-active :deep(.q-field__native) {
+    color: #86efac !important;
+  }
+
+  .status-inactive :deep(.q-field__control) {
+    background: rgba(148, 163, 184, 0.15) !important;
+    border-color: rgba(148, 163, 184, 0.25) !important;
+  }
+  .status-inactive :deep(.q-field__native) {
+    color: #cbd5e1 !important;
+  }
+
+  .status-suspended :deep(.q-field__control) {
+    background: rgba(239, 68, 68, 0.18) !important;
+    border-color: rgba(239, 68, 68, 0.35) !important;
+  }
+  .status-suspended :deep(.q-field__native) {
+    color: #fca5a5 !important;
+  }
+
+  .insight-chip-glass {
+    background: rgba(30, 41, 59, 0.75) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #e2e8f0 !important;
+  }
+  .insight-chip-glass:hover {
+    background: rgba(51, 65, 85, 0.9) !important;
+    color: #ffffff !important;
+  }
 }
 
 /* ==========================================================
@@ -1247,29 +1391,30 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .page-container {
-    padding: 20px;
+    padding: 20px 16px;
   }
-  .management-header-color > .row {
+  .management-header-color {
     flex-direction: column;
     align-items: flex-start;
+  }
+  .header-stat-box {
+    margin-top: 14px;
+    width: 100%;
   }
 }
 
 @media (max-width: 600px) {
-  .page-container {
-    padding: 16px;
-  }
-  .toolbar > .row {
+  .toolbar {
     flex-direction: column;
     align-items: stretch;
-    width: 100%;
+    gap: 12px;
   }
   .search-input-glass,
   .filter-select-glass {
     max-width: 100%;
+    width: 100%;
   }
   .export-btn {
-    margin-top: 12px;
     margin-left: 0;
     width: 100%;
   }
