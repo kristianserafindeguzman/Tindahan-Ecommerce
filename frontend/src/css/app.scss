@@ -1,7 +1,12 @@
 // app global css
 
+/* Smooth transitions for theme switching */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
 .glass-logout-dialog {
-  background: rgba(255, 255, 255, 0.85) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
   backdrop-filter: blur(10px) !important;
   border-radius: 20px !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
@@ -11,7 +16,6 @@
 .glass-logout-btn-cancel {
   border-radius: 12px !important;
   font-weight: 600 !important;
-  transition: all 0.2s ease !important;
 }
 
 .glass-logout-btn-ok {
@@ -20,5 +24,179 @@
   box-shadow: 0 4px 12px rgba(185, 28, 28, 0.2) !important;
   background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%) !important;
   color: white !important;
-  transition: all 0.2s ease !important;
+}
+
+/* ==========================================================
+   GLOBAL SYSTEM-WIDE DARK MODE (Applies across all modules)
+========================================================== */
+body.body--dark {
+  background-color: #090d16 !important;
+  color: #f8fafc !important;
+
+  /* Layout and Page Container */
+  .q-layout,
+  .q-page-container,
+  .admin-page,
+  .admin-dashboard,
+  .vendor-page {
+    background-color: #090d16 !important;
+    background-image: none !important;
+    color: #f8fafc !important;
+  }
+
+  /* Universal Cards & Main Table Wrappers */
+  .premium-glass-card,
+  .glass-card,
+  .table-main-card,
+  .table-glass-container,
+  .sari-base-card {
+    background: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
+    color: #f8fafc !important;
+  }
+
+  .glass-toolbar {
+    background: rgba(15, 23, 42, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Core Quasar Table Overrides (Kills the bright white table body) */
+  .q-table__container,
+  .q-table__middle,
+  .q-table,
+  .custom-glass-table,
+  .directory-solid-table,
+  .interactive-table {
+    background-color: #0f172a !important;
+    color: #cbd5e1 !important;
+  }
+
+  /* Tab strip container above tables */
+  .panel-header {
+    background: #1e293b !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Table Header (THEAD) */
+  .q-table thead tr th,
+  .custom-glass-table thead tr th,
+  .directory-solid-table thead tr th {
+    background: #162032 !important;
+    color: #fca5a5 !important;
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Table Body Rows & Cells (TBODY) */
+  .q-table tbody tr,
+  .q-table tbody tr td,
+  .custom-glass-table tbody tr td,
+  .directory-solid-table tbody tr td,
+  .interactive-table tbody tr td {
+    background-color: #0f172a !important;
+    color: #cbd5e1 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  }
+
+  /* Table Row Hover State */
+  .q-table tbody tr:hover td,
+  .custom-glass-table tbody tr:hover td,
+  .interactive-table tbody tr:hover td {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+  }
+
+  /* Table Pagination / Footer */
+  .q-table__bottom {
+    background: #0f172a !important;
+    color: #94a3b8 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  /* Inputs, Search Bars & Filters */
+  .q-field--outlined .q-field__control,
+  .search-input-glass .q-field__control,
+  .filter-select-glass .q-field__control,
+  .search-input-field .q-field__control,
+  .filter-select-field .q-field__control,
+  .custom-glass-input .q-field__control {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #f8fafc !important;
+  }
+
+  .q-field__native,
+  .q-field__input {
+    color: #f8fafc !important;
+  }
+
+  /* Dropdown Menus */
+  .q-menu {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  }
+  .q-menu .q-item {
+    color: #cbd5e1 !important;
+  }
+  .q-menu .q-item:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+  }
+
+  /* Typography */
+  .text-dark,
+  .text-heading {
+    color: #f8fafc !important;
+  }
+
+  .text-grey-6,
+  .text-grey-7,
+  .text-grey-8,
+  .text-subtext {
+    color: #94a3b8 !important;
+  }
+
+  /* Action Buttons */
+  .btn-view-3d {
+    background: #1e293b !important;
+    color: #94a3b8 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  }
+  .btn-view-3d:hover {
+    background: #334155 !important;
+    color: #ffffff !important;
+  }
+
+  .btn-delete-3d {
+    background: rgba(185, 28, 28, 0.18) !important;
+    border: 1px solid rgba(239, 68, 68, 0.35) !important;
+    color: #fca5a5 !important;
+  }
+  .btn-delete-3d:hover {
+    background: rgba(185, 28, 28, 0.32) !important;
+  }
+
+  .export-btn,
+  .btn-glass {
+    background: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #f8fafc !important;
+  }
+
+  /* Modal Dialogs */
+  .q-dialog .review-dialog-glass,
+  .q-dialog .consumer-profile-card,
+  .q-dialog .modal-solid-card,
+  .q-dialog .glass-logout-dialog {
+    background: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #f8fafc !important;
+  }
+
+  .q-dialog .dialog-actions-glass,
+  .q-dialog .modal-actions-bar,
+  .q-dialog .q-card__actions {
+    background: #1e293b !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
 }
