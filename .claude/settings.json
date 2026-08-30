@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(node verify_profile_buttons.mjs)",
-      "Bash(node verify_security_row.mjs)",
-      "Bash(npx quasar *)"
-    ]
-  }
-}
