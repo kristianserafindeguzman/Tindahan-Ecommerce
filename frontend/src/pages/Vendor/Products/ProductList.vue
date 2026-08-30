@@ -784,7 +784,7 @@ const fetchMlInsights = async () => {
       mlInsights.value.restockProduct = res.data.restockProduct
       mlInsights.value.daysUntilStockout = res.data.daysUntilStockout
       mlInsights.value.trendingCategory = res.data.trendingCategory
-      mlInsights.value.trendMultiplier = "1.5" // Placeholder
+      mlInsights.value.trendMultiplier = res.data.trendMultiplier ?? 'N/A'
       mlInsights.value.topCategory = res.data.topCategory
     } else {
       mlInsights.value.restockProduct = 'Awaiting more data'

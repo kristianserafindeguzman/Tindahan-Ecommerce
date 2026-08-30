@@ -16,13 +16,21 @@ from sklearn.metrics import mean_squared_error, r2_score
 # Suppress pandas warning about not using sqlalchemy
 warnings.filterwarnings('ignore', category=UserWarning, module='pandas')
 
-def load_data():
+def load_data(store_id=None, exclude_store_id=None):
     try:
         conn = pymysql.connect(
             host='127.0.0.1', user='root', password='', database='tindahan_db'
         )
         query = "SELECT * FROM ml_historical_sales_view"
-        data = pd.read_sql(query, conn)
+        params = []
+        if store_id is not None:
+            query += " WHERE store_id = %s"
+            params.append(store_id)
+        elif exclude_store_id is not None:
+            query += " WHERE store_id != %s"
+            params.append(exclude_store_id)
+            
+        data = pd.read_sql(query, conn, params=params)
         conn.close()
         return data
     except Exception as e:
@@ -95,8 +103,8 @@ def engineer_features(data, is_predicting=False):
     
     return df_encoded, df
 
-def train_model(output_mode):
-    data = load_data()
+def train_model(output_mode, store_id=None, exclude_store_id=None):
+    data = load_data(store_id, exclude_store_id)
     if data is None or len(data) == 0:
         if output_mode == 'json':
             print(json.dumps({"status": "error", "message": "No historical data available"}))
@@ -144,8 +152,10 @@ def train_model(output_mode):
     
     # Save model and columns
     os.makedirs('ml/models', exist_ok=True)
-    joblib.dump(model, 'ml/models/demand_model.pkl')
-    joblib.dump(list(X_all.columns), 'ml/models/demand_columns.pkl')
+    
+    model_name = f'demand_model_{store_id}' if store_id else 'demand_model'
+    joblib.dump(model, f'ml/models/{model_name}.pkl')
+    joblib.dump(list(X_all.columns), f'ml/models/{model_name}_columns.pkl')
     
     if output_mode == 'json':
         res = {
@@ -165,10 +175,11 @@ def train_model(output_mode):
         print(f"R²: {r2:.4f}")
         print("Model saved to ml/models/demand_model.pkl")
 
-def predict_model(output_mode):
+def predict_model(output_mode, store_id=None, exclude_store_id=None):
     try:
-        model = joblib.load('ml/models/demand_model.pkl')
-        train_cols = joblib.load('ml/models/demand_columns.pkl')
+        model_name = f'demand_model_{store_id}' if store_id else 'demand_model'
+        model = joblib.load(f'ml/models/{model_name}.pkl')
+        train_cols = joblib.load(f'ml/models/{model_name}_columns.pkl')
     except Exception as e:
         if output_mode == 'json':
             print(json.dumps({"status": "error", "message": f"Failed to load model: {e}"}))
@@ -176,7 +187,7 @@ def predict_model(output_mode):
             print(f"Failed to load model: {e}")
         return
 
-    data = load_data()
+    data = load_data(store_id, exclude_store_id)
     if data is None or len(data) == 0:
         if output_mode == 'json':
             print(json.dumps({"status": "error", "message": "No historical data available"}))
@@ -227,9 +238,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Tindahan Random Forest Demand Forecasting")
     parser.add_argument("--mode", type=str, default="train", choices=["train", "predict"])
     parser.add_argument("--output", type=str, default="console", choices=["console", "json"])
+    parser.add_argument("--store_id", type=int, default=None, help="Train/predict for a specific store ID only")
+    parser.add_argument("--exclude_store_id", type=int, default=None, help="Train/predict for all stores EXCEPT this ID")
     args = parser.parse_args()
     
     if args.mode == "train":
-        train_model(args.output)
+        train_model(args.output, args.store_id, args.exclude_store_id)
     elif args.mode == "predict":
-        predict_model(args.output)
+        predict_model(args.output, args.store_id, args.exclude_store_id)
