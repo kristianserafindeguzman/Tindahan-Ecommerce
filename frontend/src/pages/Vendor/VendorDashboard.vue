@@ -222,6 +222,16 @@
                   </div>
                 </template>
                 
+                <template v-else-if="mlForecast.error">
+                  <p class="text-red-2 text-body2 q-mb-lg opacity-80 relative-position z-top leading-relaxed flex-grow-1">Unable to connect to the forecasting service. Please try again later.</p>
+                  <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft q-mt-auto p-4" style="background-color: rgba(150, 0, 0, 0.2);">
+                    <div class="text-center z-top q-pa-md">
+                      <q-icon name="error_outline" size="40px" color="red-4" class="q-mb-sm" />
+                      <div class="text-caption text-red-3 font-monospace text-weight-bold tracking-wide">SYSTEM ERROR</div>
+                    </div>
+                  </div>
+                </template>
+
                 <template v-else-if="!mlForecast.has_forecast">
                   <p class="text-indigo-1 text-body2 q-mb-lg opacity-80 relative-position z-top leading-relaxed flex-grow-1">Insufficient historical data to generate a reliable demand forecast. The AI engine requires more completed orders to establish baseline sales patterns.</p>
                   <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft q-mt-auto p-4 bg-indigo-9">
@@ -636,6 +646,7 @@ const activeRevenueFilter = ref('Daily')
 const mlForecast = ref({
   loading: true,
   has_forecast: false,
+  error: false,
   summary: null,
   top_products: [],
   generated_at: null
@@ -880,6 +891,7 @@ onMounted(async () => {
       }
     } catch (err) {
       console.error('Failed to load demand forecast:', err)
+      mlForecast.value.error = true
       mlForecast.value.has_forecast = false
     } finally {
       mlForecast.value.loading = false

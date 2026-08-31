@@ -14,7 +14,7 @@ class RunDemandForecast extends Command
      *
      * @var string
      */
-    protected $signature = 'ml:run-demand-forecast {--train : Train the model before predicting}';
+    protected $signature = 'ml:run-demand-forecast {--train : Train the model before predicting} {--store_id= : Train/predict for a specific store ID only} {--exclude_store_id= : Train/predict for all stores EXCEPT this ID} {--demo : Automatically resolve and run for the ML demo store}';
 
     /**
      * The console command description.
@@ -31,9 +31,40 @@ class RunDemandForecast extends Command
         $pythonScriptPath = base_path('../ml/random_forest_demand.py');
         $pythonExecutable = 'python'; // Assumes python is in the PATH
 
+        $baseArgs = [$pythonExecutable, $pythonScriptPath, '--output=json'];
+        $isDemoRun = $this->option('demo');
+        $resolvedStoreId = $this->option('store_id');
+
+        if ($isDemoRun) {
+            $demoStore = \App\Models\Store::where('slug', 'ml-demo-store')->first();
+            if ($demoStore) {
+                $resolvedStoreId = $demoStore->store_id;
+                $this->info("Resolved ML Demo Store ID: {$resolvedStoreId}");
+            } else {
+                $this->error("Demo store 'ml-demo-store' not found. Have you run ml:demo-seed?");
+                return 1;
+            }
+        }
+
+        if ($resolvedStoreId) {
+            $baseArgs[] = '--store_id=' . $resolvedStoreId;
+        }
+
+        if ($this->option('exclude_store_id')) {
+            $baseArgs[] = '--exclude_store_id=' . $this->option('exclude_store_id');
+        } elseif (!$resolvedStoreId) {
+            // Auto-exclude demo store in production runs if not specifically targeting a store
+            $demoStore = \App\Models\Store::where('slug', 'ml-demo-store')->first();
+            if ($demoStore) {
+                $baseArgs[] = '--exclude_store_id=' . $demoStore->store_id;
+                $this->info("Auto-excluding ML demo store (ID: {$demoStore->store_id}) from production forecast.");
+            }
+        }
+
         if ($this->option('train')) {
             $this->info('Training model...');
-            $trainProcess = new Process([$pythonExecutable, $pythonScriptPath, '--mode=train', '--output=json']);
+            $trainArgs = array_merge($baseArgs, ['--mode=train']);
+            $trainProcess = new Process($trainArgs);
             $trainProcess->setWorkingDirectory(base_path('../')); // Run from root Tindahan-Ecommerce dir
             $trainProcess->setTimeout(300);
             $trainProcess->run();
@@ -54,7 +85,8 @@ class RunDemandForecast extends Command
         }
 
         $this->info('Generating forecasts...');
-        $predictProcess = new Process([$pythonExecutable, $pythonScriptPath, '--mode=predict', '--output=json']);
+        $predictArgs = array_merge($baseArgs, ['--mode=predict']);
+        $predictProcess = new Process($predictArgs);
         $predictProcess->setWorkingDirectory(base_path('../'));
         $predictProcess->setTimeout(120);
         $predictProcess->run();

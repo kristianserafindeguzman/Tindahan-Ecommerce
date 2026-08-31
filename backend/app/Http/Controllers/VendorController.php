@@ -556,16 +556,43 @@ class VendorController extends Controller
             $trendingCategory = array_key_first($categoryDemand);
         }
 
-        // Top historical category (actual sales, simplistic logic based on active inventory categories)
-        // A full implementation would query order_items, but we'll use a placeholder from active products
-        // to fit the dashboard's needs for this capstone sprint.
-        $topCategory = $trendingCategory; 
+        // Calculate real trend multiplier
+        // We'll use the restockCandidate as the basis for the trend if available
+        $trendMultiplier = null;
+        if ($restockCandidate) {
+            // Get recent historical demand for this product (last 7 days)
+            $recentDemand = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.order_id')
+                ->where('order_items.inventory_id', $restockCandidate->inventory_id)
+                ->where('orders.status', 'picked_up')
+                ->where('orders.created_at', '>=', now()->subDays(7))
+                ->sum('order_items.quantity');
+                
+            $dailyRecentAverage = $recentDemand / 7;
+            
+            // If we have some recent demand, calculate the ratio
+            if ($dailyRecentAverage > 0) {
+                // predicted_quantity is daily demand forecast
+                $ratio = $restockCandidate->predicted_quantity / $dailyRecentAverage;
+                $trendMultiplier = number_format($ratio, 1);
+            }
+        }
+
+        // Top historical category (actual sales based on completed orders)
+        $topCategory = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.order_id')
+            ->join('inventory', 'order_items.inventory_id', '=', 'inventory.inventory_id')
+            ->join('categories', 'inventory.category_id', '=', 'categories.category_id')
+            ->where('orders.store_id', $store->store_id)
+            ->where('orders.status', 'picked_up')
+            ->groupBy('categories.category_name')
+            ->orderByRaw('SUM(order_items.quantity) DESC')
+            ->value('categories.category_name');
 
         return response()->json([
             'has_insights' => true,
             'restockProduct' => $restockCandidate->inventory->product_name ?? null,
             'daysUntilStockout' => $daysUntilStockout,
             'trendingCategory' => $trendingCategory,
+            'trendMultiplier' => $trendMultiplier,
             'topCategory' => $topCategory
         ]);
     }
