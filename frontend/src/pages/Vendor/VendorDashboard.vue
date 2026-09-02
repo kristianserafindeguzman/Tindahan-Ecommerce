@@ -201,14 +201,11 @@
             <q-card class="ml-blueprint-card card-rounded h-full card-hover">
               <q-card-section class="q-pa-md q-pa-md-lg relative-position h-full column">
                 <div class="ml-glow-overlay"></div>
-                <div class="row items-center justify-between q-mb-md relative-position z-top">
+                <div class="row items-center justify-between q-mb-md">
                   <div class="row items-center">
-                    <q-icon name="model_training" size="32px" color="amber-3" class="q-mr-sm drop-shadow-icon" />
-                    <div class="text-h6 text-weight-bold text-white">Demand Forecast</div>
+                    <q-icon name="model_training" size="24px" color="amber-3" class="q-mr-sm drop-shadow-icon" />
+                    <span class="text-h6 text-white text-weight-bolder tracking-tight">Demand Forecast</span>
                   </div>
-                  <q-chip color="white" text-color="indigo-10" size="sm" class="text-weight-bolder shadow-1">
-                    <q-icon name="memory" size="14px" class="q-mr-xs" /> AI Engine
-                  </q-chip>
                 </div>
 
                 <template v-if="mlForecast.loading">
@@ -233,7 +230,7 @@
                 </template>
 
                 <template v-else-if="!mlForecast.has_forecast">
-                  <p class="text-indigo-1 text-body2 q-mb-lg opacity-80 relative-position z-top leading-relaxed flex-grow-1">Insufficient historical data to generate a reliable demand forecast. The AI engine requires more completed orders to establish baseline sales patterns.</p>
+                  <p class="text-indigo-1 text-body2 q-mb-lg opacity-80 relative-position z-top leading-relaxed flex-grow-1">Awaiting more completed orders to establish baseline sales patterns.</p>
                   <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft q-mt-auto p-4 bg-indigo-9">
                     <div class="text-center z-top q-pa-md">
                       <q-icon name="analytics" size="40px" color="blue-grey-4" class="q-mb-sm" />
@@ -243,6 +240,10 @@
                 </template>
                 
                 <template v-else>
+                  <div v-if="mlForecast.low_data_warning" class="low-data-warning q-mb-md">
+                    <q-icon name="warning" size="16px" class="q-mr-xs" />
+                    {{ mlForecast.low_data_warning }}
+                  </div>
                   <p class="text-indigo-1 text-body2 q-mb-md opacity-80 relative-position z-top leading-relaxed">Based on recent trends, here are your top predicted demand items for today.</p>
                   <div class="text-white relative-position z-top flex-grow-1">
                     <div v-for="(item, idx) in mlForecast.top_products" :key="idx" class="row justify-between items-center q-mb-sm bg-indigo-9 q-pa-sm rounded-borders">
@@ -445,9 +446,6 @@
                 <q-icon name="model_training" size="20px" color="amber-3" class="q-mr-sm drop-shadow-icon" />
                 <span class="mobile-card-title text-white">Demand Forecast</span>
               </div>
-              <q-chip color="white" text-color="indigo-10" size="xs" class="text-weight-bolder shadow-1 q-ma-none">
-                <q-icon name="memory" size="12px" class="q-mr-xs" /> AI
-              </q-chip>
             </div>
 
             <template v-if="mlForecast.loading">
@@ -468,6 +466,10 @@
               </div>
             </template>
             <template v-else>
+              <div v-if="mlForecast.low_data_warning" class="low-data-warning q-mb-sm q-mx-sm">
+                <q-icon name="warning" size="14px" class="q-mr-xs" />
+                {{ mlForecast.low_data_warning }}
+              </div>
               <div class="text-white relative-position z-top">
                 <div v-for="(item, idx) in mlForecast.top_products.slice(0,3)" :key="idx" class="mobile-forecast-row row items-center q-mb-sm q-pa-sm rounded-borders">
                   <div class="forecast-rank-badge q-mr-sm bg-amber-3 text-indigo-10 flex flex-center text-weight-bolder">
@@ -646,6 +648,7 @@ const activeRevenueFilter = ref('Daily')
 const mlForecast = ref({
   loading: true,
   has_forecast: false,
+  low_data_warning: false,
   error: false,
   summary: null,
   top_products: [],
@@ -885,6 +888,7 @@ onMounted(async () => {
       const mlRes = await api.get('/vendor/demand-forecast')
       if (mlRes.data) {
         mlForecast.value.has_forecast = mlRes.data.has_forecast
+        mlForecast.value.low_data_warning = mlRes.data.low_data_warning || false
         mlForecast.value.summary = mlRes.data.summary
         mlForecast.value.top_products = mlRes.data.top_products || []
         mlForecast.value.generated_at = mlRes.data.generated_at
@@ -1189,7 +1193,9 @@ watch(activeRevenueFilter, () => { fetchChartData() })
   .mobile-icon-tile {
     width: 34px;
     height: 34px;
-    border-radius: 10px;
+    border-radius: 50%;
+    color: #1a237e;
+    font-size: 11px;
   }
 
   .mobile-stat-label {
@@ -1353,5 +1359,17 @@ watch(activeRevenueFilter, () => { fetchChartData() })
     box-shadow: 0 4px 12px rgba(185, 28, 28, 0.35) !important;
     transform: translateY(-2px);
   }
+}
+
+.low-data-warning {
+  background: rgba(255, 183, 77, 0.15);
+  border: 1px solid rgba(255, 183, 77, 0.4);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #ffb74d;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
 }
 </style>

@@ -82,6 +82,11 @@ class RunDemandForecast extends Command
                 return 1;
             }
             $this->info('Model trained successfully. Metrics: ' . json_encode($trainOutput['model_metrics'] ?? []));
+            if (isset($trainOutput['data_sufficiency'])) {
+                $rows = $trainOutput['training_rows'] ?? 0;
+                $dates = $trainOutput['distinct_dates'] ?? 0;
+                $this->info("Data sufficiency: {$trainOutput['data_sufficiency']} (Rows: {$rows}, Distinct Dates: {$dates})");
+            }
         }
 
         $this->info('Generating forecasts...');

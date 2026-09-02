@@ -474,7 +474,7 @@ class VendorController extends Controller
     {
         $store = auth()->user()->store;
         
-        // Get the latest forecasts for this store
+        // Get the active forecasts for this store
         $forecasts = \App\Models\DemandForecast::with('inventory')
             ->where('store_id', $store->store_id)
             ->whereDate('forecast_date', '>=', now()->toDateString())
@@ -484,9 +484,34 @@ class VendorController extends Controller
         if ($forecasts->isEmpty()) {
             return response()->json([
                 'has_forecast' => false,
+                'low_data_warning' => false,
                 'summary' => null,
                 'top_products' => []
             ]);
+        }
+
+        $metricsPath = base_path("../ml/models/demand_model_{$store->store_id}_metrics.json");
+        $warningMessage = null;
+        if (file_exists($metricsPath)) {
+            $metrics = json_decode(file_get_contents($metricsPath), true);
+            $sufficiency = $metrics['data_sufficiency'] ?? 'low_data';
+            $mape = $metrics['model_metrics']['mape'] ?? null;
+            
+            if ($sufficiency === 'low_data' || $mape === null) {
+                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate.';
+            } else if ($mape >= 10) {
+                $warningMessage = 'Forecast reliability is currently low based on available historical data.';
+            }
+        } else {
+            // Fallback to database threshold check if metrics file is missing
+            $salesStats = \Illuminate\Support\Facades\DB::selectOne(
+                'SELECT COUNT(*) as cnt, COUNT(DISTINCT transaction_date) as distinct_dates 
+                 FROM ml_historical_sales_view WHERE store_id = ?',
+                [$store->store_id]
+            );
+            if ($salesStats->cnt < 30 || $salesStats->distinct_dates < 3) {
+                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate.';
+            }
         }
 
         $topProduct = $forecasts->first();
@@ -495,6 +520,7 @@ class VendorController extends Controller
 
         return response()->json([
             'has_forecast' => true,
+            'low_data_warning' => $warningMessage,
             'summary' => [
                 'total_products_forecasted' => $forecasts->count(),
                 'highest_demand_product' => $topProduct->inventory->product_name ?? 'Unknown',
@@ -525,17 +551,41 @@ class VendorController extends Controller
             return response()->json([
                 'has_insights' => false,
                 'restockProduct' => null,
-                'daysUntilStockout' => null,
+                'topCategory' => null,
                 'trendingCategory' => null,
-                'topCategory' => null
+                'trendMultiplier' => null
             ]);
+        }
+        
+        $metricsPath = base_path("../ml/models/demand_model_{$store->store_id}_metrics.json");
+        $warningMessage = null;
+        if (file_exists($metricsPath)) {
+            $metrics = json_decode(file_get_contents($metricsPath), true);
+            $sufficiency = $metrics['data_sufficiency'] ?? 'low_data';
+            $mape = $metrics['model_metrics']['mape'] ?? null;
+            
+            if ($sufficiency === 'low_data' || $mape === null) {
+                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate.';
+            } else if ($mape >= 10) {
+                $warningMessage = 'Forecast reliability is currently low based on available historical data.';
+            }
+        } else {
+            // Fallback
+            $salesStats = \Illuminate\Support\Facades\DB::selectOne(
+                'SELECT COUNT(*) as cnt, COUNT(DISTINCT transaction_date) as distinct_dates 
+                 FROM ml_historical_sales_view WHERE store_id = ?',
+                [$store->store_id]
+            );
+            if ($salesStats->cnt < 30 || $salesStats->distinct_dates < 3) {
+                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate.';
+            }
         }
 
         // Logic for restock alert: highest predicted demand / current stock
-        // (Avoiding division by zero)
-        $restockCandidate = $forecasts->sortByDesc(function ($f) {
-            $stock = max($f->inventory->available_quantity, 1);
-            return $f->predicted_quantity / $stock;
+        $restockCandidate = $forecasts->sortByDesc(function($f) {
+            return $f->inventory->stock_quantity > 0 
+                ? ($f->predicted_quantity / $f->inventory->stock_quantity)
+                : 9999;
         })->first();
 
         $daysUntilStockout = null;
@@ -589,6 +639,7 @@ class VendorController extends Controller
 
         return response()->json([
             'has_insights' => true,
+            'low_data_warning' => $warningMessage ?? false,
             'restockProduct' => $restockCandidate->inventory->product_name ?? null,
             'daysUntilStockout' => $daysUntilStockout,
             'trendingCategory' => $trendingCategory,

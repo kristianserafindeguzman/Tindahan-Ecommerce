@@ -56,9 +56,9 @@ def engineer_features(data, is_predicting=False):
         if pd.isna(min_date) or pd.isna(max_date):
             continue
         
-        # If predicting, we extend the range by 1 day to forecast for tomorrow
+        # If predicting, we extend the range up to actual tomorrow
         if is_predicting:
-            max_date = max_date + timedelta(days=1)
+            max_date = pd.Timestamp.today().normalize() + pd.Timedelta(days=1)
             
         full_date_range = pd.date_range(start=min_date, end=max_date, freq='D')
         
@@ -112,6 +112,10 @@ def train_model(output_mode, store_id=None, exclude_store_id=None):
             print("No data available to train.")
         return
         
+    n_raw_rows = len(data)
+    n_raw_distinct_dates = data['transaction_date'].nunique()
+    is_sufficient = (n_raw_rows >= 30 and n_raw_distinct_dates >= 3)
+    
     df_encoded, df = engineer_features(data, is_predicting=False)
     if df_encoded is None:
         if output_mode == 'json':
@@ -122,33 +126,46 @@ def train_model(output_mode, store_id=None, exclude_store_id=None):
     cols_to_drop = ["transaction_date", target_col]
     
     df_encoded = df_encoded.sort_values('transaction_date')
-    split_idx = int(len(df_encoded) * 0.8)
     
-    train_data = df_encoded.iloc[:split_idx]
-    test_data = df_encoded.iloc[split_idx:]
-    
-    X_train = train_data.drop(columns=cols_to_drop)
-    y_train = train_data[target_col]
-    X_test = test_data.drop(columns=cols_to_drop)
-    y_test = test_data[target_col]
-    
-    model = RandomForestRegressor(n_estimators=200, max_depth=12, random_state=42, n_jobs=-1)
-    
-    model.fit(X_train, y_train)
-    predictions = model.predict(X_test)
-    y_test_array = y_test.values
-    rmse = np.sqrt(mean_squared_error(y_test_array, predictions))
-    r2 = r2_score(y_test_array, predictions)
-    
-    non_zero_mask = y_test_array != 0
-    mape = np.nan
-    if non_zero_mask.any():
-        mape = np.mean(np.abs((y_test_array[non_zero_mask] - predictions[non_zero_mask]) / y_test_array[non_zero_mask])) * 100
+    if is_sufficient:
+        split_idx = int(len(df_encoded) * 0.8)
         
-    # Refit on all data to capture the most recent patterns before saving
-    X_all = df_encoded.drop(columns=cols_to_drop)
-    y_all = df_encoded[target_col]
-    model.fit(X_all, y_all)
+        train_data = df_encoded.iloc[:split_idx]
+        test_data = df_encoded.iloc[split_idx:]
+        
+        X_train = train_data.drop(columns=cols_to_drop)
+        y_train = train_data[target_col]
+        X_test = test_data.drop(columns=cols_to_drop)
+        y_test = test_data[target_col]
+        
+        model = RandomForestRegressor(n_estimators=200, max_depth=12, random_state=42, n_jobs=-1)
+        
+        model.fit(X_train, y_train)
+        predictions = model.predict(X_test)
+        y_test_array = y_test.values
+        rmse = float(np.sqrt(mean_squared_error(y_test_array, predictions)))
+        r2 = float(r2_score(y_test_array, predictions))
+        
+        non_zero_mask = y_test_array != 0
+        mape = None
+        if non_zero_mask.any():
+            mape = float(np.mean(np.abs((y_test_array[non_zero_mask] - predictions[non_zero_mask]) / y_test_array[non_zero_mask])) * 100)
+            
+        # Refit on all data to capture the most recent patterns before saving
+        X_all = df_encoded.drop(columns=cols_to_drop)
+        y_all = df_encoded[target_col]
+        model.fit(X_all, y_all)
+        
+        metrics = {"rmse": rmse, "mape": mape, "r2": r2}
+    else:
+        # Train on ALL data, skip evaluation
+        X_all = df_encoded.drop(columns=cols_to_drop)
+        y_all = df_encoded[target_col]
+        
+        model = RandomForestRegressor(n_estimators=200, max_depth=12, random_state=42, n_jobs=-1)
+        model.fit(X_all, y_all)
+        
+        metrics = {"rmse": None, "mape": None, "r2": None}
     
     # Save model and columns
     os.makedirs('ml/models', exist_ok=True)
@@ -157,22 +174,34 @@ def train_model(output_mode, store_id=None, exclude_store_id=None):
     joblib.dump(model, f'ml/models/{model_name}.pkl')
     joblib.dump(list(X_all.columns), f'ml/models/{model_name}_columns.pkl')
     
+    # Save metrics to JSON so the API can read them without a DB migration
+    metrics_data = {
+        "data_sufficiency": "sufficient" if is_sufficient else "low_data",
+        "training_rows": int(n_raw_rows),
+        "distinct_dates": int(n_raw_distinct_dates),
+        "model_metrics": metrics
+    }
+    with open(f'ml/models/{model_name}_metrics.json', 'w') as f:
+        json.dump(metrics_data, f)
+    
     if output_mode == 'json':
         res = {
             "status": "success",
-            "model_metrics": {
-                "rmse": float(rmse),
-                "mape": float(mape) if not np.isnan(mape) else None,
-                "r2": float(r2)
-            },
+            "data_sufficiency": "sufficient" if is_sufficient else "low_data",
+            "training_rows": int(n_raw_rows),
+            "distinct_dates": int(n_raw_distinct_dates),
+            "model_metrics": metrics,
             "message": "Training complete"
         }
         print(json.dumps(res))
     else:
         print("MODEL EVALUATION")
-        print(f"RMSE: {rmse:.4f}")
-        print(f"MAPE: {mape:.2f}%" if not np.isnan(mape) else "MAPE: N/A")
-        print(f"R²: {r2:.4f}")
+        if is_sufficient:
+            print(f"RMSE: {metrics['rmse']:.4f}")
+            print(f"MAPE: {metrics['mape']:.2f}%" if metrics['mape'] is not None else "MAPE: N/A")
+            print(f"R²: {metrics['r2']:.4f}")
+        else:
+            print("Skipped evaluation due to insufficient data (low_data mode).")
         print("Model saved to ml/models/demand_model.pkl")
 
 def predict_model(output_mode, store_id=None, exclude_store_id=None):
