@@ -98,8 +98,9 @@ class CatalogController extends Controller
             $realtimeCategories = \App\Models\SearchLog::where('consumer_id', $consumerId)
                 ->where('searched_at', '>=', now()->subDays(30))
                 ->whereNotNull('category_id')
-                ->select('category_id', \Illuminate\Support\Facades\DB::raw('COUNT(*) as search_count'))
+                ->select('category_id', \Illuminate\Support\Facades\DB::raw('COUNT(*) as search_count'), \Illuminate\Support\Facades\DB::raw('MAX(searched_at) as latest_search'))
                 ->groupBy('category_id')
+                ->orderBy('latest_search', 'desc')
                 ->orderBy('search_count', 'desc')
                 ->pluck('category_id')
                 ->toArray();
@@ -141,12 +142,12 @@ class CatalogController extends Controller
         }
 
         // Create unified deterministic ranking category list
-        // Priority: ML Categories -> Realtime Categories not in ML -> Fallback
+        // Priority: Realtime Categories -> ML Categories -> Fallback
         $priorityCategories = [];
-        foreach ($mlCategories as $catId) {
+        foreach ($realtimeCategories as $catId) {
             if (!in_array($catId, $priorityCategories)) $priorityCategories[] = $catId;
         }
-        foreach ($realtimeCategories as $catId) {
+        foreach ($mlCategories as $catId) {
             if (!in_array($catId, $priorityCategories)) $priorityCategories[] = $catId;
         }
         foreach ($fallbackCategories as $catId) {

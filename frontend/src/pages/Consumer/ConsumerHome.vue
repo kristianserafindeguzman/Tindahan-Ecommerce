@@ -30,7 +30,7 @@
 
       <!-- RECOMMENDED / POPULAR PRODUCTS -->
       <SectionBlock :title="resultsSectionTitle" view-all @view-all="router.push(resultsViewAllPath)">
-        <div v-if="productsLoading" class="products-grid">
+        <div v-if="isLoggedIn ? loadingPersonalized : productsLoading" class="products-grid">
           <div v-for="n in 6" :key="n" class="skeleton-card">
             <div class="skeleton-image" />
             <div class="skeleton-body">
@@ -101,6 +101,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
+import { api } from '@/boot/axios'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import SectionBlock from '@/components/consumer/SectionBlock.vue'
@@ -134,10 +135,33 @@ const { categories, fetchCategories } = useCategories()
 const { products, loading: productsLoading, fetchProducts } = useProducts()
 const { stores, loading: storesLoading, fetchStores } = useStores()
 
+const personalizedFeed = ref([])
+const loadingPersonalized = ref(false)
+
+const fetchPersonalizedFeed = async () => {
+  if (!isLoggedIn.value) return
+  loadingPersonalized.value = true
+  try {
+    const lat = localStorage.getItem('consumer_lat')
+    const lng = localStorage.getItem('consumer_lng')
+    const params = lat && lng ? { lat, lng } : {}
+    
+    const response = await api.get('/consumer/personalized-feed', { params })
+    personalizedFeed.value = response.data.products || []
+  } catch (error) {
+    console.error('Failed to fetch personalized feed', error)
+  } finally {
+    loadingPersonalized.value = false
+  }
+}
+
 onMounted(() => {
   fetchCategories()
   fetchProducts()
   fetchStores()
+  if (isLoggedIn.value) {
+    fetchPersonalizedFeed()
+  }
 })
 
 const goToCategory = (category) => {
@@ -194,8 +218,19 @@ onBeforeUnmount(() => gridColumnsObserver?.disconnect())
 
 const RECOMMENDED_ROWS = 2
 const recommendedCount = computed(() => gridColumns.value * RECOMMENDED_ROWS)
-const recommendedProducts = computed(() => products.value.slice(0, recommendedCount.value))
-const discoverProducts = computed(() => products.value.slice(recommendedCount.value))
+const recommendedProducts = computed(() => {
+  if (isLoggedIn.value) {
+    return personalizedFeed.value.slice(0, recommendedCount.value)
+  }
+  return products.value.slice(0, recommendedCount.value)
+})
+
+const discoverProducts = computed(() => {
+  if (isLoggedIn.value) {
+    return products.value
+  }
+  return products.value.slice(recommendedCount.value)
+})
 
 // "See More" reveals additional full rows in place rather than navigating away — that's what "View All" is for.
 const DISCOVER_ROWS_PER_PAGE = 2
