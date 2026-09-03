@@ -92,9 +92,24 @@ const goToProduct = () => {
 
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 
-  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+  transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s;
 
   cursor: pointer;
+
+  /* Fades in on its own mount — independent of whatever page/grid it's rendered inside, so it's
+     reliable regardless of how that page's loading state swaps the grid's content in. */
+  animation: card-fade-up 0.4s ease both;
+}
+
+@keyframes card-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-card {
+    animation: none;
+  }
 }
 
 .product-card:hover {

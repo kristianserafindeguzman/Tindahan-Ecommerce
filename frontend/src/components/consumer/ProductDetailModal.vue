@@ -35,6 +35,8 @@
               </div>
             </div>
 
+            <p v-if="product.description" class="detail-description">{{ product.description }}</p>
+
             <!-- VARIANTS -->
             <div v-if="hasVariants" class="variants-section">
               <div class="variants-label">Available Sizes</div>
@@ -417,6 +419,15 @@ const handleAddToCart = async () => {
 .detail-stock-oos {
   background: #fef2f2;
   color: #b91c1c;
+}
+
+.detail-description {
+  margin: 0 0 18px;
+
+  font-size: 13.5px;
+  line-height: 1.5;
+
+  color: #767676;
 }
 
 /* VARIANTS */

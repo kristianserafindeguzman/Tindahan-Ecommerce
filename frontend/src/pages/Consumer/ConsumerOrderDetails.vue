@@ -605,6 +605,26 @@ onMounted(() => {
   gap: 20px;
 
   align-items: start;
+
+  animation: orderdetails-fade-up 0.5s ease both;
+  animation-delay: 0.06s;
+}
+
+/* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
+@keyframes orderdetails-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-title {
+  animation: orderdetails-fade-up 0.5s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .order-layout,
+  .page-title {
+    animation: none;
+  }
 }
 
 .order-main {

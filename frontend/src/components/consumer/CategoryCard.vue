@@ -39,9 +39,22 @@ defineEmits(['click'])
   background: #ffffff;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   cursor: pointer;
+
+  animation: card-fade-up 0.4s ease both;
+}
+
+@keyframes card-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-tile {
+    animation: none;
+  }
 }
 
 .category-tile:hover {
