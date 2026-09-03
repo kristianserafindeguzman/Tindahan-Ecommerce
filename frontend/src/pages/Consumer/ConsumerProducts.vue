@@ -552,6 +552,29 @@ const clearFilters = () => {
   text-align: center;
 }
 
+/* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
+@keyframes products-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-header-row,
+.category-pills-row,
+.products-grid {
+  animation: products-fade-up 0.5s ease both;
+}
+
+.category-pills-row { animation-delay: 0.06s; }
+.products-grid { animation-delay: 0.12s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-header-row,
+  .category-pills-row,
+  .products-grid {
+    animation: none;
+  }
+}
+
 /* SKELETON LOADING STATE */
 
 .skeleton-card {

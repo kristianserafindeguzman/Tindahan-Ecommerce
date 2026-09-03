@@ -32,8 +32,7 @@
           </div>
         </div>
 
-        <!-- Not wired up yet — no directions/maps feature exists yet, intentionally not clickable. -->
-        <q-btn unelevated no-caps icon="o_directions" label="Directions" class="store-banner-directions" />
+        <q-btn unelevated no-caps icon="o_directions" label="Directions" class="store-banner-directions" :disable="!hasDirections" @click="getDirections" />
       </div>
 
       <p v-else class="store-not-found">
@@ -217,6 +216,22 @@ const { addToCart } = useCart()
 
 const storeParam = computed(() => route.params.id)
 const store = computed(() => stores.value.find((s) => s.slug === storeParam.value || String(s.id) === String(storeParam.value)) || null)
+
+// Same origin+destination pattern as ConsumerOrderDetails.vue's "Get Directions" button.
+const hasDirections = computed(() => {
+  const lat = localStorage.getItem('consumer_lat')
+  const lng = localStorage.getItem('consumer_lng')
+  return !!(lat != null && lng != null && store.value?.latitude != null && store.value?.longitude != null)
+})
+
+const getDirections = () => {
+  if (!hasDirections.value) return
+  const oLat = localStorage.getItem('consumer_lat')
+  const oLng = localStorage.getItem('consumer_lng')
+  const { latitude: dLat, longitude: dLng } = store.value
+
+  window.open(`https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}`, '_blank')
+}
 
 const storeProducts = computed(() => {
   if (!store.value) return []
@@ -464,7 +479,7 @@ const clearFilters = () => {
   background: #f87171;
 }
 
-/* Same white-on-photo CTA recipe as .hero-cta (ConsumerHome.vue). No @click — no directions/maps feature yet. */
+/* Same white-on-photo CTA recipe as .hero-cta (ConsumerHome.vue). */
 .store-banner-directions {
   position: absolute;
   z-index: 1;
@@ -745,6 +760,26 @@ const clearFilters = () => {
 
   font-size: 14px;
   text-align: center;
+}
+
+/* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
+@keyframes storedetail-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.store-banner,
+.products-grid {
+  animation: storedetail-fade-up 0.5s ease both;
+}
+
+.products-grid { animation-delay: 0.1s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .store-banner,
+  .products-grid {
+    animation: none;
+  }
 }
 
 /* SKELETON LOADING STATE */

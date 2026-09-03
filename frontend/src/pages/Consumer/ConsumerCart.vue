@@ -328,6 +328,29 @@ const removeItem = async (item) => {
   padding: 60px 24px;
 
   text-align: center;
+
+  animation: cart-fade-up 0.5s ease both;
+}
+
+/* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
+@keyframes cart-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-title,
+.cart-layout {
+  animation: cart-fade-up 0.5s ease both;
+}
+
+.cart-layout { animation-delay: 0.06s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cart-empty,
+  .page-title,
+  .cart-layout {
+    animation: none;
+  }
 }
 
 .cart-empty-icon {
@@ -827,6 +850,11 @@ const removeItem = async (item) => {
 
   /* Redundant next to the per-unit price now shown in red, so the line-item math stays desktop-only. */
   .cart-item-line-total {
+    display: none;
+  }
+
+  /* Hidden on mobile/tablet — the sticky checkout bar is the page's one focal action, footer links just add extra scroll past it. */
+  :deep(.site-footer) {
     display: none;
   }
 }

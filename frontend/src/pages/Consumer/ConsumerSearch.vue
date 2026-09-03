@@ -329,6 +329,20 @@ const goToRecentSearch = (term) => {
 
 .page-header-row {
   margin-bottom: 0;
+
+  /* Page load only — results below re-render on every keystroke, so only the header (which doesn't) gets the entrance animation, to avoid it retriggering while typing. */
+  animation: search-fade-up 0.5s ease both;
+}
+
+@keyframes search-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-header-row {
+    animation: none;
+  }
 }
 
 .page-title {

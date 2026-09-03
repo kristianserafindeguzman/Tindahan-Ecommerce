@@ -670,6 +670,8 @@ onBeforeUnmount(() => {
   margin: 0 auto;
   padding: 40px 16px 56px;
 
+  animation: checkout-fade-up 0.5s ease both;
+
   text-align: center;
 }
 
@@ -1026,6 +1028,27 @@ onBeforeUnmount(() => {
   gap: 20px;
 
   align-items: start;
+
+  animation: checkout-fade-up 0.5s ease both;
+  animation-delay: 0.06s;
+}
+
+/* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
+@keyframes checkout-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-title {
+  animation: checkout-fade-up 0.5s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .success-view,
+  .checkout-layout,
+  .page-title {
+    animation: none;
+  }
 }
 
 .checkout-main {
@@ -1680,6 +1703,11 @@ onBeforeUnmount(() => {
 @media (max-width: 800px) {
   .checkout-layout {
     grid-template-columns: 1fr;
+  }
+
+  /* Hidden on mobile/tablet — the sticky checkout bar is the page's one focal action, footer links just add extra scroll past it. */
+  :deep(.site-footer) {
+    display: none;
   }
 }
 

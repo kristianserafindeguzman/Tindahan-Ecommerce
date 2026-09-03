@@ -420,6 +420,21 @@ onBeforeUnmount(() => {
 
   overflow-y: auto;
   padding: 0 10px 10px;
+
+  /* Lighter touch than the other pages — this is a q-dialog with its own Quasar-driven open transition
+     already, so only the inner list content fades in (avoids stacking a second animation on the dialog itself). */
+  animation: map-fade-up 0.4s ease both;
+}
+
+@keyframes map-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-list {
+    animation: none;
+  }
 }
 
 .sidebar-store-card {

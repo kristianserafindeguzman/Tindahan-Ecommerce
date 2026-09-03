@@ -1579,7 +1579,7 @@ const goToTab = (tab) => {
   }
 
   .header-logo {
-    height: 24px;
+    height: 32px;
   }
 
   .header-actions {

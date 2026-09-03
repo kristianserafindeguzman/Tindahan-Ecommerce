@@ -431,6 +431,26 @@ const reorderItems = async (order) => {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 
   transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+
+  /* Plays on initial load AND on tab switch (Active/Past re-creates these cards via v-for :key) — a nice "refreshing" cue rather than a jarring swap. */
+  animation: orders-fade-up 0.4s ease both;
+}
+
+/* PAGE ENTRANCE — opacity/transform only so it never shifts layout. */
+@keyframes orders-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-title {
+  animation: orders-fade-up 0.5s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .order-card,
+  .page-title {
+    animation: none;
+  }
 }
 
 .order-card:hover {

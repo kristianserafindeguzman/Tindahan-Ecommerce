@@ -1216,6 +1216,26 @@ const goHomeAfterDelete = () => {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
 
   transition: box-shadow 0.2s, border-color 0.2s;
+
+  animation: profile-fade-up 0.5s ease both;
+  animation-delay: 0.06s;
+}
+
+/* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
+@keyframes profile-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-header-block {
+  animation: profile-fade-up 0.5s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-card,
+  .page-header-block {
+    animation: none;
+  }
 }
 
 /* No hover lift/red-tint, unlike ProductCard/StoreCard — this card isn't a single clickable unit. */

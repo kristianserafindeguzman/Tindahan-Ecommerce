@@ -25,7 +25,13 @@
 
       <!-- CATEGORIES -->
       <SectionBlock title="Categories">
-        <CategoryCarousel :categories="categories" @select="goToCategory" />
+        <div v-if="categoriesLoading" class="categories-skeleton-row">
+          <div v-for="n in 12" :key="n" class="category-skeleton-tile">
+            <div class="category-skeleton-icon" />
+            <div class="skeleton-line skeleton-line-short" />
+          </div>
+        </div>
+        <CategoryCarousel v-else :categories="categories" @select="goToCategory" />
       </SectionBlock>
 
       <!-- RECOMMENDED / POPULAR PRODUCTS -->
@@ -131,7 +137,7 @@ const openProductModal = (product) => {
 // This page renders for guests and logged-in consumers alike, so SiteHeader reads localStorage directly instead of route-guarding.
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
-const { categories, fetchCategories } = useCategories()
+const { categories, loading: categoriesLoading, fetchCategories } = useCategories()
 const { products, loading: productsLoading, fetchProducts } = useProducts()
 const { stores, loading: storesLoading, fetchStores } = useStores()
 
@@ -293,6 +299,34 @@ const visibleDiscoverProducts = computed(() =>
       #9c171b 55%,
       #651012 100%
     );
+
+  animation: home-fade-up 0.5s ease both;
+}
+
+/* Entrance animation, page load only (a fresh DOM each navigation, not scroll-triggered) — kept
+   to opacity/transform only so it's cheap and never shifts layout. Staggered per section so the
+   page reads top-to-bottom instead of popping in all at once. .section-block is SectionBlock.vue's
+   own root — :deep() here only reaches instances rendered from within this page's own template,
+   not the component's other usages elsewhere (same safe pattern as this session's dashboard work). */
+@keyframes home-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+:deep(.section-block) {
+  animation: home-fade-up 0.5s ease both;
+}
+
+:deep(.section-block:nth-of-type(1)) { animation-delay: 0.06s; }
+:deep(.section-block:nth-of-type(2)) { animation-delay: 0.12s; }
+:deep(.section-block:nth-of-type(3)) { animation-delay: 0.18s; }
+:deep(.section-block:nth-of-type(4)) { animation-delay: 0.24s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-banner,
+  :deep(.section-block) {
+    animation: none;
+  }
 }
 
 .hero-content {
@@ -312,11 +346,14 @@ const visibleDiscoverProducts = computed(() =>
   color: #ffffff;
 }
 
-/* Bigger now that the subtitle is gone — the only line of copy left in the hero. */
+/* Bigger now that the subtitle is gone — the only line of copy left in the hero.
+   Display font (Poppins, loaded in index.html) — everything else on the page stays Roboto. */
 .hero-title-lg {
   margin: 0 0 20px;
 
+  font-family: 'Poppins', 'Roboto', Arial, sans-serif;
   font-size: 34px;
+  font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
@@ -345,6 +382,14 @@ const visibleDiscoverProducts = computed(() =>
 
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
   transform: translateY(-1px);
+}
+
+.hero-cta :deep(.q-icon) {
+  transition: transform 0.2s ease;
+}
+
+.hero-cta:hover :deep(.q-icon) {
+  transform: translateX(3px);
 }
 
 .hero-cta:active {
@@ -406,12 +451,13 @@ const visibleDiscoverProducts = computed(() =>
 
   cursor: pointer;
 
-  transition: background-color 0.15s, border-color 0.15s;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
 }
 
 .see-more-btn:hover {
   border-color: #f3c6c7;
   background: #fdecec;
+  transform: translateY(-1px);
 }
 
 /* STORES ROW */
@@ -425,6 +471,43 @@ const visibleDiscoverProducts = computed(() =>
 }
 
 /* SKELETON LOADING STATE */
+
+.categories-skeleton-row {
+  display: flex;
+
+  gap: 12px;
+  overflow: hidden;
+}
+
+.category-skeleton-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  gap: 10px;
+
+  width: 132px;
+  padding: 20px 12px;
+
+  border-radius: 10px;
+  border: 1px solid #e8e8e8;
+
+  background: #ffffff;
+}
+
+.category-skeleton-icon {
+  width: 44px;
+  height: 44px;
+
+  border-radius: 50%;
+
+  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
+  background-size: 400% 100%;
+
+  animation: skeleton-pulse 1.4s ease infinite;
+}
 
 .skeleton-card {
   overflow: hidden;

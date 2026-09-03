@@ -183,6 +183,26 @@ const paginatedProducts = computed(() => {
   text-align: center;
 }
 
+/* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
+@keyframes personalize-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-header-row,
+.products-grid {
+  animation: personalize-fade-up 0.5s ease both;
+}
+
+.products-grid { animation-delay: 0.08s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-header-row,
+  .products-grid {
+    animation: none;
+  }
+}
+
 /* RESPONSIVE */
 
 @media (max-width: 600px) {
