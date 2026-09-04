@@ -10,9 +10,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Services\SemaphoreService;
 
 class AuthController extends Controller
 {
+    public function __construct(private SemaphoreService $semaphoreService)
+    {
+
+    }
     /**
      * Register a new Consumer user.
      *
@@ -44,7 +49,7 @@ class AuthController extends Controller
                         'email' => ['The email or phone number has already been taken.'],
                     ]);
                 }
-                
+
                 $photoPath = $existingUser->profile_picture;
                 if ($request->hasFile('profile_picture')) {
                     $photoPath = $request->file('profile_picture')->store('profiles', 'public');
@@ -177,71 +182,81 @@ class AuthController extends Controller
      *
      * POST /api/otp/verify
      */
+    /**
+ * Verify OTP code (for registration or password reset).
+ *
+ * POST /api/otp/verify
+ */
     public function verifyOtp(Request $request)
     {
         $request->validate([
             'phone_number' => 'required|string',
-            'code'         => 'required|string|size:6',
-            'type'         => 'required|in:registration,password_reset',
+            'code' => ['required', 'string', 'regex:/^\d{6}$/'],
+            'type' => 'required|in:registration,password_reset',
         ]);
 
+        // Get the latest unverified OTP for this phone number and type.
         $otp = OtpCode::where('phone_number', $request->phone_number)
             ->where('type', $request->type)
             ->whereNull('verified_at')
             ->latest('created_at')
             ->first();
 
-        \Illuminate\Support\Facades\Log::info('OTP Verification Debug', [
-            'incoming_phone' => $request->phone_number,
-            'incoming_code'  => $request->code,
-            'otp_record_found' => $otp ? true : false,
-            'db_code_hash'   => $otp ? $otp->code : null,
-            'hash_match'     => $otp ? Hash::check($request->code, $otp->code) : false,
-        ]);
-
         if (!$otp) {
             return response()->json([
-                'message' => 'No verification code found. Please request a new one.'
+                'message' => 'No verification code found. Please request a new one.',
             ], 400);
         }
 
-        if (!Hash::check($request->code, $otp->code)) {
-            return response()->json([
-                'message' => 'Invalid verification code. Please try again.'
-            ], 400);
-        }
-
+        // Check expiration before verifying the code.
         if ($otp->isExpired()) {
             return response()->json([
                 'message' => 'Verification code has expired. Please request a new one.',
             ], 422);
         }
 
-        // Mark as verified
-        $otp->update(['verified_at' => now()]);
+        // Compare the entered OTP against the stored hash.
+        if (!Hash::check($request->code, $otp->code)) {
+            return response()->json([
+                'message' => 'Invalid verification code. Please try again.',
+            ], 400);
+        }
 
-        // Activate user account if they were inactive (e.g., new registration)
+        // Mark the OTP as verified.
+        $otp->update([
+            'verified_at' => now(),
+        ]);
+
+        // Find the user using the verified phone number.
         $user = User::where('phone_number', $request->phone_number)->first();
-        if ($user && $user->account_status === 'inactive') {
-            $user->update(['account_status' => 'active']);
+
+        // Activate an inactive account after successful registration verification.
+        if (
+            $user &&
+            $request->type === 'registration' &&
+            $user->account_status === 'inactive'
+        ) {
+            $user->update([
+                'account_status' => 'active',
+            ]);
         }
 
         $responseData = [
-            'message'  => 'Verification successful.',
+            'message' => 'Verification successful.',
             'verified' => true,
         ];
 
-        // For password reset, return a temporary reset token
+        // Password reset flow.
         if ($request->type === 'password_reset') {
             $resetToken = Str::random(64);
 
-            // Store the reset token on the user for validation during password reset
-            $user = User::where('phone_number', $request->phone_number)->first();
             if ($user) {
-                // Use the password_reset_tokens table
                 \DB::table('password_reset_tokens')->updateOrInsert(
                     ['email' => $user->email],
-                    ['token' => Hash::make($resetToken), 'created_at' => now()]
+                    [
+                        'token' => Hash::make($resetToken),
+                        'created_at' => now(),
+                    ]
                 );
             }
 
@@ -490,7 +505,7 @@ class AuthController extends Controller
                 $approval = $store->approvalStatus;
                 $vendorStatus = $approval->status;
                 $rejectionReason = $approval->rejection_reason;
-                
+
                 if ($vendorStatus === 'rejected' && $approval->admin_id) {
                     $admin = User::find($approval->admin_id);
                     if ($admin) {
@@ -517,24 +532,40 @@ class AuthController extends Controller
      * In production, replace the mock code with a random 6-digit
      * number and send it via an SMS gateway (Semaphore, Twilio, etc.).
      */
-    private function generateOtp(User $user, string $type): OtpCode
+    private function generateOtp(User $user, string $type): void
     {
-        // Invalidate any existing unverified OTPs of this type
-        OtpCode::where('user_id', $user->user_id)
+        // Invalidate any previous unverified OTP
+        // for this phone number and OTP type.
+        OtpCode::where('phone_number', $user->phone_number)
             ->where('type', $type)
             ->whereNull('verified_at')
             ->delete();
 
-        // Mock code — always 123456 for development
-        // In production: $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $code = '123456';
+        // Generate a random 6-digit OTP.
+        $code = str_pad(
+            random_int(0, 999999),
+            6,
+            '0',
+            STR_PAD_LEFT
+        );
 
-        return OtpCode::create([
-            'user_id'      => $user->user_id,
+        // Save the OTP securely as a hash.
+        OtpCode::create([
+            'user_id' => $type === 'registration'
+                ? null
+                : $user->user_id,
+
             'phone_number' => $user->phone_number,
-            'code'         => Hash::make($code),
-            'type'         => $type,
-            'expires_at'   => now()->addMinutes(10),
+            'code' => Hash::make($code),
+            'type' => $type,
+            'expires_at' => now()->addMinutes(10),
         ]);
+
+        // Send the plaintext OTP through Semaphore.
+        $this->semaphoreService->sendOtp(
+            $user->phone_number,
+            $code
+        );
     }
+
 }
