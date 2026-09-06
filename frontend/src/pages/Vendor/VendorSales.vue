@@ -7,8 +7,8 @@
     <div class="page-container relative-position" style="z-index: 1;">
       
       <!-- ================= DESKTOP HEADER AREA ================= -->
-      <div v-if="!$q.screen.lt.md" class="page-header q-mb-xl q-mt-sm row items-center justify-between">
-        <div class="row items-center">
+      <div v-if="!$q.screen.lt.md" class="page-header q-mb-xl q-mt-sm">
+        <div class="row items-center q-mb-sm">
           <div class="glass-icon-box q-mr-md">
             <q-icon name="point_of_sale" size="26px" color="red-8" />
           </div>
@@ -17,31 +17,11 @@
             <p class="text-body1 text-blue-grey-5 q-mt-xs q-mb-none">Monitor metrics, process manual entries, and view predictions.</p>
           </div>
         </div>
-
-        <div class="q-mt-md q-mt-sm-none">
-          <q-btn outline icon="calendar_today" color="dark" :label="displayDate" no-caps class="btn-glass-outline text-weight-bold q-px-lg">
-            <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-              <q-date v-model="selectedDate" mask="YYYY/MM/DD" color="red-8" today-btn class="premium-glass-card">
-                  <div class="row justify-between full-width border-top q-pt-sm" style="border-top: 1px solid rgba(0,0,0,0.05)">
-                    <div class="q-gutter-x-sm">
-                      <q-btn label="View All Time" color="grey-8" flat size="sm" class="text-weight-bold" @click="clearDate" v-close-popup />
-                      <q-btn label="Go to Today" color="blue-8" flat size="sm" class="text-weight-bold" @click="setToday" v-close-popup />
-                    </div>
-                    <div class="q-gutter-x-sm">
-                      <q-btn label="Cancel" color="grey-6" flat size="sm" v-close-popup />
-                      <q-btn label="Apply" color="red-8" unelevated size="sm" class="text-weight-bold" @click="fetchSalesData" v-close-popup />
-                    </div>
-                  </div>
-              </q-date>
-            </q-popup-proxy>
-          </q-btn>
-        </div>
       </div>
 
       <!-- ================= MOBILE HEADER AREA ================= -->
       <div v-else class="page-header q-mb-lg q-mt-sm">
-        <!-- Restored Original Mobile Header with Logo and Text -->
-        <div class="row items-center q-mb-md">
+        <div class="row items-center">
           <div class="glass-icon-box q-mr-md" style="width: 44px; height: 44px;">
             <q-icon name="point_of_sale" size="22px" class="text-brand-red" />
           </div>
@@ -50,23 +30,6 @@
             <p class="text-caption text-blue-grey-5 q-mt-xs q-mb-none font-medium">Monitor metrics and track revenue.</p>
           </div>
         </div>
-        
-        <!-- Clean, Standardized Date Picker matching the reference image -->
-        <q-btn outline icon="calendar_today" text-color="blue-grey-8" :label="displayDate" no-caps class="full-width text-weight-bold" style="border-radius: 6px; background-color: #94a3b840; border-color: #94a3b880; height: 40px; font-size: 13px;">
-          <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-            <q-date v-model="selectedDate" mask="YYYY/MM/DD" color="red-8" today-btn class="bg-white">
-              <div class="row justify-between full-width border-top q-pt-sm" style="border-top: 1px solid rgba(0,0,0,0.05)">
-                <div class="q-gutter-x-sm">
-                  <q-btn label="All Time" color="grey-8" flat size="sm" class="text-weight-bold" @click="clearDate" v-close-popup />
-                  <q-btn label="Today" color="blue-8" flat size="sm" class="text-weight-bold" @click="setToday" v-close-popup />
-                </div>
-                <div class="q-gutter-x-sm">
-                  <q-btn label="Apply" color="red-8" unelevated size="sm" class="text-weight-bold" @click="fetchSalesData" v-close-popup />
-                </div>
-              </div>
-            </q-date>
-          </q-popup-proxy>
-        </q-btn>
       </div>
 
       <div class="row q-col-gutter-lg q-col-gutter-md-xl">
@@ -74,10 +37,48 @@
         <!-- ================= LEFT COLUMN / MAIN CONTENT ================= -->
         <div class="col-12 col-md-8">
           
-          <!-- Today's Revenue -->
+          <!-- Revenue Card with Integrated Date Picker -->
           <q-card class="q-mb-lg text-white" :class="$q.screen.lt.md ? 'bg-brand-red q-pa-md shadow-2' : 'premium-glass-card q-pa-md bg-gradient-red'" :style="$q.screen.lt.md ? 'border-radius: 12px;' : ''">
             <q-card-section :class="{ 'q-pa-sm': $q.screen.lt.md }">
-              <div class="text-white opacity-80 text-uppercase text-weight-bold q-mb-sm" :style="$q.screen.lt.md ? 'font-size: 11px; letter-spacing: 0.5px;' : ''">REVENUE FOR {{ displayDate.toUpperCase() }}</div>
+              <div class="row items-center justify-between q-mb-sm">
+                <div class="text-white opacity-80 text-uppercase text-weight-bold" :style="$q.screen.lt.md ? 'font-size: 11px; letter-spacing: 0.5px;' : ''">
+                  REVENUE FOR {{ displayDate.toUpperCase() }}
+                </div>
+                
+                <!-- Revamped Calendar Button (Sleek Outline) -->
+                <q-btn 
+                  outline 
+                  dense 
+                  no-caps 
+                  icon="calendar_month" 
+                  label="Select Date" 
+                  class="text-white text-weight-bold transition-ease hover-bg-white-20" 
+                  style="border-radius: 8px; border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.1); padding: 4px 12px; font-size: 11.5px; letter-spacing: 0.3px;"
+                >
+                  <q-popup-proxy anchor="bottom right" self="top right" :offset="[0, 8]" transition-show="jump-down" transition-hide="jump-up">
+                    <q-card class="calendar-popover-card shadow-soft overflow-hidden" style="width: 320px; max-width: 90vw; border-radius: 14px; border: 1px solid #e2e8f0;">
+                      <div class="calendar-popover-header row items-center justify-between q-px-md q-py-sm bg-gradient-red text-white">
+                        <div class="row items-center no-wrap">
+                          <q-icon name="event" size="18px" class="q-mr-xs" />
+                          <span class="text-caption text-weight-bolder text-uppercase tracking-wide">Select Date</span>
+                        </div>
+                        <span class="text-caption text-weight-bold opacity-80">{{ selectedDate ? selectedDate.replace(/\//g, '-') : 'All Time' }}</span>
+                      </div>
+                      
+                      <q-date v-model="selectedDate" mask="YYYY/MM/DD" color="red-9" flat class="custom-flat-date full-width" />
+                      
+                      <div class="row items-center justify-between q-pa-sm calendar-popover-footer border-top-solid bg-slate-50">
+                        <div class="row q-gutter-x-xs">
+                          <q-btn label="All Time" color="blue-grey-7" flat dense size="12px" class="text-weight-bold q-px-xs" @click="clearDate" v-close-popup />
+                          <q-btn label="Today" color="blue-8" flat dense size="12px" class="text-weight-bold q-px-xs" @click="setToday" v-close-popup />
+                        </div>
+                        <q-btn label="Apply" color="red-9" unelevated dense size="12px" class="text-weight-bold q-px-md" style="border-radius: 6px;" @click="fetchSalesData" v-close-popup />
+                      </div>
+                    </q-card>
+                  </q-popup-proxy>
+                </q-btn>
+              </div>
+
               <div class="row items-center justify-between">
                 <div class="text-weight-bolder" :class="$q.screen.lt.md ? 'text-h3' : 'text-h2'" style="letter-spacing: -0.02em;">₱{{ formatNumber(metrics.revenue) }}</div>
                 
@@ -125,7 +126,7 @@
                     <div class="text-subtitle2 text-amber-2 text-uppercase" style="font-size: 11px;">BEST SELLER FOR {{ displayDate.toUpperCase() }}</div>
                   </div>
                   <div class="text-h6 text-weight-bold text-white leading-tight">
-                    {{ metrics.bestSellingCategory || 'Analyzing...' }}
+                    {{ metrics.bestSellingCategory || 'No Data' }}
                   </div>
                 </q-card-section>
               </q-card>
@@ -134,7 +135,6 @@
 
           <!-- Mobile Metrics Stacked Cards -->
           <div v-else class="q-mb-xl q-gutter-y-md">
-            
             <!-- Avg Order Value -->
             <q-card bordered flat class="bg-white shadow-soft" style="border-radius: 10px; border-color: #e2e8f0;">
               <q-card-section class="q-pa-md row items-center justify-between">
@@ -162,12 +162,11 @@
               <q-card-section class="q-pa-md row items-center justify-between no-wrap">
                 <div class="col q-pr-sm">
                   <div class="text-caption text-weight-bold text-amber-5 text-uppercase q-mb-xs" style="font-size: 11px;">Best Seller</div>
-                  <div class="text-h6 text-weight-bold text-white leading-tight ellipsis">{{ metrics.bestSellingCategory || 'Analyzing...' }}</div>
+                  <div class="text-h6 text-weight-bold text-white leading-tight ellipsis">{{ metrics.bestSellingCategory || 'No Data' }}</div>
                 </div>
                 <q-avatar size="38px" color="amber-9" text-color="white" icon="emoji_events" />
               </q-card-section>
             </q-card>
-
           </div>
 
           <!-- Transactions Table Container / Header -->
@@ -182,14 +181,16 @@
 
           <!-- Desktop Table -->
           <q-card v-if="!$q.screen.lt.md" class="premium-glass-card">
-            <q-card-section class="panel-header q-pa-lg">
-              <div class="text-h6 text-weight-bold text-dark row items-center">
+            <!-- Adjusted Table Header Text Size -->
+            <q-card-section class="panel-header q-pa-md">
+              <div class="text-subtitle1 text-weight-bolder text-dark row items-center" style="font-size: 17px;">
                 <div class="header-accent-red q-mr-md"></div>
                 Sales for {{ displayDate }}
               </div>
             </q-card-section>
 
             <q-table
+              v-if="transactions.length > 0"
               flat
               class="custom-premium-table bg-transparent"
               :rows="transactions"
@@ -198,19 +199,6 @@
               hide-bottom
               :pagination="{ rowsPerPage: 5 }"
             >
-              <!-- Explicit Empty State for Desktop -->
-              <template #no-data>
-                <div class="full-width row flex-center q-pa-xl empty-state-glass">
-                  <div class="text-center z-top relative-position">
-                    <div class="empty-icon-wrapper q-mb-lg">
-                      <q-icon name="receipt_long" size="56px" color="blue-grey-3" class="drop-shadow-icon" />
-                    </div>
-                    <div class="text-h6 text-weight-bold text-blue-grey-8">No recent sales recorded</div>
-                    <div class="text-body2 text-blue-grey-5 q-mt-xs">Sales recorded today will appear here.</div>
-                  </div>
-                </div>
-              </template>
-
               <template #body-cell-order_id="props">
                 <q-td :props="props">
                   <span class="order-id-badge text-weight-bold text-red-8 q-px-sm q-py-xs bg-red-1 transition-ease" style="border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 6px;">
@@ -232,15 +220,29 @@
                 <q-td :props="props" class="text-weight-bold text-blue-grey-9">₱{{ formatNumber(props.row.daily_revenue) }}</q-td>
               </template>
             </q-table>
+
+            <!-- Empty State Feedback Dialog for Desktop outside the q-table -->
+            <div v-else class="full-width q-pa-lg flex flex-center">
+              <div class="bg-slate-50 border-slate-light rounded-borders q-pa-lg text-center shadow-soft" style="max-width: 420px; border-style: dashed; border-width: 2px;">
+                <q-icon name="query_stats" size="56px" color="blue-grey-3" class="q-mb-md" />
+                <div class="text-h6 text-weight-bolder text-blue-grey-9 q-mb-xs">No Sales Data Found</div>
+                <div class="text-body2 text-blue-grey-6 q-mb-none">
+                  There are no recorded transactions for <strong>{{ displayDate }}</strong>. As you process orders or add manual sales, they will appear here.
+                </div>
+              </div>
+            </div>
           </q-card>
 
           <!-- MOBILE SALES RECORDS LIST -->
           <div v-if="$q.screen.lt.md" class="q-pb-xl">
-            <!-- EXPLICIT RESTORED EMPTY STATE FEEDBACK FOR MOBILE -->
-            <div v-if="transactions.length === 0" class="full-width text-center bg-white shadow-soft q-py-xl q-px-md border-slate-light" style="border-radius: 12px;">
-              <q-icon name="receipt_long" size="48px" color="blue-grey-3" class="q-mb-md opacity-50 drop-shadow-icon" />
-              <div class="text-subtitle1 text-weight-bold text-blue-grey-8">No sales recorded</div>
-              <div class="text-caption text-blue-grey-5">There are no transactions for {{ displayDate }}.</div>
+            <!-- Empty State Feedback Dialog for Mobile -->
+            <div v-if="transactions.length === 0" class="full-width text-center bg-slate-50 shadow-soft q-pa-lg border-slate-light" style="border-radius: 12px; border-style: dashed; border-width: 2px;">
+              <q-icon name="query_stats" size="48px" color="blue-grey-3" class="q-mb-md drop-shadow-icon" />
+              <div class="text-subtitle1 text-weight-bolder text-blue-grey-9 q-mb-xs">No Sales Data Found</div>
+              <div class="text-caption text-blue-grey-6 q-mb-md">
+                There are no recorded transactions for <strong>{{ displayDate }}</strong>.
+              </div>
+              <q-btn unelevated color="red-9" icon="add" label="Record a Sale" no-caps class="text-weight-bold full-width" style="border-radius: 8px; padding: 8px 16px;" @click="showMobileManualModal = true" />
             </div>
 
             <!-- Mobile Transactions Rendering -->
@@ -275,51 +277,75 @@
 
         <!-- ================= RIGHT COLUMN (Manual Entry - Desktop Only) ================= -->
         <div v-if="!$q.screen.lt.md" class="col-12 col-md-4">
-          <q-card class="premium-glass-card q-pa-sm manual-entry-card relative-position">
+          <q-card class="premium-glass-card q-pa-sm manual-entry-card relative-position overflow-hidden">
             
             <div v-if="!selectedDate" class="absolute-full flex flex-center z-top" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); border-radius: inherit;">
-              <div class="text-center q-pa-lg">
-                <q-icon name="edit_calendar" size="48px" color="blue-grey-4" class="q-mb-sm" />
+              <div class="text-center q-pa-md">
+                <q-icon name="edit_calendar" size="44px" color="blue-grey-4" class="q-mb-xs" />
                 <div class="text-subtitle1 text-weight-bold text-dark leading-tight q-mb-xs">Select a Date</div>
                 <div class="text-caption text-blue-grey-6">All Time date is selected. Please select a specific date from the calendar to manual entry sales.</div>
               </div>
             </div>
             
-            <q-card-section class="q-pb-none q-pt-lg">
-              <div class="row items-center q-mb-md">
-                <div class="icon-premium-box bg-grey-2 border-grey-light text-red-8 q-mr-md">
-                  <q-icon name="add_shopping_cart" size="24px" />
+            <q-card-section class="q-pb-none q-pt-md">
+              <div class="row items-center q-mb-xs">
+                <div class="icon-compact-box bg-grey-2 border-grey-light text-red-8 q-mr-sm">
+                  <q-icon name="add_shopping_cart" size="20px" />
                 </div>
                 <div class="text-h6 text-weight-bold text-dark leading-tight">Manual Entry</div>
               </div>
             </q-card-section>
 
-            <q-card-section class="q-pt-sm">
-              <q-form @submit.prevent="confirmManualSale" class="q-gutter-y-lg">
-                <div class="field-group">
-                  <label class="input-label">Product Name <span class="text-red-8">*</span></label>
-                  <q-select v-model="manualForm.product" :options="inventoryOptions" option-value="inventory_id" option-label="product_name" :use-input="!manualForm.product" clearable @clear="manualForm.unitPrice = 0" input-debounce="0" @filter="filterInventory" @update:model-value="onProductSelected" outlined dense class="custom-glass-input" placeholder="Search product..." :rules="[val => !!val || 'Product is required']" hide-bottom-space>
+            <q-card-section class="q-pt-sm q-pb-md">
+              <q-form @submit.prevent="confirmManualSale">
+                <!-- Balanced Gap for Product Name -->
+                <div class="q-mb-md">
+                  <div class="text-caption text-weight-bold text-blue-grey-8 q-mb-xs" style="font-size: 13px;">
+                    Product Name <span class="text-red">*</span>
+                  </div>
+                  <q-select 
+                    v-model="manualForm.product" 
+                    :options="inventoryOptions" 
+                    option-value="inventory_id" 
+                    option-label="product_name" 
+                    :use-input="!manualForm.product" 
+                    clearable 
+                    @clear="manualForm.unitPrice = 0" 
+                    input-debounce="0" 
+                    @filter="filterInventory" 
+                    @update:model-value="onProductSelected" 
+                    outlined 
+                    dense 
+                    class="manual-modal-input-grey" 
+                    placeholder="Search product..." 
+                    :rules="[val => !!val || 'Product is required']" 
+                    hide-bottom-space 
+                  >
                     <template v-slot:no-option><q-item><q-item-section class="text-italic text-grey-6">No products found</q-item-section></q-item></template>
                   </q-select>
                 </div>
-                <div class="row q-col-gutter-md">
-                  <div class="col-6 field-group">
-                    <label class="input-label">Quantity</label>
-                    <q-input v-model.number="manualForm.quantity" type="number" outlined dense class="custom-glass-input" :rules="[val => val > 0 || 'Must be > 0']" hide-bottom-space />
+                
+                <!-- Balanced Gaps for Quantity and Price -->
+                <div class="row q-col-gutter-md q-mb-md">
+                  <div class="col-6">
+                    <div class="text-caption text-weight-bold text-blue-grey-8 q-mb-xs" style="font-size: 13px;">Quantity</div>
+                    <q-input v-model.number="manualForm.quantity" type="number" outlined dense class="manual-modal-input-grey" :rules="[val => val > 0 || 'Must be > 0']" hide-bottom-space />
                   </div>
-                  <div class="col-6 field-group">
-                    <label class="input-label">Unit Price (₱)</label>
-                    <q-input v-model.number="manualForm.unitPrice" type="number" outlined dense class="custom-glass-input" :rules="[val => val >= 0 || 'Invalid price']" hide-bottom-space />
+                  <div class="col-6">
+                    <div class="text-caption text-weight-bold text-blue-grey-8 q-mb-xs" style="font-size: 13px;">Unit Price (₱)</div>
+                    <q-input v-model.number="manualForm.unitPrice" type="number" outlined dense class="manual-modal-input-grey" :rules="[val => val >= 0 || 'Invalid price']" hide-bottom-space />
                   </div>
                 </div>
-                <div class="bg-grey-2 rounded-borders q-pa-md q-mt-md shadow-1">
+
+                <div class="q-pa-md q-mb-md" style="border-radius: 6px; border: 1px solid #e2e8f0; background: #fff;">
                   <div class="row items-center justify-between">
-                    <div class="text-subtitle2 text-grey-8">Estimated Total</div>
-                    <div class="text-h6 text-weight-bold text-red-8">₱{{ formatNumber(estimatedTotal) }}</div>
+                    <div class="text-subtitle2 text-blue-grey-8 text-weight-bold">Estimated Total</div>
+                    <div class="text-h6 text-weight-bolder text-red-9">₱{{ formatNumber(estimatedTotal) }}</div>
                   </div>
                 </div>
-                <div class="q-mt-sm">
-                  <q-btn type="submit" label="Record Sale" unelevated class="btn-premium text-white full-width bg-red-8" size="lg" no-caps :loading="submitting" />
+
+                <div>
+                  <q-btn type="submit" label="Record Sale" unelevated class="full-width bg-brand-red text-white text-weight-bold" style="border-radius: 8px; padding: 12px 0; font-size: 15px;" no-caps :loading="submitting" />
                 </div>
               </q-form>
             </q-card-section>
@@ -354,11 +380,10 @@
 
     </div>
 
-    <!-- Mobile Manual Sale Modal - EXACTLY MATCHING DESIGN -->
+    <!-- Mobile Manual Sale Modal -->
     <q-dialog v-model="showMobileManualModal" position="bottom">
       <q-card style="width: 100%; border-radius: 20px 20px 0 0; padding-bottom: 24px;" class="bg-white overflow-hidden">
         
-        <!-- Red Gradient Header for Mobile Modal -->
         <q-card-section class="row items-center justify-between q-py-md q-px-lg bg-gradient-red text-white">
           <div class="text-h6 text-weight-bolder tracking-tight">Add Manual Sale</div>
           <q-btn icon="close" flat round dense v-close-popup class="opacity-80 hover-opacity-100 text-white" size="sm" />
@@ -374,10 +399,8 @@
             <div style="font-size: 13px;">You must select a specific date from the calendar to record a manual sale.</div>
           </div>
 
-          <q-form v-else @submit.prevent="confirmManualSale" class="q-gutter-y-md">
-            
-            <!-- Product Name -->
-            <div>
+          <q-form v-else @submit.prevent="confirmManualSale">
+            <div class="q-mb-md">
               <div class="text-caption text-weight-bold text-blue-grey-8 q-mb-xs" style="font-size: 13px;">
                 Product Name <span class="text-red">*</span>
               </div>
@@ -408,8 +431,7 @@
               </q-select>
             </div>
 
-            <!-- Quantity & Unit Price Row -->
-            <div class="row q-col-gutter-md">
+            <div class="row q-col-gutter-md q-mb-md">
               <div class="col-6">
                 <div class="text-caption text-weight-bold text-blue-grey-8 q-mb-xs" style="font-size: 13px;">Quantity</div>
                 <q-input 
@@ -436,16 +458,14 @@
               </div>
             </div>
 
-            <!-- Estimated Total Box -->
-            <div class="q-mt-lg q-pa-md" style="border-radius: 6px; border: 1px solid #e2e8f0; background: #fff;">
+            <div class="q-pa-md q-mb-md" style="border-radius: 6px; border: 1px solid #e2e8f0; background: #fff;">
               <div class="row items-center justify-between">
                 <div class="text-subtitle2 text-blue-grey-8 text-weight-bold">Estimated Total</div>
                 <div class="text-h6 text-weight-bolder text-red-9">₱{{ formatNumber(estimatedTotal) }}</div>
               </div>
             </div>
 
-            <!-- Record Sale Button -->
-            <div class="q-mt-lg">
+            <div>
               <q-btn type="submit" label="Record Sale" unelevated class="full-width bg-brand-red text-white text-weight-bold" style="border-radius: 8px; padding: 12px 0; font-size: 15px;" no-caps :loading="submitting" />
             </div>
 
@@ -464,7 +484,6 @@ import { api } from '@/boot/axios'
 
 const $q = useQuasar()
 
-// Set default date to today, formatted properly for QDate mask
 const timeStamp = Date.now()
 const selectedDate = ref(date.formatDate(timeStamp, 'YYYY/MM/DD'))
 const showMobileManualModal = ref(false)
@@ -487,7 +506,7 @@ const setToday = () => {
 
 const metrics = reactive({
   revenue: 0,
-  growthRate: null, // Tied to real data, hidden otherwise
+  growthRate: null,
   avgOrderValue: 0,
   cancellationRate: 0,
   bestSellingCategory: null
@@ -512,7 +531,6 @@ const columns = computed(() => {
   ]
 })
 
-// Unified Status Colors mapping to Quasar brand colors
 const getStatusColor = (status) => {
   const normalizedStatus = String(status).toLowerCase().replace(/\s+/g, '_')
   
@@ -527,7 +545,6 @@ const getStatusColor = (status) => {
   }
 }
 
-// Format status nicely for UI
 const formatStatus = (status) => {
   if (!status) return ''
   return String(status).split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -537,7 +554,6 @@ const formatNumber = (num) => {
   return Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-// Manual Entry Form
 const manualForm = reactive({
   product: null,
   quantity: 1,
@@ -590,7 +606,6 @@ const confirmManualSale = () => {
         total_amount: estimatedTotal.value,
         sale_date: selectedDate.value ? selectedDate.value.replace(/\//g, '-') : date.formatDate(Date.now(), 'YYYY-MM-DD')
       }
-      console.log("MANUAL SALE PAYLOAD", payload)
       await api.post('/vendor/sales/manual', payload)
       $q.notify({ type: 'positive', message: 'Manual sale recorded successfully.', position: 'top-right' })
       manualForm.product = null
@@ -676,14 +691,19 @@ onMounted(() => {
 /* Typography Utilities */
 .text-brand-red { color: #b91c1c !important; }
 .bg-brand-red { background-color: #b91c1c !important; }
+.bg-white-20 { background-color: rgba(255,255,255,0.15) !important; }
+.hover-bg-white-20:hover { background-color: rgba(255,255,255,0.25) !important; }
+.transition-ease { transition: all 0.2s ease; }
 .tracking-tight { letter-spacing: -0.02em; }
 .leading-tight { line-height: 1.2; }
 .opacity-80 { opacity: 0.8; }
 .h-full { height: 100%; }
 .shrink-none { flex-shrink: 0; }
 .border-none { border: none !important; }
+.border-radius-6 { border-radius: 6px; }
+.bg-slate-50 { background-color: #f8fafc; }
 
-/* Beautiful Header Glass Icon Box */
+/* Header Glass Icon Box */
 .glass-icon-box {
   width: 48px;
   height: 48px;
@@ -704,6 +724,25 @@ onMounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+/* Calendar Popover Styling */
+.calendar-popover-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+}
+.calendar-popover-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+.custom-flat-date {
+  width: 100%;
+}
+.custom-flat-date :deep(.q-date__header) {
+  display: none;
+}
+.border-top-solid {
+  border-top: 1px solid #e2e8f0;
 }
 
 /* Gradients */
@@ -743,28 +782,17 @@ onMounted(() => {
   filter: blur(20px);
 }
 
-/* Base Inputs & Form Elements (Desktop) */
-.input-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: #475569;
-  margin-bottom: 6px;
-}
-.field-group { margin-bottom: 8px; }
-.custom-glass-input :deep(.q-field__control) {
-  background: rgba(241, 245, 249, 0.6); 
+/* Compact Icon Box for Manual Entry */
+.icon-compact-box {
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
-  transition: all 0.3s ease;
-}
-.custom-glass-input :deep(.q-field__control:before) { border: 1px solid rgba(226, 232, 240, 0.8); }
-.custom-glass-input :deep(.q-field__control:hover) { background: #ffffff; }
-.custom-glass-input :deep(.q-field--focused .q-field__control) {
-  background: #ffffff;
-  box-shadow: 0 2px 10px rgba(185, 28, 28, 0.06); 
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Mobile Manual Modal Inputs (Matches Reference Image Exactly) */
+/* Mobile Manual Modal Inputs */
 .manual-modal-input :deep(.q-field__control) {
   border-radius: 6px;
   border: 1px solid #cbd5e1;
@@ -796,27 +824,19 @@ onMounted(() => {
 }
 .btn-premium {
   border-radius: 8px !important;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.3);
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.25);
   transition: all 0.2s ease;
 }
 .btn-premium:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(185, 28, 28, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(185, 28, 28, 0.35);
 }
 
 /* Utilities */
 .border-grey-light { border: 1px solid rgba(226, 232, 240, 0.8); }
 .border-slate-light { border: 1px solid #e2e8f0; }
 .shadow-soft { box-shadow: 0 2px 8px rgba(15,23,42,0.06); }
-.icon-premium-box {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 /* Custom Premium Table Styling */
 :deep(.custom-premium-table thead tr th) {
@@ -825,30 +845,17 @@ onMounted(() => {
   font-weight: 700;
   color: #64748B; 
   text-transform: uppercase; 
-  font-size: 11px; 
+  font-size: 10px; /* Highly compact table header text */
   letter-spacing: 0.05em; 
-  padding: 16px 20px; 
+  padding: 8px 16px; 
   border-bottom: 1px solid rgba(226, 232, 240, 0.8); 
 }
 :deep(.custom-premium-table tbody td) {
-  padding: 16px 20px; 
+  padding: 8px 16px; 
   border-bottom: 1px solid rgba(226, 232, 240, 0.5); 
 }
 
 /* Empty State Styling */
-.empty-state-glass {
-  background: rgba(248, 250, 252, 0.5);
-  border: 1px dashed #E2E8F0;
-  border-radius: 12px;
-  margin: 16px;
-  width: calc(100% - 32px);
-}
-.empty-icon-wrapper {
-  position: relative;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-}
 .drop-shadow-icon { filter: drop-shadow(0 4px 6px rgba(15, 23, 42, 0.05)); opacity: 0.5; }
 
 /* Mobile specific styling */
@@ -856,7 +863,6 @@ onMounted(() => {
   .vendor-page.mobile-page-padding { padding: 16px 16px calc(90px + env(safe-area-inset-bottom)) 16px !important; }
   .desktop-only { display: none !important; }
   
-  /* Mobile Bottom Navigation */
   .mobile-bottom-nav {
     position: fixed;
     bottom: 0;

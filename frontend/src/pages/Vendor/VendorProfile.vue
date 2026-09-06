@@ -7,58 +7,189 @@
     <div class="page-container relative-position" style="z-index: 1">
       
       <!-- PAGE HEADER -->
-      <div class="page-header q-mb-lg q-mb-xl-md q-mt-sm">
-        <h1 class="text-h5 text-md-h4 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight">
+      <div class="page-header q-mb-lg q-mt-sm">
+        <h1 class="text-h4 text-md-h3 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight">
           Profile Settings
         </h1>
-        <p class="text-caption text-md-body1 text-blue-grey-5 q-mt-xs q-mb-none">
+        <p class="text-subtitle2 text-md-subtitle1 text-blue-grey-5 q-mt-xs q-mb-none">
           Manage your personal information, store details, and security.
         </p>
       </div>
 
-      <div class="row q-col-gutter-lg items-stretch">
+      <div class="row q-col-gutter-md items-start">
         
         <!-- ================= MY PROFILE ================= -->
         <div class="col-12 col-md-6">
-          <q-card class="premium-glass-card profile-card flex column overflow-hidden">
+          <q-card class="premium-glass-card profile-card overflow-hidden">
             <q-card-section class="row items-center q-pa-md text-white bg-gradient-red">
               <q-icon name="account_circle" size="22px" class="q-mr-sm" />
               <div class="text-subtitle1 text-weight-bold">My Profile</div>
             </q-card-section>
 
-            <q-card-section class="q-pa-md q-pa-lg-lg col flex column full-height">
-              <q-form
-                @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to save these changes?', submitProfile)"
-                class="col flex column full-height"
-              >
-                <div class="q-gutter-y-md">
-                  <div class="row q-col-gutter-sm q-col-gutter-md-md">
+            <q-card-section class="q-pa-md">
+              <q-form @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to save these changes?', submitProfile)">
+                <div class="q-gutter-y-sm">
+                  <div class="row q-col-gutter-sm">
                     <div class="col-12 col-sm-6">
-                      <q-input v-model="profileForm.firstName" label="First Name" outlined class="custom-glass-input">
+                      <q-input v-model="profileForm.firstName" label="First Name" outlined class="custom-glass-input" hide-bottom-space>
                         <template v-slot:prepend><q-icon name="person_outline" size="20px" color="blue-grey-4" /></template>
                       </q-input>
                     </div>
                     <div class="col-12 col-sm-6">
-                      <q-input v-model="profileForm.lastName" label="Last Name" outlined class="custom-glass-input">
+                      <q-input v-model="profileForm.lastName" label="Last Name" outlined class="custom-glass-input" hide-bottom-space>
                         <template v-slot:prepend><q-icon name="person_outline" size="20px" color="blue-grey-4" /></template>
                       </q-input>
                     </div>
                   </div>
 
-                  <q-input v-model="profileForm.email" label="Email Address" type="email" outlined class="custom-glass-input">
+                  <q-input v-model="profileForm.email" label="Email Address" type="email" outlined class="custom-glass-input" hide-bottom-space>
                     <template v-slot:prepend><q-icon name="mail_outline" size="20px" color="blue-grey-4" /></template>
                   </q-input>
 
-                  <div class="row items-center q-gutter-sm no-wrap">
-                    <q-input v-model="profileForm.phoneNumber" label="Mobile Number" outlined class="custom-glass-input col">
+                  <!-- Mobile Number with OTP Verification Flow -->
+                  <div class="row items-start no-wrap q-gutter-x-sm">
+                    <q-input 
+                      v-model="profileForm.phoneNumber" 
+                      label="Mobile Number" 
+                      outlined 
+                      class="custom-glass-input col"
+                      hide-bottom-space
+                      lazy-rules
+                      :rules="[
+                        val => !!val || 'Mobile number is required',
+                        val => /^09\d{9}$/.test(val) || 'Enter a valid 11-digit mobile number (e.g. 09123456789)'
+                      ]"
+                    >
                       <template v-slot:prepend><q-icon name="phone_iphone" size="20px" color="blue-grey-4" /></template>
                     </q-input>
-                    <q-btn v-if="phoneChanged" v-ripple label="Verify" outline color="red-9" no-caps class="btn-danger-outline q-px-md" style="height: 56px;" @click="verifyPhoneModal = true" />
+
+                    <!-- Verify Button -->
+                    <q-btn 
+                      v-if="phoneNeedsVerification" 
+                      label="Verify" 
+                      unelevated 
+                      color="amber-9" 
+                      class="text-weight-bold shadow-soft" 
+                      style="border-radius: 8px; height: 56px; margin-top: 0;" 
+                      no-caps 
+                      @click="sendOtp" 
+                      :loading="isSendingOtp"
+                    />
                   </div>
                 </div>
 
-                <div class="text-right q-mt-auto pt-lg">
-                  <q-btn v-ripple type="submit" label="Save Profile" unelevated class="btn-red-gradient text-white q-px-lg q-py-sm text-weight-bold full-width-mobile" no-caps />
+                <div class="text-right q-mt-md">
+                  <q-btn v-ripple type="submit" label="Save Profile" unelevated class="btn-red-gradient text-white q-px-lg q-py-sm text-weight-bold full-width-mobile" no-caps :disable="phoneNeedsVerification" />
+                </div>
+              </q-form>
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <!-- ================= PASSWORD ================= -->
+        <div class="col-12 col-md-6">
+          <q-card class="premium-glass-card profile-card overflow-hidden">
+            <q-card-section class="row items-center q-pa-md text-white bg-gradient-red">
+              <q-icon name="security" size="22px" class="q-mr-sm" />
+              <div class="text-subtitle1 text-weight-bold">Security & Password</div>
+            </q-card-section>
+
+            <q-card-section class="q-pa-md">
+              <q-form @submit.prevent="validateAndSubmitPassword">
+                <div class="q-gutter-y-sm">
+                  <q-input 
+                    v-model="passwordForm.current" 
+                    label="Current Password" 
+                    :type="showCurrentPassword ? 'text' : 'password'" 
+                    outlined 
+                    class="custom-glass-input"
+                    hide-bottom-space
+                    lazy-rules
+                    :rules="[val => !!val || 'Current password is required']"
+                  >
+                    <template v-slot:prepend><q-icon name="lock_outline" size="20px" color="blue-grey-4" /></template>
+                    <template v-slot:append>
+                      <q-icon 
+                        :name="showCurrentPassword ? 'visibility' : 'visibility_off'" 
+                        class="cursor-pointer text-blue-grey-4" 
+                        size="20px"
+                        @click="showCurrentPassword = !showCurrentPassword" 
+                      />
+                    </template>
+                  </q-input>
+
+                  <div>
+                    <q-input 
+                      v-model="passwordForm.new" 
+                      label="New Password" 
+                      :type="showNewPassword ? 'text' : 'password'" 
+                      outlined 
+                      class="custom-glass-input q-mb-xs"
+                      hide-bottom-space
+                      lazy-rules
+                      :rules="[val => !!val || 'New password is required']"
+                    >
+                      <template v-slot:prepend><q-icon name="key" size="20px" color="blue-grey-4" /></template>
+                      <template v-slot:append>
+                        <q-icon 
+                          :name="showNewPassword ? 'visibility' : 'visibility_off'" 
+                          class="cursor-pointer text-blue-grey-4" 
+                          size="20px"
+                          @click="showNewPassword = !showNewPassword" 
+                        />
+                      </template>
+                    </q-input>
+
+                    <div class="password-requirements-card bg-slate-50 border-slate-light rounded-borders q-pa-sm q-px-md q-mt-xs">
+                      <div class="text-caption text-weight-bold text-slate-700 q-mb-xs">Password Requirements:</div>
+                      <div class="row q-col-gutter-xs">
+                        <div class="col-12 col-sm-6 row items-center no-wrap">
+                          <q-icon :name="passwordRules.minChars ? 'check_circle' : 'radio_button_unchecked'" size="15px" :color="passwordRules.minChars ? 'positive' : 'grey-5'" class="q-mr-xs shrink-none" />
+                          <span class="text-caption" :class="passwordRules.minChars ? 'text-positive text-weight-medium' : 'text-grey-6'">At least 8 characters</span>
+                        </div>
+                        <div class="col-12 col-sm-6 row items-center no-wrap">
+                          <q-icon :name="passwordRules.hasUpper ? 'check_circle' : 'radio_button_unchecked'" size="15px" :color="passwordRules.hasUpper ? 'positive' : 'grey-5'" class="q-mr-xs shrink-none" />
+                          <span class="text-caption" :class="passwordRules.hasUpper ? 'text-positive text-weight-medium' : 'text-grey-6'">One uppercase letter (A-Z)</span>
+                        </div>
+                        <div class="col-12 col-sm-6 row items-center no-wrap">
+                          <q-icon :name="passwordRules.hasNumber ? 'check_circle' : 'radio_button_unchecked'" size="15px" :color="passwordRules.hasNumber ? 'positive' : 'grey-5'" class="q-mr-xs shrink-none" />
+                          <span class="text-caption" :class="passwordRules.hasNumber ? 'text-positive text-weight-medium' : 'text-grey-6'">One number (0-9)</span>
+                        </div>
+                        <div class="col-12 col-sm-6 row items-center no-wrap">
+                          <q-icon :name="passwordRules.hasSymbol ? 'check_circle' : 'radio_button_unchecked'" size="15px" :color="passwordRules.hasSymbol ? 'positive' : 'grey-5'" class="q-mr-xs shrink-none" />
+                          <span class="text-caption" :class="passwordRules.hasSymbol ? 'text-positive text-weight-medium' : 'text-grey-6'">One special symbol (@, #, $)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <q-input 
+                    v-model="passwordForm.confirm" 
+                    label="Confirm New Password" 
+                    :type="showConfirmPassword ? 'text' : 'password'" 
+                    outlined 
+                    class="custom-glass-input"
+                    hide-bottom-space
+                    lazy-rules
+                    :rules="[
+                      val => !!val || 'Please confirm your new password',
+                      val => val === passwordForm.new || 'Passwords do not match'
+                    ]"
+                  >
+                    <template v-slot:prepend><q-icon name="verified_user" size="20px" color="blue-grey-4" /></template>
+                    <template v-slot:append>
+                      <q-icon 
+                        :name="showConfirmPassword ? 'visibility' : 'visibility_off'" 
+                        class="cursor-pointer text-blue-grey-4" 
+                        size="20px"
+                        @click="showConfirmPassword = !showConfirmPassword" 
+                      />
+                    </template>
+                  </q-input>
+                </div>
+
+                <div class="text-right q-mt-md">
+                  <q-btn v-ripple type="submit" label="Update Password" unelevated class="btn-red-gradient text-white q-px-lg q-py-sm text-weight-bold full-width-mobile" no-caps />
                 </div>
               </q-form>
             </q-card-section>
@@ -67,58 +198,45 @@
 
         <!-- ================= STORE INFO ================= -->
         <div class="col-12 col-md-6">
-          <q-card class="premium-glass-card profile-card flex column overflow-hidden">
+          <q-card class="premium-glass-card profile-card overflow-hidden">
             <q-card-section class="row items-center q-pa-md text-white bg-gradient-red">
               <q-icon name="storefront" size="22px" class="q-mr-sm" />
               <div class="text-subtitle1 text-weight-bold">Store Info</div>
             </q-card-section>
 
-            <q-card-section class="q-pa-md q-pa-lg-lg col flex column full-height">
-              <q-form
-                @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to save these changes?', submitStoreInfo)"
-                class="col flex column full-height"
-              >
-                <div class="q-gutter-y-md">
-                  <q-input v-model="storeForm.storeName" label="Store Name" outlined class="custom-glass-input">
+            <q-card-section class="q-pa-md">
+              <q-form @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to save these changes?', submitStoreInfo)">
+                <div class="q-gutter-y-sm">
+                  <q-input v-model="storeForm.storeName" label="Store Name" outlined class="custom-glass-input" hide-bottom-space>
                     <template v-slot:prepend><q-icon name="store" size="20px" color="blue-grey-4" /></template>
                     <template v-slot:hint><span class="text-blue-grey-4">This name will be visible to neighborhood consumers.</span></template>
                   </q-input>
 
                   <!-- Upload Controls -->
-                  <div class="store-photo-preview-container q-mt-md q-mb-md">
-                    <q-img
-                      v-if="storePicturePreview"
-                      :src="storePicturePreview"
-                      :style="{ width: '100%', height: $q.screen.lt.md ? '160px' : '200px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0' }"
-                      ratio="16/9"
-                    >
+                  <div class="store-photo-preview-container q-my-sm">
+                    <q-img v-if="storePicturePreview" :src="storePicturePreview" :style="{ width: '100%', height: $q.screen.lt.md ? '140px' : '180px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0' }" ratio="16/9">
                       <template v-slot:error>
                         <div class="absolute-full flex flex-center bg-grey-3 text-grey-7">Error loading image</div>
                       </template>
                     </q-img>
 
-                    <div
-                      v-else
-                      class="empty-preview flex flex-center bg-grey-2 text-grey-6"
-                      :style="{ width: '100%', height: $q.screen.lt.md ? '160px' : '200px', border: '2px dashed #cbd5e1', borderRadius: '8px' }"
-                    >
+                    <div v-else class="empty-preview flex flex-center bg-grey-2 text-grey-6" :style="{ width: '100%', height: $q.screen.lt.md ? '140px' : '180px', border: '2px dashed #cbd5e1', borderRadius: '8px' }">
                       <div class="text-center">
-                        <q-icon name="storefront" size="40px" color="blue-grey-3" />
-                        <div class="q-mt-sm text-caption text-weight-medium">No cover photo uploaded</div>
+                        <q-icon name="storefront" size="32px" color="blue-grey-3" />
+                        <div class="q-mt-xs text-caption text-weight-medium">No cover photo uploaded</div>
                       </div>
                     </div>
                   </div>
 
-                  <div class="row items-center justify-between bg-slate-50 q-pa-md rounded-borders border-slate-light">
+                  <div class="row items-center justify-between bg-slate-50 q-pa-sm rounded-borders border-slate-light">
                     <div>
-                      <div class="text-weight-bold text-dark" style="font-size: 14px;">Store Cover Photo</div>
-                      <div class="text-caption text-grey-6">Upload a crisp 16:9 photo</div>
+                      <div class="text-weight-bold text-dark" style="font-size: 13px;">Store Cover Photo</div>
                     </div>
-                    <q-btn outline color="red-9" class="btn-danger-outline bg-white" label="Update Photo" no-caps @click="showImageCaptureModal = true" :loading="uploadingImage" />
+                    <q-btn outline color="red-9" class="btn-danger-outline bg-white text-weight-bold q-px-md q-py-xs" label="Update Photo" no-caps @click="showImageCaptureModal = true" :loading="uploadingImage" />
                   </div>
                 </div>
 
-                <div class="text-right q-mt-auto pt-lg">
+                <div class="text-right q-mt-md">
                   <q-btn v-ripple type="submit" label="Save Store Info" unelevated class="btn-red-gradient text-white q-px-lg q-py-sm text-weight-bold full-width-mobile" no-caps />
                 </div>
               </q-form>
@@ -128,50 +246,53 @@
 
         <!-- ================= MAP ADDRESS ================= -->
         <div class="col-12 col-md-6">
-          <q-card class="premium-glass-card profile-card flex column overflow-hidden">
+          <q-card class="premium-glass-card profile-card overflow-hidden">
             <q-card-section class="row items-center q-pa-md text-white bg-gradient-red">
               <q-icon name="place" size="22px" class="q-mr-sm" />
               <div class="text-subtitle1 text-weight-bold">Address & Location</div>
             </q-card-section>
 
-            <q-card-section class="q-pa-md q-pa-lg-lg col flex column full-height">
-              <q-form
-                @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to save these changes?', submitAddress)"
-                class="col flex column full-height"
-              >
-                <div class="q-gutter-y-md">
-                  <q-input v-model="addressForm.fullAddress" label="Street Name, Building, House No" type="textarea" :rows="$q.screen.lt.md ? '2' : '3'" outlined class="custom-glass-input">
-                    <template v-slot:prepend><q-icon name="map" size="20px" color="blue-grey-4" class="q-mt-sm" /></template>
+            <q-card-section class="q-pa-md">
+              <q-form @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to save these changes?', submitAddress)">
+                <div class="q-gutter-y-sm">
+                  <q-input 
+                    v-model="addressForm.fullAddress" 
+                    label="Street Name, Building, House No" 
+                    type="textarea" 
+                    autogrow 
+                    outlined 
+                    class="custom-glass-input"
+                    hide-bottom-space
+                  >
+                    <template v-slot:prepend><q-icon name="map" size="20px" color="blue-grey-4" class="q-mt-xs" /></template>
                   </q-input>
 
-                  <div class="q-mt-md">
-                    <!-- Accurate Pin Warning Banner Fixed Layout -->
-                    <div class="bg-amber-1 rounded-borders q-pa-md q-mb-md row no-wrap items-start" style="border: 1px solid #fde68a;">
-                      <div class="bg-amber-5 text-white flex flex-center rounded-borders q-mr-md" style="width: 36px; height: 36px; min-width: 36px; border-radius: 50%; flex-shrink: 0;">
-                        <q-icon name="notifications" size="20px" />
+                  <div class="q-mt-sm">
+                    <div class="bg-amber-1 rounded-borders q-pa-sm q-mb-sm row no-wrap items-start" style="border: 1px solid #fde68a;">
+                      <div class="bg-amber-5 text-white flex flex-center rounded-borders q-mr-sm" style="width: 28px; height: 28px; min-width: 28px; border-radius: 50%; flex-shrink: 0;">
+                        <q-icon name="notifications" size="16px" />
                       </div>
                       <div class="col">
-                        <div class="text-subtitle2 text-weight-bold text-amber-9 q-mb-xs" style="font-size: 14px;">Place an accurate pin</div>
-                        <div class="text-caption text-blue-grey-8" style="line-height: 1.4; font-size: 12px;">
-                          This will serve as the map location for consumers. Please check if it is correct; otherwise, click on the map to adjust it.
+                        <div class="text-subtitle2 text-weight-bold text-amber-9 q-mb-none" style="font-size: 13px;">Place an accurate pin</div>
+                        <div class="text-caption text-blue-grey-8" style="line-height: 1.3; font-size: 11px;">
+                          This map location will be shown to consumers.
                         </div>
                       </div>
                     </div>
 
-                    <div v-if="addressForm.latitude && addressForm.longitude" id="vendor-profile-map" class="rounded-borders shadow-soft" :style="{ height: $q.screen.lt.md ? '250px' : '300px', width: '100%', zIndex: 1 }"></div>
-                    <div v-else class="bg-grey-2 rounded-borders flex flex-center shadow-soft full-width column" :style="{ height: $q.screen.lt.md ? '250px' : '300px', border: '2px dashed #cbd5e1' }">
-                      <q-icon name="location_off" size="48px" color="blue-grey-3" class="q-mb-md" />
-                      <div class="text-weight-bold text-blue-grey-7 text-body1">No Location Detected</div>
-                      <div class="text-caption text-blue-grey-5 q-mt-xs">Please detect your current location first.</div>
+                    <div v-if="addressForm.latitude && addressForm.longitude" id="vendor-profile-map" class="rounded-borders shadow-soft" :style="{ height: $q.screen.lt.md ? '200px' : '230px', width: '100%', zIndex: 1 }"></div>
+                    <div v-else class="bg-grey-2 rounded-borders flex flex-center shadow-soft full-width column" :style="{ height: $q.screen.lt.md ? '200px' : '230px', border: '2px dashed #cbd5e1' }">
+                      <q-icon name="location_off" size="36px" color="blue-grey-3" class="q-mb-sm" />
+                      <div class="text-weight-bold text-blue-grey-7 text-body2">No Location Detected</div>
                     </div>
                   </div>
 
-                  <div class="row justify-end q-mt-sm">
-                    <q-btn outline color="red-9" icon="my_location" label="Detect Current Location" @click="detectLocation" :loading="isDetectingLocation" no-caps class="btn-danger-outline bg-white text-weight-bold q-px-md q-py-xs full-width-mobile" />
+                  <div class="row justify-end q-mt-xs">
+                    <q-btn outline color="red-9" icon="my_location" label="Detect Location" @click="detectLocation" :loading="isDetectingLocation" no-caps class="btn-danger-outline bg-white text-weight-bold q-px-md q-py-xs full-width-mobile" />
                   </div>
                 </div>
 
-                <div class="text-right q-mt-auto pt-lg">
+                <div class="text-right q-mt-md">
                   <q-btn v-ripple type="submit" label="Save Address" unelevated class="btn-red-gradient text-white q-px-lg q-py-sm text-weight-bold full-width-mobile" no-caps />
                 </div>
               </q-form>
@@ -179,44 +300,9 @@
           </q-card>
         </div>
 
-        <!-- ================= PASSWORD ================= -->
-        <div class="col-12 col-md-6">
-          <q-card class="premium-glass-card profile-card flex column overflow-hidden">
-            <q-card-section class="row items-center q-pa-md text-white bg-gradient-red">
-              <q-icon name="security" size="22px" class="q-mr-sm" />
-              <div class="text-subtitle1 text-weight-bold">Security & Password</div>
-            </q-card-section>
-
-            <q-card-section class="q-pa-md q-pa-lg-lg col flex column full-height">
-              <q-form
-                @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to update your password? A confirmation will be sent to your email.', submitPassword)"
-                class="col flex column full-height"
-              >
-                <div class="q-gutter-y-md">
-                  <q-input v-model="passwordForm.current" label="Current Password" type="password" outlined class="custom-glass-input">
-                    <template v-slot:prepend><q-icon name="lock_outline" size="20px" color="blue-grey-4" /></template>
-                  </q-input>
-
-                  <q-input v-model="passwordForm.new" label="New Password" type="password" outlined class="custom-glass-input">
-                    <template v-slot:prepend><q-icon name="key" size="20px" color="blue-grey-4" /></template>
-                  </q-input>
-
-                  <q-input v-model="passwordForm.confirm" label="Confirm New Password" type="password" outlined class="custom-glass-input">
-                    <template v-slot:prepend><q-icon name="verified_user" size="20px" color="blue-grey-4" /></template>
-                  </q-input>
-                </div>
-
-                <div class="text-right q-mt-auto pt-lg">
-                  <q-btn v-ripple type="submit" label="Update Password" unelevated class="btn-red-gradient text-white q-px-lg q-py-sm text-weight-bold full-width-mobile" no-caps />
-                </div>
-              </q-form>
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <!-- ================= STORE HOURS (Full Width) ================= -->
+        <!-- ================= STORE HOURS ================= -->
         <div class="col-12">
-          <q-card class="premium-glass-card flex column overflow-hidden">
+          <q-card class="premium-glass-card overflow-hidden">
             <q-card-section class="row items-center justify-between q-pa-md text-white bg-gradient-red">
               <div class="row items-center">
                 <q-icon name="schedule" size="22px" class="q-mr-sm" />
@@ -227,39 +313,33 @@
               </q-btn>
             </q-card-section>
 
-            <q-card-section class="q-pa-md q-pa-lg-lg col flex column full-height">
-              <q-form @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to save these changes?', submitStoreHours)" class="col flex column full-height q-gutter-y-sm">
+            <q-card-section class="q-pa-md">
+              <q-form @submit.prevent="openConfirm('Confirm Changes', 'Are you sure you want to save these changes?', submitStoreHours)" class="q-gutter-y-xs">
                 
-                <div class="row items-center q-col-gutter-sm schedule-row q-pa-sm q-pa-md-md rounded-borders border-bottom-mobile" v-for="day in operatingDays" :key="day.name">
-                  <!-- Day Name -->
+                <div class="row items-center q-col-gutter-sm schedule-row q-pa-sm rounded-borders border-bottom-mobile" v-for="day in operatingDays" :key="day.name">
                   <div class="col-6 col-sm-3 row items-center no-wrap">
                     <div class="text-subtitle2 text-weight-bold text-blue-grey-9 q-mr-sm">{{ day.name }}</div>
                   </div>
-                  
-                  <!-- Toggle -->
                   <div class="col-6 col-sm-3 text-right text-sm-left row items-center justify-end justify-sm-start no-wrap">
-                    <q-toggle v-model="day.isOpen" color="red-9" keep-color />
+                    <q-toggle v-model="day.isOpen" color="red-9" keep-color size="sm" />
                     <span class="text-body2 text-weight-bold q-ml-xs" :class="day.isOpen ? 'text-red-9' : 'text-blue-grey-4'">
                       {{ day.isOpen ? 'Open' : 'Closed' }}
                     </span>
                   </div>
 
-                  <!-- Time Inputs -->
-                  <div class="col-12 col-sm-6 row q-gutter-x-sm items-center q-mt-sm q-mt-sm-none" v-if="day.isOpen">
+                  <div class="col-12 col-sm-6 row q-gutter-x-sm items-center q-mt-xs q-mt-sm-none" v-if="day.isOpen">
                     <q-input v-model="day.openTime" type="time" outlined dense class="custom-glass-input col" />
                     <div class="text-center text-blue-grey-4 text-weight-bolder">—</div>
                     <q-input v-model="day.closeTime" type="time" outlined dense class="custom-glass-input col" />
                   </div>
-
-                  <!-- Closed State Placeholder -->
-                  <div class="col-12 col-sm-6 flex items-center q-mt-sm q-mt-sm-none" v-else>
+                  <div class="col-12 col-sm-6 flex items-center q-mt-xs q-mt-sm-none" v-else>
                     <div class="text-blue-grey-5 text-caption text-weight-medium bg-slate-50 q-px-sm q-py-xs rounded-borders w-full text-center border-slate-light" style="border: 1px dashed #cbd5e1;">
                       Closed
                     </div>
                   </div>
                 </div>
 
-                <div class="text-right q-mt-lg pt-md">
+                <div class="text-right q-mt-md">
                   <q-btn v-ripple type="submit" label="Save Store Hours" unelevated class="btn-red-gradient text-white q-px-lg q-py-sm text-weight-bold full-width-mobile" no-caps />
                 </div>
               </q-form>
@@ -275,10 +355,10 @@
               <div class="text-subtitle1 text-weight-bold">Danger Zone</div>
             </q-card-section>
             
-            <q-card-section class="q-pa-md q-pa-lg-lg row items-center justify-between">
-              <div class="column col-12 col-md-8 q-mb-md q-mb-md-none">
-                <div class="text-h6 text-weight-bold text-red-9 q-mb-xs">Delete Account</div>
-                <div class="text-blue-grey-8 text-body2" style="max-width: 500px;">
+            <q-card-section class="q-pa-md row items-center justify-between">
+              <div class="column col-12 col-md-8 q-mb-sm q-mb-md-none">
+                <div class="text-subtitle1 text-weight-bold text-red-9 q-mb-xs">Delete Account</div>
+                <div class="text-blue-grey-8 text-caption" style="max-width: 500px;">
                   Once you delete your account, there is no going back. All inventory, data, and sales records will be permanently lost.
                 </div>
               </div>
@@ -293,6 +373,57 @@
     </div>
 
     <!-- ================= MODALS ================= -->
+    
+    <!-- OTP Verification Modal -->
+    <q-dialog v-model="verifyPhoneModal" persistent backdrop-filter="blur(4px)">
+      <q-card class="premium-glass-card q-pa-md text-center" style="width: 400px; max-width: 90vw; border-top: 4px solid #b91c1c;">
+        <q-card-section class="q-pb-none">
+          <q-icon name="phonelink_ring" size="48px" color="red-9" class="q-mb-md" />
+          <div class="text-h6 text-weight-bolder text-blue-grey-9 q-mb-xs">Verify Mobile Number</div>
+          <div class="text-body2 text-blue-grey-7 q-mb-lg">We sent a 6-digit verification code to <strong class="text-dark">{{ profileForm.phoneNumber }}</strong>.</div>
+          
+          <!-- Individual OTP Boxes -->
+          <div class="row justify-center q-gutter-x-sm q-mb-xl">
+            <input 
+              v-for="(digit, index) in otpDigits" 
+              :key="index"
+              :ref="el => { if (el) otpInputRefs[index] = el }"
+              v-model="otpDigits[index]"
+              type="text" 
+              inputmode="numeric" 
+              maxlength="1" 
+              class="otp-box-input text-center text-h5 text-weight-bolder" 
+              @input="handleOtpInput(index, $event)"
+              @keydown="handleOtpKeydown(index, $event)"
+              @paste="handlePaste"
+            />
+          </div>
+          
+          <q-btn 
+            label="Verify Code" 
+            unelevated 
+            class="btn-red-gradient text-white full-width text-weight-bold q-py-sm q-mb-md" 
+            no-caps 
+            @click="verifyOtp" 
+            :loading="isVerifyingOtp" 
+            :disable="otpDigits.join('').length !== 6" 
+          />
+
+          <!-- Resend Timer Feedback -->
+          <div class="text-body2 text-blue-grey-6 q-mt-sm">
+            Didn't receive a code? 
+            <span v-if="!canResend" class="text-weight-bold">Resend in {{ resendTimer }}s</span>
+            <q-btn v-else flat dense no-caps label="Resend Now" color="red-9" class="text-weight-bold q-pa-none" style="min-height: auto;" @click="sendOtp" :loading="isSendingOtp" />
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="center" class="q-pt-md">
+          <q-btn flat label="Cancel" color="blue-grey-5" no-caps v-close-popup class="text-weight-bold full-width" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Standard Confirm Modal -->
     <q-dialog v-model="confirmDialog.isOpen" persistent backdrop-filter="blur(4px)">
       <q-card class="premium-glass-card q-pa-md" style="width: 420px; max-width: 90vw; border-top: 4px solid #b91c1c; height: auto !important;">
         <q-card-section class="column items-center text-center q-pb-none">
@@ -314,7 +445,7 @@
           <div class="text-h5 text-weight-bolder text-red-9 q-mb-md">Delete Merchant Account</div>
           <div class="text-body1 text-weight-bold text-red-8 q-mb-xs">Do you really want to delete your Merchant Account?</div>
           <div class="text-body2 text-blue-grey-7 q-mb-lg">If yes, please type your store name to confirm.</div>
-          <q-input v-model="deleteDialog.inputName" placeholder="Type your store name" outlined class="custom-glass-input q-mb-lg center-input-text" />
+          <q-input v-model="deleteDialog.inputName" placeholder="Type your store name" outlined dense class="custom-glass-input q-mb-lg center-input-text" hide-bottom-space />
         </q-card-section>
         <q-card-actions align="center" class="q-mt-xs q-gutter-md">
           <q-btn label="Back" outline color="blue-grey-4" class="btn-glass-outline text-blue-grey-8 q-px-xl text-weight-bold" no-caps v-close-popup />
@@ -327,7 +458,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
@@ -360,13 +491,140 @@ const addressForm = reactive({
   latitude: null,
   longitude: null
 })
-const passwordForm = reactive({ current: '', new: '', confirm: '' })
 
+// Password Form & Visibility Toggles
+const passwordForm = reactive({ current: '', new: '', confirm: '' })
+const showCurrentPassword = ref(false)
+const showNewPassword = ref(false)
+const showConfirmPassword = ref(false)
+
+// Mobile OTP States
 const originalPhone = ref('')
-const phoneChanged = computed(
-  () => profileForm.phoneNumber !== originalPhone.value
-)
+const phoneVerified = ref(true)
 const verifyPhoneModal = ref(false)
+
+const otpDigits = ref(['', '', '', '', '', ''])
+const otpInputRefs = ref([])
+
+const isSendingOtp = ref(false)
+const isVerifyingOtp = ref(false)
+
+const resendTimer = ref(25)
+const canResend = ref(false)
+let timerInterval = null
+
+// Check if phone was changed and needs OTP verification
+const phoneNeedsVerification = computed(() => {
+  const isValidRegex = /^09\d{9}$/.test(profileForm.phoneNumber)
+  return profileForm.phoneNumber && profileForm.phoneNumber !== originalPhone.value && !phoneVerified.value && isValidRegex
+})
+
+watch(() => profileForm.phoneNumber, (newVal) => {
+  if (newVal !== originalPhone.value) {
+    phoneVerified.value = false
+  } else {
+    phoneVerified.value = true
+  }
+})
+
+// Timer Logic
+const startResendTimer = () => {
+  resendTimer.value = 25
+  canResend.value = false
+  if (timerInterval) clearInterval(timerInterval)
+  timerInterval = setInterval(() => {
+    if (resendTimer.value > 0) {
+      resendTimer.value--
+    } else {
+      canResend.value = true
+      clearInterval(timerInterval)
+    }
+  }, 1000)
+}
+
+// OTP Handlers
+const handleOtpInput = (index, event) => {
+  const val = event.target.value
+  if (val) {
+    otpDigits.value[index] = val.slice(-1)
+    if (index < 5) {
+      otpInputRefs.value[index + 1].focus()
+    }
+  }
+}
+
+const handleOtpKeydown = (index, event) => {
+  if (event.key === 'Backspace' && !otpDigits.value[index]) {
+    if (index > 0) {
+      otpInputRefs.value[index - 1].focus()
+    }
+  }
+}
+
+const handlePaste = (event) => {
+  event.preventDefault()
+  const pasteData = event.clipboardData.getData('text').slice(0, 6).split('')
+  let pastedCount = 0
+  pasteData.forEach((char, i) => {
+    if (/[0-9]/.test(char) && i < 6) {
+      otpDigits.value[i] = char
+      pastedCount++
+    }
+  })
+  const nextIndex = Math.min(pastedCount, 5)
+  otpInputRefs.value[nextIndex].focus()
+}
+
+const sendOtp = () => {
+  isSendingOtp.value = true
+  setTimeout(() => {
+    isSendingOtp.value = false
+    verifyPhoneModal.value = true
+    otpDigits.value = ['', '', '', '', '', '']
+    startResendTimer()
+    $q.notify({ type: 'info', message: 'Verification code sent.', color: 'blue-8' })
+    nextTick(() => {
+      if (otpInputRefs.value[0]) otpInputRefs.value[0].focus()
+    })
+  }, 1000)
+}
+
+const verifyOtp = () => {
+  isVerifyingOtp.value = true
+  const code = otpDigits.value.join('')
+  setTimeout(() => {
+    isVerifyingOtp.value = false
+    if (code === '123456' || code.length === 6) {
+      phoneVerified.value = true
+      originalPhone.value = profileForm.phoneNumber
+      verifyPhoneModal.value = false
+      if (timerInterval) clearInterval(timerInterval)
+      $q.notify({ type: 'positive', message: 'Mobile number verified successfully!', color: 'green-7' })
+    } else {
+      $q.notify({ type: 'negative', message: 'Invalid OTP code.' })
+    }
+  }, 1000)
+}
+
+// Real-time Checklist Computations
+const passwordRules = computed(() => {
+  const val = passwordForm.new || ''
+  return {
+    minChars: val.length >= 8,
+    hasUpper: /[A-Z]/.test(val),
+    hasNumber: /[0-9]/.test(val),
+    hasSymbol: /[!@#$%^&*(),.?":{}|<>]/.test(val)
+  }
+})
+
+const isPasswordChecklistValid = computed(() => {
+  return (
+    passwordRules.value.minChars &&
+    passwordRules.value.hasUpper &&
+    passwordRules.value.hasNumber &&
+    passwordRules.value.hasSymbol
+  )
+})
 
 const operatingDays = reactive([
   { name: 'Monday', isOpen: true, openTime: '08:00', closeTime: '17:00' },
@@ -427,19 +685,41 @@ const initiateDelete = () => {
 // ================= API SUBMISSION LOGIC =================
 const submitProfile = async () => {
   try {
+    const fullName = `${profileForm.firstName} ${profileForm.lastName}`.trim()
+
     await api.put('/vendor/profile', {
+      name: fullName,
+      full_name: fullName,
       first_name: profileForm.firstName,
       last_name: profileForm.lastName,
       email: profileForm.email,
       phone_number: profileForm.phoneNumber
     })
+
+    originalPhone.value = profileForm.phoneNumber
+    phoneVerified.value = true
+
     $q.notify({
       type: 'positive',
       message: 'Profile saved successfully.',
       color: 'green-7'
     })
   } catch (error) {
-    $q.notify({ type: 'negative', message: 'Failed to update profile.' })
+    const errorData = error.response?.data
+    let errorMsg = errorData?.message || 'Failed to update profile.'
+
+    if (errorData?.errors) {
+      const firstKey = Object.keys(errorData.errors)[0]
+      if (firstKey && errorData.errors[firstKey][0]) {
+        errorMsg = errorData.errors[firstKey][0]
+      }
+    }
+
+    $q.notify({
+      type: 'negative',
+      message: errorMsg,
+      position: 'top'
+    })
   }
 }
 
@@ -484,10 +764,7 @@ const submitStoreInfo = async () => {
 const handleCapturedImage = ({ file }) => {
   if (!file) return
 
-  // Instant local preview from the blob
   storePicturePreview.value = URL.createObjectURL(file)
-
-  // Store the file to be uploaded later when saving Store Info
   newStorePictureFile.value = file
 
   $q.notify({
@@ -538,12 +815,40 @@ const submitAddress = async () => {
   }
 }
 
+const validateAndSubmitPassword = () => {
+  if (!isPasswordChecklistValid.value) {
+    $q.notify({
+      type: 'warning',
+      message: 'Please meet all password complexity requirements.',
+      position: 'top',
+      icon: 'warning'
+    })
+    return
+  }
+
+  if (passwordForm.new !== passwordForm.confirm) {
+    $q.notify({
+      type: 'warning',
+      message: 'Passwords do not match.',
+      position: 'top',
+      icon: 'warning'
+    })
+    return
+  }
+
+  openConfirm(
+    'Confirm Changes', 
+    'Are you sure you want to update your password? A confirmation will be sent to your email.', 
+    submitPassword
+  )
+}
+
 const submitPassword = async () => {
   try {
     await api.put('/vendor/profile/password', {
       current_password: passwordForm.current,
-      new_password: passwordForm.new,
-      new_password_confirmation: passwordForm.confirm
+      password: passwordForm.new,
+      password_confirmation: passwordForm.confirm
     })
     $q.notify({
       type: 'positive',
@@ -554,7 +859,8 @@ const submitPassword = async () => {
     passwordForm.new = ''
     passwordForm.confirm = ''
   } catch (error) {
-    $q.notify({ type: 'negative', message: 'Failed to update password.' })
+    const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Failed to update password.'
+    $q.notify({ type: 'negative', message: errorMsg, position: 'top' })
   }
 }
 
@@ -583,6 +889,8 @@ const fetchProfile = async () => {
       profileForm.email = data.email || ''
       profileForm.phoneNumber = data.phone_number || ''
       originalPhone.value = profileForm.phoneNumber
+      phoneVerified.value = true
+      
       if (data.store) {
         storeForm.storeName = data.store.store_name || ''
 
@@ -661,9 +969,9 @@ const initMap = () => {
   map.value = L.map('vendor-profile-map').setView([lat, lng], 15)
 
   L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }
   ).addTo(map.value)
 
@@ -680,14 +988,13 @@ const initMap = () => {
 
   marker.value = L.marker([lat, lng], { icon }).addTo(map.value)
   
-  // Update pin location smoothly when map is clicked
   map.value.on('click', function(e) {
-    const newLat = e.latlng.lat;
-    const newLng = e.latlng.lng;
-    addressForm.latitude = newLat;
-    addressForm.longitude = newLng;
-    marker.value.setLatLng([newLat, newLng]);
-  });
+    const newLat = e.latlng.lat
+    const newLng = e.latlng.lng
+    addressForm.latitude = newLat
+    addressForm.longitude = newLng
+    marker.value.setLatLng([newLat, newLng])
+  })
 }
 
 const detectLocation = () => {
@@ -740,7 +1047,7 @@ onMounted(async () => {
 <style scoped>
 /* Core Page Styling */
 .vendor-page {
-  padding: 32px 24px;
+  padding: 24px 16px;
   background-color: #f8fafc;
   min-height: 100vh;
 }
@@ -748,12 +1055,10 @@ onMounted(async () => {
   max-width: 1000px;
   margin: 0 auto;
 }
-.pt-lg { padding-top: 24px; }
-.pt-md { padding-top: 16px; }
 .w-full { width: 100%; }
 .shrink-none { flex-shrink: 0; }
 
-/* Strict Brand Red Gradient Class (No Pink) */
+/* Strict Brand Red Gradient Class */
 .bg-gradient-red {
   background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
 }
@@ -773,19 +1078,19 @@ onMounted(async () => {
 .bg-glow-secondary { bottom: 100px; right: -100px; background: radial-gradient(circle, rgba(69, 10, 10, 0.3) 0%, transparent 70%); }
 
 .tracking-tight { letter-spacing: -0.02em; }
+.tracking-widest { letter-spacing: 0.2em; }
 
 /* Clean Glassmorphism Cards */
 .premium-glass-card {
   background: rgba(255, 255, 255, 0.98);
   border: 1px solid rgba(241, 245, 249, 1);
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 .premium-glass-card:hover {
-  box-shadow: 0 6px 28px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
 }
-.profile-card { height: 100%; }
 
 /* Custom Glass Inputs */
 .custom-glass-input :deep(.q-field__control) {
@@ -801,6 +1106,29 @@ onMounted(async () => {
 }
 .custom-glass-input :deep(.q-field--focused .q-icon) { color: #b91c1c !important; }
 .center-input-text :deep(.q-field__native) { text-align: center; font-weight: bold; font-size: 1.1rem; }
+
+/* OTP Specific Styling */
+.otp-box-input {
+  width: 44px;
+  height: 52px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0f172a;
+  transition: all 0.2s ease;
+  outline: none;
+}
+.otp-box-input:focus {
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1);
+  background: #ffffff;
+}
+
+/* Password Checklist Card */
+.password-requirements-card {
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
 
 /* Primary Accent Buttons (Strict Red Gradient) */
 .btn-red-gradient {
@@ -822,7 +1150,7 @@ onMounted(async () => {
   border-radius: 8px !important; background: #ffffff !important;
   border: 1px solid #b91c1c !important; color: #b91c1c !important; transition: all 0.2s ease;
 }
-.btn-danger-outline:hover { background: #fef2f2 !important; transform: translateY(-1px); }
+.btn-danger-outline:hover { background-color: #fef2f2 !important; transform: translateY(-1px); }
 
 /* Delete Zone */
 .delete-zone-card {

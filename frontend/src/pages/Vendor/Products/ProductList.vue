@@ -96,41 +96,41 @@
             </div>
           </div>
 
-          <!-- Controls: Unified Toolbar -->
+          <!-- Controls: Unified Toolbar (Solid Buttons) -->
           <div class="row items-center justify-between q-col-gutter-sm">
             <div class="col-12 col-md-6 row items-center no-wrap q-gutter-x-sm">
-              <q-input v-model="search" outlined dense class="custom-glass-input exact-height col-grow" placeholder="Search products...">
+              <q-input v-model="search" outlined dense class="custom-solid-input exact-height col-grow bg-white" placeholder="Search products...">
                 <template v-slot:prepend>
                   <q-icon name="search" color="blue-grey-4" size="20px" />
                 </template>
               </q-input>
               
-              <q-btn outline icon="filter_list" label="Filter" color="blue-grey-4" text-color="blue-grey-8" no-caps class="btn-glass-outline exact-height text-weight-bold q-px-md">
-                <q-menu class="premium-dropdown-list shadow-4 q-mt-xs" style="min-width: 280px; border-radius: 12px; padding: 8px;">
+              <q-btn outline icon="filter_list" label="Filter" color="grey-4" text-color="slate-700" no-caps class="btn-modern-outline exact-height text-weight-bold q-px-md">
+                <q-menu class="premium-dropdown-list shadow-4 q-mt-xs" style="width: 280px; max-width: 85vw; border-radius: 12px;" anchor="bottom right" self="top right">
                   <div class="q-pa-md">
                     <div class="row items-center justify-between q-mb-md">
                       <div class="text-subtitle1 text-weight-bolder text-slate-800">Filters</div>
-                      <q-btn flat label="Clear" color="red-9" size="sm" class="text-weight-bold" @click="resetFilters" v-close-popup no-caps />
+                      <q-btn flat label="Clear" color="red-9" class="text-weight-bold" @click="resetFilters" v-close-popup no-caps />
                     </div>
                     
                     <div class="q-mb-md">
                       <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Category</div>
-                      <q-select v-model="filters.category" :options="[{label: 'All Categories', value: 'all'}, ...categoryOptions]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                      <q-select v-model="filters.category" :options="[{label: 'All Categories', value: 'all'}, ...categoryOptions]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
                     </div>
 
                     <div class="q-mb-md">
                       <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Stock Level</div>
-                      <q-select v-model="filters.stock" :options="[{label: 'All', value: 'all'}, {label: 'Low Stock (< 10)', value: 'low_stock'}]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                      <q-select v-model="filters.stock" :options="[{label: 'All', value: 'all'}, {label: 'Low Stock (< 10)', value: 'low_stock'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
                     </div>
 
                     <div class="q-mb-md">
                       <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Status</div>
-                      <q-select v-model="filters.status" :options="[{label: 'All', value: 'all'}, {label: 'Active', value: 'active'}, {label: 'Archived', value: 'archived'}]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                      <q-select v-model="filters.status" :options="[{label: 'All', value: 'all'}, {label: 'Active', value: 'active'}, {label: 'Deactivated', value: 'deactivated'}, {label: 'Archived', value: 'archived'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
                     </div>
 
                     <div class="q-mb-sm">
                       <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Price</div>
-                      <q-select v-model="filters.priceSort" :options="[{label: 'Default', value: 'default'}, {label: 'Low to High', value: 'low_to_high'}, {label: 'High to Low', value: 'high_to_low'}]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                      <q-select v-model="filters.priceSort" :options="[{label: 'Default', value: 'default'}, {label: 'Low to High', value: 'low_to_high'}, {label: 'High to Low', value: 'high_to_low'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
                     </div>
                   </div>
                 </q-menu>
@@ -138,8 +138,8 @@
             </div>
 
             <div class="row q-gutter-md col-12 col-md-auto justify-end">
-              <q-btn outline icon="download" label="Export" color="blue-grey-4" text-color="blue-grey-8" no-caps class="btn-glass-outline exact-height text-weight-bold q-px-md" @click="openExportWizard" />
-              <q-btn unelevated icon="add" label="Add Product" color="red-9" no-caps class="btn-premium exact-height text-white text-weight-bold q-px-md" @click="showAddModal = true" />
+              <q-btn outline icon="download" label="Export" color="grey-4" text-color="slate-700" no-caps class="btn-modern-outline exact-height text-weight-bold q-px-md" @click="openExportWizard" />
+              <q-btn unelevated icon="add" label="Add Product" color="red-9" no-caps class="btn-modern-solid exact-height text-white text-weight-bold q-px-md" @click="showAddModal = true" />
             </div>
           </div>
         </q-card-section>
@@ -192,7 +192,7 @@
           
           <template #body-cell-status="props">
             <q-td :props="props" class="q-pl-lg">
-              <q-chip :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bolder shadow-1 q-px-md" style="font-size: 12.5px; min-height: 26px;">
+              <q-chip :color="getStatusBgColor(props.row.status)" :text-color="getStatusTextColor(props.row.status)" class="text-weight-bold q-px-md q-ma-none" style="font-size: 12px; min-height: 24px; border-radius: 6px;">
                 {{ formatStatus(props.row.status) }}
               </q-chip>
             </q-td>
@@ -202,14 +202,23 @@
             <q-td :props="props" class="text-right q-pr-lg">
               <q-btn flat round dense icon="more_vert" color="blue-grey-4" class="hover-action-btn">
                 <q-menu class="premium-dropdown-list shadow-10 q-mt-xs" anchor="bottom right" self="top right" auto-close transition-show="scale" transition-hide="scale">
-                  <q-list style="min-width: 160px; padding: 4px;">
-                    <q-item clickable @click="openDetails(props.row)" class="hover-grey rounded-borders">
-                      <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="visibility" size="20px" color="blue-6" /></q-item-section>
-                      <q-item-section class="text-weight-medium text-slate-700">View & Edit</q-item-section>
+                  <q-list style="min-width: 130px; padding: 6px;">
+                    <!-- View -->
+                    <q-item clickable @click="viewProduct(props.row)" class="hover-slate rounded-borders q-px-sm q-py-sm" style="min-height: 36px;">
+                      <q-item-section side class="q-pr-sm"><q-icon name="visibility" size="18px" class="text-slate-500" /></q-item-section>
+                      <q-item-section class="text-weight-medium text-slate-700">View</q-item-section>
                     </q-item>
-                    <q-item clickable v-if="props.row.status !== 'archived'" @click="deactivateProduct(props.row)" class="hover-red rounded-borders q-mt-xs">
-                      <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="archive" size="20px" color="red-9" /></q-item-section>
-                      <q-item-section class="text-weight-bold text-red-9">Archive</q-item-section>
+                    
+                    <!-- Deactivate -->
+                    <q-item clickable v-if="props.row.status !== 'deactivated'" @click="confirmDeactivate(props.row)" class="hover-slate rounded-borders q-px-sm q-py-sm q-mt-xs" style="min-height: 36px;">
+                      <q-item-section side class="q-pr-sm"><q-icon name="block" size="18px" class="text-slate-500" /></q-item-section>
+                      <q-item-section class="text-weight-medium text-slate-700">Deactivate</q-item-section>
+                    </q-item>
+                    
+                    <!-- Delete -->
+                    <q-item clickable @click="confirmDelete(props.row)" class="hover-slate rounded-borders q-px-sm q-py-sm q-mt-xs" style="min-height: 36px;">
+                      <q-item-section side class="q-pr-sm"><q-icon name="delete" size="18px" class="text-slate-500" /></q-item-section>
+                      <q-item-section class="text-weight-medium text-slate-700">Delete</q-item-section>
                     </q-item>
                   </q-list>
                 </q-menu>
@@ -219,7 +228,7 @@
         </q-table>
       </q-card>
 
-      <!-- ================= MOBILE PRODUCT LIST (MOCKUP STYLE) ================= -->
+      <!-- ================= MOBILE PRODUCT LIST ================= -->
       <div v-else class="mobile-products-layout q-pb-xl">
         
         <!-- Mobile Header -->
@@ -289,47 +298,45 @@
         <!-- Header & Add Button -->
         <div class="row items-center justify-between q-mb-md">
           <div class="row items-center">
-            <!-- Restored Red Bar -->
             <div style="width: 5px; height: 24px; background-color: #b91c1c; border-radius: 4px;" class="q-mr-sm"></div>
             <h2 class="text-h5 text-weight-bolder text-red-9 q-ma-none tracking-tight" style="line-height: 1;">Products</h2>
           </div>
-          <!-- Properly sized Add Product Button -->
-          <q-btn unelevated color="red-9" icon="add" label="Add Product" no-caps class="text-weight-bold shadow-2" style="border-radius: 8px; font-size: 13px; padding: 6px 16px;" @click="showAddModal = true" />
+          <q-btn unelevated color="red-9" icon="add" label="Add Product" no-caps class="text-weight-bold shadow-1 btn-modern-solid" style="border-radius: 8px; font-size: 13px; padding: 6px 16px;" @click="showAddModal = true" />
         </div>
 
         <!-- Search Bar -->
-        <q-input v-model="search" outlined dense placeholder="Search products..." class="q-mb-md bg-white shadow-soft" style="border-radius: 8px;">
-          <template v-slot:prepend><q-icon name="search" size="20px" color="grey-6" /></template>
+        <q-input v-model="search" outlined dense placeholder="Search products..." class="q-mb-md custom-solid-input bg-white" style="border-radius: 8px;">
+          <template v-slot:prepend><q-icon name="search" color="grey-6" size="20px" /></template>
         </q-input>
 
-        <!-- Export & Filter Controls -->
+        <!-- Export & Filter Controls (Solid Buttons) -->
         <div class="row q-col-gutter-sm q-mb-lg">
           <div class="col-6">
-            <q-btn outline icon="description" label="Export" color="blue-grey-3" text-color="blue-grey-8" class="full-width bg-white text-weight-medium" style="border-radius: 8px; height: 36px; font-size: 13px;" no-caps @click="openExportWizard" />
+            <q-btn outline icon="description" label="Export" color="grey-4" text-color="slate-700" class="full-width btn-modern-outline text-weight-medium" style="height: 36px; font-size: 13px;" no-caps @click="openExportWizard" />
           </div>
           <div class="col-6">
-            <q-btn outline icon="filter_list" label="Filter" color="blue-grey-3" text-color="blue-grey-8" class="full-width bg-white text-weight-medium" style="border-radius: 8px; height: 36px; font-size: 13px;" no-caps>
-              <q-menu class="premium-dropdown-list shadow-4 q-mt-xs" style="min-width: 280px; border-radius: 12px; padding: 8px;">
+            <q-btn outline icon="filter_list" label="Filter" color="grey-4" text-color="slate-700" class="full-width btn-modern-outline text-weight-medium" style="height: 36px; font-size: 13px;" no-caps>
+              <q-menu class="premium-dropdown-list shadow-4 q-mt-xs" style="width: 280px; max-width: 85vw; border-radius: 12px;" anchor="bottom right" self="top right">
                 <div class="q-pa-md">
                   <div class="row items-center justify-between q-mb-md">
                     <div class="text-subtitle1 text-weight-bolder text-slate-800">Filters</div>
-                    <q-btn flat label="Clear" color="red-9" size="sm" class="text-weight-bold" @click="resetFilters" v-close-popup no-caps />
+                    <q-btn flat label="Clear" color="red-9" class="text-weight-bold" @click="resetFilters" v-close-popup no-caps />
                   </div>
                   <div class="q-mb-md">
                     <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase">Category</div>
-                    <q-select v-model="filters.category" :options="[{label: 'All Categories', value: 'all'}, ...categoryOptions]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                    <q-select v-model="filters.category" :options="[{label: 'All Categories', value: 'all'}, ...categoryOptions]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
                   </div>
                   <div class="q-mb-md">
                     <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase">Stock Level</div>
-                    <q-select v-model="filters.stock" :options="[{label: 'All', value: 'all'}, {label: 'Low Stock (< 10)', value: 'low_stock'}]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                    <q-select v-model="filters.stock" :options="[{label: 'All', value: 'all'}, {label: 'Low Stock (< 10)', value: 'low_stock'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
                   </div>
                   <div class="q-mb-md">
                     <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase">Status</div>
-                    <q-select v-model="filters.status" :options="[{label: 'All', value: 'all'}, {label: 'Active', value: 'active'}, {label: 'Archived', value: 'archived'}]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                    <q-select v-model="filters.status" :options="[{label: 'All', value: 'all'}, {label: 'Active', value: 'active'}, {label: 'Deactivated', value: 'deactivated'}, {label: 'Archived', value: 'archived'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
                   </div>
                   <div class="q-mb-sm">
                     <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase">Price</div>
-                    <q-select v-model="filters.priceSort" :options="[{label: 'Default', value: 'default'}, {label: 'Low to High', value: 'low_to_high'}, {label: 'High to Low', value: 'high_to_low'}]" emit-value map-options dense outlined options-dense class="custom-glass-input" />
+                    <q-select v-model="filters.priceSort" :options="[{label: 'Default', value: 'default'}, {label: 'Low to High', value: 'low_to_high'}, {label: 'High to Low', value: 'high_to_low'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
                   </div>
                 </div>
               </q-menu>
@@ -337,7 +344,7 @@
           </div>
         </div>
 
-        <!-- Product List Cards (Less Compact) -->
+        <!-- Product List Cards -->
         <div v-if="loading" class="flex flex-center q-py-xl">
           <q-spinner-dots size="40px" color="red-9" />
         </div>
@@ -354,12 +361,21 @@
               <div class="absolute-top-right q-pa-sm" style="z-index: 2;">
                 <q-btn flat round dense icon="more_vert" color="grey-7">
                   <q-menu class="premium-dropdown-list shadow-4" anchor="bottom right" self="top right">
-                    <q-list style="min-width: 150px; padding: 4px;">
-                      <q-item clickable @click="openDetails(product)" class="hover-grey rounded-borders">
-                        <q-item-section class="text-weight-medium text-slate-700">View & Edit</q-item-section>
+                    <!-- DENSE LIST for Mobile Actions -->
+                    <q-list style="min-width: 130px; padding: 6px;">
+                      <q-item clickable @click="viewProduct(product)" class="hover-slate rounded-borders q-px-sm q-py-sm" style="min-height: 36px;">
+                        <q-item-section side class="q-pr-sm"><q-icon name="visibility" size="18px" class="text-slate-500" /></q-item-section>
+                        <q-item-section class="text-weight-medium text-slate-700">View</q-item-section>
                       </q-item>
-                      <q-item clickable v-if="product.status !== 'archived'" @click="deactivateProduct(product)" class="hover-red rounded-borders q-mt-xs">
-                        <q-item-section class="text-weight-bold text-red-9">Archive</q-item-section>
+                      
+                      <q-item clickable v-if="product.status !== 'deactivated'" @click="confirmDeactivate(product)" class="hover-slate rounded-borders q-px-sm q-py-sm q-mt-xs" style="min-height: 36px;">
+                        <q-item-section side class="q-pr-sm"><q-icon name="block" size="18px" class="text-slate-500" /></q-item-section>
+                        <q-item-section class="text-weight-medium text-slate-700">Deactivate</q-item-section>
+                      </q-item>
+                      
+                      <q-item clickable @click="confirmDelete(product)" class="hover-slate rounded-borders q-px-sm q-py-sm q-mt-xs" style="min-height: 36px;">
+                        <q-item-section side class="q-pr-sm"><q-icon name="delete" size="18px" class="text-slate-500" /></q-item-section>
+                        <q-item-section class="text-weight-medium text-slate-700">Delete</q-item-section>
                       </q-item>
                     </q-list>
                   </q-menu>
@@ -367,14 +383,11 @@
               </div>
               
               <q-card-section class="q-pa-md row items-center no-wrap">
-                <!-- Rounded Square Box Container for Image (Smaller) -->
                 <div class="q-mr-md flex flex-center bg-slate-50 shadow-soft" style="width: 64px; height: 64px; border-radius: 10px; border: 1px solid #f1f5f9; flex-shrink: 0; padding: 4px;">
-                  <!-- Drop shadow applied to image to create true depth inside the box -->
                   <img v-if="product.image_url" :src="product.image_url" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.15));" />
                   <q-icon v-else name="inventory_2" color="grey-4" size="28px" />
                 </div>
                 
-                <!-- Info Column -->
                 <div class="col" style="min-width: 0; padding-right: 20px;">
                   <div class="text-weight-bold text-dark ellipsis" style="font-size: 14px;">{{ product.product_name }}</div>
                   <div class="text-caption text-grey-6 ellipsis q-mb-xs" style="font-size: 12px;">{{ product.category?.category_name || 'Uncategorized' }}</div>
@@ -382,10 +395,9 @@
                   <div class="row items-center justify-between q-mt-xs">
                     <div class="text-weight-bold text-deep-orange-9" style="font-size: 14px;">₱ {{ formatNumber(product.price) }}</div>
                     
-                    <!-- Exact Pastel Status Chips -->
-                    <q-chip v-if="product.status === 'active'" color="green-1" text-color="green-8" size="sm" class="text-weight-bold q-ma-none" style="border-radius: 4px; height: 20px;">Active</q-chip>
-                    <q-chip v-else-if="product.status === 'archived'" color="grey-2" text-color="grey-8" size="sm" class="text-weight-bold q-ma-none" style="border-radius: 4px; height: 20px;">Archived</q-chip>
-                    <q-chip v-else color="red-1" text-color="red-8" size="sm" class="text-weight-bold q-ma-none" style="border-radius: 4px; height: 20px;">Deactivated</q-chip>
+                    <q-chip :color="getStatusBgColor(product.status)" :text-color="getStatusTextColor(product.status)" size="sm" class="text-weight-bold q-ma-none" style="border-radius: 4px; height: 20px;">
+                      {{ formatStatus(product.status) }}
+                    </q-chip>
                   </div>
                 </div>
               </q-card-section>
@@ -395,35 +407,11 @@
         </div>
       </div>
 
-      <!-- ================= PREMIUM MOBILE BOTTOM NAVIGATION ================= -->
-      <div v-if="$q.screen.lt.md" class="mobile-bottom-nav row justify-around items-center">
-        <div class="nav-item-wrapper" @click="$router.push('/vendor/dashboard')">
-          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-            <q-icon name="home" size="26px" />
-          </q-btn>
-        </div>
-        <div class="nav-item-wrapper" @click="$router.push('/vendor/orders/list')">
-          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-            <q-icon name="receipt_long" size="26px" />
-          </q-btn>
-        </div>
-        <div class="nav-item-wrapper" @click="$router.push('/vendor/products/list')">
-          <q-btn flat round class="mobile-nav-btn nav-active shadow-3">
-            <q-icon name="inventory_2" size="24px" />
-          </q-btn>
-        </div>
-        <div class="nav-item-wrapper" @click="$router.push('/vendor/sales')">
-          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-            <q-icon name="analytics" size="26px" />
-          </q-btn>
-        </div>
-      </div>
-
     </div>
 
-    <!-- Modals -->
+    <!-- Modals (Passing Details Mode) -->
     <AddProductModal v-model="showAddModal" @refresh="fetchProducts" />
-    <ProductDetailsModal v-model="showDetailsModal" :product="selectedProduct" @refresh="fetchProducts" />
+    <ProductDetailsModal v-model="showDetailsModal" :product="selectedProduct" :mode="detailsMode" @refresh="fetchProducts" />
 
     <!-- Export Wizard Modal -->
     <q-dialog v-model="showExportModal" persistent transition-show="scale" transition-hide="scale">
@@ -457,7 +445,7 @@
             </div>
 
             <div class="row justify-end q-mt-xl">
-              <q-btn unelevated label="Next" color="red-9" class="q-px-xl text-weight-bold btn-premium" no-caps @click="proceedToPreview(exportFormat)" />
+              <q-btn unelevated label="Next" color="red-9" class="q-px-xl text-weight-bold btn-modern-solid" no-caps @click="proceedToPreview(exportFormat)" />
             </div>
           </div>
 
@@ -476,7 +464,7 @@
 
             <div class="row justify-end q-mt-lg q-gutter-sm">
               <q-btn flat label="Back" color="blue-grey-6" no-caps @click="exportStep = 1" :disable="isExporting" class="text-weight-bold" />
-              <q-btn unelevated label="Confirm & Download" color="red-9" class="q-px-lg text-weight-bold btn-premium" no-caps :loading="isExporting" @click="executeFinalExport" />
+              <q-btn unelevated label="Confirm & Download" color="red-9" class="q-px-lg text-weight-bold btn-modern-solid" no-caps :loading="isExporting" @click="executeFinalExport" />
             </div>
           </div>
         </q-card-section>
@@ -492,6 +480,7 @@ import html2canvas from 'html2canvas'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
 import { useAuth } from '@/composables/useAuth'
+
 import AddProductModal from '@/components/modals/AddProductModal.vue'
 import ProductDetailsModal from '@/components/modals/ProductDetailsModal.vue'
 
@@ -503,6 +492,8 @@ const products = ref([])
 const showAddModal = ref(false)
 const showDetailsModal = ref(false)
 const selectedProduct = ref(null)
+
+const detailsMode = ref('view') 
 
 const filters = reactive({
   stock: 'all',
@@ -519,7 +510,6 @@ const mlInsights = ref({
   topCategory: null
 })
 
-// Columns redefined with explicit padding classes to separate Price, Status, and Action
 const columns = [
   { name: 'image', label: 'Image', field: 'image', align: 'left' },
   { name: 'product_name', label: 'Name', field: 'product_name', align: 'left', sortable: true },
@@ -527,34 +517,29 @@ const columns = [
   { name: 'quantity', label: 'QTY', field: 'stock_quantity', align: 'left', sortable: true },
   { name: 'price', label: 'Price (₱)', field: 'price', align: 'right', sortable: true, headerClasses: 'q-pr-xl' },
   { name: 'status', label: 'Status', field: 'status', align: 'left', headerClasses: 'q-pl-lg' },
-  { name: 'action', label: '', field: 'action', align: 'right', headerClasses: 'q-pr-lg' }
+  { name: 'action', label: 'Actions', field: 'action', align: 'right', headerClasses: 'q-pr-lg' }
 ]
 
 const filteredProducts = computed(() => {
   let result = products.value
 
-  // Search
   if (search.value) {
     const needle = search.value.toLowerCase()
     result = result.filter(p => p.product_name.toLowerCase().includes(needle))
   }
 
-  // Stock
   if (filters.stock === 'low_stock') {
     result = result.filter(p => p.stock_quantity < 10)
   }
 
-  // Category
   if (filters.category !== 'all') {
     result = result.filter(p => p.category_id === filters.category)
   }
 
-  // Status
   if (filters.status !== 'all') {
     result = result.filter(p => p.status === filters.status)
   }
 
-  // Price Sort
   if (filters.priceSort === 'low_to_high') {
     result = result.slice().sort((a, b) => (a.price || 0) - (b.price || 0))
   } else if (filters.priceSort === 'high_to_low') {
@@ -606,12 +591,11 @@ const executeFinalExport = async () => {
             showExportModal.value = false
         } catch (error) {
             console.error('PDF Export failed:', error)
-            $q.notify({ type: 'negative', message: 'Failed to generate PDF report' })
+            $q.notify({ type: 'negative', message: 'Failed to generate PDF report', color: 'dark' })
         } finally {
             isExporting.value = false
         }
     } else {
-        // Image Export via Backend HTML rendering
         try {
             isExporting.value = true
             
@@ -640,7 +624,6 @@ const executeFinalExport = async () => {
                     try {
                         await img.decode()
                     } catch (e) {
-                        // ignore decode errors
                     }
                 }
             })
@@ -707,7 +690,7 @@ const executeFinalExport = async () => {
             showExportModal.value = false
         } catch (error) {
             console.error('Detailed Image Export Error:', error)
-            $q.notify({ type: 'negative', message: 'Failed to generate Image report' })
+            $q.notify({ type: 'negative', message: 'Failed to generate Image report', color: 'dark' })
         } finally {
             isExporting.value = false
         }
@@ -724,19 +707,30 @@ const categoryOptions = computed(() => {
   return Array.from(cats, ([value, label]) => ({ value, label }))
 })
 
-// Ensures first letter capitalization
 const formatStatus = (status) => {
   if (!status) return 'Active'
   return String(status).charAt(0).toUpperCase() + String(status).slice(1).toLowerCase()
 }
 
-const getStatusColor = (status) => {
+const getStatusBgColor = (status) => {
   switch (String(status || 'active').toLowerCase()) {
-    case 'active': return 'green-6'
-    case 'inactive': return 'grey-6'
+    case 'active': return 'green-1'
+    case 'deactivated': 
+    case 'inactive': return 'red-1'
+    case 'archived': return 'grey-2'
+    case 'out of stock': return 'orange-1'
+    default: return 'blue-grey-1'
+  }
+}
+
+const getStatusTextColor = (status) => {
+  switch (String(status || 'active').toLowerCase()) {
+    case 'active': return 'green-8'
+    case 'deactivated':
+    case 'inactive': return 'red-8'
     case 'archived': return 'grey-8'
-    case 'out of stock': return 'red-9'
-    default: return 'blue-grey-4'
+    case 'out of stock': return 'orange-9'
+    default: return 'blue-grey-8'
   }
 }
 
@@ -753,25 +747,77 @@ const fetchProducts = async () => {
   }
 }
 
-const openDetails = (product) => {
+// ==== ACTION MENU FUNCTIONS ====
+
+const viewProduct = (product) => {
+  detailsMode.value = 'view'
   selectedProduct.value = product
   showDetailsModal.value = true
 }
 
-const deactivateProduct = async (product) => {
+const confirmDeactivate = (product) => {
   $q.dialog({
-    title: 'Archive Product',
-    message: `Are you sure you want to archive "${product.product_name}"? It will no longer be available for sale.`,
-    cancel: true,
+    title: `<div class="text-h6 text-weight-bolder text-slate-800 row items-center"><i class="q-icon material-icons text-red-9 q-mr-sm" style="font-size: 24px;">block</i> Deactivate Product</div>`,
+    message: `<div class="text-slate-600 q-mt-sm" style="font-size: 14px; line-height: 1.5;">Are you sure you want to deactivate <strong class="text-slate-800">"${product.product_name}"</strong>?<br><br>Customers will no longer be able to purchase this item.</div>`,
+    html: true,
+    style: 'border-radius: 16px; padding: 12px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1); background: #ffffff;',
+    cancel: {
+      label: 'Cancel',
+      flat: true,
+      color: 'grey-7',
+      noCaps: true,
+      class: 'text-weight-bold q-px-md'
+    },
+    ok: {
+      label: 'Deactivate',
+      unelevated: true,
+      color: 'red-9',
+      noCaps: true,
+      class: 'text-weight-bold q-px-lg shadow-2',
+      style: 'border-radius: 8px;'
+    },
     persistent: true,
-    color: 'red-9'
+  }).onOk(async () => {
+    try {
+      await api.patch(`/vendor/products/${product.inventory_id}/status`, { status: 'deactivated' })
+      $q.notify({ type: 'positive', message: 'Product deactivated successfully', icon: 'check_circle', color: 'dark', position: 'top' })
+      fetchProducts()
+    } catch (err) {
+      $q.notify({ type: 'negative', message: 'Failed to deactivate product', icon: 'error', color: 'dark', position: 'top' })
+      console.error(err)
+    }
+  })
+}
+
+const confirmDelete = (product) => {
+  $q.dialog({
+    title: `<div class="text-h6 text-weight-bolder text-slate-800 row items-center"><i class="q-icon material-icons text-red-9 q-mr-sm" style="font-size: 24px;">delete</i> Delete Product</div>`,
+    message: `<div class="text-slate-600 q-mt-sm" style="font-size: 14px; line-height: 1.5;">Are you sure you want to completely delete <strong class="text-slate-800">"${product.product_name}"</strong>?<br><br><span class="text-red-7 font-medium">This action is permanent and cannot be undone.</span></div>`,
+    html: true,
+    style: 'border-radius: 16px; padding: 12px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1); background: #ffffff;',
+    cancel: {
+      label: 'Cancel',
+      flat: true,
+      color: 'grey-7',
+      noCaps: true,
+      class: 'text-weight-bold q-px-md'
+    },
+    ok: {
+      label: 'Delete Product',
+      unelevated: true,
+      color: 'red-9',
+      noCaps: true,
+      class: 'text-weight-bold q-px-lg shadow-2',
+      style: 'border-radius: 8px;'
+    },
+    persistent: true,
   }).onOk(async () => {
     try {
       await api.delete(`/vendor/products/${product.inventory_id}`)
-      $q.notify({ type: 'positive', message: 'Product archived successfully' })
+      $q.notify({ type: 'positive', message: 'Product deleted successfully', icon: 'check_circle', color: 'dark', position: 'top' })
       fetchProducts()
     } catch (err) {
-      $q.notify({ type: 'negative', message: 'Failed to archive product' })
+      $q.notify({ type: 'negative', message: 'Failed to delete product', icon: 'error', color: 'dark', position: 'top' })
       console.error(err)
     }
   })
@@ -822,7 +868,9 @@ onMounted(() => {
 
 .bg-slate-50 { background-color: #f8fafc; }
 .bg-slate-100 { background-color: #f1f5f9; }
+.bg-slate-200 { background-color: #e2e8f0; }
 .text-slate-500 { color: #64748b; }
+.text-slate-600 { color: #475569; }
 .text-slate-700 { color: #334155; }
 .text-slate-800 { color: #1e293b; }
 .border-slate-light { border: 1px solid #e2e8f0; }
@@ -923,42 +971,35 @@ onMounted(() => {
   min-height: 40px !important;
 }
 
-/* Custom Inputs & Outline Buttons */
-.custom-glass-input :deep(.q-field__control) {
-  background: rgba(248, 250, 252, 0.8); 
+/* Custom Solid Modern Buttons & Inputs */
+.custom-solid-input :deep(.q-field__control) {
   border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
-.custom-glass-input :deep(.q-field__control:before) { border: 1px solid rgba(226, 232, 240, 0.8); }
-.custom-glass-input :deep(.q-field__control:hover) { background: #ffffff; }
-.custom-glass-input :deep(.q-field--focused .q-field__control) {
-  background: #ffffff;
+.custom-solid-input :deep(.q-field__control:before) { border: 1px solid #e2e8f0; }
+.custom-solid-input :deep(.q-field--focused .q-field__control) {
   box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.15); 
   border-color: #B91C1C;
 }
 
-.btn-glass-outline {
+.btn-modern-outline {
   border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.9) !important;
-  border: 1px solid rgba(203, 213, 225, 0.8);
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1;
   transition: all 0.2s ease;
 }
-.btn-glass-outline:hover {
-  background: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
-  transform: translateY(-1px);
+.btn-modern-outline:hover {
+  border-color: #94a3b8;
+  background-color: #f8fafc !important;
 }
 
-/* Solid Action Button */
-.btn-premium {
+.btn-modern-solid {
   border-radius: 8px !important;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.3);
   transition: all 0.2s ease;
 }
-.btn-premium:hover {
+.btn-modern-solid:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(185, 28, 28, 0.4);
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.25);
 }
 
 /* Utilities */
@@ -1017,21 +1058,16 @@ onMounted(() => {
   transform: scale(0.95) !important;
 }
 
-.status-chip { 
-  border: 1px solid rgba(255,255,255,0.4); 
-  letter-spacing: 0.3px;
-}
-
-/* Dropdown styling */
+/* Dropdown styling & Neutral Hover Action (No Frosted Glass) */
 .premium-dropdown-list {
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(12px);
+  background: #ffffff;
   border: 1px solid rgba(226, 232, 240, 0.8);
   border-radius: 8px;
 }
-.hover-grey:hover { background: rgba(241, 245, 249, 0.8); }
-.hover-red:hover { background: rgba(254, 242, 242, 0.8); color: #B91C1C; }
 .rounded-borders { border-radius: 6px; }
+
+/* Unified Monochrome Hover State */
+.hover-slate:hover { background: rgba(241, 245, 249, 0.8); }
 
 /* Empty State Styling */
 .empty-state-glass {
@@ -1056,46 +1092,5 @@ onMounted(() => {
 @media (max-width: 767px) {
   .vendor-page.mobile-page-padding { padding: 16px 16px calc(90px + env(safe-area-inset-bottom)) 16px !important; }
   .desktop-only { display: none !important; }
-  
-  /* Mobile Bottom Navigation */
-  .mobile-bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: calc(75px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-top: 1px solid rgba(255, 255, 255, 0.5);
-    z-index: 2000;
-    box-shadow: 0 -10px 25px rgba(15, 23, 42, 0.05);
-  }
-  
-  .nav-item-wrapper {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .mobile-nav-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    padding: 0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .nav-active {
-    background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important; /* Premium Brand Red */
-    color: #ffffff !important;
-    box-shadow: 0 8px 16px rgba(185, 28, 28, 0.35) !important;
-    transform: translateY(-4px);
-  }
-  .nav-active .q-icon {
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-  }
 }
 </style>

@@ -17,7 +17,7 @@
             
             <div class="store-badge-frame flex flex-center">
               <img 
-                src="@/assets/tindahan-mobile.png" 
+                src="@/assets/tindahan-logo.png" 
                 alt="Tindahan Logo" 
                 class="loading-store-logo" 
                 @error="$event.target.style.display='none'"
@@ -61,20 +61,20 @@
             @click="drawerOpen = !drawerOpen"
           />
           
-          <!-- Desktop Logo Plate -->
+          <!-- Desktop Logo (Transparent) -->
           <div 
             class="header-logo-card flex flex-center cursor-pointer q-mr-md"
             @click="router.push('/vendor/dashboard')"
           >
             <img 
-              src="@/assets/tindahan-mobile.png" 
+              src="@/assets/tindahan-logo.png" 
               alt="Tindahan Logo" 
               class="header-logo-img" 
               @error="$event.target.style.display='none'"
             />
             <div class="header-logo-fallback row items-center no-wrap">
-              <q-icon name="storefront" size="20px" color="red-9" class="q-mr-xs" />
-              <span class="text-weight-bolder text-red-9 text-body2">Tindahan</span>
+              <q-icon name="storefront" size="28px" color="white" class="q-mr-xs" />
+              <span class="text-weight-bolder text-white text-h6">Tindahan</span>
             </div>
           </div>
 
@@ -92,7 +92,9 @@
           
           <!-- Desktop Notification Bell -->
           <q-btn flat round dense icon="notifications" color="white" class="header-action-btn relative-position">
-            <q-badge color="amber-9" text-color="white" floating rounded class="text-weight-bolder">2</q-badge>
+            <q-badge v-if="unreadCount > 0" color="amber-9" text-color="white" floating rounded class="text-weight-bolder">
+              {{ unreadCount > 99 ? '99+' : unreadCount }}
+            </q-badge>
             
             <q-menu class="solid-paper-menu no-shadow" :offset="[0, 12]" anchor="bottom right" self="top right" style="border-radius: 12px; width: 340px; border: 2px solid #e2e8f0;">
               <div class="q-pa-md bg-white border-bottom-solid row items-center justify-between sticky-top z-top">
@@ -100,22 +102,37 @@
                   <div style="width: 4px; height: 16px; background-color: #b91c1c; border-radius: 2px;" class="q-mr-sm"></div>
                   <div class="text-weight-bolder text-dark text-subtitle2">Notifications</div>
                 </div>
-                <q-btn flat dense no-caps label="Mark all read" color="grey-7" size="11px" class="text-weight-bold" />
+                <q-btn flat dense no-caps label="Mark all read" color="grey-7" size="11px" class="text-weight-bold" @click="markAllAsRead" :disable="unreadCount === 0" />
               </div>
               
               <q-list class="scroll bg-grey-1" style="max-height: 50vh;">
-                <q-item clickable v-ripple class="q-pa-md notification-card-item unread-paper-notification">
+                <div v-if="notifications.length === 0" class="q-pa-xl text-center text-grey-5 flex flex-center column">
+                  <q-icon name="notifications_off" size="32px" class="q-mb-sm opacity-50" />
+                  <span class="text-weight-medium">No notifications yet</span>
+                </div>
+
+                <q-item 
+                  v-for="notif in notifications" 
+                  :key="notif.id" 
+                  clickable 
+                  v-ripple 
+                  @click="markAsRead(notif)" 
+                  class="q-pa-md notification-card-item" 
+                  :class="{ 'unread-paper-notification': !notif.read_at }"
+                >
                   <q-item-section avatar top class="q-pr-sm min-w-0">
-                    <div class="solid-icon-stamp bg-red-1 text-red-9">
-                      <q-icon name="shopping_bag" size="20px" />
+                    <div class="solid-icon-stamp" :class="!notif.read_at ? 'bg-red-1 text-red-9' : 'bg-grey-2 text-grey-7'">
+                      <q-icon :name="notif.data?.icon || 'shopping_bag'" size="20px" />
                     </div>
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label class="text-weight-bolder text-dark text-body2">New Order Placed</q-item-label>
-                    <q-item-label caption class="text-grey-7 q-mt-xs font-medium leading-snug">Order #1024 has been submitted by customer.</q-item-label>
-                    <q-item-label caption class="text-red-9 text-weight-bold q-mt-xs" style="font-size: 11px;">Just now</q-item-label>
+                    <q-item-label class="text-weight-bolder text-dark text-body2">{{ notif.data?.title || 'Notification' }}</q-item-label>
+                    <q-item-label caption class="text-grey-7 q-mt-xs font-medium leading-snug">{{ notif.data?.message || notif.message }}</q-item-label>
+                    <q-item-label caption class="text-weight-bold q-mt-xs" :class="!notif.read_at ? 'text-red-9' : 'text-grey-5'" style="font-size: 11px;">
+                      {{ formatTime(notif.created_at) }}
+                    </q-item-label>
                   </q-item-section>
-                  <q-item-section side top>
+                  <q-item-section side top v-if="!notif.read_at">
                     <div class="unread-solid-tag"></div>
                   </q-item-section>
                 </q-item>
@@ -182,20 +199,20 @@
     <q-header v-else elevated class="sari-brand-header z-top">
       <q-toolbar class="q-px-md toolbar-mobile">
         
-        <!-- Mobile Logo Plate -->
+        <!-- Mobile Logo (Transparent) -->
         <div 
           class="header-logo-card flex flex-center cursor-pointer" 
           @click="router.push('/vendor/dashboard')"
         >
           <img 
-            src="@/assets/tindahan-mobile.png" 
+            src="@/assets/tindahan-logo.png" 
             alt="Tindahan Logo" 
             class="header-logo-img"
             @error="$event.target.style.display='none'"
           />
           <div class="header-logo-fallback row items-center no-wrap">
-            <q-icon name="storefront" size="18px" color="red-9" class="q-mr-xs" />
-            <span class="text-weight-bolder text-red-9 text-body2">Tindahan</span>
+            <q-icon name="storefront" size="24px" color="white" class="q-mr-xs" />
+            <span class="text-weight-bolder text-white text-body1">Tindahan</span>
           </div>
         </div>
 
@@ -204,7 +221,9 @@
         <div class="row items-center no-wrap q-gutter-x-xs">
           <!-- Notification Button -->
           <q-btn flat round dense icon="notifications" color="white" class="header-action-btn relative-position">
-            <q-badge color="amber-9" text-color="white" floating rounded class="text-weight-bolder">2</q-badge>
+            <q-badge v-if="unreadCount > 0" color="amber-9" text-color="white" floating rounded class="text-weight-bolder">
+              {{ unreadCount > 99 ? '99+' : unreadCount }}
+            </q-badge>
             
             <q-menu class="solid-paper-menu no-shadow" :offset="[0, 12]" anchor="bottom right" self="top right" style="border-radius: 12px; width: 330px; max-width: 90vw; border: 2px solid #e2e8f0;">
               <div class="q-pa-md bg-white border-bottom-solid row items-center justify-between sticky-top z-top">
@@ -212,22 +231,37 @@
                   <div style="width: 4px; height: 16px; background-color: #b91c1c; border-radius: 2px;" class="q-mr-sm"></div>
                   <div class="text-weight-bolder text-dark text-subtitle2">Notifications</div>
                 </div>
-                <q-btn flat dense no-caps label="Mark all read" color="grey-7" size="11px" class="text-weight-bold" />
+                <q-btn flat dense no-caps label="Mark all read" color="grey-7" size="11px" class="text-weight-bold" @click="markAllAsRead" :disable="unreadCount === 0" />
               </div>
               
               <q-list class="scroll bg-grey-1" style="max-height: 50vh;">
-                <q-item clickable v-ripple class="q-pa-md notification-card-item unread-paper-notification">
+                <div v-if="notifications.length === 0" class="q-pa-xl text-center text-grey-5 flex flex-center column">
+                  <q-icon name="notifications_off" size="32px" class="q-mb-sm opacity-50" />
+                  <span class="text-weight-medium">No notifications yet</span>
+                </div>
+
+                <q-item 
+                  v-for="notif in notifications" 
+                  :key="notif.id" 
+                  clickable 
+                  v-ripple 
+                  @click="markAsRead(notif)" 
+                  class="q-pa-md notification-card-item" 
+                  :class="{ 'unread-paper-notification': !notif.read_at }"
+                >
                   <q-item-section avatar top class="q-pr-sm min-w-0">
-                    <div class="solid-icon-stamp bg-red-1 text-red-9">
-                      <q-icon name="shopping_bag" size="20px" />
+                    <div class="solid-icon-stamp" :class="!notif.read_at ? 'bg-red-1 text-red-9' : 'bg-grey-2 text-grey-7'">
+                      <q-icon :name="notif.data?.icon || 'shopping_bag'" size="20px" />
                     </div>
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label class="text-weight-bolder text-dark text-body2">New Order Placed</q-item-label>
-                    <q-item-label caption class="text-grey-7 q-mt-xs font-medium leading-snug">Order #1024 has been submitted by customer.</q-item-label>
-                    <q-item-label caption class="text-red-9 text-weight-bold q-mt-xs" style="font-size: 11px;">Just now</q-item-label>
+                    <q-item-label class="text-weight-bolder text-dark text-body2">{{ notif.data?.title || 'Notification' }}</q-item-label>
+                    <q-item-label caption class="text-grey-7 q-mt-xs font-medium leading-snug">{{ notif.data?.message || notif.message }}</q-item-label>
+                    <q-item-label caption class="text-weight-bold q-mt-xs" :class="!notif.read_at ? 'text-red-9' : 'text-grey-5'" style="font-size: 11px;">
+                      {{ formatTime(notif.created_at) }}
+                    </q-item-label>
                   </q-item-section>
-                  <q-item-section side top>
+                  <q-item-section side top v-if="!notif.read_at">
                     <div class="unread-solid-tag"></div>
                   </q-item-section>
                 </q-item>
@@ -473,7 +507,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 
@@ -488,10 +522,15 @@ const userName = ref('Vendor')
 const userProfilePicture = ref(null)
 const storeName = ref('Loading...')
 
+// Notifications State
+const notifications = ref([])
+const unreadCount = computed(() => notifications.value.filter(n => !n.read_at).length)
+
 onMounted(async () => {
   try {
     isGlobalLoading.value = true
-
+    
+    // Fetch User Profile
     const res = await api.get('/user')
     if (res.data && res.data.user) {
       const user = res.data.user
@@ -499,6 +538,10 @@ onMounted(async () => {
       userProfilePicture.value = user.profile_picture_url || null
       storeName.value = user.store?.store_name || user.store_name || user.shop?.name || res.data.store_name || 'My Store' 
     }
+
+    // Fetch Notifications
+    fetchNotifications()
+
   } catch (error) {
     console.error('Error fetching user info:', error)
     userName.value = 'Vendor'
@@ -507,6 +550,50 @@ onMounted(async () => {
     isGlobalLoading.value = false
   }
 })
+
+const fetchNotifications = async () => {
+  try {
+    const res = await api.get('/vendor/notifications')
+    // Handle standard laravel response structures
+    notifications.value = res.data.data || res.data || []
+  } catch (error) {
+    console.error('Failed to fetch notifications', error)
+  }
+}
+
+const markAsRead = async (notification) => {
+  if (notification.read_at) return
+  
+  try {
+    await api.post(`/vendor/notifications/${notification.id}/mark-read`)
+    notification.read_at = new Date().toISOString()
+  } catch (error) {
+    console.error('Failed to mark notification as read', error)
+  }
+}
+
+const markAllAsRead = async () => {
+  try {
+    await api.post('/vendor/notifications/mark-all-read')
+    notifications.value.forEach(n => {
+      if (!n.read_at) n.read_at = new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Failed to mark all notifications as read', error)
+  }
+}
+
+const formatTime = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInSeconds = Math.floor((now - date) / 1000)
+  
+  if (diffInSeconds < 60) return 'Just now'
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
+  return `${Math.floor(diffInSeconds / 86400)}d ago`
+}
 
 const navItems = [
   { label: 'Dashboard', icon: 'dashboard', path: '/vendor/dashboard' },
@@ -665,19 +752,17 @@ const confirmLogout = async () => {
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* White Logo Container Box */
+/* Transparent Logo Container Box */
 .header-logo-card {
-  background: #ffffff;
+  background: transparent;
   border-radius: 8px;
-  padding: 5px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  padding: 0px 4px;
 }
 
 .header-logo-img {
-  height: 22px;
+  height: 52px;
   width: auto;
-  max-width: 110px;
+  max-width: 200px;
   object-fit: contain;
   display: block;
 }
