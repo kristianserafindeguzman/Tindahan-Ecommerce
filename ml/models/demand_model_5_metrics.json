@@ -1,0 +1,1 @@
+{"data_sufficiency": "sufficient", "training_rows": 8563, "distinct_dates": 237, "model_metrics": {"rmse": 1.2178972917037536, "mape": 69.88016209166061, "r2": -0.017673330667163034}}

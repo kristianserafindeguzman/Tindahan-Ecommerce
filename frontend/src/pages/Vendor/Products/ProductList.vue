@@ -59,6 +59,13 @@
                 <q-icon name="insights" size="14px" class="q-mr-xs" />
                 Expected {{ mlInsights.trendMultiplier || '0' }}x demand increase
               </div>
+              <div v-if="mlInsights.currentSeason" class="insight-badge bg-green-50 text-green-9 border-green-light q-mt-sm">
+                <q-icon name="wb_sunny" size="14px" class="q-mr-xs" />
+                Season: {{ mlInsights.currentSeason }}
+                <span v-if="mlInsights.currentHoliday" class="q-ml-xs">
+                  • {{ mlInsights.currentHoliday }}
+                </span>
+              </div>
             </q-card-section>
           </q-card>
         </div>
@@ -507,7 +514,9 @@ const mlInsights = ref({
   daysUntilStockout: null,
   trendingCategory: null,
   trendMultiplier: null,
-  topCategory: null
+  topCategory: null,
+  currentSeason: null,
+  currentHoliday: null
 })
 
 const columns = [
@@ -832,6 +841,8 @@ const fetchMlInsights = async () => {
       mlInsights.value.trendingCategory = res.data.trendingCategory
       mlInsights.value.trendMultiplier = res.data.trendMultiplier ?? 'N/A'
       mlInsights.value.topCategory = res.data.topCategory
+      mlInsights.value.currentSeason = res.data.currentSeason ?? null
+      mlInsights.value.currentHoliday = res.data.currentHoliday ?? null
     } else {
       mlInsights.value.restockProduct = 'Awaiting more data'
       mlInsights.value.daysUntilStockout = 'N/A'
