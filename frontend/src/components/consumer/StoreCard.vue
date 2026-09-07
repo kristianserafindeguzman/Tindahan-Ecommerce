@@ -37,6 +37,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { splitHighlightParts } from '@/utils/textHighlight'
+import { formatDistance } from '@/utils/distance'
 
 const router = useRouter()
 
@@ -54,13 +55,6 @@ const props = defineProps({
 const nameParts = computed(() => splitHighlightParts(props.store.name, props.highlightQuery))
 const imageFailed = ref(false)
 
-const formatDistance = (meters) => {
-  if (meters == null) return ''
-  const rounded = Math.round(meters)
-  if (rounded < 1000) return `${rounded} m away`
-  return `${(meters / 1000).toFixed(1)} km away`
-}
-
 const storeCardDistanceText = computed(() => {
   const parts = []
   if (props.store.distance_meters != null) parts.push(formatDistance(props.store.distance_meters))
@@ -75,8 +69,8 @@ const storeCardDistanceText = computed(() => {
 
   font-family: 'Roboto', Arial, sans-serif;
 
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
 
   background: #ffffff;
 
@@ -86,24 +80,10 @@ const storeCardDistanceText = computed(() => {
 
   cursor: pointer;
 
-  /* Fades in on its own mount — independent of whatever page/grid it's rendered inside, so it's
-     reliable regardless of how that page's loading state swaps the grid's content in. */
-  animation: card-fade-up 0.4s ease both;
-}
-
-@keyframes card-fade-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .store-card {
-    animation: none;
-  }
 }
 
 .store-card:hover {
-  border-color: #f3c6c7;
+  border-color: var(--c-brand-tint-3);
 
   box-shadow: 0 10px 24px rgba(189, 36, 39, 0.14);
   transform: translateY(-3px);
@@ -119,14 +99,14 @@ const storeCardDistanceText = computed(() => {
   aspect-ratio: 4 / 3;
   overflow: hidden;
 
-  background: linear-gradient(145deg, #f7f7f8 0%, #ececee 100%);
-  color: #bd2427;
+  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  color: var(--c-brand);
 
   transition: background 0.2s;
 }
 
 .store-card:hover .store-card-image {
-  background: linear-gradient(145deg, #fdecec 0%, #fbdbdc 100%);
+  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
 }
 
 .store-card-img {
@@ -153,12 +133,12 @@ const storeCardDistanceText = computed(() => {
   gap: 5px;
   padding: 3px 9px;
 
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 
   background: rgba(255, 255, 255, 0.92);
-  color: #16a34a;
+  color: var(--c-success);
 
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -167,7 +147,7 @@ const storeCardDistanceText = computed(() => {
 }
 
 .store-status-tag-closed {
-  color: #b91c1c;
+  color: var(--c-danger);
 }
 
 .store-card-body {
@@ -175,11 +155,11 @@ const storeCardDistanceText = computed(() => {
 }
 
 .store-card-name {
-  font-size: 16px;
+  font-size: var(--fs-xl);
   font-weight: 700;
   line-height: 1.3;
 
-  color: #222222;
+  color: var(--c-text);
 
   margin-bottom: 6px;
 
@@ -190,25 +170,25 @@ const storeCardDistanceText = computed(() => {
 }
 
 .highlight-mark {
-  background: #fdecec;
-  color: #9c171b;
+  background: var(--c-brand-tint);
+  color: var(--c-brand-deep);
   font-weight: 700;
 
-  border-radius: 2px;
+  border-radius: var(--r-xs);
 }
 
 .store-card-hours {
   margin-bottom: 12px;
 
-  font-size: 12.5px;
+  font-size: var(--fs-md);
   font-weight: 500;
   line-height: 1.3;
 
-  color: #16a34a;
+  color: var(--c-success);
 }
 
 .store-card-hours-closed {
-  color: #b91c1c;
+  color: var(--c-danger);
 }
 
 .status-dot {
@@ -218,11 +198,11 @@ const storeCardDistanceText = computed(() => {
 
   border-radius: 50%;
 
-  background: #16a34a;
+  background: var(--c-success);
 }
 
 .status-dot-closed {
-  background: #b91c1c;
+  background: var(--c-danger);
 }
 
 .store-card-distance {
@@ -232,12 +212,12 @@ const storeCardDistanceText = computed(() => {
   gap: 5px;
   padding-top: 10px;
 
-  border-top: 1px solid #f4f4f4;
+  border-top: 1px solid var(--c-hairline);
 
-  font-size: 12px;
+  font-size: var(--fs-sm);
   line-height: 1.3;
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .store-card-distance .q-icon {

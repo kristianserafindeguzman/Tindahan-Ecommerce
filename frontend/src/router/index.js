@@ -32,70 +32,66 @@ export default defineRouter((/* { store, ssrContext } */) => {
     history: createHistory(import.meta.env.QUASAR_VUE_ROUTER_BASE)
   })
 
-  // Navigation guard for auth & RBAC
-  Router.beforeEach((to, from, next) => {
+  // Navigation guard for auth & RBAC.
+  //
+  // Returns values rather than calling next(): vue-router 5 deprecates the next()
+  // callback and logs a warning on every single navigation. Returning is also safer here
+  // — with next(), an accidental fall-through calls it twice and the router throws.
+  Router.beforeEach((to) => {
     const token = localStorage.getItem('auth_token')
     const role = localStorage.getItem('auth_role')
 
-    // If route requires authentication
-    if (to.meta.requiresAuth) {
-      if (!token) {
-        // Not logged in — redirect to login
-        return next('/login')
-      }
+    // Clears every auth key together; leaving one behind puts the app in a half-signed-in
+    // state where the guard passes but requests 401.
+    const clearAuth = () => {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
+      localStorage.removeItem('auth_role')
+      localStorage.removeItem('vendor_status')
+    }
 
-      // --- NEW: Status enforcement ---
+    // Where a signed-in user belongs when they land somewhere they should not be.
+    const homeForRole = () => {
+      if (role === 'Admin') return '/admin/dashboard'
+      if (role === 'Vendor') return '/vendor/dashboard'
+      if (role === 'Consumer') return '/consumer/home'
+      return '/login'
+    }
+
+    if (to.meta.requiresAuth) {
+      if (!token) return '/login'
+
+      // Status enforcement
       try {
         const userDataStr = localStorage.getItem('auth_user')
         const userData = userDataStr ? JSON.parse(userDataStr) : {}
         const accountStatus = userData.account_status
 
         if (accountStatus === 'suspended' || accountStatus === 'inactive') {
-          localStorage.removeItem('auth_token')
-          localStorage.removeItem('auth_user')
-          localStorage.removeItem('auth_role')
-          localStorage.removeItem('vendor_status')
-          return next('/login')
+          clearAuth()
+          return '/login'
         }
-      } catch (e) {
-        // Corrupted data — force re-login
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('auth_user')
-        localStorage.removeItem('auth_role')
-        localStorage.removeItem('vendor_status')
-        return next('/login')
+      } catch {
+        // Corrupted auth_user — force re-login rather than trusting it.
+        clearAuth()
+        return '/login'
       }
 
-      // Check vendor approval status for vendor-only routes
+      // Vendor approval state
       if (to.meta.role === 'Vendor' && role === 'Vendor') {
         const vendorStatus = localStorage.getItem('vendor_status')
-        if (vendorStatus === 'rejected') {
-          return next('/auth/vendor/rejected')
-        }
-        if (vendorStatus === 'pending') {
-          return next('/auth/vendor/under-review')
-        }
+        if (vendorStatus === 'rejected') return '/auth/vendor/rejected'
+        if (vendorStatus === 'pending') return '/auth/vendor/under-review'
       }
-      // --- END NEW ---
 
-      // If route requires a specific role
-      if (to.meta.role && to.meta.role !== role) {
-        // Wrong role — redirect to their own dashboard
-        if (role === 'Admin') return next('/admin/dashboard')
-        if (role === 'Vendor') return next('/vendor/dashboard')
-        if (role === 'Consumer') return next('/consumer/home')
-        return next('/login')
-      }
+      // Wrong role for this route — send them to their own dashboard.
+      if (to.meta.role && to.meta.role !== role) return homeForRole()
     }
 
-    // If route is guest-only (login, register) and user is already logged in
-    if (to.meta.guest && token && role) {
-      if (role === 'Admin') return next('/admin/dashboard')
-      if (role === 'Vendor') return next('/vendor/dashboard')
-      if (role === 'Consumer') return next('/consumer/home')
-    }
+    // Guest-only route (login, register) while already signed in.
+    if (to.meta.guest && token && role) return homeForRole()
 
-    next()
+    return true
   })
 
   return Router

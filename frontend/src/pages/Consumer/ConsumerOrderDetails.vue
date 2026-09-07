@@ -284,6 +284,7 @@ import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
+import { formatDistance, calculateDistanceMeters } from '@/utils/distance'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -372,25 +373,6 @@ const formatReceiptDateParts = (dateString) => {
   return `${datePart} • ${timePart}`
 }
 
-// Haversine distance, same formula as the backend's DistanceService — this endpoint doesn't return a precomputed distance_meters.
-const calculateDistanceMeters = (lat1, lng1, lat2, lng2) => {
-  const R = 6371000
-  const toRad = (deg) => (deg * Math.PI) / 180
-  const dLat = toRad(lat2 - lat1)
-  const dLng = toRad(lng2 - lng1)
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-const formatDistance = (meters) => {
-  if (meters == null) return ''
-  const rounded = Math.round(meters)
-  if (rounded < 1000) return `${rounded} m away`
-  return `${(meters / 1000).toFixed(1)} km away`
-}
-
 const storeAddressText = computed(() => {
   const address = order.value?.store?.address
   const cLat = order.value?.consumer_latitude
@@ -398,9 +380,9 @@ const storeAddressText = computed(() => {
   const sLat = order.value?.store?.latitude
   const sLng = order.value?.store?.longitude
 
-  const dist = cLat != null && cLng != null && sLat != null && sLng != null
-    ? formatDistance(calculateDistanceMeters(Number(cLat), Number(cLng), Number(sLat), Number(sLng)))
-    : ''
+  // See ConsumerOrders: the guard lives in calculateDistanceMeters, and the raw
+  // values are passed because Number(null) would coerce a missing coordinate to 0.
+  const dist = formatDistance(calculateDistanceMeters(cLat, cLng, sLat, sLng))
 
   if (address && dist) return `${address} (${dist})`
   return address || dist
@@ -552,10 +534,10 @@ onMounted(() => {
   gap: 4px;
   margin-bottom: 14px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 
-  color: #767676;
+  color: var(--c-subtle);
 
   cursor: pointer;
 
@@ -563,17 +545,17 @@ onMounted(() => {
 }
 
 .back-link:hover {
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .page-title {
   margin: 0 0 20px;
 
-  font-size: 22px;
+  font-size: var(--fs-3xl);
   font-weight: 700;
   line-height: 1.3;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .order-loading {
@@ -585,15 +567,15 @@ onMounted(() => {
   gap: 16px;
   padding: 80px 24px;
 
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .order-loading-text {
   margin: 0;
 
-  color: #8992a2;
+  color: var(--c-muted);
 
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 /* LAYOUT */
@@ -640,8 +622,8 @@ onMounted(() => {
 .store-info-card {
   padding: 20px 22px;
 
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
 
   background: #ffffff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -650,7 +632,7 @@ onMounted(() => {
 .card-divider {
   margin: 16px 0 18px;
 
-  background: #f0f0f0;
+  background: var(--c-hairline);
 }
 
 /* STATUS CARD */
@@ -664,45 +646,45 @@ onMounted(() => {
 }
 
 .status-label {
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .status-expected {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 .status-title {
   margin-top: 6px;
 
-  font-size: 19px;
+  font-size: var(--fs-2xl);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .status-title-cancelled {
-  color: #b91c1c;
+  color: var(--c-danger);
 }
 
 .status-title-done {
-  color: #16a34a;
+  color: var(--c-success);
 }
 
 .status-desc {
   margin: 6px 0 0;
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   line-height: 1.5;
 
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 .status-steps {
@@ -731,34 +713,34 @@ onMounted(() => {
   height: 34px;
 
   border-radius: 50%;
-  border: 2px solid #e2e2e2;
+  border: 2px solid var(--c-border);
 
   background: #ffffff;
-  color: #b0b0b8;
+  color: var(--c-muted);
 
   transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 
 .status-step-circle-active {
-  border-color: #bd2427;
+  border-color: var(--c-brand);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 }
 
 .status-step-label {
   margin-top: 6px;
 
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 600;
 
-  color: #9ca3af;
+  color: var(--c-muted);
 
   text-align: center;
 }
 
 .status-step-label-active {
-  color: #222222;
+  color: var(--c-text);
 }
 
 .status-step-line {
@@ -767,25 +749,25 @@ onMounted(() => {
   height: 2px;
   margin-top: 17px;
 
-  background: #e2e2e2;
+  background: var(--c-border);
 }
 
 .status-step-line-active {
-  background: #bd2427;
+  background: var(--c-brand);
 }
 
 .status-step-line-current {
-  background: linear-gradient(to right, #bd2427 50%, #e2e2e2 50%);
+  background: linear-gradient(to right, var(--c-brand) 50%, var(--c-border) 50%);
 }
 
 /* Picked up = done, so the stepper switches to the same green as .status-title-done. */
 .status-steps-done .status-step-circle-active {
-  border-color: #16a34a;
-  background: #16a34a;
+  border-color: var(--c-success);
+  background: var(--c-success);
 }
 
 .status-steps-done .status-step-line-active {
-  background: #16a34a;
+  background: var(--c-success);
 }
 
 .cancellation-note {
@@ -796,24 +778,24 @@ onMounted(() => {
   margin-top: 18px;
   padding: 12px 14px;
 
-  border-radius: 8px;
+  border-radius: var(--r-md);
 
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--c-danger-tint);
+  color: var(--c-danger);
 }
 
 .cancellation-note-title {
   margin-bottom: 2px;
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 700;
 }
 
 .cancellation-note-text {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.4;
 
-  color: #c0393a;
+  color: var(--c-brand);
 }
 
 /* STORE INFO */
@@ -826,23 +808,23 @@ onMounted(() => {
 }
 
 .store-info-pin {
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .store-info-name {
-  font-size: 15px;
+  font-size: var(--fs-lg);
   font-weight: 700;
 
-  color: #222222;
+  color: var(--c-text);
 }
 
 .store-info-address {
   margin-top: 6px;
   padding-left: 28px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .order-meta-row {
@@ -860,12 +842,12 @@ onMounted(() => {
 .order-meta-label {
   margin-bottom: 4px;
 
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .order-meta-value {
@@ -874,10 +856,10 @@ onMounted(() => {
 
   gap: 5px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
 
-  color: #222222;
+  color: var(--c-text);
 }
 
 .order-meta-placed .order-meta-value {
@@ -894,14 +876,14 @@ onMounted(() => {
   flex: 1;
   height: 48px;
 
-  border-radius: 6px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-border);
   outline: none !important;
 
   background: #ffffff;
-  color: #333333;
+  color: var(--c-text-2);
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
   transition: border-color 0.15s, box-shadow 0.2s, transform 0.2s;
@@ -923,14 +905,14 @@ onMounted(() => {
 }
 
 .cancel-order-btn:hover:not(:disabled) {
-  border-color: #f3c6c7;
+  border-color: var(--c-brand-tint-3);
 
   box-shadow: 0 4px 12px rgba(189, 36, 39, 0.08);
   transform: translateY(-1px);
 }
 
 .cancel-order-btn:active:not(:disabled) {
-  border-color: #f3c6c7;
+  border-color: var(--c-brand-tint-3);
 
   transform: translateY(0);
 }
@@ -944,12 +926,12 @@ onMounted(() => {
   flex: 1;
   height: 48px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
@@ -968,7 +950,7 @@ onMounted(() => {
 }
 
 .get-directions-btn:hover:not(:disabled) {
-  background: #a91e21;
+  background: var(--c-brand-hover);
 
   box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
 
@@ -976,7 +958,7 @@ onMounted(() => {
 }
 
 .get-directions-btn:active:not(:disabled) {
-  background: #8f1a1c;
+  background: var(--c-brand-active);
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
 
@@ -1003,8 +985,8 @@ onMounted(() => {
 .order-summary {
   padding: 18px;
 
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
 
   background: #ffffff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -1013,22 +995,22 @@ onMounted(() => {
 .summary-title {
   margin-bottom: 4px;
 
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .summary-store {
   margin-bottom: 12px;
   padding-bottom: 12px;
 
-  border-bottom: 1px solid #f4f4f4;
+  border-bottom: 1px solid var(--c-hairline);
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 .summary-item-row {
@@ -1048,11 +1030,11 @@ onMounted(() => {
   width: 28px;
   height: 28px;
 
-  border-radius: 6px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-border);
 
-  background: linear-gradient(145deg, #f7f7f8 0%, #ececee 100%);
-  color: #bd2427;
+  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  color: var(--c-brand);
 
   overflow: hidden;
 }
@@ -1069,10 +1051,10 @@ onMounted(() => {
 }
 
 .summary-item-name {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 
-  color: #222222;
+  color: var(--c-text);
 
   overflow: hidden;
   white-space: nowrap;
@@ -1082,16 +1064,16 @@ onMounted(() => {
 .summary-item-qty {
   margin-top: 1px;
 
-  font-size: 10.5px;
+  font-size: var(--fs-2xs);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .summary-item-price {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 
-  color: #555555;
+  color: var(--c-text-3);
 }
 
 .summary-row {
@@ -1100,9 +1082,9 @@ onMounted(() => {
 
   margin-bottom: 8px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #555555;
+  color: var(--c-text-3);
 }
 
 .summary-separator {
@@ -1110,25 +1092,25 @@ onMounted(() => {
 }
 
 .summary-total {
-  font-size: 15px;
+  font-size: var(--fs-lg);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .view-receipt-btn {
   width: 100%;
   height: 52px;
 
-  border-radius: 6px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-border);
   outline: none !important;
 
   background: #ffffff;
-  color: #333333;
+  color: var(--c-text-2);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
   transition: border-color 0.15s, box-shadow 0.2s, transform 0.2s;
@@ -1150,14 +1132,14 @@ onMounted(() => {
 }
 
 .view-receipt-btn:hover {
-  border-color: #f3c6c7;
+  border-color: var(--c-brand-tint-3);
 
   box-shadow: 0 4px 12px rgba(189, 36, 39, 0.08);
   transform: translateY(-1px);
 }
 
 .view-receipt-btn:active {
-  border-color: #f3c6c7;
+  border-color: var(--c-brand-tint-3);
 
   transform: translateY(0);
 }
@@ -1177,7 +1159,7 @@ onMounted(() => {
 
   padding: 24px;
 
-  border-radius: 12px;
+  border-radius: var(--r-xl);
 }
 
 /* Sheet mode: fixed header, scrollable reason list, fixed footer — same flex-column split as ProductFilters.vue's sheet mode. */
@@ -1201,9 +1183,9 @@ onMounted(() => {
   height: 4px;
   margin: 10px auto 0;
 
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 
-  background: #d6d6da;
+  background: var(--c-border-strong);
 }
 
 .cancel-dialog-card-sheet .cancel-dialog-scroll {
@@ -1221,7 +1203,7 @@ onMounted(() => {
   margin-top: 0;
   padding: 14px 24px calc(14px + env(safe-area-inset-bottom, 0px));
 
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--c-hairline);
 }
 
 .cancel-dialog-close-btn {
@@ -1230,7 +1212,7 @@ onMounted(() => {
   right: 12px;
   z-index: 1;
 
-  color: #666666;
+  color: var(--c-muted);
 }
 
 .cancel-dialog-card-sheet .cancel-dialog-close-btn {
@@ -1240,18 +1222,18 @@ onMounted(() => {
 .cancel-dialog-title {
   padding-right: 28px;
 
-  font-size: 18px;
+  font-size: var(--fs-2xl);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .cancel-dialog-text {
   margin: 6px 0 0;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 .cancel-reason-list {
@@ -1269,8 +1251,8 @@ onMounted(() => {
   gap: 12px;
   padding: 14px 16px;
 
-  border-radius: 8px;
-  border: 1px solid #e2e2e2;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-border);
 
   cursor: pointer;
 
@@ -1278,14 +1260,14 @@ onMounted(() => {
 }
 
 .cancel-reason-option:hover {
-  border-color: #d6d6da;
+  border-color: var(--c-border-strong);
 }
 
 .cancel-reason-option-selected,
 .cancel-reason-option-selected:hover {
-  border-color: #bd2427;
+  border-color: var(--c-brand);
 
-  background: #fdecec;
+  background: var(--c-brand-tint);
 }
 
 .cancel-reason-radio {
@@ -1295,8 +1277,8 @@ onMounted(() => {
   width: 18px;
   height: 18px;
 
-  border-radius: 999px;
-  border: 2px solid #cbd5e1;
+  border-radius: var(--r-pill);
+  border: 2px solid var(--c-border);
 
   background: #ffffff;
 
@@ -1305,14 +1287,14 @@ onMounted(() => {
 
 .cancel-reason-option-selected .cancel-reason-radio {
   border-width: 6px;
-  border-color: #bd2427;
+  border-color: var(--c-brand);
 }
 
 .cancel-reason-label {
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   font-weight: 600;
 
-  color: #222222;
+  color: var(--c-text);
 }
 
 .cancel-dialog-input {
@@ -1331,32 +1313,32 @@ onMounted(() => {
   flex: 1;
   height: 48px;
 
-  border-radius: 6px;
-  border: 1px solid #d6d6da;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-border-strong);
 
   background: #ffffff;
-  color: #333333;
+  color: var(--c-text-2);
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
   transition: background-color 0.15s;
 }
 
 .keep-order-btn:hover {
-  background: #f7f7f8;
+  background: var(--c-surface);
 }
 
 .confirm-cancel-btn {
   flex: 1;
   height: 48px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #b91c1c;
+  background: var(--c-danger);
   color: #ffffff;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
   box-shadow: 0 2px 8px rgba(185, 28, 28, 0.25);
@@ -1365,7 +1347,7 @@ onMounted(() => {
 }
 
 .confirm-cancel-btn:hover:not(:disabled) {
-  background: #991616;
+  background: var(--c-brand-deep);
 
   box-shadow: 0 6px 16px rgba(185, 28, 28, 0.32);
 
@@ -1373,7 +1355,7 @@ onMounted(() => {
 }
 
 .confirm-cancel-btn:active:not(:disabled) {
-  background: #7a1212;
+  background: var(--c-brand-active);
 
   box-shadow: 0 2px 6px rgba(185, 28, 28, 0.28);
 
@@ -1408,7 +1390,7 @@ onMounted(() => {
 
   padding: 24px;
 
-  border-radius: 12px;
+  border-radius: var(--r-xl);
   text-align: center;
 }
 
@@ -1417,7 +1399,7 @@ onMounted(() => {
   top: 10px;
   right: 10px;
 
-  color: #666666;
+  color: var(--c-muted);
 }
 
 .receipt-icon-circle {
@@ -1431,15 +1413,15 @@ onMounted(() => {
 
   border-radius: 999px !important;
 
-  background: #fdecec;
-  color: #bd2427;
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
 }
 
 .receipt-store-name {
-  font-size: 18px;
+  font-size: var(--fs-2xl);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .receipt-store-address {
@@ -1450,10 +1432,10 @@ onMounted(() => {
   gap: 4px;
   margin-top: 4px;
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   line-height: 1.4;
 
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 .receipt-ref-row {
@@ -1466,24 +1448,24 @@ onMounted(() => {
 .receipt-ref-badge {
   padding: 4px 12px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #f4f4f4;
-  color: #333333;
+  background: var(--c-hairline);
+  color: var(--c-text-2);
 
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: 0.03em;
 }
 
 .receipt-ref-number {
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .receipt-divider {
   margin: 16px 0;
 
-  background: #f0f0f0;
+  background: var(--c-hairline);
 }
 
 .receipt-date-banner {
@@ -1495,19 +1477,19 @@ onMounted(() => {
   margin-top: 14px;
   padding: 10px 14px;
 
-  border-radius: 10px;
+  border-radius: var(--r-lg);
 
-  background: #f7f7f8;
-  color: #333333;
+  background: var(--c-surface);
+  color: var(--c-text-2);
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 
   text-align: center;
 }
 
 .receipt-date-banner .q-icon {
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .receipt-items-header {
@@ -1516,12 +1498,12 @@ onMounted(() => {
 
   margin: 16px 0 10px;
 
-  font-size: 10.5px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 
-  color: #9ca3af;
+  color: var(--c-muted);
 }
 
 .receipt-items {
@@ -1538,7 +1520,7 @@ onMounted(() => {
 
   gap: 8px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
   text-align: left;
 }
@@ -1546,19 +1528,19 @@ onMounted(() => {
 .receipt-item-qty {
   font-weight: 700;
 
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .receipt-item-name {
   font-weight: 600;
 
-  color: #222222;
+  color: var(--c-text);
 }
 
 .receipt-item-price {
   font-weight: 700;
 
-  color: #222222;
+  color: var(--c-text);
 }
 
 .receipt-total-band {
@@ -1568,26 +1550,26 @@ onMounted(() => {
 
   margin-top: 4px;
 
-  font-size: 16px;
+  font-size: var(--fs-xl);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .receipt-total-amount {
-  color: #111111;
+  color: var(--c-text);
 }
 
 .receipt-download-btn {
   height: 46px;
   padding: 0 28px;
 
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 
   background: #ffffff;
-  color: #111111;
+  color: var(--c-text);
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
 
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
@@ -1606,7 +1588,7 @@ onMounted(() => {
 }
 
 .receipt-download-btn:hover {
-  background: #f4f4f4;
+  background: var(--c-hairline);
 
   transform: translateY(-1px);
 }
@@ -1659,7 +1641,7 @@ onMounted(() => {
     padding: 36px 32px !important;
 
     box-shadow: none !important;
-    border: 1px solid #e2e2e2 !important;
+    border: 1px solid var(--c-border) !important;
     border-radius: 6px !important;
   }
 
@@ -1674,11 +1656,11 @@ onMounted(() => {
     margin-top: 26px;
     padding-top: 16px;
 
-    border-top: 1px dashed #d6d6da;
+    border-top: 1px dashed var(--c-border-strong);
 
-    font-size: 11.5px;
+    font-size: var(--fs-xs);
 
-    color: #8992a2;
+    color: var(--c-muted);
     text-align: center;
   }
 }
@@ -1720,7 +1702,8 @@ onMounted(() => {
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
 
   background: #ffffff;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--c-hairline);
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
 }
 </style>
+

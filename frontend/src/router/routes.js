@@ -4,8 +4,22 @@ const routes = [
     component: () => import('@/layouts/MainLayout.vue'),
     children: [
       {
+        // The storefront is the landing screen, not the login form — browsing needs no
+        // account, so sending everyone to a sign-in wall first hid the whole catalog
+        // behind it.
+        //
+        // Kept role-aware: a signed-in vendor or admin opening the root still lands on
+        // their own dashboard rather than on the consumer storefront, which is the same
+        // mapping the `meta.guest` guard in router/index.js already applies.
         path: '',
-        redirect: '/login'
+        redirect: () => {
+          const token = localStorage.getItem('auth_token')
+          const role = localStorage.getItem('auth_role')
+
+          if (token && role === 'Admin') return '/admin/dashboard'
+          if (token && role === 'Vendor') return '/vendor/dashboard'
+          return '/consumer/home'
+        }
       },
 
       // ----- Public Auth Routes -----
