@@ -44,14 +44,7 @@
             </div>
 
             <div v-if="isSearching" class="products-grid">
-              <div v-for="n in 6" :key="n" class="skeleton-card">
-                <div class="skeleton-image" />
-                <div class="skeleton-body">
-                  <div class="skeleton-line skeleton-line-short" />
-                  <div class="skeleton-line" />
-                  <div class="skeleton-line skeleton-line-short" />
-                </div>
-              </div>
+              <CardSkeleton v-for="n in 6" :key="n" />
             </div>
 
             <div v-else class="products-grid">
@@ -75,14 +68,7 @@
             </div>
 
             <div v-if="isSearching" class="stores-grid">
-              <div v-for="n in 4" :key="n" class="skeleton-card">
-                <div class="skeleton-image" />
-                <div class="skeleton-body">
-                  <div class="skeleton-line skeleton-line-short" />
-                  <div class="skeleton-line" />
-                  <div class="skeleton-line skeleton-line-short" />
-                </div>
-              </div>
+              <CardSkeleton v-for="n in 4" :key="n" variant="store" />
             </div>
 
             <div v-else class="stores-grid">
@@ -127,6 +113,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
+import CardSkeleton from '@/components/consumer/CardSkeleton.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import StoreCard from '@/components/consumer/StoreCard.vue'
@@ -348,11 +335,11 @@ const goToRecentSearch = (term) => {
 .page-title {
   margin: 0 0 4px;
 
-  font-size: 22px;
+  font-size: var(--fs-3xl);
   font-weight: 700;
   line-height: 1.3;
 
-  color: #111111;
+  color: var(--c-text);
 
   overflow-wrap: anywhere;
 }
@@ -360,9 +347,9 @@ const goToRecentSearch = (term) => {
 .page-subtitle {
   margin: 0;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 /* EMPTY QUERY STATE */
@@ -378,7 +365,7 @@ const goToRecentSearch = (term) => {
 }
 
 .search-prompt-icon {
-  color: #d8dce3;
+  color: var(--c-border);
 
   margin-bottom: 8px;
 }
@@ -386,9 +373,9 @@ const goToRecentSearch = (term) => {
 .search-prompt-text {
   margin: 0;
 
-  font-size: 14px;
+  font-size: var(--fs-md);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .search-prompt-recent {
@@ -401,12 +388,12 @@ const goToRecentSearch = (term) => {
 .search-prompt-recent-title {
   margin-bottom: 8px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 
-  color: #9ca3af;
+  color: var(--c-muted);
 }
 
 .search-prompt-recent-chips {
@@ -418,20 +405,20 @@ const goToRecentSearch = (term) => {
 }
 
 .recent-chip {
-  border: 1px solid #e2e2e2;
-  border-radius: 999px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-pill);
 
   background: #ffffff;
-  color: #333333;
+  color: var(--c-text-2);
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
 
   transition: background-color 0.15s, border-color 0.15s;
 }
 
 .recent-chip:hover {
-  border-color: #f3c6c7;
-  background: #fdecec;
+  border-color: var(--c-brand-tint-3);
+  background: var(--c-brand-tint);
 }
 
 /* Shared by both Products and Stores headers — same gap above, same gap below, no per-section overrides. */
@@ -447,10 +434,10 @@ const goToRecentSearch = (term) => {
 .results-section-title {
   margin: 0;
 
-  font-size: 15px;
+  font-size: var(--fs-lg);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 /* auto-fill/minmax instead of fixed column counts, so card size shrinks smoothly as the viewport narrows. */
@@ -473,7 +460,7 @@ const goToRecentSearch = (term) => {
   margin-top: 32px;
   padding-top: 8px;
 
-  border-top: 1px solid #e8e8e8;
+  border-top: 1px solid var(--c-border);
 }
 
 .related-section .results-section-title {
@@ -493,70 +480,24 @@ const goToRecentSearch = (term) => {
 .results-empty-icon {
   margin-bottom: 8px;
 
-  color: #d8dce3;
+  color: var(--c-border);
 }
 
 .results-empty-title {
   margin: 0;
 
-  font-size: 15px;
+  font-size: var(--fs-lg);
   font-weight: 600;
 
-  color: #333333;
+  color: var(--c-text-2);
 }
 
 .results-empty-text {
   margin: 4px 0 0;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #8992a2;
-}
-
-/* SKELETON LOADING STATE */
-
-.skeleton-card {
-  overflow: hidden;
-
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
-
-  background: #ffffff;
-}
-
-.skeleton-image,
-.skeleton-line {
-  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
-  background-size: 400% 100%;
-
-  animation: skeleton-pulse 1.4s ease infinite;
-}
-
-.skeleton-image {
-  height: 110px;
-}
-
-.skeleton-body {
-  display: flex;
-  flex-direction: column;
-
-  gap: 8px;
-  padding: 12px;
-}
-
-.skeleton-line {
-  height: 10px;
-
-  border-radius: 4px;
-}
-
-.skeleton-line-short {
-  width: 60%;
-}
-
-@keyframes skeleton-pulse {
-  0% { background-position: 100% 50%; }
-  100% { background-position: 0 50%; }
+  color: var(--c-muted);
 }
 
 /* RESPONSIVE */

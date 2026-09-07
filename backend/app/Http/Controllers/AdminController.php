@@ -322,7 +322,7 @@ class AdminController extends Controller
         $suspensionMessage = null;
         if ($request->account_status === 'suspended') {
             $reason = $request->suspension_message ?? 'Violation of terms';
-            $suspensionMessage = "Suspension notice from Admin: {$admin->full_name}. Reason: {$reason}";
+            $suspensionMessage = "Suspended by {$admin->full_name}.\nReason: {$reason}";
         }
 
         $vendor->update([
@@ -461,7 +461,7 @@ class AdminController extends Controller
         $suspensionMessage = null;
         if ($request->account_status === 'suspended') {
             $reason = $request->suspension_message ?? 'Violation of terms';
-            $suspensionMessage = "Suspension notice from Admin: {$admin->full_name}. Reason: {$reason}";
+            $suspensionMessage = "Suspended by {$admin->full_name}.\nReason: {$reason}";
         }
 
         $consumer->update([

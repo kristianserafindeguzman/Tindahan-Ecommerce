@@ -33,8 +33,8 @@ defineEmits(['click'])
 
   font-family: 'Roboto', Arial, sans-serif;
 
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
 
   background: #ffffff;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -58,7 +58,7 @@ defineEmits(['click'])
 }
 
 .category-tile:hover {
-  border-color: #f3c6c7;
+  border-color: var(--c-brand-tint-3);
 
   box-shadow: 0 10px 24px rgba(189, 36, 39, 0.14);
   transform: translateY(-3px);
@@ -75,8 +75,8 @@ defineEmits(['click'])
   /* !important: QCard rounds a direct first-child's top corners to match its own radius by default. */
   border-radius: 50% !important;
 
-  background: linear-gradient(145deg, #fdecec 0%, #fbdbdc 100%);
-  color: #bd2427;
+  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  color: var(--c-brand);
 
   transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
@@ -86,11 +86,11 @@ defineEmits(['click'])
 }
 
 .category-tile-label {
-  font-size: 13px;
+  font-size: var(--fs-lg);
   font-weight: 500;
   line-height: 1.3;
 
-  color: #111111;
+  color: var(--c-text);
   text-align: center;
 
   min-height: calc(1.3em * 2);

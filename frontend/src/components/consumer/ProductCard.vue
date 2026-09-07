@@ -25,13 +25,13 @@
       />
     </div>
     <q-card-section class="product-card-body">
-      <div class="product-price">₱{{ product.price.toFixed(2) }}</div>
       <div class="product-name">
         <template v-for="(part, i) in nameParts" :key="i">
           <mark v-if="part.match" class="highlight-mark">{{ part.text }}</mark>
           <template v-else>{{ part.text }}</template>
         </template>
       </div>
+      <div class="product-price">₱{{ product.price.toFixed(2) }}</div>
       <div v-if="productMetaText" class="product-meta">
         <q-icon name="o_storefront" size="13px" class="product-meta-icon" />
         <span class="product-meta-text">{{ productMetaText }}</span>
@@ -43,6 +43,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { splitHighlightParts } from '@/utils/textHighlight'
+import { formatDistance } from '@/utils/distance'
 
 const props = defineProps({
   product: {
@@ -60,13 +61,6 @@ defineEmits(['add-to-cart', 'view-product'])
 const nameParts = computed(() => splitHighlightParts(props.product.name, props.highlightQuery))
 const imageFailed = ref(false)
 
-const formatDistance = (meters) => {
-  if (meters == null) return ''
-  const rounded = Math.round(meters)
-  if (rounded < 1000) return `${rounded} m away`
-  return `${(meters / 1000).toFixed(1)} km away`
-}
-
 const productMetaText = computed(() => {
   const parts = []
   if (props.product.distance_meters != null) parts.push(formatDistance(props.product.distance_meters))
@@ -74,9 +68,6 @@ const productMetaText = computed(() => {
   return parts.join(' • ')
 })
 
-const goToProduct = () => {
-  router.push(`/consumer/product/${props.product.id}`)
-}
 </script>
 
 <style scoped>
@@ -85,8 +76,8 @@ const goToProduct = () => {
 
   font-family: 'Roboto', Arial, sans-serif;
 
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
 
   background: #ffffff;
 
@@ -96,24 +87,10 @@ const goToProduct = () => {
 
   cursor: pointer;
 
-  /* Fades in on its own mount — independent of whatever page/grid it's rendered inside, so it's
-     reliable regardless of how that page's loading state swaps the grid's content in. */
-  animation: card-fade-up 0.4s ease both;
-}
-
-@keyframes card-fade-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .product-card {
-    animation: none;
-  }
 }
 
 .product-card:hover {
-  border-color: #f3c6c7;
+  border-color: var(--c-brand-tint-3);
 
   box-shadow: 0 10px 24px rgba(189, 36, 39, 0.14);
   transform: translateY(-3px);
@@ -129,14 +106,14 @@ const goToProduct = () => {
   aspect-ratio: 1 / 1;
   overflow: hidden;
 
-  background: linear-gradient(145deg, #f7f7f8 0%, #ececee 100%);
-  color: #bd2427;
+  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  color: var(--c-brand);
 
   transition: background 0.2s;
 }
 
 .product-card:hover .product-card-image {
-  background: linear-gradient(145deg, #fdecec 0%, #fbdbdc 100%);
+  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
 }
 
 .product-card-img {
@@ -164,12 +141,12 @@ const goToProduct = () => {
 
   padding: 3px 8px;
 
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 
   background: rgba(255, 255, 255, 0.92);
-  color: #4a4a4a;
+  color: var(--c-text-2);
 
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -185,12 +162,12 @@ const goToProduct = () => {
 
   padding: 5px 12px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
   background: rgba(17, 17, 17, 0.78);
   color: #ffffff;
 
-  font-size: 11.5px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -212,7 +189,7 @@ const goToProduct = () => {
   min-height: 28px;
   padding: 0;
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.35);
@@ -225,28 +202,28 @@ const goToProduct = () => {
 }
 
 .product-add-btn:hover {
-  background: #9c171b;
+  background: var(--c-brand-deep);
   transform: scale(1.1);
 }
 
 .product-price {
-  font-size: 16px;
+  font-size: var(--fs-xl);
   font-weight: 700;
   line-height: 1.3;
 
-  color: #bd2427;
+  color: var(--c-brand);
 
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
 .product-name {
-  font-size: 13px;
+  font-size: var(--fs-lg);
   font-weight: 500;
   line-height: 1.35;
 
-  color: #333333;
+  color: var(--c-text-2);
 
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 
   min-height: calc(1.35em * 2);
 
@@ -258,11 +235,11 @@ const goToProduct = () => {
 }
 
 .highlight-mark {
-  background: #fdecec;
-  color: #9c171b;
+  background: var(--c-brand-tint);
+  color: var(--c-brand-deep);
   font-weight: 700;
 
-  border-radius: 2px;
+  border-radius: var(--r-xs);
 }
 
 .product-meta {
@@ -273,12 +250,12 @@ const goToProduct = () => {
   min-width: 0;
   padding-top: 10px;
 
-  border-top: 1px solid #f4f4f4;
+  border-top: 1px solid var(--c-hairline);
 
-  font-size: 12px;
+  font-size: var(--fs-sm);
   line-height: 1.3;
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .product-meta-icon {
@@ -292,5 +269,59 @@ const goToProduct = () => {
 
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* Phones fit two cards to a 390px row, so the body has ~171px to work with. The
+   desktop padding and tag sizing eat that width and make the card read bulky —
+   these trim the chrome, not the content. Type already steps down via the scale
+   in app.scss. */
+@media (max-width: 600px) {
+  /* The square photo is the single biggest contributor to card height: 171px of a
+     291px card at 390px wide. 4:3 takes ~43px out of every card without touching
+     the content, which is what actually makes the grid feel oversized on a phone. */
+  /* 5:4 rather than the desktop 1:1. It takes ~34px out of every card while keeping
+     the photo edge-to-edge on the desktop's cover fit — 4:3 shaved more height but
+     cropped enough off tall bottles and packets to change what the product looked
+     like. */
+  .product-card-image {
+    aspect-ratio: 5 / 4;
+  }
+
+  .product-card-body {
+    padding: 10px;
+  }
+
+  /* Drops the two-line reserve. It exists so prices share a baseline across a row,
+     which is worth ~20px of dead space under a one-line name on a 6-up desktop row
+     but not on a 2-up phone row, where the mismatch is barely legible and the space
+     is what makes the card feel oversized. */
+  .product-name {
+    min-height: 0;
+
+    margin-bottom: 4px;
+  }
+
+  .product-price {
+    margin-bottom: 8px;
+  }
+
+  .product-category-tag {
+    top: 6px;
+    left: 6px;
+
+    padding: 2px 6px;
+
+    letter-spacing: 0.02em;
+  }
+
+  .product-meta {
+    gap: 4px;
+    padding-top: 8px;
+  }
+
+  .product-add-btn {
+    right: 6px;
+    bottom: 6px;
+  }
 }
 </style>

@@ -64,36 +64,48 @@
                 <div class="cart-item-price">₱{{ item.price.toFixed(2) }}</div>
               </div>
 
-              <div class="stepper-wrapper" style="display: flex; flex-direction: column; align-items: center;">
+              <div class="stepper-wrapper">
                 <div class="quantity-stepper">
-                  <button
-                    type="button"
+                  <!-- Named per item: a screen reader hitting six identical "Decrease"
+                       buttons in a cart cannot tell which row it is on. -->
+                  <q-btn
+                    flat
+                    dense
+                    :ripple="false"
+                    icon="o_remove"
                     class="stepper-btn"
-                    :disabled="item.quantity <= 1"
+                    :disable="item.quantity <= 1"
+                    :aria-label="`Decrease quantity of ${item.name}`"
                     @click="changeQuantity(item, item.quantity - 1)"
-                  >
-                    <q-icon name="o_remove" size="14px" />
-                  </button>
+                  />
                   <span class="stepper-value">{{ item.quantity }}</span>
-                  <button
-                    type="button"
+                  <q-btn
+                    flat
+                    dense
+                    :ripple="false"
+                    icon="o_add"
                     class="stepper-btn"
-                    :disabled="item.quantity >= item.availableQuantity"
+                    :disable="item.quantity >= item.availableQuantity"
+                    :aria-label="`Increase quantity of ${item.name}`"
                     @click="changeQuantity(item, item.quantity + 1)"
-                  >
-                    <q-icon name="o_add" size="14px" />
-                  </button>
+                  />
                 </div>
-                <div v-if="item.quantity >= item.availableQuantity" class="text-caption text-red-7 q-mt-xs text-center" style="font-size: 10px; line-height: 1.1; max-width: 90px;">
+                <div v-if="item.quantity >= item.availableQuantity" class="stepper-limit">
                   Max ({{ item.availableQuantity }} limit)
                 </div>
               </div>
 
               <div class="cart-item-line-total">₱{{ (item.price * item.quantity).toFixed(2) }}</div>
 
-              <button type="button" class="remove-btn" aria-label="Remove item" @click="removeItem(item)">
-                <q-icon name="o_delete" size="18px" />
-              </button>
+              <q-btn
+                flat
+                dense
+                :ripple="false"
+                icon="o_delete"
+                class="remove-btn"
+                :aria-label="`Remove ${item.name} from cart`"
+                @click="removeItem(item)"
+              />
             </div>
 
             <div class="store-card-subtotal">
@@ -283,19 +295,19 @@ const removeItem = async (item) => {
 .page-title {
   margin: 0 0 4px;
 
-  font-size: 22px;
+  font-size: var(--fs-3xl);
   font-weight: 700;
   line-height: 1.3;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .page-subtitle {
   margin: 0 0 20px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 /* LOADING / EMPTY */
@@ -309,15 +321,15 @@ const removeItem = async (item) => {
   gap: 16px;
   padding: 60px 0;
 
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .cart-loading-text {
   margin: 0;
 
-  color: #8992a2;
+  color: var(--c-muted);
 
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .cart-empty {
@@ -356,27 +368,27 @@ const removeItem = async (item) => {
 .cart-empty-icon {
   margin-bottom: 10px;
 
-  color: #d8dce3;
+  color: var(--c-border);
 }
 
 .cart-empty-text {
   margin: 0 0 20px;
 
-  font-size: 14px;
+  font-size: var(--fs-md);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .browse-btn {
   height: 48px;
   padding: 0 24px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
@@ -385,7 +397,7 @@ const removeItem = async (item) => {
 }
 
 .browse-btn:hover {
-  background: #a91e21;
+  background: var(--c-brand-hover);
 
   box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
 
@@ -393,7 +405,7 @@ const removeItem = async (item) => {
 }
 
 .browse-btn:active {
-  background: #8f1a1c;
+  background: var(--c-brand-active);
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
 
@@ -422,8 +434,8 @@ const removeItem = async (item) => {
   margin-bottom: 14px;
   padding: 14px 16px;
 
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
 
   background: #ffffff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -436,8 +448,8 @@ const removeItem = async (item) => {
 }
 
 .store-card-selected {
-  border-color: #f3c6c7;
-  background: #fdf6f6;
+  border-color: var(--c-brand-tint-3);
+  background: var(--c-brand-tint);
 }
 
 .store-card-checkbox {
@@ -452,7 +464,7 @@ const removeItem = async (item) => {
   margin-bottom: 8px;
   padding-bottom: 8px;
 
-  border-bottom: 1px solid #f4f4f4;
+  border-bottom: 1px solid var(--c-hairline);
 }
 
 .store-card-header-info {
@@ -461,14 +473,14 @@ const removeItem = async (item) => {
 
   gap: 6px;
 
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   font-weight: 700;
 
-  color: #333333;
+  color: var(--c-text-2);
 }
 
 .store-card-header-info .q-icon {
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .cart-item {
@@ -481,7 +493,7 @@ const removeItem = async (item) => {
 }
 
 .cart-item + .cart-item {
-  border-top: 1px solid #f8f8f8;
+  border-top: 1px solid var(--c-surface);
 }
 
 .cart-item-oos {
@@ -496,11 +508,11 @@ const removeItem = async (item) => {
   width: 46px;
   height: 46px;
 
-  border-radius: 8px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-border);
 
-  background: linear-gradient(145deg, #f7f7f8 0%, #ececee 100%);
-  color: #bd2427;
+  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  color: var(--c-brand);
 
   overflow: hidden;
 }
@@ -517,11 +529,11 @@ const removeItem = async (item) => {
 }
 
 .cart-item-name {
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   font-weight: 600;
   line-height: 1.35;
 
-  color: #222222;
+  color: var(--c-text);
 
   overflow: hidden;
   white-space: nowrap;
@@ -531,56 +543,78 @@ const removeItem = async (item) => {
 .cart-item-oos-tag {
   margin-top: 2px;
 
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   text-transform: uppercase;
 
-  color: #b91c1c;
+  color: var(--c-danger);
 }
 
 .cart-item-price {
   margin-top: 2px;
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .quantity-stepper {
   display: flex;
   align-items: center;
 
-  border: 1px solid #d6d6da;
-  border-radius: 8px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-md);
 
   overflow: hidden;
 }
 
+/* QBtn ships its own min-width, padding and border-radius; these pin it back to the
+   32px square the stepper strip is built around. */
 .stepper-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
   width: 32px;
   height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
 
-  border: none;
+  border-radius: 0;
+
   background: #ffffff;
-  color: #333333;
-
-  cursor: pointer;
-
-  transition: background-color 0.15s;
+  color: var(--c-text-2);
 }
 
-.stepper-btn:hover:not(:disabled) {
-  background: #fdecec;
-  color: #bd2427;
+.stepper-btn :deep(.q-icon) {
+  font-size: 14px;
 }
 
-.stepper-btn:disabled {
-  color: #cccccc;
-  cursor: default;
+.stepper-btn:hover:not(.disabled) {
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
+}
+
+/* QBtn marks a disabled button with a plain .disabled class (not :disabled, and not
+   .q-btn--disable), and dims the whole thing to 0.7 opacity. This restores the greyed
+   glyph the strip used instead, so the button reads disabled without the wash. */
+.stepper-btn.disabled {
+  color: var(--c-border-strong);
+  opacity: 1 !important;
+}
+
+.stepper-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stepper-limit {
+  max-width: 90px;
+  margin-top: 4px;
+
+  font-size: var(--fs-2xs);
+  line-height: 1.1;
+  text-align: center;
+
+  color: var(--c-danger);
 }
 
 .stepper-value {
@@ -588,10 +622,10 @@ const removeItem = async (item) => {
 
   text-align: center;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
-  color: #222222;
+  color: var(--c-text);
 }
 
 .cart-item-line-total {
@@ -599,34 +633,31 @@ const removeItem = async (item) => {
 
   text-align: right;
 
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   font-weight: 700;
 
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .remove-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
   width: 30px;
   height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
 
-  border: none;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: transparent;
-  color: #9ca3af;
+  color: var(--c-muted);
+}
 
-  cursor: pointer;
-
-  transition: background-color 0.15s, color 0.15s;
+.remove-btn :deep(.q-icon) {
+  font-size: 18px;
 }
 
 .remove-btn:hover {
-  background: #fdecec;
-  color: #bd2427;
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
 }
 
 .store-card-subtotal {
@@ -637,18 +668,18 @@ const removeItem = async (item) => {
   margin-top: 6px;
   padding-top: 10px;
 
-  border-top: 1px solid #f4f4f4;
+  border-top: 1px solid var(--c-hairline);
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
 
-  color: #666666;
+  color: var(--c-muted);
 }
 
 .store-card-subtotal strong {
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 /* SUMMARY */
@@ -659,8 +690,8 @@ const removeItem = async (item) => {
 
   padding: 18px;
 
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
 
   background: #ffffff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -669,19 +700,19 @@ const removeItem = async (item) => {
 .summary-title {
   margin-bottom: 12px;
 
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .summary-empty-hint {
   margin: 0;
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   line-height: 1.5;
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .summary-row {
@@ -690,9 +721,9 @@ const removeItem = async (item) => {
 
   margin-bottom: 8px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #555555;
+  color: var(--c-text-3);
 }
 
 .summary-separator {
@@ -700,10 +731,10 @@ const removeItem = async (item) => {
 }
 
 .summary-total {
-  font-size: 15px;
+  font-size: var(--fs-lg);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .checkout-btn {
@@ -711,12 +742,12 @@ const removeItem = async (item) => {
   height: 48px;
   margin-top: 14px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   font-weight: 600;
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
@@ -725,7 +756,7 @@ const removeItem = async (item) => {
 }
 
 .checkout-btn:hover {
-  background: #a91e21;
+  background: var(--c-brand-hover);
 
   box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
 
@@ -733,7 +764,7 @@ const removeItem = async (item) => {
 }
 
 .checkout-btn:active {
-  background: #8f1a1c;
+  background: var(--c-brand-active);
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
 
@@ -746,18 +777,18 @@ const removeItem = async (item) => {
 }
 
 .checkout-btn:disabled {
-  background: #bd2427;
+  background: var(--c-brand);
   opacity: 0.45;
 }
 
 .summary-pickup-note {
   margin: 10px 0 0;
 
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   line-height: 1.4;
   text-align: center;
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 /* MOBILE STICKY CHECKOUT BAR — replaces the Order Summary sidebar below 600px. */
@@ -773,7 +804,7 @@ const removeItem = async (item) => {
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
 
   background: #ffffff;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--c-hairline);
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
 }
 
@@ -789,29 +820,29 @@ const removeItem = async (item) => {
 }
 
 .cart-checkout-bar-title {
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .cart-checkout-bar-subtitle {
   margin-top: 2px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.4;
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .cart-checkout-bar-price {
   flex-shrink: 0;
 
   /* Matches .order-ref-total-amount / .receipt-total-amount — this app's one "grand total" size. */
-  font-size: 16px;
+  font-size: var(--fs-xl);
   font-weight: 700;
 
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 /* .checkout-btn already carries margin-top: 14px, so no override is needed here. */
@@ -845,7 +876,7 @@ const removeItem = async (item) => {
 
   .cart-item-price {
     font-weight: 700;
-    color: #bd2427;
+    color: var(--c-brand);
   }
 
   /* Redundant next to the per-unit price now shown in red, so the line-item math stays desktop-only. */
@@ -869,3 +900,6 @@ const removeItem = async (item) => {
   }
 }
 </style>
+
+
+
