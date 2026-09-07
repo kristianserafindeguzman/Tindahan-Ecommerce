@@ -22,6 +22,8 @@ class Order extends Model
         'cancellation_reason',
         'consumer_latitude',
         'consumer_longitude',
+        'created_at',
+        'updated_at',
     ];
 
     /**
