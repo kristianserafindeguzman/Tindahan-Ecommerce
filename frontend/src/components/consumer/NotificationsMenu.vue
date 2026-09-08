@@ -54,6 +54,16 @@
           </q-item-section>
         </q-item>
       </q-list>
+
+      <!-- Always offered, even when the list is empty, so the full history is one
+           tap away rather than only reachable when notifications exist. -->
+      <q-btn
+        unelevated
+        no-caps
+        label="View All Notifications"
+        class="notif__view-all"
+        @click="goToAll"
+      />
       </q-menu>
     </q-btn>
   </div>
@@ -62,9 +72,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 
 const router = useRouter()
+const $q = useQuasar()
 
 const props = defineProps({
   /**
@@ -103,7 +115,14 @@ const fetchNotifications = async () => {
   }
 }
 
+// This instance only renders in the compact header, so below md it never opens the
+// panel — the bell is a link to the notifications page, matching the cart icon.
 const toggle = () => {
+  if ($q.screen.lt.md) {
+    open.value = false
+    router.push('/consumer/notifications')
+    return
+  }
   open.value = !open.value
   if (open.value) fetchNotifications()
 }
@@ -129,6 +148,11 @@ const select = async (notif) => {
     open.value = false
     router.push('/consumer/orders/details')
   }
+}
+
+const goToAll = () => {
+  open.value = false
+  router.push('/consumer/notifications')
 }
 
 const markAllAsRead = async () => {
@@ -281,6 +305,24 @@ const markAllAsRead = async () => {
   color: var(--c-muted);
 }
 
+.notif__view-all {
+  width: calc(100% - 28px);
+  height: 40px;
+  margin: 10px 14px 14px;
+
+  border-radius: var(--r-sm);
+
+  background: var(--c-brand);
+  color: #ffffff;
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.notif__view-all:hover {
+  background: var(--c-brand-hover);
+}
+
 /* Unread carries the weight; read rows fade back. */
 .notif__item:not(.notif__item--unread) {
   opacity: 0.7;
@@ -290,6 +332,8 @@ const markAllAsRead = async () => {
   font-weight: 700;
 }
 </style>
+
+
 
 
 
