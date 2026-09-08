@@ -37,41 +37,29 @@
 
         <template v-if="isSearching || hasAnyResults">
 
-          <!-- PRODUCTS -->
-          <template v-if="isSearching || hasProducts">
-            <div v-if="productsSectionLabel" class="results-section-header">
-              <h2 class="results-section-title">{{ productsSectionLabel }}</h2>
-            </div>
-
-            <div v-if="isSearching" class="products-grid">
-              <CardSkeleton v-for="n in 6" :key="n" />
-            </div>
-
-            <div v-else class="products-grid">
-              <ProductCard
-                v-for="product in paginatedProducts"
-                :key="product.id"
-                :product="product"
-                :highlight-query="query"
-                @add-to-cart="handleAddToCart"
-                @view-product="openProductModal"
-              />
-            </div>
-
-            <AppPagination v-if="!isSearching" v-model="currentPage" :max="totalPages" />
-          </template>
-
-          <!-- STORES -->
-          <template v-if="isSearching || hasStores">
-            <div v-if="storesSectionLabel" class="results-section-header">
-              <h2 class="results-section-title">{{ storesSectionLabel }}</h2>
+          <!-- STORES — first on the All tab. A store match is navigational: the name
+               was typed to go there, so it should not sit under 200 product cards. -->
+          <template v-if="showStoreStrip">
+            <!-- No heading, per design: the row survives only to carry the expander. -->
+            <div v-if="matchedStores.length > STORE_STRIP_MAX" class="results-section-header results-section-header--bare">
+              <button
+                v-if="matchedStores.length > STORE_STRIP_MAX"
+                type="button"
+                class="section-link"
+                @click="storesExpanded = !storesExpanded"
+              >
+                {{ storesExpanded ? 'Show less' : `Show all ${matchedStores.length} stores` }}
+              </button>
             </div>
 
             <div v-if="isSearching" class="stores-grid">
               <CardSkeleton v-for="n in 4" :key="n" variant="store" />
             </div>
 
-            <div v-else class="stores-grid">
+            <!-- Rows on the mixed view, cards on the dedicated tab. A row reads as
+                 "go here" and a card as "buy this", so the form tells them apart
+                 rather than the heading having to. -->
+            <div v-else-if="storesExpanded" class="stores-grid">
               <StoreCard
                 v-for="store in matchedStores"
                 :key="store.id"
@@ -79,6 +67,72 @@
                 :highlight-query="query"
               />
             </div>
+
+            <div v-else class="store-rows">
+              <button
+                v-for="store in strippedStores"
+                :key="store.id"
+                type="button"
+                class="store-row"
+                @click="goToStore(store)"
+              >
+                <span class="store-row-image">
+                  <img v-if="store.image" :src="store.image" :alt="store.name" />
+                  <q-icon v-else name="o_storefront" size="20px" />
+                </span>
+
+                <span class="store-row-body">
+                  <span class="store-row-name">
+                    <template v-for="(part, i) in storeNameParts(store)" :key="i">
+                      <mark v-if="part.match" class="highlight-mark">{{ part.text }}</mark>
+                      <template v-else>{{ part.text }}</template>
+                    </template>
+                  </span>
+                  <span class="store-row-meta">
+                    <span class="store-row-status" :class="{ 'store-row-status--closed': !store.isOpen }">
+                      <span class="store-row-dot" :class="{ 'store-row-dot--closed': !store.isOpen }" />
+                      {{ store.isOpen ? 'Open' : 'Closed' }}
+                    </span>
+                    <span v-if="storeMetaText(store)" class="store-row-sub">{{ storeMetaText(store) }}</span>
+                  </span>
+                </span>
+
+                <q-icon name="o_chevron_right" size="20px" class="store-row-chevron" />
+              </button>
+            </div>
+          </template>
+
+          <!-- PRODUCTS -->
+          <template v-if="showProductGrid">
+            <div v-if="isSearching" class="products-grid">
+              <CardSkeleton v-for="n in 6" :key="n" />
+            </div>
+
+            <!-- Infinite scroll rather than pages: a search can return 200+ products and
+                 paging through them a screen at a time is the wrong shape for browsing.
+                 QInfiniteScroll handles the sentinel and the load guard. -->
+            <q-infinite-scroll v-else :offset="300" :disable="allProductsShown" @load="loadMoreProducts">
+              <div class="products-grid">
+                <ProductCard
+                  v-for="product in visibleProducts"
+                  :key="product.id"
+                  :product="product"
+                  :highlight-query="query"
+                  @add-to-cart="handleAddToCart"
+                  @view-product="openProductModal"
+                />
+              </div>
+
+              <template #loading>
+                <div class="products-grid infinite-loading">
+                  <CardSkeleton v-for="n in 4" :key="`more-${n}`" />
+                </div>
+              </template>
+            </q-infinite-scroll>
+
+            <p v-if="allProductsShown && filteredProducts.length > PAGE_SIZE" class="results-end">
+              That's all {{ filteredProducts.length }} results.
+            </p>
           </template>
 
           <!-- RELATED PRODUCTS (fills out the page when the search itself only turned up 1-2 results) -->
@@ -117,8 +171,9 @@ import CardSkeleton from '@/components/consumer/CardSkeleton.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import StoreCard from '@/components/consumer/StoreCard.vue'
-import AppPagination from '@/components/consumer/AppPagination.vue'
 import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
+import { splitHighlightParts } from '@/utils/textHighlight'
+import { formatDistance } from '@/utils/distance'
 import { useCategories } from '@/composables/useCategories'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
@@ -194,21 +249,41 @@ const hasProducts = computed(() => filteredProducts.value.length > 0)
 const hasStores = computed(() => matchedStores.value.length > 0)
 const hasAnyResults = computed(() => hasProducts.value || hasStores.value)
 
+/* --------------------------------------------------------------- STORE RESULTS */
+
+// A store match is navigational — the name was typed to go there — so stores lead the
+// page rather than sitting under a product grid that can run to 200 cards. Only the
+// first few show; the rest are one click away.
+const STORE_STRIP_MAX = 3
+
+const storesExpanded = ref(false)
+
+// A new query invalidates the expanded state.
+watch(query, () => { storesExpanded.value = false })
+
+const showStoreStrip = computed(() => isSearching.value || hasStores.value)
+const showProductGrid = computed(() => isSearching.value || hasProducts.value)
+
+const strippedStores = computed(() =>
+  storesExpanded.value ? matchedStores.value : matchedStores.value.slice(0, STORE_STRIP_MAX)
+)
+
+const storeNameParts = (store) => splitHighlightParts(store.name, query.value)
+
+const storeMetaText = (store) => {
+  const parts = []
+  if (store.distance_meters != null) parts.push(formatDistance(store.distance_meters))
+  if (store.address) parts.push(store.address)
+  return parts.join(' · ')
+}
+
+const goToStore = (store) => router.push(`/consumer/stores/${store.slug || store.id}`)
+
 // Same breakpoint as the page's own @media (max-width: 600px) rules.
 const isMobileScreen = computed(() => $q.screen.width < 600)
 
 // Mobile: only label a section when both are present (to tell them apart) — drop the count too.
 // Desktop keeps the full "Products (N)" / "Stores (N)" heading regardless.
-const productsSectionLabel = computed(() => {
-  if (!isMobileScreen.value) return `Products (${filteredProducts.value.length})`
-  return hasProducts.value && hasStores.value ? 'Products' : ''
-})
-
-const storesSectionLabel = computed(() => {
-  if (!isMobileScreen.value) return `Stores (${matchedStores.value.length})`
-  return hasProducts.value && hasStores.value ? 'Stores' : ''
-})
-
 const subtitleText = computed(() => {
   if (!query.value) return 'Search for products and stores near you.'
   if (isSearching.value) return `Searching for "${query.value}"…`
@@ -234,21 +309,23 @@ const relatedProducts = computed(() => {
   return [...sameCategory, ...rest].slice(0, 6)
 })
 
-// Client-side pagination, same convention as ConsumerProducts.vue.
-const PAGE_SIZE = 10
-const currentPage = ref(1)
+// Results are already in memory, so "loading more" is just revealing the next slice.
+const PAGE_SIZE = 12
 
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(filteredProducts.value.length / PAGE_SIZE))
-)
+const visibleCount = ref(PAGE_SIZE)
 
-const paginatedProducts = computed(() => {
-  const start = (currentPage.value - 1) * PAGE_SIZE
-  return filteredProducts.value.slice(start, start + PAGE_SIZE)
-})
+const visibleProducts = computed(() => filteredProducts.value.slice(0, visibleCount.value))
+const allProductsShown = computed(() => visibleCount.value >= filteredProducts.value.length)
 
-// Jump back to page 1 when the search term changes, otherwise the user could be stranded on a now-empty page.
-watch(filteredProducts, () => { currentPage.value = 1 })
+// QInfiniteScroll fires this as its sentinel scrolls into view; done(true) retires it.
+const loadMoreProducts = (index, done) => {
+  visibleCount.value += PAGE_SIZE
+  done(allProductsShown.value)
+}
+
+// A new result set starts from the top again — otherwise narrowing the search would
+// keep the previous scroll depth and render more rows than the query now has.
+watch(filteredProducts, () => { visibleCount.value = PAGE_SIZE })
 
 // Brief simulated delay whenever the search term changes, so the UI has a visible "searching" state to show.
 const isSearching = ref(false)
@@ -315,7 +392,7 @@ const goToRecentSearch = (term) => {
 /* PAGE HEADER */
 
 .page-header-row {
-  margin-bottom: 0;
+  margin-bottom: 20px;
 
   /* Page load only — results below re-render on every keystroke, so only the header (which doesn't) gets the entrance animation, to avoid it retriggering while typing. */
   animation: search-fade-up 0.5s ease both;
@@ -422,20 +499,192 @@ const goToRecentSearch = (term) => {
 }
 
 /* Shared by both Products and Stores headers — same gap above, same gap below, no per-section overrides. */
+/* STORE ROWS — the mixed-view form for a store. Deliberately not a card: a row reads
+   as navigation, which is what a store result is. */
+.store-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.store-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  width: 100%;
+  padding: 12px 16px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+
+  background: #ffffff;
+
+  font-family: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  transition: border-color 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+
+.store-row:hover {
+  border-color: var(--c-brand-tint-3);
+  box-shadow: var(--sh-card-hover);
+  transform: translateY(-1px);
+}
+
+.store-row:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
+}
+
+.store-row-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 46px;
+  height: 46px;
+  overflow: hidden;
+
+  border-radius: var(--r-md);
+
+  background: var(--c-surface);
+  color: var(--c-brand);
+}
+
+.store-row-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.store-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  min-width: 0;
+  flex: 1;
+}
+
+.store-row-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  font-size: var(--fs-md);
+  font-weight: 600;
+
+  color: var(--c-text);
+}
+
+.store-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  min-width: 0;
+}
+
+.store-row-status {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 5px;
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  color: var(--c-success);
+}
+
+.store-row-status--closed {
+  color: var(--c-muted);
+}
+
+.store-row-dot {
+  width: 6px;
+  height: 6px;
+
+  border-radius: var(--r-pill);
+  background: var(--c-success);
+}
+
+.store-row-dot--closed {
+  background: var(--c-muted);
+}
+
+.store-row-sub {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  font-size: var(--fs-xs);
+  color: var(--c-muted);
+}
+
+.store-row-chevron {
+  flex-shrink: 0;
+  color: var(--c-border-strong);
+}
+
+/* "See all N stores" — a text action in the section header, not a button, so it does
+   not compete with the tabs directly above it. */
+.section-link {
+  padding: 0;
+
+  border: none;
+  background: none;
+
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  color: var(--c-brand);
+
+  cursor: pointer;
+}
+
+.section-link:hover {
+  text-decoration: underline;
+}
+
 .results-section-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
 
-  margin-top: 8px;
+  margin-top: 26px;
+  margin-bottom: 12px;
+}
+
+/* Titles are gone, so this row holds only the expander — push it back to the right. */
+.results-section-header--bare {
+  margin-top: 0;
   margin-bottom: 8px;
+}
+
+.results-section-header--bare .section-link {
+  margin-left: auto;
+}
+
+/* With no heading between them, this margin is the only thing separating the store
+   block from the products, so it lives on the block itself rather than on an
+   adjacent-sibling rule that only matched some of the time. */
+.store-rows,
+.stores-grid {
+  margin-bottom: 28px;
 }
 
 .results-section-title {
   margin: 0;
 
-  font-size: var(--fs-lg);
+  font-size: var(--fs-xl);
   font-weight: 700;
+  line-height: 1.3;
 
   color: var(--c-text);
 }
@@ -456,15 +705,18 @@ const goToRecentSearch = (term) => {
   gap: 16px;
 }
 
+/* 8px left the heading sitting on the rule. The rule is what separates this from the
+   results above, so the heading needs room below it, not to hug it. */
 .related-section {
   margin-top: 32px;
-  padding-top: 8px;
+  padding-top: 22px;
 
   border-top: 1px solid var(--c-border);
 }
 
+/* Same heading-to-grid gap as .results-section-header, so both sections read alike. */
 .related-section .results-section-title {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .results-empty {
@@ -513,8 +765,27 @@ const goToRecentSearch = (term) => {
     padding: 16px;
   }
 
+  /* Shown on phones too. It was hidden here, which left the results grid with no
+     heading and no result count — the one place that tells you what was searched
+     and how much came back. The type scale already steps down below 600px, so only
+     the bottom margin needs tightening. */
   .page-header-row {
-    display: none;
+    margin-bottom: 16px;
+  }
+
+  .store-rows,
+  .stores-grid {
+    margin-bottom: 22px;
   }
 }
 </style>
+
+
+
+
+
+
+
+
+
+

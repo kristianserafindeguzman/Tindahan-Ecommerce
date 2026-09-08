@@ -115,6 +115,11 @@ const routes = [
         meta: { requiresAuth: true, role: 'Consumer' }
       },
       {
+        path: 'consumer/notifications',
+        component: () => import('@/pages/Consumer/ConsumerNotifications.vue'),
+        meta: { requiresAuth: true, role: 'Consumer' }
+      },
+      {
         path: 'consumer/orders/details',
         component: () => import('@/pages/Consumer/ConsumerOrderDetails.vue'),
         meta: { requiresAuth: true, role: 'Consumer' }

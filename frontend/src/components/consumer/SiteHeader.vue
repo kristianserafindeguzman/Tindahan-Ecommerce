@@ -249,6 +249,16 @@
                       </div>
                     </div>
                   </div>
+
+                  <!-- The panel caps at 10; this is the way to the rest. Same
+                       treatment as the cart menu's View All. -->
+                  <q-btn
+                    unelevated
+                    no-caps
+                    label="View All Notifications"
+                    class="cart-menu-view-all"
+                    @click="notificationsMenuOpen = false; router.push('/consumer/notifications')"
+                  />
                 </div>
                 </q-menu>
               </q-btn>
@@ -425,6 +435,21 @@
       </q-card>
     </q-dialog>
   </header>
+
+  <!--
+    Dims the page behind an open search on phones and tablets, where the suggestion
+    panel covers most of the screen and needs separating from the content under it.
+    Desktop keeps the page undimmed: the panel is a small dropdown there and the
+    surrounding catalogue stays useful context.
+
+    A sibling of <header>, not a child — inside it, the backdrop covered the header's
+    own gradient and dulled the bar.
+  -->
+  <div
+    v-if="suggestionsOpen && $q.screen.lt.md"
+    class="search-backdrop"
+    @click="closeSuggestions"
+  />
 </template>
 
 <script setup>
@@ -594,7 +619,15 @@ const unreadNotificationCount = computed(() => notifications.value.filter(n => !
 
 const notificationsMenuOpen = ref(false)
 
+// Mirrors handleCartIconClick: below md the preview dropdown is skipped entirely and
+// the icon goes straight to the full page, which is the better use of a phone screen
+// than a panel that only shows ten rows.
 const toggleNotificationsMenu = () => {
+  if ($q.screen.lt.md) {
+    closeHeaderMenus()
+    router.push('/consumer/notifications')
+    return
+  }
   const next = !notificationsMenuOpen.value
   closeHeaderMenus('notifications')
   notificationsMenuOpen.value = next
@@ -1484,6 +1517,30 @@ const goToTab = (tab) => {
 
 /* HEADER — SEARCH BAR */
 
+/* Fixed to the viewport so it covers the page as the user scrolls. 150 sits under the
+   header (200), so the bar and its suggestion panel stay lit, and over page content
+   including the fixed bottom bars (100). */
+.search-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+
+  background: rgba(17, 17, 17, 0.45);
+
+  animation: search-dim-in 200ms ease-out;
+}
+
+@keyframes search-dim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-backdrop {
+    animation: none;
+  }
+}
+
 .header-search-wrap {
   position: relative;
 
@@ -2149,6 +2206,10 @@ const goToTab = (tab) => {
   border-radius: 0;
 }
 </style>
+
+
+
+
 
 
 
