@@ -39,7 +39,7 @@ defineEmits(['update:modelValue'])
 
 /* Brands the otherwise-default Quasar pagination buttons to match the app's rounded/red button language. */
 .app-pagination-row :deep(.q-btn) {
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   font-weight: 600;
 
   transition: background-color 0.15s, color 0.15s, box-shadow 0.2s;
@@ -50,8 +50,8 @@ defineEmits(['update:modelValue'])
 }
 
 .app-pagination-row :deep(.q-btn:not(.bg-primary):hover) {
-  background: #fdecec !important;
-  color: #bd2427 !important;
+  background: var(--c-brand-tint) !important;
+  color: var(--c-brand) !important;
 }
 
 .app-pagination-row :deep(.q-btn:focus-visible) {

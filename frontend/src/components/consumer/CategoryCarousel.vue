@@ -9,9 +9,7 @@
       />
     </div>
 
-    <button type="button" class="categories-next" aria-label="More categories" @click="scrollNext">
-      <q-icon name="o_chevron_right" size="20px" />
-    </button>
+    <q-btn flat dense round :ripple="false" icon="o_chevron_right" class="categories-next" aria-label="More categories" @click="scrollNext" />
   </div>
 </template>
 
@@ -70,7 +68,14 @@ const scrollNext = () => {
   display: none;
 }
 
+.categories-next :deep(.q-icon) {
+  font-size: 20px;
+}
+
 .categories-next {
+  min-width: auto;
+  min-height: auto;
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -81,11 +86,11 @@ const scrollNext = () => {
 
   align-self: center;
 
-  border: 1px solid #eceef1;
-  border-radius: 10px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
 
   background: #ffffff;
-  color: #bd2427;
+  color: var(--c-brand);
 
   transition: background-color 0.15s, border-color 0.15s;
 
@@ -93,7 +98,8 @@ const scrollNext = () => {
 }
 
 .categories-next:hover {
-  border-color: #bd2427;
-  background: #fdecec;
+  border-color: var(--c-brand);
+  background: var(--c-brand-tint);
 }
 </style>
+

@@ -77,18 +77,11 @@
       <div class="products-layout">
 
         <div class="products-main">
-          <div v-if="productsLoading" class="products-grid">
-            <div v-for="n in 12" :key="n" class="skeleton-card">
-              <div class="skeleton-image" />
-              <div class="skeleton-body">
-                <div class="skeleton-line skeleton-line-short" />
-                <div class="skeleton-line" />
-                <div class="skeleton-line skeleton-line-short" />
-              </div>
-            </div>
+          <div v-if="productsLoading" ref="gridEl" class="products-grid">
+            <CardSkeleton v-for="n in skeletonCount" :key="n" />
           </div>
-          <div v-else class="products-grid">
-            <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
+          <div v-else ref="gridEl" class="products-grid">
+            <ProductCard v-for="(product, i) in paginatedProducts" :key="product.id" v-intersection.once="onReveal" class="reveal" :style="{ '--reveal-delay': (i % 6) * 70 + 'ms' }" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
           </div>
 
           <p v-if="!productsLoading && !filteredProducts.length" class="products-empty">
@@ -152,16 +145,29 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
+import CardSkeleton from '@/components/consumer/CardSkeleton.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import ProductFilters from '@/components/consumer/ProductFilters.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
 import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
 import { useCategories } from '@/composables/useCategories'
+import { useGridColumns } from '@/composables/useGridColumns'
 import { useProducts } from '@/composables/useProducts'
 import { useCart } from '@/composables/useCart'
+import { useReveal } from '@/composables/useReveal'
 
 const $q = useQuasar()
+
+const gridEl = ref(null)
+const { columns: gridColumns } = useGridColumns(gridEl)
+
+// Two full rows of placeholders. Derived rather than hardcoded so the block never ends
+// in a ragged part-row — the grid is auto-fill, so its column count changes continuously
+// with width, not at breakpoints.
+const SKELETON_ROWS = 2
+const skeletonCount = computed(() => gridColumns.value * SKELETON_ROWS)
+const { onReveal } = useReveal()
 const route = useRoute()
 const router = useRouter()
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
@@ -332,19 +338,19 @@ const clearFilters = () => {
 .page-title {
   margin: 0 0 4px;
 
-  font-size: 22px;
+  font-size: var(--fs-3xl);
   font-weight: 700;
   line-height: 1.3;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .page-subtitle {
   margin: 0;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 .page-header-actions {
@@ -364,10 +370,10 @@ const clearFilters = () => {
 }
 
 .sort-label {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 
-  color: #4a4a4a;
+  color: var(--c-text-2);
 
   white-space: nowrap;
 }
@@ -377,24 +383,24 @@ const clearFilters = () => {
 }
 
 .sort-select :deep(.q-field__control) {
-  border-radius: 10px;
+  border-radius: var(--r-lg);
 }
 
 .sort-select :deep(.q-field__prepend) {
-  color: #9ca3af;
+  color: var(--c-muted);
 }
 
 /* Same red hover/focus treatment as .filters-toggle-btn, so the two paired controls feel consistent. */
 .sort-select:hover :deep(.q-field__control) {
-  background: #fdecec;
+  background: var(--c-brand-tint);
 }
 
 .sort-select:hover :deep(.q-field__control):before {
-  border-color: #bd2427;
+  border-color: var(--c-brand);
 }
 
 .sort-select.q-field--focused :deep(.q-field__control:after) {
-  border-color: #bd2427;
+  border-color: var(--c-brand);
 }
 
 .filters-toggle-btn {
@@ -404,14 +410,14 @@ const clearFilters = () => {
   min-height: 36px;
   padding: 0 14px;
 
-  border: 1px solid #e2e2e2;
-  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
   outline: none !important;
 
   background: #ffffff;
-  color: #333333;
+  color: var(--c-text-2);
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 
   transition: border-color 0.15s, background-color 0.15s;
@@ -427,8 +433,8 @@ const clearFilters = () => {
 }
 
 .filters-toggle-btn:hover {
-  border-color: #bd2427;
-  background: #fdecec;
+  border-color: var(--c-brand);
+  background: var(--c-brand-tint);
 }
 
 /* Swaps the browser's default focus ring for a red glow matching the app's hover/focus treatment. */
@@ -449,7 +455,7 @@ const clearFilters = () => {
   border-radius: 50%;
   border: 1.5px solid #ffffff;
 
-  background: #bd2427;
+  background: var(--c-brand);
 }
 
 /* CATEGORY PILLS */
@@ -481,26 +487,26 @@ const clearFilters = () => {
   height: 36px;
   padding: 0 20px;
 
-  border: 1px solid #e2e2e2;
-  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
 
   background: #ffffff;
-  color: #333333;
+  color: var(--c-text-2);
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 
   transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
 .category-pill:hover {
-  border-color: #f3c6c7;
-  background: #fdecec;
+  border-color: var(--c-brand-tint-3);
+  background: var(--c-brand-tint);
 }
 
 .category-pill-active {
   border-color: transparent;
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
   font-weight: 600;
 
@@ -510,7 +516,7 @@ const clearFilters = () => {
 
 .category-pill-active:hover {
   border-color: transparent;
-  background: #a91e21;
+  background: var(--c-brand-hover);
 }
 
 .category-pill-more {
@@ -546,9 +552,9 @@ const clearFilters = () => {
 .products-empty {
   padding: 40px 0;
 
-  color: #8992a2;
+  color: var(--c-muted);
 
-  font-size: 14px;
+  font-size: var(--fs-md);
   text-align: center;
 }
 
@@ -575,52 +581,6 @@ const clearFilters = () => {
   }
 }
 
-/* SKELETON LOADING STATE */
-
-.skeleton-card {
-  overflow: hidden;
-
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
-
-  background: #ffffff;
-}
-
-.skeleton-image,
-.skeleton-line {
-  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
-  background-size: 400% 100%;
-
-  animation: skeleton-pulse 1.4s ease infinite;
-}
-
-.skeleton-image {
-  height: 110px;
-}
-
-.skeleton-body {
-  display: flex;
-  flex-direction: column;
-
-  gap: 8px;
-  padding: 12px;
-}
-
-.skeleton-line {
-  height: 10px;
-
-  border-radius: 4px;
-}
-
-.skeleton-line-short {
-  width: 60%;
-}
-
-@keyframes skeleton-pulse {
-  0% { background-position: 100% 50%; }
-  100% { background-position: 0 50%; }
-}
-
 /* FILTERS SIDEBAR (desktop) / POPUP (mobile) — see ProductFilters.vue for shared inner content styling */
 
 .filters-panel {
@@ -628,8 +588,8 @@ const clearFilters = () => {
 
   width: 260px;
 
-  border: 1px solid #e8e8e8;
-  border-radius: 10px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
 
   background: #ffffff;
 
@@ -641,7 +601,7 @@ const clearFilters = () => {
   width: 100%;
   max-width: 380px;
 
-  border-radius: 10px;
+  border-radius: var(--r-lg);
 }
 
 /* Mobile only: the same dialog restyled as a bottom sheet. */
@@ -662,9 +622,9 @@ const clearFilters = () => {
   height: 4px;
   margin: 10px auto 0;
 
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 
-  background: #d6d6da;
+  background: var(--c-border-strong);
 }
 
 /* RESPONSIVE */

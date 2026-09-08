@@ -49,18 +49,11 @@
       <div class="stores-layout">
 
         <div class="stores-main">
-          <div v-if="storesLoading" class="stores-grid">
-            <div v-for="n in 8" :key="n" class="skeleton-card">
-              <div class="skeleton-image" />
-              <div class="skeleton-body">
-                <div class="skeleton-line skeleton-line-short" />
-                <div class="skeleton-line" />
-                <div class="skeleton-line skeleton-line-short" />
-              </div>
-            </div>
+          <div v-if="storesLoading" ref="gridEl" class="stores-grid">
+            <CardSkeleton v-for="n in skeletonCount" :key="n" variant="store" />
           </div>
-          <div v-else class="stores-grid">
-            <StoreCard v-for="store in paginatedStores" :key="store.id" :store="store" />
+          <div v-else ref="gridEl" class="stores-grid">
+            <StoreCard v-for="(store, i) in paginatedStores" :key="store.id" v-intersection.once="onReveal" class="reveal" :style="{ '--reveal-delay': (i % 6) * 70 + 'ms' }" :store="store" />
           </div>
 
           <p v-if="!storesLoading && !filteredStores.length" class="stores-empty">
@@ -109,13 +102,26 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
+import CardSkeleton from '@/components/consumer/CardSkeleton.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import StoreCard from '@/components/consumer/StoreCard.vue'
 import StoreFilters from '@/components/consumer/StoreFilters.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
 import { useStores } from '@/composables/useStores'
+import { useGridColumns } from '@/composables/useGridColumns'
+import { useReveal } from '@/composables/useReveal'
 
 const $q = useQuasar()
+
+const gridEl = ref(null)
+const { columns: gridColumns } = useGridColumns(gridEl)
+
+// Two full rows of placeholders. Derived rather than hardcoded so the block never ends
+// in a ragged part-row — the grid is auto-fill, so its column count changes continuously
+// with width, not at breakpoints.
+const SKELETON_ROWS = 2
+const skeletonCount = computed(() => gridColumns.value * SKELETON_ROWS)
+const { onReveal } = useReveal()
 
 const { stores, loading: storesLoading, fetchStores } = useStores()
 
@@ -222,19 +228,19 @@ const clearFilters = () => {
 .page-title {
   margin: 0 0 4px;
 
-  font-size: 22px;
+  font-size: var(--fs-3xl);
   font-weight: 700;
   line-height: 1.3;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .page-subtitle {
   margin: 0;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 .page-header-actions {
@@ -254,10 +260,10 @@ const clearFilters = () => {
 }
 
 .sort-label {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 
-  color: #4a4a4a;
+  color: var(--c-text-2);
 
   white-space: nowrap;
 }
@@ -267,24 +273,24 @@ const clearFilters = () => {
 }
 
 .sort-select :deep(.q-field__control) {
-  border-radius: 10px;
+  border-radius: var(--r-lg);
 }
 
 .sort-select :deep(.q-field__prepend) {
-  color: #9ca3af;
+  color: var(--c-muted);
 }
 
 /* Same red hover/focus treatment as .filters-toggle-btn, so the two paired controls feel consistent. */
 .sort-select:hover :deep(.q-field__control) {
-  background: #fdecec;
+  background: var(--c-brand-tint);
 }
 
 .sort-select:hover :deep(.q-field__control):before {
-  border-color: #bd2427;
+  border-color: var(--c-brand);
 }
 
 .sort-select.q-field--focused :deep(.q-field__control:after) {
-  border-color: #bd2427;
+  border-color: var(--c-brand);
 }
 
 .filters-toggle-btn {
@@ -294,14 +300,14 @@ const clearFilters = () => {
   min-height: 36px;
   padding: 0 14px;
 
-  border: 1px solid #e2e2e2;
-  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
   outline: none !important;
 
   background: #ffffff;
-  color: #333333;
+  color: var(--c-text-2);
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 
   transition: border-color 0.15s, background-color 0.15s;
@@ -323,7 +329,7 @@ const clearFilters = () => {
   border-radius: 50%;
   border: 1.5px solid #ffffff;
 
-  background: #bd2427;
+  background: var(--c-brand);
 }
 
 .filters-toggle-btn :deep(.q-btn__content) {
@@ -331,8 +337,8 @@ const clearFilters = () => {
 }
 
 .filters-toggle-btn:hover {
-  border-color: #bd2427;
-  background: #fdecec;
+  border-color: var(--c-brand);
+  background: var(--c-brand-tint);
 }
 
 /* Swaps the browser's default focus ring for a red glow matching the app's hover/focus treatment. */
@@ -368,9 +374,9 @@ const clearFilters = () => {
 .stores-empty {
   padding: 40px 0;
 
-  color: #8992a2;
+  color: var(--c-muted);
 
-  font-size: 14px;
+  font-size: var(--fs-md);
   text-align: center;
 }
 
@@ -394,52 +400,6 @@ const clearFilters = () => {
   }
 }
 
-/* SKELETON LOADING STATE */
-
-.skeleton-card {
-  overflow: hidden;
-
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
-
-  background: #ffffff;
-}
-
-.skeleton-image,
-.skeleton-line {
-  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
-  background-size: 400% 100%;
-
-  animation: skeleton-pulse 1.4s ease infinite;
-}
-
-.skeleton-image {
-  height: 110px;
-}
-
-.skeleton-body {
-  display: flex;
-  flex-direction: column;
-
-  gap: 8px;
-  padding: 12px;
-}
-
-.skeleton-line {
-  height: 10px;
-
-  border-radius: 4px;
-}
-
-.skeleton-line-short {
-  width: 60%;
-}
-
-@keyframes skeleton-pulse {
-  0% { background-position: 100% 50%; }
-  100% { background-position: 0 50%; }
-}
-
 /* FILTERS SIDEBAR */
 
 .filters-panel {
@@ -447,8 +407,8 @@ const clearFilters = () => {
 
   width: 260px;
 
-  border: 1px solid #e8e8e8;
-  border-radius: 10px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
 
   background: #ffffff;
 
@@ -460,7 +420,7 @@ const clearFilters = () => {
   width: 100%;
   max-width: 380px;
 
-  border-radius: 10px;
+  border-radius: var(--r-lg);
 }
 
 /* Mobile only: the same dialog restyled as a bottom sheet. */
@@ -481,9 +441,9 @@ const clearFilters = () => {
   height: 4px;
   margin: 10px auto 0;
 
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 
-  background: #d6d6da;
+  background: var(--c-border-strong);
 }
 
 /* RESPONSIVE */

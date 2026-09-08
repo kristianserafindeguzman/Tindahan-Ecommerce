@@ -82,7 +82,8 @@ export default defineConfig((/* ctx */) => {
       // you can manually specify Quasar components/directives to be available everywhere:
       //
       // components: [],
-      // directives: [],
+      // Intersection backs the scroll-reveal on the consumer pages (see useReveal.js).
+      directives: ['Intersection'],
 
       // Quasar plugins
       plugins: ['Dialog', 'Notify']

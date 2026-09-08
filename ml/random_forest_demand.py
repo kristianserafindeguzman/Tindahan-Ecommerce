@@ -18,8 +18,17 @@ warnings.filterwarnings('ignore', category=UserWarning, module='pandas')
 
 def load_data(store_id=None, exclude_store_id=None):
     try:
+        # Load DB credentials from Laravel's .env
+        from dotenv import load_dotenv
+        env_path = os.path.join(os.path.dirname(__file__), '..', 'backend', '.env')
+        load_dotenv(env_path)
+
         conn = pymysql.connect(
-            host='127.0.0.1', user='root', password='', database='tindahan_db'
+            host=os.getenv('DB_HOST', '127.0.0.1'),
+            port=int(os.getenv('DB_PORT', 3306)),
+            user=os.getenv('DB_USERNAME', 'root'),
+            password=os.getenv('DB_PASSWORD', ''),
+            database=os.getenv('DB_DATABASE', 'tindahan_db')
         )
         query = "SELECT * FROM ml_historical_sales_view"
         params = []
@@ -34,6 +43,7 @@ def load_data(store_id=None, exclude_store_id=None):
         conn.close()
         return data
     except Exception as e:
+        print(f"Database connection error: {e}", file=sys.stderr)
         return None
 
 def engineer_features(data, is_predicting=False):

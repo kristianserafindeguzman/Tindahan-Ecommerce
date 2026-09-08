@@ -4,9 +4,9 @@
     <div class="bg-glow bg-glow-primary"></div>
     <div class="bg-glow bg-glow-secondary"></div>
 
-    <!-- Warm Glassmorphic Sari-Sari Store Loading Screen -->
+    <!-- Warm Glassmorphic Sari-Sari Store Loading Screen (Fixed Centering) -->
     <transition name="fade-fast">
-      <div v-if="checkingAccess" class="checking-access absolute-full z-max flex flex-center glass-backdrop">
+      <div v-if="checkingAccess" class="checking-access-overlay z-max flex flex-center glass-backdrop">
         <div class="bg-glow bg-glow-primary pulse-bg-glow" style="opacity: 0.4;"></div>
         
         <div class="loader-glass-card column flex-center shadow-soft">
@@ -230,11 +230,13 @@
                 </template>
 
                 <template v-else-if="!mlForecast.has_forecast">
-                  <p class="text-indigo-1 text-body2 q-mb-lg opacity-80 relative-position z-top leading-relaxed flex-grow-1">Awaiting more completed orders to establish baseline sales patterns.</p>
-                  <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft q-mt-auto p-4 bg-indigo-9">
-                    <div class="text-center z-top q-pa-md">
-                      <q-icon name="analytics" size="40px" color="blue-grey-4" class="q-mb-sm" />
-                      <div class="text-caption text-blue-grey-2 font-monospace text-weight-bold tracking-wide">AWAITING MORE DATA</div>
+                  <p class="text-indigo-1 text-body2 q-mb-lg opacity-80 relative-position z-top leading-relaxed">Awaiting more completed orders to establish baseline sales patterns.</p>
+                  
+                  <!-- Enhanced Awaiting Data Box -->
+                  <div class="ml-container-glass flex-grow-1 flex flex-center relative-position overflow-hidden shadow-soft q-pa-xl bg-indigo-9" style="min-height: 200px;">
+                    <div class="text-center z-top">
+                      <q-icon name="analytics" size="56px" color="blue-grey-4" class="q-mb-md opacity-80" />
+                      <div class="text-body2 text-blue-grey-2 font-monospace text-weight-bold tracking-wide">AWAITING MORE DATA</div>
                     </div>
                   </div>
                 </template>
@@ -458,10 +460,10 @@
               </div>
             </template>
             <template v-else-if="!mlForecast.has_forecast">
-              <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft q-pa-md bg-indigo-9" style="min-height: 110px; border: 1px solid rgba(255,255,255,0.1);">
+              <div class="ml-container-glass flex-grow-1 flex flex-center relative-position overflow-hidden shadow-soft q-pa-lg bg-indigo-9" style="min-height: 160px; border: 1px solid rgba(255,255,255,0.1);">
                 <div class="text-center z-top">
-                  <q-icon name="analytics" size="26px" color="indigo-2" class="opacity-50 q-mb-xs" />
-                  <div class="text-caption text-indigo-2 font-monospace text-weight-bold opacity-80" style="font-size: 10px;">AWAITING MORE DATA</div>
+                  <q-icon name="analytics" size="38px" color="indigo-2" class="opacity-50 q-mb-sm" />
+                  <div class="text-caption text-indigo-2 font-monospace text-weight-bold opacity-80" style="font-size: 11px;">AWAITING MORE DATA</div>
                 </div>
               </div>
             </template>
@@ -1078,6 +1080,7 @@ watch(activeRevenueFilter, () => { fetchChartData() })
 .store-preview-map-container { height: 200px; border: 1px solid #cfd8dc; position: relative; z-index: 1; }
 
 /* ================= LOADER STYLES ================= */
+.checking-access-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background-color: rgba(248, 250, 252, 0.85); backdrop-filter: blur(12px); }
 .glass-backdrop { background: rgba(248, 250, 252, 0.82); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 .fade-fast-enter-active, .fade-fast-leave-active { transition: opacity 0.35s ease; }
 .fade-fast-enter-from, .fade-fast-leave-to { opacity: 0; }

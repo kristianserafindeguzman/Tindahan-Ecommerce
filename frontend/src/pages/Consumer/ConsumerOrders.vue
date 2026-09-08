@@ -10,12 +10,12 @@
       <div v-if="loading" class="orders-list">
         <div v-for="n in 3" :key="n" class="order-card">
           <div class="skeleton-order-top">
-            <div class="skeleton-line skeleton-line-short" />
-            <div class="skeleton-line skeleton-line-short" />
+            <q-skeleton type="text" class="skeleton-line skeleton-line-short" />
+            <q-skeleton type="text" class="skeleton-line skeleton-line-short" />
           </div>
-          <div class="skeleton-order-item" />
+          <q-skeleton type="rect" class="skeleton-order-item" />
           <div class="skeleton-order-bottom">
-            <div class="skeleton-line skeleton-line-short" />
+            <q-skeleton type="text" class="skeleton-line skeleton-line-short" />
           </div>
         </div>
       </div>
@@ -27,18 +27,20 @@
       </div>
 
       <div v-else>
-        <div class="orders-tabs">
-          <button
-            v-for="tab in orderTabs"
-            :key="tab.value"
-            type="button"
-            class="orders-tab"
-            :class="{ 'orders-tab-active': activeTab === tab.value }"
-            @click="activeTab = tab.value"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
+        <!-- QTabs rather than hand-rolled buttons: it brings the tablist/tab ARIA roles,
+             arrow-key navigation and the sliding indicator, none of which the plain
+             buttons had. v-model keeps the same activeTab value the rest of the page
+             filters on. -->
+        <q-tabs
+          v-model="activeTab"
+          class="orders-tabs"
+          align="left"
+          no-caps
+          narrow-indicator
+          :breakpoint="0"
+        >
+          <q-tab v-for="tab in orderTabs" :key="tab.value" :name="tab.value" :label="tab.label" class="orders-tab" />
+        </q-tabs>
 
         <div v-if="!displayedOrders.length" class="orders-empty">
           <q-icon name="o_receipt_long" size="40px" class="orders-empty-icon" />
@@ -129,6 +131,7 @@ import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import { api } from '@/boot/axios'
 import { useCart } from '@/composables/useCart'
+import { formatDistance, calculateDistanceMeters } from '@/utils/distance'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -179,26 +182,6 @@ const STATUS_BADGE_CLASSES = {
 
 const statusBadgeClass = (status) => STATUS_BADGE_CLASSES[status] || 'status-badge-default'
 
-// Haversine distance — same formula used on the order details page, since the orders
-// list endpoint doesn't return a precomputed distance_meters either.
-const calculateDistanceMeters = (lat1, lng1, lat2, lng2) => {
-  const R = 6371000
-  const toRad = (deg) => (deg * Math.PI) / 180
-  const dLat = toRad(lat2 - lat1)
-  const dLng = toRad(lng2 - lng1)
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-const formatDistance = (meters) => {
-  if (meters == null) return ''
-  const rounded = Math.round(meters)
-  if (rounded < 1000) return `${rounded} m away`
-  return `${(meters / 1000).toFixed(1)} km away`
-}
-
 const orderAddressText = (order) => {
   const address = order.store?.address
   const cLat = order.consumer_latitude
@@ -206,9 +189,11 @@ const orderAddressText = (order) => {
   const sLat = order.store?.latitude
   const sLng = order.store?.longitude
 
-  const dist = cLat != null && cLng != null && sLat != null && sLng != null
-    ? formatDistance(calculateDistanceMeters(Number(cLat), Number(cLng), Number(sLat), Number(sLng)))
-    : ''
+  // calculateDistanceMeters guards the coordinates itself and returns null when any
+  // is missing, which formatDistance renders as ''. Note the raw values are passed:
+  // Number(null) is 0, so wrapping them here would turn a missing coordinate into a
+  // valid one and measure a distance that does not exist.
+  const dist = formatDistance(calculateDistanceMeters(cLat, cLng, sLat, sLng))
 
   if (address && dist) return `${address} (${dist})`
   return address || dist || 'Address unavailable'
@@ -277,16 +262,16 @@ const reorderItems = async (order) => {
 
 .page-title {
   margin: 0 0 4px;
-  font-size: 22px;
+  font-size: var(--fs-3xl);
   font-weight: 700;
   line-height: 1.3;
-  color: #111111;
+  color: var(--c-text);
 }
 
 .page-subtitle {
   margin: 0 0 20px;
-  font-size: 13px;
-  color: #767676;
+  font-size: var(--fs-sm);
+  color: var(--c-subtle);
 }
 
 /* LOADING / EMPTY */
@@ -300,37 +285,23 @@ const reorderItems = async (order) => {
   margin-bottom: 16px;
 }
 
+/* QSkeleton draws the shimmer; only the geometry stays here. */
 .skeleton-order-item {
   height: 48px;
   margin-bottom: 16px;
 
-  border-radius: 8px;
-
-  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
-  background-size: 400% 100%;
-
-  animation: skeleton-pulse 1.4s ease infinite;
+  border-radius: var(--r-md);
 }
 
 .skeleton-line {
   width: 45%;
   height: 12px;
 
-  border-radius: 4px;
-
-  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
-  background-size: 400% 100%;
-
-  animation: skeleton-pulse 1.4s ease infinite;
+  border-radius: var(--r-xs);
 }
 
 .skeleton-line-short {
   width: 30%;
-}
-
-@keyframes skeleton-pulse {
-  0% { background-position: 100% 50%; }
-  100% { background-position: 0 50%; }
 }
 
 .orders-empty {
@@ -343,29 +314,29 @@ const reorderItems = async (order) => {
 
 .orders-empty-icon {
   margin-bottom: 10px;
-  color: #d8dce3;
+  color: var(--c-border);
 }
 
 .orders-empty-text {
   margin: 0 0 20px;
-  font-size: 14px;
-  color: #8992a2;
+  font-size: var(--fs-md);
+  color: var(--c-muted);
 }
 
 .browse-btn {
   height: 48px;
   padding: 0 24px;
-  border-radius: 6px;
-  background: #bd2427;
+  border-radius: var(--r-sm);
+  background: var(--c-brand);
   color: #ffffff;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
   transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
 .browse-btn:hover {
-  background: #a91e21;
+  background: var(--c-brand-hover);
   box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
   transform: translateY(-1px);
 }
@@ -375,43 +346,59 @@ const reorderItems = async (order) => {
   display: flex;
   gap: 28px;
   margin-bottom: 20px;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--c-border);
 }
 
+/* QTabs ships its own padding, uppercase and min-width; these bring it back to the
+   flat underlined row this page already used. */
 .orders-tab {
-  position: relative;
   padding: 0 0 12px;
-  border: none;
-  background: none;
+  min-height: auto;
+  min-width: auto;
+
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 600;
-  color: #8992a2;
-  cursor: pointer;
-  transition: color 0.15s;
+
+  color: var(--c-muted);
+}
+
+.orders-tabs :deep(.q-tab__content) {
+  padding: 0;
+  min-width: auto;
+}
+
+.orders-tabs :deep(.q-tab--active) {
+  color: var(--c-brand);
+}
+
+.orders-tabs :deep(.q-tab__indicator) {
+  background: var(--c-brand);
+  height: 2px;
+}
+
+/* The row is a plain underlined strip, not Quasar's scrollable tab bar. */
+.orders-tabs :deep(.q-tabs__content) {
+  gap: 28px;
 }
 
 .orders-tab:hover {
-  color: #555555;
+  color: var(--c-text-3);
 }
 
-.orders-tab:focus-visible {
-  outline: 2px dashed #8992a2;
-  outline-offset: 3px;
+/* QTab paints a q-focus-helper block behind itself on hover and focus. That suited
+   Quasar's filled tab bar, but this row is a flat underlined strip and the block
+   reads as a stray grey/pink rectangle behind the label. */
+.orders-tabs :deep(.q-focus-helper) {
+  display: none;
 }
 
-.orders-tab-active {
-  color: #bd2427;
-}
-
-.orders-tab-active::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  background: #bd2427;
+/* Replaces the helper with a ring on the label itself. The old rule targeted a plain
+   <button>; on a QTab it drew a dashed box around Quasar's padding instead. */
+.orders-tabs :deep(.q-tab:focus-visible) {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
 }
 
 /* ORDERS LIST */
@@ -424,8 +411,8 @@ const reorderItems = async (order) => {
 .order-card {
   padding: 18px 20px;
 
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
 
   background: #ffffff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -454,7 +441,7 @@ const reorderItems = async (order) => {
 }
 
 .order-card:hover {
-  border-color: #f3c6c7;
+  border-color: var(--c-brand-tint-3);
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.05);
   transform: translateY(-1px);
@@ -463,7 +450,7 @@ const reorderItems = async (order) => {
 .card-divider {
   margin: 14px 0;
 
-  background: #f0f0f0;
+  background: var(--c-hairline);
 }
 
 .order-card-top {
@@ -475,10 +462,10 @@ const reorderItems = async (order) => {
 }
 
 .order-store {
-  font-size: 15px;
+  font-size: var(--fs-lg);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .order-card-meta {
@@ -488,9 +475,9 @@ const reorderItems = async (order) => {
   gap: 4px;
   margin-top: 4px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .order-meta-dot {
@@ -504,18 +491,18 @@ const reorderItems = async (order) => {
 }
 
 .order-total {
-  font-size: 15px;
+  font-size: var(--fs-lg);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .order-item-count {
   margin-top: 4px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 /* ORDER ITEMS — restored, same recipe as the original card. */
@@ -538,11 +525,11 @@ const reorderItems = async (order) => {
   width: 48px;
   height: 48px;
 
-  border-radius: 8px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-border);
 
-  background: linear-gradient(145deg, #f7f7f8 0%, #ececee 100%);
-  color: #bd2427;
+  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  color: var(--c-brand);
 
   display: flex;
   align-items: center;
@@ -563,25 +550,25 @@ const reorderItems = async (order) => {
 }
 
 .order-item-name {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
-  color: #222222;
+  color: var(--c-text);
 }
 
 .order-item-qty {
   margin-top: 2px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .order-item-price {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
 
-  color: #222222;
+  color: var(--c-text);
 }
 
 .order-card-bottom {
@@ -609,40 +596,40 @@ const reorderItems = async (order) => {
 
   padding: 6px 12px;
 
-  border-radius: 10px;
+  border-radius: var(--r-lg);
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 }
 
 .status-badge-placed {
-  background: #e3f2fd;
-  color: #1e88e5;
+  background: var(--c-info-tint);
+  color: var(--c-info);
 }
 
 .status-badge-preparing {
-  background: #fff8e1;
-  color: #ff6f00;
+  background: var(--c-status-wait-tint);
+  color: var(--c-status-wait);
 }
 
 .status-badge-ready {
-  background: #fff3e0;
-  color: #ff9800;
+  background: var(--c-status-active-tint);
+  color: var(--c-status-active);
 }
 
 .status-badge-picked-up {
-  background: #e8f5e9;
-  color: #43a047;
+  background: var(--c-success-tint);
+  color: var(--c-success);
 }
 
 .status-badge-cancelled {
-  background: #ffebee;
-  color: #e53935;
+  background: var(--c-danger-tint);
+  color: var(--c-danger);
 }
 
 .status-badge-default {
-  background: #f5f5f5;
-  color: #757575;
+  background: var(--c-surface);
+  color: var(--c-muted);
 }
 
 .order-card-actions {
@@ -656,12 +643,12 @@ const reorderItems = async (order) => {
   height: 40px;
   padding: 0 18px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
@@ -670,14 +657,14 @@ const reorderItems = async (order) => {
 }
 
 .reorder-btn:hover {
-  background: #a91e21;
+  background: var(--c-brand-hover);
 
   box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
   transform: translateY(-1px);
 }
 
 .reorder-btn:active {
-  background: #8f1a1c;
+  background: var(--c-brand-active);
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
   transform: translateY(0);
@@ -706,14 +693,14 @@ const reorderItems = async (order) => {
   height: 40px;
   padding: 0 18px;
 
-  border-radius: 6px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-border);
   outline: none !important;
 
   background: #ffffff;
-  color: #333333;
+  color: var(--c-text-2);
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
   transition: border-color 0.15s, box-shadow 0.2s, transform 0.2s;
@@ -725,7 +712,7 @@ const reorderItems = async (order) => {
 }
 
 .view-details-btn:hover {
-  border-color: #f3c6c7;
+  border-color: var(--c-brand-tint-3);
 
   box-shadow: 0 4px 12px rgba(189, 36, 39, 0.08);
   transform: translateY(-1px);
@@ -745,12 +732,12 @@ const reorderItems = async (order) => {
   margin-top: 14px;
   padding: 10px 12px;
 
-  border-radius: 8px;
+  border-radius: var(--r-md);
 
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--c-danger-tint);
+  color: var(--c-danger);
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
 }
 
 /* RESPONSIVE */
@@ -781,7 +768,7 @@ const reorderItems = async (order) => {
   }
 
   .order-total {
-    font-size: 14px;
+    font-size: var(--fs-md);
   }
 
   .order-item-image {
@@ -792,7 +779,7 @@ const reorderItems = async (order) => {
   .status-badge {
     padding: 6px 12px;
 
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
 
   .order-card-bottom {
@@ -819,3 +806,7 @@ const reorderItems = async (order) => {
   }
 }
 </style>
+
+
+
+

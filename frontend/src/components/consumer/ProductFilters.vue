@@ -4,9 +4,7 @@
       <div class="filters-panel-title-group">
         <span class="filters-panel-title">Filters</span>
       </div>
-      <button type="button" class="filters-close-btn" aria-label="Close filters" @click="$emit('close')">
-        <q-icon name="o_close" size="18px" />
-      </button>
+      <q-btn flat dense round :ripple="false" icon="o_close" class="filters-close-btn" aria-label="Close filters" @click="$emit('close')" />
     </div>
 
     <div class="filters-scroll">
@@ -172,13 +170,22 @@ const sort = defineModel('sort')
 }
 
 .filters-panel-title {
-  font-size: 16px;
+  font-size: var(--fs-xl);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
+}
+
+/* QBtn ships min-width and padding of its own; the panel's close control is a bare
+   glyph, so those are zeroed here. */
+.filters-close-btn :deep(.q-icon) {
+  font-size: 18px;
 }
 
 .filters-close-btn {
+  min-width: auto;
+  min-height: auto;
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -190,7 +197,7 @@ const sort = defineModel('sort')
   border-radius: 50%;
 
   background: transparent;
-  color: #666666;
+  color: var(--c-muted);
 
   cursor: pointer;
 
@@ -198,7 +205,7 @@ const sort = defineModel('sort')
 }
 
 .filters-close-btn:hover {
-  background: #f4f4f4;
+  background: var(--c-hairline);
 }
 
 .filter-group {
@@ -216,17 +223,17 @@ const sort = defineModel('sort')
 
   margin-bottom: 6px;
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
-  color: #4a4a4a;
+  color: var(--c-text-2);
 }
 
 .filter-label-inline {
   margin-bottom: 0;
 
-  font-size: 13px;
-  color: #333333;
+  font-size: var(--fs-sm);
+  color: var(--c-text-2);
 }
 
 .price-range-row {
@@ -237,21 +244,21 @@ const sort = defineModel('sort')
 }
 
 .price-range-sep {
-  color: #9ca3af;
+  color: var(--c-muted);
 }
 
 .product-filters :deep(.q-field--outlined .q-field__control) {
-  border-radius: 10px;
+  border-radius: var(--r-lg);
 }
 
 /* Same red hover/focus fill as the page-level Sort/Filters controls, for consistency across every field. */
 .product-filters :deep(.q-field--outlined .q-field__control:hover),
 .product-filters :deep(.q-field--outlined.q-field--focused .q-field__control) {
-  background: #fdecec;
+  background: var(--c-brand-tint);
 }
 
 .product-filters :deep(.q-field--outlined .q-field__control:hover):before {
-  border-color: #bd2427;
+  border-color: var(--c-brand);
 }
 
 .filters-divider {
@@ -262,12 +269,12 @@ const sort = defineModel('sort')
   width: 100%;
   height: 40px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 600;
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
@@ -276,7 +283,7 @@ const sort = defineModel('sort')
 }
 
 .apply-filters-btn:hover {
-  background: #a91e21;
+  background: var(--c-brand-hover);
 
   box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
 
@@ -284,7 +291,7 @@ const sort = defineModel('sort')
 }
 
 .apply-filters-btn:active {
-  background: #8f1a1c;
+  background: var(--c-brand-active);
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
 
@@ -303,17 +310,18 @@ const sort = defineModel('sort')
 }
 
 .clear-filters-link {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 
-  color: #bd2427;
+  color: var(--c-brand);
 
   cursor: pointer;
   transition: color 0.15s;
 }
 
 .clear-filters-link:hover {
-  color: #8f1a1c;
+  color: var(--c-brand-active);
   text-decoration: underline;
 }
 </style>
+

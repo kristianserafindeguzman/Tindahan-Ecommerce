@@ -370,28 +370,17 @@
           <div class="status-icon-wrap bg-red-1 text-red-6">
             <q-icon name="o_block" size="36px" />
           </div>
-          <div class="modal-title">Account Suspended</div>
-          <p class="modal-subtitle">Your account has been temporarily suspended.</p>
+          <div class="status-title">Account Suspended</div>
+          <p class="status-message">Your account has been temporarily suspended.</p>
 
-          <div class="reason-box bg-red-1">
-            <strong>Notice:</strong> {{ suspensionMessage }}
+          <div class="notice-box notice-box-red">
+            <q-icon name="o_info" size="16px" />
+            <p><strong>Notice:</strong> {{ suspensionMessage }}</p>
           </div>
         </q-card-section>
-        <q-card-actions align="center" class="status-actions">
-          <q-btn
-            unelevated
-            label="Contact Support"
-            color="red-6"
-            class="full-width-btn"
-            @click="showContactSupport = true"
-          />
-          <q-btn
-            flat
-            label="Back to Login"
-            color="grey-7"
-            class="full-width-btn q-mt-sm"
-            @click="handleStatusLogout"
-          />
+        <q-card-actions class="status-actions" vertical>
+          <q-btn unelevated no-caps label="Contact Support" class="login-button full-width" @click="showContactSupport = true" />
+          <button type="button" class="text-button cancel-link" @click="handleStatusLogout">Back to Login</button>
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -403,28 +392,17 @@
           <div class="status-icon-wrap bg-orange-1 text-orange-6">
             <q-icon name="o_warning" size="36px" />
           </div>
-          <div class="modal-title">Account Inactive</div>
-          <p class="modal-subtitle">Your account is currently inactive.</p>
+          <div class="status-title">Account Inactive</div>
+          <p class="status-message">Your account is currently inactive.</p>
 
-          <div class="reason-box bg-orange-1">
-            <strong>Notice:</strong> {{ inactiveMessage }}
+          <div class="notice-box notice-box-orange">
+            <q-icon name="o_info" size="16px" />
+            <p><strong>Notice:</strong> {{ inactiveMessage }}</p>
           </div>
         </q-card-section>
-        <q-card-actions align="center" class="status-actions">
-          <q-btn
-            unelevated
-            label="Contact Support"
-            color="orange-6"
-            class="full-width-btn"
-            @click="showContactSupport = true"
-          />
-          <q-btn
-            flat
-            label="Back to Login"
-            color="grey-7"
-            class="full-width-btn q-mt-sm"
-            @click="handleStatusLogout"
-          />
+        <q-card-actions class="status-actions" vertical>
+          <q-btn unelevated no-caps label="Contact Support" class="login-button full-width" @click="showContactSupport = true" />
+          <button type="button" class="text-button cancel-link" @click="handleStatusLogout">Back to Login</button>
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -1281,6 +1259,49 @@ const goToVendorRegister = () => {
 
 .status-actions {
   padding: 0 28px 24px;
+}
+
+/* Account status notice — used by the Suspended/Inactive dialogs' "Notice: ..." box. */
+.notice-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  margin: 16px 0 6px;
+  padding: 12px 14px;
+
+  border-radius: 8px;
+
+  text-align: left;
+}
+
+.notice-box .q-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.notice-box p {
+  margin: 0;
+
+  font-size: 12.5px;
+  line-height: 1.6;
+
+  /* The backend sends the admin attribution and the reason as two lines
+     separated by \n (e.g. "Suspended by X.\nReason: ...") — preserve that
+     instead of collapsing it into one run-on sentence. */
+  white-space: pre-line;
+}
+
+.notice-box-red {
+  border: 1px solid rgba(189, 36, 39, 0.2);
+  background: #fdecec;
+  color: #7a1113;
+}
+
+.notice-box-orange {
+  border: 1px solid rgba(234, 145, 8, 0.3);
+  background: #fff4e5;
+  color: #7a4a02;
 }
 
 /* OTP BOXES — same pattern as ConsumerVerify.vue */

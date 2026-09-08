@@ -1,9 +1,9 @@
 import { ref, computed } from 'vue'
 import { api } from '@/boot/axios'
 
-// Module-level singleton (unlike useProducts/useStores) so the header badge, the
-// mini-cart dropdown, the product detail page, and the full cart page all observe
-// the same state after any of them adds/updates/removes an item.
+// Module-level singleton, like useProducts/useStores/useCategories, so the header
+// badge, the mini-cart dropdown, the product detail page, and the full cart page all
+// observe the same state after any of them adds/updates/removes an item.
 const items = ref([])
 const loading = ref(false)
 

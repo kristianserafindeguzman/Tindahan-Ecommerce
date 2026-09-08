@@ -79,6 +79,7 @@ import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useStores } from '@/composables/useStores'
+import { formatDistance } from '@/utils/distance'
 import { useAddress } from '@/composables/useAddress'
 
 defineProps({
@@ -105,7 +106,7 @@ const storeIcon = L.divIcon({
   className: 'store-map-marker',
   html: `
     <svg width="30" height="40" viewBox="0 0 30 40">
-      <path d="M15 0C6.7 0 0 6.7 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.7 23.3 0 15 0z" fill="#bd2427" stroke="#ffffff" stroke-width="1.5"/>
+      <path d="M15 0C6.7 0 0 6.7 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.7 23.3 0 15 0z" fill="var(--c-brand)" stroke="#ffffff" stroke-width="1.5"/>
       <circle cx="15" cy="15" r="6.5" fill="#ffffff"/>
     </svg>
   `,
@@ -127,13 +128,6 @@ const meIcon = L.divIcon({
   iconSize: [34, 34],
   iconAnchor: [17, 17]
 })
-
-const formatDistance = (meters) => {
-  if (meters == null) return ''
-  const rounded = Math.round(meters)
-  if (rounded < 1000) return `${rounded} m away`
-  return `${(meters / 1000).toFixed(1)} km away`
-}
 
 const filteredStores = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
@@ -253,7 +247,7 @@ onBeforeUnmount(() => {
 
   display: flex;
 
-  border-radius: 16px;
+  border-radius: var(--r-2xl);
 
   overflow: hidden;
 
@@ -278,28 +272,28 @@ onBeforeUnmount(() => {
 
   padding: 10px 16px;
 
-  border-radius: 10px;
+  border-radius: var(--r-lg);
 
   background: #ffffff;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
 }
 
 .map-address-label {
-  font-size: 10.5px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .map-address-text {
   margin-top: 2px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
-  color: #222222;
+  color: var(--c-text);
 }
 
 .map-controls {
@@ -319,7 +313,7 @@ onBeforeUnmount(() => {
   height: 38px;
 
   background: #ffffff;
-  color: #333333;
+  color: var(--c-text-2);
 
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 
@@ -327,7 +321,7 @@ onBeforeUnmount(() => {
 }
 
 .map-control-btn:hover {
-  background: #fafafa;
+  background: var(--c-surface-2);
 
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 
@@ -335,11 +329,11 @@ onBeforeUnmount(() => {
 }
 
 .map-locate-btn {
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .map-locate-btn:hover {
-  background: #fdecec;
+  background: var(--c-brand-tint);
 }
 
 /* SIDEBAR */
@@ -351,7 +345,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
 
-  border-left: 1px solid #e8e8e8;
+  border-left: 1px solid var(--c-border);
 
   background: #ffffff;
 }
@@ -365,14 +359,14 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-title {
-  font-size: 17px;
+  font-size: var(--fs-xl);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .sidebar-close-btn {
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 .sidebar-search {
@@ -382,7 +376,7 @@ onBeforeUnmount(() => {
 .sidebar-search :deep(.q-field__control) {
   height: 40px;
 
-  border-radius: 8px;
+  border-radius: var(--r-md);
 }
 
 .sidebar-loading {
@@ -394,15 +388,15 @@ onBeforeUnmount(() => {
   gap: 12px;
   padding: 24px 16px;
 
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .sidebar-loading-text {
   margin: 0;
 
-  color: #8992a2;
+  color: var(--c-muted);
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .sidebar-empty {
@@ -410,9 +404,9 @@ onBeforeUnmount(() => {
 
   text-align: center;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .sidebar-list {
@@ -444,7 +438,7 @@ onBeforeUnmount(() => {
   gap: 12px;
   padding: 10px 6px;
 
-  border-radius: 10px;
+  border-radius: var(--r-lg);
 
   cursor: pointer;
 
@@ -452,7 +446,7 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-store-card:hover {
-  background: #fafafa;
+  background: var(--c-surface-2);
 }
 
 .sidebar-store-image {
@@ -464,11 +458,11 @@ onBeforeUnmount(() => {
   width: 60px;
   height: 60px;
 
-  border-radius: 8px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-border);
 
-  background: linear-gradient(145deg, #f7f7f8 0%, #ececee 100%);
-  color: #bd2427;
+  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  color: var(--c-brand);
 
   overflow: hidden;
 }
@@ -485,11 +479,11 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-store-name {
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   font-weight: 700;
   line-height: 1.3;
 
-  color: #222222;
+  color: var(--c-text);
 
   overflow: hidden;
   white-space: nowrap;
@@ -503,9 +497,9 @@ onBeforeUnmount(() => {
   gap: 4px;
   margin-top: 3px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 /* LEAFLET MARKERS + POPUP — targets Leaflet-injected DOM outside Vue's render tree. */
@@ -536,7 +530,7 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   border: 3px solid #ffffff;
 
-  background: #2563eb;
+  background: var(--c-info);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
@@ -567,7 +561,7 @@ onBeforeUnmount(() => {
 .map-container :deep(.leaflet-popup-content-wrapper) {
   padding: 0;
 
-  border-radius: 12px;
+  border-radius: var(--r-xl);
 
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 
@@ -597,7 +591,7 @@ onBeforeUnmount(() => {
   border-radius: 50%;
 
   background: rgba(255, 255, 255, 0.9);
-  color: #767676 !important;
+  color: var(--c-subtle) !important;
 
   font-size: 16px !important;
 
@@ -605,8 +599,8 @@ onBeforeUnmount(() => {
 }
 
 .map-container :deep(.leaflet-popup-close-button:hover) {
-  background: #f4f4f4;
-  color: #333333 !important;
+  background: var(--c-hairline);
+  color: var(--c-text-2) !important;
 }
 
 .map-container :deep(.store-popup) {
@@ -627,18 +621,18 @@ onBeforeUnmount(() => {
 }
 
 .map-container :deep(.store-popup-name) {
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   font-weight: 700;
 
-  color: #222222;
+  color: var(--c-text);
 }
 
 .map-container :deep(.store-popup-distance) {
   margin-top: 2px;
 
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .map-container :deep(.store-popup-link) {
@@ -646,11 +640,11 @@ onBeforeUnmount(() => {
 
   margin-top: 6px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   text-decoration: none;
 
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .map-container :deep(.store-popup-link:hover) {
@@ -667,7 +661,7 @@ onBeforeUnmount(() => {
     height: 240px;
 
     border-left: none;
-    border-top: 1px solid #e8e8e8;
+    border-top: 1px solid var(--c-border);
   }
 }
 </style>

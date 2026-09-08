@@ -27,8 +27,8 @@
       <SectionBlock title="Categories">
         <div v-if="categoriesLoading" class="categories-skeleton-row">
           <div v-for="n in 12" :key="n" class="category-skeleton-tile">
-            <div class="category-skeleton-icon" />
-            <div class="skeleton-line skeleton-line-short" />
+            <q-skeleton type="circle" class="category-skeleton-icon" />
+            <q-skeleton type="text" class="category-skeleton-label" />
           </div>
         </div>
         <CategoryCarousel v-else :categories="categories" @select="goToCategory" />
@@ -37,14 +37,7 @@
       <!-- RECOMMENDED / POPULAR PRODUCTS -->
       <SectionBlock :title="resultsSectionTitle" view-all @view-all="router.push(resultsViewAllPath)">
         <div v-if="isLoggedIn ? loadingPersonalized : productsLoading" class="products-grid">
-          <div v-for="n in 6" :key="n" class="skeleton-card">
-            <div class="skeleton-image" />
-            <div class="skeleton-body">
-              <div class="skeleton-line skeleton-line-short" />
-              <div class="skeleton-line" />
-              <div class="skeleton-line skeleton-line-short" />
-            </div>
-          </div>
+          <CardSkeleton v-for="n in 6" :key="n" />
         </div>
         <div v-else ref="productsGridEl" class="products-grid">
           <ProductCard v-for="product in recommendedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
@@ -54,13 +47,7 @@
       <!-- STORES NEAR YOU -->
       <SectionBlock title="Stores near You" view-all @view-all="router.push('/consumer/stores')">
         <div v-if="storesLoading" class="stores-row">
-          <div v-for="n in 4" :key="n" class="skeleton-card">
-            <div class="skeleton-image" />
-            <div class="skeleton-body">
-              <div class="skeleton-line skeleton-line-short" />
-              <div class="skeleton-line" />
-            </div>
-          </div>
+          <CardSkeleton v-for="n in 4" :key="n" variant="store" />
         </div>
         <div v-else class="stores-row">
           <StoreCard v-for="store in nearbyStores" :key="store.id" :store="store" />
@@ -70,14 +57,7 @@
       <!-- DISCOVER PRODUCTS -->
       <SectionBlock title="Discover Products" view-all @view-all="router.push('/consumer/products')">
         <div v-if="productsLoading" class="products-grid">
-          <div v-for="n in 6" :key="n" class="skeleton-card">
-            <div class="skeleton-image" />
-            <div class="skeleton-body">
-              <div class="skeleton-line skeleton-line-short" />
-              <div class="skeleton-line" />
-              <div class="skeleton-line skeleton-line-short" />
-            </div>
-          </div>
+          <CardSkeleton v-for="n in 6" :key="n" />
         </div>
         <div v-else class="products-grid">
           <ProductCard v-for="product in visibleDiscoverProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
@@ -104,11 +84,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
+import CardSkeleton from '@/components/consumer/CardSkeleton.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import SectionBlock from '@/components/consumer/SectionBlock.vue'
 import CategoryCarousel from '@/components/consumer/CategoryCarousel.vue'
@@ -120,6 +101,7 @@ import { useCategories } from '@/composables/useCategories'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'
+import { useGridColumns } from '@/composables/useGridColumns'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -200,27 +182,10 @@ const resultsViewAllPath = computed(() => isLoggedIn.value ? '/consumer/personal
 const NEARBY_STORES_COUNT = 4
 const nearbyStores = computed(() => stores.value.slice(0, NEARBY_STORES_COUNT))
 
-// Reads the grid's own live column count (auto-fill, so it varies by device) instead of guessing
-// a breakpoint, so both sections always show whole rows — no partially-filled row at any width.
+// Both product sections show whole rows only, so they need the live column count — the
+// grid is auto-fill, so it changes continuously with width rather than at breakpoints.
 const productsGridEl = ref(null)
-const gridColumns = ref(3)
-let gridColumnsObserver = null
-
-watch(productsGridEl, (el) => {
-  gridColumnsObserver?.disconnect()
-  gridColumnsObserver = null
-  if (!el) return
-
-  const measure = () => {
-    const count = getComputedStyle(el).gridTemplateColumns.split(' ').length
-    if (count > 0) gridColumns.value = count
-  }
-  measure()
-  gridColumnsObserver = new ResizeObserver(measure)
-  gridColumnsObserver.observe(el)
-})
-
-onBeforeUnmount(() => gridColumnsObserver?.disconnect())
+const { columns: gridColumns } = useGridColumns(productsGridEl, 3)
 
 const RECOMMENDED_ROWS = 2
 const recommendedCount = computed(() => gridColumns.value * RECOMMENDED_ROWS)
@@ -287,7 +252,7 @@ const visibleDiscoverProducts = computed(() =>
   padding: 40px;
   margin-bottom: 24px;
 
-  border-radius: 14px;
+  border-radius: var(--r-2xl);
   box-shadow: 0 4px 16px rgba(101, 16, 18, 0.2);
 
   /* Dot-grid texture over the gradient, instead of the old flat gradient + two decorative circles — subtle enough not to fight the white text. */
@@ -295,36 +260,25 @@ const visibleDiscoverProducts = computed(() =>
     radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0 0 / 26px 26px,
     linear-gradient(
       145deg,
-      #c02226 0%,
-      #9c171b 55%,
-      #651012 100%
+      var(--c-brand) 0%,
+      var(--c-brand-deep) 55%,
+      var(--c-brand-active) 100%
     );
 
   animation: home-fade-up 0.5s ease both;
 }
 
-/* Entrance animation, page load only (a fresh DOM each navigation, not scroll-triggered) — kept
-   to opacity/transform only so it's cheap and never shifts layout. Staggered per section so the
-   page reads top-to-bottom instead of popping in all at once. .section-block is SectionBlock.vue's
-   own root — :deep() here only reaches instances rendered from within this page's own template,
-   not the component's other usages elsewhere (same safe pattern as this session's dashboard work). */
+/* Hero entrance, page load only. The sections below it are handled by scroll reveal
+   (v-intersection in SectionBlock.vue) rather than a mount animation, so this keyframe
+   now has exactly one user. */
 @keyframes home-fade-up {
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-:deep(.section-block) {
-  animation: home-fade-up 0.5s ease both;
-}
-
-:deep(.section-block:nth-of-type(1)) { animation-delay: 0.06s; }
-:deep(.section-block:nth-of-type(2)) { animation-delay: 0.12s; }
-:deep(.section-block:nth-of-type(3)) { animation-delay: 0.18s; }
-:deep(.section-block:nth-of-type(4)) { animation-delay: 0.24s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-banner,
-  :deep(.section-block) {
+  .hero-banner {
     animation: none;
   }
 }
@@ -339,7 +293,7 @@ const visibleDiscoverProducts = computed(() =>
 .hero-title {
   margin: 0 0 8px;
 
-  font-size: 24px;
+  font-size: var(--fs-4xl);
   font-weight: 700;
   line-height: 1.3;
 
@@ -352,7 +306,7 @@ const visibleDiscoverProducts = computed(() =>
   margin: 0 0 20px;
 
   font-family: 'Poppins', 'Roboto', Arial, sans-serif;
-  font-size: 34px;
+  font-size: var(--fs-hero);
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -362,12 +316,12 @@ const visibleDiscoverProducts = computed(() =>
   height: 42px;
   padding: 0 24px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
   background: #ffffff;
-  color: #bd2427;
+  color: var(--c-brand);
 
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   font-weight: 700;
   letter-spacing: 0.01em;
 
@@ -378,7 +332,7 @@ const visibleDiscoverProducts = computed(() =>
 }
 
 .hero-cta:hover {
-  background: #f4f4f4;
+  background: var(--c-hairline);
 
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
   transform: translateY(-1px);
@@ -393,7 +347,7 @@ const visibleDiscoverProducts = computed(() =>
 }
 
 .hero-cta:active {
-  background: #ececec;
+  background: var(--c-surface);
 
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
   transform: translateY(0);
@@ -439,13 +393,13 @@ const visibleDiscoverProducts = computed(() =>
   margin-top: 16px;
   padding: 12px;
 
-  border: 1px solid #e2e2e2;
-  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
 
   background: #ffffff;
-  color: #bd2427;
+  color: var(--c-brand);
 
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 600;
   font-family: inherit;
 
@@ -455,8 +409,8 @@ const visibleDiscoverProducts = computed(() =>
 }
 
 .see-more-btn:hover {
-  border-color: #f3c6c7;
-  background: #fdecec;
+  border-color: var(--c-brand-tint-3);
+  background: var(--c-brand-tint);
   transform: translateY(-1px);
 }
 
@@ -469,8 +423,6 @@ const visibleDiscoverProducts = computed(() =>
 
   gap: 16px;
 }
-
-/* SKELETON LOADING STATE */
 
 .categories-skeleton-row {
   display: flex;
@@ -491,66 +443,25 @@ const visibleDiscoverProducts = computed(() =>
   width: 132px;
   padding: 20px 12px;
 
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
 
   background: #ffffff;
 }
 
+/* QSkeleton draws the shimmer; only the geometry of the tile it stands in for
+   belongs here. */
 .category-skeleton-icon {
   width: 44px;
   height: 44px;
-
-  border-radius: 50%;
-
-  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
-  background-size: 400% 100%;
-
-  animation: skeleton-pulse 1.4s ease infinite;
 }
 
-.skeleton-card {
-  overflow: hidden;
+/* Mirrors .category-tile-label: 13px / 1.3, two reserved lines. */
+.category-skeleton-label {
+  width: 74%;
+  height: calc(var(--fs-sm) * 1.3 * 2);
 
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
-
-  background: #ffffff;
-}
-
-.skeleton-image,
-.skeleton-line {
-  background: linear-gradient(90deg, #e0e0e0 25%, #e8e8e8 37%, #e0e0e0 63%);
-  background-size: 400% 100%;
-
-  animation: skeleton-pulse 1.4s ease infinite;
-}
-
-.skeleton-image {
-  height: 110px;
-}
-
-.skeleton-body {
-  display: flex;
-  flex-direction: column;
-
-  gap: 8px;
-  padding: 12px;
-}
-
-.skeleton-line {
-  height: 10px;
-
-  border-radius: 4px;
-}
-
-.skeleton-line-short {
-  width: 60%;
-}
-
-@keyframes skeleton-pulse {
-  0% { background-position: 100% 50%; }
-  100% { background-position: 0 50%; }
+  border-radius: var(--r-xs);
 }
 
 /* RESPONSIVE */
@@ -574,7 +485,7 @@ const visibleDiscoverProducts = computed(() =>
   }
 
   .hero-title-lg {
-    font-size: 28px;
+    font-size: var(--fs-4xl);
   }
 
   .hero-content {
@@ -587,3 +498,4 @@ const visibleDiscoverProducts = computed(() =>
   }
 }
 </style>
+

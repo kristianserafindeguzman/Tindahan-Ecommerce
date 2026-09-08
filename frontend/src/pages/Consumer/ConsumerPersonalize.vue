@@ -36,8 +36,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, inject } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import { api } from '@/boot/axios'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
@@ -47,7 +48,6 @@ import { useProducts } from '@/composables/useProducts'
 import { useCart } from '@/composables/useCart'
 
 const $q = useQuasar()
-const api = inject('api') // Need to inject api for custom fetch
 const products = ref([])
 const isFallback = ref(false)
 
@@ -149,19 +149,19 @@ const paginatedProducts = computed(() => {
 .page-title {
   margin: 0 0 4px;
 
-  font-size: 22px;
+  font-size: var(--fs-3xl);
   font-weight: 700;
   line-height: 1.3;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .page-subtitle {
   margin: 0;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 /* PRODUCTS GRID */
@@ -177,9 +177,9 @@ const paginatedProducts = computed(() => {
 .products-empty {
   padding: 40px 0;
 
-  color: #8992a2;
+  color: var(--c-muted);
 
-  font-size: 14px;
+  font-size: var(--fs-md);
   text-align: center;
 }
 

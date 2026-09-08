@@ -1,5 +1,5 @@
 <template>
-  <section class="section-block">
+  <section v-intersection.once="onReveal" class="section-block reveal">
     <div class="section-heading-row">
       <span class="section-heading">{{ title }}</span>
       <span v-if="viewAll" class="section-link" @click="$emit('view-all')">View All</span>
@@ -10,6 +10,10 @@
 </template>
 
 <script setup>
+import { useReveal } from '@/composables/useReveal'
+
+const { onReveal } = useReveal()
+
 defineProps({
   title: {
     type: String,
@@ -38,17 +42,18 @@ defineEmits(['view-all'])
 }
 
 .section-heading {
-  font-size: 16px;
+  font-size: var(--fs-2xl);
+  letter-spacing: -0.01em;
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .section-link {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-lg);
+  font-weight: 600;
 
-  color: #bd2427;
+  color: var(--c-brand);
 
   cursor: pointer;
 }

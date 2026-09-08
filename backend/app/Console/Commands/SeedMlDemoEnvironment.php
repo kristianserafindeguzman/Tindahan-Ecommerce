@@ -179,15 +179,26 @@ class SeedMlDemoEnvironment extends Command
                 $origDate = Carbon::parse($row['date'] . ' ' . $row['time'], 'Asia/Manila');
                 $shiftedDate = $origDate->addDays($shiftDays);
 
-                $order = Order::create([
+                $orderBatch[] = [
                     'consumer_id' => $consumer->user_id,
                     'store_id' => $store->store_id,
                     'total_amount' => $row['total_amount_php'],
                     'status' => 'picked_up', // Crucial for ml_historical_sales_view
                     'created_at' => $shiftedDate,
                     'updated_at' => $shiftedDate, // Used by ML view
-                ]);
+                ];
+            }
 
+            // Batch insert all orders
+            foreach (array_chunk($orderBatch, 500) as $chunk) {
+                Order::insert($chunk);
+            }
+
+            // Retrieve the orders we just inserted
+            $insertedOrders = Order::where('store_id', $store->store_id)->orderBy('order_id', 'asc')->get();
+
+            foreach ($jsonData as $i => $row) {
+                $order = $insertedOrders[$i];
                 $orderItemBatch[] = [
                     'order_id' => $order->order_id,
                     'inventory_id' => $inventoryRecords[$row['product_name']],
@@ -195,16 +206,10 @@ class SeedMlDemoEnvironment extends Command
                     'unit_price' => $row['unit_price_php'],
                     'subtotal' => $row['total_amount_php'],
                 ];
-
-                // Batch insert order items every 500 records
-                if (count($orderItemBatch) >= 500) {
-                    OrderItem::insert($orderItemBatch);
-                    $orderItemBatch = [];
-                }
             }
 
-            if (!empty($orderItemBatch)) {
-                OrderItem::insert($orderItemBatch);
+            foreach (array_chunk($orderItemBatch, 500) as $chunk) {
+                OrderItem::insert($chunk);
             }
 
             DB::commit();

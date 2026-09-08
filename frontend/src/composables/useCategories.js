@@ -15,34 +15,53 @@ const CATEGORY_ICONS = {
 
 const DEFAULT_ICON = 'o_category'
 
+// Shared for the same reason as useProducts: the header refetched this on every
+// consumer page alongside the page's own identical call. See useProducts.js.
+const categories = ref([])
+const loading = ref(false)
+
+// No coordinates in this request, so concurrent callers always share.
+let inFlight = null
+
+const load = async () => {
+  try {
+    const { data } = await api.get('/categories')
+    const mapped = (data || []).map((category) => ({
+      id: category.category_id,
+      label: category.category_name,
+      icon: CATEGORY_ICONS[category.category_name] || DEFAULT_ICON
+    }))
+
+    // "Others" is a catch-all and reads oddly sorted alphabetically
+    // among real categories — always show it last.
+    categories.value = mapped.sort((a, b) => {
+      if (a.label === 'Others') return 1
+      if (b.label === 'Others') return -1
+      return 0
+    })
+  } catch (error) {
+    console.error('Failed to load categories', error)
+    categories.value = []
+  }
+}
+
 export function useCategories() {
-  const categories = ref([])
-  const loading = ref(false)
+  const fetchCategories = () => {
+    if (inFlight) return inFlight
 
-  const fetchCategories = async () => {
     loading.value = true
-    try {
-      const { data } = await api.get('/categories')
-      const mapped = (data || []).map((category) => ({
-        id: category.category_id,
-        label: category.category_name,
-        icon: CATEGORY_ICONS[category.category_name] || DEFAULT_ICON
-      }))
 
-      // "Others" is a catch-all and reads oddly sorted alphabetically
-      // among real categories — always show it last.
-      categories.value = mapped.sort((a, b) => {
-        if (a.label === 'Others') return 1
-        if (b.label === 'Others') return -1
-        return 0
-      })
-    } catch (error) {
-      console.error('Failed to load categories', error)
-      categories.value = []
-    } finally {
-      loading.value = false
-    }
+    const promise = load().finally(() => {
+      if (inFlight === promise) {
+        inFlight = null
+        loading.value = false
+      }
+    })
+    inFlight = promise
+
+    return promise
   }
 
   return { categories, loading, fetchCategories }
 }
+

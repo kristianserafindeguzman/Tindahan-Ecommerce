@@ -158,6 +158,7 @@
     <q-dialog v-model="showEditPersonalModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card edit-personal-card" style="width: 620px; max-width: 90vw;">
         <q-card-section class="dialog-header">
+          <div class="dialog-icon"><q-icon name="o_person" size="22px" /></div>
           <div class="dialog-header-text">
             <div class="text-h6">Edit Personal Information</div>
             <div class="section-subtitle">Update your personal details below.</div>
@@ -241,6 +242,7 @@
     <q-dialog v-model="showDiscardConfirm" :persistent="discardingChanges" transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card discard-confirm-card" style="width: 420px; max-width: 90vw;">
         <q-card-section class="dialog-header discard-confirm-header">
+          <div class="dialog-icon dialog-icon--warn"><q-icon name="o_error_outline" size="22px" /></div>
           <div class="dialog-header-text">
             <div class="text-h6">Discard Changes?</div>
             <div class="section-subtitle">You have unsaved changes. If you leave now, your changes will not be saved.</div>
@@ -271,6 +273,7 @@
     <q-dialog v-model="showCropModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card" style="width: 560px; max-width: 90vw;">
         <q-card-section class="dialog-header">
+          <div class="dialog-icon"><q-icon name="o_crop" size="22px" /></div>
           <div class="dialog-header-text">
             <div class="text-h6">Crop Profile Photo</div>
             <div class="section-subtitle">Drag to select a square crop area.</div>
@@ -298,6 +301,7 @@
     <q-dialog v-model="showPasswordModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card" style="width: 480px; max-width: 90vw;">
         <q-card-section class="dialog-header">
+          <div class="dialog-icon"><q-icon name="o_lock" size="22px" /></div>
           <div class="dialog-header-text">
             <div class="text-h6">Change Password</div>
             <div class="section-subtitle">Keep your account secure with a strong password.</div>
@@ -400,6 +404,7 @@
     <q-dialog v-model="showOtpModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card" style="width: 500px; max-width: 90vw;">
         <q-card-section class="dialog-header">
+          <div class="dialog-icon"><q-icon name="o_sms" size="22px" /></div>
           <div class="dialog-header-text">
             <div class="text-h6">Verify New Phone</div>
             <div class="section-subtitle">Enter the 6-digit verification code sent to {{ maskedPhone }}. Sent via SMS.</div>
@@ -450,6 +455,7 @@
     <q-dialog v-model="showDeleteModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card delete-dialog-card" style="width: 540px; max-width: 90vw;">
         <q-card-section class="dialog-header">
+          <div class="dialog-icon dialog-icon--danger"><q-icon name="o_delete" size="22px" /></div>
           <div class="dialog-header-text">
             <div class="text-h6">Delete Account</div>
             <div class="section-subtitle">This action cannot be undone.</div>
@@ -1184,31 +1190,33 @@ const goHomeAfterDelete = () => {
   padding: 24px;
 }
 
+/* 20px, matching every other consumer page's header-to-content gap. This was the
+   only page at 28px, which read as the profile header sitting lower than the rest. */
 .page-header-block {
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
 .page-title {
   margin: 0 0 4px;
 
-  font-size: 22px;
+  font-size: var(--fs-3xl);
   font-weight: 700;
   line-height: 1.3;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .page-subtitle {
   margin: 0;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 .profile-card {
-  border: 1px solid #e8e8e8;
-  border-radius: 10px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
 
   background: #ffffff;
 
@@ -1241,7 +1249,7 @@ const goHomeAfterDelete = () => {
 /* No hover lift/red-tint, unlike ProductCard/StoreCard — this card isn't a single clickable unit. */
 
 .profile-card:hover {
-  border-color: #cccccc;
+  border-color: var(--c-border-strong);
 
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06) !important;
 }
@@ -1290,20 +1298,20 @@ const goHomeAfterDelete = () => {
 }
 
 .section-title {
-  font-size: 16px;
+  font-size: var(--fs-xl);
   font-weight: 700;
   line-height: 1.3;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .section-subtitle {
   margin-top: 2px;
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   line-height: 1.4;
 
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 /* Sized explicitly (not via q-btn's dense prop) so every pill renders the same height. */
@@ -1314,16 +1322,16 @@ const goHomeAfterDelete = () => {
   min-height: 32px;
   padding: 0 14px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
   transition: background-color 0.15s, border-color 0.15s;
 }
 
 .card-action-btn:hover {
-  background: #fdecec;
+  background: var(--c-brand-tint);
 }
 
 /* Quasar's default icon size (~22px) reads oversized on a 32px pill. */
@@ -1336,31 +1344,27 @@ const goHomeAfterDelete = () => {
   margin-right: 8px;
 }
 
-.border-red {
-  border-color: #fca5a5;
-}
-
 /* Excludes round buttons (photo camera badge) so it doesn't flatten Quasar's .q-btn--round. */
 .profile-container :deep(.q-btn:not(.q-btn--round)) {
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 }
 
 /* Same close-icon grey used everywhere else a dialog has an X (Terms/Privacy/Support/ProductDetailModal). */
 .dialog-close-btn {
-  color: #666666;
+  color: var(--c-muted);
 }
 
 .profile-container :deep(.q-btn) {
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .profile-container :deep(.q-field--outlined .q-field__control) {
-  border-radius: 12px;
+  border-radius: var(--r-xl);
 }
 
 /* Primary CTA buttons — same flat red + shadow-lift treatment as Login/Sign Up/Apply Filters. */
 .btn-gradient {
-  background: #bd2427 !important;
+  background: var(--c-brand) !important;
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
 
@@ -1368,7 +1372,7 @@ const goHomeAfterDelete = () => {
 }
 
 .btn-gradient:hover {
-  background: #a91e21 !important;
+  background: var(--c-brand-hover) !important;
 
   box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
 
@@ -1376,7 +1380,7 @@ const goHomeAfterDelete = () => {
 }
 
 .btn-gradient:active {
-  background: #8f1a1c !important;
+  background: var(--c-brand-active) !important;
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
 
@@ -1395,7 +1399,7 @@ const goHomeAfterDelete = () => {
 
 /* Deeper, more saturated red than the primary button to read as higher-stakes. */
 .btn-danger-gradient {
-  background: #b91c1c !important;
+  background: var(--c-danger) !important;
   color: #ffffff !important;
 
   box-shadow: 0 2px 8px rgba(185, 28, 28, 0.3);
@@ -1404,7 +1408,7 @@ const goHomeAfterDelete = () => {
 }
 
 .btn-danger-gradient:hover {
-  background: #991717 !important;
+  background: var(--c-brand-deep) !important;
 
   box-shadow: 0 6px 16px rgba(185, 28, 28, 0.4);
 
@@ -1412,7 +1416,7 @@ const goHomeAfterDelete = () => {
 }
 
 .btn-danger-gradient:active {
-  background: #7a1212 !important;
+  background: var(--c-brand-active) !important;
 
   box-shadow: 0 2px 6px rgba(185, 28, 28, 0.35);
 
@@ -1439,15 +1443,15 @@ const goHomeAfterDelete = () => {
   margin: 0 -10px;
   padding: 14px 10px;
 
-  /* Softer than the card's #e8e8e8 border so rows read as a subtle rhythm. */
-  border-bottom: 1px solid #f6f6f6;
-  border-radius: 12px;
+  /* Softer than the card's var(--c-border) border so rows read as a subtle rhythm. */
+  border-bottom: 1px solid var(--c-hairline);
+  border-radius: var(--r-xl);
 
   transition: background-color 0.15s;
 }
 
 .info-row:hover {
-  background: #fafafa;
+  background: var(--c-surface-2);
 }
 
 .info-row:last-of-type,
@@ -1465,10 +1469,10 @@ const goHomeAfterDelete = () => {
   width: 44px;
   height: 44px;
 
-  border-radius: 12px;
+  border-radius: var(--r-xl);
 
-  background: linear-gradient(145deg, #fdecec 0%, #fbdbdc 100%);
-  color: #bd2427;
+  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  color: var(--c-brand);
 }
 
 .info-body {
@@ -1477,9 +1481,9 @@ const goHomeAfterDelete = () => {
 }
 
 .info-label {
-  font-size: 12px;
+  font-size: var(--fs-xs);
 
-  color: #a3a3a3;
+  color: var(--c-muted);
 }
 
 .info-value-row {
@@ -1494,11 +1498,11 @@ const goHomeAfterDelete = () => {
 .info-value {
   margin-top: 5px;
 
-  font-size: 14.5px;
+  font-size: var(--fs-lg);
   font-weight: 500;
   line-height: 1.4;
 
-  color: #111111;
+  color: var(--c-text);
 
   overflow-wrap: anywhere;
 }
@@ -1549,9 +1553,9 @@ const goHomeAfterDelete = () => {
 .photo-hint {
   margin-top: 10px;
 
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
 
-  color: #9a9a9a;
+  color: var(--c-muted);
 }
 
 .profile-container :deep(.q-btn--outline.text-primary) {
@@ -1559,8 +1563,8 @@ const goHomeAfterDelete = () => {
 }
 
 .profile-container :deep(.q-btn--outline.text-primary:hover) {
-  border-color: #bd2427;
-  background: #fdecec;
+  border-color: var(--c-brand);
+  background: var(--c-brand-tint);
 }
 
 /* Secondary outline buttons inside dialogs (Cancel, Keep Editing), shared across every modal. */
@@ -1569,12 +1573,12 @@ const goHomeAfterDelete = () => {
 }
 
 .profile-dialog-card :deep(.q-btn--outline.text-grey-7:hover) {
-  border-color: #b0b0b0;
-  background: #f5f5f5;
+  border-color: var(--c-border-strong);
+  background: var(--c-surface);
 }
 
 .profile-dialog-card :deep(.q-btn--outline.text-grey-7:active) {
-  background: #ececec;
+  background: var(--c-surface);
 }
 
 .profile-dialog-card :deep(.q-btn--outline.text-grey-7:focus-visible) {
@@ -1585,8 +1589,8 @@ const goHomeAfterDelete = () => {
 /* DANGER ZONE */
 
 .danger-card {
-  border-color: #fecdd3;
-  background: #fffbfb;
+  border-color: var(--c-danger-tint);
+  background: var(--c-brand-tint);
 }
 
 .danger-card .section-subtitle {
@@ -1600,8 +1604,8 @@ const goHomeAfterDelete = () => {
   gap: 14px;
   padding: 10px;
 
-  border-radius: 10px;
-  border: 1px solid #fecaca;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-danger-tint);
 
   background: #ffffff;
 
@@ -1611,33 +1615,33 @@ const goHomeAfterDelete = () => {
 }
 
 .danger-row:hover {
-  border-color: #fca5a5;
-  background: #fff5f5;
+  border-color: var(--c-danger-tint);
+  background: var(--c-brand-tint);
 
   box-shadow: 0 4px 14px rgba(220, 38, 38, 0.1);
   transform: translateY(-1px);
 }
 
 .danger-icon {
-  border-radius: 12px;
+  border-radius: var(--r-xl);
 
-  background: linear-gradient(145deg, #fee2e2 0%, #fecaca 100%);
-  color: #b91c1c;
+  background: linear-gradient(145deg, var(--c-danger-tint) 0%, var(--c-danger-tint) 100%);
+  color: var(--c-danger);
 }
 
 .danger-title {
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 700;
 
-  color: #b91c1c;
+  color: var(--c-danger);
 }
 
 .danger-desc {
   margin-top: 1px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
 
-  color: #b45858;
+  color: var(--c-danger);
 }
 
 /* DIALOG HEADER (title/subtitle + close) — shared by all dialogs. */
@@ -1688,10 +1692,10 @@ const goHomeAfterDelete = () => {
 .edit-field-label {
   margin-bottom: 6px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .edit-field-label-row {
@@ -1706,69 +1710,23 @@ const goHomeAfterDelete = () => {
   margin-bottom: 0;
 }
 
-.verified-badge {
-  display: inline-flex;
-  align-items: center;
-
-  gap: 4px;
-  padding: 4px 10px 4px 8px;
-
-  border-radius: 999px;
-
-  background: #dcfce7;
-
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1;
-
-  color: #16a34a;
-}
-
-.pending-badge {
-  display: inline-flex;
-  align-items: center;
-
-  gap: 4px;
-  padding: 4px 10px 4px 8px;
-
-  border-radius: 999px;
-
-  background: #fef3c7;
-
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1;
-
-  color: #b45309;
-}
-
 .edit-field-hint {
   margin-top: 4px;
 
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
 
-  color: #9a9a9a;
-}
-
-.edit-field-hint-success {
-  display: flex;
-  align-items: center;
-
-  gap: 3px;
-
-  color: #16a34a;
-  font-weight: 600;
+  color: var(--c-muted);
 }
 
 .edit-field-hint-error {
-  color: #dc2626;
+  color: var(--c-danger);
 }
 
 /* Same show/hide toggle as ConsumerRegister.vue's password fields */
 .password-icon {
   font-size: 16px;
 
-  color: #777777;
+  color: var(--c-muted);
 }
 
 /* DELETE ACCOUNT DIALOG */
@@ -1776,10 +1734,10 @@ const goHomeAfterDelete = () => {
 .delete-warning {
   margin: 0;
 
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   line-height: 1.6;
 
-  color: #4a4a4a;
+  color: var(--c-text-2);
 }
 
 /* SUCCESS DIALOG */
@@ -1794,8 +1752,8 @@ const goHomeAfterDelete = () => {
 
   border-radius: 50%;
 
-  background: #dcfce7;
-  color: #16a34a;
+  background: var(--c-success-tint);
+  color: var(--c-success);
 
   animation: success-icon-pop 240ms ease-out;
 }
@@ -1825,19 +1783,19 @@ const goHomeAfterDelete = () => {
   height: 48px;
   padding: 0;
 
-  border: 1px solid #d6d6da;
-  border-radius: 8px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-md);
 
   background: #ffffff;
 
   font-family: 'Roboto', Arial, sans-serif;
-  font-size: 20px;
+  font-size: var(--fs-2xl);
   font-weight: 600;
   line-height: 1;
 
   text-align: center;
 
-  color: #222222;
+  color: var(--c-text);
 
   outline: none;
 
@@ -1845,25 +1803,25 @@ const goHomeAfterDelete = () => {
 }
 
 .otp-box:focus {
-  border-color: #bd2427;
+  border-color: var(--c-brand);
 
   box-shadow: 0 0 0 1px rgba(189, 36, 39, 0.1);
 }
 
 .otp-box-error {
-  border-color: #ef4444;
+  border-color: var(--c-danger);
 }
 
 /* Brief green flash on the digit boxes before handoff to the success screen. */
 .otp-box-success {
-  border-color: #16a34a;
+  border-color: var(--c-success);
 
-  background: #f0fdf4;
-  color: #16a34a;
+  background: var(--c-success-tint);
+  color: var(--c-success);
 }
 
 .otp-error {
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
 }
 
 .otp-meta {
@@ -1875,15 +1833,15 @@ const goHomeAfterDelete = () => {
   margin-top: 16px;
   margin-bottom: 12px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .otp-resend {
-  color: #9a9a9a;
+  color: var(--c-muted);
 }
 
 .otp-resend-link {
-  color: #bd2427;
+  color: var(--c-brand);
   font-weight: 600;
 
   text-decoration: none;
@@ -1897,10 +1855,44 @@ const goHomeAfterDelete = () => {
 /* q-dialog content is teleported to <body>, so :deep() scoping must anchor on .profile-dialog-card itself, not an ancestor like .profile-container. */
 
 .profile-dialog-card {
-  border-radius: 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xl);
+
+  /* Deeper than .profile-card's shadow — an overlay has to lift off the page behind it.
+     !important beats Quasar's own dialog card shadow utility. */
+  box-shadow: 0 18px 48px rgba(17, 17, 17, 0.18) !important;
 
   /* Tightens Quasar's default 300ms "scale" transition down to ~200ms. */
   --q-transition-duration: 200ms;
+}
+
+/* Same tinted tile as the page's .info-icon, so a dialog opens into the visual
+   language of the card that launched it instead of a flat white sheet. */
+.dialog-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 44px;
+  height: 44px;
+
+  border-radius: var(--r-xl);
+
+  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  color: var(--c-brand);
+}
+
+/* Destructive actions get the deeper end of the brand red rather than a new hue. */
+.dialog-icon--danger {
+  background: linear-gradient(145deg, var(--c-brand-tint-2) 0%, var(--c-brand-tint-3) 100%);
+  color: var(--c-brand-deep);
+}
+
+/* Amber reads as "pause and check" without borrowing the delete dialog's red. */
+.dialog-icon--warn {
+  background: linear-gradient(145deg, var(--c-warning-tint) 0%, var(--c-warning-tint) 100%);
+  color: var(--c-warning);
 }
 
 /* 32px baseline padding; .dialog-header/.dialog-body trim top/bottom so adjacent sections don't double up into a 64px gap. */
@@ -1908,13 +1900,15 @@ const goHomeAfterDelete = () => {
   padding: 32px;
 }
 
-.profile-dialog-card :deep(.dialog-header) {
+.profile-dialog-card :deep(.dialog-header:not(.discard-confirm-header)) {
   padding-bottom: 20px;
+
+  border-bottom: 1px solid var(--c-hairline);
 }
 
 .profile-dialog-card :deep(.dialog-body) {
-  padding-top: 0;
-  padding-bottom: 4px;
+  padding-top: 24px;
+  padding-bottom: 24px;
 }
 
 .profile-dialog-card :deep(.q-card__actions) {
@@ -1922,7 +1916,10 @@ const goHomeAfterDelete = () => {
   justify-content: flex-end;
 
   gap: 10px;
-  padding: 4px 32px 32px;
+  padding: 20px 32px;
+
+  /* Hairline only — the divider gives the actions their own band without tinting them. */
+  border-top: 1px solid var(--c-border);
 }
 
 /* Zeroes Quasar's own .q-card__actions--horiz margin-left so flex `gap` above is the only spacing in play. */
@@ -1940,7 +1937,7 @@ const goHomeAfterDelete = () => {
   justify-content: flex-end;
 
   gap: 10px;
-  padding: 6px 32px 28px;
+  padding: 20px 32px;
 }
 
 /* Zeroes Quasar's own .q-card__actions--horiz margin-left so flex `gap` is the only spacing. */
@@ -1958,8 +1955,8 @@ const goHomeAfterDelete = () => {
   height: 48px;
   min-height: 48px;
 
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
 }
 
 /* Close (×) icon reads oversized next to the dialog's 18px icon language. */
@@ -1971,12 +1968,12 @@ const goHomeAfterDelete = () => {
 .profile-dialog-card :deep(.q-field--outlined:not(.otp-box) .q-field__control) {
   height: 48px;
 
-  border-radius: 8px;
+  border-radius: var(--r-md);
 }
 
 /* Excludes the error state so a failed field still shows Quasar's own negative red. */
 .profile-dialog-card :deep(.q-field--focused:not(.q-field--error)) {
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 /* Below md breakpoint both cards stack in DOM order — pull Profile Photo ahead of Personal Information for phones/tablets. */
@@ -1992,11 +1989,11 @@ const goHomeAfterDelete = () => {
   }
 
   .page-title {
-    font-size: 19px;
+    font-size: var(--fs-2xl);
   }
 
   .page-subtitle {
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
   }
 
   .profile-card :deep(.q-card__section) {
@@ -2004,11 +2001,11 @@ const goHomeAfterDelete = () => {
   }
 
   .section-title {
-    font-size: 15px;
+    font-size: var(--fs-lg);
   }
 
   .section-subtitle {
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
 
   /* Edit / Change Password pills */
@@ -2017,7 +2014,7 @@ const goHomeAfterDelete = () => {
     min-height: 32px;
     padding: 0 12px;
 
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
 
   .info-row {
@@ -2031,7 +2028,7 @@ const goHomeAfterDelete = () => {
   }
 
   .info-value {
-    font-size: 14px;
+    font-size: var(--fs-md);
   }
 
   .photo-camera-btn {
@@ -2046,29 +2043,29 @@ const goHomeAfterDelete = () => {
   }
 
   .danger-title {
-    font-size: 13.5px;
+    font-size: var(--fs-md);
   }
 
   .danger-desc {
-    font-size: 11.5px;
+    font-size: var(--fs-xs);
   }
 
   /* All buttons — pill actions, primary CTAs, and dialog buttons alike */
   .profile-container :deep(.q-btn),
   .profile-dialog-card :deep(.q-btn) {
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
   }
 
   .edit-field-label {
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
   }
 
   .edit-field-hint {
-    font-size: 11px;
+    font-size: var(--fs-2xs);
   }
 
   .delete-warning {
-    font-size: 13px;
+    font-size: var(--fs-sm);
   }
 
   /* .success-icon deliberately has no override — stays 64px, same as desktop. */
@@ -2096,18 +2093,20 @@ const goHomeAfterDelete = () => {
     align-items: flex-start;
   }
 
-  /* Reasserts padding-top:0 — the blanket .q-card__section rule above would otherwise double the top gap. */
+  /* Clears the header's divider rather than sitting on it; the blanket .q-card__section
+     rule above would otherwise double this into a 48px gap. */
   .profile-dialog-card :deep(.dialog-body) {
-    padding-top: 0;
-    padding-bottom: 8px;
+    padding-top: 20px;
+    padding-bottom: 20px;
   }
 
-  /* Cancel + primary action buttons split the footer evenly instead of sizing to their own label. */
+  /* Cancel + primary action buttons split the footer evenly instead of sizing to their own label.
+     Even padding now that the actions sit on their own tinted band. */
   .profile-dialog-card :deep(.q-card__actions) {
     display: flex;
 
     gap: 10px;
-    padding: 12px 24px 24px;
+    padding: 16px 24px;
   }
 
   /* Zeroes the buttons' leftover q-mr-sm margin so flex `gap` above is the only spacing in play. */
@@ -2139,3 +2138,4 @@ const goHomeAfterDelete = () => {
   }
 }
 </style>
+

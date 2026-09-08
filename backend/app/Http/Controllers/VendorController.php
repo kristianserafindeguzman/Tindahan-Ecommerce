@@ -510,7 +510,7 @@ class VendorController extends Controller
                 [$store->store_id]
             );
             if ($salesStats->cnt < 30 || $salesStats->distinct_dates < 3) {
-                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate.';
+                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate. Continue recording sales for more accurate results.';
             }
         }
 
@@ -565,7 +565,7 @@ class VendorController extends Controller
             $mape = $metrics['model_metrics']['mape'] ?? null;
             
             if ($sufficiency === 'low_data' || $mape === null) {
-                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate.';
+                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate. Continue recording sales for more accurate results.';
             } else if ($mape >= 10) {
                 $warningMessage = 'Forecast reliability is currently low based on available historical data.';
             }
@@ -577,7 +577,7 @@ class VendorController extends Controller
                 [$store->store_id]
             );
             if ($salesStats->cnt < 30 || $salesStats->distinct_dates < 3) {
-                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate.';
+                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate. Continue recording sales for more accurate results.';
             }
         }
 
@@ -637,6 +637,29 @@ class VendorController extends Controller
             ->orderByRaw('SUM(order_items.quantity) DESC')
             ->value('categories.category_name');
 
+        // Derive current seasonal context from today's date
+        $now = now('Asia/Manila');
+        $month = $now->month;
+        $day = $now->day;
+
+        $currentSeason = match(true) {
+            in_array($month, [3, 4, 5]) => 'Summer',
+            in_array($month, [6, 7, 8, 9, 10]) => 'Rainy',
+            in_array($month, [11, 12, 1, 2]) => 'Amihan',
+            default => 'Unknown',
+        };
+
+        $currentHoliday = match(true) {
+            $month == 12 && $day >= 16 => 'Christmas',
+            ($month == 12 && $day == 31) || ($month == 1 && $day <= 2) => 'New Year',
+            $month == 2 && $day >= 13 && $day <= 15 => 'Valentines',
+            ($month == 3 && $day >= 25) || ($month == 4 && $day <= 10) => 'Holy Week',
+            $month == 5 => 'Fiesta',
+            $month == 8 || ($month == 9 && $day <= 15) => 'Back to School',
+            ($month == 10 && $day >= 30) || ($month == 11 && $day <= 2) => 'Undas',
+            default => null,
+        };
+
         return response()->json([
             'has_insights' => true,
             'low_data_warning' => $warningMessage ?? false,
@@ -644,7 +667,9 @@ class VendorController extends Controller
             'daysUntilStockout' => $daysUntilStockout,
             'trendingCategory' => $trendingCategory,
             'trendMultiplier' => $trendMultiplier,
-            'topCategory' => $topCategory
+            'topCategory' => $topCategory,
+            'currentSeason' => $currentSeason,
+            'currentHoliday' => $currentHoliday
         ]);
     }
 }

@@ -41,20 +41,23 @@
             <div v-if="hasVariants" class="variants-section">
               <div class="variants-label">Available Sizes</div>
               <div class="variants-list">
-                <button
+                <q-btn
                   v-for="(variant, i) in product.variants"
                   :key="i"
-                  type="button"
+                  flat
+                  dense
+                  no-caps
+                  :ripple="false"
                   class="variant-chip"
                   :class="{
                     'variant-chip-oos': !variant.quantity,
                     'variant-chip-selected': selectedVariantIndex === i
                   }"
-                  :disabled="!variant.quantity"
+                  :disable="!variant.quantity"
+                  :label="variant.size || variant.name"
+                  :aria-pressed="selectedVariantIndex === i"
                   @click="selectVariant(i)"
-                >
-                  {{ variant.size || variant.name }}
-                </button>
+                />
               </div>
             </div>
 
@@ -64,18 +67,9 @@
                 <span class="quantity-label">Quantity</span>
                 <div class="stepper-wrapper">
                   <div class="quantity-stepper">
-                    <button type="button" class="stepper-btn" :disabled="quantity <= 1" @click="quantity--">
-                      <q-icon name="o_remove" size="16px" />
-                    </button>
+                    <q-btn flat dense :ripple="false" icon="o_remove" class="stepper-btn" :disable="quantity <= 1" aria-label="Decrease quantity" @click="quantity--" />
                     <span class="stepper-value">{{ quantity }}</span>
-                    <button
-                      type="button"
-                      class="stepper-btn"
-                      :disabled="quantity >= maxQuantity"
-                      @click="quantity++"
-                    >
-                      <q-icon name="o_add" size="16px" />
-                    </button>
+                    <q-btn flat dense :ripple="false" icon="o_add" class="stepper-btn" :disable="quantity >= maxQuantity" aria-label="Increase quantity" @click="quantity++" />
                   </div>
                 </div>
               </div>
@@ -122,18 +116,9 @@
           <div v-if="product.inStock" class="quantity-row">
             <div class="stepper-wrapper">
               <div class="quantity-stepper">
-                <button type="button" class="stepper-btn" :disabled="quantity <= 1" @click="quantity--">
-                  <q-icon name="o_remove" size="16px" />
-                </button>
+                <q-btn flat dense :ripple="false" icon="o_remove" class="stepper-btn" :disable="quantity <= 1" aria-label="Decrease quantity" @click="quantity--" />
                 <span class="stepper-value">{{ quantity }}</span>
-                <button
-                  type="button"
-                  class="stepper-btn"
-                  :disabled="quantity >= maxQuantity"
-                  @click="quantity++"
-                >
-                  <q-icon name="o_add" size="16px" />
-                </button>
+                <q-btn flat dense :ripple="false" icon="o_add" class="stepper-btn" :disable="quantity >= maxQuantity" aria-label="Increase quantity" @click="quantity++" />
               </div>
             </div>
           </div>
@@ -161,6 +146,7 @@ import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { useStores } from '@/composables/useStores'
+import { formatDistance } from '@/utils/distance'
 import { useCart } from '@/composables/useCart'
 
 const props = defineProps({
@@ -193,13 +179,6 @@ const store = computed(() =>
   props.product ? stores.value.find((s) => s.id === props.product.storeId) || null : null
 )
 
-const formatDistance = (meters) => {
-  if (meters == null) return ''
-  const rounded = Math.round(meters)
-  if (rounded < 1000) return `${rounded} m away`
-  return `${(meters / 1000).toFixed(1)} km away`
-}
-
 const storeAddressText = computed(() => {
   if (!store.value) return ''
   const dist = store.value.distance_meters != null ? formatDistance(store.value.distance_meters) : ''
@@ -224,8 +203,10 @@ const displayPrice = computed(() =>
   selectedVariant.value ? Number(selectedVariant.value.price) : props.product.price
 )
 
+// ?? not || : a sold-out product reports availableQuantity 0, which || would fall
+// through to the 99 meant only for products that omit the field entirely.
 const maxQuantity = computed(() =>
-  selectedVariant.value ? selectedVariant.value.quantity : (props.product.availableQuantity || 99)
+  selectedVariant.value ? selectedVariant.value.quantity : (props.product.availableQuantity ?? 99)
 )
 
 const selectVariant = (i) => {
@@ -267,7 +248,7 @@ const handleAddToCart = async () => {
   width: 760px;
   max-width: 92vw;
 
-  border-radius: 12px;
+  border-radius: var(--r-xl);
 
   font-family: 'Roboto', Arial, sans-serif;
 
@@ -280,7 +261,7 @@ const handleAddToCart = async () => {
   right: 12px;
   z-index: 1;
 
-  color: #666666;
+  color: var(--c-muted);
 
   background: rgba(255, 255, 255, 0.9);
 
@@ -314,11 +295,11 @@ const handleAddToCart = async () => {
   aspect-ratio: 1 / 1;
   overflow: hidden;
 
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
 
-  background: linear-gradient(145deg, #f7f7f8 0%, #ececee 100%);
-  color: #bd2427;
+  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  color: var(--c-brand);
 }
 
 .detail-image {
@@ -335,12 +316,12 @@ const handleAddToCart = async () => {
 
   padding: 4px 10px;
 
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 
   background: rgba(255, 255, 255, 0.92);
-  color: #4a4a4a;
+  color: var(--c-text-2);
 
-  font-size: 10.5px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -356,12 +337,12 @@ const handleAddToCart = async () => {
 
   padding: 6px 14px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
   background: rgba(17, 17, 17, 0.78);
   color: #ffffff;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -379,11 +360,11 @@ const handleAddToCart = async () => {
 .detail-name {
   margin: 0 0 14px;
 
-  font-size: 23px;
+  font-size: var(--fs-3xl);
   font-weight: 700;
   line-height: 1.3;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .price-stock-row {
@@ -395,11 +376,11 @@ const handleAddToCart = async () => {
 }
 
 .detail-price {
-  font-size: 24px;
+  font-size: var(--fs-4xl);
   font-weight: 700;
   line-height: 1.2;
 
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .detail-stock {
@@ -407,27 +388,27 @@ const handleAddToCart = async () => {
 
   padding: 4px 10px;
 
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 
-  background: #f0fdf4;
-  color: #16a34a;
+  background: var(--c-success-tint);
+  color: var(--c-success);
 
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   font-weight: 700;
 }
 
 .detail-stock-oos {
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--c-danger-tint);
+  color: var(--c-danger);
 }
 
 .detail-description {
   margin: 0 0 18px;
 
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   line-height: 1.5;
 
-  color: #767676;
+  color: var(--c-subtle);
 }
 
 /* VARIANTS */
@@ -439,12 +420,12 @@ const handleAddToCart = async () => {
 .variants-label {
   margin-bottom: 8px;
 
-  font-size: 10.5px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 
-  color: #9a9aa2;
+  color: var(--c-muted);
 }
 
 .variants-list {
@@ -454,17 +435,21 @@ const handleAddToCart = async () => {
   gap: 8px;
 }
 
+/* QBtn ships min-width, its own padding and a rectangle radius; these restore the
+   pill the chip row is built from. Quasar marks a disabled button with .disabled
+   (not :disabled), so the hover guards below key off that. */
 .variant-chip {
   padding: 5px 14px;
+  min-height: auto;
 
-  border-radius: 999px;
-  border: 1px solid #f3c6c7;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--c-brand-tint-3);
 
-  background: #fdecec;
-  color: #9c171b;
+  background: var(--c-brand-tint);
+  color: var(--c-brand-deep);
 
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
   cursor: pointer;
@@ -472,24 +457,24 @@ const handleAddToCart = async () => {
   transition: background-color 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.variant-chip:hover:not(:disabled) {
-  border-color: #e29a9c;
-  background: #fbdbdc;
+.variant-chip:hover:not(.disabled) {
+  border-color: var(--c-brand-tint-3);
+  background: var(--c-brand-tint-2);
 }
 
 .variant-chip-selected,
-.variant-chip-selected:hover:not(:disabled) {
-  border-color: #bd2427;
+.variant-chip-selected:hover:not(.disabled) {
+  border-color: var(--c-brand);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 }
 
 .variant-chip-oos {
-  border-color: #e2e2e2;
+  border-color: var(--c-border);
 
-  background: #f4f4f5;
-  color: #9ca3af;
+  background: var(--c-surface);
+  color: var(--c-muted);
 
   text-decoration: line-through;
 
@@ -507,47 +492,48 @@ const handleAddToCart = async () => {
 }
 
 .quantity-label {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
-  color: #333333;
+  color: var(--c-text-2);
 }
 
 .quantity-stepper {
   display: flex;
   align-items: center;
 
-  border: 1px solid #d6d6da;
-  border-radius: 8px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-md);
 
   overflow: hidden;
 }
 
 .stepper-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
   width: 32px;
   height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
 
-  border: none;
+  border-radius: 0;
+
   background: #ffffff;
-  color: #333333;
-
-  cursor: pointer;
-
-  transition: background-color 0.15s;
+  color: var(--c-text-2);
 }
 
-.stepper-btn:hover:not(:disabled) {
-  background: #fdecec;
-  color: #bd2427;
+.stepper-btn :deep(.q-icon) {
+  font-size: 16px;
 }
 
-.stepper-btn:disabled {
-  color: #cccccc;
-  cursor: default;
+.stepper-btn:hover:not(.disabled) {
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
+}
+
+/* Quasar dims a disabled QBtn to 0.7 opacity; the greyed glyph reads better here. */
+.stepper-btn.disabled {
+  color: var(--c-border-strong);
+  opacity: 1 !important;
 }
 
 .stepper-value {
@@ -555,10 +541,10 @@ const handleAddToCart = async () => {
 
   text-align: center;
 
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 600;
 
-  color: #222222;
+  color: var(--c-text);
 }
 
 /* ADD TO CART — same brand button treatment as .login-button. */
@@ -567,12 +553,12 @@ const handleAddToCart = async () => {
   width: 100%;
   height: 46px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
@@ -581,7 +567,7 @@ const handleAddToCart = async () => {
 }
 
 .add-to-cart-btn:hover {
-  background: #a91e21;
+  background: var(--c-brand-hover);
 
   box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
 
@@ -589,7 +575,7 @@ const handleAddToCart = async () => {
 }
 
 .add-to-cart-btn:active {
-  background: #8f1a1c;
+  background: var(--c-brand-active);
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
 
@@ -602,7 +588,7 @@ const handleAddToCart = async () => {
 }
 
 .add-to-cart-btn:disabled {
-  background: #bd2427;
+  background: var(--c-brand);
   opacity: 0.45;
 }
 
@@ -612,16 +598,16 @@ const handleAddToCart = async () => {
   margin-top: 22px;
   padding-top: 18px;
 
-  border-top: 1px solid #f4f4f4;
+  border-top: 1px solid var(--c-hairline);
 }
 
 .store-section-label {
   margin-bottom: 10px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .store-row {
@@ -631,8 +617,8 @@ const handleAddToCart = async () => {
   gap: 12px;
   padding: 16px;
 
-  border-radius: 10px;
-  border: 1px solid #e8e8e8;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
 
   cursor: pointer;
 
@@ -640,8 +626,8 @@ const handleAddToCart = async () => {
 }
 
 .store-row:hover {
-  border-color: #f3c6c7;
-  background: #fdecec;
+  border-color: var(--c-brand-tint-3);
+  background: var(--c-brand-tint);
 
   box-shadow: 0 6px 16px rgba(189, 36, 39, 0.12);
   transform: translateY(-2px);
@@ -653,23 +639,23 @@ const handleAddToCart = async () => {
 }
 
 .store-row-name {
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   font-weight: 700;
 
-  color: #222222;
+  color: var(--c-text);
 }
 
 .store-row-status {
   margin-top: 1px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 500;
 
-  color: #2e9e5b;
+  color: var(--c-success);
 }
 
 .store-row-status-closed {
-  color: #c02226;
+  color: var(--c-brand);
 }
 
 .store-row-address {
@@ -680,9 +666,9 @@ const handleAddToCart = async () => {
   min-width: 0;
   margin-top: 3px;
 
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .store-row-address .q-icon {
@@ -705,10 +691,10 @@ const handleAddToCart = async () => {
 
   gap: 1px;
 
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 /* RESPONSIVE — sheet styling is driven by the .detail-card-sheet class (same isSheet check as the dialog's position), not a separate media query, so the two can't disagree at the breakpoint. */
@@ -733,9 +719,9 @@ const handleAddToCart = async () => {
   height: 4px;
   margin: 10px auto 0;
 
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 
-  background: #d6d6da;
+  background: var(--c-border-strong);
 }
 
 .detail-card-sheet .close-btn {
@@ -767,7 +753,7 @@ const handleAddToCart = async () => {
   padding: 14px 20px 16px;
 
   background: #ffffff;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--c-hairline);
 }
 
 .cart-action-row-sheet .quantity-row {
@@ -782,3 +768,5 @@ const handleAddToCart = async () => {
   flex: 1;
 }
 </style>
+
+
