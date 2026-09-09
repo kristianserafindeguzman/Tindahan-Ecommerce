@@ -163,7 +163,7 @@
             <div class="text-h6">Edit Personal Information</div>
             <div class="section-subtitle">Update your personal details below.</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="dialog-close-btn" :disable="savingPersonal" @click="attemptCloseEditPersonal" />
+          <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close edit profile" :disable="savingPersonal" @click="attemptCloseEditPersonal" />
         </q-card-section>
 
         <q-form ref="editPersonalFormRef">
@@ -278,7 +278,7 @@
             <div class="text-h6">Crop Profile Photo</div>
             <div class="section-subtitle">Drag to select a square crop area.</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="dialog-close-btn" @click="showCropModal = false" />
+          <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close photo cropper" @click="showCropModal = false" />
         </q-card-section>
         <q-card-section class="dialog-body text-center">
           <canvas
@@ -306,7 +306,7 @@
             <div class="text-h6">Change Password</div>
             <div class="section-subtitle">Keep your account secure with a strong password.</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="dialog-close-btn" :disable="savingPassword" @click="attemptClosePasswordModal" />
+          <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close change password" :disable="savingPassword" @click="attemptClosePasswordModal" />
         </q-card-section>
 
         <q-form ref="passwordFormRef">
@@ -409,7 +409,7 @@
             <div class="text-h6">Verify New Phone</div>
             <div class="section-subtitle">Enter the 6-digit verification code sent to {{ maskedPhone }}. Sent via SMS.</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="dialog-close-btn" :disable="verifyingOtp" @click="cancelOtp" />
+          <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close verification" :disable="verifyingOtp" @click="cancelOtp" />
         </q-card-section>
         <q-card-section class="dialog-body text-center">
           <!-- Same boxed OTP pattern as ConsumerVerify.vue / LoginPage.vue's forgot-password flow -->
@@ -460,7 +460,7 @@
             <div class="text-h6">Delete Account</div>
             <div class="section-subtitle">This action cannot be undone.</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="dialog-close-btn" :disable="deletingAccount" @click="cancelDeleteModal" />
+          <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close delete account" :disable="deletingAccount" @click="cancelDeleteModal" />
         </q-card-section>
 
         <q-card-section class="dialog-body">
@@ -2138,4 +2138,5 @@ const goHomeAfterDelete = () => {
   }
 }
 </style>
+
 

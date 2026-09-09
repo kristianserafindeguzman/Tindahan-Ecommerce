@@ -174,8 +174,12 @@ const markAllAsRead = async () => {
 .notif__btn {
   position: relative;
 
-  width: 40px;
-  height: 40px;
+  /* 44px, not the desktop cluster's 40px: this only ever mounts inside the compact
+     header (< 768px), beside .header-mobile-btn siblings that are already 44. The bump
+     used to live in SiteHeader's scoped block, which cannot reach a child component's
+     non-root element, so it never applied. */
+  width: 44px;
+  height: 44px;
 
   border-radius: var(--r-md);
 
@@ -332,6 +336,7 @@ const markAllAsRead = async () => {
   font-weight: 700;
 }
 </style>
+
 
 
 

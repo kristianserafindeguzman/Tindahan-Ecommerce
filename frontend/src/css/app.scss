@@ -41,9 +41,22 @@
 
   /* Semantic */
   --c-success: #16a34a;
+  /* -wash is a step lighter than -tint, for whole surfaces that still need to hold
+     tint-filled elements inside them (a tinted card whose tracker discs are tinted too).
+     -tint-2 is a step deeper, for an inset sitting on a -tint ground. */
   --c-success-tint: #dcfce7;
+  --c-success-wash: #f0fdf4;
+  /* Hue-matched stand-in for --c-muted on a tinted ground, where a cool grey reads as
+     dirty. Both clear 4.5:1 on their own wash (--c-muted manages only 3.0 there). */
+  --c-success-muted: #43705a;
+  /* Two steps deeper than -tint: a border a single step off its own fill is invisible,
+     which is what a tinted card's outline had become. */
+  --c-success-line: #86efac;
   --c-danger: #b91c1c;
   --c-danger-tint: #fef2f2;
+  --c-danger-tint-2: #fee2e2;
+  --c-danger-muted: #8c5f5f;
+  --c-danger-line: #f6b0b0;
   --c-warning: #c2410c;
   --c-warning-tint: #ffedd5;
   --c-info: #2563eb;
@@ -427,6 +440,108 @@ body.body--dark {
     transition-duration: 0ms;
   }
 }
+
+
+
+
+
+
+/* ---------------------------------------------------------------------------
+   TOASTS
+
+   Quasar's stock notification is a saturated slab — solid green or red with white
+   text — which matches nothing else on the consumer surface. This gives it the same
+   treatment as the cards it appears over: white ground, hairline border, the pop
+   shadow, and a tinted status disc for the icon.
+
+   Types are re-registered in boot/notify.js, so all ~96 existing $q.notify calls
+   pick this up without changing.
+   --------------------------------------------------------------------------- */
+
+.q-notification.app-toast {
+  /* Anchors the ::before status rail; without it the rail resolves against the
+     notification list container and lands off the toast entirely. */
+  position: relative;
+  overflow: hidden;
+
+  min-height: 0;
+  padding: 12px 16px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+
+  /* !important: Quasar sets the ground with its own bg-* utility on the element. */
+  background: #ffffff !important;
+  color: var(--c-text) !important;
+
+  box-shadow: var(--sh-pop);
+
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+.app-toast .q-notification__message {
+  padding: 0;
+
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* The disc, matching .notif-icon / .info-icon rather than a bare glyph on colour. */
+.app-toast .q-notification__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 30px;
+  height: 30px;
+  margin-right: 12px;
+
+  border-radius: var(--r-xl);
+
+  font-size: 18px;
+}
+
+.app-toast--positive .q-notification__icon {
+  background: var(--c-success-tint);
+  color: var(--c-success);
+}
+
+.app-toast--negative .q-notification__icon {
+  background: var(--c-danger-tint);
+  color: var(--c-danger);
+}
+
+.app-toast--warning .q-notification__icon {
+  background: var(--c-warning-tint);
+  color: var(--c-warning);
+}
+
+.app-toast--info .q-notification__icon {
+  background: var(--c-info-tint);
+  color: var(--c-info);
+}
+
+/* A thin status rail on the leading edge, so the type still reads at a glance now
+   that the whole toast is no longer colour-coded. */
+.app-toast::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+
+  width: 3px;
+
+  border-radius: var(--r-lg) 0 0 var(--r-lg);
+}
+
+.app-toast--positive::before { background: var(--c-success); }
+.app-toast--negative::before { background: var(--c-danger); }
+.app-toast--warning::before { background: var(--c-warning); }
+.app-toast--info::before { background: var(--c-info); }
+
 
 
 

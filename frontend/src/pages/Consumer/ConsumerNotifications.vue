@@ -6,7 +6,7 @@
       <div class="page-header-row">
         <div>
           <h1 class="page-title">Notifications</h1>
-          <p class="page-subtitle">Order updates and store activity from the last 50 notifications.</p>
+          <p class="page-subtitle">Order updates and store activity.</p>
         </div>
 
         <q-btn
@@ -23,7 +23,7 @@
       <!-- Same skeleton shape as the rows below, so nothing shifts when they arrive. -->
       <div v-if="loading" class="notif-list">
         <div v-for="n in 5" :key="n" class="notif-row">
-          <q-skeleton type="QAvatar" size="38px" class="notif-skeleton-icon" />
+          <q-skeleton type="QAvatar" size="40px" class="notif-skeleton-icon" />
           <div class="notif-row-body">
             <q-skeleton type="text" class="notif-skeleton-title" />
             <q-skeleton type="text" class="notif-skeleton-text" />
@@ -53,7 +53,7 @@
           @click="notif.order_id ? openOrder(notif) : markRead(notif)"
         >
           <span class="notif-icon" :class="`notif-icon--${toneOf(notif)}`">
-            <q-icon :name="iconOf(notif)" size="19px" />
+            <q-icon :name="iconOf(notif)" size="22px" />
           </span>
 
           <span class="notif-row-body">
@@ -91,23 +91,29 @@ const markingAll = ref(false)
 
 const unreadCount = computed(() => notifications.value.filter((n) => !n.is_read).length)
 
-// Titles are free text from the backend, so the tone is matched on keywords rather
-// than a status column. Anything unrecognised falls back to the brand tone.
-const toneOf = (notif) => {
+/*
+  Notifications carry no status column — the title and message are free text — so the
+  stage is matched on keywords. The icons are deliberately the same set the order
+  tracker on ConsumerOrderDetails uses for each stage, so a "ready for pickup" notice
+  and the "Ready" step on the order it refers to show the same glyph.
+*/
+const NOTIF_STAGES = [
+  { test: /cancel|reject|fail/, icon: 'o_cancel', tone: 'danger' },
+  { test: /picked up|collected|complete/, icon: 'o_task_alt', tone: 'success' },
+  { test: /ready/, icon: 'o_storefront', tone: 'success' },
+  { test: /prepar|process/, icon: 'o_inventory_2', tone: 'active' },
+  { test: /placed|order received|confirmed/, icon: 'o_shopping_cart', tone: 'brand' }
+]
+
+const DEFAULT_STAGE = { icon: 'o_notifications', tone: 'brand' }
+
+const stageOf = (notif) => {
   const t = `${notif.title} ${notif.message}`.toLowerCase()
-  if (/cancel|reject|fail/.test(t)) return 'danger'
-  if (/ready|picked up|complete|deliver/.test(t)) return 'success'
-  if (/prepar|process/.test(t)) return 'active'
-  return 'brand'
+  return NOTIF_STAGES.find((s) => s.test.test(t)) || DEFAULT_STAGE
 }
 
-const iconOf = (notif) => {
-  const tone = toneOf(notif)
-  if (tone === 'danger') return 'o_cancel'
-  if (tone === 'success') return 'o_check_circle'
-  if (tone === 'active') return 'o_local_shipping'
-  return 'o_notifications'
-}
+const toneOf = (notif) => stageOf(notif).tone
+const iconOf = (notif) => stageOf(notif).icon
 
 // Short relative form, matching the "30 mins ago" style used elsewhere in the app.
 const relativeTime = (value) => {
@@ -284,10 +290,19 @@ onMounted(fetchNotifications)
   outline-offset: 2px;
 }
 
-/* Unread carries a tinted rail rather than a different background, so the row still
-   reads as the same object in the list. */
 .notif-row--unread {
-  border-left: 3px solid var(--c-brand);
+  border-color: var(--c-brand-tint-3);
+  background: var(--c-brand-tint);
+}
+
+/* These two discs are the same hue family as the unread ground and would flatten into
+   it, so they step a shade deeper. The green and amber tones already read against it. */
+.notif-row--unread .notif-icon--brand {
+  background: linear-gradient(145deg, var(--c-brand-tint-2) 0%, var(--c-brand-tint-3) 100%);
+}
+
+.notif-row--unread .notif-icon--danger {
+  background: var(--c-danger-tint-2);
 }
 
 .notif-icon {
@@ -296,8 +311,8 @@ onMounted(fetchNotifications)
   justify-content: center;
   flex-shrink: 0;
 
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
 
   border-radius: var(--r-xl);
 }
@@ -457,4 +472,8 @@ onMounted(fetchNotifications)
   }
 }
 </style>
+
+
+
+
 

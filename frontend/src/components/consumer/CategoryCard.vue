@@ -1,6 +1,6 @@
 <template>
   <q-card flat class="category-tile" @click="$emit('click', category)">
-    <div class="category-tile-icon">
+    <div class="category-tile-icon" :class="`category-tile-icon--${category.tone || 'brand'}`">
       <q-icon :name="category.icon" size="22px" />
     </div>
     <span class="category-tile-label">{{ category.label }}</span>
@@ -75,10 +75,39 @@ defineEmits(['click'])
   /* !important: QCard rounds a direct first-child's top corners to match its own radius by default. */
   border-radius: 50% !important;
 
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+/* One tone per category. Muted enough to sit under a red brand bar without fighting
+   it — these are saturated icons on pale grounds, not six competing accents. */
+.category-tile-icon--brand {
   background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
   color: var(--c-brand);
+}
 
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+.category-tile-icon--blue {
+  background: linear-gradient(145deg, #e8f2fd 0%, #d6e8fa 100%);
+  color: #1668ab;
+}
+
+.category-tile-icon--amber {
+  background: linear-gradient(145deg, #fdf3e3 0%, #fae8cd 100%);
+  color: #b06a10;
+}
+
+.category-tile-icon--orange {
+  background: linear-gradient(145deg, #fdeee6 0%, #fadfd0 100%);
+  color: #c1521c;
+}
+
+.category-tile-icon--rose {
+  background: linear-gradient(145deg, #fdeaf2 0%, #f9d8e6 100%);
+  color: #b3215f;
+}
+
+.category-tile-icon--teal {
+  background: linear-gradient(145deg, #e2f5f2 0%, #cbeae5 100%);
+  color: #0f766e;
 }
 
 .category-tile:hover .category-tile-icon {
@@ -102,3 +131,4 @@ defineEmits(['click'])
   overflow: hidden;
 }
 </style>
+

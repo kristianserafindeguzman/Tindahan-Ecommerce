@@ -6,14 +6,29 @@
     <!-- MAIN CONTENT -->
     <div class="home-content">
 
-      <!-- HERO BANNER -->
-      <div class="hero-banner">
+      <section class="hero-banner">
         <div class="hero-content">
+          <span class="hero-eyebrow">
+            <q-icon name="o_location_on" size="14px" />
+            Discover local stores
+          </span>
+
           <h1 class="hero-title hero-title-lg">Explore sari-sari stores around you</h1>
-          <q-btn unelevated no-caps label="Show Map" class="hero-cta" @click="showMapDialog = true">
-            <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
-          </q-btn>
+
+          <p class="hero-sub">
+            Find nearby stores, discover products, and shop from your local community.
+          </p>
+
+          <div class="hero-actions">
+            <q-btn unelevated no-caps label="Browse Products" class="hero-cta" @click="router.push('/consumer/products')">
+              <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
+            </q-btn>
+            <q-btn unelevated no-caps label="Show Map" class="hero-cta hero-cta--ghost" @click="showMapDialog = true">
+              <q-icon name="o_map" size="16px" class="q-ml-xs" />
+            </q-btn>
+          </div>
         </div>
+
         <div class="hero-logo-wrap">
           <img
             src="@/assets/tindahan-logo.png"
@@ -21,7 +36,8 @@
             class="hero-logo"
           />
         </div>
-      </div>
+      </section>
+
 
       <!-- CATEGORIES -->
       <SectionBlock title="Categories">
@@ -33,6 +49,31 @@
         </div>
         <CategoryCarousel v-else :categories="categories" @select="goToCategory" />
       </SectionBlock>
+
+      <!--
+        Two routes into the catalogue. Standard storefront furniture: the hero sells the
+        idea, these send you somewhere. Tinted panels rather than white cards so they
+        read as navigation, not as another content section.
+      -->
+      <div class="promo-tiles">
+        <button type="button" class="promo-tile promo-tile--brand" @click="router.push('/consumer/products')">
+          <span class="promo-icon"><q-icon name="o_shopping_basket" size="22px" /></span>
+          <span class="promo-body">
+            <span class="promo-title">Shop everyday essentials</span>
+            <span class="promo-text">Rice, drinks, snacks and household goods from stores near you.</span>
+          </span>
+          <q-icon name="o_arrow_forward" size="20px" class="promo-arrow" />
+        </button>
+
+        <button type="button" class="promo-tile promo-tile--solid" @click="router.push('/consumer/stores')">
+          <span class="promo-icon"><q-icon name="o_storefront" size="22px" /></span>
+          <span class="promo-body">
+            <span class="promo-title">Browse local stores</span>
+            <span class="promo-text">See opening hours and how far each store is from you.</span>
+          </span>
+          <q-icon name="o_arrow_forward" size="20px" class="promo-arrow" />
+        </button>
+      </div>
 
       <!-- RECOMMENDED / POPULAR PRODUCTS -->
       <SectionBlock :title="resultsSectionTitle" view-all @view-all="router.push(resultsViewAllPath)">
@@ -73,6 +114,23 @@
         />
       </SectionBlock>
 
+      <!--
+        Marketplaces recruit supply on the storefront, and this is the one place a store
+        owner is likely to be looking.
+
+        Guests only: /vendor/register is meta.guest, so the router bounces anyone holding
+        a token back to their role home. Shown to a signed-in consumer the button would
+        look broken — it would return them to this very page.
+      -->
+      <section v-if="!isLoggedIn" class="seller-band">
+        <div class="seller-copy">
+          <h2 class="seller-title">Own a sari-sari store?</h2>
+          <p class="seller-text">List what you stock and reach shoppers on your street.</p>
+        </div>
+        <q-btn unelevated no-caps label="Start selling" class="seller-cta" @click="router.push('/vendor/register')">
+          <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
+        </q-btn>
+      </section>
     </div>
 
     <SiteFooter />
@@ -248,9 +306,9 @@ const visibleDiscoverProducts = computed(() =>
   align-items: center;
   justify-content: space-between;
 
-  gap: 24px;
-  padding: 40px;
-  margin-bottom: 24px;
+  gap: 40px;
+  padding: 44px 40px;
+  margin-bottom: 28px;
 
   border-radius: var(--r-2xl);
   box-shadow: 0 4px 16px rgba(101, 16, 18, 0.2);
@@ -287,7 +345,65 @@ const visibleDiscoverProducts = computed(() =>
   position: relative;
   z-index: 1;
 
-  max-width: 640px;
+  max-width: 560px;
+}
+
+/* Eyebrow states the model — reserve then collect — before the headline. */
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  margin-bottom: 14px;
+  padding: 5px 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--r-pill);
+
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hero-sub {
+  max-width: 46ch;
+  margin: 0 0 22px;
+
+  font-size: var(--fs-md);
+  line-height: 1.5;
+
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hero-logo-wrap {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 380px;
+  max-width: 46%;
+}
+
+.hero-logo {
+  width: 100%;
+  height: auto;
+
+  object-fit: contain;
 }
 
 .hero-title {
@@ -300,10 +416,10 @@ const visibleDiscoverProducts = computed(() =>
   color: #ffffff;
 }
 
-/* Bigger now that the subtitle is gone — the only line of copy left in the hero.
-   Display font (Poppins, loaded in index.html) — everything else on the page stays Roboto. */
+/* Display font (Poppins, loaded in index.html) — everything else on the page stays
+   Roboto. Bottom margin is small because .hero-sub now sits directly under it. */
 .hero-title-lg {
-  margin: 0 0 20px;
+  margin: 0 0 12px;
 
   font-family: 'Poppins', 'Roboto', Arial, sans-serif;
   font-size: var(--fs-hero);
@@ -358,24 +474,201 @@ const visibleDiscoverProducts = computed(() =>
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
 }
 
-.hero-logo-wrap {
-  position: relative;
-  z-index: 1;
-  flex-shrink: 0;
+/* Ghost variant: the map is the secondary path, so it reads as an outline on the
+   banner rather than competing with the white primary. */
+.hero-cta--ghost {
+  border: 1px solid rgba(255, 255, 255, 0.55);
 
+  background: transparent;
+  color: #ffffff;
+
+  box-shadow: none;
+}
+
+.hero-cta--ghost:hover {
+  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+.hero-cta--ghost:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* PROMO TILES */
+.promo-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+
+  margin-bottom: 24px;
+}
+
+.promo-tile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  width: 100%;
+  padding: 16px 18px;
+
+  border: none;
+  border-radius: var(--r-xl);
+
+  font-family: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.promo-tile:hover {
+  box-shadow: 0 10px 24px rgba(17, 17, 17, 0.14);
+  transform: translateY(-2px);
+}
+
+.promo-tile:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 3px;
+}
+
+/* One tinted, one solid: two panels of the same weight would read as a single block.
+   The contrast comes from depth of the same brand red rather than a second hue — the
+   near-black this used to be belonged to no palette on the consumer surface. */
+.promo-tile--brand {
+  background: linear-gradient(135deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  color: var(--c-brand-deep);
+}
+
+.promo-tile--solid {
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-deep) 100%);
+  color: #ffffff;
+}
+
+.promo-icon {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 
-  width: 220px;
-  max-width: 40%;
+  width: 40px;
+  height: 40px;
+
+  border-radius: var(--r-lg);
 }
 
-.hero-logo {
-  width: 100%;
-  height: auto;
+.promo-tile--brand .promo-icon {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--c-brand);
+}
 
-  object-fit: contain;
+.promo-tile--solid .promo-icon {
+  /* 0.12 read as a disc on the old near-black; on brand red it needs a touch more. */
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.promo-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  min-width: 0;
+  flex: 1;
+}
+
+.promo-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.promo-text {
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+
+  /* 0.78 white measured 4.22:1 on --c-brand, just under the bar; 0.85 clears it at
+     4.76 and costs nothing on the tinted tile. */
+  opacity: 0.85;
+}
+
+.promo-arrow {
+  flex-shrink: 0;
+  opacity: 0.6;
+
+  transition: transform 0.2s ease;
+}
+
+.promo-tile:hover .promo-arrow {
+  transform: translateX(3px);
+  opacity: 1;
+}
+
+/* SELLER BAND */
+.seller-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+  margin: 8px 0 32px;
+  padding: 26px 30px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xl);
+
+  background: var(--c-surface);
+}
+
+.seller-title {
+  margin: 0 0 4px;
+
+  font-family: 'Poppins', 'Roboto', Arial, sans-serif;
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  line-height: 1.25;
+
+  color: var(--c-text);
+}
+
+.seller-text {
+  margin: 0;
+
+  font-size: var(--fs-sm);
+  color: var(--c-muted);
+}
+
+.seller-cta {
+  flex-shrink: 0;
+  height: 44px;
+  padding: 0 22px;
+
+  border-radius: var(--r-sm);
+
+  background: var(--c-brand);
+  color: #ffffff;
+
+  font-size: var(--fs-sm);
+  font-weight: 700;
+
+  box-shadow: var(--sh-brand);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+
+.seller-cta:hover {
+  background: var(--c-brand-hover);
+  box-shadow: var(--sh-brand-hover);
+  transform: translateY(-1px);
+}
+
+.seller-cta :deep(.q-icon) {
+  transition: transform 0.2s ease;
+}
+
+.seller-cta:hover :deep(.q-icon) {
+  transform: translateX(3px);
 }
 
 /* PRODUCTS GRID */
@@ -472,30 +765,159 @@ const visibleDiscoverProducts = computed(() =>
   }
 }
 
-@media (max-width: 600px) {
-  .home-content {
-    padding: 16px;
-  }
-
+/* Below the laptop breakpoint the copy and the logo stop fitting side by side —
+   the headline was wrapping to five lines with the logo floating beside it. */
+@media (max-width: 1023px) {
+  /* Stays a row. Stacking the logo above the copy added its full height to the hero —
+     371px on a tablet. Beside the copy it costs nothing vertically. */
   .hero-banner {
-    flex-direction: column-reverse;
-
-    padding: 28px;
-    text-align: center;
-  }
-
-  .hero-title-lg {
-    font-size: var(--fs-4xl);
+    gap: 24px;
+    padding: 26px 28px;
   }
 
   .hero-content {
     max-width: none;
   }
 
+  .hero-eyebrow {
+    margin-bottom: 10px;
+  }
+
+  .hero-title-lg {
+    margin-bottom: 8px;
+  }
+
+  .hero-sub {
+    margin-bottom: 16px;
+  }
+
   .hero-logo-wrap {
-    width: 160px;
-    max-width: 60%;
+    width: 250px;
+    max-width: 38%;
+  }
+}
+
+@media (max-width: 720px) {
+  .seller-band {
+    flex-direction: column;
+    align-items: flex-start;
+
+    padding: 22px;
+  }
+
+  .seller-cta {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .home-content {
+    padding: 16px;
+  }
+
+  /* Icon and label sit on one line. Two tiles share ~358px here, so each has about
+     172px — the icon shrinks to leave the label room, and the description and arrow
+     are dropped rather than squeezed into what is left. */
+  .promo-tile {
+    gap: 10px;
+    padding: 14px 12px;
+  }
+
+  .promo-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .promo-icon :deep(.q-icon) {
+    font-size: 18px;
+  }
+
+  .promo-text,
+  .promo-arrow {
+    display: none;
+  }
+
+  .promo-title {
+    font-size: var(--fs-sm);
+  }
+
+  /* The hero was 468px on a 844px phone — over half the viewport before a single
+     product was visible. Everything below trims it back to roughly a third. */
+  .hero-banner {
+    flex-direction: column-reverse;
+    align-items: center;
+
+    gap: 10px;
+    padding: 18px;
+    text-align: center;
+  }
+
+  .hero-eyebrow,
+  .hero-sub {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-actions {
+    justify-content: center;
+  }
+
+  .hero-eyebrow {
+    margin-bottom: 10px;
+    padding: 4px 10px;
+  }
+
+  .hero-title-lg {
+    margin-bottom: 8px;
+    font-size: var(--fs-4xl);
+  }
+
+  .hero-sub {
+    margin-bottom: 14px;
+  }
+
+  /* Side by side rather than stacked: two full-width rows cost ~54px of a hero that
+     was already too tall, and both labels are short enough to sit on one line. */
+  .hero-actions {
+    gap: 10px;
+  }
+
+  .hero-cta {
+    flex: 1;
+    padding: 0 12px;
+    font-size: var(--fs-sm);
+  }
+
+  /* QBtn wraps its label by default; these need to stay on one line to fit. */
+  .hero-cta :deep(.q-btn__content) {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  .hero-logo-wrap {
+    width: 150px;
+    max-width: 46%;
   }
 }
 </style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
