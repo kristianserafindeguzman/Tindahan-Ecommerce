@@ -1,5 +1,9 @@
 <template>
-  <q-layout view="hHh LpR fFf" class="admin-layout">
+  <q-layout 
+    view="hHh LpR fFf" 
+    class="admin-layout"
+    :class="{ 'admin-dark-mode': $q.dark.isActive }"
+  >
 
     <!-- ================= INITIAL ENTRY SPLASH SCREEN (ONE-TIME ONLY) ================= -->
     <transition name="splash-fade">
@@ -31,7 +35,7 @@
           </div>
           
           <div class="text-caption text-weight-bold tracking-wider text-uppercase text-red-7 q-mb-lg">
-            HQ Control Panel
+            Marketplace Control Center
           </div>
 
           <!-- Dynamic Status Counter & Label -->
@@ -83,47 +87,38 @@
     <q-drawer
       v-model="drawerOpen"
       show-if-above
-      :width="280"
+      :width="284"
       :breakpoint="1024"
       class="admin-fixed-sidebar"
     >
       <div class="sidebar-wrapper column full-height justify-between">
 
-        <!-- TOP: BRAND, SLEEK THEME SWITCHER & NAV -->
+        <!-- TOP: BRAND, THEME SWITCHER & NAV -->
         <div>
-          <!-- BRAND & EXPANDED LOGO PLATE -->
-          <div class="sidebar-brand-section q-pa-lg">
-            <div class="brand-canopy-card column flex-center text-center q-pa-md">
-              <div class="brand-awning-roof row no-wrap">
-                <span class="awn-red"></span><span class="awn-white"></span>
-                <span class="awn-red"></span><span class="awn-white"></span>
-                <span class="awn-red"></span><span class="awn-white"></span>
-                <span class="awn-red"></span>
-              </div>
-
-              <!-- Expanded Logo Frame -->
-              <div class="sidebar-logo-frame q-my-sm flex flex-center">
-                <img
-                  src="@/assets/tindahan-mobile.png"
-                  alt="Tindahan"
-                  class="logo-img-expanded"
-                  @error="onLogoError"
-                />
-                <div v-if="logoFailed" class="fallback-logo row items-center no-wrap">
-                  <q-icon name="storefront" size="28px" color="red-9" class="q-mr-sm" />
-                  <span class="text-weight-bolder text-red-9 text-h6">Tindahan</span>
-                </div>
-              </div>
-
-              <div class="store-badge-tag q-mt-xs">
-                ADMINISTRATION HQ
+          <!-- BRAND -->
+          <div class="sidebar-brand-section q-pa-md">
+            <div class="brand-logo-wrap flex flex-center q-mb-xs">
+              <img
+                v-if="!logoFailed"
+                src="@/assets/tindahan-logo.png"
+                alt="Tindahan"
+                class="logo-img-transparent"
+                @error="onLogoError"
+              />
+              <div v-else class="fallback-logo row items-center no-wrap">
+                <q-icon name="storefront" size="34px" color="white" class="q-mr-sm" />
+                <span class="text-weight-bolder text-white text-h5">Tindahan</span>
               </div>
             </div>
 
-            <!-- Integrated Header Segmented Mode Switcher -->
-            <div class="theme-segmented-bar row items-center no-wrap q-mt-md q-pa-xs">
+            <div class="store-badge-tag text-center">
+              SARI-SARI STORES CONTROL CENTER
+            </div>
+
+            <!-- Segmented Mode Switcher -->
+            <div class="theme-segmented-bar row items-center no-wrap q-mt-sm q-pa-xs">
               <div
-                class="segmented-tab row items-center justify-center flex-1 cursor-pointer"
+                class="segmented-tab row items-center justify-center no-wrap"
                 :class="{ 'segmented-tab-active': !$q.dark.isActive }"
                 @click="setTheme(false)"
               >
@@ -131,7 +126,7 @@
                 <span>Light</span>
               </div>
               <div
-                class="segmented-tab row items-center justify-center flex-1 cursor-pointer"
+                class="segmented-tab row items-center justify-center no-wrap"
                 :class="{ 'segmented-tab-active': $q.dark.isActive }"
                 @click="setTheme(true)"
               >
@@ -141,24 +136,27 @@
             </div>
           </div>
 
-          <!-- SPACIOUS NAVIGATION MENU -->
-          <div class="sidebar-nav-container q-px-lg q-pt-md">
+          <div class="sidebar-divider"></div>
+
+          <!-- NAVIGATION -->
+          <div class="sidebar-nav-container q-px-md q-pt-md">
             <div class="sidebar-section-label q-px-sm q-mb-sm">
               MAIN NAVIGATION
             </div>
 
-            <q-list class="sidebar-nav-list q-gutter-y-sm">
+            <q-list class="sidebar-nav-list q-gutter-y-xs">
               <q-item
-                v-for="item in navItems"
+                v-for="(item, index) in navItems"
                 :key="item.path"
                 :to="item.path"
                 clickable
                 v-ripple
                 active-class="nav-item-active"
-                class="sidebar-nav-item row items-center no-wrap"
+                class="sidebar-nav-item row items-center no-wrap nav-item-enter"
+                :style="{ '--i': index }"
               >
                 <q-item-section avatar class="nav-icon-slot">
-                  <q-icon :name="item.icon" size="22px" class="nav-glyph" />
+                  <q-icon :name="item.icon" size="21px" class="nav-glyph" />
                 </q-item-section>
                 <q-item-section class="nav-label text-weight-bold">
                   {{ item.label }}
@@ -168,12 +166,12 @@
           </div>
         </div>
 
-        <!-- FOOTER: CLEAN ISOLATED LOGOUT -->
+        <!-- FOOTER: LOGOUT -->
         <div class="sidebar-footer-section q-pa-lg">
           <button
             type="button"
             class="sidebar-logout-btn row items-center justify-center full-width cursor-pointer"
-            @click="handleLogout"
+            @click="showLogoutModal = true"
           >
             <q-icon name="logout" size="18px" class="q-mr-sm" />
             <span class="text-weight-bolder">Sign Out Account</span>
@@ -184,15 +182,91 @@
     </q-drawer>
 
     <!-- MAIN PAGE CONTAINER -->
-    <q-page-container>
+    <q-page-container class="admin-page-container">
       <router-view />
     </q-page-container>
+
+    <!-- ================= REVITALIZED LOGOUT CONFIRMATION MODAL ================= -->
+    <q-dialog 
+      v-model="showLogoutModal" 
+      persistent 
+      transition-show="scale" 
+      transition-hide="scale"
+    >
+      <q-card class="logout-modal-card overflow-hidden">
+        <!-- Awning Header Banner -->
+        <div class="logout-hero-banner relative-position q-pa-lg text-center">
+          <div class="banner-awning-strip row no-wrap">
+            <span class="awn-red"></span><span class="awn-white"></span>
+            <span class="awn-red"></span><span class="awn-white"></span>
+            <span class="awn-red"></span><span class="awn-white"></span>
+            <span class="awn-red"></span><span class="awn-white"></span>
+          </div>
+
+          <div class="logout-banner-glow"></div>
+
+          <!-- 3D Logout Badge with Pulsing Ring -->
+          <div class="logout-badge-wrap flex flex-center q-mx-auto relative-position z-top">
+            <div class="logout-icon-ring flex flex-center">
+              <q-icon name="logout" size="34px" color="red-9" class="logout-animated-icon" />
+            </div>
+            <div class="logout-pulse-halo"></div>
+          </div>
+
+          <div class="relative-position z-top q-mt-md">
+            <span class="logout-chip text-weight-bolder text-uppercase">
+              ADMIN SESSION TERMINATION
+            </span>
+            <div class="text-h5 text-weight-bolder text-white q-mt-xs tracking-tight">
+              Sign Out Account?
+            </div>
+          </div>
+        </div>
+
+        <!-- Body Section -->
+        <q-card-section class="q-pa-lg logout-body-section text-center">
+          <p class="text-body2 text-slate-600 q-mb-md line-height-relaxed">
+            Are you sure you want to end your administrative session? You will need to log back in with your credentials to access marketplace management.
+          </p>
+
+          <div class="logout-notice-box row items-center no-wrap q-pa-md text-left">
+            <q-icon name="info" size="22px" color="amber-9" class="q-mr-sm flex-shrink-0" />
+            <div class="text-caption text-slate-700 text-weight-medium">
+              Any unsaved changes on open review modals will be discarded.
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-separator class="logout-divider" />
+
+        <!-- Actions -->
+        <q-card-actions align="center" class="q-pa-md logout-footer-actions gap-sm">
+          <q-btn
+            flat
+            no-caps
+            label="Stay Logged In"
+            class="logout-btn-cancel text-weight-bolder"
+            :disable="isLoggingOut"
+            v-close-popup
+          />
+          <q-btn
+            unelevated
+            no-caps
+            label="Confirm Sign Out"
+            icon="power_settings_new"
+            class="logout-btn-confirm text-weight-bolder"
+            :loading="isLoggingOut"
+            @click="executeLogout"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
   </q-layout>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
@@ -206,6 +280,9 @@ const isInitialLoading = ref(false)
 const loadProgress = ref(0)
 const loadingStepText = ref('Connecting to server...')
 
+const showLogoutModal = ref(false)
+const isLoggingOut = ref(false)
+
 const onLogoError = () => {
   logoFailed.value = true
 }
@@ -218,13 +295,12 @@ const navItems = [
 ]
 
 const toggleDarkMode = () => {
-  $q.dark.toggle()
-  localStorage.setItem('admin_dark_mode', $q.dark.isActive ? 'true' : 'false')
+  setTheme(!$q.dark.isActive)
 }
 
-const setTheme = (isDark) => {
-  $q.dark.set(isDark)
-  localStorage.setItem('admin_dark_mode', isDark ? 'true' : 'false')
+const setTheme = (dark) => {
+  $q.dark.set(dark)
+  localStorage.setItem('admin_dark_mode', dark ? 'true' : 'false')
 }
 
 const runInitialLoader = () => {
@@ -258,49 +334,62 @@ const runInitialLoader = () => {
 
 onMounted(() => {
   const savedDarkMode = localStorage.getItem('admin_dark_mode')
-  if (savedDarkMode === 'true') {
-    $q.dark.set(true)
-  }
+  $q.dark.set(savedDarkMode === 'true')
+
   runInitialLoader()
 })
 
-const handleLogout = () => {
-  $q.dialog({
-    title: 'Confirm Sign Out',
-    message: 'Are you sure you want to log out of the administrator panel?',
-    cancel: { flat: true, color: 'grey-7', label: 'Cancel', noCaps: true, class: 'q-px-md text-weight-bold' },
-    ok: { unelevated: true, color: 'red-9', label: 'Sign Out', noCaps: true, class: 'q-px-md text-weight-bold' },
-    persistent: true
-  }).onOk(async () => {
-    try {
-      await api.post('/logout')
-    } catch {
-      // Ignore network errors
-    }
+onBeforeUnmount(() => {
+  $q.dark.set(false)
+})
+
+const executeLogout = async () => {
+  isLoggingOut.value = true
+  try {
+    await api.post('/logout')
+  } catch {
+    // Ignore network errors on logout
+  } finally {
     sessionStorage.removeItem('admin_session_loaded')
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_user')
     localStorage.removeItem('auth_role')
+    isLoggingOut.value = false
+    showLogoutModal.value = false
     router.push('/login')
-  })
+  }
 }
 </script>
 
 <style scoped>
+/* ==========================================================
+   BASE LAYOUT
+========================================================== */
 .admin-layout {
   min-height: 100vh;
+  background-color: #f8fafc;
+  color: #1e293b;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .font-mono {
   font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
 }
 
-.flex-1 {
-  flex: 1;
+.line-height-relaxed {
+  line-height: 1.5;
+}
+
+.gap-sm {
+  gap: 12px;
+}
+
+.flex-shrink-0 {
+  flex-shrink: 0;
 }
 
 /* ==========================================================
-   INITIAL ENTRY SPLASH SCREEN
+   SPLASH SCREEN
 ========================================================== */
 .admin-entry-splash {
   background: #090d16;
@@ -451,12 +540,12 @@ const handleLogout = () => {
 }
 
 /* ==========================================================
-   SPACIOUS & EXPANDED RED SIDEBAR DRAWER
+   SIDEBAR
 ========================================================== */
 :deep(.q-drawer.admin-fixed-sidebar),
 :deep(.admin-fixed-sidebar),
 :deep(.admin-fixed-sidebar .q-drawer__content) {
-  background: linear-gradient(180deg, #991b1b 0%, #7f1d1d 55%, #581010 100%) !important;
+  background: linear-gradient(180deg, #9f1d1d 0%, #7f1d1d 55%, #581010 100%) !important;
   color: #ffffff !important;
 }
 
@@ -466,67 +555,57 @@ const handleLogout = () => {
 }
 
 .sidebar-brand-section {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.brand-canopy-card {
-  background: rgba(0, 0, 0, 0.22) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 16px;
-  position: relative;
-  overflow: hidden;
-}
-
-.brand-awning-roof {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
   display: flex;
-}
-.brand-awning-roof span { flex: 1; }
-.awn-red { background: #b91c1c; }
-.awn-white { background: #fee2e2; }
-
-/* Expanded Logo Housing */
-.sidebar-logo-frame {
-  background: #ffffff !important;
-  border-radius: 12px;
-  padding: 10px 16px;
-  width: 100%;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+  flex-direction: column;
+  align-items: center;
 }
 
-.logo-img-expanded {
+.brand-logo-wrap {
   width: 100%;
-  max-width: 180px;
-  height: 52px;
-  object-fit: contain;
+}
+
+.logo-img-transparent {
+  width: 100%;
+  max-width: 232px;
+  height: auto;
   display: block;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+}
+
+.fallback-logo {
+  padding: 8px 0;
 }
 
 .store-badge-tag {
   color: #fecaca !important;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
-/* Header Segmented Pill Theme Switcher */
-.theme-segmented-bar {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
+  letter-spacing: 0.1em;
   width: 100%;
 }
 
+.theme-segmented-bar {
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  width: 100%;
+  min-height: 36px;
+  box-sizing: border-box;
+}
+
 .segmented-tab {
-  padding: 6px 12px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 7px 10px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.7);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.72);
+  white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease;
   user-select: none;
+  cursor: pointer;
 }
 
 .segmented-tab:hover {
@@ -536,15 +615,19 @@ const handleLogout = () => {
 .segmented-tab-active {
   background: #ffffff;
   color: #991b1b !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Airy Navigation Menu */
+.sidebar-divider {
+  height: 1px;
+  margin: 0 20px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .sidebar-section-label {
   font-size: 10.5px;
   font-weight: 800;
   color: #fca5a5 !important;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
 .sidebar-nav-list {
@@ -553,18 +636,31 @@ const handleLogout = () => {
 }
 
 .sidebar-nav-item {
-  border-radius: 12px;
+  border-radius: 10px;
   color: #ffffff !important;
-  opacity: 0.88;
-  min-height: 48px;
-  padding: 10px 16px !important;
+  opacity: 0.86;
+  min-height: 46px;
+  padding: 10px 14px !important;
   background: transparent !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  transition: background 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
+}
+
+.sidebar-nav-item::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 3px;
+  background: transparent;
+  transition: background 0.18s ease;
 }
 
 .nav-icon-slot {
-  min-width: 32px !important;
-  max-width: 32px !important;
+  min-width: 30px !important;
+  max-width: 30px !important;
   padding-right: 12px !important;
   display: flex;
   align-items: center;
@@ -573,7 +669,7 @@ const handleLogout = () => {
 
 .nav-glyph {
   color: #ffffff !important;
-  font-size: 22px !important;
+  font-size: 20px !important;
 }
 
 .nav-label {
@@ -584,14 +680,17 @@ const handleLogout = () => {
 
 .sidebar-nav-item:hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.15) !important;
-  transform: translateX(3px);
+  background: rgba(255, 255, 255, 0.1) !important;
+  transform: translateX(2px);
 }
 
 .nav-item-active {
   opacity: 1 !important;
   background: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.nav-item-active::before {
+  background: transparent;
 }
 
 .nav-item-active .nav-label,
@@ -599,30 +698,42 @@ const handleLogout = () => {
   color: #991b1b !important;
 }
 
-/* Footer Section & Sign Out Button */
+@keyframes navItemEnter {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.nav-item-enter {
+  animation: navItemEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-item-enter { animation: none; }
+}
+
 .sidebar-footer-section {
   border-top: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.18) !important;
+  background: rgba(0, 0, 0, 0.16) !important;
 }
 
 .sidebar-logout-btn {
-  background: rgba(0, 0, 0, 0.25) !important;
+  background: rgba(0, 0, 0, 0.22) !important;
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: #fecaca !important;
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 12px;
   font-size: 13.5px;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .sidebar-logout-btn:hover {
   background: #b91c1c !important;
   color: #ffffff !important;
   border-color: #b91c1c;
-  box-shadow: 0 4px 14px rgba(185, 28, 28, 0.4);
 }
 
-/* Mobile Header */
+/* ==========================================================
+   MOBILE HEADER
+========================================================== */
 .admin-header-mobile {
   background: linear-gradient(90deg, #dc2626 0%, #b91c1c 50%, #7f1d1d 100%);
 }
@@ -636,5 +747,256 @@ const handleLogout = () => {
   .admin-header-mobile {
     display: none;
   }
+}
+
+/* ==========================================================
+   REVITALIZED LOGOUT MODAL AESTHETICS
+========================================================== */
+.logout-modal-card {
+  width: 440px;
+  max-width: 92vw;
+  border-radius: 24px !important;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.2) !important;
+}
+
+.logout-hero-banner {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #7f1d1d 100%);
+  position: relative;
+  overflow: hidden;
+  padding-top: 26px;
+  padding-bottom: 22px;
+}
+
+.banner-awning-strip {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  display: flex;
+}
+.banner-awning-strip span { flex: 1; }
+.awn-red { background: #991b1b; }
+.awn-white { background: #fee2e2; }
+
+.logout-banner-glow {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.logout-badge-wrap {
+  width: 72px;
+  height: 72px;
+}
+
+.logout-icon-ring {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  position: relative;
+  z-index: 2;
+}
+
+.logout-animated-icon {
+  animation: pulseIcon 2s infinite ease-in-out;
+}
+
+@keyframes pulseIcon {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+.logout-pulse-halo {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  animation: haloPulse 2.2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+@keyframes haloPulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+.logout-chip {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fecaca;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.logout-body-section {
+  background: #ffffff;
+}
+
+.logout-notice-box {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-radius: 12px;
+}
+
+.logout-divider {
+  border-color: #f1f5f9;
+}
+
+.logout-footer-actions {
+  background: #f8fafc;
+}
+
+.logout-btn-cancel {
+  border-radius: 9999px !important;
+  font-size: 13px !important;
+  padding: 8px 20px !important;
+  color: #64748b !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  transition: all 0.2s ease;
+}
+.logout-btn-cancel:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.logout-btn-confirm {
+  border-radius: 9999px !important;
+  font-size: 13px !important;
+  padding: 8px 24px !important;
+  background: #c5221f !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(185, 28, 28, 0.35) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.logout-btn-confirm:hover {
+  background: #a91b18 !important;
+  box-shadow: 0 6px 18px rgba(185, 28, 28, 0.45) !important;
+  transform: translateY(-1px);
+}
+</style>
+
+<!-- ==========================================================
+     UNSCOPED GLOBAL OVERRIDES (Only active inside .admin-dark-mode)
+========================================================== -->
+<style>
+.admin-layout.admin-dark-mode,
+.admin-layout.admin-dark-mode .q-page-container,
+.admin-layout.admin-dark-mode .q-page {
+  background-color: #0b0f19 !important;
+  color: #f1f5f9 !important;
+}
+
+.admin-layout.admin-dark-mode .q-page-container > * {
+  background-color: #0b0f19 !important;
+  color: #f1f5f9 !important;
+}
+
+.admin-layout.admin-dark-mode .q-card,
+.admin-layout.admin-dark-mode .premium-glass-card {
+  background-color: #111827 !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45) !important;
+}
+
+.admin-layout.admin-dark-mode .text-slate-800,
+.admin-layout.admin-dark-mode .text-dark {
+  color: #f8fafc !important;
+}
+.admin-layout.admin-dark-mode .text-slate-700 {
+  color: #e2e8f0 !important;
+}
+.admin-layout.admin-dark-mode .text-slate-600,
+.admin-layout.admin-dark-mode .text-slate-500 {
+  color: #94a3b8 !important;
+}
+.admin-layout.admin-dark-mode .text-slate-400 {
+  color: #64748b !important;
+}
+
+.admin-layout.admin-dark-mode .border-slate-light,
+.admin-layout.admin-dark-mode .border-bottom-light,
+.admin-layout.admin-dark-mode .border-top-light {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.admin-layout.admin-dark-mode .q-field__control {
+  background-color: #1f2937 !important;
+  color: #f8fafc !important;
+}
+.admin-layout.admin-dark-mode .q-field__control:before {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+.admin-layout.admin-dark-mode .q-field__native,
+.admin-layout.admin-dark-mode .q-field__input {
+  color: #f8fafc !important;
+}
+
+.admin-layout.admin-dark-mode .q-table {
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+}
+.admin-layout.admin-dark-mode .q-table thead tr th {
+  background-color: #111827 !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.admin-layout.admin-dark-mode .q-table tbody tr td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+  color: #e2e8f0 !important;
+}
+.admin-layout.admin-dark-mode .q-table tbody tr:hover td {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Dark Mode Overrides for Revitalized Logout Modal */
+.body--dark .logout-modal-card {
+  background: #0f172a !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.body--dark .logout-body-section {
+  background: #0f172a !important;
+}
+
+.body--dark .logout-icon-ring {
+  background: #1e293b !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.body--dark .logout-notice-box {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+
+.body--dark .logout-footer-actions {
+  background: #162032 !important;
+}
+
+.body--dark .logout-divider {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.body--dark .logout-btn-cancel {
+  background: rgba(30, 41, 59, 0.8) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+.body--dark .logout-btn-cancel:hover {
+  background: rgba(51, 65, 85, 0.9) !important;
+  color: #ffffff !important;
 }
 </style>

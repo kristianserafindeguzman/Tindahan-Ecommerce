@@ -93,12 +93,12 @@
         </div>
 
         <q-btn
-          label="Export List"
+          label="Export PDF"
           no-caps
           outline
           icon="print"
           class="btn-glass export-btn q-ml-auto"
-          color="red-7"
+          color="red-9"
           @click="handleExport"
           :loading="isExporting"
         />
@@ -130,64 +130,100 @@
           </q-tabs>
         </div>
 
-        <!-- TABLE -->
+        <!-- TABLE WITH CELL-LEVEL SKELETON INTEGRATION -->
         <q-table
           flat
           class="custom-glass-table interactive-table"
-          :rows="filteredApplications"
+          :rows="loading ? skeletonRows : filteredApplications"
           :columns="columns"
           row-key="approval_id"
-          :loading="loading"
-          @row-click="openVendorInfo"
+          :pagination="{ rowsPerPage: 10 }"
+          @row-click="onRowClick"
         >
-          <!-- FIXED LOADING STATE -->
-          <template #loading>
-            <div class="full-width column flex-center q-py-xl table-loading-wrapper">
-              <q-spinner-dots size="48px" color="red-7" />
-              <div class="text-subtitle2 text-weight-bold q-mt-md text-grey-7">
-                Fetching applications...
-              </div>
-            </div>
+          <!-- OWNER NAME -->
+          <template #body-cell-owner_name="props">
+            <q-td :props="props">
+              <q-skeleton v-if="loading" type="text" width="130px" height="20px" />
+              <div v-else class="text-weight-bold text-dark ellipsis">{{ props.row.owner_name }}</div>
+            </q-td>
           </template>
 
-          <!-- INTERACTIVE ACTIONS (CENTERED) -->
+          <!-- EMAIL -->
+          <template #body-cell-email="props">
+            <q-td :props="props">
+              <q-skeleton v-if="loading" type="text" width="150px" height="20px" />
+              <span v-else>{{ props.row.email }}</span>
+            </q-td>
+          </template>
+
+          <!-- PHONE -->
+          <template #body-cell-phone="props">
+            <q-td :props="props">
+              <q-skeleton v-if="loading" type="text" width="105px" height="20px" />
+              <span v-else class="font-mono">{{ props.row.phone || 'N/A' }}</span>
+            </q-td>
+          </template>
+
+          <!-- STORE NAME -->
+          <template #body-cell-store_name="props">
+            <q-td :props="props">
+              <q-skeleton v-if="loading" type="text" width="120px" height="20px" />
+              <span v-else class="text-weight-medium">{{ props.row.store_name }}</span>
+            </q-td>
+          </template>
+
+          <!-- APPLIED AT -->
+          <template #body-cell-applied_at="props">
+            <q-td :props="props">
+              <q-skeleton v-if="loading" type="text" width="90px" height="20px" />
+              <span v-else>{{ formatAppliedDate(props.row.applied_at) }}</span>
+            </q-td>
+          </template>
+
+          <!-- INTERACTIVE ACTIONS -->
           <template #body-cell-actions="props">
             <q-td :props="props" class="text-center">
-              <div class="flex items-center gap-sm justify-center no-wrap">
-                <template v-if="props.row.status === 'pending'">
-                  <q-btn
-                    label="Approve"
-                    icon="check_circle"
-                    no-caps
-                    dense
-                    unelevated
-                    class="btn-approve-3d q-px-sm"
-                    @click.stop="handleApprove(props.row)"
-                  />
-                  <q-btn
-                    label="Reject"
-                    icon="cancel"
-                    no-caps
-                    dense
-                    outline
-                    class="btn-reject-3d q-px-sm"
-                    @click.stop="openRejectModal(props.row)"
-                  />
+              <div class="row items-center justify-center no-wrap gap-xs">
+                <template v-if="loading">
+                  <q-skeleton type="rect" width="88px" height="30px" style="border-radius: 8px;" />
+                  <q-skeleton type="rect" width="76px" height="30px" style="border-radius: 8px;" />
                 </template>
                 <template v-else>
-                  <q-chip
-                    dense
-                    class="rejected-chip-3d text-weight-bold q-px-md"
-                    icon="block"
-                  >
-                    Rejected
-                  </q-chip>
+                  <template v-if="props.row.status === 'pending'">
+                    <q-btn
+                      label="Approve"
+                      icon="check_circle"
+                      no-caps
+                      dense
+                      unelevated
+                      class="btn-approve-3d q-px-sm"
+                      @click.stop="handleApprove(props.row)"
+                    />
+                    <q-btn
+                      label="Reject"
+                      icon="cancel"
+                      no-caps
+                      dense
+                      outline
+                      class="btn-reject-3d q-px-sm"
+                      @click.stop="openRejectModal(props.row)"
+                    />
+                  </template>
+                  <template v-else>
+                    <q-chip
+                      dense
+                      class="rejected-chip-3d text-weight-bold q-px-md"
+                      icon="block"
+                    >
+                      Rejected
+                    </q-chip>
+                  </template>
                 </template>
               </div>
             </q-td>
           </template>
 
-          <!-- FIXED NO DATA SLOT (HIDDEN WHEN LOADING) -->
+          <!-- NO DATA SLOT -->
           <template #no-data>
             <div
               v-if="!loading"
@@ -239,7 +275,7 @@
         >
           <div class="text-center q-mb-lg">
             <div class="info-store-name q-mb-xs">{{
-              selectedVendor.store?.store_name || 'N/A'
+              selectedVendor.store?.store_name || selectedVendor.store_name || 'N/A'
             }}</div>
             <div class="info-owner-name text-red-7 q-mb-md"
               >Owned by:
@@ -284,7 +320,7 @@
                 class="modal-label-sub text-caption text-uppercase text-weight-bold"
                 >Contact Email</div
               >
-              <div class="modal-value-main text-subtitle2 text-weight-bold">{{
+              <div class="modal-value-main text-subtitle2 text-weight-bold ellipsis">{{
                 selectedVendor.email
               }}</div>
             </div>
@@ -520,6 +556,10 @@ const actionLoading = ref(false)
 const pending = ref([])
 const currentTab = ref('pending')
 
+const skeletonRows = Array.from({ length: 6 }, (_, index) => ({
+  approval_id: `skeleton-${index}`
+}))
+
 const filteredApplications = computed(() => {
   return pending.value.filter(app => app.status === currentTab.value)
 })
@@ -563,8 +603,7 @@ const columns = [
     name: 'applied_at',
     label: 'APPLIED',
     field: 'applied_at',
-    align: 'left',
-    format: val => (val ? new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—')
+    align: 'left'
   },
   {
     name: 'actions',
@@ -575,6 +614,15 @@ const columns = [
     headerClasses: 'print-hide text-center'
   }
 ]
+
+const formatAppliedDate = val => {
+  if (!val) return '—'
+  return new Date(val).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+}
 
 const fetchPending = async () => {
   loading.value = true
@@ -643,8 +691,9 @@ const getMapUrl = (lat, lng) => {
   return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${parsedLat}%2C${parsedLng}`
 }
 
-const openVendorInfo = (evt, row) => {
-  if (evt && (evt.target.closest('.q-btn') || evt.target.closest('.gap-sm')))
+const onRowClick = (evt, row) => {
+  if (loading.value) return
+  if (evt && (evt.target.closest('.q-btn') || evt.target.closest('.q-chip') || evt.target.closest('.gap-xs')))
     return
   selectedVendor.value = row
   showVendorInfoModal.value = true
@@ -777,6 +826,9 @@ onMounted(() => {
 }
 .opacity-80 {
   opacity: 0.8;
+}
+.gap-xs {
+  gap: 8px;
 }
 .gap-sm {
   gap: 8px;
@@ -954,16 +1006,12 @@ onMounted(() => {
 }
 
 :deep(.custom-glass-table tbody td) {
-  padding: 16px 20px;
+  padding: 14px 20px;
   font-size: 13.5px;
 }
 
 :deep(.interactive-table tbody tr) {
   cursor: pointer;
-}
-
-.table-loading-wrapper {
-  background: transparent;
 }
 
 .empty-state-glass {
@@ -1011,21 +1059,27 @@ onMounted(() => {
   color: white !important;
   border-radius: 8px !important;
   font-weight: 700;
+  font-size: 12px !important;
+  padding: 4px 12px !important;
   box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);
   border: 1px solid #15803d;
+  transition: all 0.2s ease;
 }
 .btn-approve-3d:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   box-shadow: 0 6px 12px rgba(22, 163, 74, 0.4);
 }
 
 .btn-reject-3d {
   border-radius: 8px !important;
   font-weight: 700;
+  font-size: 12px !important;
+  padding: 4px 12px !important;
   background: rgba(255, 255, 255, 0.9) !important;
   color: #dc2626 !important;
   border: 1px solid #ef4444 !important;
   box-shadow: 0 2px 5px rgba(220, 38, 38, 0.1);
+  transition: all 0.2s ease;
 }
 .btn-reject-3d:hover {
   background: #fef2f2 !important;
