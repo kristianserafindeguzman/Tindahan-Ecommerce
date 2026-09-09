@@ -127,7 +127,7 @@
         <div class="header-location" :title="address || 'Enter Address'" @click="toggleAddressMenu">
           <span class="header-location-pill" :class="{ 'header-location-expanded': addressMenuOpen }">
             <q-icon name="o_location_on" size="15px" />
-            <span>{{ address || 'Enter Address' }}</span>
+            <span>{{ displayAddress }}</span>
           </span>
 
           <!--
@@ -242,7 +242,13 @@
                   <div v-if="!notifications.length" class="cart-menu-empty">No notifications yet.</div>
 
                   <div v-else class="notifications-scroll">
-                    <div v-for="notif in notifications.slice(0, 10)" :key="notif.notification_id" class="cart-menu-item notification-item" style="cursor:pointer;" @click="handleNotificationClick(notif)">
+                    <div
+                      v-for="notif in notifications.slice(0, 10)"
+                      :key="notif.notification_id"
+                      class="cart-menu-item notification-item"
+                      :class="{ 'notification-item--unread': !notif.is_read }"
+                      @click="handleNotificationClick(notif)"
+                    >
                       <div class="cart-menu-item-info" :style="notif.is_read ? 'opacity: 0.7;' : 'font-weight: bold;'">
                         <div class="cart-menu-item-name">{{ notif.title }}</div>
                         <div class="cart-menu-item-meta" style="white-space: normal; line-height: 1.3;">{{ notif.message }}</div>
@@ -382,27 +388,12 @@
 
         <q-separator />
 
+        <!--
+          Account only. Home/Products/Stores live in the header's nav row now, so this
+          drawer holds exactly the destinations that are not already on screen — the same
+          split the tablet header makes by dropping the hamburger altogether.
+        -->
         <div class="mobile-menu-scroll">
-
-          <q-list padding>
-            <q-item
-              v-for="tab in tabs"
-              :key="tab.value"
-              v-close-popup
-              clickable
-              :active="activeTab === tab.value"
-              active-class="mobile-menu-item-active"
-              class="mobile-menu-item"
-              @click="goToTab(tab)"
-            >
-              <q-item-section avatar class="mobile-menu-avatar">
-                <q-icon :name="tab.icon" size="22px" />
-              </q-item-section>
-              <q-item-section>{{ tab.label }}</q-item-section>
-            </q-item>
-          </q-list>
-
-          <q-separator class="mobile-menu-rule" />
 
           <q-list v-if="isLoggedIn" padding>
             <q-item v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/orders')">
@@ -515,6 +506,11 @@ const isTabletHeader = computed(
 const actionIconSize = computed(() => (isTabletHeader.value ? '24px' : '20px'))
 const avatarSize = computed(() => (isTabletHeader.value ? '28px' : '24px'))
 const avatarIconSize = computed(() => (isTabletHeader.value ? '19px' : '16px'))
+
+// Always the full address; the pill ellipses whatever does not fit. On the compact bar
+// the text has about 95px against the ~272px a full address wants, so most of it is
+// elided — the title attribute and the picker carry the whole string.
+const displayAddress = computed(() => address.value || 'Enter Address')
 
 const toggleAddressMenu = () => {
   const next = !addressMenuOpen.value
@@ -1087,11 +1083,29 @@ const goToTab = (tab) => {
 
 .notification-item {
   align-items: flex-start;
-  padding: 10px 0;
+
+  /* Bled out and re-inset so an unread row's tint reads as a band with breathing room
+     either side of the text, rather than stopping flush against it. */
+  margin: 0 -8px;
+  padding: 10px 8px;
+
+  border-radius: var(--r-sm);
+
+  cursor: pointer;
 }
 
 .notification-item + .notification-item {
   border-top: 1px solid var(--c-hairline);
+}
+
+.notification-item--unread {
+  background: var(--c-brand-tint);
+}
+
+/* A tinted band already separates itself from the row below it; the hairline on top of
+   that reads as a line cutting the tint's rounded corner. */
+.notification-item--unread + .notification-item {
+  border-top-color: transparent;
 }
 
 /* Title/"Mark all read" row stays outside .notifications-scroll below, so it never scrolls out of view. */
@@ -1448,10 +1462,6 @@ const goToTab = (tab) => {
   padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
-.mobile-menu-rule {
-  margin: 4px 0;
-}
-
 .mobile-menu-item {
   min-height: 48px;
 
@@ -1466,16 +1476,6 @@ const goToTab = (tab) => {
   padding-right: 14px;
 
   color: var(--c-muted);
-}
-
-.mobile-menu-item-active {
-  background: var(--c-brand-tint);
-  color: var(--c-brand);
-  font-weight: 700;
-}
-
-.mobile-menu-item-active .mobile-menu-avatar {
-  color: var(--c-brand);
 }
 
 .mobile-menu-logout,
@@ -1879,9 +1879,9 @@ const goToTab = (tab) => {
 
 /* RESPONSIVE — below 1024px the bar collapses to one row:
      [menu]        [logo, centred]        [search] [cart]
-   The nav, address and account links move into the slide-in menu, and the search field
-   is revealed on demand as a second row rather than living there permanently. That takes
-   the header from four stacked rows to one. */
+   The address and account links move into the slide-in menu; the nav keeps a row of its
+   own beneath search, mirroring the tablet header, so the two browse destinations stay
+   one tap away. */
 
 @media (max-width: 767px) {
   .header-bar-inner {
@@ -1898,8 +1898,6 @@ const goToTab = (tab) => {
     flex: 0 0 auto;
 
     height: 46px;
-    /* Pushes the action cluster to the opposite edge. */
-    margin: 0 auto 0 0;
   }
 
   /* position: relative anchors the notifications panel to this cluster rather than to
@@ -1910,10 +1908,49 @@ const goToTab = (tab) => {
     flex: 0 0 auto;
   }
 
-  /* Nav and the desktop action cluster live in the slide-in menu now. */
-  .header-nav,
+  /* Only the desktop action cluster moves into the slide-in menu. The nav gets its own
+     row under search — same arrangement as the tablet header below, so Products and
+     Stores are one tap instead of two. */
   .header-actions {
     display: none;
+  }
+
+  /* order 3: after the search row (2), which follows the bar's own row (0/1). */
+  .header-nav {
+    order: 3;
+
+    width: 100%;
+
+    /* 2px, not the tablet row's 4: the tabs below carry their own 44px height, so the
+       row does not need extra padding to feel separated from search. */
+    padding-top: 2px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .header-nav :deep(.q-tabs__content) {
+    justify-content: space-around;
+    width: 100%;
+  }
+
+  /* The row is the full width of a phone, so the tabs can breathe; the desktop bar's
+     22px gap would bunch them against the centre.
+
+     min-height 44px for the same reason .header-mobile-btn has it — the label alone left
+     a 25px strip, and these three sit edge to edge, so a near-miss lands on a neighbour
+     rather than on nothing. */
+  .header-nav :deep(.q-tab) {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+  }
+
+  /* 40px was under the 44px minimum for touch, at the top corner of the screen where
+     mis-hits are most likely. */
+  .header-mobile-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   /* Forces the wrap after the bar's own row. Without it the address pill still fitted
@@ -1925,14 +1962,29 @@ const goToTab = (tab) => {
     width: 100%;
   }
 
-  /* Row two: address on the left, search taking the rest — the address is capped so a
-     long one cannot squeeze the field down to nothing. */
+  /* Row one held a 71px logo, 213px of nothing, then the icons. The address moves up
+     into that gap so both rows carry weight, and search gets the whole of row two —
+     it went from 201px to the full bar width. */
+  /* flex-basis 0, not auto. With auto the item sizes to its content, so a long address
+     wanted 272px, overflowed row one and pushed the logo and icons onto another line.
+     A zero basis makes it take only the space left between them. */
   .header-location {
-    order: 2;
+    order: 0;
 
-    flex: 0 1 auto;
+    flex: 1 1 0;
     min-width: 0;
-    max-width: 44%;
+    margin: 0 4px;
+  }
+
+  /* min-width:auto is the flexbox default and stops a flex item shrinking below its
+     content, which defeats the ellipsis. Every level from the pill down to the text
+     span has to opt out of it. */
+  .header-location-pill {
+    min-width: 0;
+  }
+
+  .header-location-pill > span:last-child {
+    min-width: 0;
   }
 
   .header-location-pill {
@@ -1942,13 +1994,11 @@ const goToTab = (tab) => {
   }
 
   .header-search-wrap {
-    order: 3;
+    order: 2;
 
-    flex: 1 1 0;
+    flex: 1 1 100%;
     min-width: 0;
     max-width: none;
-
-    transition: flex-grow 0.25s ease;
   }
 
   /* Rounded to match the pill beside it, so row two reads as one pair of controls. */
@@ -1968,26 +2018,10 @@ const goToTab = (tab) => {
     padding-right: 16px;
   }
 
-  /* Expand-on-focus, same behaviour as the desktop bar: focusing search collapses the
-     address to its pin and hands the width over. .header-location is a later sibling of
-     .header-search-wrap, so the same general-sibling selector works here. */
-  /* Focused, the search takes the whole row and the address disappears.
-
-     It has to leave the flow, not just shrink: clamping it to max-width:0 kept it a flex
-     item, the search grew to the full line, and the 4px gap then tipped the line over so
-     the search wrapped onto a third row — the header grew 38px instead of staying put.
-     Absolute positioning takes it out of the line entirely, and opacity still animates. */
-  .header-search-wrap:focus-within ~ .header-location {
-    position: absolute;
-    left: 12px;
-
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .header-location {
-    transition: opacity 0.2s ease;
-  }
+  /* No expand-on-focus here any more. It existed when search and the address shared
+     row two and search needed to borrow the width. The address now sits in row one and
+     search already owns the whole of row two, so hiding the address on focus just made
+     it vanish from a row the user was not even interacting with. */
 
 /* Fixed 460px overflows a phone screen, so cap it. The left/translateX centring that
      used to sit here existed only to re-centre an absolutely positioned panel; QMenu and
@@ -2206,6 +2240,20 @@ const goToTab = (tab) => {
   border-radius: 0;
 }
 </style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

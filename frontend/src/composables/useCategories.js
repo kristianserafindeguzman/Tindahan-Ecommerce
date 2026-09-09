@@ -4,16 +4,22 @@ import { api } from '@/boot/axios'
 // The categories table has no icon column, so icons are matched here by
 // category_name. Anything not in this list (e.g. a category added later
 // through the admin/vendor UI) falls back to a generic icon.
-const CATEGORY_ICONS = {
-  'Cooking Essentials': 'o_kitchen',
-  'Beverages': 'o_local_drink',
-  'Snacks & Sweets': 'o_fastfood',
-  'Personal Care': 'o_spa',
-  'Laundry & Cleaning': 'o_local_laundry_service',
-  'Others': 'o_category'
+// Filled icons, not the o_ outlined variants: at 22px in a 44px disc the outlines read
+// as thin and washed out. Each category also carries a tone, so the row is six distinct
+// colours rather than six identical red discs.
+//
+// Only base names whose outlined form was already in use, so every glyph is known to
+// exist in the bundled Material Icons set.
+const CATEGORY_STYLES = {
+  'Cooking Essentials': { icon: 'restaurant', tone: 'amber' },
+  'Beverages': { icon: 'local_drink', tone: 'blue' },
+  'Snacks & Sweets': { icon: 'fastfood', tone: 'orange' },
+  'Personal Care': { icon: 'spa', tone: 'rose' },
+  'Laundry & Cleaning': { icon: 'local_laundry_service', tone: 'teal' },
+  'Others': { icon: 'category', tone: 'brand' }
 }
 
-const DEFAULT_ICON = 'o_category'
+const DEFAULT_STYLE = { icon: 'category', tone: 'brand' }
 
 // Shared for the same reason as useProducts: the header refetched this on every
 // consumer page alongside the page's own identical call. See useProducts.js.
@@ -29,7 +35,8 @@ const load = async () => {
     const mapped = (data || []).map((category) => ({
       id: category.category_id,
       label: category.category_name,
-      icon: CATEGORY_ICONS[category.category_name] || DEFAULT_ICON
+      icon: (CATEGORY_STYLES[category.category_name] || DEFAULT_STYLE).icon,
+      tone: (CATEGORY_STYLES[category.category_name] || DEFAULT_STYLE).tone
     }))
 
     // "Others" is a catch-all and reads oddly sorted alphabetically
@@ -64,4 +71,5 @@ export function useCategories() {
 
   return { categories, loading, fetchCategories }
 }
+
 

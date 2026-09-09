@@ -4,7 +4,7 @@
 
       <div v-if="isSheet" class="detail-drag-handle" />
 
-      <q-btn icon="o_close" flat round dense class="close-btn" v-close-popup />
+      <q-btn icon="o_close" flat round dense class="close-btn" aria-label="Close product details" v-close-popup />
 
       <div class="detail-scroll">
 
@@ -768,5 +768,6 @@ const handleAddToCart = async () => {
   flex: 1;
 }
 </style>
+
 
 

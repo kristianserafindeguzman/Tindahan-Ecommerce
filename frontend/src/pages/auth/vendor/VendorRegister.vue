@@ -2,6 +2,14 @@
   <q-page class="vendor-page">
     <div class="vendor-card">
 
+      <!-- Leaves the form without submitting. history.back() where there is somewhere
+           to go back to, otherwise the storefront — the page is reachable from a link
+           in the consumer home, so a blind back() could land on nothing. -->
+      <button type="button" class="vendor-back" @click="goBack">
+        <q-icon name="o_arrow_back" size="18px" />
+        <span>Back</span>
+      </button>
+
       <!-- HEADER -->
       <div class="vendor-header">
         <img
@@ -441,6 +449,11 @@ import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 
 const router = useRouter()
 
+const goBack = () => {
+  if (window.history.length > 1) router.back()
+  else router.push('/consumer/home')
+}
+
 const vendorForm = ref(null)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
@@ -841,6 +854,60 @@ function handleLocationSelected(location) {
 /* =========================
    HEADER
 ========================= */
+
+/* Sits above the centred header rather than inside it, so it does not shift the
+   logo off-centre. Given a defined outline because as bare text it read as a stray
+   label floating in the card's 45px margin rather than as a control. */
+.vendor-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  height: 40px;
+  margin-bottom: 10px;
+  padding: 0 18px 0 14px;
+
+  border: 1px solid #e8e8e8;
+  border-radius: 999px;
+
+  background: #ffffff;
+  color: #333333;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+/* Red arrow ties the control to the section markers and the submit button; the label
+   stays neutral so it does not compete with them. */
+.vendor-back .q-icon {
+  color: #bd2427;
+
+  transition: transform 0.2s ease;
+}
+
+.vendor-back:hover {
+  border-color: #f3c6c7;
+  background: #fdecec;
+  color: #bd2427;
+}
+
+.vendor-back:hover .q-icon {
+  transform: translateX(-2px);
+}
+
+.vendor-back:active {
+  background: #fbdbdc;
+}
+
+.vendor-back:focus-visible {
+  outline: 2px solid #bd2427;
+  outline-offset: 2px;
+}
 
 .vendor-header {
   text-align: center;
@@ -1539,3 +1606,5 @@ function handleLocationSelected(location) {
   }
 }
 </style>
+
+

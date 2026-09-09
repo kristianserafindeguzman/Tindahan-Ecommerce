@@ -16,7 +16,7 @@
         <div class="order-main">
 
           <!-- STATUS -->
-          <div class="status-card">
+          <div class="status-card" :class="statusCardClass">
             <div class="status-card-top">
               <div class="status-label">Order Status</div>
               <div v-if="!['picked_up', 'cancelled'].includes(order.status)" class="status-expected">Expected Today</div>
@@ -29,7 +29,13 @@
             <div v-if="order.status !== 'cancelled'" class="status-steps" :class="{ 'status-steps-done': order.status === 'picked_up' }">
               <template v-for="(step, i) in statusSteps" :key="step.key">
                 <div class="status-step">
-                  <div class="status-step-circle" :class="{ 'status-step-circle-active': isStatusActive(step.key) }">
+                  <div
+                    class="status-step-circle"
+                    :class="{
+                      'status-step-circle-done': isStatusActive(step.key) && !isStatusCurrent(step.key),
+                      'status-step-circle-current': isStatusCurrent(step.key)
+                    }"
+                  >
                     <q-icon :name="step.icon" size="16px" />
                   </div>
                   <div class="status-step-label" :class="{ 'status-step-label-active': isStatusActive(step.key) }">{{ step.label }}</div>
@@ -176,7 +182,7 @@
       <q-card class="cancel-dialog-card" :class="{ 'cancel-dialog-card-sheet': $q.screen.lt.sm }">
         <div v-if="$q.screen.lt.sm" class="cancel-dialog-drag-handle" />
 
-        <q-btn flat round dense icon="close" class="cancel-dialog-close-btn" v-close-popup />
+        <q-btn flat round dense icon="close" class="cancel-dialog-close-btn" aria-label="Close" v-close-popup />
 
         <div class="cancel-dialog-scroll">
           <div class="cancel-dialog-title">Cancel Order?</div>
@@ -226,7 +232,7 @@
     <q-dialog v-model="showReceiptDialog">
       <div class="receipt-dialog-wrap">
         <q-card class="receipt-dialog-card">
-          <q-btn flat round dense icon="close" class="receipt-close-btn" v-close-popup />
+          <q-btn flat round dense icon="close" class="receipt-close-btn" aria-label="Close receipt" v-close-popup />
 
           <div class="receipt-icon-circle">
             <q-icon name="o_storefront" size="26px" />
@@ -324,6 +330,20 @@ const statusSteps = [
   { key: 'picked_up', label: 'Picked Up', icon: 'o_task_alt' }
 ]
 
+/*
+  The two states you should be able to read without parsing the tracker. Everything else
+  is mid-flight and stays on the default white card.
+*/
+const STATUS_CARD_TONES = {
+  cancelled: 'danger',
+  picked_up: 'success'
+}
+
+const statusCardClass = computed(() => {
+  const tone = STATUS_CARD_TONES[order.value?.status]
+  return tone ? `status-card--${tone}` : ''
+})
+
 const statusTitleClass = computed(() => {
   if (!order.value) return ''
   if (order.value.status === 'cancelled') return 'status-title-cancelled'
@@ -387,6 +407,11 @@ const storeAddressText = computed(() => {
   if (address && dist) return `${address} (${dist})`
   return address || dist
 })
+
+// isStatusActive covers "reached", which includes every completed step. The tracker
+// needs "reached but behind us" and "where we are now" to look different, or all four
+// discs render identically solid and nothing marks the current stage.
+const isStatusCurrent = (step) => order.value?.status === step
 
 const isStatusActive = (step) => {
   if (!order.value) return false
@@ -626,7 +651,38 @@ onMounted(() => {
   border: 1px solid var(--c-border);
 
   background: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--sh-card);
+}
+
+/* Terminal states take a tinted ground. Each border is a step deeper than its own fill
+   so the card edge still reads, and each ground is a step lighter than the tints used
+   inside it (cancellation note, tracker discs) so those do not disappear into it. */
+.status-card--danger {
+  border-color: var(--c-danger-line);
+  background: var(--c-danger-tint);
+}
+
+.status-card--success {
+  border-color: var(--c-success-line);
+  background: var(--c-success-wash);
+}
+
+/* The eyebrow and the divider are neutrals tuned against a white card. Left alone on a
+   tinted ground they read as grubby rather than quiet, so both take the card's own hue. */
+.status-card--danger .status-label {
+  color: var(--c-danger-muted);
+}
+
+.status-card--danger .card-divider {
+  background: var(--c-danger-tint-2);
+}
+
+.status-card--success .status-label {
+  color: var(--c-success-muted);
+}
+
+.status-card--success .card-divider {
+  background: var(--c-success-tint);
 }
 
 .card-divider {
@@ -644,6 +700,7 @@ onMounted(() => {
 
   gap: 12px;
 }
+
 
 .status-label {
   font-size: var(--fs-2xs);
@@ -721,11 +778,23 @@ onMounted(() => {
   transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 
-.status-step-circle-active {
+/* Completed steps take the tinted-disc language used for every other leading icon in
+   the app (.info-icon, .notif-icon, .promo-icon), rather than a second solid fill. */
+.status-step-circle-done {
+  border-color: transparent;
+
+  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  color: var(--c-brand);
+}
+
+/* Solid is reserved for where the order actually is, so one disc carries the emphasis. */
+.status-step-circle-current {
   border-color: var(--c-brand);
 
   background: var(--c-brand);
   color: #ffffff;
+
+  box-shadow: 0 0 0 4px var(--c-brand-tint);
 }
 
 .status-step-label {
@@ -760,10 +829,21 @@ onMounted(() => {
   background: linear-gradient(to right, var(--c-brand) 50%, var(--c-border) 50%);
 }
 
-/* Picked up = done, so the stepper switches to the same green as .status-title-done. */
-.status-steps-done .status-step-circle-active {
+/* Picked up = done, so the whole tracker switches to the same green as
+   .status-title-done — otherwise the connectors go green while the discs stay brand red
+   and a finished order still reads as in progress. */
+.status-steps-done .status-step-circle-done {
+  background: var(--c-success-tint);
+  color: var(--c-success);
+}
+
+.status-steps-done .status-step-circle-current {
   border-color: var(--c-success);
+
   background: var(--c-success);
+  color: #ffffff;
+
+  box-shadow: 0 0 0 4px var(--c-success-tint);
 }
 
 .status-steps-done .status-step-line-active {
@@ -780,7 +860,7 @@ onMounted(() => {
 
   border-radius: var(--r-md);
 
-  background: var(--c-danger-tint);
+  background: var(--c-danger-tint-2);
   color: var(--c-danger);
 }
 
@@ -795,7 +875,7 @@ onMounted(() => {
   font-size: var(--fs-xs);
   line-height: 1.4;
 
-  color: var(--c-brand);
+  color: var(--c-danger);
 }
 
 /* STORE INFO */
@@ -989,7 +1069,7 @@ onMounted(() => {
   border: 1px solid var(--c-border);
 
   background: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--sh-card);
 }
 
 .summary-title {
@@ -1108,7 +1188,7 @@ onMounted(() => {
 
   background: #ffffff;
   color: var(--c-text-2);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--sh-card);
 
   font-size: var(--fs-sm);
   font-weight: 600;
@@ -1706,4 +1786,14 @@ onMounted(() => {
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
 }
 </style>
+
+
+
+
+
+
+
+
+
+
 

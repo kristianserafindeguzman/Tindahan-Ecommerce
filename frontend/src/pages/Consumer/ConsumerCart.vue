@@ -438,18 +438,23 @@ const removeItem = async (item) => {
   border: 1px solid var(--c-border);
 
   background: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--sh-card);
 
-  transition: border-color 0.15s, background-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.2s;
 }
 
 .store-card:last-child {
   margin-bottom: 0;
 }
 
+/* Selection is shown with a brand border and a soft ring, not by tinting the whole
+   card. Flooding it put the product thumbnails and prices on a pink ground and made
+   the selected store look like a warning rather than a choice. */
 .store-card-selected {
-  border-color: var(--c-brand-tint-3);
-  background: var(--c-brand-tint);
+  border-color: var(--c-brand);
+  background: #ffffff;
+
+  box-shadow: 0 0 0 3px var(--c-brand-tint), var(--sh-card);
 }
 
 .store-card-checkbox {
@@ -694,7 +699,7 @@ const removeItem = async (item) => {
   border: 1px solid var(--c-border);
 
   background: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--sh-card);
 }
 
 .summary-title {
@@ -900,6 +905,7 @@ const removeItem = async (item) => {
   }
 }
 </style>
+
 
 
 

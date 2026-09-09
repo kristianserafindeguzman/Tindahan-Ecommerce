@@ -16,16 +16,16 @@
         </div>
 
         <div class="map-controls">
-          <q-btn round unelevated class="map-control-btn" icon="o_add" @click="zoomIn" />
-          <q-btn round unelevated class="map-control-btn" icon="o_remove" @click="zoomOut" />
-          <q-btn round unelevated class="map-control-btn map-locate-btn" icon="o_my_location" @click="locateMe" />
+          <q-btn round unelevated class="map-control-btn" icon="o_add" aria-label="Zoom in" @click="zoomIn" />
+          <q-btn round unelevated class="map-control-btn" icon="o_remove" aria-label="Zoom out" @click="zoomOut" />
+          <q-btn round unelevated class="map-control-btn map-locate-btn" icon="o_my_location" aria-label="Centre on my location" @click="locateMe" />
         </div>
       </div>
 
       <aside class="map-sidebar">
         <div class="sidebar-header">
           <div class="sidebar-title">Stores near you</div>
-          <q-btn flat round dense icon="o_close" class="sidebar-close-btn" @click="closeDialog" />
+          <q-btn flat round dense icon="o_close" class="sidebar-close-btn" aria-label="Close map" @click="closeDialog" />
         </div>
 
         <q-input
@@ -665,3 +665,4 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+
