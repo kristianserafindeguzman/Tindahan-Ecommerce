@@ -6,7 +6,6 @@
         <div class="header-bg-glow"></div>
 
         <div class="row items-center col-12 col-md-8 relative-position" style="z-index: 2">
-          <!-- White Block with Red Groups Icon and Pulse Effect -->
           <div class="header-white-block q-mr-lg flex flex-center relative-position">
             <q-icon name="groups" size="36px" color="red-9" />
             <div class="pulse-ring"></div>
@@ -33,7 +32,6 @@
           </div>
         </div>
 
-        <!-- Right Side Dynamic Tab-Specific Stat Counter Box -->
         <div class="col-12 col-md-auto q-mt-md q-mt-md-none flex justify-end" style="z-index: 2">
           <div class="header-stat-box column flex-center text-center">
             <span class="stat-box-label text-weight-bolder text-uppercase">
@@ -76,25 +74,31 @@
             emit-value
             map-options
             clearable
-            placeholder="Filter by status"
+            placeholder="Filter"
             class="filter-select-glass"
             :options="statusFilterOptions"
             @update:model-value="fetchConsumers"
           >
             <template #prepend>
-              <q-icon name="filter_list" color="red-4" size="20px" />
+              <q-icon name="filter_list" color="red-4" size="18px" />
+            </template>
+            <template #selected>
+              <span v-if="!statusFilter" class="text-grey-6 text-weight-bold">Filter</span>
+              <span v-else class="text-weight-bold text-grey-8">
+                {{ statusFilterOptions.find(opt => opt.value === statusFilter)?.label }}
+              </span>
             </template>
           </q-select>
         </div>
 
         <!-- Export Action -->
         <q-btn
-          label="Export List"
+          label="Export PDF"
           no-caps
           outline
           icon="print"
           class="btn-glass export-btn q-ml-auto"
-          color="red-7"
+          color="red-9"
           @click="handleExport"
           :loading="isExporting"
         />
@@ -114,16 +118,8 @@
             narrow-indicator
             @update:model-value="fetchConsumers"
           >
-            <q-tab
-              name="active"
-              label="Active Accounts"
-              class="text-weight-bold"
-            />
-            <q-tab
-              name="deleted"
-              label="Deleted Accounts"
-              class="text-weight-bold"
-            />
+            <q-tab name="active" label="Active Accounts" class="text-weight-bold" />
+            <q-tab name="deleted" label="Deleted Accounts" class="text-weight-bold" />
           </q-tabs>
         </div>
 
@@ -131,112 +127,139 @@
         <q-table
           flat
           class="custom-glass-table interactive-table"
-          :rows="consumers"
+          :rows="loading ? skeletonRows : consumers"
           :columns="columns"
           row-key="user_id"
-          :loading="loading"
+          :pagination="{ rowsPerPage: 10 }"
         >
-          <!-- FIXED LOADING STATE -->
-          <template #loading>
-            <div class="full-width column flex-center q-py-xl table-loading-wrapper">
-              <q-spinner-dots size="48px" color="red-7" />
-              <div class="text-subtitle2 text-weight-bold q-mt-md text-grey-7">
-                Fetching consumers...
-              </div>
-            </div>
-          </template>
-
           <!-- AVATAR & NAME COLUMN -->
           <template #body-cell-full_name="props">
             <q-td :props="props">
-              <div class="row items-center no-wrap">
-                <div class="avatar-3d-wrapper q-mr-md print-hide flex flex-center">
-                  <q-avatar size="34px" color="grey-2" text-color="grey-7">
-                    <img v-if="props.row.profile_picture_url" :src="props.row.profile_picture_url" />
-                    <q-icon v-else name="person" size="18px" />
-                  </q-avatar>
+              <template v-if="loading">
+                <div class="row items-center no-wrap">
+                  <q-skeleton type="QAvatar" size="36px" class="q-mr-sm" />
+                  <q-skeleton type="text" width="130px" height="20px" />
                 </div>
-                <div class="text-weight-bold">{{ props.row.full_name }}</div>
+              </template>
+              <template v-else>
+                <div class="row items-center no-wrap">
+                  <div class="avatar-3d-wrapper q-mr-sm print-hide flex flex-center">
+                    <q-avatar size="36px" color="grey-2" text-color="grey-7">
+                      <img v-if="props.row.profile_picture_url" :src="props.row.profile_picture_url" />
+                      <q-icon v-else name="person" size="20px" />
+                    </q-avatar>
+                  </div>
+                  <div class="text-weight-bold ellipsis">{{ props.row.full_name }}</div>
+                </div>
+              </template>
+            </q-td>
+          </template>
+
+          <!-- EMAIL COLUMN -->
+          <template #body-cell-email="props">
+            <q-td :props="props">
+              <q-skeleton v-if="loading" type="text" width="150px" height="20px" />
+              <span v-else>{{ props.row.email }}</span>
+            </q-td>
+          </template>
+
+          <!-- PHONE NUMBER COLUMN -->
+          <template #body-cell-phone_number="props">
+            <q-td :props="props">
+              <q-skeleton v-if="loading" type="text" width="105px" height="20px" />
+              <span v-else>{{ props.row.phone_number || 'N/A' }}</span>
+            </q-td>
+          </template>
+
+          <!-- LAST ACTIVITY COLUMN -->
+          <template #body-cell-last_activity_at="props">
+            <q-td :props="props" class="text-grey-8 text-weight-medium">
+              <q-skeleton v-if="loading" type="text" width="110px" height="20px" />
+              <div v-else class="row items-center no-wrap">
+                <q-icon name="schedule" color="red-4" class="q-mr-xs print-hide" size="16px" />
+                <span class="text-body2">{{ formatActivity(props.row.last_activity_at) }}</span>
               </div>
             </q-td>
           </template>
 
-          <!-- STATUS COLUMN (CENTERED) -->
+          <!-- STATUS COLUMN -->
           <template #body-cell-account_status="props">
             <q-td :props="props" class="text-center">
               <div class="row items-center justify-center">
-                <q-select
-                  v-model="props.row.account_status"
-                  dense
-                  borderless
-                  emit-value
-                  map-options
-                  class="status-select-glass print-hide"
-                  :class="'status-' + props.row.account_status"
-                  :options="statusOptions"
-                  @update:model-value="val => updateStatus(props.row.user_id, val)"
-                >
-                  <template v-slot:selected>
-                    <div class="text-weight-bold row items-center no-wrap text-capitalize status-selected-label" @click.stop>
-                      <span class="status-indicator-dot q-mr-xs"></span>
-                      <span>{{ props.row.account_status }}</span>
-                    </div>
-                  </template>
-                </q-select>
+                <q-skeleton
+                  v-if="loading"
+                  type="rect"
+                  width="100px"
+                  height="32px"
+                  style="border-radius: 9999px;"
+                />
+                <template v-else>
+                  <q-select
+                    v-model="props.row.account_status"
+                    dense
+                    borderless
+                    emit-value
+                    map-options
+                    class="status-select-glass print-hide"
+                    :class="'status-' + props.row.account_status"
+                    :options="statusOptions"
+                    @update:model-value="val => updateStatus(props.row.user_id, val)"
+                  >
+                    <template v-slot:selected>
+                      <div class="status-selected-label">
+                        <span class="status-indicator-dot"></span>
+                        <span class="text-capitalize">{{ props.row.account_status }}</span>
+                      </div>
+                    </template>
+                  </q-select>
+                </template>
               </div>
-              <span class="print-only text-weight-bold text-uppercase" style="display: none;">
+              <span v-if="!loading" class="print-only text-weight-bold text-uppercase" style="display: none;">
                 {{ props.row.account_status }}
               </span>
             </q-td>
           </template>
 
-          <!-- LAST ACTIVITY -->
-          <template #body-cell-last_activity_at="props">
-            <q-td :props="props" class="text-grey-8 text-weight-medium">
-              <div class="row items-center no-wrap">
-                <q-icon name="schedule" color="red-4" class="q-mr-xs print-hide" size="16px" />
-                <span>{{ formatActivity(props.row.last_activity_at) }}</span>
-              </div>
-            </q-td>
-          </template>
-
-          <!-- ACTIONS (CENTERED) -->
+          <!-- ACTIONS COLUMN -->
           <template #body-cell-actions="props">
             <q-td :props="props" class="text-center">
-              <div class="row items-center justify-center no-wrap q-gutter-x-xs">
-                <q-btn
-                  label="View"
-                  icon="visibility"
-                  no-caps
-                  dense
-                  outline
-                  class="btn-view-3d q-px-sm print-hide"
-                  @click="viewDetails(props.row)"
-                />
-                <q-btn
-                  label="Delete"
-                  icon="person_remove"
-                  no-caps
-                  dense
-                  outline
-                  class="btn-delete-3d q-px-sm print-hide"
-                  @click="confirmDelete(props.row)"
-                />
+              <div class="row items-center justify-center no-wrap gap-xs">
+                <template v-if="loading">
+                  <q-skeleton type="rect" width="82px" height="32px" style="border-radius: 9999px;" />
+                  <q-skeleton type="rect" width="92px" height="32px" style="border-radius: 9999px;" />
+                </template>
+                <template v-else>
+                  <q-btn
+                    unelevated
+                    no-caps
+                    dense
+                    label="View"
+                    icon="visibility"
+                    class="action-pill-btn action-pill-view"
+                    @click.stop="viewDetails(props.row)"
+                  />
+                  <q-btn
+                    unelevated
+                    no-caps
+                    dense
+                    label="Delete"
+                    icon="person_remove"
+                    class="action-pill-btn action-pill-delete"
+                    @click.stop="confirmDelete(props.row)"
+                  />
+                </template>
               </div>
             </q-td>
           </template>
 
-          <!-- FIXED NO DATA SLOT (HIDDEN WHEN LOADING) -->
+          <!-- NO DATA STATE -->
           <template #no-data>
-            <div
-              v-if="!loading"
-              class="full-width column flex-center q-py-xl empty-state-glass"
-            >
+            <div v-if="!loading" class="full-width column flex-center q-py-xl empty-state-glass">
               <div class="empty-icon-glass q-mb-md">
-                <q-icon name="people_outline" color="red-3" size="40px" />
+                <q-icon name="people_outline" color="red-3" size="36px" />
               </div>
-              <div class="text-h6 text-weight-bold">No consumers found</div>
-              <div class="text-body2 text-grey-6">There are currently no accounts matching your search.</div>
+              <div class="text-subtitle1 text-weight-bold">No consumers found</div>
+              <div class="text-caption text-grey-6">There are currently no accounts matching your search.</div>
             </div>
           </template>
         </q-table>
@@ -246,7 +269,6 @@
     <!-- ================= VIEW DETAILS MODAL ================= -->
     <q-dialog v-model="showViewModal" transition-show="scale" transition-hide="scale">
       <q-card class="consumer-profile-card overflow-hidden">
-        <!-- Top Banner Header -->
         <div class="profile-hero-banner relative-position q-pa-lg">
           <div class="banner-awning-strip row no-wrap">
             <span class="awn-red"></span><span class="awn-white"></span>
@@ -257,7 +279,6 @@
 
           <div class="banner-mesh-glow"></div>
 
-          <!-- Top Role Tag & Close Button -->
           <div class="row items-center justify-between relative-position z-top">
             <span class="profile-role-chip row items-center no-wrap q-px-sm q-py-xs">
               <q-icon name="shopping_bag" size="13px" class="q-mr-xs text-red-9" />
@@ -266,7 +287,6 @@
             <q-btn icon="close" flat round dense v-close-popup color="white" class="modal-close-btn" />
           </div>
 
-          <!-- Avatar & Centerpiece -->
           <div class="column items-center text-center q-mt-md relative-position z-top">
             <div class="profile-avatar-frame q-mb-sm shadow-sm flex flex-center">
               <q-avatar size="84px" color="white" text-color="red-9">
@@ -285,9 +305,7 @@
           </div>
         </div>
 
-        <!-- Profile Detail Cards with Explicit Light/Dark Palette -->
         <q-card-section class="q-pa-lg profile-body-section" v-if="viewTarget">
-          <!-- Status Summary Pill -->
           <div class="status-summary-row row items-center justify-between q-pa-md q-mb-md">
             <div class="row items-center no-wrap">
               <div class="status-icon-box q-mr-md flex flex-center" :class="'box-' + viewTarget.account_status">
@@ -310,9 +328,7 @@
             </span>
           </div>
 
-          <!-- Metric Cards Grid -->
           <div class="row q-col-gutter-sm">
-            <!-- Email -->
             <div class="col-12 col-sm-6">
               <div class="info-metric-box q-pa-md h-full">
                 <div class="row items-center no-wrap q-mb-xs">
@@ -325,7 +341,6 @@
               </div>
             </div>
 
-            <!-- Mobile -->
             <div class="col-12 col-sm-6">
               <div class="info-metric-box q-pa-md h-full">
                 <div class="row items-center no-wrap q-mb-xs">
@@ -338,7 +353,6 @@
               </div>
             </div>
 
-            <!-- Last Activity -->
             <div class="col-12">
               <div class="info-metric-box q-pa-md">
                 <div class="row items-center no-wrap q-mb-xs">
@@ -355,16 +369,8 @@
 
         <q-separator class="modal-divider" />
 
-        <!-- Footer Actions -->
         <q-card-actions align="right" class="q-pa-md modal-footer-actions">
-          <q-btn
-            unelevated
-            label="Close Profile"
-            color="grey-9"
-            no-caps
-            class="btn-primary-close q-px-lg text-weight-bolder"
-            v-close-popup
-          />
+          <q-btn unelevated label="Close Profile" color="grey-9" no-caps class="btn-primary-close q-px-lg text-weight-bolder" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -385,15 +391,7 @@
 
         <q-card-actions align="center" class="q-pa-md dialog-actions-glass">
           <q-btn flat label="Cancel" no-caps class="btn-3d-outline q-px-md q-mr-sm" v-close-popup />
-          <q-btn
-            unelevated
-            label="Confirm Deletion"
-            color="red-9"
-            no-caps
-            class="btn-3d q-px-md"
-            :loading="actionLoading"
-            @click="handleDelete"
-          />
+          <q-btn unelevated label="Confirm Deletion" color="red-9" no-caps class="btn-3d q-px-md" :loading="actionLoading" @click="handleDelete" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -423,15 +421,7 @@
 
         <q-card-actions align="center" class="q-pa-md dialog-actions-glass">
           <q-btn flat label="Cancel" no-caps class="btn-3d-outline q-px-md q-mr-sm" @click="cancelSuspension" />
-          <q-btn
-            unelevated
-            label="Confirm Suspension"
-            color="red-9"
-            no-caps
-            class="btn-3d q-px-md"
-            :loading="actionLoading"
-            @click="confirmSuspension"
-          />
+          <q-btn unelevated label="Confirm Suspension" color="red-9" no-caps class="btn-3d q-px-md" :loading="actionLoading" @click="confirmSuspension" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -449,30 +439,31 @@ const search = ref('')
 const statusFilter = ref(null)
 const loading = ref(false)
 const actionLoading = ref(false)
+const isExporting = ref(false)
 const consumers = ref([])
 const currentTab = ref('active')
+
+const skeletonRows = Array.from({ length: 6 }, (_, index) => ({
+  user_id: `skeleton-${index}`
+}))
 
 const counts = ref({
   active: 0,
   deleted: 0
 })
 
-// View Modal Refs
 const showViewModal = ref(false)
 const viewTarget = ref(null)
 
-// Delete Modal Refs
 const showDeleteModal = ref(false)
 const deleteTarget = ref(null)
 
-// Suspend Modal Refs
 const showSuspendModal = ref(false)
 const suspensionTarget = ref(null)
 const suspensionMessage = ref('')
 const originalStatus = ref('')
 
 const statusFilterOptions = [
-  { label: 'All Statuses', value: null },
   { label: 'Active', value: 'active' },
   { label: 'Inactive', value: 'inactive' },
   { label: 'Suspended', value: 'suspended' }
@@ -489,21 +480,8 @@ const columns = [
   { name: 'email', label: 'EMAIL', field: 'email', align: 'left', sortable: true },
   { name: 'phone_number', label: 'PHONE', field: row => row.phone_number || 'N/A', align: 'left' },
   { name: 'last_activity_at', label: 'LAST ACTIVITY', field: 'last_activity_at', align: 'left', sortable: true },
-  { 
-    name: 'account_status', 
-    label: 'STATUS', 
-    field: 'account_status', 
-    align: 'center',
-    headerClasses: 'text-center'
-  },
-  { 
-    name: 'actions', 
-    label: 'ACTIONS', 
-    field: 'actions', 
-    align: 'center', 
-    classes: 'print-hide', 
-    headerClasses: 'print-hide text-center' 
-  }
+  { name: 'account_status', label: 'STATUS', field: 'account_status', align: 'center', headerClasses: 'text-center' },
+  { name: 'actions', label: 'ACTIONS', field: 'actions', align: 'center', classes: 'print-hide', headerClasses: 'print-hide text-center' }
 ]
 
 const fetchConsumers = async () => {
@@ -634,27 +612,36 @@ const formatActivity = (timestamp) => {
 const handleExport = async () => {
   if (isExporting.value) return
   isExporting.value = true
+
   try {
     const response = await api.get('/admin/consumers/export', {
       params: {
         tab: currentTab.value,
-        search: search.value,
-        status: statusFilter.value
+        search: search.value || undefined,
+        status: statusFilter.value || undefined
       },
       responseType: 'blob'
     })
-    const url = window.URL.createObjectURL(new Blob([response.data]))
+
+    const blob = new Blob([response.data], { type: 'application/pdf' })
+    const downloadUrl = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = url
+    link.href = downloadUrl
+
     const dateStr = new Date().toISOString().split('T')[0]
-    link.setAttribute('download', `Tindahan_Admin_Consumers_Export_${dateStr}.pdf`)
+    link.setAttribute('download', `Consumers_Report_${dateStr}.pdf`)
     document.body.appendChild(link)
     link.click()
-    document.body.removeChild(link)
-    $q.notify({ type: 'positive', message: 'Report exported successfully.', color: 'green-7' })
+
+    setTimeout(() => {
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(downloadUrl)
+    }, 150)
+
+    $q.notify({ type: 'positive', message: 'PDF report generated successfully.', position: 'top-right' })
   } catch (err) {
-    console.error('Export failed:', err)
-    $q.notify({ type: 'negative', message: 'Failed to export report. Please try again.', color: 'red-7' })
+    console.error('Export error:', err)
+    $q.notify({ type: 'negative', message: 'Failed to export PDF report. Please try again.', position: 'top-right' })
   } finally {
     isExporting.value = false
   }
@@ -675,9 +662,6 @@ onMounted(() => {
 </style>
 
 <style scoped>
-/* ==========================================================
-   PAGE BASE
-========================================================== */
 .admin-page {
   background-color: #f1f5f9;
   min-height: 100vh;
@@ -697,14 +681,10 @@ onMounted(() => {
 .opacity-80 { opacity: 0.8; }
 .opacity-90 { opacity: 0.9; }
 .gap-md { gap: 16px; }
+.gap-xs { gap: 8px; }
 .flex-1 { flex: 1; }
 .font-mono { font-family: 'SFMono-Regular', Consolas, Menlo, monospace; }
-.text-dark { color: #0f172a !important; }
-.shadow-xs { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
 
-/* ==========================================================
-   PAGE BANNER & MATCHED TITLE TYPOGRAPHY
-========================================================== */
 .consumer-mgmt-header {
   background: linear-gradient(90deg, #dc2626 0%, #b91c1c 45%, #7f1d1d 100%);
   border-radius: 20px;
@@ -768,7 +748,6 @@ onMounted(() => {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .header-stat-box {
@@ -799,9 +778,6 @@ onMounted(() => {
   font-weight: 600;
 }
 
-/* ==========================================================
-   GLASSMORPHISM CORE & TABLES
-========================================================== */
 .glass-toolbar {
   background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(16px);
@@ -818,10 +794,6 @@ onMounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.85);
   border-radius: 20px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.03);
-}
-
-.table-glass-container {
-  overflow: hidden;
 }
 
 .panel-header {
@@ -845,93 +817,76 @@ onMounted(() => {
 }
 
 :deep(.custom-glass-table tbody td) {
-  padding: 16px 20px;
+  padding: 14px 20px;
   font-size: 13.5px;
 }
 
-:deep(.interactive-table tbody tr) {
-  cursor: pointer;
-}
-
-.table-loading-wrapper {
-  background: transparent;
-}
-
-.empty-state-glass {
-  background: transparent;
-}
-
-.empty-icon-glass {
-  padding: 20px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-}
-
-/* 3D Avatar */
-.avatar-3d-wrapper {
-  border-radius: 50%;
-  padding: 2px;
-  background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-}
-
-/* STATUS SELECT PILL (CENTERED & COMPACT) */
+/* STATUS SELECT PILL (MATCHED ACTION PILL FONT & SYSTEM TYPOGRAPHY) */
 .status-select-glass {
-  width: 110px;
+  width: fit-content;
+  display: inline-flex;
   margin: 0 auto;
 }
 
 .status-select-glass :deep(.q-field__control) {
-  border-radius: 999px;
-  padding: 0 10px 0 12px !important;
-  height: 28px !important;
-  min-height: 28px !important;
-  display: flex;
+  border-radius: 9999px;
+  padding: 0 14px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(0, 0, 0, 0.08);
+  background: white;
+  transition: all 0.2s ease;
 }
 
 .status-select-glass :deep(.q-field__control-container) {
-  padding-top: 0 !important;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
 }
 
 .status-select-glass :deep(.q-field__native) {
-  font-size: 11.5px;
-  font-weight: 700;
-  min-height: auto;
+  font-family: inherit !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
   padding: 0 !important;
-  display: flex;
+  min-height: unset;
+  line-height: 1;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  width: auto !important;
+  flex: unset !important;
 }
 
 .status-select-glass :deep(.q-field__append) {
-  padding-left: 2px !important;
-  min-width: auto;
-  height: 100%;
+  padding: 0 !important;
+  margin-left: 6px;
+  min-width: unset;
+  height: auto;
 }
 
 .status-select-glass :deep(.q-field__append .q-icon) {
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .status-selected-label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  font-family: inherit !important;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   line-height: 1;
 }
 
 .status-indicator-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -940,35 +895,71 @@ onMounted(() => {
 .status-active :deep(.q-field__native) { color: #15803d; }
 .status-active .status-indicator-dot { background-color: #16a34a; }
 
-.status-inactive :deep(.q-field__control) { background: #f8fafc; border-color: #e2e8f0; }
-.status-inactive :deep(.q-field__native) { color: #64748b; }
-.status-inactive .status-indicator-dot { background-color: #94a3b8; }
+.status-inactive :deep(.q-field__control) { background: #f8fafc; border-color: #cbd5e1; }
+.status-inactive :deep(.q-field__native) { color: #475569; }
+.status-inactive .status-indicator-dot { background-color: #64748b; }
 
 .status-suspended :deep(.q-field__control) { background: #fef2f2; border-color: #fecaca; }
 .status-suspended :deep(.q-field__native) { color: #b91c1c; }
 .status-suspended .status-indicator-dot { background-color: #dc2626; }
 
-/* Action Buttons */
-.search-input-glass { max-width: 320px; width: 100%; }
-.filter-select-glass { width: 180px; }
+/* ACTION BUTTONS DESIGN */
+.action-pill-btn {
+  border-radius: 9999px !important;
+  font-family: inherit !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 4px 16px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  letter-spacing: -0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
 
-.btn-delete-3d {
-  border-radius: 8px !important;
-  font-weight: 700;
-  background: #ffffff !important;
-  color: #dc2626 !important;
+.action-pill-btn :deep(.q-icon) {
+  font-size: 15px !important;
+  margin-right: 5px;
+}
+
+.action-pill-view {
+  background: #c5221f !important;
+  color: #ffffff !important;
+}
+
+.action-pill-view:hover {
+  background: #a91b18 !important;
+  box-shadow: 0 2px 6px rgba(185, 28, 28, 0.35);
+  transform: translateY(-0.5px);
+}
+
+.action-pill-view:active {
+  transform: translateY(0);
+}
+
+.action-pill-delete {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
   border: 1px solid #fca5a5 !important;
 }
-.btn-delete-3d:hover { background: #fef2f2 !important; }
 
-.btn-view-3d {
-  border-radius: 8px !important;
-  font-weight: 700;
-  background: #ffffff !important;
-  color: #475569 !important;
-  border: 1px solid #cbd5e1 !important;
+.action-pill-delete:hover {
+  background: #fecaca !important;
+  color: #991b1b !important;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.15);
 }
-.btn-view-3d:hover { background: #f8fafc !important; }
+
+.avatar-3d-wrapper {
+  border-radius: 50%;
+  padding: 2px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.search-input-glass { max-width: 320px; width: 100%; }
+.filter-select-glass { width: 140px; }
+.filter-select-glass :deep(.q-field__native) { font-size: 13px; }
 
 .btn-glass {
   border-radius: 10px !important;
@@ -977,9 +968,7 @@ onMounted(() => {
   border: 1px solid #e2e8f0 !important;
 }
 
-/* ==========================================================
-   REVITALIZED CONSUMER PROFILE MODAL AESTHETICS
-========================================================== */
+/* CONSUMER PROFILE MODAL */
 .consumer-profile-card {
   width: 480px;
   max-width: 95vw;
@@ -1040,7 +1029,6 @@ onMounted(() => {
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-/* Modal Inner Data Containers */
 .status-summary-row {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -1082,33 +1070,15 @@ onMounted(() => {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  transition: all 0.2s ease;
 }
 
-.modal-label-sub {
-  color: #64748b;
-}
+.modal-label-sub { color: #64748b; }
+.modal-value-main { color: #0f172a; }
+.modal-divider { border-color: #e2e8f0; }
+.modal-footer-actions { background: #f8fafc; }
+.btn-primary-close { border-radius: 8px !important; font-size: 13px; }
 
-.modal-value-main {
-  color: #0f172a;
-}
-
-.modal-divider {
-  border-color: #e2e8f0;
-}
-
-.modal-footer-actions {
-  background: #f8fafc;
-}
-
-.btn-primary-close {
-  border-radius: 8px !important;
-  font-size: 13px;
-}
-
-/* ==========================================================
-   OTHER MODALS
-========================================================== */
+/* DIALOGS */
 .review-dialog-glass {
   width: 550px;
   max-width: 95vw;
@@ -1156,9 +1126,16 @@ onMounted(() => {
   box-shadow: 0 8px 24px rgba(220, 38, 38, 0.15);
 }
 
-/* ==========================================================
-   DARK MODE OVERRIDES SCOPED TO MANAGE CONSUMERS
-========================================================== */
+.empty-state-glass { background: transparent; }
+.empty-icon-glass {
+  padding: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+/* DARK MODE SUPPORT */
 body.body--dark {
   .consumer-profile-card {
     background: #0f172a !important;
@@ -1221,23 +1198,21 @@ body.body--dark {
     color: #fca5a5 !important;
   }
 
-  .btn-view-3d {
-    background: rgba(30, 41, 59, 0.8) !important;
-    color: #94a3b8 !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-  }
-  .btn-view-3d:hover {
-    background: rgba(51, 65, 85, 0.9) !important;
+  .action-pill-view {
+    background: #b91c1c !important;
     color: #ffffff !important;
   }
+  .action-pill-view:hover {
+    background: #dc2626 !important;
+  }
 
-  .btn-delete-3d {
-    background: rgba(185, 28, 28, 0.15) !important;
-    border-color: rgba(239, 68, 68, 0.3) !important;
+  .action-pill-delete {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border-color: rgba(239, 68, 68, 0.35) !important;
     color: #fca5a5 !important;
   }
-  .btn-delete-3d:hover {
-    background: rgba(185, 28, 28, 0.3) !important;
+  .action-pill-delete:hover {
+    background: rgba(239, 68, 68, 0.25) !important;
   }
 }
 
