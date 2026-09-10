@@ -27,10 +27,7 @@
       </div>
 
       <div v-else>
-        <!-- QTabs rather than hand-rolled buttons: it brings the tablist/tab ARIA roles,
-             arrow-key navigation and the sliding indicator, none of which the plain
-             buttons had. v-model keeps the same activeTab value the rest of the page
-             filters on. -->
+        <!-- QTabs provides the tab roles, arrow-key navigation and sliding indicator, and v-model keeps the activeTab value the page filters on. -->
         <q-tabs
           v-model="activeTab"
           class="orders-tabs"
@@ -169,9 +166,7 @@ onMounted(() => {
   fetchOrders()
 })
 
-// Same status → color assignment used on the vendor side's order list (OrderList.vue,
-// CustomerOrders.vue), just as hex instead of Quasar color names, so a status reads the
-// same regardless of which side of the app you're looking at it from.
+// Status badges use the same colour per status as the vendor order lists, so a status reads the same on both sides.
 const STATUS_BADGE_CLASSES = {
   placed: 'status-badge-placed',
   preparing: 'status-badge-preparing',
@@ -189,10 +184,7 @@ const orderAddressText = (order) => {
   const sLat = order.store?.latitude
   const sLng = order.store?.longitude
 
-  // calculateDistanceMeters guards the coordinates itself and returns null when any
-  // is missing, which formatDistance renders as ''. Note the raw values are passed:
-  // Number(null) is 0, so wrapping them here would turn a missing coordinate into a
-  // valid one and measure a distance that does not exist.
+  // Raw coordinates are passed because calculateDistanceMeters returns null for a missing one, whereas Number(null) would measure from 0.
   const dist = formatDistance(calculateDistanceMeters(cLat, cLng, sLat, sLng))
 
   if (address && dist) return `${address} (${dist})`
@@ -349,8 +341,7 @@ const reorderItems = async (order) => {
   border-bottom: 1px solid var(--c-border);
 }
 
-/* QTabs ships its own padding, uppercase and min-width; these bring it back to the
-   flat underlined row this page already used. */
+/* Undoes QTabs' own padding, uppercase and min-width to keep the flat underlined row this page uses. */
 .orders-tab {
   padding: 0 0 12px;
   min-height: auto;
@@ -386,15 +377,12 @@ const reorderItems = async (order) => {
   color: var(--c-text-3);
 }
 
-/* QTab paints a q-focus-helper block behind itself on hover and focus. That suited
-   Quasar's filled tab bar, but this row is a flat underlined strip and the block
-   reads as a stray grey/pink rectangle behind the label. */
+/* Hides QTab's focus-helper block, which reads as a stray grey rectangle behind the label on this flat strip. */
 .orders-tabs :deep(.q-focus-helper) {
   display: none;
 }
 
-/* Replaces the helper with a ring on the label itself. The old rule targeted a plain
-   <button>; on a QTab it drew a dashed box around Quasar's padding instead. */
+/* Draws the focus ring on the label itself, since the old button rule drew a dashed box around Quasar's padding. */
 .orders-tabs :deep(.q-tab:focus-visible) {
   outline: 2px solid var(--c-brand);
   outline-offset: 2px;
@@ -806,7 +794,3 @@ const reorderItems = async (order) => {
   }
 }
 </style>
-
-
-
-

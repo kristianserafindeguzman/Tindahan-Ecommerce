@@ -50,11 +50,7 @@
         <CategoryCarousel v-else :categories="categories" @select="goToCategory" />
       </SectionBlock>
 
-      <!--
-        Two routes into the catalogue. Standard storefront furniture: the hero sells the
-        idea, these send you somewhere. Tinted panels rather than white cards so they
-        read as navigation, not as another content section.
-      -->
+      <!-- Two promo tiles that route into the catalogue, styled as navigation rather than as another content section. -->
       <div class="promo-tiles">
         <button type="button" class="promo-tile promo-tile--brand" @click="router.push('/consumer/products')">
           <span class="promo-icon"><q-icon name="o_shopping_basket" size="22px" /></span>
@@ -114,14 +110,7 @@
         />
       </SectionBlock>
 
-      <!--
-        Marketplaces recruit supply on the storefront, and this is the one place a store
-        owner is likely to be looking.
-
-        Guests only: /vendor/register is meta.guest, so the router bounces anyone holding
-        a token back to their role home. Shown to a signed-in consumer the button would
-        look broken — it would return them to this very page.
-      -->
+      <!-- Seller call-to-action for guests only, because /vendor/register is guest-only and would bounce a signed-in consumer straight back here. -->
       <section v-if="!isLoggedIn" class="seller-band">
         <div class="seller-copy">
           <h2 class="seller-title">Own a sari-sari store?</h2>
@@ -235,13 +224,11 @@ const resultsSectionTitle = computed(() =>
 // Personalization is a logged-in-only route, so guests get routed to the guest-browsable catalog instead.
 const resultsViewAllPath = computed(() => isLoggedIn.value ? '/consumer/personalize' : '/consumer/products')
 
-// No real recommendation/nearby endpoint yet — these are simple slices of the same fetched
-// catalog until personalization/geolocation exist.
+// Nearby stores are the first four entries of the store list fetched for the current address.
 const NEARBY_STORES_COUNT = 4
 const nearbyStores = computed(() => stores.value.slice(0, NEARBY_STORES_COUNT))
 
-// Both product sections show whole rows only, so they need the live column count — the
-// grid is auto-fill, so it changes continuously with width rather than at breakpoints.
+// Both product sections show whole rows only, so they read the live column count of the auto-fill grid.
 const productsGridEl = ref(null)
 const { columns: gridColumns } = useGridColumns(productsGridEl, 3)
 
@@ -326,9 +313,7 @@ const visibleDiscoverProducts = computed(() =>
   animation: home-fade-up 0.5s ease both;
 }
 
-/* Hero entrance, page load only. The sections below it are handled by scroll reveal
-   (v-intersection in SectionBlock.vue) rather than a mount animation, so this keyframe
-   now has exactly one user. */
+/* Hero entrance on page load only, since the sections below use the scroll reveal in SectionBlock.vue. */
 @keyframes home-fade-up {
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: translateY(0); }
@@ -416,8 +401,7 @@ const visibleDiscoverProducts = computed(() =>
   color: #ffffff;
 }
 
-/* Display font (Poppins, loaded in index.html) — everything else on the page stays
-   Roboto. Bottom margin is small because .hero-sub now sits directly under it. */
+/* Display font Poppins, loaded in index.html, with a small bottom margin because .hero-sub sits directly under it. */
 .hero-title-lg {
   margin: 0 0 12px;
 
@@ -474,8 +458,7 @@ const visibleDiscoverProducts = computed(() =>
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
 }
 
-/* Ghost variant: the map is the secondary path, so it reads as an outline on the
-   banner rather than competing with the white primary. */
+/* Ghost variant, since the map is the secondary path and should not compete with the white primary button. */
 .hero-cta--ghost {
   border: 1px solid rgba(255, 255, 255, 0.55);
 
@@ -533,9 +516,7 @@ const visibleDiscoverProducts = computed(() =>
   outline-offset: 3px;
 }
 
-/* One tinted, one solid: two panels of the same weight would read as a single block.
-   The contrast comes from depth of the same brand red rather than a second hue — the
-   near-black this used to be belonged to no palette on the consumer surface. */
+/* One tinted and one solid tile, using depths of the same brand red so the two panels do not read as one block. */
 .promo-tile--brand {
   background: linear-gradient(135deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
   color: var(--c-brand-deep);
@@ -588,8 +569,7 @@ const visibleDiscoverProducts = computed(() =>
   font-size: var(--fs-xs);
   line-height: 1.4;
 
-  /* 0.78 white measured 4.22:1 on --c-brand, just under the bar; 0.85 clears it at
-     4.76 and costs nothing on the tinted tile. */
+  /* White at 0.85 opacity clears 4.5:1 on --c-brand at 4.76, where 0.78 measured only 4.22. */
   opacity: 0.85;
 }
 
@@ -742,8 +722,7 @@ const visibleDiscoverProducts = computed(() =>
   background: #ffffff;
 }
 
-/* QSkeleton draws the shimmer; only the geometry of the tile it stands in for
-   belongs here. */
+/* QSkeleton draws the shimmer, so only the geometry of the tile it stands in for belongs here. */
 .category-skeleton-icon {
   width: 44px;
   height: 44px;
@@ -765,11 +744,9 @@ const visibleDiscoverProducts = computed(() =>
   }
 }
 
-/* Below the laptop breakpoint the copy and the logo stop fitting side by side —
-   the headline was wrapping to five lines with the logo floating beside it. */
+/* Below the laptop breakpoint the copy and logo no longer fit side by side, as the headline wrapped to five lines. */
 @media (max-width: 1023px) {
-  /* Stays a row. Stacking the logo above the copy added its full height to the hero —
-     371px on a tablet. Beside the copy it costs nothing vertically. */
+  /* Stays a row, because stacking the logo above the copy added its full height to the hero, 371px on a tablet. */
   .hero-banner {
     gap: 24px;
     padding: 26px 28px;
@@ -815,9 +792,7 @@ const visibleDiscoverProducts = computed(() =>
     padding: 16px;
   }
 
-  /* Icon and label sit on one line. Two tiles share ~358px here, so each has about
-     172px — the icon shrinks to leave the label room, and the description and arrow
-     are dropped rather than squeezed into what is left. */
+  /* Icon and label share one line on phones, dropping the description and arrow rather than squeezing them into a 172px tile. */
   .promo-tile {
     gap: 10px;
     padding: 14px 12px;
@@ -841,8 +816,7 @@ const visibleDiscoverProducts = computed(() =>
     font-size: var(--fs-sm);
   }
 
-  /* The hero was 468px on a 844px phone — over half the viewport before a single
-     product was visible. Everything below trims it back to roughly a third. */
+  /* Trims the phone hero from 468px, over half an 844px screen, back to roughly a third of the viewport. */
   .hero-banner {
     flex-direction: column-reverse;
     align-items: center;
@@ -876,8 +850,7 @@ const visibleDiscoverProducts = computed(() =>
     margin-bottom: 14px;
   }
 
-  /* Side by side rather than stacked: two full-width rows cost ~54px of a hero that
-     was already too tall, and both labels are short enough to sit on one line. */
+  /* The two buttons sit side by side rather than stacked, saving about 54px of hero height since both labels are short. */
   .hero-actions {
     gap: 10px;
   }
@@ -900,24 +873,3 @@ const visibleDiscoverProducts = computed(() =>
   }
 }
 </style>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

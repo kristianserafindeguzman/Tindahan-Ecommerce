@@ -415,8 +415,7 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   padding: 0 10px 10px;
 
-  /* Lighter touch than the other pages — this is a q-dialog with its own Quasar-driven open transition
-     already, so only the inner list content fades in (avoids stacking a second animation on the dialog itself). */
+  /* Only the inner list fades in, because the q-dialog already runs its own open transition. */
   animation: map-fade-up 0.4s ease both;
 }
 
@@ -665,4 +664,3 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-

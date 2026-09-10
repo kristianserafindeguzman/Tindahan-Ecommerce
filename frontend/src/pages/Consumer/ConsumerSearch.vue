@@ -37,8 +37,7 @@
 
         <template v-if="isSearching || hasAnyResults">
 
-          <!-- STORES — first on the All tab. A store match is navigational: the name
-               was typed to go there, so it should not sit under 200 product cards. -->
+          <!-- Store matches come first, because a typed store name means the user wants to go there. -->
           <template v-if="showStoreStrip">
             <!-- No heading, per design: the row survives only to carry the expander. -->
             <div v-if="matchedStores.length > STORE_STRIP_MAX" class="results-section-header results-section-header--bare">
@@ -56,9 +55,7 @@
               <CardSkeleton v-for="n in 4" :key="n" variant="store" />
             </div>
 
-            <!-- Rows on the mixed view, cards on the dedicated tab. A row reads as
-                 "go here" and a card as "buy this", so the form tells them apart
-                 rather than the heading having to. -->
+            <!-- Stores show as compact rows that read as places to go, switching to full cards once the list is expanded. -->
             <div v-else-if="storesExpanded" class="stores-grid">
               <StoreCard
                 v-for="store in matchedStores"
@@ -108,9 +105,7 @@
               <CardSkeleton v-for="n in 6" :key="n" />
             </div>
 
-            <!-- Infinite scroll rather than pages: a search can return 200+ products and
-                 paging through them a screen at a time is the wrong shape for browsing.
-                 QInfiniteScroll handles the sentinel and the load guard. -->
+            <!-- Infinite scroll rather than pages, since a search can return 200+ products, with QInfiniteScroll handling the sentinel. -->
             <q-infinite-scroll v-else :offset="300" :disable="allProductsShown" @load="loadMoreProducts">
               <div class="products-grid">
                 <ProductCard
@@ -219,16 +214,14 @@ onMounted(() => {
   fetchStores()
 })
 
-// A query that exactly names a category (e.g. "Beverages") browses that whole category instead of
-// name-matching, since no product literally has the category word in its own name.
+// A query that exactly names a category, such as Beverages, browses the whole category instead of matching product names.
 const matchedCategory = computed(() => {
   const q = query.value.toLowerCase()
   if (!q) return null
   return categories.value.find((category) => category.label.toLowerCase() === q) || null
 })
 
-// This is a universal products+stores search, not the dedicated Products page, so there's no
-// Sort/Filters here — just the query itself (plus the category-name shortcut above).
+// A universal products-and-stores search, so there is no Sort or Filters here, only the query and the category shortcut.
 const filteredProducts = computed(() => {
   const q = query.value.toLowerCase()
   const categoryMatch = matchedCategory.value
@@ -251,9 +244,7 @@ const hasAnyResults = computed(() => hasProducts.value || hasStores.value)
 
 /* --------------------------------------------------------------- STORE RESULTS */
 
-// A store match is navigational — the name was typed to go there — so stores lead the
-// page rather than sitting under a product grid that can run to 200 cards. Only the
-// first few show; the rest are one click away.
+// Stores lead the page and only the first three show, with the rest one click away.
 const STORE_STRIP_MAX = 3
 
 const storesExpanded = ref(false)
@@ -279,11 +270,7 @@ const storeMetaText = (store) => {
 
 const goToStore = (store) => router.push(`/consumer/stores/${store.slug || store.id}`)
 
-// Same breakpoint as the page's own @media (max-width: 600px) rules.
-const isMobileScreen = computed(() => $q.screen.width < 600)
-
-// Mobile: only label a section when both are present (to tell them apart) — drop the count too.
-// Desktop keeps the full "Products (N)" / "Stores (N)" heading regardless.
+// The page subtitle reports the query and its total result count.
 const subtitleText = computed(() => {
   if (!query.value) return 'Search for products and stores near you.'
   if (isSearching.value) return `Searching for "${query.value}"…`
@@ -323,8 +310,7 @@ const loadMoreProducts = (index, done) => {
   done(allProductsShown.value)
 }
 
-// A new result set starts from the top again — otherwise narrowing the search would
-// keep the previous scroll depth and render more rows than the query now has.
+// A new result set starts from the top again, otherwise narrowing the search would keep the previous scroll depth.
 watch(filteredProducts, () => { visibleCount.value = PAGE_SIZE })
 
 // Brief simulated delay whenever the search term changes, so the UI has a visible "searching" state to show.
@@ -499,8 +485,7 @@ const goToRecentSearch = (term) => {
 }
 
 /* Shared by both Products and Stores headers — same gap above, same gap below, no per-section overrides. */
-/* STORE ROWS — the mixed-view form for a store. Deliberately not a card: a row reads
-   as navigation, which is what a store result is. */
+/* Store rows are deliberately not cards, since a store result is navigation. */
 .store-rows {
   display: flex;
   flex-direction: column;
@@ -631,8 +616,7 @@ const goToRecentSearch = (term) => {
   color: var(--c-border-strong);
 }
 
-/* "See all N stores" — a text action in the section header, not a button, so it does
-   not compete with the tabs directly above it. */
+/* The show-all toggle is styled as plain text so it stays quieter than the results around it. */
 .section-link {
   padding: 0;
 
@@ -671,9 +655,7 @@ const goToRecentSearch = (term) => {
   margin-left: auto;
 }
 
-/* With no heading between them, this margin is the only thing separating the store
-   block from the products, so it lives on the block itself rather than on an
-   adjacent-sibling rule that only matched some of the time. */
+/* With no heading between them, this margin alone separates the store block from the products. */
 .store-rows,
 .stores-grid {
   margin-bottom: 28px;
@@ -705,8 +687,7 @@ const goToRecentSearch = (term) => {
   gap: 16px;
 }
 
-/* 8px left the heading sitting on the rule. The rule is what separates this from the
-   results above, so the heading needs room below it, not to hug it. */
+/* Room between the rule and the heading, since the rule is what separates this section from the results above. */
 .related-section {
   margin-top: 32px;
   padding-top: 22px;
@@ -765,10 +746,7 @@ const goToRecentSearch = (term) => {
     padding: 16px;
   }
 
-  /* Shown on phones too. It was hidden here, which left the results grid with no
-     heading and no result count — the one place that tells you what was searched
-     and how much came back. The type scale already steps down below 600px, so only
-     the bottom margin needs tightening. */
+  /* The page header stays visible on phones as the only place showing the query and result count, with a tighter bottom margin. */
   .page-header-row {
     margin-bottom: 16px;
   }
@@ -779,13 +757,3 @@ const goToRecentSearch = (term) => {
   }
 }
 </style>
-
-
-
-
-
-
-
-
-
-

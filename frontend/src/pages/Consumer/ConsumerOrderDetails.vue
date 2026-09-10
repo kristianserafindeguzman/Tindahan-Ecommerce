@@ -1,5 +1,5 @@
 <template>
-  <q-page class="storefront-page" :style="showActionsBar ? { paddingBottom: actionsBarHeight + 'px' } : null">
+  <q-page class="storefront-page" :style="showActionsBar ? { paddingBottom: `calc(${actionsBarHeight}px + var(--bottom-nav-h))` } : null">
     <SiteHeader />
 
     <div v-if="order" class="page-content">
@@ -330,10 +330,7 @@ const statusSteps = [
   { key: 'picked_up', label: 'Picked Up', icon: 'o_task_alt' }
 ]
 
-/*
-  The two states you should be able to read without parsing the tracker. Everything else
-  is mid-flight and stays on the default white card.
-*/
+/* The two terminal states that get a tinted card, while every in-progress state stays on the default white one. */
 const STATUS_CARD_TONES = {
   cancelled: 'danger',
   picked_up: 'success'
@@ -400,17 +397,14 @@ const storeAddressText = computed(() => {
   const sLat = order.value?.store?.latitude
   const sLng = order.value?.store?.longitude
 
-  // See ConsumerOrders: the guard lives in calculateDistanceMeters, and the raw
-  // values are passed because Number(null) would coerce a missing coordinate to 0.
+  // The raw coordinates are passed because calculateDistanceMeters does the guarding, and Number(null) would turn a missing one into 0.
   const dist = formatDistance(calculateDistanceMeters(cLat, cLng, sLat, sLng))
 
   if (address && dist) return `${address} (${dist})`
   return address || dist
 })
 
-// isStatusActive covers "reached", which includes every completed step. The tracker
-// needs "reached but behind us" and "where we are now" to look different, or all four
-// discs render identically solid and nothing marks the current stage.
+// The current step is styled apart from completed ones, since isStatusActive alone would render every reached disc identically.
 const isStatusCurrent = (step) => order.value?.status === step
 
 const isStatusActive = (step) => {
@@ -654,9 +648,7 @@ onMounted(() => {
   box-shadow: var(--sh-card);
 }
 
-/* Terminal states take a tinted ground. Each border is a step deeper than its own fill
-   so the card edge still reads, and each ground is a step lighter than the tints used
-   inside it (cancellation note, tracker discs) so those do not disappear into it. */
+/* Terminal states take a tinted ground with a deeper border, lighter than the tints inside so the note and discs stay visible. */
 .status-card--danger {
   border-color: var(--c-danger-line);
   background: var(--c-danger-tint);
@@ -667,8 +659,7 @@ onMounted(() => {
   background: var(--c-success-wash);
 }
 
-/* The eyebrow and the divider are neutrals tuned against a white card. Left alone on a
-   tinted ground they read as grubby rather than quiet, so both take the card's own hue. */
+/* On a tinted card the eyebrow and divider take the card's own hue, since neutral greys read as grubby there. */
 .status-card--danger .status-label {
   color: var(--c-danger-muted);
 }
@@ -778,8 +769,7 @@ onMounted(() => {
   transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 
-/* Completed steps take the tinted-disc language used for every other leading icon in
-   the app (.info-icon, .notif-icon, .promo-icon), rather than a second solid fill. */
+/* Completed steps use the tinted-disc style shared by the app's other leading icons rather than a second solid fill. */
 .status-step-circle-done {
   border-color: transparent;
 
@@ -829,9 +819,7 @@ onMounted(() => {
   background: linear-gradient(to right, var(--c-brand) 50%, var(--c-border) 50%);
 }
 
-/* Picked up = done, so the whole tracker switches to the same green as
-   .status-title-done — otherwise the connectors go green while the discs stay brand red
-   and a finished order still reads as in progress. */
+/* A picked-up order turns the whole tracker green to match .status-title-done, so a finished order never reads as in progress. */
 .status-steps-done .status-step-circle-done {
   background: var(--c-success-tint);
   color: var(--c-success);
@@ -1773,7 +1761,8 @@ onMounted(() => {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  /* Sits on top of the bottom tab bar rather than under it; 0 on desktop. */
+  bottom: var(--bottom-nav-h);
   z-index: 100;
 
   display: flex;
@@ -1786,14 +1775,3 @@ onMounted(() => {
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
 }
 </style>
-
-
-
-
-
-
-
-
-
-
-

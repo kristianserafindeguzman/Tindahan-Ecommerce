@@ -78,8 +78,7 @@ defineEmits(['click'])
   transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
-/* One tone per category. Muted enough to sit under a red brand bar without fighting
-   it — these are saturated icons on pale grounds, not six competing accents. */
+/* One muted tone per category, so the icons sit under the red brand bar without competing with it. */
 .category-tile-icon--brand {
   background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
   color: var(--c-brand);
@@ -131,4 +130,3 @@ defineEmits(['click'])
   overflow: hidden;
 }
 </style>
-

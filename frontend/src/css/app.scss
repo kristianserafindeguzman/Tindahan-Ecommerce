@@ -1,17 +1,6 @@
 // app global css
 
-/* ===========================================================================
-   CONSUMER DESIGN TOKENS
-
-   The consumer surface had grown 23 distinct font sizes, 9 radii and ~60 one-off
-   hexes across 11 pages — several of them near-duplicates of each other (three
-   different greens for "open", six greys within a shade of #8992a2). These are the
-   canonical values; consumer SFCs consume them as var(--token) from plain scoped
-   CSS, so no component needs converting to SCSS.
-
-   Type scale is 10 steps. Everything that used to sit below 13px moved up a step:
-   the old 10-12.5px labels were the "too small" end of the range.
-   =========================================================================== */
+/* Consumer design tokens, the canonical values consumer components read as var(--token) from plain scoped CSS. */
 
 :root {
   /* Brand */
@@ -29,9 +18,7 @@
   --c-text-3: #555555;
   --c-muted: #8992a2;
   --c-subtle: #767676;
-  /* Cooler and a shade darker than the old #e8e8e8 — card outlines were reading as
-     almost-invisible against the off-white page, most obviously on the cart,
-     checkout and order surfaces where the whole layout is stacked cards. */
+  /* Cooler and a shade darker than the old #e8e8e8, so card outlines stay visible against the off-white page. */
   --c-border: #d8dce3;
   --c-border-strong: #c3c9d4;
   --c-surface: #f7f7f8;
@@ -41,16 +28,12 @@
 
   /* Semantic */
   --c-success: #16a34a;
-  /* -wash is a step lighter than -tint, for whole surfaces that still need to hold
-     tint-filled elements inside them (a tinted card whose tracker discs are tinted too).
-     -tint-2 is a step deeper, for an inset sitting on a -tint ground. */
+  /* The -wash step is lighter than -tint for surfaces holding tinted elements, and -tint-2 is deeper for insets on a -tint ground. */
   --c-success-tint: #dcfce7;
   --c-success-wash: #f0fdf4;
-  /* Hue-matched stand-in for --c-muted on a tinted ground, where a cool grey reads as
-     dirty. Both clear 4.5:1 on their own wash (--c-muted manages only 3.0 there). */
+  /* Hue-matched stand-ins for --c-muted on tinted grounds, each clearing 4.5:1 where --c-muted manages only 3.0. */
   --c-success-muted: #43705a;
-  /* Two steps deeper than -tint: a border a single step off its own fill is invisible,
-     which is what a tinted card's outline had become. */
+  /* Two steps deeper than -tint, since a border one step off its own fill is invisible. */
   --c-success-line: #86efac;
   --c-danger: #b91c1c;
   --c-danger-tint: #fef2f2;
@@ -59,11 +42,15 @@
   --c-danger-line: #f6b0b0;
   --c-warning: #c2410c;
   --c-warning-tint: #ffedd5;
+  /* Wash and line steps for the warning and info toasts, matching the success and danger sets. */
+  --c-warning-wash: #fff7ed;
+  --c-warning-line: #fdba74;
   --c-info: #2563eb;
   --c-info-tint: #e3f2fd;
+  --c-info-wash: #eff6ff;
+  --c-info-line: #93c5fd;
 
-  /* Order lifecycle. Placed/preparing/ready need to stay visually distinct from each
-     other and from brand red, so these are their own hues rather than tints of it. */
+  /* Order lifecycle colours, kept as their own hues so placed, preparing and ready stay distinct from each other and the brand red. */
   --c-status-wait: #ff6f00;
   --c-status-wait-tint: #fff8e1;
   --c-status-active: #ff9800;
@@ -77,6 +64,9 @@
   --r-xl: 12px;   /* dialogs, icon tiles */
   --r-2xl: 16px;  /* sheets, hero and store banners */
   --r-pill: 999px;
+
+  /* Space the bottom tab bar occupies, zero at desktop widths where the bar does not render. */
+  --bottom-nav-h: 0px;
 
   /* Type scale */
   --fs-2xs: 11.5px;
@@ -94,15 +84,15 @@
   --sh-card: 0 2px 10px rgba(0, 0, 0, 0.05);
   --sh-card-hover: 0 4px 14px rgba(0, 0, 0, 0.06);
   --sh-pop: 0 10px 30px rgba(0, 0, 0, 0.18);
+  /* Upward, for a bar docked to the bottom edge. */
+  --sh-dock: 0 -4px 18px rgba(17, 17, 17, 0.07);
+  /* The header's long, soft shadow, tinted with its gradient's dark end so the red fades into the page. */
+  --sh-header: 0 8px 24px rgba(73, 15, 15, 0.16);
   --sh-brand: 0 2px 8px rgba(189, 36, 39, 0.25);
   --sh-brand-hover: 0 6px 16px rgba(189, 36, 39, 0.32);
 }
 
-/* The scale steps down ~8% on phones. A product card is 171px wide at 390px but
-   220px+ on desktop, so a single fixed scale either reads cramped on the desktop
-   card or oversized on the phone one — the desktop sizes were making the mobile
-   cards feel bulky. Ratios between steps are preserved, so hierarchy is identical
-   at both ends; only the absolute sizes shift. */
+/* The type scale steps down about 8% on phones, keeping the ratios between steps so hierarchy is unchanged. */
 @media (max-width: 600px) {
   :root {
     --fs-2xs: 10.5px;
@@ -144,9 +134,7 @@
   color: white !important;
 }
 
-/* ==========================================================
-   GLOBAL SYSTEM-WIDE DARK MODE (Applies across all modules)
-========================================================== */
+/* Global dark mode, applied across every module. */
 body.body--dark {
   background-color: #090d16 !important;
   color: #f8fafc !important;
@@ -319,37 +307,14 @@ body.body--dark {
   }
 }
 
-/* ==========================================================
-   SCROLL REVEAL (v-reveal directive)
-   The directive only toggles classes; the motion lives here so every revealed element
-   shares one curve and one duration.
-========================================================== */
+/* Scroll reveal, where the v-intersection handler in useReveal.js toggles classes and the motion lives here. */
 
-/*
-  A keyframe animation, not a transition — deliberately.
-
-  A transition loses here: components declare their own `transition` on the same element
-  (ProductCard sets box-shadow/transform/border-color), scoped styles load after this
-  file, and at equal specificity that list replaces this one outright. The measured result
-  was a card that slid but never faded: transform happened to be in the component's list,
-  opacity was not. An animation is not governed by the transition property, so there is
-  nothing to clash with.
-
-  No fill-mode on purpose. Once it finishes, .reveal--in's own opacity keeps the element
-  visible while transform reverts to the component's own rules, so the card hover lift
-  still works. animation-fill-mode: both would pin transform and kill it.
-*/
+/* A keyframe animation rather than a transition, since a component's own transition list would replace this one. */
 .reveal {
   opacity: 0;
 }
 
-/*
-  fill-mode: backwards is what makes the stagger possible. It applies the first keyframe
-  during the delay, so a card waiting its turn stays hidden instead of flashing in at
-  .reveal--in's opacity and then animating from nothing. Crucially it does NOT persist the
-  final frame, so transform returns to the component's own rules afterwards and the card
-  hover lift still works — 'both' or 'forwards' would pin transform and kill it.
-*/
+/* fill-mode backwards hides a staggered card during its delay without pinning transform, so the hover lift still works. */
 .reveal--in {
   opacity: 1;
 
@@ -368,8 +333,7 @@ body.body--dark {
   }
 }
 
-/* The directive already no-ops under reduced motion, so nothing gets the .reveal class
-   in the first place. This is belt-and-braces for a preference toggled after load. */
+/* Under reduced motion, revealed elements show at once with no animation. */
 @media (prefers-reduced-motion: reduce) {
   .reveal,
   .reveal--in {
@@ -378,47 +342,25 @@ body.body--dark {
   }
 }
 
-/* ---------------------------------------------------------------------------
-   SHEETS (q-dialog position="bottom" / "left")
-
-   Retimes Quasar's own slide transitions rather than replacing them — the
-   component still drives the animation, these rules only change its duration and
-   curve. Quasar ships transform on 300ms cubic-bezier(0.215, 0.61, 0.355, 1)
-   (easeOutCubic) in both directions, which coasts to a stop and makes the last
-   few pixels read as a jolt on a tall sheet.
-
-   Enter uses the same expo-out curve as .reveal above, so a sheet and a revealing
-   section decelerate identically. Leave is shorter and accelerates away: a sheet
-   the user dismissed should get out of the way faster than it arrived.
-   --------------------------------------------------------------------------- */
+/* Sheets retime Quasar's own slide transitions, with an expo-out entrance and a shorter, accelerating exit. */
 
 .q-dialog__inner--bottom.q-transition--slide-up-enter-active,
 .q-dialog__inner--left.q-transition--slide-right-enter-active {
   transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Quasar names the leave transition after the direction of travel, so a bottom
-   sheet enters on slide-up and leaves on slide-down (left drawer: slide-right in,
-   slide-left out). Matching -leave-active on the enter name silently never fires. */
+/* Quasar names the leave transition after its direction, so a bottom sheet leaves on slide-down and a left drawer on slide-left. */
 .q-dialog__inner--bottom.q-transition--slide-down-leave-active,
 .q-dialog__inner--left.q-transition--slide-left-leave-active {
   transition: transform 240ms cubic-bezier(0.4, 0, 1, 1);
 }
 
-/* Promotes the panel for the duration of the slide only. Left permanently it would
-   pin a compositor layer for every sheet on the page; Quasar removes
-   .q-dialog__inner--animating as soon as the transition ends. */
+/* Promotes the panel to its own layer only while it slides, since Quasar removes the animating class when it ends. */
 .q-dialog__inner--animating {
   will-change: transform;
 }
 
-/* The backdrop is a separate element with its own 300ms ease-out, so without this
-   the dim and the slide finish at different moments and read as two events.
-
-   Scoped to sheets via :has() rather than applied to every .q-dialog__backdrop —
-   the centered dialogs (profile, product detail on desktop) set their own
-   --q-transition-duration: 200ms, and a 360ms backdrop under a 200ms card is the
-   same desync this rule exists to remove. */
+/* Retimes the backdrop to match the sheet, scoped to sheets with :has() so centred dialogs keep their own 200ms timing. */
 .q-dialog:has(.q-dialog__inner--bottom) > .q-dialog__backdrop,
 .q-dialog:has(.q-dialog__inner--left) > .q-dialog__backdrop {
   transition: background-color 360ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -446,32 +388,24 @@ body.body--dark {
 
 
 
-/* ---------------------------------------------------------------------------
-   TOASTS
+/* Toasts are tinted per type like the terminal-state order cards, with the types registered in boot/notify.js. */
 
-   Quasar's stock notification is a saturated slab — solid green or red with white
-   text — which matches nothing else on the consumer surface. This gives it the same
-   treatment as the cards it appears over: white ground, hairline border, the pop
-   shadow, and a tinted status disc for the icon.
-
-   Types are re-registered in boot/notify.js, so all ~96 existing $q.notify calls
-   pick this up without changing.
-   --------------------------------------------------------------------------- */
-
+/* No position: relative here, because it overrides the absolute positioning Quasar gives a leaving toast and shoves it sideways by its own offset. */
 .q-notification.app-toast {
-  /* Anchors the ::before status rail; without it the rail resolves against the
-     notification list container and lands off the toast entirely. */
-  position: relative;
-  overflow: hidden;
+  --toast-wash: #ffffff;
+  --toast-line: var(--c-border);
+  --toast-disc: var(--c-surface);
+  --toast-ink: var(--c-text-2);
 
   min-height: 0;
-  padding: 12px 16px;
+  min-width: min(300px, calc(100vw - 32px));
+  padding: 14px 18px;
 
-  border: 1px solid var(--c-border);
+  border: 1px solid var(--toast-line);
   border-radius: var(--r-lg);
 
-  /* !important: Quasar sets the ground with its own bg-* utility on the element. */
-  background: #ffffff !important;
+  /* !important because Quasar paints its own bg and text utility classes on the element. */
+  background: var(--toast-wash) !important;
   color: var(--c-text) !important;
 
   box-shadow: var(--sh-pop);
@@ -479,71 +413,76 @@ body.body--dark {
   font-family: 'Roboto', Arial, sans-serif;
 }
 
+.app-toast.app-toast--positive {
+  --toast-wash: var(--c-success-wash);
+  --toast-line: var(--c-success-line);
+  --toast-disc: var(--c-success-tint);
+  --toast-ink: var(--c-success);
+}
+
+.app-toast.app-toast--negative {
+  --toast-wash: var(--c-danger-tint);
+  --toast-line: var(--c-danger-line);
+  --toast-disc: var(--c-danger-tint-2);
+  --toast-ink: var(--c-danger);
+}
+
+.app-toast.app-toast--warning {
+  --toast-wash: var(--c-warning-wash);
+  --toast-line: var(--c-warning-line);
+  --toast-disc: var(--c-warning-tint);
+  --toast-ink: var(--c-warning);
+}
+
+.app-toast.app-toast--info {
+  --toast-wash: var(--c-info-wash);
+  --toast-line: var(--c-info-line);
+  --toast-disc: var(--c-info-tint);
+  --toast-ink: var(--c-info);
+}
+
 .app-toast .q-notification__message {
   padding: 0;
 
-  font-size: var(--fs-sm);
-  font-weight: 500;
+  font-size: var(--fs-md);
+  font-weight: 600;
   line-height: 1.4;
 }
 
-/* The disc, matching .notif-icon / .info-icon rather than a bare glyph on colour. */
+/* The status disc, the same tinted shape as .notif-icon and .info-icon. */
 .app-toast .q-notification__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  /* Quasar sizes the icon with flex: 0 0 1em, which overrode the width below and squeezed the disc into a tall pill. */
+  flex: 0 0 34px;
 
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   margin-right: 12px;
 
   border-radius: var(--r-xl);
 
-  font-size: 18px;
+  background: var(--toast-disc);
+  color: var(--toast-ink);
+
+  font-size: 20px;
 }
 
-.app-toast--positive .q-notification__icon {
-  background: var(--c-success-tint);
-  color: var(--c-success);
+/* Toasts rise above the tab bar, reading the root value since they are teleported to the body. */
+.q-notifications__list.q-notifications__list--bottom {
+  bottom: var(--bottom-nav-h);
 }
 
-.app-toast--negative .q-notification__icon {
-  background: var(--c-danger-tint);
-  color: var(--c-danger);
+/* Mirrors the tab bar's 1px border and 64px tabs plus the safe-area inset, at the same breakpoint as its script gate. */
+@media (max-width: 1023px) {
+  :root {
+    --bottom-nav-h: calc(65px + env(safe-area-inset-bottom));
+  }
 }
 
-.app-toast--warning .q-notification__icon {
-  background: var(--c-warning-tint);
-  color: var(--c-warning);
+/* Every consumer page clears the tab bar, with pages that own a fixed bottom bar adding its height inline. */
+.storefront-page,
+.profile-page {
+  padding-bottom: var(--bottom-nav-h);
 }
-
-.app-toast--info .q-notification__icon {
-  background: var(--c-info-tint);
-  color: var(--c-info);
-}
-
-/* A thin status rail on the leading edge, so the type still reads at a glance now
-   that the whole toast is no longer colour-coded. */
-.app-toast::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-
-  width: 3px;
-
-  border-radius: var(--r-lg) 0 0 var(--r-lg);
-}
-
-.app-toast--positive::before { background: var(--c-success); }
-.app-toast--negative::before { background: var(--c-danger); }
-.app-toast--warning::before { background: var(--c-warning); }
-.app-toast--info::before { background: var(--c-info); }
-
-
-
-
-
-
