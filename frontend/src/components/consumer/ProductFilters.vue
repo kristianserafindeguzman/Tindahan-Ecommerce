@@ -176,8 +176,7 @@ const sort = defineModel('sort')
   color: var(--c-text);
 }
 
-/* QBtn ships min-width and padding of its own; the panel's close control is a bare
-   glyph, so those are zeroed here. */
+/* Zeroes QBtn's own min-width and padding, since the panel's close control is a bare glyph. */
 .filters-close-btn :deep(.q-icon) {
   font-size: 18px;
 }
@@ -324,4 +323,3 @@ const sort = defineModel('sort')
   text-decoration: underline;
 }
 </style>
-

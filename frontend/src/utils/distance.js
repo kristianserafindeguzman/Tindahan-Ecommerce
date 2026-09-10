@@ -1,13 +1,6 @@
-// Distance formatting and measurement.
-//
-// Extracted because this was copy-pasted into eight consumer files with identical bodies
-// (both cards, the detail modal, the map, checkout, store detail, and both order
-// screens), which is eight places to fix if the wording or rounding ever changes.
+// Distance formatting and measurement, extracted from eight consumer files that each carried an identical copy.
 
-/**
- * Metres to a short human string, e.g. "820 m away" / "1.4 km away".
- * Returns '' for null/undefined so callers can drop it into a template unguarded.
- */
+/** Metres to a short string such as 820 m away or 1.4 km away, or an empty string for null. */
 export function formatDistance(meters) {
   if (meters == null) return ''
   const rounded = Math.round(meters)
@@ -15,29 +8,14 @@ export function formatDistance(meters) {
   return `${(meters / 1000).toFixed(1)} km away`
 }
 
-/**
- * Coordinate to a finite number, or null. Mirrors PHP's is_numeric(), which the
- * backend guards with: null, undefined, '' and non-numeric strings are all rejected,
- * numeric strings are accepted.
- *
- * Deliberately not Number() alone — Number(null) is 0, a perfectly valid latitude,
- * so a missing coordinate would silently measure the distance to null island off
- * the coast of Africa rather than reporting that it cannot be measured.
- */
+/** Coordinate to a finite number or null, rejecting what PHP's is_numeric rejects, since Number(null) would give a valid 0. */
 function toCoord(value) {
   if (value === null || value === undefined || value === '') return null
   const n = Number(value)
   return Number.isFinite(n) ? n : null
 }
 
-/**
- * Great-circle distance in metres (Haversine), or null if any coordinate is missing
- * or non-numeric. Mirrors the backend's DistanceService, including its guard — the
- * orders endpoints return raw coordinates rather than a precomputed distance_meters,
- * so the order screens have to measure it client-side.
- *
- * Pass the raw values; conversion happens here.
- */
+/** Haversine distance in metres, or null when any coordinate is missing, mirroring the backend's DistanceService guard. */
 export function calculateDistanceMeters(lat1, lng1, lat2, lng2) {
   const a1 = toCoord(lat1)
   const o1 = toCoord(lng1)
@@ -58,4 +36,3 @@ export function calculateDistanceMeters(lat1, lng1, lat2, lng2) {
 
   return EARTH_RADIUS_M * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
-

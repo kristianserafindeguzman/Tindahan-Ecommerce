@@ -1,9 +1,7 @@
 import { ref, computed } from 'vue'
 import { api } from '@/boot/axios'
 
-// Module-level singleton, like useProducts/useStores/useCategories, so the header
-// badge, the mini-cart dropdown, the product detail page, and the full cart page all
-// observe the same state after any of them adds/updates/removes an item.
+// Module-level singleton so the header badge, cart dropdown, product modal and cart page all share one cart.
 const items = ref([])
 const loading = ref(false)
 
@@ -40,8 +38,7 @@ export function useCart() {
     await fetchCart()
   }
 
-  // Updates the local item immediately instead of waiting on a mutation + a full re-fetch round-trip —
-  // rolled back if the request fails, since the server is still the source of truth.
+  // Updates the local item immediately and rolls it back if the request fails, since the server stays the source of truth.
   const updateQuantity = async (cartId, quantity) => {
     const item = items.value.find((i) => i.cartId === cartId)
     const previousQuantity = item?.quantity

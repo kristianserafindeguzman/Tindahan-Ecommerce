@@ -85,16 +85,13 @@ const handleAddToCart = async (product) => {
   }
 }
 
-const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
-
 const pageTitle = computed(() => !isFallback.value ? 'Recommended for You' : 'Popular Products Near You')
 const pageSubtitle = computed(() => !isFallback.value
   ? "Products picked based on your activity and preferences."
   : "Popular picks from sari-sari stores near you."
 )
 
-// No real /recommendations endpoint yet — same full catalog as ConsumerHome.vue's "Discover" section,
-// just paginated here instead of "See More"-revealed.
+// The feed is paginated client-side, 60 products per page.
 const PAGE_SIZE = 60
 const currentPage = ref(1)
 

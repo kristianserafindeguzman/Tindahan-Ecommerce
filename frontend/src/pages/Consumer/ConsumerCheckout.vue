@@ -570,6 +570,9 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .storefront-page {
+  /* The bottom tab bar hides on checkout, so there is nothing to clear and the Place Order bar keeps the screen edge. */
+  --bottom-nav-h: 0px;
+
   min-height: 100vh;
 
   display: flex;

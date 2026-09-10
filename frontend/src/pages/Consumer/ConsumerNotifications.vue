@@ -38,11 +38,7 @@
       </div>
 
       <div v-else class="notif-list">
-        <!--
-          A row is only a button when it goes somewhere. Notifications without an
-          order_id are informational, so they render as a plain div rather than
-          advertising an interaction that does nothing.
-        -->
+        <!-- A row is only a button when it has an order to open, so informational notifications render as a plain div. -->
         <component
           :is="notif.order_id ? 'button' : 'div'"
           v-for="notif in notifications"
@@ -91,12 +87,7 @@ const markingAll = ref(false)
 
 const unreadCount = computed(() => notifications.value.filter((n) => !n.is_read).length)
 
-/*
-  Notifications carry no status column — the title and message are free text — so the
-  stage is matched on keywords. The icons are deliberately the same set the order
-  tracker on ConsumerOrderDetails uses for each stage, so a "ready for pickup" notice
-  and the "Ready" step on the order it refers to show the same glyph.
-*/
+/* Notifications have no status field, so the stage is matched on keywords and shown with the same icons as the order tracker. */
 const NOTIF_STAGES = [
   { test: /cancel|reject|fail/, icon: 'o_cancel', tone: 'danger' },
   { test: /picked up|collected|complete/, icon: 'o_task_alt', tone: 'success' },
@@ -144,8 +135,7 @@ const fetchNotifications = async () => {
   }
 }
 
-// Marked locally first so the row responds immediately; the request is best-effort,
-// and the next fetch reconciles it. Same treatment as the header dropdown.
+// Marked read locally first so the row responds at once, with the best-effort request reconciled by the next fetch.
 const markRead = async (notif) => {
   if (notif.is_read) return
   notif.is_read = true
@@ -200,8 +190,7 @@ onMounted(fetchNotifications)
   padding: 24px;
 }
 
-/* Title block and the mark-all action share a row; the action drops below the text
-   on phones rather than squeezing the heading. */
+/* Title block and mark-all action share a row, with the action dropping below the text on phones. */
 .page-header-row {
   display: flex;
   align-items: flex-start;
@@ -295,8 +284,7 @@ onMounted(fetchNotifications)
   background: var(--c-brand-tint);
 }
 
-/* These two discs are the same hue family as the unread ground and would flatten into
-   it, so they step a shade deeper. The green and amber tones already read against it. */
+/* These two discs share the unread ground's hue, so they step a shade deeper to stay visible against it. */
 .notif-row--unread .notif-icon--brand {
   background: linear-gradient(145deg, var(--c-brand-tint-2) 0%, var(--c-brand-tint-3) 100%);
 }
@@ -472,8 +460,3 @@ onMounted(fetchNotifications)
   }
 }
 </style>
-
-
-
-
-

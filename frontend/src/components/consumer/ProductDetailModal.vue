@@ -203,8 +203,7 @@ const displayPrice = computed(() =>
   selectedVariant.value ? Number(selectedVariant.value.price) : props.product.price
 )
 
-// ?? not || : a sold-out product reports availableQuantity 0, which || would fall
-// through to the 99 meant only for products that omit the field entirely.
+// ?? rather than ||, so a sold-out product's availableQuantity of 0 is not replaced by the 99 meant for a missing field.
 const maxQuantity = computed(() =>
   selectedVariant.value ? selectedVariant.value.quantity : (props.product.availableQuantity ?? 99)
 )
@@ -435,9 +434,7 @@ const handleAddToCart = async () => {
   gap: 8px;
 }
 
-/* QBtn ships min-width, its own padding and a rectangle radius; these restore the
-   pill the chip row is built from. Quasar marks a disabled button with .disabled
-   (not :disabled), so the hover guards below key off that. */
+/* Restores the chip row's pill shape over QBtn's own min-width, padding and radius, with hover guards keyed off Quasar's .disabled class. */
 .variant-chip {
   padding: 5px 14px;
   min-height: auto;
@@ -768,6 +765,3 @@ const handleAddToCart = async () => {
   flex: 1;
 }
 </style>
-
-
-

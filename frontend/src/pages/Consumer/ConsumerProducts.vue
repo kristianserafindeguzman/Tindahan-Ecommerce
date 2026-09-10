@@ -162,9 +162,7 @@ const $q = useQuasar()
 const gridEl = ref(null)
 const { columns: gridColumns } = useGridColumns(gridEl)
 
-// Two full rows of placeholders. Derived rather than hardcoded so the block never ends
-// in a ragged part-row — the grid is auto-fill, so its column count changes continuously
-// with width, not at breakpoints.
+// Two full rows of placeholders, derived from the live column count so the block never ends in a ragged part-row.
 const SKELETON_ROWS = 2
 const skeletonCount = computed(() => gridColumns.value * SKELETON_ROWS)
 const { onReveal } = useReveal()

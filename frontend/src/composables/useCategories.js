@@ -1,15 +1,7 @@
 import { ref } from 'vue'
 import { api } from '@/boot/axios'
 
-// The categories table has no icon column, so icons are matched here by
-// category_name. Anything not in this list (e.g. a category added later
-// through the admin/vendor UI) falls back to a generic icon.
-// Filled icons, not the o_ outlined variants: at 22px in a 44px disc the outlines read
-// as thin and washed out. Each category also carries a tone, so the row is six distinct
-// colours rather than six identical red discs.
-//
-// Only base names whose outlined form was already in use, so every glyph is known to
-// exist in the bundled Material Icons set.
+// The categories table has no icon column, so each category name maps to a filled icon and tone here, with a generic fallback.
 const CATEGORY_STYLES = {
   'Cooking Essentials': { icon: 'restaurant', tone: 'amber' },
   'Beverages': { icon: 'local_drink', tone: 'blue' },
@@ -21,8 +13,7 @@ const CATEGORY_STYLES = {
 
 const DEFAULT_STYLE = { icon: 'category', tone: 'brand' }
 
-// Shared for the same reason as useProducts: the header refetched this on every
-// consumer page alongside the page's own identical call. See useProducts.js.
+// Shared like useProducts, so the header and the page no longer fetch the same categories twice.
 const categories = ref([])
 const loading = ref(false)
 
@@ -39,8 +30,7 @@ const load = async () => {
       tone: (CATEGORY_STYLES[category.category_name] || DEFAULT_STYLE).tone
     }))
 
-    // "Others" is a catch-all and reads oddly sorted alphabetically
-    // among real categories — always show it last.
+    // Others is a catch-all, so it always sorts last instead of alphabetically.
     categories.value = mapped.sort((a, b) => {
       if (a.label === 'Others') return 1
       if (b.label === 'Others') return -1
@@ -71,5 +61,3 @@ export function useCategories() {
 
   return { categories, loading, fetchCategories }
 }
-
-

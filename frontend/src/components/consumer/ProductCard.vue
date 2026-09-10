@@ -271,18 +271,9 @@ const productMetaText = computed(() => {
   text-overflow: ellipsis;
 }
 
-/* Phones fit two cards to a 390px row, so the body has ~171px to work with. The
-   desktop padding and tag sizing eat that width and make the card read bulky —
-   these trim the chrome, not the content. Type already steps down via the scale
-   in app.scss. */
+/* Phones fit two cards to a 390px row, so this trims the card's chrome rather than its content. */
 @media (max-width: 600px) {
-  /* The square photo is the single biggest contributor to card height: 171px of a
-     291px card at 390px wide. 4:3 takes ~43px out of every card without touching
-     the content, which is what actually makes the grid feel oversized on a phone. */
-  /* 5:4 rather than the desktop 1:1. It takes ~34px out of every card while keeping
-     the photo edge-to-edge on the desktop's cover fit — 4:3 shaved more height but
-     cropped enough off tall bottles and packets to change what the product looked
-     like. */
+  /* 5:4 rather than the desktop 1:1 trims about 34px per card without cropping tall bottles and packets the way 4:3 did. */
   .product-card-image {
     aspect-ratio: 5 / 4;
   }
@@ -291,10 +282,7 @@ const productMetaText = computed(() => {
     padding: 10px;
   }
 
-  /* Drops the two-line reserve. It exists so prices share a baseline across a row,
-     which is worth ~20px of dead space under a one-line name on a 6-up desktop row
-     but not on a 2-up phone row, where the mismatch is barely legible and the space
-     is what makes the card feel oversized. */
+  /* Drops the two-line name reserve, which aligns prices across a desktop row but only adds dead space on a two-up phone row. */
   .product-name {
     min-height: 0;
 

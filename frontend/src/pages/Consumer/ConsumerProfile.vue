@@ -495,8 +495,7 @@
     </q-dialog>
 
     <!-- ACCOUNT DELETED CONFIRMATION -->
-    <!-- No close button — the account (and its session) is already gone,
-         so the only way out is the explicit "Go to Home" navigation. -->
+    <!-- No close button, since the account and its session are already gone and the only way out is Go to Home. -->
     <q-dialog v-model="showAccountDeletedModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card success-card" style="width: 500px; max-width: 90vw;">
         <q-card-section class="text-center">
@@ -730,8 +729,7 @@ const startOtpTimers = () => {
     if (resendSecondsLeft.value > 0) resendSecondsLeft.value -= 1
     if (otpSecondsLeft.value <= 0) {
       clearInterval(otpTimerHandle)
-      // The countdown UI was removed, but the user still needs to know why
-      // their code stopped working instead of getting a generic "invalid code".
+      // The countdown UI is gone, so an expired code gets its own message instead of a generic invalid-code error.
       if (!otpVerifiedFlash.value) otpError.value = 'Code expired. Please resend a new code.'
     }
   }, 1000)
@@ -1190,8 +1188,7 @@ const goHomeAfterDelete = () => {
   padding: 24px;
 }
 
-/* 20px, matching every other consumer page's header-to-content gap. This was the
-   only page at 28px, which read as the profile header sitting lower than the rest. */
+/* 20px, matching the header-to-content gap on every other consumer page instead of the 28px this page used. */
 .page-header-block {
   margin-bottom: 20px;
 }
@@ -1858,16 +1855,14 @@ const goHomeAfterDelete = () => {
   border: 1px solid var(--c-border);
   border-radius: var(--r-xl);
 
-  /* Deeper than .profile-card's shadow — an overlay has to lift off the page behind it.
-     !important beats Quasar's own dialog card shadow utility. */
+  /* A deeper shadow than .profile-card so the dialog lifts off the page, with !important beating Quasar's dialog shadow utility. */
   box-shadow: 0 18px 48px rgba(17, 17, 17, 0.18) !important;
 
   /* Tightens Quasar's default 300ms "scale" transition down to ~200ms. */
   --q-transition-duration: 200ms;
 }
 
-/* Same tinted tile as the page's .info-icon, so a dialog opens into the visual
-   language of the card that launched it instead of a flat white sheet. */
+/* Same tinted tile as the page's .info-icon, so a dialog opens in the visual language of the card that launched it. */
 .dialog-icon {
   display: flex;
   align-items: center;
@@ -2093,15 +2088,13 @@ const goHomeAfterDelete = () => {
     align-items: flex-start;
   }
 
-  /* Clears the header's divider rather than sitting on it; the blanket .q-card__section
-     rule above would otherwise double this into a 48px gap. */
+  /* Clears the header's divider, which the blanket .q-card__section rule would otherwise double into a 48px gap. */
   .profile-dialog-card :deep(.dialog-body) {
     padding-top: 20px;
     padding-bottom: 20px;
   }
 
-  /* Cancel + primary action buttons split the footer evenly instead of sizing to their own label.
-     Even padding now that the actions sit on their own tinted band. */
+  /* Cancel and primary buttons split the footer evenly, with even padding on their tinted band. */
   .profile-dialog-card :deep(.q-card__actions) {
     display: flex;
 
@@ -2138,5 +2131,3 @@ const goHomeAfterDelete = () => {
   }
 }
 </style>
-
-

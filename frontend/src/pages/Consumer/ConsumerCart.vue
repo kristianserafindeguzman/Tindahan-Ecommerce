@@ -1,5 +1,5 @@
 <template>
-  <q-page class="storefront-page" :style="showCheckoutBar ? { paddingBottom: checkoutBarHeight + 'px' } : null">
+  <q-page class="storefront-page" :style="showCheckoutBar ? { paddingBottom: `calc(${checkoutBarHeight}px + var(--bottom-nav-h))` } : null">
 
     <SiteHeader />
 
@@ -66,8 +66,7 @@
 
               <div class="stepper-wrapper">
                 <div class="quantity-stepper">
-                  <!-- Named per item: a screen reader hitting six identical "Decrease"
-                       buttons in a cart cannot tell which row it is on. -->
+                  <!-- Each stepper button is named after its item, so a screen reader can tell six identical Decrease buttons apart. -->
                   <q-btn
                     flat
                     dense
@@ -447,9 +446,7 @@ const removeItem = async (item) => {
   margin-bottom: 0;
 }
 
-/* Selection is shown with a brand border and a soft ring, not by tinting the whole
-   card. Flooding it put the product thumbnails and prices on a pink ground and made
-   the selected store look like a warning rather than a choice. */
+/* Selection shows as a brand border and soft ring rather than a tinted card, which put thumbnails and prices on a pink ground. */
 .store-card-selected {
   border-color: var(--c-brand);
   background: #ffffff;
@@ -573,8 +570,7 @@ const removeItem = async (item) => {
   overflow: hidden;
 }
 
-/* QBtn ships its own min-width, padding and border-radius; these pin it back to the
-   32px square the stepper strip is built around. */
+/* Pins QBtn back to the 32px square the stepper strip is built around, overriding its own min-width, padding and radius. */
 .stepper-btn {
   width: 32px;
   height: 32px;
@@ -597,9 +593,7 @@ const removeItem = async (item) => {
   color: var(--c-brand);
 }
 
-/* QBtn marks a disabled button with a plain .disabled class (not :disabled, and not
-   .q-btn--disable), and dims the whole thing to 0.7 opacity. This restores the greyed
-   glyph the strip used instead, so the button reads disabled without the wash. */
+/* QBtn marks a disabled button with a plain .disabled class at 0.7 opacity, so this restores the strip's greyed glyph without the wash. */
 .stepper-btn.disabled {
   color: var(--c-border-strong);
   opacity: 1 !important;
@@ -802,7 +796,8 @@ const removeItem = async (item) => {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  /* Sits on top of the bottom tab bar rather than under it; 0 on desktop. */
+  bottom: var(--bottom-nav-h);
   z-index: 100;
 
   /* Same padding/border/shadow recipe as .order-actions-fixed (ConsumerOrderDetails.vue), this app's one fixed-bottom-bar convention. */
@@ -905,7 +900,3 @@ const removeItem = async (item) => {
   }
 }
 </style>
-
-
-
-
