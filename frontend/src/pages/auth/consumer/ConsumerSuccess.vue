@@ -183,6 +183,26 @@ const goToLogin = () => {
   color: var(--c-success);
 
   margin-bottom: 22px;
+
+  animation: success-icon-pop 240ms ease-out;
+}
+
+/* The same pop as the consumer profile's success dialog, scaling the tile in as the page opens. */
+@keyframes success-icon-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.75);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .success-icon-wrap {
+    animation: none;
+  }
 }
 
 .login-content h1 {

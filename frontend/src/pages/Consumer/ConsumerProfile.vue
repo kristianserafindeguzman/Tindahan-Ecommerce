@@ -40,6 +40,14 @@
               </div>
 
               <div class="info-row">
+                <div class="info-icon"><q-icon name="o_cake" size="18px" /></div>
+                <div class="info-body">
+                  <div class="info-label">Birthday</div>
+                  <div class="info-value">{{ birthdayLabel }}</div>
+                </div>
+              </div>
+
+              <div class="info-row">
                 <div class="info-icon"><q-icon name="o_phone" size="18px" /></div>
                 <div class="info-body">
                   <div class="info-label">Phone Number</div>
@@ -72,17 +80,20 @@
               </div>
 
               <div class="photo-card-body">
-                <div class="text-center q-mb-md relative-position">
-                  <q-avatar :size="avatarSize" class="bg-grey-3 photo-avatar">
-                    <img v-if="photoPreview" :src="photoPreview" />
-                    <img v-else-if="user.profile_picture_url" :src="user.profile_picture_url" />
-                    <q-icon v-else name="person" size="64px" color="grey-6" />
-                  </q-avatar>
+                <div class="text-center q-mb-md">
+                  <div class="photo-avatar-wrap">
+                    <q-avatar :size="avatarSize" class="bg-grey-3 photo-avatar">
+                      <img v-if="photoPreview" :src="photoPreview" />
+                      <img v-else-if="user.profile_picture_url" :src="user.profile_picture_url" />
+                      <q-icon v-else name="person" size="64px" color="grey-6" />
+                    </q-avatar>
+
+                    <q-btn round unelevated color="primary" class="photo-camera-btn" aria-label="Change profile photo" @click="triggerUpload">
+                      <q-icon name="o_photo_camera" size="16px" />
+                    </q-btn>
+                  </div>
 
                   <input type="file" id="photoUpload" accept="image/*" class="hidden" @change="onFileSelected" style="display: none;" />
-                  <q-btn round unelevated color="primary" class="photo-camera-btn" @click="triggerUpload">
-                    <q-icon name="o_photo_camera" size="14px" />
-                  </q-btn>
                 </div>
 
                 <div class="text-center">
@@ -91,7 +102,7 @@
                   </template>
                   <template v-else>
                     <q-btn unelevated no-caps color="primary" label="Save Photo" :loading="savingPhoto" @click="savePhoto" class="full-width q-mb-sm btn-gradient" />
-                    <q-btn flat no-caps color="grey-7" label="Cancel" class="full-width" :disable="savingPhoto" @click="cancelPhoto" />
+                    <q-btn outline no-caps color="grey-7" label="Cancel" class="full-width" :disable="savingPhoto" @click="cancelPhoto" />
                   </template>
                 </div>
                 <div class="text-center photo-hint">JPG, PNG or GIF. Max size of 2MB.</div>
@@ -178,6 +189,11 @@
                 <div class="edit-field-label">Last Name</div>
                 <q-input v-model="editForm.lastName" outlined dense no-error-icon hide-bottom-space :rules="[val => !!val || 'Required']" />
               </div>
+            </div>
+
+            <div class="edit-field edit-field-tight">
+              <div class="edit-field-label">Birthday</div>
+              <BirthdayInput v-model="editForm.birthday" />
             </div>
 
             <div class="edit-field edit-field-tight">
@@ -515,6 +531,8 @@ import { useAuth } from '@/composables/useAuth'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import PhotoCropper from '@/components/shared/PhotoCropper.vue'
+import BirthdayInput from '@/components/shared/BirthdayInput.vue'
+import { formatBirthday } from '@/utils/birthday'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -526,6 +544,7 @@ const avatarSize = computed(() => ($q.screen.lt.sm ? '96px' : '120px'))
 const user = ref({})
 const form = reactive({
   full_name: '',
+  birthday: '',
   phone_number: '',
   email: ''
 })
@@ -560,12 +579,17 @@ const openSuccessModal = (title, message) => {
 const editForm = reactive({
   firstName: '',
   lastName: '',
+  birthday: '',
   phone_number: '',
   email: ''
 })
 
 const phoneChanged = computed(() => editForm.phone_number !== user.value.phone_number)
 const emailChanged = computed(() => editForm.email !== user.value.email)
+const birthdayChanged = computed(() => (editForm.birthday || '') !== (user.value.birthday || ''))
+
+// Written out as a date, or Not set for accounts made before sign-up asked for a birthday.
+const birthdayLabel = computed(() => formatBirthday(user.value.birthday) || 'Not set')
 const isPhoneValid = computed(() => /^09\d{9}$/.test(editForm.phone_number || ''))
 const isEmailValid = computed(() => /.+@.+\..+/.test(editForm.email || ''))
 
@@ -612,7 +636,8 @@ const hasPersonalChanges = computed(() => {
   return (
     fullName !== (user.value.full_name || '') ||
     phoneChanged.value ||
-    emailChanged.value
+    emailChanged.value ||
+    birthdayChanged.value
   )
 })
 
@@ -805,18 +830,23 @@ const savePhoto = async () => {
   }
 }
 
+// Returns whether the save went through, so the caller never shows success after a failure.
 const saveInfo = async () => {
-  if (!form.full_name) return
+  if (!form.full_name) return false
   savingInfo.value = true
   try {
-    await api.post('/profile/personal-info', { full_name: form.full_name })
+    await api.post('/profile/personal-info', { full_name: form.full_name, birthday: form.birthday || null })
     user.value.full_name = form.full_name
+    user.value.birthday = form.birthday || null
 
     const lsUser = JSON.parse(localStorage.getItem('auth_user') || '{}')
     lsUser.full_name = form.full_name
+    lsUser.birthday = form.birthday || null
     localStorage.setItem('auth_user', JSON.stringify(lsUser))
+    return true
   } catch (err) {
-    $q.notify({ type: 'negative', message: 'Failed to update info.' })
+    $q.notify({ type: 'negative', message: err.response?.data?.message || 'Failed to update info.' })
+    return false
   } finally {
     savingInfo.value = false
   }
@@ -829,6 +859,7 @@ const startEditPersonal = () => {
   editForm.lastName = parts.slice(1).join(' ')
   editForm.phone_number = user.value.phone_number
   editForm.email = user.value.email
+  editForm.birthday = user.value.birthday || ''
   editPersonalFormRef.value?.resetValidation()
   showEditPersonalModal.value = true
 }
@@ -846,20 +877,22 @@ const savePersonal = async () => {
   const nameChanged = `${editForm.firstName} ${editForm.lastName}`.trim() !== user.value.full_name
   const phoneIsChanged = phoneChanged.value
   const emailIsChanged = emailChanged.value
+  const birthdayIsChanged = birthdayChanged.value
 
   form.full_name = `${editForm.firstName} ${editForm.lastName}`.trim()
+  form.birthday = editForm.birthday
   form.phone_number = editForm.phone_number
   form.email = editForm.email
 
   savingPersonal.value = true
   try {
-    if (nameChanged) await saveInfo()
+    // The name and birthday share one endpoint, and a failed save keeps the dialog open instead of claiming success.
+    if ((nameChanged || birthdayIsChanged) && !(await saveInfo())) return
     if (emailIsChanged) {
       await saveEmail()
-      // saveEmail() swallows its own errors, so check the value actually landed.
-      if (user.value.email === form.email) {
-        emailVerificationRequired.value = true
-      }
+      // saveEmail() swallows its own errors, so the dialog stays open unless the new email actually landed.
+      if (user.value.email !== form.email) return
+      emailVerificationRequired.value = true
     }
 
     showEditPersonalModal.value = false
@@ -870,7 +903,7 @@ const savePersonal = async () => {
       if (showOtpModal.value) {
         phoneVerificationRequired.value = true
       }
-    } else if (nameChanged || emailIsChanged) {
+    } else if (nameChanged || emailIsChanged || birthdayIsChanged) {
       openSuccessModal('Information Updated!', 'Your personal information has been updated successfully.')
     }
   } finally {
@@ -1179,10 +1212,11 @@ const goHomeAfterDelete = () => {
   justify-content: flex-start;
 }
 
-/* Top-anchored, not centered, so extra height (2-button crop state) doesn't crowd the header. */
+/* Centred in the height left over when the card stretches to match Personal Information, so no empty band sits at the bottom. */
 .photo-card-body {
   display: flex;
   flex-direction: column;
+  justify-content: center;
 
   flex: 1;
   margin-top: 20px;
@@ -1423,24 +1457,32 @@ const goHomeAfterDelete = () => {
     0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
+/* Shrinks to the avatar so the camera badge can sit on its ring. */
+.photo-avatar-wrap {
+  position: relative;
+
+  display: inline-block;
+}
+
+/* Sits on the avatar's lower-right edge so it never covers the face or the placeholder. */
 .photo-camera-btn {
   position: absolute;
-  bottom: 2px;
-  left: 50%;
+  right: 0;
+  bottom: 0;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  min-height: 34px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   padding: 0;
 
-  transform: translateX(-50%);
-
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 0 0 3px #ffffff,
+    0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .photo-camera-btn :deep(.q-btn__content) {
@@ -1469,20 +1511,24 @@ const goHomeAfterDelete = () => {
   background: var(--c-brand-tint);
 }
 
-/* Secondary outline buttons inside dialogs (Cancel, Keep Editing), shared across every modal. */
+/* Grey outline buttons (Cancel, Keep Editing), shared by every dialog and the photo card. */
+.profile-container :deep(.q-btn--outline.text-grey-7),
 .profile-dialog-card :deep(.q-btn--outline.text-grey-7) {
   transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
+.profile-container :deep(.q-btn--outline.text-grey-7:hover),
 .profile-dialog-card :deep(.q-btn--outline.text-grey-7:hover) {
   border-color: var(--c-border-strong);
   background: var(--c-surface);
 }
 
+.profile-container :deep(.q-btn--outline.text-grey-7:active),
 .profile-dialog-card :deep(.q-btn--outline.text-grey-7:active) {
   background: var(--c-surface);
 }
 
+.profile-container :deep(.q-btn--outline.text-grey-7:focus-visible),
 .profile-dialog-card :deep(.q-btn--outline.text-grey-7:focus-visible) {
   outline: none;
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.12);
@@ -1952,10 +1998,10 @@ const goHomeAfterDelete = () => {
   }
 
   .photo-camera-btn {
-    width: 30px;
-    height: 30px;
-    min-width: 30px;
-    min-height: 30px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
   }
 
   .danger-row {

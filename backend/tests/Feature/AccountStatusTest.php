@@ -5,38 +5,22 @@ namespace Tests\Feature;
 use App\Models\OtpCode;
 use App\Models\User;
 use App\Services\SemaphoreService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
 use Mockery\MockInterface;
-use RuntimeException;
+use Tests\RefreshesTestDatabase;
 use Tests\TestCase;
 
 /** Covers the pending status that keeps unfinished sign-ups apart from accounts an admin set inactive, run against a MySQL *_test database because older migrations use MySQL-only SQL. */
 class AccountStatusTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshesTestDatabase;
 
     /** Codes the fake SMS gateway was asked to send, keyed by phone number. */
     private array $sent = [];
 
     /** Hands each made-up user its own phone number, in a range the tests never type in by hand. */
     private int $phoneCounter = 0;
-
-    /** Skips on the default SQLite run, where older MySQL-only migrations can't run, and refuses to wipe any database that isn't clearly a test one. */
-    protected function beforeRefreshingDatabase()
-    {
-        $connection = config('database.connections.' . config('database.default'));
-        $name = (string) ($connection['database'] ?? '');
-
-        if (($connection['driver'] ?? '') === 'sqlite') {
-            $this->markTestSkipped('Needs a MySQL *_test database, e.g. DB_CONNECTION=mysql DB_DATABASE=tindahan_test.');
-        }
-
-        if (!str_ends_with($name, '_test')) {
-            throw new RuntimeException("Refusing to refresh the '{$name}' database; point DB_DATABASE at a *_test database.");
-        }
-    }
 
     protected function setUp(): void
     {
@@ -66,6 +50,7 @@ class AccountStatusTest extends TestCase
     {
         return $this->postJson('/api/register/consumer', array_merge([
             'full_name' => 'Juan Cruz',
+            'birthday' => '1995-06-15',
             'email' => 'juan@example.com',
             'phone_number' => '09171234567',
             'password' => 'password123',
@@ -79,6 +64,23 @@ class AccountStatusTest extends TestCase
 
         $this->assertSame('pending', User::where('email', 'juan@example.com')->value('account_status'));
         $this->assertArrayHasKey('09171234567', $this->sent);
+    }
+
+    public function test_a_sign_up_saves_the_birthday(): void
+    {
+        $this->signUp()->assertCreated();
+
+        $this->assertSame('1995-06-15', User::where('email', 'juan@example.com')->first()->birthday->format('Y-m-d'));
+    }
+
+    public function test_a_sign_up_needs_a_real_past_birthday(): void
+    {
+        $this->signUp(['birthday' => ''])->assertStatus(422)->assertJsonValidationErrors('birthday');
+        $this->signUp(['birthday' => now()->addDay()->format('Y-m-d')])->assertStatus(422)->assertJsonValidationErrors('birthday');
+        $this->signUp(['birthday' => '15/06/1995'])->assertStatus(422)->assertJsonValidationErrors('birthday');
+        $this->signUp(['birthday' => '1899-12-31'])->assertStatus(422)->assertJsonValidationErrors('birthday');
+
+        $this->assertSame(0, User::count());
     }
 
     public function test_signing_up_again_replaces_an_unfinished_sign_up(): void
