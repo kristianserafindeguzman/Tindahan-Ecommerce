@@ -22,27 +22,28 @@
     </div>
 
     <!-- Main Content Stack -->
-    <div v-else class="embedded-content-stack">
+    <div v-else class="embedded-content-stack full-width">
       
       <!-- ================= HERO HEADER BANNER ================= -->
-      <div class="header-gradient text-white q-pa-md q-pa-md-lg shadow-soft q-mb-lg" style="border-radius: 14px;">
-        <div class="row items-center justify-between no-wrap q-col-gutter-md">
-          <!-- Left Info Block: Header & Status Badge separated cleanly without overlap -->
+      <div class="header-gradient text-white q-pa-md q-pa-md-lg shadow-soft q-mb-lg full-width" style="border-radius: 16px;">
+        <!-- Desktop Header Row -->
+        <div v-if="!$q.screen.lt.md" class="row items-center justify-between no-wrap q-col-gutter-md">
           <div class="row items-center no-wrap col min-w-0">
-            <div class="icon-box-white q-mr-md shadow-soft flex flex-center flex-shrink-0" :style="$q.screen.lt.md ? 'width: 40px; height: 40px; border-radius: 10px;' : 'width: 48px; height: 48px; border-radius: 12px;'">
-              <q-icon name="receipt_long" :size="$q.screen.lt.md ? '22px' : '26px'" color="red-9" />
+            <div class="icon-box-white q-mr-md shadow-soft flex flex-center flex-shrink-0" style="width: 48px; height: 48px; border-radius: 12px;">
+              <q-icon name="receipt_long" size="26px" color="red-9" />
             </div>
             
             <div class="col min-w-0">
-              <div class="embedded-banner-title-row q-mb-xs">
-                <span class="order-id-title tracking-tight">
+              <div class="embedded-banner-title-row q-mb-xs items-center">
+                <span class="order-id-title tracking-tight q-mr-sm">
                   Order #{{ order.order_id }}
                 </span>
                 <q-chip 
-                  size="sm" 
+                  dense
+                  square
                   :color="getStatusColor(order.status)" 
                   text-color="white" 
-                  class="text-weight-bolder shadow-1 q-ma-none status-badge-embedded"
+                  class="status-box-chip q-px-md shadow-none q-ma-none"
                 >
                   {{ formatStatus(order.status) }}
                 </q-chip>
@@ -53,7 +54,7 @@
             </div>
           </div>
 
-          <!-- Actions -->
+          <!-- Desktop Actions -->
           <div class="row items-center q-gutter-x-sm no-wrap flex-shrink-0">
             <q-btn 
               unelevated 
@@ -106,10 +107,101 @@
             </template>
           </div>
         </div>
+
+        <!-- Mobile Header (Roomy Card Layout with Consistent Badge and Side-by-side Actions) -->
+        <div v-else class="column full-width q-pa-xs">
+          <div class="row items-center justify-between no-wrap q-mb-sm">
+            <div class="row items-center no-wrap col min-w-0">
+              <div class="icon-box-white q-mr-md shadow-soft flex flex-center flex-shrink-0" style="width: 44px; height: 44px; border-radius: 12px;">
+                <q-icon name="receipt_long" size="24px" color="red-9" />
+              </div>
+              <div class="col min-w-0">
+                <div class="order-id-title tracking-tight ellipsis" style="font-size: 19px;">
+                  Order #{{ order.order_id }}
+                </div>
+                <div class="text-caption font-medium text-red-1 ellipsis q-mt-xs" style="font-size: 12.5px; opacity: 0.95;">
+                  {{ order.consumer?.full_name || order.customer_name || 'Customer' }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Standardized Soft-Box Status Chip -->
+            <q-chip 
+              dense
+              square
+              :color="getStatusColor(order.status)" 
+              text-color="white" 
+              class="status-box-chip q-ma-none flex-shrink-0"
+              style="font-size: 12px; height: 28px; padding: 0 12px;"
+            >
+              {{ formatStatus(order.status) }}
+            </q-chip>
+          </div>
+
+          <div class="text-caption text-red-1 q-mb-md font-medium" style="font-size: 11.5px; opacity: 0.85;">
+            Placed on {{ formatDate(order.created_at) }}
+          </div>
+
+          <!-- Clean Actions Row: Structured Side-by-Side without stacking or line overlapping -->
+          <div class="row no-wrap items-center q-gutter-x-sm full-width">
+            <div class="col">
+              <q-btn 
+                unelevated 
+                icon="print" 
+                label="Print Receipt" 
+                text-color="red-9" 
+                class="bg-white text-weight-bold full-width" 
+                style="border-radius: 8px; font-size: 12.5px; height: 38px;"
+                no-caps 
+                :loading="isExporting" 
+                @click="printOrder" 
+              />
+            </div>
+
+            <div class="col">
+              <template v-if="order.status !== 'picked_up' && order.status !== 'cancelled' && order.status !== 'completed'">
+                <q-btn-dropdown 
+                  :loading="isUpdating" 
+                  outline 
+                  color="white" 
+                  label="Update Status" 
+                  no-caps 
+                  class="text-weight-bold full-width"
+                  style="border-radius: 8px; font-size: 12.5px; height: 38px; background: rgba(255,255,255,0.15);"
+                >
+                  <q-list class="premium-dropdown-list">
+                    <q-item clickable v-close-popup @click="updateStatus('preparing')" v-if="['placed'].includes(order.status)" class="hover-grey">
+                      <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="inventory_2" color="purple-5" size="18px"/></q-item-section>
+                      <q-item-section class="text-weight-medium">Pack / Prepare</q-item-section>
+                    </q-item>
+                    <q-item clickable v-close-popup @click="updateStatus('ready_for_pickup')" v-if="['placed', 'preparing'].includes(order.status)" class="hover-grey">
+                      <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="storefront" color="orange-6" size="18px"/></q-item-section>
+                      <q-item-section class="text-weight-medium">Ready for Pickup</q-item-section>
+                    </q-item>
+                    <q-item clickable v-close-popup @click="updateStatus('picked_up')" v-if="['ready_for_pickup'].includes(order.status)" class="hover-grey">
+                      <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="check_circle" color="green-6" size="18px"/></q-item-section>
+                      <q-item-section class="text-weight-medium">Picked up</q-item-section>
+                    </q-item>
+                    <q-separator class="q-my-xs" />
+                    <q-item clickable v-close-popup @click="promptCancelOrder" v-if="!['picked_up', 'cancelled'].includes(order.status)" class="hover-red">
+                      <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="cancel" color="red-9" size="18px"/></q-item-section>
+                      <q-item-section class="text-weight-bold text-red-9">Cancel Order</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-btn-dropdown>
+              </template>
+              <template v-else>
+                <div class="bg-white text-slate-700 text-weight-bold flex flex-center shadow-1 full-width" style="border-radius: 8px; font-size: 12px; height: 38px;">
+                  <q-icon name="lock" class="q-mr-xs" size="16px" color="red-9" /> Finalized
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Cancellation Alert Card -->
-      <q-card v-if="order.status === 'cancelled'" flat class="cancellation-alert-card q-pa-md q-mb-lg">
+      <q-card v-if="order.status === 'cancelled'" flat class="cancellation-alert-card q-pa-md q-mb-lg full-width">
         <div class="text-subtitle1 text-weight-bolder text-red-9 row items-center q-mb-xs">
           <q-icon name="cancel" size="20px" class="q-mr-xs" />
           Order Cancelled
@@ -120,10 +212,10 @@
       </q-card>
 
       <!-- ================= SECTION 1: TIMELINE & ORDER TRACKING ================= -->
-      <div class="embedded-grid-row q-mb-xl items-start">
-        <!-- Order Status Tracker: Height adjusts dynamically to content -->
-        <div class="grid-col-timeline">
-          <q-card flat class="clean-section-card timeline-card-responsive">
+      <div class="embedded-grid-row q-mb-lg items-start full-width">
+        <!-- Order Status Tracker -->
+        <div class="grid-col-timeline full-width-mobile">
+          <q-card flat class="clean-section-card timeline-card-responsive full-width">
             <div class="clean-card-header row items-center justify-between q-pa-md">
               <div class="row items-center">
                 <div class="accent-header-icon bg-red-50 text-brand-red q-mr-sm flex flex-center">
@@ -154,7 +246,7 @@
                   </div>
                 </div>
 
-                <!-- Cancelled Case (2-Step only, no trailing whitespace) -->
+                <!-- Cancelled Case -->
                 <template v-if="order.status === 'cancelled'">
                   <div class="tracker-item row items-start no-wrap tracker-item-last">
                     <div class="tracker-badge-col column items-center q-mr-md">
@@ -246,8 +338,8 @@
         </div>
 
         <!-- Order Tracking Map -->
-        <div class="grid-col-map">
-          <q-card flat class="clean-section-card overflow-hidden flex column">
+        <div class="grid-col-map full-width-mobile">
+          <q-card flat class="clean-section-card overflow-hidden flex column full-width">
             <div class="clean-card-header row items-center q-pa-md">
               <div class="row items-center">
                 <div class="accent-header-icon bg-red-50 text-brand-red q-mr-sm flex flex-center">
@@ -257,7 +349,7 @@
               </div>
             </div>
 
-            <div class="relative-position map-wrapper">
+            <div class="relative-position map-wrapper full-width">
               <OrderTrackingMap 
                 :storeLat="order.store?.latitude"
                 :storeLng="order.store?.longitude"
@@ -272,10 +364,10 @@
       </div>
 
       <!-- ================= SECTION 2: PURCHASED ITEMS & CUSTOMER / PICKUP ================= -->
-      <div class="embedded-grid-row items-start">
+      <div class="embedded-grid-row items-start full-width">
         <!-- Purchased Items & Cost Breakdown -->
-        <div class="grid-col-items">
-          <q-card flat class="clean-section-card q-pa-md q-pa-md-lg">
+        <div class="grid-col-items full-width-mobile">
+          <q-card flat class="clean-section-card q-pa-md q-pa-md-lg full-width">
             <div class="clean-card-header row items-center justify-between q-pb-md q-mb-md">
               <div class="row items-center">
                 <div class="accent-header-icon bg-red-50 text-brand-red q-mr-sm flex flex-center">
@@ -288,11 +380,11 @@
               </q-badge>
             </div>
 
-            <div class="column q-gutter-y-sm">
+            <div class="column q-gutter-y-sm full-width">
               <div 
                 v-for="item in order.items" 
                 :key="item.order_item_id" 
-                class="row items-center justify-between no-wrap q-py-sm border-bottom-subtle"
+                class="row items-center justify-between no-wrap q-py-sm border-bottom-subtle full-width"
               >
                 <div class="row items-center no-wrap col min-w-0">
                   <q-avatar rounded size="48px" class="bg-slate-100 shadow-soft q-mr-md flex-shrink-0">
@@ -309,8 +401,8 @@
                   </div>
                 </div>
 
-                <div class="text-weight-bold text-slate-800 text-body2 q-pl-md flex-shrink-0">
-                  PHP {{ formatNumber(item.subtotal || (item.price * item.quantity)) }}
+                <div class="text-slate-800 text-body2 q-pl-md flex-shrink-0 font-medium">
+                  ₱{{ formatNumber(item.subtotal || (item.price * item.quantity)) }}
                 </div>
               </div>
             </div>
@@ -319,22 +411,22 @@
 
             <div class="row justify-between items-center text-body2 text-slate-600 q-mb-sm font-medium">
               <span>Subtotal</span>
-              <span class="text-weight-bold text-slate-800">PHP {{ formatNumber(order.total_amount) }}</span>
+              <span class="text-slate-800 font-medium">₱{{ formatNumber(order.total_amount) }}</span>
             </div>
 
             <q-separator class="q-my-sm opacity-40" />
 
             <div class="row justify-between items-center">
               <span class="text-h6 text-weight-bolder text-brand-red">Total</span>
-              <span class="text-h6 text-weight-bolder text-brand-red">PHP {{ formatNumber(order.total_amount) }}</span>
+              <span class="text-h6 text-weight-bolder text-brand-red">₱{{ formatNumber(order.total_amount) }}</span>
             </div>
           </q-card>
         </div>
 
         <!-- Customer Details & Store Location -->
-        <div class="grid-col-sidebar column q-gutter-y-lg">
+        <div class="grid-col-sidebar column q-gutter-y-lg full-width-mobile">
           <!-- Customer Info -->
-          <q-card flat class="clean-section-card q-pa-md q-pa-md-lg">
+          <q-card flat class="clean-section-card q-pa-md q-pa-md-lg full-width">
             <div class="clean-card-header row items-center justify-between q-pb-md q-mb-md">
               <div class="row items-center">
                 <div class="accent-header-icon bg-red-50 text-brand-red q-mr-sm flex flex-center">
@@ -347,7 +439,7 @@
               </q-badge>
             </div>
 
-            <div class="row items-center q-mb-md no-wrap">
+            <div class="row items-center q-mb-md no-wrap full-width">
               <q-avatar size="46px" class="q-mr-md shadow-soft bg-slate-200 text-blue-grey-8 text-weight-bolder flex-shrink-0">
                 <img v-if="order.consumer?.profile_picture_url" :src="order.consumer.profile_picture_url">
                 <span v-else>{{ getInitials(order.consumer?.full_name || order.customer_name) }}</span>
@@ -360,7 +452,7 @@
               </div>
             </div>
 
-            <div class="bg-slate-50 q-pa-md rounded-borders text-caption text-slate-700 font-medium column q-gutter-y-sm">
+            <div class="bg-slate-50 q-pa-md rounded-borders text-caption text-slate-700 font-medium column q-gutter-y-sm full-width">
               <div class="row items-center no-wrap">
                 <q-icon name="email" color="blue-grey-4" size="16px" class="q-mr-sm flex-shrink-0" />
                 <span class="ellipsis">{{ order.consumer?.email || 'No email provided' }}</span>
@@ -373,7 +465,7 @@
           </q-card>
 
           <!-- Pickup Location -->
-          <q-card flat class="clean-section-card q-pa-md q-pa-md-lg">
+          <q-card flat class="clean-section-card q-pa-md q-pa-md-lg full-width">
             <div class="clean-card-header row items-center justify-between q-pb-md q-mb-md">
               <div class="row items-center">
                 <div class="accent-header-icon bg-red-50 text-brand-red q-mr-sm flex flex-center">
@@ -383,7 +475,7 @@
               </div>
             </div>
 
-            <div class="row items-start no-wrap q-mb-md">
+            <div class="row items-start no-wrap q-mb-md full-width">
               <div class="bg-red-50 rounded-borders q-mr-md flex flex-center shrink-none" style="width: 36px; height: 36px;">
                 <q-icon name="place" color="red-9" size="20px" />
               </div>
@@ -404,7 +496,7 @@
               color="red-9" 
               class="full-width btn-glass-outline text-weight-bold" 
               no-caps 
-              size="sm"
+              size="sm" 
               :disable="!order.consumer_latitude || !order.store?.latitude"
               @click="openDirections" 
             />
@@ -438,11 +530,11 @@
             <div class="row items-center q-mb-xs">
               <h1 class="text-h4 text-weight-bolder q-ma-none q-mr-md tracking-tight">Order #{{ order.order_id }}</h1>
               <q-chip 
-                size="sm" 
+                dense
+                square
                 :color="getStatusColor(order.status)" 
                 text-color="white" 
-                class="text-weight-bolder shadow-1 q-px-md" 
-                style="font-size: 13px; min-height: 26px;"
+                class="status-box-chip q-px-md" 
               >
                 {{ formatStatus(order.status) }}
               </q-chip>
@@ -480,22 +572,24 @@
           </template>
           <template v-else>
             <div class="bg-white text-slate-700 text-weight-bold q-px-lg q-py-sm shadow-1" style="border-radius: 8px; font-size: 14px;">
-              <q-icon name="lock" class="q-mr-xs" size="16px" /> Order Finalized
+              <q-icon name="lock" class="q-mr-xs" size="16px" color="red-9" /> Order Finalized
             </div>
           </template>
         </div>
       </div>
 
-      <!-- Hero Header Mobile -->
+      <!-- Hero Header Mobile (Standalone) -->
       <q-card v-else flat class="q-mb-lg shadow-4 border-none header-gradient text-white" style="border-radius: 16px;">
         <q-card-section class="q-pa-md">
           <div class="row justify-between items-center q-mb-xs no-wrap">
             <h1 class="text-h6 text-weight-bolder q-ma-none tracking-tight">Order #{{ order.order_id }}</h1>
             <q-chip 
+              dense
+              square
               :color="getStatusColor(order.status)" 
               text-color="white" 
-              class="text-weight-bolder shadow-1 q-ma-none q-px-sm" 
-              style="font-size: 11px; height: 24px; border: 1px solid rgba(255,255,255,0.4);"
+              class="status-box-chip q-ma-none" 
+              style="font-size: 11.5px; height: 26px; padding: 0 10px;"
             >
               {{ formatStatus(order.status) }}
             </q-chip>
@@ -505,20 +599,20 @@
           <q-separator color="white" style="opacity: 0.25;" class="q-my-md" />
           
           <div class="row items-center q-mb-md">
-            <q-avatar size="32px" class="q-mr-sm bg-white text-red-9 shadow-soft">
+            <q-avatar size="36px" class="q-mr-sm bg-white text-red-9 shadow-soft">
               <img v-if="order.consumer?.profile_picture_url" :src="order.consumer.profile_picture_url">
-              <q-icon v-else name="person" size="18px" />
+              <q-icon v-else name="person" size="20px" />
             </q-avatar>
             <div class="text-body2 text-weight-bold">{{ order.consumer?.full_name || 'Unknown Customer' }}</div>
           </div>
 
-          <div class="row q-col-gutter-sm">
+          <div class="row q-col-gutter-sm items-center">
             <div class="col-6">
-              <q-btn unelevated icon="print" label="Print Receipt" text-color="red-9" class="bg-white text-weight-bold full-width" style="border-radius: 8px;" no-caps size="sm" :loading="isExporting" @click="printOrder" />
+              <q-btn unelevated icon="print" label="Print Receipt" text-color="red-9" class="bg-white text-weight-bold full-width" style="border-radius: 8px; height: 38px;" no-caps size="sm" :loading="isExporting" @click="printOrder" />
             </div>
             <div class="col-6">
               <template v-if="order.status !== 'picked_up' && order.status !== 'cancelled' && order.status !== 'completed'">
-                <q-btn-dropdown :loading="isUpdating" outline color="white" label="Update Status" no-caps size="sm" class="text-weight-bold full-width" style="border-radius: 8px; background: rgba(255,255,255,0.1);">
+                <q-btn-dropdown :loading="isUpdating" outline color="white" label="Update Status" no-caps size="sm" class="text-weight-bold full-width" style="border-radius: 8px; height: 38px; background: rgba(255,255,255,0.15);">
                   <q-list class="premium-dropdown-list">
                     <q-item clickable v-close-popup @click="updateStatus('preparing')" v-if="['placed'].includes(order.status)" class="hover-grey">
                       <q-item-section avatar class="min-w-0 q-pr-sm"><q-icon name="inventory_2" color="purple-5" size="18px"/></q-item-section>
@@ -541,8 +635,8 @@
                 </q-btn-dropdown>
               </template>
               <template v-else>
-                <div class="bg-white text-slate-700 text-weight-bold flex flex-center shadow-1" style="border-radius: 8px; font-size: 11px; height: 100%; min-height: 32px;">
-                  <q-icon name="lock" class="q-mr-xs" size="12px" /> Order Finalized
+                <div class="bg-white text-slate-700 text-weight-bold flex flex-center shadow-1 full-width" style="border-radius: 8px; font-size: 11.5px; height: 38px;">
+                  <q-icon name="lock" class="q-mr-xs" size="14px" color="red-9" /> Finalized
                 </div>
               </template>
             </div>
@@ -622,7 +716,7 @@
                   </div>
                 </q-item-section>
                 <q-item-section side class="q-pl-sm q-pl-md-lg">
-                  <div class="text-subtitle2 text-md-h6 text-weight-bold text-slate-800">₱{{ formatNumber(item.subtotal) }}</div>
+                  <div class="text-subtitle2 text-md-h6 font-medium text-slate-800">₱{{ formatNumber(item.subtotal) }}</div>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -632,11 +726,11 @@
                 <div class="col-12 col-sm-6 col-md-5">
                   <div class="row justify-between q-mb-sm text-slate-600 font-medium text-body2">
                     <div>Subtotal</div>
-                    <div class="text-weight-bold text-slate-800">₱{{ formatNumber(order.total_amount) }}</div>
+                    <div class="text-slate-800 font-medium">₱{{ formatNumber(order.total_amount) }}</div>
                   </div>
                   <div class="row justify-between q-mb-md text-slate-600 font-medium text-body2">
                     <div>Platform Fee</div>
-                    <div class="text-weight-bold text-slate-800">₱{{ formatNumber(order.platform_fee || 0) }}</div>
+                    <div class="text-slate-800 font-medium">₱{{ formatNumber(order.platform_fee || 0) }}</div>
                   </div>
                   <div class="border-dotted q-my-sm q-my-md-md"></div>
                   <div class="row justify-between items-end text-dark q-mt-sm">
@@ -832,8 +926,8 @@ const confirmCancelOrder = async () => {
 const getStatusColor = (status) => {
   switch (String(status).toLowerCase()) {
     case 'placed': return 'blue-6'
-    case 'preparing': return 'amber-7'
-    case 'ready_for_pickup': return 'orange-5'
+    case 'preparing': return 'purple-5'
+    case 'ready_for_pickup': return 'orange-6'
     case 'picked_up': return 'green-6'
     case 'cancelled': return 'red-6'
     default: return 'grey-6'
@@ -939,6 +1033,10 @@ onMounted(() => {
   width: 100%;
 }
 
+.full-width {
+  width: 100% !important;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -952,7 +1050,7 @@ onMounted(() => {
   background: #f1f5f9;
 }
 
-/* Header row layout with no overlapping */
+/* Header row layout */
 .embedded-banner-title-row {
   display: flex;
   align-items: center;
@@ -967,18 +1065,25 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.status-badge-embedded {
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 11px;
+/* Standardized Soft-Box Status Chip */
+.status-box-chip {
+  border-radius: 7px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  min-height: 26px;
+  height: 26px;
+  border: none !important;
+  box-shadow: none !important;
+  letter-spacing: -0.01em;
 }
 
-/* Explicit Flex Grid for Embedded View */
+/* Explicit Flex Grid for Desktop Embedded View */
 .embedded-grid-row {
   display: flex;
   flex-wrap: wrap;
   column-gap: 20px;
   row-gap: 20px;
+  width: 100%;
 }
 
 .grid-col-timeline {
@@ -1001,38 +1106,44 @@ onMounted(() => {
   max-width: calc(41.6666% - 10px);
 }
 
-/* Responsive adjustment: Timeline hugs content height naturally */
 .timeline-card-responsive {
   height: fit-content !important;
 }
 
-/* Embedded Mobile Collapse */
-@media (max-width: 1023px) {
-  .embedded-grid-row {
-    flex-direction: column;
-    gap: 16px;
-  }
-  .grid-col-timeline,
-  .grid-col-map,
-  .grid-col-items,
-  .grid-col-sidebar {
-    flex: 0 0 100% !important;
-    max-width: 100% !important;
-  }
-  .map-wrapper {
-    height: 220px !important;
-    min-height: 220px !important;
-  }
-  .order-id-title {
-    font-size: 17px;
-  }
+/* Embedded Mobile Overrides: Full Width, Roomy Proportions */
+.is-mobile-view .embedded-grid-row {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  margin: 0 !important;
+  gap: 16px !important;
 }
 
-/* Clean Cards with Subtle Elevation */
+.is-mobile-view .full-width-mobile,
+.is-mobile-view .grid-col-timeline,
+.is-mobile-view .grid-col-map,
+.is-mobile-view .grid-col-items,
+.is-mobile-view .grid-col-sidebar {
+  flex: 0 0 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.is-mobile-view .clean-section-card {
+  width: 100% !important;
+}
+
+.is-mobile-view .map-wrapper {
+  height: 240px !important;
+  min-height: 240px !important;
+  width: 100% !important;
+}
+
+/* Clean Cards */
 .clean-section-card {
   background: #ffffff;
-  border-radius: 14px;
-  border: 1px solid rgba(226, 232, 240, 0.6);
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.7);
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
 }
 
@@ -1041,8 +1152,8 @@ onMounted(() => {
 }
 
 .accent-header-icon {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
 }
 
@@ -1050,6 +1161,7 @@ onMounted(() => {
 .custom-step-tracker {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .tracker-item {
@@ -1057,9 +1169,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
   margin-bottom: 24px;
+  width: 100%;
 }
 
-/* Natural compact spacing for cancelled state */
 .compact-cancelled-tracker .tracker-item {
   margin-bottom: 20px;
 }
@@ -1116,16 +1228,16 @@ onMounted(() => {
 }
 
 .step-icon-box {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 10px;
   flex-shrink: 0;
 }
 
 .map-wrapper {
   height: 280px;
-  border-bottom-left-radius: 14px;
-  border-bottom-right-radius: 14px;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
   overflow: hidden;
 }
 
@@ -1146,10 +1258,10 @@ onMounted(() => {
 .cancellation-alert-card {
   background-color: #fef2f2;
   border: 1px solid #fee2e2;
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
-/* ================= STANDALONE PAGE STYLES (/vendor/orders/:id) ================= */
+/* ================= STANDALONE PAGE STYLES ================= */
 .vendor-page {
   padding: 32px 24px;
   background-color: #f8fafc;
@@ -1162,7 +1274,6 @@ onMounted(() => {
 .shrink-none, .flex-shrink-0 { flex-shrink: 0; }
 .min-w-0 { min-width: 0 !important; }
 
-/* Header & Accent Colors */
 .text-brand-red { color: #b91c1c !important; }
 .header-gradient { 
   background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%); 
@@ -1181,7 +1292,6 @@ onMounted(() => {
 .text-slate-800 { color: #1e293b; }
 .border-slate-light { border: 1px solid #e2e8f0; }
 
-/* Subtle Ambient Glows */
 .bg-glow {
   position: absolute;
   width: 500px;
@@ -1245,7 +1355,7 @@ onMounted(() => {
   background: #ffffff !important;
   border: 1px solid rgba(203, 213, 225, 0.8);
   transition: all 0.2s ease;
-  height: 36px;
+  height: 38px;
 }
 .btn-glass-outline:hover {
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
@@ -1287,7 +1397,6 @@ onMounted(() => {
   border-color: #b91c1c;
 }
 
-/* Standalone Timeline Customization */
 :deep(.q-timeline__title) {
   font-size: 15px;
   font-weight: 700;

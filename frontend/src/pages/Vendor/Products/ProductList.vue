@@ -103,7 +103,7 @@
             </div>
           </div>
 
-          <!-- Controls: Unified Toolbar (Solid Buttons) -->
+          <!-- Controls: Unified Toolbar -->
           <div class="row items-center justify-between q-col-gutter-sm">
             <div class="col-12 col-md-6 row items-center no-wrap q-gutter-x-sm">
               <q-input v-model="search" outlined dense class="custom-solid-input exact-height col-grow bg-white" placeholder="Search products...">
@@ -145,23 +145,25 @@
             </div>
 
             <div class="row q-gutter-md col-12 col-md-auto justify-end">
-              <q-btn outline icon="download" label="Export" color="grey-4" text-color="slate-700" no-caps class="btn-modern-outline exact-height text-weight-bold q-px-md" @click="openExportWizard" />
+              <!-- Red Outlined Export Button -->
+              <q-btn outline icon="download" label="Export" color="red-9" text-color="red-9" no-caps class="btn-export-red exact-height text-weight-bold q-px-md" @click="openExportWizard" />
               <q-btn unelevated icon="add" label="Add Product" color="red-9" no-caps class="btn-modern-solid exact-height text-white text-weight-bold q-px-md" @click="showAddModal = true" />
             </div>
           </div>
         </q-card-section>
 
-        <!-- Table -->
+        <!-- Table with Skeleton State -->
         <q-table
           flat
           class="custom-premium-table bg-transparent"
-          :rows="filteredProducts"
+          :rows="loading ? skeletonRows : filteredProducts"
           :columns="columns"
           row-key="inventory_id"
-          :loading="loading"
+          :pagination="{ rowsPerPage: 10 }"
         >
+          <!-- Empty State -->
           <template #no-data>
-            <div class="full-width row flex-center text-grey-6 q-pa-xl empty-state-glass">
+            <div v-if="!loading" class="full-width row flex-center text-grey-6 q-pa-xl empty-state-glass">
               <div class="text-center">
                 <q-icon name="inventory_2" size="48px" class="q-mb-md opacity-50 drop-shadow-icon" />
                 <div class="text-subtitle1 text-weight-bold text-blue-grey-8">No products found</div>
@@ -172,34 +174,67 @@
 
           <template #body-cell-image="props">
             <q-td :props="props">
-              <q-avatar size="44px" square class="bg-slate-50 shadow-soft" style="border-radius: 8px; border: 1px solid #e2e8f0;">
+              <q-skeleton v-if="loading" type="rect" width="44px" height="44px" style="border-radius: 8px;" />
+              <q-avatar v-else size="44px" square class="bg-slate-50 shadow-soft" style="border-radius: 8px; border: 1px solid #e2e8f0;">
                 <img v-if="props.row.image_url" :src="props.row.image_url" style="object-fit: contain; padding: 4px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));" />
                 <q-icon v-else name="image" color="blue-grey-3" size="24px" />
               </q-avatar>
             </q-td>
           </template>
-          
-          <template #body-cell-quantity="props">
+
+          <template #body-cell-product_name="props">
             <q-td :props="props">
-              <div class="text-weight-bold" :class="props.row.available_quantity > 0 ? 'text-blue-grey-9' : 'text-red-7'">
-                Avail: {{ props.row.available_quantity }}
-              </div>
-              <div class="text-caption text-blue-grey-4 font-medium">
-                Total: {{ props.row.stock_quantity }}
-              </div>
+              <q-skeleton v-if="loading" type="text" width="140px" height="20px" />
+              <div v-else class="text-weight-bold text-slate-800">{{ props.row.product_name }}</div>
             </q-td>
           </template>
 
-          <template #body-cell-price="props">
-            <q-td :props="props" class="text-weight-bold text-blue-grey-9 q-pr-xl">
-              <span v-if="props.row.variants && props.row.variants.length > 0" class="text-caption text-blue-grey-4 font-medium q-mr-xs">from</span>
-              ₱{{ formatNumber(props.row.price) }}
+          <template #body-cell-category="props">
+            <q-td :props="props">
+              <q-skeleton v-if="loading" type="text" width="100px" height="20px" />
+              <span v-else>{{ props.row.category?.category_name || 'Uncategorized' }}</span>
             </q-td>
           </template>
           
+          <template #body-cell-quantity="props">
+            <q-td :props="props">
+              <template v-if="loading">
+                <q-skeleton type="text" width="70px" height="16px" />
+                <q-skeleton type="text" width="55px" height="14px" class="q-mt-xs" />
+              </template>
+              <template v-else>
+                <div class="text-weight-bold" :class="props.row.available_quantity > 0 ? 'text-blue-grey-9' : 'text-red-7'">
+                  Avail: {{ props.row.available_quantity }}
+                </div>
+                <div class="text-caption text-blue-grey-4 font-medium">
+                  Total: {{ props.row.stock_quantity }}
+                </div>
+              </template>
+            </q-td>
+          </template>
+
+          <!-- Regular (Non-bold) Price -->
+          <template #body-cell-price="props">
+            <q-td :props="props" class="q-pr-xl">
+              <q-skeleton v-if="loading" type="text" width="75px" height="20px" />
+              <div v-else class="text-slate-800 price-regular">
+                <span v-if="props.row.variants && props.row.variants.length > 0" class="text-caption text-blue-grey-4 font-medium q-mr-xs">from</span>
+                ₱{{ formatNumber(props.row.price) }}
+              </div>
+            </q-td>
+          </template>
+          
+          <!-- Restored Original Status Chip Desktop -->
           <template #body-cell-status="props">
             <q-td :props="props" class="q-pl-lg">
-              <q-chip :color="getStatusBgColor(props.row.status)" :text-color="getStatusTextColor(props.row.status)" class="text-weight-bold q-px-md q-ma-none" style="font-size: 12px; min-height: 24px; border-radius: 6px;">
+              <q-skeleton v-if="loading" type="rect" width="92px" height="24px" style="border-radius: 6px;" />
+              <q-chip 
+                v-else
+                :color="getStatusBgColor(props.row.status)" 
+                :text-color="getStatusTextColor(props.row.status)" 
+                class="text-weight-bold q-px-md q-ma-none" 
+                style="font-size: 12px; min-height: 24px; border-radius: 6px;"
+              >
                 {{ formatStatus(props.row.status) }}
               </q-chip>
             </q-td>
@@ -207,22 +242,20 @@
 
           <template #body-cell-action="props">
             <q-td :props="props" class="text-right q-pr-lg">
-              <q-btn flat round dense icon="more_vert" color="blue-grey-4" class="hover-action-btn">
+              <q-skeleton v-if="loading" type="QBtn" size="sm" class="float-right" />
+              <q-btn v-else flat round dense icon="more_vert" color="blue-grey-4" class="hover-action-btn">
                 <q-menu class="premium-dropdown-list shadow-10 q-mt-xs" anchor="bottom right" self="top right" auto-close transition-show="scale" transition-hide="scale">
                   <q-list style="min-width: 130px; padding: 6px;">
-                    <!-- View -->
                     <q-item clickable @click="viewProduct(props.row)" class="hover-slate rounded-borders q-px-sm q-py-sm" style="min-height: 36px;">
                       <q-item-section side class="q-pr-sm"><q-icon name="visibility" size="18px" class="text-slate-500" /></q-item-section>
                       <q-item-section class="text-weight-medium text-slate-700">View</q-item-section>
                     </q-item>
                     
-                    <!-- Deactivate -->
                     <q-item clickable v-if="props.row.status !== 'deactivated'" @click="confirmDeactivate(props.row)" class="hover-slate rounded-borders q-px-sm q-py-sm q-mt-xs" style="min-height: 36px;">
                       <q-item-section side class="q-pr-sm"><q-icon name="block" size="18px" class="text-slate-500" /></q-item-section>
                       <q-item-section class="text-weight-medium text-slate-700">Deactivate</q-item-section>
                     </q-item>
                     
-                    <!-- Delete -->
                     <q-item clickable @click="confirmDelete(props.row)" class="hover-slate rounded-borders q-px-sm q-py-sm q-mt-xs" style="min-height: 36px;">
                       <q-item-section side class="q-pr-sm"><q-icon name="delete" size="18px" class="text-slate-500" /></q-item-section>
                       <q-item-section class="text-weight-medium text-slate-700">Delete</q-item-section>
@@ -251,7 +284,7 @@
           </div>
         </div>
 
-        <!-- ML Insights (Stacked Vertically, Spaced, Proportional) -->
+        <!-- ML Insights -->
         <div class="q-mb-xl q-gutter-y-md">
           <!-- Restock Alert -->
           <q-card class="premium-glass-card shadow-soft border-slate-light" style="border-radius: 12px;">
@@ -316,10 +349,11 @@
           <template v-slot:prepend><q-icon name="search" color="grey-6" size="20px" /></template>
         </q-input>
 
-        <!-- Export & Filter Controls (Solid Buttons) -->
+        <!-- Export & Filter Controls -->
         <div class="row q-col-gutter-sm q-mb-lg">
           <div class="col-6">
-            <q-btn outline icon="description" label="Export" color="grey-4" text-color="slate-700" class="full-width btn-modern-outline text-weight-medium" style="height: 36px; font-size: 13px;" no-caps @click="openExportWizard" />
+            <!-- Mobile Red Outlined Export Button -->
+            <q-btn outline icon="description" label="Export" color="red-9" text-color="red-9" class="full-width btn-export-red text-weight-medium" style="height: 36px; font-size: 13px;" no-caps @click="openExportWizard" />
           </div>
           <div class="col-6">
             <q-btn outline icon="filter_list" label="Filter" color="grey-4" text-color="slate-700" class="full-width btn-modern-outline text-weight-medium" style="height: 36px; font-size: 13px;" no-caps>
@@ -330,19 +364,19 @@
                     <q-btn flat label="Clear" color="red-9" class="text-weight-bold" @click="resetFilters" v-close-popup no-caps />
                   </div>
                   <div class="q-mb-md">
-                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase">Category</div>
+                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Category</div>
                     <q-select v-model="filters.category" :options="[{label: 'All Categories', value: 'all'}, ...categoryOptions]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
                   </div>
                   <div class="q-mb-md">
-                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase">Stock Level</div>
+                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Stock Level</div>
                     <q-select v-model="filters.stock" :options="[{label: 'All', value: 'all'}, {label: 'Low Stock (< 10)', value: 'low_stock'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
                   </div>
                   <div class="q-mb-md">
-                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase">Status</div>
+                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Status</div>
                     <q-select v-model="filters.status" :options="[{label: 'All', value: 'all'}, {label: 'Active', value: 'active'}, {label: 'Deactivated', value: 'deactivated'}, {label: 'Archived', value: 'archived'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
                   </div>
                   <div class="q-mb-sm">
-                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase">Price</div>
+                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Price</div>
                     <q-select v-model="filters.priceSort" :options="[{label: 'Default', value: 'default'}, {label: 'Low to High', value: 'low_to_high'}, {label: 'High to Low', value: 'high_to_low'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
                   </div>
                 </div>
@@ -351,9 +385,21 @@
           </div>
         </div>
 
-        <!-- Product List Cards -->
-        <div v-if="loading" class="flex flex-center q-py-xl">
-          <q-spinner-dots size="40px" color="red-9" />
+        <!-- Product List Mobile Cards / Skeletons -->
+        <div v-if="loading" class="q-gutter-y-md">
+          <q-card v-for="n in 4" :key="'mob-skel-' + n" flat bordered class="bg-white shadow-soft border-slate-light q-pa-md" style="border-radius: 12px;">
+            <div class="row items-center no-wrap">
+              <q-skeleton type="rect" width="64px" height="64px" style="border-radius: 10px;" class="q-mr-md flex-shrink-0" />
+              <div class="col">
+                <q-skeleton type="text" width="70%" height="18px" />
+                <q-skeleton type="text" width="40%" height="14px" class="q-mt-xs" />
+                <div class="row items-center justify-between q-mt-sm">
+                  <q-skeleton type="text" width="50px" height="18px" />
+                  <q-skeleton type="rect" width="65px" height="20px" style="border-radius: 4px;" />
+                </div>
+              </div>
+            </div>
+          </q-card>
         </div>
         <div v-else-if="filteredProducts.length === 0" class="text-center text-grey-5 q-py-xl">
           <q-icon name="inventory_2" size="48px" class="q-mb-sm opacity-50" />
@@ -361,14 +407,12 @@
         </div>
         <div v-else>
           <div v-for="product in filteredProducts" :key="product.inventory_id" class="q-mb-md">
-            <!-- Premium Mobile List Card -->
             <q-card flat bordered class="bg-white relative-position shadow-soft border-slate-light" style="border-radius: 12px;">
               
               <!-- Absolute Top Right Action Menu -->
               <div class="absolute-top-right q-pa-sm" style="z-index: 2;">
                 <q-btn flat round dense icon="more_vert" color="grey-7">
                   <q-menu class="premium-dropdown-list shadow-4" anchor="bottom right" self="top right">
-                    <!-- DENSE LIST for Mobile Actions -->
                     <q-list style="min-width: 130px; padding: 6px;">
                       <q-item clickable @click="viewProduct(product)" class="hover-slate rounded-borders q-px-sm q-py-sm" style="min-height: 36px;">
                         <q-item-section side class="q-pr-sm"><q-icon name="visibility" size="18px" class="text-slate-500" /></q-item-section>
@@ -400,9 +444,16 @@
                   <div class="text-caption text-grey-6 ellipsis q-mb-xs" style="font-size: 12px;">{{ product.category?.category_name || 'Uncategorized' }}</div>
                   
                   <div class="row items-center justify-between q-mt-xs">
-                    <div class="text-weight-bold text-deep-orange-9" style="font-size: 14px;">₱ {{ formatNumber(product.price) }}</div>
+                    <div class="text-slate-800 price-regular" style="font-size: 14px;">₱{{ formatNumber(product.price) }}</div>
                     
-                    <q-chip :color="getStatusBgColor(product.status)" :text-color="getStatusTextColor(product.status)" size="sm" class="text-weight-bold q-ma-none" style="border-radius: 4px; height: 20px;">
+                    <!-- Restored Original Status Chip Mobile -->
+                    <q-chip 
+                      :color="getStatusBgColor(product.status)" 
+                      :text-color="getStatusTextColor(product.status)" 
+                      size="sm" 
+                      class="text-weight-bold q-ma-none" 
+                      style="border-radius: 4px; height: 20px;"
+                    >
                       {{ formatStatus(product.status) }}
                     </q-chip>
                   </div>
@@ -416,7 +467,7 @@
 
     </div>
 
-    <!-- Modals (Passing Details Mode) -->
+    <!-- Modals -->
     <AddProductModal v-model="showAddModal" @refresh="fetchProducts" />
     <ProductDetailsModal v-model="showDetailsModal" :product="selectedProduct" :mode="detailsMode" @refresh="fetchProducts" />
 
@@ -502,6 +553,10 @@ const selectedProduct = ref(null)
 
 const detailsMode = ref('view') 
 
+const skeletonRows = Array.from({ length: 6 }, (_, index) => ({
+  inventory_id: `skeleton-${index}`
+}))
+
 const filters = reactive({
   stock: 'all',
   category: 'all',
@@ -571,139 +626,138 @@ const exportStep = ref(1)
 const exportFormat = ref('pdf')
 
 const openExportWizard = () => {
-    exportStep.value = 1
-    exportFormat.value = 'pdf'
-    showExportModal.value = true
+  exportStep.value = 1
+  exportFormat.value = 'pdf'
+  showExportModal.value = true
 }
 
 const proceedToPreview = (format) => {
-    exportFormat.value = format
-    exportStep.value = 2
+  exportFormat.value = format
+  exportStep.value = 2
 }
 
 const executeFinalExport = async () => {
-    if (exportFormat.value === 'pdf') {
-        try {
-            isExporting.value = true
-            const response = await api.get('/vendor/inventory/export', { responseType: 'blob' })
-            const blob = new Blob([response.data], { type: 'application/pdf' })
-            const url = window.URL.createObjectURL(blob)
-            
-            const link = document.createElement('a')
-            link.href = url
-            link.download = `Tindahan-Inventory-Report-${Date.now()}.pdf`
-            document.body.appendChild(link)
-            link.click()
-            document.body.removeChild(link)
-            
-            setTimeout(() => window.URL.revokeObjectURL(url), 1000)
-            showExportModal.value = false
-        } catch (error) {
-            console.error('PDF Export failed:', error)
-            $q.notify({ type: 'negative', message: 'Failed to generate PDF report', color: 'dark' })
-        } finally {
-            isExporting.value = false
-        }
-    } else {
-        try {
-            isExporting.value = true
-            
-            const response = await api.get('/vendor/inventory/export-html')
-            const htmlContent = response.data.html
-            
-            const container = document.createElement('div')
-            container.innerHTML = htmlContent
-            container.style.position = 'absolute'
-            container.style.left = '-9999px'
-            container.style.top = '0'
-            container.style.width = '840px'
-            document.body.appendChild(container)
-            
-            await nextTick()
-            
-            const images = container.querySelectorAll('img')
-            const imagePromises = Array.from(images).map(async (img) => {
-                if (!img.complete) {
-                    await new Promise((resolve) => {
-                        img.onload = resolve
-                        img.onerror = resolve
-                    })
-                }
-                if (img.decode) {
-                    try {
-                        await img.decode()
-                    } catch (e) {
-                    }
-                }
-            })
-            await Promise.all([
-                ...imagePromises,
-                document.fonts ? document.fonts.ready : Promise.resolve()
-            ])
-            
-            const allImages = container.querySelectorAll('img');
-            allImages.forEach(img => {
-                if (img.src && img.src.startsWith('data:image')) {
-                    try {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.naturalWidth || img.width || 240;
-                        canvas.height = img.naturalHeight || img.height || 160;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        
-                        canvas.style.cssText = img.style.cssText;
-                        canvas.className = img.className;
-                        if (img.hasAttribute('width')) canvas.style.width = img.getAttribute('width') + 'px';
-                        if (img.hasAttribute('height')) canvas.style.height = img.getAttribute('height') + 'px';
-                        
-                        img.parentNode.replaceChild(canvas, img);
-                    } catch (e) {
-                        console.warn('Failed to convert image to canvas for export', e);
-                    }
-                }
-            });
-            
-            const pages = container.querySelectorAll('.page')
-            if (pages.length > 0) {
-                for (let i = 0; i < pages.length; i++) {
-                    const canvas = await html2canvas(pages[i], {
-                        scale: 2,
-                        useCORS: true,
-                        allowTaint: true,
-                        logging: false,
-                        backgroundColor: '#ffffff'
-                    })
-                    
-                    const imageLink = document.createElement('a')
-                    imageLink.download = `inventory-report-page-${i + 1}-${Date.now()}.png`
-                    imageLink.href = canvas.toDataURL('image/png')
-                    imageLink.click()
-                    
-                    await new Promise(r => setTimeout(r, 500))
-                }
-            } else {
-                const canvas = await html2canvas(container, {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
-                    logging: false
-                })
-                
-                const imageLink = document.createElement('a')
-                imageLink.download = `inventory-report-${Date.now()}.png`
-                imageLink.href = canvas.toDataURL('image/png')
-                imageLink.click()
-            }
-            
-            document.body.removeChild(container)
-            showExportModal.value = false
-        } catch (error) {
-            console.error('Detailed Image Export Error:', error)
-            $q.notify({ type: 'negative', message: 'Failed to generate Image report', color: 'dark' })
-        } finally {
-            isExporting.value = false
-        }
+  if (exportFormat.value === 'pdf') {
+    try {
+      isExporting.value = true
+      const response = await api.get('/vendor/inventory/export', { responseType: 'blob' })
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Tindahan-Inventory-Report-${Date.now()}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000)
+      showExportModal.value = false
+    } catch (error) {
+      console.error('PDF Export failed:', error)
+      $q.notify({ type: 'negative', message: 'Failed to generate PDF report', color: 'dark' })
+    } finally {
+      isExporting.value = false
     }
+  } else {
+    try {
+      isExporting.value = true
+      
+      const response = await api.get('/vendor/inventory/export-html')
+      const htmlContent = response.data.html
+      
+      const container = document.createElement('div')
+      container.innerHTML = htmlContent
+      container.style.position = 'absolute'
+      container.style.left = '-9999px'
+      container.style.top = '0'
+      container.style.width = '840px'
+      document.body.appendChild(container)
+      
+      await nextTick()
+      
+      const images = container.querySelectorAll('img')
+      const imagePromises = Array.from(images).map(async (img) => {
+        if (!img.complete) {
+          await new Promise((resolve) => {
+            img.onload = resolve
+            img.onerror = resolve
+          })
+        }
+        if (img.decode) {
+          try {
+            await img.decode()
+          } catch (e) {}
+        }
+      })
+      await Promise.all([
+        ...imagePromises,
+        document.fonts ? document.fonts.ready : Promise.resolve()
+      ])
+      
+      const allImages = container.querySelectorAll('img')
+      allImages.forEach(img => {
+        if (img.src && img.src.startsWith('data:image')) {
+          try {
+            const canvas = document.createElement('canvas')
+            canvas.width = img.naturalWidth || img.width || 240
+            canvas.height = img.naturalHeight || img.height || 160
+            const ctx = canvas.getContext('2d')
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+            
+            canvas.style.cssText = img.style.cssText
+            canvas.className = img.className
+            if (img.hasAttribute('width')) canvas.style.width = img.getAttribute('width') + 'px'
+            if (img.hasAttribute('height')) canvas.style.height = img.getAttribute('height') + 'px'
+            
+            img.parentNode.replaceChild(canvas, img)
+          } catch (e) {
+            console.warn('Failed to convert image to canvas for export', e)
+          }
+        }
+      })
+      
+      const pages = container.querySelectorAll('.page')
+      if (pages.length > 0) {
+        for (let i = 0; i < pages.length; i++) {
+          const canvas = await html2canvas(pages[i], {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+          })
+          
+          const imageLink = document.createElement('a')
+          imageLink.download = `inventory-report-page-${i + 1}-${Date.now()}.png`
+          imageLink.href = canvas.toDataURL('image/png')
+          imageLink.click()
+          
+          await new Promise(r => setTimeout(r, 500))
+        }
+      } else {
+        const canvas = await html2canvas(container, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false
+        })
+        
+        const imageLink = document.createElement('a')
+        imageLink.download = `inventory-report-${Date.now()}.png`
+        imageLink.href = canvas.toDataURL('image/png')
+        imageLink.click()
+      }
+      
+      document.body.removeChild(container)
+      showExportModal.value = false
+    } catch (error) {
+      console.error('Detailed Image Export Error:', error)
+      $q.notify({ type: 'negative', message: 'Failed to generate Image report', color: 'dark' })
+    } finally {
+      isExporting.value = false
+    }
+  }
 }
 
 const categoryOptions = computed(() => {
@@ -735,7 +789,7 @@ const getStatusBgColor = (status) => {
 const getStatusTextColor = (status) => {
   switch (String(status || 'active').toLowerCase()) {
     case 'active': return 'green-8'
-    case 'deactivated':
+    case 'deactivated': 
     case 'inactive': return 'red-8'
     case 'archived': return 'grey-8'
     case 'out of stock': return 'orange-9'
@@ -746,6 +800,7 @@ const getStatusTextColor = (status) => {
 const formatNumber = (num) => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const fetchProducts = async () => {
+  loading.value = true
   try {
     const res = await api.get('/vendor/products')
     products.value = res.data || []
@@ -886,6 +941,11 @@ onMounted(() => {
 .text-slate-800 { color: #1e293b; }
 .border-slate-light { border: 1px solid #e2e8f0; }
 
+/* Non-bold Typography Helper */
+.price-regular {
+  font-weight: 500 !important;
+}
+
 /* Subtle Ambient Glows */
 .bg-glow {
   position: absolute;
@@ -1004,6 +1064,21 @@ onMounted(() => {
   background-color: #f8fafc !important;
 }
 
+/* Red Outlined Export Button */
+.btn-export-red {
+  border-radius: 8px !important;
+  background-color: #ffffff !important;
+  border: 1px solid #b91c1c !important;
+  color: #b91c1c !important;
+  transition: all 0.2s ease;
+}
+.btn-export-red:hover {
+  background-color: #fef2f2 !important;
+  border-color: #991b1b !important;
+  color: #991b1b !important;
+  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.15);
+}
+
 .btn-modern-solid {
   border-radius: 8px !important;
   transition: all 0.2s ease;
@@ -1069,7 +1144,7 @@ onMounted(() => {
   transform: scale(0.95) !important;
 }
 
-/* Dropdown styling & Neutral Hover Action (No Frosted Glass) */
+/* Dropdown styling & Neutral Hover Action */
 .premium-dropdown-list {
   background: #ffffff;
   border: 1px solid rgba(226, 232, 240, 0.8);
