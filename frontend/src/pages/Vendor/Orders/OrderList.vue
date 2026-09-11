@@ -12,11 +12,10 @@
           
           <!-- Title & Subtitle Group -->
           <div class="row items-center no-wrap col q-pr-sm">
-            <div class="glass-icon-box q-mr-md shrink-none">
-              <q-icon name="receipt_long" size="26px" class="text-brand-red" />
+            <div class="glass-icon-box q-mr-md shrink-none" :style="$q.screen.lt.md ? 'width: 44px; height: 44px;' : 'width: 48px; height: 48px;'">
+              <q-icon name="receipt_long" :size="$q.screen.lt.md ? '22px' : '26px'" class="text-brand-red" />
             </div>
             <div class="col">
-              <!-- Desktop uses standard text-h4, mobile uses text-h5 -->
               <h1 class="text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight" :class="$q.screen.lt.md ? 'text-h5' : 'text-h4'" style="line-height: 1.1;">Order List</h1>
               <p class="text-blue-grey-5 q-mt-xs q-mb-none" :class="$q.screen.lt.md ? 'text-caption' : 'text-body1'" style="line-height: 1.3;">
                 Manage and track all neighborhood customer orders.
@@ -24,11 +23,9 @@
             </div>
           </div>
 
-          <!-- Export Button Group -->
-          <div class="col-auto flex flex-center">
-            <!-- Desktop Export Button -->
+          <!-- Desktop Export Button -->
+          <div v-if="!$q.screen.lt.md" class="col-auto flex flex-center">
             <q-btn 
-              v-if="!$q.screen.lt.md"
               outline 
               icon="download" 
               label="Export Report" 
@@ -38,21 +35,6 @@
               :loading="isExporting" 
               @click="exportOrders" 
             />
-            
-            <!-- Mobile Export Button with Text -->
-            <div v-else class="column items-center justify-center cursor-pointer" @click="exportOrders">
-              <q-btn 
-                outline 
-                icon="download" 
-                color="red-9" 
-                class="btn-glass-outline" 
-                style="padding: 8px;"
-                round
-                dense
-                :loading="isExporting" 
-              />
-              <span class="text-red-9 text-weight-bold q-mt-xs" style="font-size: 10px; letter-spacing: 0.5px;">EXPORT</span>
-            </div>
           </div>
           
         </div>
@@ -61,26 +43,57 @@
       <!-- ================= CONTROLS & TABLE ================= -->
       <q-card class="premium-glass-card" style="border-radius: 16px;">
         
-        <!-- Search & Filters (Side-by-side on desktop, stacked on mobile) -->
-        <q-card-section class="q-pa-md q-pa-lg-lg border-bottom row items-center justify-between q-col-gutter-y-md q-col-gutter-x-md">
+        <!-- Search, Filters, & Mobile Export Controls -->
+        <q-card-section class="q-pa-md q-pa-lg-lg border-bottom row items-center justify-between q-col-gutter-y-sm q-col-gutter-x-md">
           
-          <!-- Search -->
+          <!-- Search & Mobile Export Row (1-Line on mobile with Export label) -->
           <div class="col-12 col-md-5 col-lg-4">
-            <q-input v-model="search" outlined dense class="custom-glass-input exact-height" placeholder="Search Order ID or Customer...">
-              <template v-slot:prepend>
-                <q-icon name="search" />
-              </template>
-            </q-input>
+            <div class="row items-center no-wrap q-gutter-x-xs full-width">
+              <q-input 
+                v-model="search" 
+                outlined 
+                dense 
+                class="custom-glass-input exact-height col" 
+                placeholder="Search Order ID or Customer..."
+                hide-bottom-space
+              >
+                <template v-slot:prepend>
+                  <q-icon name="search" size="18px" />
+                </template>
+                <template v-if="search" v-slot:append>
+                  <q-icon name="close" size="16px" class="cursor-pointer text-slate-400" @click="search = ''" />
+                </template>
+              </q-input>
+
+              <!-- Mobile-only Export Button with text label beside Search -->
+              <q-btn
+                v-if="$q.screen.lt.md"
+                outline
+                dense
+                no-caps
+                color="red-9"
+                class="btn-mobile-export bg-white flex-shrink-0 q-px-sm"
+                icon="download"
+                label="Export"
+                :loading="isExporting"
+                @click="exportOrders"
+              >
+                <q-tooltip>Export Report</q-tooltip>
+              </q-btn>
+            </div>
           </div>
 
-          <!-- Filters (Connected group on desktop, swipeable on mobile) -->
-          <div class="col-12 col-md-7 col-lg-8 flex justify-md-end scroll-container">
+          <!-- Clean Horizontal Scrollable Filters -->
+          <div class="col-12 col-md-7 col-lg-8 flex justify-md-end scroll-container-clean">
             <q-btn-group flat class="bg-slate-50 border-slate-light rounded-borders q-pa-xs items-stretch filter-group-wrapper">
-              <q-btn v-for="status in statuses" :key="status" :label="status" 
+              <q-btn 
+                v-for="status in statuses" 
+                :key="status" 
+                :label="status" 
                 v-ripple
                 :unelevated="activeStatus === status" 
                 :flat="activeStatus !== status"
-                :class="activeStatus === status ? 'bg-gradient-red text-white shadow-3' : 'text-blue-grey-6 hover-text-dark'" 
+                :class="activeStatus === status ? 'bg-gradient-red text-white shadow-1' : 'text-blue-grey-6 hover-text-dark'" 
                 no-caps 
                 class="filter-pill q-px-md text-weight-bold transition-ease text-no-wrap" 
                 style="font-size: 13px;"
@@ -96,21 +109,13 @@
           flat
           class="custom-premium-table"
           :class="{ 'bg-transparent': $q.screen.lt.md }"
-          :rows="filteredOrders"
+          :rows="loading ? skeletonRows : filteredOrders"
           :columns="columns"
           row-key="order_id"
-          :loading="loading"
           @row-click="onRowClick"
           card-container-class="q-col-gutter-md q-pa-sm"
+          :pagination="{ rowsPerPage: 10 }"
         >
-          <!-- Loading State -->
-          <template #loading>
-            <q-inner-loading showing class="bg-white opacity-80" style="backdrop-filter: blur(4px); z-index: 10;">
-              <q-spinner-dots size="50px" color="red-9" />
-              <div class="text-red-9 text-weight-bold q-mt-sm tracking-tight">Fetching orders...</div>
-            </q-inner-loading>
-          </template>
-
           <!-- Empty State -->
           <template #no-data>
             <div class="full-width row flex-center q-pa-xl empty-state-glass" v-show="!loading">
@@ -126,26 +131,54 @@
           <!-- ================= DESKTOP TABLE FORMATTERS ================= -->
           <template #body-cell-order_id="props">
             <q-td :props="props">
-              <!-- Reverted back to strictly #ID for desktop view -->
-              <span class="order-id-badge text-weight-bold text-red-8 q-px-sm q-py-xs bg-red-1 transition-ease">#{{ props.row.order_id }}</span>
+              <q-skeleton v-if="loading" type="rect" width="60px" height="22px" style="border-radius: 6px;" />
+              <span v-else class="order-id-badge text-weight-bold text-red-8 q-px-sm q-py-xs bg-red-1 transition-ease">#{{ props.row.order_id }}</span>
+            </q-td>
+          </template>
+
+          <template #body-cell-date="props">
+            <q-td :props="props">
+              <q-skeleton v-if="loading" type="text" width="110px" height="20px" />
+              <span v-else class="text-slate-600">{{ formatDate(props.row.created_at) }}</span>
             </q-td>
           </template>
 
           <template #body-cell-customer="props">
             <q-td :props="props">
-              <div class="row items-center">
+              <div v-if="loading" class="row items-center no-wrap">
+                <q-skeleton type="QAvatar" size="32px" class="q-mr-sm" />
+                <q-skeleton type="text" width="130px" height="20px" />
+              </div>
+              <div v-else class="row items-center">
                 <q-avatar size="32px" class="q-mr-sm bg-blue-grey-1 shadow-soft border-white">
                   <img v-if="props.row.consumer?.profile_picture_url" :src="props.row.consumer.profile_picture_url">
                   <q-icon v-else name="person" color="blue-grey-6" size="22px" />
                 </q-avatar>
-                <div class="text-weight-bold">{{ props.row.consumer?.full_name || 'Unknown' }}</div>
+                <div class="text-weight-bold text-slate-800">{{ props.row.consumer?.full_name || 'Unknown' }}</div>
               </div>
             </q-td>
           </template>
+
+          <!-- Non-bold Desktop Price -->
+          <template #body-cell-price="props">
+            <q-td :props="props">
+              <q-skeleton v-if="loading" type="text" width="80px" height="20px" />
+              <span v-else class="text-slate-800 price-regular">₱{{ formatNumber(props.row.total_amount) }}</span>
+            </q-td>
+          </template>
           
+          <!-- Box with Rounded Corners Status Chip Desktop -->
           <template #body-cell-status="props">
             <q-td :props="props">
-              <q-chip :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bolder status-chip q-px-md shadow-1" style="font-size: 13px;">
+              <q-skeleton v-if="loading" type="rect" width="102px" height="28px" style="border-radius: 7px;" />
+              <q-chip 
+                v-else
+                dense
+                square
+                :color="getStatusColor(props.row.status)" 
+                text-color="white" 
+                class="status-box-chip q-px-md"
+              >
                 {{ formatStatus(props.row.status) }}
               </q-chip>
             </q-td>
@@ -153,20 +186,50 @@
 
           <template #body-cell-action="props">
             <q-td :props="props" class="text-right">
-              <q-btn flat round dense icon="chevron_right" color="blue-grey-4" class="hover-action-btn transition-ease" @click.stop="goToOrder(props.row.order_id)" />
+              <q-skeleton v-if="loading" type="QBtn" size="sm" class="float-right" />
+              <q-btn v-else flat round dense icon="chevron_right" color="blue-grey-4" class="hover-action-btn transition-ease" @click.stop="goToOrder(props.row.order_id)" />
             </q-td>
           </template>
 
           <!-- ================= MOBILE GRID CARD LAYOUT ================= -->
           <template #item="props">
             <div class="col-12 col-sm-6">
-              <q-card class="mobile-grid-card q-pa-md transition-ease shadow-soft" bordered @click="onRowClick($event, props.row)">
-                
+              <!-- Mobile Skeleton Card -->
+              <q-card v-if="loading" class="mobile-grid-card q-pa-md shadow-soft" bordered>
                 <div class="row justify-between items-center q-mb-sm">
-                  <!-- Kept 'Order #1' exclusively for the mobile view layout -->
+                  <q-skeleton type="rect" width="75px" height="24px" style="border-radius: 6px;" />
+                  <q-skeleton type="rect" width="95px" height="26px" style="border-radius: 7px;" />
+                </div>
+                <q-separator class="q-my-sm" color="grey-2" />
+                <div class="row items-center q-mb-md">
+                  <q-skeleton type="QAvatar" size="44px" class="q-mr-md" />
+                  <div class="col">
+                    <q-skeleton type="text" width="120px" height="20px" />
+                    <q-skeleton type="text" width="80px" height="16px" class="q-mt-xs" />
+                  </div>
+                </div>
+                <div class="row justify-between items-end">
+                  <div>
+                    <q-skeleton type="text" width="70px" height="14px" />
+                    <q-skeleton type="text" width="90px" height="22px" class="q-mt-xs" />
+                  </div>
+                  <q-skeleton type="QBtn" size="sm" />
+                </div>
+              </q-card>
+
+              <!-- Mobile Loaded Card -->
+              <q-card v-else class="mobile-grid-card q-pa-md transition-ease shadow-soft" bordered @click="onRowClick($event, props.row)">
+                <div class="row justify-between items-center q-mb-sm">
                   <span class="order-id-badge text-weight-bold text-red-8 q-px-sm bg-red-1" style="font-size: 13px; padding-top: 4px; padding-bottom: 4px;">Order #{{ props.row.order_id }}</span>
                   
-                  <q-chip :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bold shadow-1 q-ma-none" style="font-size: 12px; height: 26px; padding: 0 12px;">
+                  <q-chip 
+                    dense
+                    square
+                    :color="getStatusColor(props.row.status)" 
+                    text-color="white" 
+                    class="status-box-chip q-ma-none" 
+                    style="font-size: 12px; height: 26px; padding: 0 12px;"
+                  >
                     {{ formatStatus(props.row.status) }}
                   </q-chip>
                 </div>
@@ -186,43 +249,17 @@
                 
                 <div class="row justify-between items-end">
                   <div>
-                    <div class="text-weight-bold text-blue-grey-4" style="text-transform: uppercase; font-size: 11px;">Total Amount</div>
-                    <div class="text-weight-bolder text-dark text-subtitle1" style="line-height: 1;">₱{{ formatNumber(props.row.total_amount) }}</div>
+                    <div class="text-weight-medium text-blue-grey-4" style="text-transform: uppercase; font-size: 11px;">Total Amount</div>
+                    <div class="text-slate-800 text-subtitle1 price-regular" style="line-height: 1.1;">₱{{ formatNumber(props.row.total_amount) }}</div>
                   </div>
                   <q-btn flat round dense icon="chevron_right" color="blue-grey-3" />
                 </div>
-                
               </q-card>
             </div>
           </template>
 
         </q-table>
       </q-card>
-
-      <!-- ================= PREMIUM MOBILE BOTTOM NAVIGATION ================= -->
-      <div v-if="$q.screen.lt.md" class="mobile-bottom-nav row justify-around items-center">
-        <div class="nav-item-wrapper" @click="router.push('/vendor/dashboard')">
-          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-            <q-icon name="home" size="26px" />
-          </q-btn>
-        </div>
-        <div class="nav-item-wrapper" @click="router.push('/vendor/orders/list')">
-          <!-- Active state applied to Orders -->
-          <q-btn flat round class="mobile-nav-btn nav-active shadow-3">
-            <q-icon name="receipt_long" size="24px" />
-          </q-btn>
-        </div>
-        <div class="nav-item-wrapper" @click="router.push('/vendor/products/list')">
-          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-            <q-icon name="inventory_2" size="26px" />
-          </q-btn>
-        </div>
-        <div class="nav-item-wrapper" @click="router.push('/vendor/sales')">
-          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-            <q-icon name="analytics" size="26px" />
-          </q-btn>
-        </div>
-      </div>
 
     </div>
   </q-page>
@@ -242,6 +279,10 @@ const isExporting = ref(false)
 
 const orders = ref([])
 
+const skeletonRows = Array.from({ length: 6 }, (_, index) => ({
+  order_id: `skeleton-${index}`
+}))
+
 const columns = [
   { name: 'order_id', label: 'Order ID', field: 'order_id', align: 'left', sortable: true },
   { name: 'date', label: 'Date', field: row => formatDate(row.created_at), align: 'left', sortable: true },
@@ -255,12 +296,12 @@ const filteredOrders = computed(() => {
   return orders.value.filter(order => {
     const matchesSearch = search.value === '' || 
       String(order.order_id).includes(search.value) || 
-      (order.consumer?.full_name || '').toLowerCase().includes(search.value.toLowerCase());
+      (order.consumer?.full_name || '').toLowerCase().includes(search.value.toLowerCase())
       
     const matchesStatus = activeStatus.value === 'All' || 
-      formatStatus(order.status).toLowerCase() === activeStatus.value.toLowerCase();
+      formatStatus(order.status).toLowerCase() === activeStatus.value.toLowerCase()
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus
   })
 })
 
@@ -292,6 +333,7 @@ const goToOrder = (id) => {
 }
 
 const onRowClick = (evt, row) => {
+  if (loading.value) return
   goToOrder(row.order_id)
 }
 
@@ -307,6 +349,7 @@ const exportOrders = async () => {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    setTimeout(() => window.URL.revokeObjectURL(url), 1000)
   } catch (error) {
     console.error('Export failed:', error)
   } finally {
@@ -316,15 +359,13 @@ const exportOrders = async () => {
 
 onMounted(async () => {
   try {
-    setTimeout(async () => {
-      const res = await api.get('/vendor/orders')
-      if (res.data) {
-        orders.value = res.data.data || res.data
-      }
-      loading.value = false
-    }, 800)
+    const res = await api.get('/vendor/orders')
+    if (res.data) {
+      orders.value = res.data.data || res.data
+    }
   } catch (error) {
     console.error('Failed to load orders', error)
+  } finally {
     loading.value = false
   }
 })
@@ -344,6 +385,11 @@ onMounted(async () => {
 .text-brand-red { color: #b91c1c !important; }
 .bg-gradient-red { background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important; }
 
+/* Non-bold Typography Helper */
+.price-regular {
+  font-weight: 500 !important;
+}
+
 /* Background Glows */
 .bg-glow { position: absolute; width: 500px; height: 500px; border-radius: 50%; filter: blur(140px); z-index: 0; opacity: 0.15; pointer-events: none; }
 .bg-glow-primary { top: -50px; left: -50px; background: radial-gradient(circle, rgba(185, 28, 28, 0.25) 0%, transparent 70%); }
@@ -354,7 +400,7 @@ onMounted(async () => {
 
 /* Icon Box */
 .glass-icon-box {
-  width: 48px; height: 48px; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(185, 28, 28, 0.1); 
 }
 
@@ -371,13 +417,29 @@ onMounted(async () => {
 .btn-glass-outline { border-radius: 8px !important; background: rgba(255, 255, 255, 0.9) !important; border: 1px solid currentColor; transition: all 0.2s ease; }
 .btn-glass-outline:hover { background: #ffffff !important; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05); transform: translateY(-2px); }
 
+/* Mobile Export Button with Label */
+.btn-mobile-export {
+  height: 40px !important;
+  border-radius: 8px !important;
+  border: 1px solid #fecdd3 !important;
+  background-color: #fff1f2 !important;
+  color: #b91c1c !important;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: -0.01em;
+  transition: all 0.2s ease;
+}
+.btn-mobile-export:active {
+  background-color: #fee2e2 !important;
+  transform: scale(0.97);
+}
+
 /* Utilities */
 .border-bottom { border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
 .bg-slate-50 { background-color: #f8fafc; }
 .border-slate-light { border: 1px solid #e2e8f0; }
 .transition-ease { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
 .hover-text-dark:hover { color: #1e293b !important; }
-.opacity-80 { opacity: 0.85; }
 .filter-pill { border-radius: 6px; }
 
 /* Custom Premium Table Styling */
@@ -388,7 +450,19 @@ onMounted(async () => {
 :deep(.custom-premium-table tbody tr:hover .order-id-badge) { background: rgba(185, 28, 28, 0.1) !important; color: #b91c1c !important; border-color: rgba(185, 28, 28, 0.4) !important; }
 
 .order-id-badge { font-family: monospace; font-size: 13px; border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 6px; }
-.status-chip { border: 1px solid rgba(255,255,255,0.8); }
+
+/* Soft Box Status Chip */
+.status-box-chip {
+  border-radius: 7px !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  min-height: 28px;
+  height: 28px;
+  border: none !important;
+  box-shadow: none !important;
+  letter-spacing: -0.01em;
+}
+
 .border-white { border: 2px solid #ffffff; }
 
 /* Mobile Grid Card Styling */
@@ -400,67 +474,21 @@ onMounted(async () => {
 }
 .mobile-grid-card:active { transform: scale(0.98); background: #f8fafc; }
 
-/* Native Swiping for Mobile Filters */
-.scroll-container {
+/* Clean horizontal scrolling for mobile filters */
+.scroll-container-clean {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  width: 100%;
+  padding-bottom: 2px;
 }
-.scroll-container::-webkit-scrollbar { display: none; }
+.scroll-container-clean::-webkit-scrollbar { display: none; }
 
 /* Mobile overrides */
 @media (max-width: 767px) {
-  .vendor-page.mobile-page-padding { padding: 16px 12px calc(80px + env(safe-area-inset-bottom)) 12px !important; }
+  .vendor-page.mobile-page-padding { padding: 16px 12px 32px 12px !important; }
   .desktop-only { display: none !important; }
   .mobile-only { display: block !important; }
   .full-width-mobile { width: 100%; }
-  .scroll-container {
-    margin-left: -16px;
-    margin-right: -16px;
-    padding-left: 16px;
-    padding-right: 16px;
-    padding-bottom: 8px; /* Room for shadow */
-  }
-
-  /* Premium Glass Floating Bottom Navigation */
-  .mobile-bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: calc(75px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-top: 1px solid rgba(255, 255, 255, 0.5);
-    z-index: 2000;
-    box-shadow: 0 -10px 25px rgba(15, 23, 42, 0.05);
-  }
-  
-  .nav-item-wrapper {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .mobile-nav-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    padding: 0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .nav-active {
-    background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
-    color: #ffffff !important;
-    box-shadow: 0 8px 16px rgba(185, 28, 28, 0.35) !important;
-    transform: translateY(-4px);
-  }
-  .nav-active .q-icon {
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-  }
 }
 </style>

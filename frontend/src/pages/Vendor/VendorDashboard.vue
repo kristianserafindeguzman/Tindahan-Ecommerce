@@ -4,13 +4,12 @@
     <div class="bg-glow bg-glow-primary"></div>
     <div class="bg-glow bg-glow-secondary"></div>
 
-    <!-- Warm Glassmorphic Sari-Sari Store Loading Screen (Fixed Centering) -->
+    <!-- Warm Glassmorphic Sari-Sari Store Loading Screen -->
     <transition name="fade-fast">
       <div v-if="checkingAccess" class="checking-access-overlay z-max flex flex-center glass-backdrop">
         <div class="bg-glow bg-glow-primary pulse-bg-glow" style="opacity: 0.4;"></div>
         
         <div class="loader-glass-card column flex-center shadow-soft">
-          <!-- Animated Sari-Sari Hub with Floating Retail Motifs -->
           <div class="store-icon-wrapper relative-position flex flex-center q-mb-md">
             <div class="soft-glow-ring"></div>
             
@@ -30,7 +29,6 @@
             </div>
           </div>
           
-          <!-- Context-Aware Dynamic Messages -->
           <div class="text-h6 text-weight-bolder text-blue-grey-9 tracking-wide q-mt-sm row items-center no-wrap">
             <span>{{ loadingTitle }}</span>
             <span class="loading-dots"></span>
@@ -55,7 +53,6 @@
         
         <!-- ================= DYNAMIC TIME-SYNCED HEADER ================= -->
         <div class="welcome-banner q-mb-lg q-pa-lg row items-center justify-between transition-theme card-rounded" :class="headerThemeClass">
-          <!-- Left: Date, Greeting, Subtitle -->
           <div class="col-12 col-md-7 col-lg-7">
             <div class="row items-center q-mb-xs">
               <q-icon name="today" size="16px" :class="subTextClass" class="q-mr-xs opacity-80" />
@@ -72,7 +69,6 @@
             </p>
           </div>
 
-          <!-- Right: Unified Store Control Capsule -->
           <div class="col-12 col-md-5 col-lg-5 flex justify-end items-center">
             <div class="unified-store-capsule row items-center no-wrap shadow-soft" :class="capsuleThemeClass">
               <div class="store-status-section row items-center no-wrap q-px-md q-py-sm">
@@ -154,7 +150,7 @@
           </div>
         </div>
 
-        <!-- ================= REVENUE & ML BLUEPRINT ================= -->
+        <!-- ================= REVENUE & ML PREDICTION ================= -->
         <div class="row q-col-gutter-lg q-mb-xl">
           <!-- Revenue Chart -->
           <div class="col-12 col-md-7">
@@ -196,65 +192,124 @@
             </q-card>
           </div>
 
-          <!-- ML Blueprint Container -->
+          <!-- ML Demand Forecast Card -->
           <div class="col-12 col-md-5">
-            <q-card class="ml-blueprint-card card-rounded h-full card-hover">
-              <q-card-section class="q-pa-md q-pa-md-lg relative-position h-full column">
-                <div class="ml-glow-overlay"></div>
+            <q-card class="ai-forecast-terminal card-rounded h-full card-hover relative-position overflow-hidden flex column">
+              <div class="ai-terminal-grid"></div>
+              <div class="ai-orb-glow"></div>
+              <div class="ai-orb-secondary"></div>
+
+              <q-card-section class="q-pa-lg relative-position z-top flex-grow-1 column">
+                <!-- Top Badge & Header -->
                 <div class="row items-center justify-between q-mb-md">
-                  <div class="row items-center">
-                    <q-icon name="model_training" size="24px" color="amber-3" class="q-mr-sm drop-shadow-icon" />
-                    <span class="text-h6 text-white text-weight-bolder tracking-tight">Demand Forecast</span>
+                  <div class="row items-center no-wrap">
+                    <div class="ai-chip-pill row items-center no-wrap q-px-sm q-py-xs q-mr-sm">
+                      <span class="ai-radar-dot q-mr-xs"></span>
+                      <span class="text-caption text-weight-bolder text-amber-4 tracking-wider">AI ENGINE</span>
+                    </div>
+                    <span class="text-h6 text-weight-bolder text-white tracking-tight">Demand Forecast</span>
                   </div>
+
+                  <span class="ai-live-tag text-caption font-monospace text-weight-bold">
+                    TODAY's PROJECTION
+                  </span>
                 </div>
 
+                <!-- State 1: Loading -->
                 <template v-if="mlForecast.loading">
-                  <p class="text-indigo-1 text-body2 q-mb-lg opacity-80 relative-position z-top leading-relaxed flex-grow-1">Fetching latest demand forecast data...</p>
-                  <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft q-mt-auto">
-                    <div class="ml-animated-bg"></div>
-                    <div class="text-center z-top">
-                      <q-spinner-orbit size="45px" color="amber-3" />
-                      <div class="text-caption text-amber-2 q-mt-md font-monospace text-weight-bold tracking-wide">LOADING PREDICTIONS...</div>
+                  <div class="column items-center justify-center flex-grow-1 q-py-xl">
+                    <div class="ai-loader-ring relative-position flex flex-center q-mb-md">
+                      <q-spinner-orbit size="52px" color="amber-4" />
+                      <q-icon name="auto_awesome" size="22px" color="amber-3" class="absolute-center pulse-soft" />
                     </div>
+                    <div class="text-body2 text-white font-monospace text-weight-bold tracking-wide">COMPUTING RECENT SALES...</div>
+                    <div class="text-caption text-blue-grey-3 q-mt-xs">Forecasting neighborhood purchase patterns</div>
                   </div>
                 </template>
                 
+                <!-- State 2: Error -->
                 <template v-else-if="mlForecast.error">
-                  <p class="text-red-2 text-body2 q-mb-lg opacity-80 relative-position z-top leading-relaxed flex-grow-1">Unable to connect to the forecasting service. Please try again later.</p>
-                  <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft q-mt-auto p-4" style="background-color: rgba(150, 0, 0, 0.2);">
-                    <div class="text-center z-top q-pa-md">
-                      <q-icon name="error_outline" size="40px" color="red-4" class="q-mb-sm" />
-                      <div class="text-caption text-red-3 font-monospace text-weight-bold tracking-wide">SYSTEM ERROR</div>
+                  <div class="column items-center justify-center flex-grow-1 q-py-xl text-center">
+                    <div class="ai-status-circle bg-red-10 border-red q-mb-md flex flex-center">
+                      <q-icon name="sync_problem" size="32px" color="red-4" />
                     </div>
+                    <div class="text-body2 text-red-2 text-weight-bold">Forecasting Model Unavailable</div>
+                    <div class="text-caption text-blue-grey-4 q-mt-xs">Could not sync predictions right now.</div>
                   </div>
                 </template>
 
+                <!-- State 3: Insufficient Data -->
                 <template v-else-if="!mlForecast.has_forecast">
-                  <p class="text-indigo-1 text-body2 q-mb-lg opacity-80 relative-position z-top leading-relaxed">Awaiting more completed orders to establish baseline sales patterns.</p>
-                  
-                  <!-- Enhanced Awaiting Data Box -->
-                  <div class="ml-container-glass flex-grow-1 flex flex-center relative-position overflow-hidden shadow-soft q-pa-xl bg-indigo-9" style="min-height: 200px;">
-                    <div class="text-center z-top">
-                      <q-icon name="analytics" size="56px" color="blue-grey-4" class="q-mb-md opacity-80" />
-                      <div class="text-body2 text-blue-grey-2 font-monospace text-weight-bold tracking-wide">AWAITING MORE DATA</div>
+                  <div class="column items-center justify-center flex-grow-1 q-py-xl text-center">
+                    <div class="ai-status-circle bg-indigo-10 border-indigo q-mb-md flex flex-center shadow-soft">
+                      <q-icon name="insights" size="36px" color="amber-3" />
                     </div>
+                    <div class="text-body2 text-white text-weight-bold font-monospace tracking-wide">COLLECTING TRENDS</div>
+                    <p class="text-caption text-blue-grey-3 q-mt-xs q-mb-none max-w-280">
+                      Need a few more completed orders to accurately predict fast-moving sari-sari items.
+                    </p>
                   </div>
                 </template>
                 
+                <!-- State 4: Populated Forecast List -->
                 <template v-else>
-                  <div v-if="mlForecast.low_data_warning" class="low-data-warning q-mb-md">
-                    <q-icon name="warning" size="16px" class="q-mr-xs" />
-                    {{ mlForecast.low_data_warning }}
-                  </div>
-                  <p class="text-indigo-1 text-body2 q-mb-md opacity-80 relative-position z-top leading-relaxed">Based on recent trends, here are your top predicted demand items for today.</p>
-                  <div class="text-white relative-position z-top flex-grow-1">
-                    <div v-for="(item, idx) in mlForecast.top_products" :key="idx" class="row justify-between items-center q-mb-sm bg-indigo-9 q-pa-sm rounded-borders">
-                      <div class="text-weight-bold ellipsis" style="max-width: 70%;">{{ idx + 1 }}. {{ item.product_name }}</div>
-                      <q-chip color="amber-3" text-color="indigo-10" size="sm" class="text-weight-bold shadow-1 q-ma-none">{{ item.predicted_quantity }} units</q-chip>
+                  <p class="text-caption text-blue-grey-2 q-mb-sm opacity-90 line-height-tight">
+                    Based on recent trends, here are your top predicted demand items for today.
+                  </p>
+
+                  <div class="ai-prediction-list flex-grow-1 q-gutter-y-xs">
+                    <div 
+                      v-for="(item, idx) in mlForecast.top_products" 
+                      :key="idx" 
+                      class="ai-product-item row items-center justify-between no-wrap q-pa-sm"
+                    >
+                      <div class="row items-center no-wrap col ellipsis q-pr-sm">
+                        <div class="ai-rank-badge flex flex-center q-mr-sm" :class="'rank-' + (idx + 1)">
+                          #{{ idx + 1 }}
+                        </div>
+
+                        <div class="ai-product-thumb q-mr-sm flex flex-center flex-shrink-0 bg-slate-50">
+                          <img 
+                            v-if="resolveProductImage(item)" 
+                            :src="resolveProductImage(item)" 
+                            class="product-real-img"
+                          />
+                          <q-icon v-else name="image" color="blue-grey-3" size="20px" />
+                        </div>
+
+                        <div class="col ellipsis">
+                          <div class="text-weight-bold text-white text-body2 ellipsis">
+                            {{ item.product_name }}
+                          </div>
+                          <div class="text-caption text-blue-grey-3 font-monospace" style="font-size: 11px;">
+                            {{ getDemandCategory(item.predicted_quantity) }}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="ai-quantity-chip row items-center no-wrap flex-shrink-0">
+                        <span class="quantity-num">{{ formatPieces(item.predicted_quantity) }}</span>
+                        <span class="quantity-unit q-ml-xs">pcs</span>
+                      </div>
                     </div>
                   </div>
-                  <div class="text-caption text-indigo-3 text-right q-mt-md relative-position z-top font-monospace">
-                    <q-icon name="update" class="q-mr-xs" /> Last updated: {{ new Date(mlForecast.generated_at).toLocaleString() }}
+
+                  <div v-if="mlForecast.low_data_warning" class="ai-warning-bar row items-center q-mt-sm q-px-sm q-py-xs">
+                    <q-icon name="warning_amber" size="15px" color="amber-4" class="q-mr-xs flex-shrink-0" />
+                    <span class="text-caption text-amber-2 text-weight-medium line-height-tight">
+                      {{ mlForecast.low_data_warning }}
+                    </span>
+                  </div>
+
+                  <div class="row items-center justify-between q-mt-md pt-xs border-top-glass text-caption text-blue-grey-4 font-monospace" style="font-size: 11px;">
+                    <span class="row items-center">
+                      <q-icon name="bolt" size="14px" color="amber-4" class="q-mr-xs" />
+                      Dynamic Stock Engine
+                    </span>
+                    <span class="row items-center">
+                      <q-icon name="sync" size="13px" color="blue-grey-3" class="q-mr-xs" />
+                      {{ formatLastSync(mlForecast.generated_at) }}
+                    </span>
                   </div>
                 </template>
               </q-card-section>
@@ -302,7 +357,6 @@
         
         <!-- Clean Airy Mobile Header -->
         <div class="mobile-hero-banner q-mb-lg q-pa-md transition-theme" :class="headerThemeClass">
-          <!-- Top Row: Date & Status Badge -->
           <div class="row items-center justify-between no-wrap q-mb-xs">
             <div class="row items-center no-wrap">
               <q-icon name="today" size="14px" :class="subTextClass" class="q-mr-xs opacity-80" />
@@ -311,7 +365,6 @@
               </span>
             </div>
             
-            <!-- Compact Status Tag -->
             <div class="mobile-status-tag row items-center no-wrap q-px-sm q-py-xs" :class="capsuleThemeClass">
               <span class="status-pulse-wrapper q-mr-xs">
                 <span class="status-pulse-ring" :class="isStoreOpen ? 'pulse-open' : 'pulse-closed'"></span>
@@ -323,18 +376,17 @@
             </div>
           </div>
 
-          <!-- Bottom Row: Greeting & Store Avatar Button -->
           <div class="row items-center justify-between no-wrap q-pt-xs">
             <div class="col ellipsis q-pr-md">
               <div class="mobile-greeting-text ellipsis" :class="headerTextClass">
                 {{ timeGreeting }}, <span class="text-weight-black">{{ userName }}</span>
               </div>
-              <div class="text-caption q-mt-none opacity-80 ellipsis" :class="subTextClass" style="font-size: 12px;">
-                Neighborhood store overview
+              <!-- Improved sari-sari store phrasing -->
+              <div class="text-caption q-mt-none opacity-80 ellipsis font-medium" :class="subTextClass" style="font-size: 12px;">
+                Your sari-sari store today
               </div>
             </div>
             
-            <!-- Store Preview Avatar with Button Overlay -->
             <div class="col-auto relative-position">
               <q-avatar size="52px" class="bg-white text-red-9 cursor-pointer shadow-2 border-white" @click="liveStoreModal = true">
                 <img v-if="vendorStore?.store_picture_url" :src="vendorStore.store_picture_url" />
@@ -439,49 +491,81 @@
           </div>
         </q-card>
 
-        <!-- Mobile Demand Forecast (ML) -->
-        <q-card class="ml-blueprint-card mobile-ml-card q-mb-lg">
-          <div class="q-pa-md relative-position column">
-            <div class="ml-glow-overlay" style="width: 110px; height: 110px;"></div>
-            <div class="row items-center justify-between q-mb-md relative-position z-top">
-              <div class="row items-center">
-                <q-icon name="model_training" size="20px" color="amber-3" class="q-mr-sm drop-shadow-icon" />
+        <!-- Mobile Demand Forecast -->
+        <q-card class="ai-forecast-terminal mobile-ml-card q-mb-lg relative-position overflow-hidden">
+          <div class="ai-terminal-grid"></div>
+          <div class="ai-orb-glow" style="width: 110px; height: 110px;"></div>
+
+          <div class="q-pa-md relative-position z-top column">
+            <div class="row items-center justify-between q-mb-sm">
+              <div class="row items-center no-wrap">
+                <div class="ai-chip-pill row items-center no-wrap q-px-xs q-py-none q-mr-xs">
+                  <span class="ai-radar-dot q-mr-xs"></span>
+                  <span class="text-caption text-weight-bolder text-amber-4" style="font-size: 10px;">AI ENGINE</span>
+                </div>
                 <span class="mobile-card-title text-white">Demand Forecast</span>
               </div>
+              <span class="text-caption font-monospace text-amber-3 text-weight-bold" style="font-size: 10px;">
+                TODAY'S PCS
+              </span>
             </div>
 
             <template v-if="mlForecast.loading">
-              <div class="ml-container-glass flex flex-center relative-position overflow-hidden shadow-soft" style="min-height: 110px;">
-                <div class="ml-animated-bg"></div>
-                <div class="text-center z-top">
-                  <q-spinner-orbit size="28px" color="amber-3" />
-                  <div class="text-caption text-amber-2 q-mt-xs font-monospace text-weight-bold" style="font-size: 10px;">ANALYZING...</div>
-                </div>
+              <div class="flex flex-center q-py-lg">
+                <q-spinner-orbit size="32px" color="amber-3" />
+                <span class="text-caption text-amber-2 q-ml-sm font-monospace">ANALYZING...</span>
               </div>
             </template>
             <template v-else-if="!mlForecast.has_forecast">
-              <div class="ml-container-glass flex-grow-1 flex flex-center relative-position overflow-hidden shadow-soft q-pa-lg bg-indigo-9" style="min-height: 160px; border: 1px solid rgba(255,255,255,0.1);">
-                <div class="text-center z-top">
-                  <q-icon name="analytics" size="38px" color="indigo-2" class="opacity-50 q-mb-sm" />
-                  <div class="text-caption text-indigo-2 font-monospace text-weight-bold opacity-80" style="font-size: 11px;">AWAITING MORE DATA</div>
-                </div>
+              <div class="text-center q-py-md">
+                <q-icon name="insights" size="32px" color="blue-grey-3" class="q-mb-xs opacity-60" />
+                <div class="text-caption text-white font-monospace text-weight-bold">AWAITING ORDERS</div>
+                <div class="text-caption text-blue-grey-4" style="font-size: 11px;">Gathering customer purchasing habits</div>
               </div>
             </template>
             <template v-else>
-              <div v-if="mlForecast.low_data_warning" class="low-data-warning q-mb-sm q-mx-sm">
-                <q-icon name="warning" size="14px" class="q-mr-xs" />
-                {{ mlForecast.low_data_warning }}
+              <div class="text-caption text-blue-grey-3 q-mb-xs" style="font-size: 11px;">
+                Based on recent trends, here are your top predicted demand items for today.
               </div>
-              <div class="text-white relative-position z-top">
-                <div v-for="(item, idx) in mlForecast.top_products.slice(0,3)" :key="idx" class="mobile-forecast-row row items-center q-mb-sm q-pa-sm rounded-borders">
-                  <div class="forecast-rank-badge q-mr-sm bg-amber-3 text-indigo-10 flex flex-center text-weight-bolder">
-                    {{ idx + 1 }}
+              <div class="q-gutter-y-xs q-mt-xs">
+                <div 
+                  v-for="(item, idx) in mlForecast.top_products.slice(0, 5)" 
+                  :key="idx" 
+                  class="ai-product-item row items-center justify-between no-wrap q-pa-xs"
+                >
+                  <div class="row items-center no-wrap col ellipsis q-pr-xs">
+                    <div class="ai-rank-badge flex flex-center q-mr-xs" :class="'rank-' + (idx + 1)">
+                      {{ idx + 1 }}
+                    </div>
+                    <div class="ai-product-thumb q-mr-xs flex flex-center flex-shrink-0 bg-slate-50" style="width: 34px; height: 34px;">
+                      <img 
+                        v-if="resolveProductImage(item)" 
+                        :src="resolveProductImage(item)" 
+                        class="product-real-img"
+                      />
+                      <q-icon v-else name="image" color="blue-grey-3" size="16px" />
+                    </div>
+                    <div class="col ellipsis">
+                      <div class="text-weight-bold text-white text-caption ellipsis" style="font-size: 12px;">
+                        {{ item.product_name }}
+                      </div>
+                    </div>
                   </div>
-                  <div class="col ellipsis text-weight-medium text-white text-body2">{{ item.product_name }}</div>
-                  <div class="col-auto">
-                    <span class="text-amber-3 text-weight-bolder text-caption">{{ item.predicted_quantity }} units</span>
+                  <div class="ai-quantity-chip row items-center no-wrap flex-shrink-0 q-px-sm q-py-xs">
+                    <span class="quantity-num" style="font-size: 12px;">{{ formatPieces(item.predicted_quantity) }}</span>
+                    <span class="quantity-unit q-ml-xs" style="font-size: 10px;">pcs</span>
                   </div>
                 </div>
+              </div>
+
+              <div v-if="mlForecast.low_data_warning" class="ai-warning-bar q-mt-sm q-px-xs q-py-xs">
+                <q-icon name="warning_amber" size="12px" color="amber-4" class="q-mr-xs flex-shrink-0" />
+                <span class="text-caption text-amber-2" style="font-size: 10.5px;">{{ mlForecast.low_data_warning }}</span>
+              </div>
+
+              <div class="row items-center justify-between q-mt-sm pt-xs border-top-glass text-caption text-blue-grey-4 font-monospace" style="font-size: 10px;">
+                <span>AI Engine</span>
+                <span>{{ formatLastSync(mlForecast.generated_at) }}</span>
               </div>
             </template>
           </div>
@@ -529,45 +613,22 @@
           </div>
         </q-card>
 
-        <!-- Mobile Floating Bottom Navigation -->
-        <div class="mobile-bottom-nav row justify-around items-center">
-          <div class="nav-item-wrapper" @click="router.push('/vendor/dashboard')">
-            <q-btn flat round class="mobile-nav-btn nav-active shadow-2">
-              <q-icon name="home" size="22px" />
-            </q-btn>
-          </div>
-          <div class="nav-item-wrapper" @click="router.push('/vendor/orders/list')">
-            <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-              <q-icon name="receipt_long" size="24px" />
-            </q-btn>
-          </div>
-          <div class="nav-item-wrapper" @click="router.push('/vendor/products/list')">
-            <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-              <q-icon name="inventory_2" size="24px" />
-            </q-btn>
-          </div>
-          <div class="nav-item-wrapper" @click="router.push('/vendor/sales')">
-            <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-              <q-icon name="analytics" size="24px" />
-            </q-btn>
-          </div>
-        </div>
-
       </div>
     </div>
 
-    <!-- ================= LIVE STORE MODAL ================= -->
-    <q-dialog v-model="liveStoreModal" transition-show="scale" transition-hide="scale" @show="initMap">
+    <!-- ================= LIVE STORE MODAL (Safe Rendering & Map Life-cycle) ================= -->
+    <q-dialog v-model="liveStoreModal" transition-show="scale" transition-hide="scale" @show="initMap" @hide="cleanupMap">
       <q-card class="premium-glass-card column no-wrap live-store-modal card-rounded">
-        <q-card-section class="row items-center justify-center q-pb-sm bg-white col-auto z-top-10">
-          <div class="text-h6 text-weight-bold">{{ vendorStore?.store_name || 'My Store' }}</div>
+        <q-card-section class="row items-center justify-between q-py-sm q-px-md bg-white col-auto z-top-10 border-bottom-light">
+          <div class="text-subtitle1 text-weight-bold ellipsis">{{ vendorStore?.store_name || 'My Store' }}</div>
+          <q-btn flat round dense icon="close" color="blue-grey-6" v-close-popup size="sm" />
         </q-card-section>
-        <q-separator />
+        
         <q-card-section class="q-pa-none col scroll">
           <div class="full-width">
             <q-img v-if="vendorStore?.store_picture_url" :src="vendorStore.store_picture_url" class="store-banner" fit="cover" />
             <div v-else class="bg-grey-3 flex flex-center full-width store-placeholder">
-              <q-icon name="storefront" size="80px" color="grey-6" />
+              <q-icon name="storefront" size="70px" color="grey-6" />
             </div>
           </div>
           <div class="q-pa-md">
@@ -579,6 +640,7 @@
                   <q-item-label caption>{{ ownerFullName || 'Not provided' }}</q-item-label>
                 </q-item-section>
               </q-item>
+              
               <q-item class="q-px-none">
                 <q-item-section avatar><q-icon color="red-8" name="call" /></q-item-section>
                 <q-item-section>
@@ -586,6 +648,7 @@
                   <q-item-label caption>{{ vendorPhone || 'Not provided' }}</q-item-label>
                 </q-item-section>
               </q-item>
+              
               <q-item class="q-px-none items-start">
                 <q-item-section avatar class="q-pt-xs"><q-icon color="red-8" name="schedule" /></q-item-section>
                 <q-item-section>
@@ -599,6 +662,7 @@
                   </div>
                 </q-item-section>
               </q-item>
+              
               <q-item class="q-px-none">
                 <q-item-section avatar><q-icon color="red-8" name="location_on" /></q-item-section>
                 <q-item-section>
@@ -607,11 +671,16 @@
                 </q-item-section>
               </q-item>
             </q-list>
-            <div id="store-preview-map" class="border-radius-8 overflow-hidden shadow-soft q-mt-sm store-preview-map-container"></div>
+
+            <!-- Store Map Container with Relative Anchor -->
+            <div class="store-preview-map-wrapper q-mt-sm">
+              <div id="store-preview-map" class="border-radius-8 overflow-hidden shadow-soft store-preview-map-container"></div>
+            </div>
           </div>
         </q-card-section>
+        
         <q-separator />
-        <q-card-actions align="right" class="bg-white col-auto q-pa-md z-top-10">
+        <q-card-actions align="right" class="bg-white col-auto q-pa-sm q-px-md z-top-10">
           <q-btn flat label="Close" color="blue-grey-8" class="text-weight-bold q-px-md" v-close-popup />
         </q-card-actions>
       </q-card>
@@ -646,6 +715,8 @@ const vendorStore = ref(null)
 const vendorPhone = ref(null)
 const liveStoreModal = ref(false)
 const activeRevenueFilter = ref('Daily')
+
+const catalogProducts = ref([])
 
 const mlForecast = ref({
   loading: true,
@@ -797,14 +868,82 @@ const getStatusColor = status => {
   }
 }
 
+// Safe time formatting without date object parsing bugs
 const formatTime = timeString => {
   if (!timeString) return 'Not set'
-  return new Date(`1970-01-01T${timeString}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  try {
+    const parts = timeString.split(':')
+    if (parts.length >= 2) {
+      let hours = parseInt(parts[0], 10)
+      const minutes = parts[1].substring(0, 2)
+      const ampm = hours >= 12 ? 'PM' : 'AM'
+      hours = hours % 12
+      hours = hours ? hours : 12
+      return `${hours}:${minutes} ${ampm}`
+    }
+    return timeString
+  } catch (e) {
+    return timeString
+  }
 }
 
 const formatNumber = num => {
   const cleanNum = Number(String(num).replace(/[^0-9.-]+/g, ""))
   return Number(cleanNum || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+const formatPieces = val => {
+  const parsed = parseFloat(val)
+  if (isNaN(parsed)) return '0'
+  return Math.round(parsed).toString()
+}
+
+const getDemandCategory = qty => {
+  const parsed = parseFloat(qty)
+  if (parsed >= 10) return 'High Velocity'
+  if (parsed >= 5) return 'Steady Sales'
+  return 'Regular Demand'
+}
+
+const formatLastSync = timestamp => {
+  if (!timestamp) return 'Synced: Today'
+  const dateObj = new Date(timestamp)
+  if (isNaN(dateObj.getTime())) return 'Synced: Today'
+  
+  const formattedDate = dateObj.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+  const formattedTime = dateObj.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+  
+  return `Synced: ${formattedDate} • ${formattedTime}`
+}
+
+const normalize = str => (str ? String(str).toLowerCase().trim() : '')
+
+const resolveProductImage = item => {
+  if (!item) return null
+
+  if (item.image_url && typeof item.image_url === 'string' && item.image_url.trim() !== '') {
+    return item.image_url.trim()
+  }
+
+  const matched = catalogProducts.value.find(p => {
+    if (item.product_id && p.product_id && Number(item.product_id) === Number(p.product_id)) return true
+    if (item.inventory_id && p.inventory_id && Number(item.inventory_id) === Number(p.inventory_id)) return true
+    if (item.product_name && p.product_name && normalize(item.product_name) === normalize(p.product_name)) return true
+    return false
+  })
+
+  if (matched && matched.image_url) {
+    return matched.image_url
+  }
+
+  return null
 }
 
 // ==========================================
@@ -829,27 +968,62 @@ const fetchChartData = async () => {
 }
 
 // ==========================================
-// 6. LEAFLET FUNCTIONS
+// 6. SAFE LEAFLET PREVIEW FUNCTIONS
 // ==========================================
 let map = null
+
+const cleanupMap = () => {
+  if (map) {
+    map.remove()
+    map = null
+  }
+}
+
 const initMap = async () => {
   await nextTick()
-  if (map) map.remove()
-  const lat = vendorStore.value?.latitude || 14.5995
-  const lng = vendorStore.value?.longitude || 120.9842
+  setTimeout(() => {
+    const container = document.getElementById('store-preview-map')
+    if (!container) return
 
-  map = L.map('store-preview-map').setView([lat, lng], 15)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map)
+    cleanupMap()
 
-  const icon = L.icon({
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-  })
+    if (container._leaflet_id) {
+      delete container._leaflet_id
+    }
 
-  L.marker([lat, lng], { icon }).addTo(map).bindPopup('<b>' + (vendorStore.value?.store_name || 'My Store') + '</b><br>Location').openPopup()
-  setTimeout(() => { map.invalidateSize() }, 100)
+    const rawLat = vendorStore.value?.latitude
+    const rawLng = vendorStore.value?.longitude
+    const lat = rawLat && !isNaN(Number(rawLat)) ? Number(rawLat) : 14.5995
+    const lng = rawLng && !isNaN(Number(rawLng)) ? Number(rawLng) : 120.9842
+
+    try {
+      map = L.map(container).setView([lat, lng], 15)
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map)
+
+      const icon = L.icon({
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      })
+
+      L.marker([lat, lng], { icon })
+        .addTo(map)
+        .bindPopup('<b>' + (vendorStore.value?.store_name || 'My Store') + '</b><br>Location')
+        .openPopup()
+
+      setTimeout(() => {
+        if (map) map.invalidateSize()
+      }, 200)
+    } catch (err) {
+      console.warn('Map preview initialization caught safely:', err)
+    }
+  }, 180)
 }
 
 // ==========================================
@@ -865,9 +1039,10 @@ onMounted(async () => {
   try {
     fetchChartData()
 
-    const [profileRes, statsRes] = await Promise.allSettled([
+    const [profileRes, statsRes, productsRes] = await Promise.allSettled([
       api.get('/vendor/profile'),
-      api.get('/vendor/stats')
+      api.get('/vendor/stats'),
+      api.get('/vendor/products')
     ])
 
     if (profileRes.status === 'fulfilled' && profileRes.value.data) {
@@ -884,6 +1059,10 @@ onMounted(async () => {
       stats.value.picked_up_orders = statsRes.value.data.picked_up_orders || 0
       stats.value.cancelled_orders = statsRes.value.data.cancelled_orders || 0
       recentOrders.value = statsRes.value.data.recent_orders || []
+    }
+
+    if (productsRes.status === 'fulfilled' && productsRes.value.data) {
+      catalogProducts.value = productsRes.value.data || []
     }
     
     try {
@@ -935,12 +1114,17 @@ watch(activeRevenueFilter, () => { fetchChartData() })
 .h-full { height: 100%; }
 .border-radius-8 { border-radius: 8px; }
 .opacity-50 { opacity: 0.5; }
+.opacity-60 { opacity: 0.6; }
 .opacity-80 { opacity: 0.8; }
+.opacity-90 { opacity: 0.9; }
 .flex-grow-1 { flex-grow: 1; }
+.flex-shrink-0 { flex-shrink: 0; }
 .tracking-wide { letter-spacing: 0.08em; }
 .leading-relaxed { line-height: 1.6; }
 .line-height-tight { line-height: 1.2; }
 .mobile-only { display: none; }
+.bg-slate-50 { background-color: #f8fafc !important; }
+.border-bottom-light { border-bottom: 1px solid #e2e8f0; }
 
 /* Desktop Cards */
 .clean-solid-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05); transition: transform 0.2s ease, box-shadow 0.2s ease; }
@@ -1045,7 +1229,7 @@ watch(activeRevenueFilter, () => { fetchChartData() })
 .shadow-soft { box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); }
 .border-white { border: 2px solid #ffffff; }
 
-/* Desktop Static Segmented Controls */
+/* Desktop Controls */
 .desktop-filter-toggle { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 3px; }
 .filter-toggle-btn { background: transparent; border: none; outline: none; font-size: 12px; font-weight: 600; color: #64748b; padding: 5px 14px; border-radius: 6px; cursor: pointer; }
 .filter-toggle-btn:hover:not(.filter-toggle-active) { color: #0f172a; }
@@ -1063,21 +1247,175 @@ watch(activeRevenueFilter, () => { fetchChartData() })
 
 .chart-container { min-height: 250px; padding: 0; width: 100%; display: flex; flex-direction: column; overflow: hidden; }
 
-/* ML Blueprint Card */
-.ml-blueprint-card { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 15px 40px rgba(15, 23, 42, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
-.ml-glow-overlay { position: absolute; top: 0; right: 0; width: 150px; height: 150px; background: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, transparent 70%); filter: blur(20px); z-index: 0; }
-.ml-container-glass { background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(251, 191, 36, 0.25); backdrop-filter: blur(12px); border-radius: 12px; }
-.ml-animated-bg { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: conic-gradient(from 0deg, transparent 0%, rgba(251, 191, 36, 0.08) 25%, transparent 50%); animation: rotate-bg 10s linear infinite; }
-@keyframes rotate-bg { 100% { transform: rotate(360deg); } }
-.drop-shadow-icon { filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.4)); }
-.font-monospace { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+/* AI FORECAST TERMINAL */
+.ai-forecast-terminal {
+  background: linear-gradient(145deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 50px rgba(10, 15, 30, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.ai-terminal-grid {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 18px 18px;
+  pointer-events: none;
+}
+
+.ai-orb-glow {
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, transparent 70%);
+  filter: blur(28px);
+  pointer-events: none;
+}
+
+.ai-orb-secondary {
+  position: absolute;
+  bottom: -40px;
+  left: -20px;
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, transparent 70%);
+  filter: blur(32px);
+  pointer-events: none;
+}
+
+.ai-chip-pill {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 999px;
+  font-size: 10.5px;
+}
+
+.ai-radar-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #fbbf24;
+  box-shadow: 0 0 8px #fbbf24;
+  animation: pulse-dot 1.8s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+.ai-live-tag {
+  color: #94a3b8;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ai-product-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.ai-product-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+  transform: translateX(2px);
+}
+
+.ai-rank-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+}
+
+.rank-1 { background: linear-gradient(135deg, #f59e0b, #d97706); color: #ffffff; }
+.rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: #ffffff; }
+.rank-3 { background: linear-gradient(135deg, #b45309, #78350f); color: #ffffff; }
+.rank-4 { background: linear-gradient(135deg, #6366f1, #4338ca); color: #ffffff; }
+.rank-5 { background: linear-gradient(135deg, #334155, #1e293b); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15); }
+
+.ai-product-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 3px;
+}
+
+.product-real-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+}
+
+.ai-quantity-chip {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1.5px solid rgba(245, 158, 11, 0.4);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+
+.quantity-num {
+  font-size: 14px;
+  font-weight: 900;
+  color: #fde68a;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+}
+
+.quantity-unit {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fef3c7;
+  text-transform: uppercase;
+}
+
+.border-top-glass {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ai-status-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+}
+.border-red { border: 1.5px solid rgba(239, 68, 68, 0.3); }
+.border-indigo { border: 1.5px solid rgba(99, 102, 241, 0.3); }
+.max-w-280 { max-width: 280px; }
+
+.ai-warning-bar {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 8px;
+}
+
+.pulse-soft {
+  animation: icon-float 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes icon-float {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  100% { transform: scale(1.08); opacity: 1; }
+}
 
 /* Live Store Modal */
-.live-store-modal { width: 500px; max-width: 90vw; max-height: 90vh; }
-.store-banner { height: 220px; }
-.store-placeholder { aspect-ratio: 16/9; }
+.live-store-modal { width: 500px; max-width: 92vw; max-height: 85vh; overflow: hidden; }
+.store-banner { height: 180px; }
+.store-placeholder { aspect-ratio: 16/9; height: 180px; }
 .custom-glass-input { border: 1px solid #e2e8f0; }
-.store-preview-map-container { height: 200px; border: 1px solid #cfd8dc; position: relative; z-index: 1; }
+.store-preview-map-wrapper { width: 100%; position: relative; }
+.store-preview-map-container { height: 190px; width: 100%; border: 1px solid #cfd8dc; position: relative; z-index: 1; }
 
 /* ================= LOADER STYLES ================= */
 .checking-access-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background-color: rgba(248, 250, 252, 0.85); backdrop-filter: blur(12px); }
@@ -1152,7 +1490,6 @@ watch(activeRevenueFilter, () => { fetchChartData() })
     max-width: 320px;
   }
 
-  /* 1. Balanced Mobile Header */
   .mobile-hero-banner {
     border-radius: 16px;
     box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
@@ -1184,7 +1521,6 @@ watch(activeRevenueFilter, () => { fetchChartData() })
     cursor: pointer;
   }
 
-  /* 2. Spacious 2x2 Metric Cards */
   .mobile-stat-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
@@ -1215,7 +1551,6 @@ watch(activeRevenueFilter, () => { fetchChartData() })
     line-height: 1.1;
   }
 
-  /* 3. Mobile Clean Card Standard */
   .mobile-clean-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
@@ -1280,24 +1615,10 @@ watch(activeRevenueFilter, () => { fetchChartData() })
     line-height: 1.1;
   }
 
-  /* 4. Mobile Demand Forecast */
   .mobile-ml-card {
     border-radius: 16px;
   }
 
-  .mobile-forecast-row {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  .forecast-rank-badge {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    font-size: 11px;
-  }
-
-  /* 5. Mobile Recent Orders Item */
   .mobile-order-item {
     background: #ffffff;
     border: 1px solid #f1f5f9;
@@ -1324,55 +1645,5 @@ watch(activeRevenueFilter, () => { fetchChartData() })
     padding: 0 8px;
     margin: 0;
   }
-
-  /* 6. Mobile Bottom Nav */
-  .mobile-bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: calc(64px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-top: 1px solid rgba(226, 232, 240, 0.8);
-    z-index: 2000;
-    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.05);
-  }
-  
-  .nav-item-wrapper {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .mobile-nav-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    padding: 0;
-    transition: all 0.25s ease;
-  }
-  
-  .nav-active {
-    background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
-    color: #ffffff !important;
-    box-shadow: 0 4px 12px rgba(185, 28, 28, 0.35) !important;
-    transform: translateY(-2px);
-  }
-}
-
-.low-data-warning {
-  background: rgba(255, 183, 77, 0.15);
-  border: 1px solid rgba(255, 183, 77, 0.4);
-  border-radius: 8px;
-  padding: 8px 12px;
-  color: #ffb74d;
-  font-size: 12px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
 }
 </style>

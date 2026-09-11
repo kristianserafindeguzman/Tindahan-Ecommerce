@@ -45,7 +45,7 @@
                   REVENUE FOR {{ displayDate.toUpperCase() }}
                 </div>
                 
-                <!-- Revamped Calendar Button (Sleek Outline) -->
+                <!-- Calendar Button -->
                 <q-btn 
                   outline 
                   dense 
@@ -169,19 +169,16 @@
             </q-card>
           </div>
 
-          <!-- Transactions Table Container / Header -->
+          <!-- Transactions Table Container / Header (Mobile Clean Title) -->
           <div class="row items-center justify-between q-mb-md">
             <div class="row items-center">
               <div v-if="$q.screen.lt.md" style="width: 4px; height: 20px; background-color: #b91c1c; border-radius: 2px;" class="q-mr-sm"></div>
               <h2 class="text-h6 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight" :class="{ 'text-red-9': $q.screen.lt.md }" style="line-height: 1;">Sales Records</h2>
             </div>
-            <!-- Standardized Manual Sale Button -->
-            <q-btn v-if="$q.screen.lt.md" unelevated color="red-9" icon="add" label="Manual Sale" no-caps class="text-weight-bold shadow-1" style="border-radius: 6px; font-size: 12px; padding: 4px 12px;" @click="showMobileManualModal = true" />
           </div>
 
           <!-- Desktop Table -->
           <q-card v-if="!$q.screen.lt.md" class="premium-glass-card">
-            <!-- Adjusted Table Header Text Size -->
             <q-card-section class="panel-header q-pa-md">
               <div class="text-subtitle1 text-weight-bolder text-dark row items-center" style="font-size: 17px;">
                 <div class="header-accent-red q-mr-md"></div>
@@ -221,7 +218,6 @@
               </template>
             </q-table>
 
-            <!-- Empty State Feedback Dialog for Desktop outside the q-table -->
             <div v-else class="full-width q-pa-lg flex flex-center">
               <div class="bg-slate-50 border-slate-light rounded-borders q-pa-lg text-center shadow-soft" style="max-width: 420px; border-style: dashed; border-width: 2px;">
                 <q-icon name="query_stats" size="56px" color="blue-grey-3" class="q-mb-md" />
@@ -235,7 +231,7 @@
 
           <!-- MOBILE SALES RECORDS LIST -->
           <div v-if="$q.screen.lt.md" class="q-pb-xl">
-            <!-- Empty State Feedback Dialog for Mobile -->
+            <!-- Empty State Feedback Dialog for Mobile with Single Primary Button -->
             <div v-if="transactions.length === 0" class="full-width text-center bg-slate-50 shadow-soft q-pa-lg border-slate-light" style="border-radius: 12px; border-style: dashed; border-width: 2px;">
               <q-icon name="query_stats" size="48px" color="blue-grey-3" class="q-mb-md drop-shadow-icon" />
               <div class="text-subtitle1 text-weight-bolder text-blue-grey-9 q-mb-xs">No Sales Data Found</div>
@@ -298,7 +294,6 @@
 
             <q-card-section class="q-pt-sm q-pb-md">
               <q-form @submit.prevent="confirmManualSale">
-                <!-- Balanced Gap for Product Name -->
                 <div class="q-mb-md">
                   <div class="text-caption text-weight-bold text-blue-grey-8 q-mb-xs" style="font-size: 13px;">
                     Product Name <span class="text-red">*</span>
@@ -325,7 +320,6 @@
                   </q-select>
                 </div>
                 
-                <!-- Balanced Gaps for Quantity and Price -->
                 <div class="row q-col-gutter-md q-mb-md">
                   <div class="col-6">
                     <div class="text-caption text-weight-bold text-blue-grey-8 q-mb-xs" style="font-size: 13px;">Quantity</div>
@@ -352,30 +346,6 @@
           </q-card>
         </div>
 
-      </div>
-
-      <!-- ================= PREMIUM MOBILE BOTTOM NAVIGATION ================= -->
-      <div v-if="$q.screen.lt.md" class="mobile-bottom-nav row justify-around items-center">
-        <div class="nav-item-wrapper" @click="$router.push('/vendor/dashboard')">
-          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-            <q-icon name="home" size="26px" />
-          </q-btn>
-        </div>
-        <div class="nav-item-wrapper" @click="$router.push('/vendor/orders/list')">
-          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-            <q-icon name="receipt_long" size="26px" />
-          </q-btn>
-        </div>
-        <div class="nav-item-wrapper" @click="$router.push('/vendor/products/list')">
-          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-            <q-icon name="inventory_2" size="26px" />
-          </q-btn>
-        </div>
-        <div class="nav-item-wrapper" @click="$router.push('/vendor/sales')">
-          <q-btn flat round class="mobile-nav-btn nav-active shadow-3">
-            <q-icon name="analytics" size="24px" />
-          </q-btn>
-        </div>
       </div>
 
     </div>
@@ -845,7 +815,7 @@ onMounted(() => {
   font-weight: 700;
   color: #64748B; 
   text-transform: uppercase; 
-  font-size: 10px; /* Highly compact table header text */
+  font-size: 10px;
   letter-spacing: 0.05em; 
   padding: 8px 16px; 
   border-bottom: 1px solid rgba(226, 232, 240, 0.8); 
@@ -860,47 +830,7 @@ onMounted(() => {
 
 /* Mobile specific styling */
 @media (max-width: 767px) {
-  .vendor-page.mobile-page-padding { padding: 16px 16px calc(90px + env(safe-area-inset-bottom)) 16px !important; }
+  .vendor-page.mobile-page-padding { padding: 16px 16px 32px 16px !important; }
   .desktop-only { display: none !important; }
-  
-  .mobile-bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: calc(75px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-top: 1px solid rgba(255, 255, 255, 0.5);
-    z-index: 2000;
-    box-shadow: 0 -10px 25px rgba(15, 23, 42, 0.05);
-  }
-  
-  .nav-item-wrapper {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .mobile-nav-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    padding: 0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .nav-active {
-    background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
-    color: #ffffff !important;
-    box-shadow: 0 8px 16px rgba(185, 28, 28, 0.35) !important;
-    transform: translateY(-4px);
-  }
-  .nav-active .q-icon {
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-  }
 }
 </style>
