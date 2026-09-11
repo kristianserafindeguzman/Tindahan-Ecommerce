@@ -242,7 +242,6 @@
     <q-dialog v-model="showDiscardConfirm" :persistent="discardingChanges" transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card discard-confirm-card" style="width: 420px; max-width: 90vw;">
         <q-card-section class="dialog-header discard-confirm-header">
-          <div class="dialog-icon dialog-icon--warn"><q-icon name="o_error_outline" size="22px" /></div>
           <div class="dialog-header-text">
             <div class="text-h6">Discard Changes?</div>
             <div class="section-subtitle">You have unsaved changes. If you leave now, your changes will not be saved.</div>
@@ -262,9 +261,9 @@
           <div class="success-icon">
             <q-icon name="o_check" size="32px" />
           </div>
-          <div class="text-h6 q-mt-sm">{{ successModal.title }}</div>
-          <p class="section-subtitle q-mt-sm">{{ successModal.message }}</p>
-          <q-btn unelevated no-caps color="primary" label="Done" class="full-width btn-gradient q-mt-md" autofocus v-close-popup />
+          <div class="text-h6">{{ successModal.title }}</div>
+          <p class="section-subtitle">{{ successModal.message }}</p>
+          <q-btn unelevated no-caps color="primary" label="Done" class="full-width btn-gradient" autofocus v-close-popup />
         </q-card-section>
       </q-card>
     </q-dialog>
@@ -276,23 +275,16 @@
           <div class="dialog-icon"><q-icon name="o_crop" size="22px" /></div>
           <div class="dialog-header-text">
             <div class="text-h6">Crop Profile Photo</div>
-            <div class="section-subtitle">Drag to select a square crop area.</div>
+            <div class="section-subtitle">Drag the photo to move it, and zoom until your face fits the circle.</div>
           </div>
           <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close photo cropper" @click="showCropModal = false" />
         </q-card-section>
-        <q-card-section class="dialog-body text-center">
-          <canvas
-            ref="cropCanvas"
-            style="border: 1px dashed #ccc; cursor: crosshair; max-width: 100%;"
-            @mousedown="onCropMouseDown"
-            @mousemove="onCropMouseMove"
-            @mouseup="onCropMouseUp"
-            @mouseleave="onCropMouseUp"
-          ></canvas>
+        <q-card-section class="dialog-body">
+          <PhotoCropper ref="cropperRef" :src="originalPhotoUrl || ''" round :aspect="1" :output-width="512" @ready="cropReady = true" />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn outline no-caps label="Cancel" color="grey-7" @click="showCropModal = false" />
-          <q-btn unelevated no-caps color="primary" label="Apply Crop" :disable="!canApplyCrop" class="btn-gradient" @click="applyCrop" />
+          <q-btn unelevated no-caps color="primary" label="Apply Crop" :disable="!cropReady" class="btn-gradient" @click="applyCrop" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -420,10 +412,12 @@
               v-model="otpInput[i]"
               type="text"
               inputmode="numeric"
-              maxlength="1"
+              :autocomplete="i === 0 ? 'one-time-code' : 'off'"
+              :aria-label="`Digit ${i + 1} of 6`"
               class="otp-box"
               :class="{ 'otp-box-error': otpError, 'otp-box-success': otpVerifiedFlash }"
               :disabled="otpVerifiedFlash"
+              @focus="$event.target.select()"
               @input="onOtpInput(i)"
               @keydown.backspace="onOtpBackspace(i)"
               @paste="onOtpPaste"
@@ -502,9 +496,9 @@
           <div class="success-icon">
             <q-icon name="o_check" size="32px" />
           </div>
-          <div class="text-h6 q-mt-sm">Account Deleted!</div>
-          <p class="section-subtitle q-mt-sm">Your account has been permanently deleted. Thank you for being part of Tindahan.</p>
-          <q-btn unelevated no-caps color="primary" label="Go to Home" class="full-width btn-gradient q-mt-md" autofocus @click="goHomeAfterDelete" />
+          <div class="text-h6">Account Deleted!</div>
+          <p class="section-subtitle">Your account has been permanently deleted. Thank you for being part of Tindahan.</p>
+          <q-btn unelevated no-caps color="primary" label="Go to Home" class="full-width btn-gradient" autofocus @click="goHomeAfterDelete" />
         </q-card-section>
       </q-card>
     </q-dialog>
@@ -520,6 +514,7 @@ import { api } from '@/boot/axios'
 import { useAuth } from '@/composables/useAuth'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
+import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -689,13 +684,9 @@ const photoFile = ref(null)
 const photoPreview = ref(null)
 const originalPhotoUrl = ref(null)
 const showCropModal = ref(false)
-const cropCanvas = ref(null)
-
-let imageObj = null
-let isDragging = false
-const cropRect = reactive({ x: 0, y: 0, w: 0, h: 0 })
-const startPos = reactive({ x: 0, y: 0 })
-const canApplyCrop = computed(() => Math.abs(cropRect.w) > 10 && Math.abs(cropRect.h) > 10)
+const cropperRef = ref(null)
+// Set once the cropper has loaded the photo, so Apply Crop can't run on an empty frame.
+const cropReady = ref(false)
 
 // OTP State
 const showOtpModal = ref(false)
@@ -765,115 +756,21 @@ const triggerUpload = () => {
 
 const onFileSelected = (event) => {
   const file = event.target.files?.[0]
+  // Cleared so choosing the same photo again after cancelling still opens the cropper.
+  event.target.value = ''
   if (!file) return
-  
-  const url = URL.createObjectURL(file)
-  originalPhotoUrl.value = url
-  
+
+  originalPhotoUrl.value = URL.createObjectURL(file)
+  cropReady.value = false
   showCropModal.value = true
-  setTimeout(() => {
-    const canvas = cropCanvas.value
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    imageObj = new Image()
-    imageObj.onload = () => {
-      const maxW = 400
-      let w = imageObj.width
-      let h = imageObj.height
-      if (w > maxW) {
-        h = (h * maxW) / w
-        w = maxW
-      }
-      canvas.width = w
-      canvas.height = h
-      ctx.drawImage(imageObj, 0, 0, w, h)
-      cropRect.x = 0; cropRect.y = 0; cropRect.w = w; cropRect.h = h
-      drawCropCanvas()
-    }
-    imageObj.src = originalPhotoUrl.value
-  }, 100)
 }
 
-const drawCropCanvas = () => {
-  const canvas = cropCanvas.value
-  if (!canvas || !imageObj) return
-  const ctx = canvas.getContext('2d')
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height)
-  
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
-  
-  if (cropRect.w > 0 && cropRect.h > 0) {
-    ctx.clearRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
-    ctx.drawImage(imageObj, 
-      (cropRect.x / canvas.width) * imageObj.width, 
-      (cropRect.y / canvas.height) * imageObj.height, 
-      (cropRect.w / canvas.width) * imageObj.width, 
-      (cropRect.h / canvas.height) * imageObj.height, 
-      cropRect.x, cropRect.y, cropRect.w, cropRect.h)
-    
-    ctx.strokeStyle = '#fff'
-    
-    ctx.lineWidth = 2
-    ctx.strokeRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
-  }
-}
-
-const onCropMouseDown = (e) => {
-  isDragging = true
-  const rect = cropCanvas.value.getBoundingClientRect()
-  startPos.x = e.clientX - rect.left
-  startPos.y = e.clientY - rect.top
-  cropRect.x = startPos.x
-  cropRect.y = startPos.y
-  cropRect.w = 0
-  cropRect.h = 0
-}
-
-const onCropMouseMove = (e) => {
-  if (!isDragging) return
-  const rect = cropCanvas.value.getBoundingClientRect()
-  const mouseX = e.clientX - rect.left
-  const mouseY = e.clientY - rect.top
-  cropRect.w = mouseX - startPos.x
-  cropRect.h = cropRect.w // Force square
-  drawCropCanvas()
-}
-
-const onCropMouseUp = () => {
-  if (isDragging) {
-    if (cropRect.w < 0) {
-      cropRect.x += cropRect.w
-      cropRect.w = Math.abs(cropRect.w)
-      cropRect.h = Math.abs(cropRect.h)
-    }
-    isDragging = false
-  }
-}
-
-const applyCrop = () => {
-  if (!canApplyCrop.value) return
-  const canvas = cropCanvas.value
-  const tempCanvas = document.createElement('canvas')
-  tempCanvas.width = cropRect.w
-  tempCanvas.height = cropRect.h
-  const tCtx = tempCanvas.getContext('2d')
-  
-  tCtx.drawImage(
-    canvas,
-    cropRect.x, cropRect.y, cropRect.w, cropRect.h,
-    0, 0, cropRect.w, cropRect.h
-  )
-  
-  photoPreview.value = tempCanvas.toDataURL('image/jpeg', 0.9)
-  
-  tempCanvas.toBlob((blob) => {
-    if (blob) {
-      photoFile.value = new File([blob], 'profile_cropped.jpg', { type: 'image/jpeg' })
-    }
-  }, 'image/jpeg', 0.9)
-  
+// Saves the framed area from the original photo, square so it fills the round avatar.
+const applyCrop = async () => {
+  const blob = await cropperRef.value?.toBlob()
+  if (!blob) return
+  photoFile.value = new File([blob], 'profile_cropped.jpg', { type: 'image/jpeg' })
+  photoPreview.value = URL.createObjectURL(blob)
   showCropModal.value = false
 }
 
@@ -1012,16 +909,24 @@ const resendOtpCode = async () => {
 }
 
 const onOtpInput = (index) => {
-  const val = otpInput.value[index]
+  const digits = otpInput.value[index].replace(/\D/g, '')
 
-  if (val && !/^\d$/.test(val)) {
-    otpInput.value[index] = ''
+  // An autofilled SMS code lands in the first box as one string, so it is spread across all six.
+  if (digits.length >= 4) {
+    for (let i = 0; i < 6; i++) otpInput.value[i] = digits[i] || ''
+    otpRefs.value[Math.min(digits.length, 5)]?.focus()
+    otpError.value = ''
+    if (canVerifyOtp.value) verifyOtp()
     return
   }
 
+  // Typing into a filled box keeps only the newest digit.
+  otpInput.value[index] = digits.slice(-1)
+  if (!digits) return
+
   otpError.value = ''
 
-  if (val && index < 5) {
+  if (index < 5) {
     otpRefs.value[index + 1]?.focus()
   }
   // Auto-submit once every box has a digit.
@@ -1673,17 +1578,14 @@ const goHomeAfterDelete = () => {
   margin-top: 0;
 }
 
-.edit-field {
-  margin-top: 12px;
+/* One 18px gap between every field at all widths, three times the 6px label gap, so each label reads as belonging to the field below it. */
+.edit-field,
+.edit-field-tight {
+  margin-top: 18px;
 }
 
 .edit-field:first-child {
   margin-top: 0;
-}
-
-/* Phone Number / Email Address sit in a denser cluster, so tighter than the default 12px gap. */
-.edit-field-tight {
-  margin-top: 8px;
 }
 
 .edit-field-label {
@@ -1708,7 +1610,7 @@ const goHomeAfterDelete = () => {
 }
 
 .edit-field-hint {
-  margin-top: 4px;
+  margin-top: 6px;
 
   font-size: var(--fs-xs);
 
@@ -1717,6 +1619,18 @@ const goHomeAfterDelete = () => {
 
 .edit-field-hint-error {
   color: var(--c-danger);
+}
+
+/* Green with its check icon inline, the same as the sign-up page's "Passwords match." */
+.edit-field-hint-success {
+  display: flex;
+  align-items: center;
+
+  gap: 3px;
+
+  font-weight: 600;
+
+  color: var(--c-success);
 }
 
 /* Same show/hide toggle as ConsumerRegister.vue's password fields */
@@ -1828,7 +1742,6 @@ const goHomeAfterDelete = () => {
 
   gap: 6px;
   margin-top: 16px;
-  margin-bottom: 12px;
 
   font-size: var(--fs-sm);
 }
@@ -1846,6 +1759,19 @@ const goHomeAfterDelete = () => {
 
 .otp-resend-link:hover {
   text-decoration: underline;
+}
+
+/* Icon, title, message and button on one even rhythm, replacing the utility classes' uneven 8px, 2px and 32px. */
+.success-card .text-h6 {
+  margin-top: 16px;
+}
+
+.success-card .section-subtitle {
+  margin: 6px 0 0;
+}
+
+.success-card .q-btn {
+  margin-top: 24px;
 }
 
 /* DIALOGS (crop / password / OTP / edit / success) */
@@ -1884,12 +1810,6 @@ const goHomeAfterDelete = () => {
   color: var(--c-brand-deep);
 }
 
-/* Amber reads as "pause and check" without borrowing the delete dialog's red. */
-.dialog-icon--warn {
-  background: linear-gradient(145deg, var(--c-warning-tint) 0%, var(--c-warning-tint) 100%);
-  color: var(--c-warning);
-}
-
 /* 32px baseline padding; .dialog-header/.dialog-body trim top/bottom so adjacent sections don't double up into a 64px gap. */
 .profile-dialog-card :deep(.q-card__section) {
   padding: 32px;
@@ -1922,9 +1842,9 @@ const goHomeAfterDelete = () => {
   margin-left: 0;
 }
 
-/* Discard-confirm dialog has no .dialog-body, so trim the header's own bottom padding instead of stacking with .q-card__actions'. */
-.discard-confirm-header {
-  padding-bottom: 6px;
+/* Discard-confirm has no .dialog-body, so its header keeps the body's 24px above the actions; the .profile-dialog-card prefix matches the section rule's weight so this one wins. */
+.profile-dialog-card .discard-confirm-header {
+  padding-bottom: 24px;
 }
 
 .discard-confirm-actions {
@@ -1940,9 +1860,9 @@ const goHomeAfterDelete = () => {
   margin-left: 0;
 }
 
-/* !important needed: Quasar's own dialog-actions rule carries higher specificity. */
-.discard-confirm-actions :deep(.q-btn) {
-  min-width: 130px !important;
+/* Paired dialog buttons share one width, so Cancel doesn't shrink beside a longer label like Update Password; !important beats Quasar's own dialog-actions rule. */
+.profile-dialog-card :deep(.q-card__actions .q-btn) {
+  min-width: 160px !important;
 }
 
 /* Buttons — 48px tall everywhere except the round close (×) button, matching the canonical .login-button/.btn-gradient recipe. */
@@ -1952,6 +1872,11 @@ const goHomeAfterDelete = () => {
 
   border-radius: var(--r-sm);
   font-size: var(--fs-sm);
+}
+
+/* A button focused as its dialog opens keeps Quasar's focus tint for keyboard users only, so after a mouse click it doesn't look pressed. */
+.profile-dialog-card :deep(.q-btn:focus:not(:focus-visible):not(:hover) > .q-focus-helper) {
+  opacity: 0;
 }
 
 /* Close (×) icon reads oversized next to the dialog's 18px icon language. */
@@ -2063,6 +1988,16 @@ const goHomeAfterDelete = () => {
     font-size: var(--fs-sm);
   }
 
+  /* Six 48px boxes overflow a phone dialog, so they shrink to share the row, the same as ConsumerVerify.vue's. */
+  .otp-row {
+    gap: 8px;
+  }
+
+  .otp-box {
+    flex: 0 1 48px;
+    min-width: 0;
+  }
+
   /* .success-icon deliberately has no override — stays 64px, same as desktop. */
 
   /* Quasar's "minimized" dialog positioning adds its own 24px padding; :global()+:has() reaches .q-dialog__inner since it's an ancestor, not a descendant, of .profile-dialog-card. */
@@ -2103,16 +2038,12 @@ const goHomeAfterDelete = () => {
   }
 
   /* Zeroes the buttons' leftover q-mr-sm margin so flex `gap` above is the only spacing in play. */
+  /* The two buttons split the row equally, so the desktop minimum width is dropped to fit narrow phones. */
   .profile-dialog-card :deep(.q-card__actions .q-btn) {
     flex: 1 1 0;
+    min-width: 0 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
-  }
-
-  /* Slightly shorter than desktop's 48px — still comfortably above the 44px minimum touch-target guidance. */
-  .profile-dialog-card :deep(.q-btn:not(.q-btn--round)) {
-    height: 44px;
-    min-height: 44px;
   }
 
   /* Same 48px as desktop; inputs shouldn't shrink for a small screen. */
@@ -2120,14 +2051,5 @@ const goHomeAfterDelete = () => {
     height: 48px;
   }
 
-  /* Flattens desktop's two different field rhythms (12px vs 8px) to one consistent 18px gap. */
-  .edit-field,
-  .edit-field-tight {
-    margin-top: 18px;
-  }
-
-  .edit-field:first-child {
-    margin-top: 0;
-  }
 }
 </style>

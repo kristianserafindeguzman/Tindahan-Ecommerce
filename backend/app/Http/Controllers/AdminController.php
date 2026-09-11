@@ -323,6 +323,12 @@ class AdminController extends Controller
         if ($request->account_status === 'suspended') {
             $reason = $request->suspension_message ?? 'Violation of terms';
             $suspensionMessage = "Suspended by {$admin->full_name}.\nReason: {$reason}";
+        } elseif ($request->account_status === 'inactive') {
+            // Recorded so the login page can tell the user who deactivated the account, the same as a suspension notice.
+            $suspensionMessage = "Set to inactive by {$admin->full_name}.";
+            if ($request->suspension_message) {
+                $suspensionMessage .= "\nReason: {$request->suspension_message}";
+            }
         }
 
         $vendor->update([
@@ -462,6 +468,12 @@ class AdminController extends Controller
         if ($request->account_status === 'suspended') {
             $reason = $request->suspension_message ?? 'Violation of terms';
             $suspensionMessage = "Suspended by {$admin->full_name}.\nReason: {$reason}";
+        } elseif ($request->account_status === 'inactive') {
+            // Recorded so the login page can tell the user who deactivated the account, the same as a suspension notice.
+            $suspensionMessage = "Set to inactive by {$admin->full_name}.";
+            if ($request->suspension_message) {
+                $suspensionMessage .= "\nReason: {$request->suspension_message}";
+            }
         }
 
         $consumer->update([

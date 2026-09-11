@@ -8,14 +8,7 @@ import {
 
 import routes from './routes.js'
 
-/*
- * If not building with SSR mode, you can
- * directly export the Router instantiation;
- *
- * The function below can be async too; either use
- * async/await or return a Promise which resolves
- * with the Router instance.
- */
+/* If not building with SSR mode, you can export the Router instantiation directly, and the function below may also be async or return a Promise that resolves with the Router instance. */
 
 export default defineRouter((/* { store, ssrContext } */) => {
   const createHistory = import.meta.env.QUASAR_SERVER
@@ -26,23 +19,16 @@ export default defineRouter((/* { store, ssrContext } */) => {
     scrollBehavior: () => ({ left: 0, top: 0 }),
     routes,
 
-    // Leave this as is and make changes in quasar.conf.js instead!
-    // quasar.conf.js -> build -> vueRouterMode
-    // quasar.conf.js -> build -> publicPath
+    // Leave this as is and change vueRouterMode and publicPath under build in quasar.conf.js instead.
     history: createHistory(import.meta.env.QUASAR_VUE_ROUTER_BASE)
   })
 
-  // Navigation guard for auth & RBAC.
-  //
-  // Returns values rather than calling next(): vue-router 5 deprecates the next()
-  // callback and logs a warning on every single navigation. Returning is also safer here
-  // — with next(), an accidental fall-through calls it twice and the router throws.
+  // Navigation guard for auth and roles, which returns values instead of calling next() because vue-router 5 deprecates next() and a fall-through could call it twice.
   Router.beforeEach((to) => {
     const token = localStorage.getItem('auth_token')
     const role = localStorage.getItem('auth_role')
 
-    // Clears every auth key together; leaving one behind puts the app in a half-signed-in
-    // state where the guard passes but requests 401.
+    // Clears every auth key together, since leaving one behind puts the app in a half-signed-in state where the guard passes but requests return 401.
     const clearAuth = () => {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')
@@ -67,7 +53,7 @@ export default defineRouter((/* { store, ssrContext } */) => {
         const userData = userDataStr ? JSON.parse(userDataStr) : {}
         const accountStatus = userData.account_status
 
-        if (accountStatus === 'suspended' || accountStatus === 'inactive') {
+        if (accountStatus === 'suspended' || accountStatus === 'inactive' || accountStatus === 'pending') {
           clearAuth()
           return '/login'
         }

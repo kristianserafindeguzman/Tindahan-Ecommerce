@@ -39,23 +39,31 @@ class AuthController extends Controller
         try {
             \Illuminate\Support\Facades\DB::beginTransaction();
 
-            $existingUser = User::where('email', $validated['email'])
-                ->orWhere('phone_number', $validated['phone_number'])
-                ->first();
+            // Deleted accounts are included, so their email or phone is refused cleanly instead of failing on the unique email column.
+            $matches = User::withTrashed()
+                ->where(fn ($query) => $query->where('email', $validated['email'])->orWhere('phone_number', $validated['phone_number']))
+                ->get();
+
+            // Only a single unfinished consumer sign-up can be replaced by signing up again; a real account, or two sign-ups split across the email and phone, is refused.
+            $replaceable = $matches->count() === 1
+                && $matches->first()->account_status === 'pending'
+                && $matches->first()->role === 'Consumer';
+
+            if ($matches->isNotEmpty() && !$replaceable) {
+                throw ValidationException::withMessages([
+                    'email' => ['The email or phone number has already been taken.'],
+                ]);
+            }
+
+            $existingUser = $matches->first();
 
             if ($existingUser) {
-                if ($existingUser->account_status !== 'inactive') {
-                    throw ValidationException::withMessages([
-                        'email' => ['The email or phone number has already been taken.'],
-                    ]);
-                }
-
                 $photoPath = $existingUser->profile_picture;
                 if ($request->hasFile('profile_picture')) {
                     $photoPath = $request->file('profile_picture')->store('profiles', 'public');
                 }
 
-                // Overwrite the existing inactive user
+                // Overwrite the unfinished sign-up
                 $existingUser->update([
                     'full_name'       => $validated['full_name'],
                     'email'           => $validated['email'],
@@ -76,7 +84,7 @@ class AuthController extends Controller
                     'email'           => $validated['email'],
                     'phone_number'    => $validated['phone_number'],
                     'password_hash'   => Hash::make($validated['password']),
-                    'account_status'  => 'inactive',
+                    'account_status'  => 'pending',
                     'profile_picture' => $photoPath,
                 ]);
             }
@@ -227,15 +235,12 @@ class AuthController extends Controller
             'verified_at' => now(),
         ]);
 
-        // Find the user using the verified phone number.
-        $user = User::where('phone_number', $request->phone_number)->first();
+        // A registration code only ever activates an unfinished sign-up, so it can never reactivate an account an admin set inactive.
+        $user = $request->type === 'registration'
+            ? User::where('phone_number', $request->phone_number)->where('account_status', 'pending')->first()
+            : User::where('phone_number', $request->phone_number)->first();
 
-        // Activate an inactive account after successful registration verification.
-        if (
-            $user &&
-            $request->type === 'registration' &&
-            $user->account_status === 'inactive'
-        ) {
+        if ($user && $request->type === 'registration') {
             $user->update([
                 'account_status' => 'active',
             ]);
@@ -278,12 +283,22 @@ class AuthController extends Controller
             'type'         => 'required|in:registration,password_reset',
         ]);
 
-        $user = User::where('phone_number', $request->phone_number)->first();
+        // A sign-up code is only sent to an unfinished sign-up, so it can't be used to reactivate an account an admin set inactive.
+        $user = $request->type === 'registration'
+            ? User::where('phone_number', $request->phone_number)->where('account_status', 'pending')->first()
+            : User::where('phone_number', $request->phone_number)->first();
 
         if (!$user) {
             return response()->json([
                 'message' => 'Phone number not found.',
             ], 404);
+        }
+
+        // Same rule as the forgot-password request, so a resend can't reach an account that was suspended or deleted.
+        if ($request->type === 'password_reset' && in_array($user->account_status, ['deleted', 'suspended'])) {
+            return response()->json([
+                'message' => 'This account is no longer active. Please contact support.',
+            ], 403);
         }
 
         $this->generateOtp($user, $request->type);
@@ -414,11 +429,22 @@ class AuthController extends Controller
                 ], 403);
             }
 
+            // A sign-up that never verified its number is sent back to verify it rather than to support.
+            if ($user->account_status === 'pending') {
+                return response()->json([
+                    'message' => 'Please verify your mobile number to finish signing up.',
+                    'contact_support' => true,
+                    'account_status' => 'pending',
+                ], 403);
+            }
+
             if ($user->account_status === 'inactive') {
                 return response()->json([
-                    'message' => 'Your account is inactive. Please complete registration or contact support.',
+                    'message' => 'Your account is inactive. Please contact support.',
                     'contact_support' => true,
-                    'account_status' => 'inactive'
+                    'account_status' => 'inactive',
+                    // Who set the account inactive, shown as the login page's notice.
+                    'notice' => $user->suspension_message,
                 ], 403);
             }
 
@@ -509,12 +535,7 @@ class AuthController extends Controller
                 if ($vendorStatus === 'rejected' && $approval->admin_id) {
                     $admin = User::find($approval->admin_id);
                     if ($admin) {
-                        $names = explode(' ', trim($admin->full_name));
-                        $initials = '';
-                        foreach($names as $n) {
-                            if(!empty($n)) $initials .= strtoupper($n[0]);
-                        }
-                        $rejectedBy = substr($initials, 0, 2);
+                        $rejectedBy = trim($admin->full_name);
                     }
                 }
             }

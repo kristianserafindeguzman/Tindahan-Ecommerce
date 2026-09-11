@@ -20,76 +20,101 @@
       <div class="login-panel">
         <div class="login-content">
 
-          <h1>Verify your account</h1>
+          <template v-if="hasPhone">
+            <h1>Verify your account</h1>
 
-          <p class="subtitle">
-            We sent a 6-digit verification code to <strong>{{ displayPhone }}</strong>.
-          </p>
+            <p class="subtitle">
+              We sent a 6-digit verification code to <strong>{{ displayPhone }}</strong>.
+            </p>
 
-          <!-- OTP INPUT BOXES -->
-          <div class="otp-row">
-            <input
-              v-for="(digit, index) in otp"
-              :key="index"
-              :ref="el => { otpRefs[index] = el }"
-              v-model="otp[index]"
-              type="text"
-              inputmode="numeric"
-              maxlength="1"
-              class="otp-box"
-              :class="{ 'otp-error': otpError }"
-              @input="handleOtpInput(index)"
-              @keydown="handleOtpKeydown(index, $event)"
-              @paste="handleOtpPaste"
+            <!-- OTP INPUT BOXES -->
+            <div class="otp-row">
+              <input
+                v-for="(digit, index) in otp"
+                :key="index"
+                :ref="el => { otpRefs[index] = el }"
+                v-model="otp[index]"
+                type="text"
+                inputmode="numeric"
+                :autocomplete="index === 0 ? 'one-time-code' : 'off'"
+                :aria-label="`Digit ${index + 1} of 6`"
+                @focus="$event.target.select()"
+                class="otp-box"
+                :class="{ 'otp-error': otpError }"
+                @input="handleOtpInput(index)"
+                @keydown="handleOtpKeydown(index, $event)"
+                @paste="handleOtpPaste"
+              />
+            </div>
+
+            <!-- OTP ERROR -->
+            <div v-if="otpError" class="error-message">
+              {{ otpError }}
+            </div>
+
+            <!-- RESEND -->
+            <div class="resend-section">
+              <span>Didn't receive a code?</span>
+
+              <button
+                type="button"
+                class="text-button resend-btn"
+                :class="{ 'resend-disabled': timer > 0 }"
+                :disabled="timer > 0"
+                @click="resendCode"
+              >
+                {{ timer > 0
+                  ? `Resend in ${formattedTimer}`
+                  : 'Resend Code'
+                }}
+              </button>
+            </div>
+
+            <!-- VERIFY BUTTON -->
+            <q-btn
+              label="Verify"
+              no-caps
+              unelevated
+              class="login-button full-width"
+              :loading="loading"
+              :disable="!otpComplete"
+              @click="verifyOtp"
             />
-          </div>
+          </template>
 
-          <!-- OTP ERROR -->
-          <div v-if="otpError" class="error-message">
-            {{ otpError }}
-          </div>
+          <!-- Opened without the number from sign-up, as happens in a new tab or from a bookmark. -->
+          <div v-else class="missing-state">
+            <div class="missing-icon">
+              <q-icon name="o_sms_failed" size="32px" />
+            </div>
 
-          <!-- RESEND -->
-          <div class="resend-section">
-            <span>Didn't receive a code?</span>
+            <h1>We don't know which number to verify</h1>
 
-            <button
-              type="button"
-              class="text-button resend-btn"
-              :class="{ 'resend-disabled': timer > 0 }"
-              :disabled="timer > 0"
-              @click="resendCode"
-            >
-              {{ timer > 0
-                ? `Resend in ${formattedTimer}`
-                : 'Resend Code'
-              }}
+            <p class="subtitle">
+              Open this page right after signing up, or sign up again with the same details and we'll text you a new code.
+            </p>
+
+            <q-btn
+              label="Log in"
+              no-caps
+              unelevated
+              class="login-button full-width"
+              @click="router.push('/login')"
+            />
+
+            <button type="button" class="text-button secondary-link" @click="router.push('/consumer/register')">
+              Create an account
             </button>
           </div>
-
-          <!-- VERIFY BUTTON -->
-          <q-btn
-            label="Verify"
-            no-caps
-            unelevated
-            class="login-button full-width"
-            :loading="loading"
-            :disable="!otpComplete"
-            @click="verifyOtp"
-          />
 
           <q-separator class="separator" />
 
           <!-- TERMS -->
           <p class="terms">
             By continuing, you agree to our
-            <a href="#" @click.prevent="showTerms = true">
-              Terms and Conditions
-            </a>
+            <a href="#" @click.prevent="showTerms = true">Terms and Conditions</a>
             and
-            <a href="#" @click.prevent="showPrivacy = true">
-              Privacy Policy
-            </a>.
+            <a href="#" @click.prevent="showPrivacy = true">Privacy Policy</a>.
           </p>
 
         </div>
@@ -113,14 +138,16 @@ import { api } from '@/boot/axios'
 const router = useRouter()
 const route = useRoute()
 
+// Read once, because history.state belongs to this history entry and is not reactive.
+const phoneNumber = history.state?.phone_number || ''
+const hasPhone = !!phoneNumber
+
 // Phone number passed from consumer registration, masked for privacy.
 const displayPhone = computed(() => {
-  const phone = history.state?.phone_number
-  if (!phone) return 'your mobile number'
-  if (phone.length >= 10) {
-    return phone.slice(0, 4) + '***' + phone.slice(-4)
+  if (phoneNumber.length >= 10) {
+    return phoneNumber.slice(0, 4) + '***' + phoneNumber.slice(-4)
   }
-  return phone
+  return phoneNumber || 'your mobile number'
 })
 
 // OTP state
@@ -159,6 +186,9 @@ const startTimer = () => {
 }
 
 onMounted(() => {
+  // Without a number there is nothing to resend to, so a countdown would only mislead.
+  if (!hasPhone) return
+
   startTimer()
 
   if (otpRefs.value[0]) {
@@ -172,16 +202,23 @@ onUnmounted(() => {
 
 // Handle typing in OTP boxes — auto-advance to next
 const handleOtpInput = (index) => {
-  const val = otp.value[index]
+  const digits = otp.value[index].replace(/\D/g, '')
 
-  if (val && !/^\d$/.test(val)) {
-    otp.value[index] = ''
+  // An autofilled SMS code lands in the first box as one string, so it is spread across all six.
+  if (digits.length >= 4) {
+    for (let i = 0; i < 6; i++) otp.value[i] = digits[i] || ''
+    otpRefs.value[Math.min(digits.length, 5)]?.focus()
+    otpError.value = ''
     return
   }
 
+  // Typing into a filled box keeps only the newest digit.
+  otp.value[index] = digits.slice(-1)
+  if (!digits) return
+
   otpError.value = ''
 
-  if (val && index < 5) {
+  if (index < 5) {
     otpRefs.value[index + 1]?.focus()
   }
 }
@@ -235,7 +272,7 @@ const verifyOtp = async () => {
       type: verificationType
     })
 
-    router.push('/consumer/success')
+    router.push({ path: '/consumer/success', state: { phone_number: phoneNumber } })
   } catch (error) {
     console.error('OTP Verification Error:', error)
     otpError.value = error.response?.data?.message || 'The verification code you entered is incorrect.'
@@ -366,7 +403,7 @@ const resendCode = async () => {
   padding: 24px 45px;
 
   background: #ffffff;
-  border-radius: 4px;
+  border-radius: var(--r-2xl);
 
   box-shadow:
     0 20px 50px rgba(0, 0, 0, 0.3);
@@ -386,22 +423,22 @@ const resendCode = async () => {
   line-height: 1.2;
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .subtitle {
   margin: 0 0 28px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.5;
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .subtitle strong {
   font-weight: 600;
 
-  color: #333333;
+  color: var(--c-text-2);
 }
 
 /* OTP BOXES */
@@ -420,8 +457,8 @@ const resendCode = async () => {
   height: 48px;
   padding: 0;
 
-  border: 1px solid #d6d6da;
-  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
 
   background: #ffffff;
 
@@ -432,7 +469,7 @@ const resendCode = async () => {
 
   text-align: center;
 
-  color: #222222;
+  color: var(--c-text);
 
   outline: none;
 
@@ -440,13 +477,13 @@ const resendCode = async () => {
 }
 
 .otp-box:focus {
-  border-color: #bd2427;
+  border-color: var(--c-brand);
 
   box-shadow: 0 0 0 1px rgba(189, 36, 39, 0.1);
 }
 
 .otp-box.otp-error {
-  border-color: #ef4444;
+  border-color: var(--c-danger);
 }
 
 /* ERROR MESSAGE */
@@ -455,15 +492,15 @@ const resendCode = async () => {
   margin-bottom: 14px;
   padding: 10px 14px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--c-danger-tint);
+  border: 1px solid var(--c-danger-line);
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.4;
 
-  color: #b91c1c;
+  color: var(--c-danger);
 
   text-align: center;
 }
@@ -473,31 +510,31 @@ const resendCode = async () => {
 .login-button {
   height: 48px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 
   font-family: 'Roboto', Arial, sans-serif;
 
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: 600;
 
-  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+  box-shadow: var(--sh-brand);
 
   transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
-.login-button:hover {
-  background: #a91e21;
+.login-button:not(.disabled):hover {
+  background: var(--c-brand-hover);
 
-  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+  box-shadow: var(--sh-brand-hover);
 
   transform: translateY(-1px);
 }
 
-.login-button:active {
-  background: #8f1a1c;
+.login-button:not(.disabled):active {
+  background: var(--c-brand-active);
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
 
@@ -509,10 +546,10 @@ const resendCode = async () => {
   box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
 }
 
+/* Stays brand red for Quasar's .disabled to fade to 60%, matching the profile page's disabled buttons. */
 .login-button:disabled,
 .login-button.disabled {
-  background: #bd2427;
-  opacity: 0.45;
+  background: var(--c-brand);
 }
 
 /* RESEND */
@@ -526,11 +563,11 @@ const resendCode = async () => {
 
   gap: 4px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .resend-section span {
-  color: #8e97a6;
+  color: var(--c-muted);
 }
 
 .text-button {
@@ -545,11 +582,15 @@ const resendCode = async () => {
   cursor: pointer;
 }
 
+/* Padding cancelled by an equal negative margin grows the tap area to 44px without moving anything. */
 .resend-btn {
-  font-size: 12px;
+  padding: 14px 0;
+  margin: -14px 0;
+
+  font-size: var(--fs-xs);
   font-weight: 600;
 
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .resend-btn:hover:not(:disabled) {
@@ -557,7 +598,7 @@ const resendCode = async () => {
 }
 
 .resend-disabled {
-  color: #aaaaaa;
+  color: var(--c-muted);
 
   cursor: default;
 }
@@ -567,7 +608,7 @@ const resendCode = async () => {
 .separator {
   margin: 16px 0;
 
-  background: #eeeeee;
+  background: var(--c-hairline);
 }
 
 /* TERMS */
@@ -577,16 +618,53 @@ const resendCode = async () => {
 
   text-align: center;
 
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--fs-2xs);
+  line-height: 1.6;
 
-  color: #8e97a6;
+  color: var(--c-muted);
 }
 
+/* Vertical padding on an inline link widens its tap area without changing the line height. */
 .terms a {
-  color: #333333;
+  padding: 16px 0;
+
+  color: var(--c-text-2);
 
   text-decoration: underline;
+}
+
+/* MISSING NUMBER */
+
+.missing-state {
+  text-align: center;
+}
+
+.missing-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 64px;
+  height: 64px;
+  margin-bottom: 18px;
+
+  border-radius: var(--r-2xl);
+
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
+}
+
+.secondary-link {
+  display: block;
+
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  color: var(--c-brand);
 }
 
 /* TABLET */

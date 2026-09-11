@@ -20,10 +20,10 @@
       <div class="login-panel">
         <div class="login-content">
 
-          <h1>Welcome!</h1>
+          <h1>Welcome back!</h1>
 
           <p class="subtitle">
-            Sign up or login to continue.
+            Log in to your Tindahan account.
           </p>
 
           <q-form
@@ -41,6 +41,9 @@
                 no-error-icon
                 hide-bottom-space
                 label="Email or Mobile Number"
+                autocomplete="username"
+                autocapitalize="none"
+                spellcheck="false"
                 class="login-input"
                 :rules="[
                   val => !identifierTouched || !!val || 'Email or mobile number is required.',
@@ -58,8 +61,10 @@
                 dense
                 no-error-icon
                 hide-bottom-space
+                ref="passwordInput"
                 :type="showPassword ? 'text' : 'password'"
                 label="Password"
+                autocomplete="current-password"
                 class="login-input"
                 :rules="[
                   val => !passwordTouched || !!val || 'Password is required.'
@@ -96,7 +101,7 @@
             <!-- LOGIN BUTTON -->
             <q-btn
               type="submit"
-              label="Login"
+              label="Log in"
               no-caps
               unelevated
               class="login-button full-width"
@@ -123,15 +128,11 @@
 
           <!-- TERMS -->
           <p class="terms">
-            By signing up, you agree to our
-            <a href="#" @click.prevent="showTerms = true">
-              Terms and Conditions
-            </a>
+            By continuing, you agree to our
+            <a href="#" @click.prevent="showTerms = true">Terms and Conditions</a>
             and
             <br />
-            <a href="#" @click.prevent="showPrivacy = true">
-              Privacy Policy
-            </a>
+            <a href="#" @click.prevent="showPrivacy = true">Privacy Policy</a>.
           </p>
 
         </div>
@@ -182,8 +183,8 @@
       <q-card class="status-dialog">
         <q-form ref="forgotPhoneForm" @submit.prevent="requestResetOTP">
           <q-card-section class="status-content">
-            <div class="status-icon-wrap" style="background: #bd2427;">
-              <q-icon name="o_lock_reset" size="36px" color="white" />
+            <div class="status-icon-wrap status-icon-brand">
+              <q-icon name="o_lock_reset" size="32px" />
             </div>
             <div class="status-title">Reset Password</div>
             <p class="status-message">
@@ -197,6 +198,8 @@
                 no-error-icon
                 hide-bottom-space
                 label="Mobile number"
+                type="tel"
+                autocomplete="tel"
                 class="login-input"
                 :rules="[
                   val => !forgotPhoneTouched || !!val || 'Mobile number is required.',
@@ -219,8 +222,8 @@
     <q-dialog v-model="showForgotOtp" persistent>
       <q-card class="status-dialog">
         <q-card-section class="status-content">
-          <div class="status-icon-wrap" style="background: #bd2427;">
-            <q-icon name="o_sms" size="36px" color="white" />
+          <div class="status-icon-wrap status-icon-brand">
+            <q-icon name="o_sms" size="32px" />
           </div>
           <div class="status-title">Verify Phone Number</div>
           <p class="status-message">
@@ -236,7 +239,9 @@
               v-model="forgotOtp[index]"
               type="text"
               inputmode="numeric"
-              maxlength="1"
+              :autocomplete="index === 0 ? 'one-time-code' : 'off'"
+              :aria-label="`Digit ${index + 1} of 6`"
+              @focus="$event.target.select()"
               class="otp-box"
               :class="{ 'otp-error': forgotError }"
               @input="handleForgotOtpInput(index)"
@@ -277,8 +282,8 @@
       <q-card class="status-dialog">
         <q-form ref="forgotResetForm" @submit.prevent="submitNewPassword">
           <q-card-section class="status-content">
-            <div class="status-icon-wrap" style="background: #bd2427;">
-              <q-icon name="o_lock_reset" size="36px" color="white" />
+            <div class="status-icon-wrap status-icon-brand">
+              <q-icon name="o_lock_reset" size="32px" />
             </div>
             <div class="status-title">Create New Password</div>
             <p class="status-message">
@@ -294,6 +299,7 @@
                 hide-bottom-space
                 :type="showNewPassword ? 'text' : 'password'"
                 label="New Password"
+                autocomplete="new-password"
                 class="login-input"
                 :rules="[
                   val => !newPasswordTouched || !!val || 'Password is required.',
@@ -309,6 +315,10 @@
                   />
                 </template>
               </q-input>
+              <div v-if="newPasswordStrong" class="field-message field-message-success">
+                <q-icon name="o_check_circle" size="12px" />
+                Strong password.
+              </div>
             </div>
 
             <div class="field-group">
@@ -320,6 +330,7 @@
                 hide-bottom-space
                 :type="showConfirmNewPassword ? 'text' : 'password'"
                 label="Confirm New Password"
+                autocomplete="new-password"
                 class="login-input"
                 :error="confirmPasswordMessage?.type === 'error'"
               >
@@ -351,14 +362,14 @@
     <q-dialog v-model="showResetSuccess">
       <q-card class="status-dialog">
         <q-card-section class="status-content">
-          <div class="status-icon-wrap" style="background: #22c55e;">
-            <q-icon name="o_check" size="36px" color="white" />
+          <div class="status-icon-wrap status-icon-success">
+            <q-icon name="o_check" size="32px" />
           </div>
           <div class="status-title">Password Reset Successful</div>
           <p class="status-message">You can now log in with your new password.</p>
         </q-card-section>
         <q-card-actions class="status-actions" vertical>
-          <q-btn label="Login Now" no-caps unelevated class="login-button full-width" @click="showResetSuccess = false" />
+          <q-btn label="Log in now" no-caps unelevated class="login-button full-width" @click="finishPasswordReset" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -367,8 +378,8 @@
     <q-dialog v-model="showSuspended" persistent>
       <q-card class="status-dialog">
         <q-card-section class="status-content">
-          <div class="status-icon-wrap bg-red-1 text-red-6">
-            <q-icon name="o_block" size="36px" />
+          <div class="status-icon-wrap status-icon-danger">
+            <q-icon name="o_block" size="32px" />
           </div>
           <div class="status-title">Account Suspended</div>
           <p class="status-message">Your account has been temporarily suspended.</p>
@@ -385,25 +396,63 @@
       </q-card>
     </q-dialog>
 
-    <!-- INACTIVE MODAL -->
+    <!-- INACTIVE MODAL: an admin set this account inactive, so the only way back is through support. -->
     <q-dialog v-model="showInactive" persistent>
       <q-card class="status-dialog">
         <q-card-section class="status-content">
-          <div class="status-icon-wrap bg-orange-1 text-orange-6">
-            <q-icon name="o_warning" size="36px" />
+          <div class="status-icon-wrap status-icon-danger">
+            <q-icon name="o_person_off" size="32px" />
           </div>
           <div class="status-title">Account Inactive</div>
-          <p class="status-message">Your account is currently inactive.</p>
+          <p class="status-message">Your account is inactive. Please contact support to reactivate it.</p>
 
-          <div class="notice-box notice-box-orange">
+          <div v-if="inactiveNotice" class="notice-box notice-box-red">
             <q-icon name="o_info" size="16px" />
-            <p><strong>Notice:</strong> {{ inactiveMessage }}</p>
+            <p><strong>Notice:</strong> {{ inactiveNotice }}</p>
           </div>
         </q-card-section>
         <q-card-actions class="status-actions" vertical>
           <q-btn unelevated no-caps label="Contact Support" class="login-button full-width" @click="showContactSupport = true" />
-          <button type="button" class="text-button cancel-link" @click="handleStatusLogout">Back to Login</button>
+          <button type="button" class="text-button cancel-link" @click="showInactive = false">Back to Login</button>
         </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- UNVERIFIED SIGN-UP: shown for a pending account, one that signed up but never verified its mobile number. -->
+    <q-dialog v-model="showUnverified" persistent>
+      <q-card class="status-dialog">
+        <q-form @submit.prevent="sendVerificationCode">
+          <q-card-section class="status-content">
+            <div class="status-icon-wrap status-icon-brand">
+              <q-icon name="o_sms" size="32px" />
+            </div>
+            <div class="status-title">Verify your mobile number</div>
+            <p class="status-message">
+              Your account isn't active yet because your mobile number hasn't been verified. We'll text you a new 6-digit code.
+            </p>
+            <div class="field-group reset-phone-group">
+              <q-input
+                v-model="unverifiedPhone"
+                outlined
+                dense
+                no-error-icon
+                hide-bottom-space
+                label="Mobile number"
+                type="tel"
+                autocomplete="tel"
+                class="login-input"
+                :rules="[val => !unverifiedTouched || phoneRule(val)]"
+                @blur="unverifiedTouched = true"
+              />
+            </div>
+            <div v-if="unverifiedError" class="error-message">{{ unverifiedError }}</div>
+          </q-card-section>
+          <q-card-actions class="status-actions" vertical>
+            <q-btn type="submit" label="Send Code" no-caps unelevated class="login-button full-width" :loading="unverifiedLoading" :disable="phoneRule(unverifiedPhone) !== true" />
+            <button type="button" class="text-button cancel-link" @click="showUnverified = false">Back to Login</button>
+            <button type="button" class="text-button cancel-link cancel-link-quiet" @click="showContactSupport = true">Contact Support</button>
+          </q-card-actions>
+        </q-form>
       </q-card>
     </q-dialog>
 
@@ -432,29 +481,39 @@ const loading = ref(false)
 const loginError = ref('')
 const showRegistrationOptions = ref(false)
 
-// The header's guest "Sign up" button links here with ?register=1 to jump straight to the
-// registration-choice dialog instead of landing on the plain login form.
+// The header's guest Sign up button links here with ?register=1 to open the registration-choice dialog straight away.
+const passwordInput = ref(null)
+
 onMounted(() => {
   if (route.query.register === '1') {
     showRegistrationOptions.value = true
   }
+
+  // Arriving from a finished sign-up, the number is already known, so only the password is left to type.
+  const identifier = history.state?.identifier
+  if (identifier) {
+    form.identifier = identifier
+    nextTick(() => passwordInput.value?.focus())
+  }
 })
 
-// Gates each field's own rules until it's been touched (blurred once,
-// or a submit attempt was made) — Quasar's `lazy-rules` only
-// re-validates on the NEXT blur once triggered, not on every
-// keystroke in between, which left stale error text on screen after
-// the field became valid. This keeps rules permanently reactive
-// (default lazy-rules behavior) while suppressing them pre-touch.
+// Gates each field's rules until it has been touched, because Quasar's lazy-rules only re-validates on the next blur and left stale errors on screen after a field became valid.
 const identifierTouched = ref(false)
 const passwordTouched = ref(false)
 
 // Vendor status modals (Under Review / Rejected now live on their own pages)
 const showSuspended = ref(false)
-const showInactive = ref(false)
 const suspensionMessage = ref('')
-const inactiveMessage = ref('')
 const showContactSupport = ref(false)
+const showInactive = ref(false)
+const inactiveNotice = ref('')
+
+// A pending sign-up never verified its mobile number, so login offers to send a fresh code.
+const showUnverified = ref(false)
+const unverifiedPhone = ref('')
+const unverifiedTouched = ref(false)
+const unverifiedError = ref('')
+const unverifiedLoading = ref(false)
 
 // Forgot password flow state
 const showForgotWarning = ref(false)
@@ -526,6 +585,9 @@ const confirmPasswordMessage = computed(() => {
   if (forgotPassword2.value !== forgotPassword1.value) return { type: 'error', text: 'Passwords do not match.' }
   return { type: 'success', text: 'Passwords match.' }
 })
+
+// Shown once the new password passes its rule, the same positive state as the sign-up and profile password fields.
+const newPasswordStrong = computed(() => !!forgotPassword1.value && passwordRule(forgotPassword1.value) === true)
 
 const canSubmitNewPassword = computed(() =>
   !!forgotPassword1.value && passwordRule(forgotPassword1.value) === true &&
@@ -623,8 +685,16 @@ const handleLogin = async () => {
       }
     } else if (error.response && error.response.status === 403) {
       if (error.response.data.contact_support) {
-        if (error.response.data.account_status === 'inactive') {
-          inactiveMessage.value = error.response.data.message
+        const status = error.response.data.account_status
+
+        // Only a pending sign-up is offered a new code, since an inactive account was deactivated by an admin.
+        if (status === 'pending') {
+          unverifiedPhone.value = toLocalMobile(form.identifier)
+          unverifiedTouched.value = false
+          unverifiedError.value = ''
+          showUnverified.value = true
+        } else if (status === 'inactive') {
+          inactiveNotice.value = error.response.data.notice || ''
           showInactive.value = true
         } else {
           suspensionMessage.value = error.response.data.message
@@ -654,7 +724,29 @@ const handleStatusLogout = async () => {
   localStorage.removeItem('auth_role')
 
   showSuspended.value = false
-  showInactive.value = false
+}
+
+// Numbers are stored in the 09 form, so a +63 identifier is converted and an email leaves the field blank.
+const toLocalMobile = (val) => {
+  if (/^09\d{9}$/.test(val)) return val
+  if (/^\+639\d{9}$/.test(val)) return '0' + val.slice(3)
+  return ''
+}
+
+const sendVerificationCode = async () => {
+  if (phoneRule(unverifiedPhone.value) !== true) return
+
+  unverifiedError.value = ''
+  unverifiedLoading.value = true
+  try {
+    await api.post('/otp/resend', { phone_number: unverifiedPhone.value, type: 'registration' })
+    showUnverified.value = false
+    router.push({ path: '/verification', state: { phone_number: unverifiedPhone.value, type: 'registration', role: 'Consumer' } })
+  } catch (error) {
+    unverifiedError.value = error.response?.data?.message || 'We could not send a code to that number.'
+  } finally {
+    unverifiedLoading.value = false
+  }
 }
 
 const handleForgotPassword = () => {
@@ -688,16 +780,23 @@ const requestResetOTP = async () => {
 
 // Same auto-advance/backspace/paste behavior as ConsumerVerify.vue's OTP boxes.
 const handleForgotOtpInput = (index) => {
-  const val = forgotOtp.value[index]
+  const digits = forgotOtp.value[index].replace(/\D/g, '')
 
-  if (val && !/^\d$/.test(val)) {
-    forgotOtp.value[index] = ''
+  // An autofilled SMS code lands in the first box as one string, so it is spread across all six.
+  if (digits.length >= 4) {
+    for (let i = 0; i < 6; i++) forgotOtp.value[i] = digits[i] || ''
+    forgotOtpRefs.value[Math.min(digits.length, 5)]?.focus()
+    forgotError.value = ''
     return
   }
 
+  // Typing into a filled box keeps only the newest digit.
+  forgotOtp.value[index] = digits.slice(-1)
+  if (!digits) return
+
   forgotError.value = ''
 
-  if (val && index < 5) {
+  if (index < 5) {
     forgotOtpRefs.value[index + 1]?.focus()
   }
 }
@@ -797,6 +896,12 @@ const submitNewPassword = async () => {
   } finally {
     forgotLoading.value = false
   }
+}
+
+const finishPasswordReset = () => {
+  showResetSuccess.value = false
+  form.identifier = forgotPhone.value
+  nextTick(() => passwordInput.value?.focus())
 }
 
 const goToConsumerRegister = () => {
@@ -902,7 +1007,7 @@ const goToVendorRegister = () => {
   padding: 45px 45px;
 
   background: #ffffff;
-  border-radius: 4px;
+  border-radius: var(--r-2xl);
 
   box-shadow:
     0 20px 50px rgba(0, 0, 0, 0.3);
@@ -922,15 +1027,15 @@ const goToVendorRegister = () => {
   line-height: 1.2;
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .subtitle {
   margin: 0 0 30px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 /* FORM */
@@ -955,36 +1060,44 @@ const goToVendorRegister = () => {
 }
 
 .login-input :deep(.q-field__control) {
-  height: 44px;
+  height: 48px;
 
-  border-radius: 8px;
+  border-radius: var(--r-md);
 }
 
 .login-input :deep(.q-field__native),
 .login-input :deep(.q-field__input) {
   font-family: 'Roboto', Arial, sans-serif;
 
-  font-size: 13px;
+  font-size: 14px;
 
-  color: #333333;
+  color: var(--c-text-2);
 
   padding-left: 6px;
 }
 
-.login-input :deep(.q-field__label) {
-  font-size: 13px;
+/* Touch screens keep 16px, because iOS zooms the whole page into any field whose text is smaller than that. */
+@media (pointer: coarse) {
+  .login-input :deep(.q-field__native),
+  .login-input :deep(.q-field__input) {
+    font-size: 16px;
+  }
+}
 
-  color: #8992a2;
+.login-input :deep(.q-field__label) {
+  font-size: var(--fs-sm);
+
+  color: var(--c-muted);
 }
 
 .login-input :deep(.q-field__append) {
-  height: 44px;
+  height: 48px;
 }
 
 .password-icon {
   font-size: 18px;
 
-  color: #777777;
+  color: var(--c-subtle);
 }
 
 /* ERROR MESSAGE */
@@ -993,15 +1106,15 @@ const goToVendorRegister = () => {
   margin-bottom: 14px;
   padding: 10px 14px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--c-danger-tint);
+  border: 1px solid var(--c-danger-line);
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.4;
 
-  color: #b91c1c;
+  color: var(--c-danger);
 }
 
 /* FORGOT PASSWORD */
@@ -1025,10 +1138,15 @@ const goToVendorRegister = () => {
   cursor: pointer;
 }
 
+/* Padding cancelled by an equal negative margin grows the tap area to 44px without moving anything. */
 .forgot-password {
-  font-size: 10px;
+  padding: 14px 0;
+  margin: -14px 0;
 
-  color: #333333;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+
+  color: var(--c-brand);
 }
 
 .forgot-password:hover {
@@ -1043,31 +1161,31 @@ const goToVendorRegister = () => {
   /* field-group's own 16px margin-bottom is the only spacing above this button. */
   margin-top: 0;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 
   font-family: 'Roboto', Arial, sans-serif;
 
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: 600;
 
-  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+  box-shadow: var(--sh-brand);
 
   transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
-.login-button:hover {
-  background: #a91e21;
+.login-button:not(.disabled):hover {
+  background: var(--c-brand-hover);
 
-  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+  box-shadow: var(--sh-brand-hover);
 
   transform: translateY(-1px);
 }
 
-.login-button:active {
-  background: #8f1a1c;
+.login-button:not(.disabled):active {
+  background: var(--c-brand-active);
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
 
@@ -1079,10 +1197,10 @@ const goToVendorRegister = () => {
   box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
 }
 
+/* Stays brand red for Quasar's .disabled to fade to 60%, matching the profile page's disabled buttons. */
 .login-button:disabled,
 .login-button.disabled {
-  background: #bd2427;
-  opacity: 0.45;
+  background: var(--c-brand);
 }
 
 /* REGISTER */
@@ -1096,17 +1214,21 @@ const goToVendorRegister = () => {
 
   gap: 4px;
 
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 
 .register-section span {
-  color: #8e97a6;
+  color: var(--c-muted);
 }
 
 .create-account {
-  font-size: 11px;
+  padding: 14px 0;
+  margin: -14px 0;
 
-  color: #222222;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  color: var(--c-brand);
 }
 
 .create-account:hover {
@@ -1126,14 +1248,17 @@ const goToVendorRegister = () => {
 
   text-align: center;
 
-  font-size: 10px;
-  line-height: 1.5;
+  font-size: var(--fs-2xs);
+  line-height: 1.6;
 
-  color: #8e97a6;
+  color: var(--c-muted);
 }
 
+/* Vertical padding on an inline link widens its tap area without changing the line height. */
 .terms a {
-  color: #333333;
+  padding: 16px 0;
+
+  color: var(--c-text-2);
 
   text-decoration: underline;
 }
@@ -1144,7 +1269,7 @@ const goToVendorRegister = () => {
   width: 400px;
   max-width: 90vw;
 
-  border-radius: 8px;
+  border-radius: var(--r-xl);
 
   font-family: 'Roboto', Arial, sans-serif;
 }
@@ -1158,15 +1283,15 @@ const goToVendorRegister = () => {
   font-size: 19px;
   font-weight: 700;
 
-  color: #222222;
+  color: var(--c-text);
 }
 
 .registration-subtitle {
   margin-top: 6px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #666666;
+  color: var(--c-text-3);
 }
 
 /* Same padding rhythm as .status-actions. */
@@ -1183,25 +1308,25 @@ const goToVendorRegister = () => {
 .vendor-registration-button {
   height: 48px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
   background: #ffffff;
-  color: #bd2427;
+  color: var(--c-brand);
 
   font-family: 'Roboto', Arial, sans-serif;
 
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: 600;
 
   transition: background-color 0.15s, border-color 0.15s;
 }
 
 .vendor-registration-button:hover {
-  background: #fdecec;
+  background: var(--c-brand-tint);
 }
 
 .vendor-registration-button:active {
-  background: #f8d7d8;
+  background: var(--c-brand-tint-2);
 }
 
 .vendor-registration-button:focus-visible {
@@ -1215,7 +1340,7 @@ const goToVendorRegister = () => {
   width: 400px;
   max-width: 90vw;
 
-  border-radius: 8px;
+  border-radius: var(--r-xl);
 
   font-family: 'Roboto', Arial, sans-serif;
 }
@@ -1226,33 +1351,49 @@ const goToVendorRegister = () => {
   padding: 30px 28px 10px;
 }
 
+/* Tinted tiles, the same icon language as the notification and status icons on the consumer pages. */
 .status-icon-wrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  width: 70px;
-  height: 70px;
+  width: 64px;
+  height: 64px;
 
-  border-radius: 50%;
+  border-radius: var(--r-2xl);
 
   margin-bottom: 18px;
+}
+
+.status-icon-brand {
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
+}
+
+.status-icon-success {
+  background: var(--c-success-tint);
+  color: var(--c-success);
+}
+
+.status-icon-danger {
+  background: var(--c-danger-tint);
+  color: var(--c-danger);
 }
 
 .status-title {
   font-size: 19px;
   font-weight: 700;
 
-  color: #222222;
+  color: var(--c-text);
 
   margin-bottom: 10px;
 }
 
 .status-message {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.6;
 
-  color: #666666;
+  color: var(--c-text-3);
 
   margin: 0 0 8px;
 }
@@ -1270,7 +1411,7 @@ const goToVendorRegister = () => {
   margin: 16px 0 6px;
   padding: 12px 14px;
 
-  border-radius: 8px;
+  border-radius: var(--r-md);
 
   text-align: left;
 }
@@ -1286,22 +1427,14 @@ const goToVendorRegister = () => {
   font-size: 12.5px;
   line-height: 1.6;
 
-  /* The backend sends the admin attribution and the reason as two lines
-     separated by \n (e.g. "Suspended by X.\nReason: ...") — preserve that
-     instead of collapsing it into one run-on sentence. */
+  /* The backend sends the admin attribution and the reason as two lines, so the line break is kept instead of collapsing them into one run-on sentence. */
   white-space: pre-line;
 }
 
 .notice-box-red {
-  border: 1px solid rgba(189, 36, 39, 0.2);
-  background: #fdecec;
-  color: #7a1113;
-}
-
-.notice-box-orange {
-  border: 1px solid rgba(234, 145, 8, 0.3);
-  background: #fff4e5;
-  color: #7a4a02;
+  border: 1px solid var(--c-danger-line);
+  background: var(--c-danger-tint);
+  color: var(--c-danger);
 }
 
 /* OTP BOXES — same pattern as ConsumerVerify.vue */
@@ -1320,8 +1453,8 @@ const goToVendorRegister = () => {
   height: 44px;
   padding: 0;
 
-  border: 1px solid #d6d6da;
-  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
 
   background: #ffffff;
 
@@ -1332,7 +1465,7 @@ const goToVendorRegister = () => {
 
   text-align: center;
 
-  color: #222222;
+  color: var(--c-text);
 
   outline: none;
 
@@ -1340,13 +1473,13 @@ const goToVendorRegister = () => {
 }
 
 .otp-box:focus {
-  border-color: #bd2427;
+  border-color: var(--c-brand);
 
   box-shadow: 0 0 0 1px rgba(189, 36, 39, 0.1);
 }
 
 .otp-box.otp-error {
-  border-color: #ef4444;
+  border-color: var(--c-danger);
 }
 
 /* RESEND — same pattern as ConsumerVerify.vue */
@@ -1360,18 +1493,21 @@ const goToVendorRegister = () => {
 
   gap: 4px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .resend-section span {
-  color: #8e97a6;
+  color: var(--c-muted);
 }
 
 .resend-btn {
-  font-size: 12px;
+  padding: 14px 0;
+  margin: -14px 0;
+
+  font-size: var(--fs-xs);
   font-weight: 600;
 
-  color: #bd2427;
+  color: var(--c-brand);
 }
 
 .resend-btn:hover:not(:disabled) {
@@ -1379,7 +1515,7 @@ const goToVendorRegister = () => {
 }
 
 .resend-disabled {
-  color: #aaaaaa;
+  color: var(--c-muted);
 
   cursor: default;
 }
@@ -1388,10 +1524,10 @@ const goToVendorRegister = () => {
 .field-message {
   margin-top: 6px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.4;
 
-  color: #dc2626;
+  color: var(--c-danger);
 }
 
 .field-message-success {
@@ -1400,7 +1536,7 @@ const goToVendorRegister = () => {
 
   gap: 3px;
 
-  color: #16a34a;
+  color: var(--c-success);
   font-weight: 600;
 }
 
@@ -1409,14 +1545,21 @@ const goToVendorRegister = () => {
   display: block;
 
   width: 100%;
-  margin-top: 12px;
-  padding: 6px 0;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 0;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
   text-align: center;
 
-  color: #666666;
+  color: var(--c-text-3);
+}
+
+.cancel-link-quiet {
+  margin-top: 0;
+
+  color: var(--c-muted);
 }
 
 .cancel-link:hover {

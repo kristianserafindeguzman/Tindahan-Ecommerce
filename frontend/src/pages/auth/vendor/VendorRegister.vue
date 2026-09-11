@@ -2,9 +2,7 @@
   <q-page class="vendor-page">
     <div class="vendor-card">
 
-      <!-- Leaves the form without submitting. history.back() where there is somewhere
-           to go back to, otherwise the storefront — the page is reachable from a link
-           in the consumer home, so a blind back() could land on nothing. -->
+      <!-- Leaves the form without submitting, going back when there is history and otherwise to the storefront, since this page can also be opened straight from a link. -->
       <button type="button" class="vendor-back" @click="goBack">
         <q-icon name="o_arrow_back" size="18px" />
         <span>Back</span>
@@ -48,6 +46,7 @@
                   no-error-icon
                   hide-bottom-space
                   label="Store name"
+                  autocomplete="organization"
                   class="login-input"
                   :rules="[
                     val => !storeNameTouched || !!val || 'Store name is required.'
@@ -64,6 +63,7 @@
                   no-error-icon
                   hide-bottom-space
                   label="Store owner name"
+                  autocomplete="name"
                   class="login-input"
                   :rules="[
                     val => !ownerNameTouched || !!val || 'Store owner name is required.',
@@ -128,6 +128,7 @@
                   hide-bottom-space
                   type="email"
                   label="Email address"
+                  autocomplete="email"
                   class="login-input"
                   :rules="[
                     val => !emailTouched || !!val || 'Email is required.',
@@ -145,6 +146,8 @@
                   no-error-icon
                   hide-bottom-space
                   label="Phone number"
+                  type="tel"
+                  autocomplete="tel"
                   class="login-input phone-input"
                   :rules="[
                     val => !phoneTouched || !!val || 'Phone number is required.',
@@ -167,6 +170,7 @@
                   hide-bottom-space
                   :type="showPassword ? 'text' : 'password'"
                   label="Create a password"
+                  autocomplete="new-password"
                   class="login-input"
                   :rules="[
                     val => !passwordTouched || !!val || 'Password is required.',
@@ -184,6 +188,10 @@
                     />
                   </template>
                 </q-input>
+                <div v-if="passwordStrong" class="field-message field-message-success">
+                  <q-icon name="check_circle" size="12px" />
+                  Strong password.
+                </div>
               </div>
 
               <div class="field-group">
@@ -195,6 +203,7 @@
                   hide-bottom-space
                   :type="showConfirmPassword ? 'text' : 'password'"
                   label="Retype password"
+                  autocomplete="new-password"
                   class="login-input"
                   :error="confirmPasswordMessage?.type === 'error'"
                 >
@@ -293,8 +302,6 @@
 
             <div class="map-placeholder">
 
-              <!-- <q-icon name="location_on" class="map-pin-icon" />
-              <span class="map-placeholder-text">Map goes here</span> -->
 
               <VendorLocationMap
                 @location-selected="handleLocationSelected"
@@ -350,44 +357,37 @@
           class="text-button create-account"
           @click="goToLogin"
         >
-          Login
+          Log in
         </button>
       </div>
 
       <!-- TERMS -->
       <p class="terms">
         By signing up, you agree to our
-        <a href="#" @click.prevent="showTerms = true">
-          Terms and Conditions
-        </a>
+        <a href="#" @click.prevent="showTerms = true">Terms and Conditions</a>
         and
-        <a href="#" @click.prevent="showPrivacy = true">
-          Privacy Policy
-        </a>
+        <a href="#" @click.prevent="showPrivacy = true">Privacy Policy</a>.
       </p>
 
     </div>
 
     <!-- CROP DIALOG -->
     <q-dialog v-model="showCropModal" persistent>
-      <q-card style="width: 500px; max-width: 90vw;">
-        <q-card-section>
-          <div class="text-h6">Crop Image</div>
+      <q-card class="crop-dialog">
+        <q-card-section class="crop-header">
+          <div class="crop-icon"><q-icon name="o_crop" size="22px" /></div>
+          <div class="crop-header-text">
+            <div class="crop-title">Crop Store Photo</div>
+            <div class="crop-subtitle">Drag the photo to move it, and zoom until the frame shows your storefront.</div>
+          </div>
+          <q-btn flat round dense icon="o_close" class="crop-close" aria-label="Close photo cropper" @click="showCropModal = false" />
         </q-card-section>
-        <q-card-section style="text-align: center;">
-          <canvas
-            ref="cropCanvas"
-            style="border: 1px dashed #ccc; cursor: crosshair; max-width: 100%;"
-            @mousedown="onCropMouseDown"
-            @mousemove="onCropMouseMove"
-            @mouseup="onCropMouseUp"
-            @mouseleave="onCropMouseUp"
-          ></canvas>
-          <div class="text-caption q-mt-sm">Drag to select a crop area.</div>
+        <q-card-section class="crop-body">
+          <PhotoCropper ref="cropperRef" :src="originalPhotoUrl || ''" :aspect="16 / 9" :output-width="1280" @ready="cropReady = true" />
         </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" @click="showCropModal = false" />
-          <q-btn flat label="Apply Crop" color="primary" @click="applyCrop" />
+        <q-card-actions class="crop-actions">
+          <q-btn outline no-caps label="Cancel" class="crop-cancel" @click="showCropModal = false" />
+          <q-btn unelevated no-caps label="Apply Crop" class="crop-apply" :disable="!cropReady" @click="applyCrop" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -398,7 +398,7 @@
 
         <q-card-section class="success-content">
           <div class="success-icon-wrap">
-            <q-icon name="check" size="36px" color="white" />
+            <q-icon name="o_check" size="32px" />
           </div>
 
           <div class="success-title">Application Submitted!</div>
@@ -446,6 +446,7 @@ import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
+import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 
 const router = useRouter()
 
@@ -479,11 +480,9 @@ const alwaysOpen = ref(false)
 
 // Crop State
 const showCropModal = ref(false)
-const cropCanvas = ref(null)
-let imageObj = null
-let isDragging = false
-const cropRect = reactive({ x: 0, y: 0, w: 0, h: 0 })
-const startPos = reactive({ x: 0, y: 0 })
+const cropperRef = ref(null)
+// Set once the cropper has loaded the photo, so Apply Crop can't run on an empty frame.
+const cropReady = ref(false)
 
 const form = reactive({
   storeName: '',
@@ -520,6 +519,9 @@ const nameRule = val =>
 const emailRule = val => /.+@.+\..+/.test(val) || 'Enter a valid email'
 const phoneRule = val => /^09\d{9}$/.test(val) || 'Phone must be exactly 11 digits starting with 09'
 const passwordRule = val => val.length >= 8 || 'Minimum 8 characters'
+
+// Shown once the password passes its rule, the same positive state as the consumer sign-up and profile password fields.
+const passwordStrong = computed(() => !!form.password && passwordRule(form.password) === true)
 
 // Confirm Password uses its own message (not Quasar's :rules) to show a positive "Passwords match" state — same pattern as ConsumerRegister.vue.
 const confirmPasswordMessage = computed(() => {
@@ -576,116 +578,17 @@ const handlePhotoChange = event => {
 }
 
 const openCropModal = () => {
+  cropReady.value = false
   showCropModal.value = true
-  setTimeout(() => {
-    const canvas = cropCanvas.value
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    imageObj = new Image()
-    imageObj.onload = () => {
-      const maxW = 400
-      let w = imageObj.width
-      let h = imageObj.height
-      if (w > maxW) {
-        h = (h * maxW) / w
-        w = maxW
-      }
-      canvas.width = w
-      canvas.height = h
-      ctx.drawImage(imageObj, 0, 0, w, h)
-      cropRect.x = 0; cropRect.y = 0; cropRect.w = w; cropRect.h = h
-      drawCropCanvas()
-    }
-    imageObj.src = originalPhotoUrl.value
-  }, 100)
 }
 
-const drawCropCanvas = () => {
-  const canvas = cropCanvas.value
-  if (!canvas || !imageObj) return
-  const ctx = canvas.getContext('2d')
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height)
-  
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
-  
-  if (cropRect.w > 0 && cropRect.h > 0) {
-    ctx.clearRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
-    ctx.drawImage(imageObj, 
-      (cropRect.x / canvas.width) * imageObj.width, 
-      (cropRect.y / canvas.height) * imageObj.height, 
-      (cropRect.w / canvas.width) * imageObj.width, 
-      (cropRect.h / canvas.height) * imageObj.height, 
-      cropRect.x, cropRect.y, cropRect.w, cropRect.h)
-    
-    ctx.strokeStyle = '#fff'
-    ctx.lineWidth = 2
-    ctx.strokeRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
-  }
-}
-
-const onCropMouseDown = (e) => {
-  isDragging = true
-  const rect = cropCanvas.value.getBoundingClientRect()
-  startPos.x = e.clientX - rect.left
-  startPos.y = e.clientY - rect.top
-  cropRect.x = startPos.x
-  cropRect.y = startPos.y
-  cropRect.w = 0
-  cropRect.h = 0
-}
-
-const onCropMouseMove = (e) => {
-  if (!isDragging) return
-  const rect = cropCanvas.value.getBoundingClientRect()
-  const mouseX = e.clientX - rect.left
-  const mouseY = e.clientY - rect.top
-  cropRect.w = mouseX - startPos.x
-  cropRect.h = mouseY - startPos.y
-  drawCropCanvas()
-}
-
-const onCropMouseUp = () => {
-  if (isDragging) {
-    if (cropRect.w < 0) {
-      cropRect.x += cropRect.w
-      cropRect.w = Math.abs(cropRect.w)
-    }
-    if (cropRect.h < 0) {
-      cropRect.y += cropRect.h
-      cropRect.h = Math.abs(cropRect.h)
-    }
-    isDragging = false
-  }
-}
-
-const applyCrop = () => {
-  if (cropRect.w <= 0 || cropRect.h <= 0) {
-    showCropModal.value = false
-    return
-  }
-  
-  const canvas = cropCanvas.value
-  const scaleX = imageObj.width / canvas.width
-  const scaleY = imageObj.height / canvas.height
-  
-  const tempCanvas = document.createElement('canvas')
-  tempCanvas.width = cropRect.w * scaleX
-  tempCanvas.height = cropRect.h * scaleY
-  const ctx = tempCanvas.getContext('2d')
-  ctx.drawImage(imageObj, 
-    cropRect.x * scaleX, cropRect.y * scaleY, cropRect.w * scaleX, cropRect.h * scaleY, 
-    0, 0, tempCanvas.width, tempCanvas.height)
-    
-  tempCanvas.toBlob((blob) => {
-    if (blob) {
-      const croppedFile = new File([blob], 'cropped_' + photoFile.value.name, { type: 'image/jpeg' })
-      photoFile.value = croppedFile
-      photoPreview.value = URL.createObjectURL(croppedFile)
-      showCropModal.value = false
-    }
-  }, 'image/jpeg', 0.9)
+// Saves the framed 16:9 area from the original photo, which stays available for cropping again.
+const applyCrop = async () => {
+  const blob = await cropperRef.value?.toBlob()
+  if (!blob) return
+  photoFile.value = new File([blob], 'cropped_' + (photoFile.value?.name || 'store.jpg'), { type: 'image/jpeg' })
+  photoPreview.value = URL.createObjectURL(blob)
+  showCropModal.value = false
 }
 
 const removePhoto = () => {
@@ -734,9 +637,6 @@ const handleVendorRegister = async () => {
     formData.append('closing_time', form.closingTime)
     formData.append('operating_days', JSON.stringify(schedule))
 
-    // Use placeholder coordinates if map is not wired
-    // formData.append('latitude', form.latitude || '14.5764')
-    // formData.append('longitude', form.longitude || '121.0351')
 
     if (!form.latitude || !form.longitude) {
         registerError.value =
@@ -818,63 +718,63 @@ function handleLocationSelected(location) {
 </script>
 
 <style scoped>
-/* =========================
-   PAGE
-========================= */
+/* PAGE */
 
+/* Same red gradient as the login and sign-up pages. */
 .vendor-page {
   min-height: 100vh;
 
   display: flex;
   justify-content: center;
 
-  padding: 40px 20px;
+  padding: 48px 24px;
 
-  background: #f4f4f4;
+  background:
+    linear-gradient(
+      145deg,
+      #c02226 0%,
+      #9c171b 55%,
+      #651012 100%
+    );
 
   font-family: 'Roboto', Arial, sans-serif;
 }
 
-/* =========================
-   CARD
-========================= */
+/* CARD */
 
 .vendor-card {
   width: 100%;
   max-width: 900px;
+  align-self: flex-start;
 
   padding: 45px 55px;
 
   background: #ffffff;
+  border-radius: var(--r-2xl);
 
-  box-shadow:
-    0 12px 35px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 }
 
-/* =========================
-   HEADER
-========================= */
+/* HEADER */
 
-/* Sits above the centred header rather than inside it, so it does not shift the
-   logo off-centre. Given a defined outline because as bare text it read as a stray
-   label floating in the card's 45px margin rather than as a control. */
+/* Sits above the centred header so it doesn't pull the logo off-centre, with an outline so it reads as a control rather than a stray label. */
 .vendor-back {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 
-  height: 40px;
+  height: 44px;
   margin-bottom: 10px;
   padding: 0 18px 0 14px;
 
-  border: 1px solid #e8e8e8;
-  border-radius: 999px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-pill);
 
   background: #ffffff;
-  color: #333333;
+  color: var(--c-text-2);
 
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 
   cursor: pointer;
@@ -882,18 +782,17 @@ function handleLocationSelected(location) {
   transition: background-color 0.15s, border-color 0.15s, color 0.15s;
 }
 
-/* Red arrow ties the control to the section markers and the submit button; the label
-   stays neutral so it does not compete with them. */
+/* The red arrow ties the control to the section markers and submit button, while the label stays neutral so it doesn't compete with them. */
 .vendor-back .q-icon {
-  color: #bd2427;
+  color: var(--c-brand);
 
   transition: transform 0.2s ease;
 }
 
 .vendor-back:hover {
-  border-color: #f3c6c7;
-  background: #fdecec;
-  color: #bd2427;
+  border-color: var(--c-brand-tint-3);
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
 }
 
 .vendor-back:hover .q-icon {
@@ -901,52 +800,50 @@ function handleLocationSelected(location) {
 }
 
 .vendor-back:active {
-  background: #fbdbdc;
+  background: var(--c-brand-tint-2);
 }
 
 .vendor-back:focus-visible {
-  outline: 2px solid #bd2427;
+  outline: 2px solid var(--c-brand);
   outline-offset: 2px;
 }
 
 .vendor-header {
   text-align: center;
 
-  margin-bottom: 22px;
+  margin-bottom: 26px;
 }
 
 .tindahan-logo {
   display: block;
 
-  width: 160px;
+  width: 150px;
 
-  margin: 0 auto 10px;
+  margin: 0 auto 12px;
 
   object-fit: contain;
 }
 
 .vendor-header h1 {
-  margin: 0 0 4px;
+  margin: 0 0 6px;
 
-  font-size: 22px;
-  line-height: 1.25;
+  font-size: 27px;
+  line-height: 1.2;
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .subtitle {
   margin: 0;
 
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
-/* =========================
-   FORM LAYOUT
-========================= */
+/* FORM LAYOUT */
 
 .vendor-form {
   width: 100%;
@@ -961,9 +858,7 @@ function handleLocationSelected(location) {
   margin-bottom: 20px;
 }
 
-/* =========================
-   SECTIONS
-========================= */
+/* SECTIONS */
 
 .section {
   margin-bottom: 26px;
@@ -975,12 +870,12 @@ function handleLocationSelected(location) {
   margin-bottom: 14px;
   padding-left: 10px;
 
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 
-  color: #333333;
+  color: var(--c-text-2);
 }
 
 .section-title::before {
@@ -993,12 +888,12 @@ function handleLocationSelected(location) {
   width: 3px;
   height: 13px;
 
-  background: #bd2427;
+  border-radius: 2px;
+
+  background: var(--c-brand);
 }
 
-/* =========================
-   FIELDS (shared with login/register)
-========================= */
+/* FIELDS (shared with login/register) */
 
 .field-group {
   margin-bottom: 16px;
@@ -1027,42 +922,50 @@ function handleLocationSelected(location) {
 }
 
 .login-input :deep(.q-field__control) {
-  height: 40px;
+  height: 48px;
 
-  border-radius: 8px;
+  border-radius: var(--r-md);
 }
 
 .login-input :deep(.q-field__native),
 .login-input :deep(.q-field__input) {
   font-family: 'Roboto', Arial, sans-serif;
 
-  font-size: 13px;
+  font-size: 14px;
 
-  color: #333333;
+  color: var(--c-text-2);
 
   padding-left: 6px;
 }
 
-.login-input :deep(.q-field__label) {
-  font-size: 13px;
+/* Touch screens keep 16px, because iOS zooms the whole page into any field whose text is smaller than that. */
+@media (pointer: coarse) {
+  .login-input :deep(.q-field__native),
+  .login-input :deep(.q-field__input) {
+    font-size: 16px;
+  }
+}
 
-  color: #8992a2;
+.login-input :deep(.q-field__label) {
+  font-size: var(--fs-sm);
+
+  color: var(--c-muted);
 }
 
 .login-input :deep(.q-field__append) {
-  height: 40px;
+  height: 48px;
 
-  color: #777777;
+  color: var(--c-subtle);
 }
 
 .login-input :deep(.q-field__prepend) {
-  height: 40px;
+  height: 48px;
 }
 
 .password-icon {
   font-size: 18px;
 
-  color: #777777;
+  color: var(--c-subtle);
 }
 
 .phone-prefix {
@@ -1071,19 +974,19 @@ function handleLocationSelected(location) {
   font-size: 13px;
   font-weight: 500;
 
-  color: #333333;
+  color: var(--c-text-2);
 
-  border-right: 1px solid #d6d6da;
+  border-right: 1px solid var(--c-border);
 }
 
 /* Confirm Password's live match/mismatch message — same look as ConsumerRegister.vue's. */
 .field-message {
   margin-top: 6px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.4;
 
-  color: #dc2626;
+  color: var(--c-danger);
 }
 
 .field-message-success {
@@ -1092,32 +995,28 @@ function handleLocationSelected(location) {
 
   gap: 3px;
 
-  color: #16a34a;
+  color: var(--c-success);
   font-weight: 600;
 }
 
-/* =========================
-   ERROR MESSAGE
-========================= */
+/* ERROR MESSAGE */
 
 .error-message {
   margin-bottom: 14px;
   padding: 10px 14px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--c-danger-tint);
+  border: 1px solid var(--c-danger-line);
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.4;
 
-  color: #b91c1c;
+  color: var(--c-danger);
 }
 
-/* =========================
-   PHOTO UPLOAD
-========================= */
+/* PHOTO UPLOAD */
 
 .upload-dropzone {
   display: flex;
@@ -1129,15 +1028,22 @@ function handleLocationSelected(location) {
 
   height: 130px;
 
-  border: 1.5px dashed #cfcfd4;
-  border-radius: 10px;
+  border: 1.5px dashed var(--c-border-strong);
+  border-radius: var(--r-lg);
 
-  background: #fafafa;
+  background: var(--c-surface-2);
 
   cursor: pointer;
 
   overflow: hidden;
   position: relative;
+
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.upload-dropzone:hover {
+  border-color: var(--c-brand);
+  background: var(--c-brand-tint);
 }
 
 .upload-input {
@@ -1147,20 +1053,20 @@ function handleLocationSelected(location) {
 .upload-icon {
   font-size: 24px;
 
-  color: #555555;
+  color: var(--c-brand);
 }
 
 .upload-label {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 
-  color: #333333;
+  color: var(--c-text-2);
 }
 
 .upload-hint {
-  font-size: 10px;
+  font-size: var(--fs-2xs);
 
-  color: #9a9aa2;
+  color: var(--c-muted);
 }
 
 .preview-container {
@@ -1193,7 +1099,7 @@ function handleLocationSelected(location) {
 
   background: rgba(0, 0, 0, 0.55);
 
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 500;
 
   color: #ffffff;
@@ -1207,34 +1113,37 @@ function handleLocationSelected(location) {
 
   margin-top: 8px;
 
-  font-size: 11px;
+  font-size: var(--fs-2xs);
 
-  color: #666666;
+  color: var(--c-text-3);
 }
 
 .remove-photo {
   display: flex;
   align-items: center;
+  justify-content: center;
 
+  width: 28px;
+  height: 28px;
   padding: 0;
 
   margin-left: auto;
 
   border: none;
+  border-radius: var(--r-pill);
   background: transparent;
 
-  color: #999999;
+  color: var(--c-subtle);
 
   cursor: pointer;
 }
 
 .remove-photo:hover {
-  color: #bd2427;
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
 }
 
-/* =========================
-   BUSINESS HOURS OPTIONS
-========================= */
+/* BUSINESS HOURS OPTIONS */
 
 .operating-days-block {
   margin-top: 4px;
@@ -1249,32 +1158,33 @@ function handleLocationSelected(location) {
 }
 
 .always-open-toggle :deep(.q-toggle__label) {
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
 
-  color: #333333;
+  color: var(--c-text-2);
 }
 
 .days-toggle {
   display: flex;
 
-  border: 1px solid #d6d6da;
-  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
   overflow: hidden;
 }
 
 .day-btn {
   flex: 1;
 
-  padding: 10px 0;
+  min-height: 44px;
+  padding: 0;
 
   border: none;
-  border-right: 1px solid #d6d6da;
+  border-right: 1px solid var(--c-border);
 
   background: #ffffff;
-  color: #555555;
+  color: var(--c-text-3);
 
   font-family: 'Roboto', Arial, sans-serif;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 
   cursor: pointer;
@@ -1287,25 +1197,24 @@ function handleLocationSelected(location) {
 }
 
 .day-btn:hover {
-  background: #fdecec;
-  color: #bd2427;
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
 }
 
 .day-btn-active,
 .day-btn-active:hover {
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 }
 
-/* =========================
-   MAP COLUMN
-========================= */
+/* MAP COLUMN */
 
 .map-column {
   display: flex;
   flex-direction: column;
 }
 
+/* The map sets its own 280px minimum height, so this box matches it and clips the corners round. */
 .map-placeholder {
   display: flex;
   flex-direction: column;
@@ -1316,87 +1225,76 @@ function handleLocationSelected(location) {
 
   height: 280px;
 
-  border-radius: 10px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
 
-  background: #eceef1;
+  background: var(--c-surface);
 
-  color: #9a9aa2;
-}
-
-.map-pin-icon {
-  font-size: 26px;
-
-  color: #bd2427;
-}
-
-.map-placeholder-text {
-  font-size: 12px;
+  color: var(--c-muted);
 }
 
 .detected-address {
   margin-top: 14px;
   padding: 10px 12px;
 
-  border-radius: 8px;
+  border-radius: var(--r-md);
 
-  background: #f6f6f7;
+  background: var(--c-surface);
 }
 
 .detected-address-label {
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 
-  color: #9a9aa2;
+  color: var(--c-muted);
 }
 
 .detected-address-value {
   margin-top: 3px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
 
-  color: #333333;
+  color: var(--c-text-2);
 }
 
 .manual-address {
   margin-top: 14px;
 }
 
-/* =========================
-   SUBMIT BUTTON
-========================= */
+/* SUBMIT BUTTON */
 
 .login-button {
   height: 48px;
 
   margin-top: 4px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 
   font-family: 'Roboto', Arial, sans-serif;
 
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: 600;
 
-  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+  box-shadow: var(--sh-brand);
 
   transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
-.login-button:hover {
-  background: #a91e21;
+.login-button:not(.disabled):hover {
+  background: var(--c-brand-hover);
 
-  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+  box-shadow: var(--sh-brand-hover);
 
   transform: translateY(-1px);
 }
 
-.login-button:active {
-  background: #8f1a1c;
+.login-button:not(.disabled):active {
+  background: var(--c-brand-active);
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
 
@@ -1408,15 +1306,13 @@ function handleLocationSelected(location) {
   box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
 }
 
+/* Stays brand red for Quasar's .disabled to fade to 60%, matching the profile page's disabled buttons. */
 .login-button:disabled,
 .login-button.disabled {
-  background: #bd2427;
-  opacity: 0.45;
+  background: var(--c-brand);
 }
 
-/* =========================
-   LOGIN LINK
-========================= */
+/* LOGIN LINK */
 
 .register-section {
   margin-top: 20px;
@@ -1427,24 +1323,26 @@ function handleLocationSelected(location) {
 
   gap: 4px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .register-section span {
-  color: #8e97a6;
+  color: var(--c-muted);
 }
 
+/* Padding cancelled by an equal negative margin grows the tap area to 44px without moving anything. */
 .create-account {
-  font-size: 12px;
-
-  color: #222222;
+  padding: 14px 0;
+  margin: -14px 0;
 
   border: none;
   background: transparent;
 
-  padding: 0;
-
   font-family: 'Roboto', Arial, sans-serif;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  color: var(--c-brand);
 
   cursor: pointer;
 }
@@ -1453,36 +1351,35 @@ function handleLocationSelected(location) {
   text-decoration: underline;
 }
 
-/* =========================
-   TERMS
-========================= */
+/* TERMS */
 
 .terms {
-  margin: 10px 0 0;
+  margin: 14px 0 0;
 
   text-align: center;
 
-  font-size: 10px;
-  line-height: 1.5;
+  font-size: var(--fs-2xs);
+  line-height: 1.6;
 
-  color: #8e97a6;
+  color: var(--c-muted);
 }
 
+/* Vertical padding on an inline link widens its tap area without changing the line height. */
 .terms a {
-  color: #333333;
+  padding: 16px 0;
+
+  color: var(--c-text-2);
 
   text-decoration: underline;
 }
 
-/* =========================
-   SUCCESS DIALOG
-========================= */
+/* SUCCESS DIALOG */
 
 .success-dialog {
   width: 400px;
   max-width: 90vw;
 
-  border-radius: 10px;
+  border-radius: var(--r-xl);
 
   font-family: 'Roboto', Arial, sans-serif;
 }
@@ -1493,17 +1390,19 @@ function handleLocationSelected(location) {
   padding: 30px 28px 10px;
 }
 
+/* A tinted tile, the same success treatment as the dialogs on the login page. */
 .success-icon-wrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  width: 70px;
-  height: 70px;
+  width: 64px;
+  height: 64px;
 
-  border-radius: 50%;
+  border-radius: var(--r-2xl);
 
-  background: #22c55e;
+  background: var(--c-success-tint);
+  color: var(--c-success);
 
   margin-bottom: 18px;
 }
@@ -1512,16 +1411,16 @@ function handleLocationSelected(location) {
   font-size: 19px;
   font-weight: 700;
 
-  color: #222222;
+  color: var(--c-text);
 
   margin-bottom: 10px;
 }
 
 .success-message {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.6;
 
-  color: #666666;
+  color: var(--c-text-3);
 
   margin: 0;
 }
@@ -1533,30 +1432,182 @@ function handleLocationSelected(location) {
 .success-btn {
   width: 100%;
 
-  height: 42px;
+  height: 48px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: 600;
 }
 
 .primary-btn {
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
+
+  box-shadow: var(--sh-brand);
 }
 
 .primary-btn:hover {
-  background: #a91e21;
+  background: var(--c-brand-hover);
 }
 
 .flat-btn {
-  color: #666666;
+  color: var(--c-text-3);
 }
 
-/* =========================
-   TABLET
-========================= */
+/* CROP DIALOG */
+
+/* Same layout as the Crop Profile Photo dialog on the consumer profile page. */
+.crop-dialog {
+  width: 560px;
+  max-width: 90vw;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xl);
+
+  box-shadow: 0 18px 48px rgba(17, 17, 17, 0.18) !important;
+
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+.crop-header {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 32px 32px 20px;
+
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.crop-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 44px;
+  height: 44px;
+
+  border-radius: var(--r-xl);
+
+  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  color: var(--c-brand);
+}
+
+.crop-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.crop-title {
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 700;
+
+  color: var(--c-text);
+}
+
+.crop-subtitle {
+  margin-top: 2px;
+
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+
+  color: var(--c-subtle);
+}
+
+.crop-close {
+  color: var(--c-muted);
+}
+
+.crop-body {
+  padding: 24px 32px;
+}
+
+.crop-actions {
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  padding: 20px 32px;
+
+  border-top: 1px solid var(--c-border);
+}
+
+/* !important beats Quasar's own dialog-actions rule, the same as the profile page's paired buttons. */
+.crop-actions .q-btn {
+  min-width: 160px !important;
+  height: 48px;
+
+  border-radius: var(--r-sm);
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+/* Quasar spaces neighbouring card buttons with its own margin, which would double up with the gap. */
+.crop-actions .q-btn + .q-btn {
+  margin-left: 0;
+}
+
+.crop-cancel {
+  color: var(--c-text-2);
+}
+
+/* Quasar draws the outline on ::before in the text colour, so the softer border has to be set there. */
+.crop-cancel::before {
+  border-color: var(--c-border-strong);
+}
+
+.crop-cancel:hover {
+  background: var(--c-surface);
+}
+
+.crop-apply {
+  background: var(--c-brand);
+  color: #ffffff;
+
+  box-shadow: var(--sh-brand);
+}
+
+.crop-apply:hover {
+  background: var(--c-brand-hover);
+}
+
+@media (max-width: 600px) {
+  /* Quasar pads a small dialog by 24px, which is trimmed to 16px so the photo gets more room on phones. */
+  :global(.q-dialog__inner--minimized:has(.crop-dialog)) {
+    padding: 16px;
+  }
+
+  .crop-dialog {
+    max-width: 100%;
+  }
+
+  .crop-header {
+    align-items: flex-start;
+
+    padding: 24px 24px 20px;
+  }
+
+  .crop-body {
+    padding: 20px 24px;
+  }
+
+  .crop-actions {
+    padding: 16px 24px;
+  }
+
+  /* The two buttons split the row equally, so the desktop minimum width is dropped. */
+  .crop-actions .q-btn {
+    flex: 1 1 0;
+    min-width: 0 !important;
+  }
+}
+
+/* TABLET */
 
 @media (max-width: 900px) {
   .vendor-card {
@@ -1568,16 +1619,11 @@ function handleLocationSelected(location) {
 
     gap: 10px;
   }
-
-  .map-placeholder {
-    height: 220px;
-  }
 }
 
-/* =========================
-   MOBILE
-========================= */
+/* MOBILE */
 
+/* Full-bleed white on phones, the same as the login page. */
 @media (max-width: 600px) {
   .vendor-page {
     padding: 0;
@@ -1586,17 +1632,18 @@ function handleLocationSelected(location) {
   }
 
   .vendor-card {
+    border-radius: 0;
     box-shadow: none;
 
-    padding: 30px 20px 40px;
+    padding: 24px 20px 40px;
   }
 
   .tindahan-logo {
-    width: 120px;
+    width: 110px;
   }
 
   .vendor-header h1 {
-    font-size: 19px;
+    font-size: 22px;
   }
 
   .hours-row {
@@ -1606,5 +1653,3 @@ function handleLocationSelected(location) {
   }
 }
 </style>
-
-
