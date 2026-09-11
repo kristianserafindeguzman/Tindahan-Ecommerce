@@ -26,7 +26,8 @@ api.interceptors.response.use(
 
       const isAccountError = 
         errorCode === 'ACCOUNT_SUSPENDED' || 
-        errorCode === 'ACCOUNT_INACTIVE' || 
+        errorCode === 'ACCOUNT_INACTIVE' ||
+        errorCode === 'ACCOUNT_PENDING' ||
         errorCode === 'VENDOR_NOT_APPROVED'
 
       if (status === 401 || (status === 403 && isAccountError)) {

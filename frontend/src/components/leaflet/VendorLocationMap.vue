@@ -41,9 +41,7 @@ const defaultLocation = {
 }
 
 
-// =========================
 // INITIALIZE MAP
-// =========================
 
 onMounted(() => {
 
@@ -85,9 +83,7 @@ onMounted(() => {
 })
 
 
-// =========================
 // CURRENT LOCATION
-// =========================
 
 const useCurrentLocation = async () => {
 
@@ -117,19 +113,14 @@ const useCurrentLocation = async () => {
 }
 
 
-// =========================
 // SELECT LOCATION
-// =========================
 
 const selectLocation = async (
   latitude,
   longitude
 ) => {
 
-  // Bail out if the map was unmounted (e.g. address menu closed) while an
-  // async geolocation/reverse-geocode call was still in flight — calling
-  // Leaflet methods on a removed map, or emitting into a stale panel, would
-  // otherwise silently corrupt state or throw.
+  // Bails out if the map was unmounted while a geolocation or reverse-geocode call was still in flight, since touching a removed map or emitting into a closed panel would throw or corrupt state.
   if (unmounted) return
 
   // Move map
@@ -173,9 +164,7 @@ const selectLocation = async (
 }
 
 
-// =========================
 // CLEANUP
-// =========================
 
 onBeforeUnmount(() => {
 
@@ -214,9 +203,7 @@ onBeforeUnmount(() => {
 }
 
 
-/* =========================
-   LOCATION BUTTON
-========================= */
+/* LOCATION BUTTON */
 
 .location-button {
   position: absolute;
@@ -270,18 +257,5 @@ onBeforeUnmount(() => {
   color: #111111;
 }
 
-
-/* =========================
-   LEAFLET
-========================= */
-
-:deep(.leaflet-control-zoom) {
-  border: none !important;
-}
-
-
-:deep(.leaflet-control-zoom a) {
-  color: #333333 !important;
-}
 
 </style>

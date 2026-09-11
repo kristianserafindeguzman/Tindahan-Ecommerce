@@ -8,8 +8,8 @@
           class="status-logo"
         />
 
-        <div class="status-icon-wrap">
-          <q-icon name="block" size="34px" />
+        <div class="status-icon-wrap status-icon-danger">
+          <q-icon name="o_block" size="32px" />
         </div>
 
         <div class="status-title">Application Not Approved</div>
@@ -21,31 +21,29 @@
         </p>
 
         <div v-if="rejectionReason" class="reason-box">
-          <div class="reason-label flex items-center justify-between">
-            <div>
-              <q-icon name="error_outline" size="15px" class="q-mr-xs" />
-              Reason for Rejection
-            </div>
-            <div v-if="rejectedBy" class="rejected-by-label flex items-center">
-              <q-icon name="person" size="14px" class="q-mr-xs" />
-              Reviewed by {{ rejectedBy }}
-            </div>
+          <div class="reason-label">
+            <q-icon name="o_error_outline" size="16px" />
+            Reason for Rejection
           </div>
           <p class="reason-text">{{ rejectionReason }}</p>
+          <div v-if="rejectedBy" class="rejected-by-label">
+            <q-icon name="o_person" size="14px" />
+            Reviewed by {{ rejectedBy }}
+          </div>
         </div>
       </q-card-section>
 
       <q-card-actions class="status-actions">
         <q-btn
           label="Contact Support"
-          icon="support_agent"
+          icon="o_support_agent"
           no-caps
           unelevated
           class="status-btn primary-btn"
           @click="showContactSupport = true"
         />
         <q-btn
-          label="Logout"
+          label="Log out"
           icon="logout"
           no-caps
           outline
@@ -92,6 +90,9 @@ onMounted(fetchReason)
 </script>
 
 <style scoped>
+/* PAGE */
+
+/* Same red gradient as the login and sign-up pages. */
 .status-page {
   min-height: 100vh;
   width: 100%;
@@ -102,140 +103,255 @@ onMounted(fetchReason)
 
   padding: 40px 20px;
 
-  background: #f4f4f4;
+  background:
+    linear-gradient(
+      145deg,
+      #c02226 0%,
+      #9c171b 55%,
+      #651012 100%
+    );
 
   font-family: 'Roboto', Arial, sans-serif;
 }
 
+/* CARD */
+
 .status-dialog {
   width: 100%;
-  max-width: 460px;
+  max-width: 440px;
 
-  padding: 12px;
+  border-radius: var(--r-2xl);
 
-  border-radius: 14px;
-
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 }
 
 .status-content {
   text-align: center;
 
-  padding: 36px 34px 14px;
+  padding: 40px 36px 8px;
 }
 
 .status-logo {
   display: block;
 
-  width: 150px;
+  width: 130px;
 
-  margin: 0 auto 18px;
+  margin: 0 auto 22px;
 
   object-fit: contain;
 }
 
+/* Tinted tiles, the same icon language as the dialogs on the login page. */
 .status-icon-wrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  width: 66px;
-  height: 66px;
+  width: 64px;
+  height: 64px;
 
-  border-radius: 50%;
-
-  background: #fde8e8;
-  color: #ef4444;
+  border-radius: var(--r-2xl);
 
   margin-bottom: 18px;
 }
 
+.status-icon-warning {
+  background: var(--c-warning-tint);
+  color: var(--c-warning);
+}
+
+.status-icon-danger {
+  background: var(--c-danger-tint);
+  color: var(--c-danger);
+}
+
 .status-title {
-  font-size: 21px;
+  font-size: 22px;
+  line-height: 1.25;
   font-weight: 700;
 
-  color: #1a1a1a;
+  color: var(--c-text);
 
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .status-message {
-  font-size: 14px;
-  line-height: 1.65;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
 
-  color: #666666;
+  color: var(--c-text-3);
 
   margin: 0;
 }
 
+/* ACTIONS */
+
+.status-actions {
+  padding: 24px 36px 8px;
+
+  gap: 12px;
+}
+
+/* Quasar spaces neighbouring card buttons with its own margin, which would double up with the gap. */
+.status-actions .status-btn {
+  margin: 0;
+}
+
+.status-btn {
+  height: 48px;
+
+  border-radius: var(--r-sm);
+
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.primary-btn {
+  background: var(--c-brand);
+  color: #ffffff;
+
+  box-shadow: var(--sh-brand);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+
+.primary-btn:hover {
+  background: var(--c-brand-hover);
+
+  box-shadow: var(--sh-brand-hover);
+
+  transform: translateY(-1px);
+}
+
+.primary-btn:active {
+  background: var(--c-brand-active);
+
+  transform: translateY(0);
+}
+
+.outline-btn {
+  color: var(--c-text-2);
+}
+
+/* Quasar draws the outline on ::before in the text colour, so the softer border has to be set there. */
+.outline-btn::before {
+  border-color: var(--c-border-strong);
+}
+
+.outline-btn:hover {
+  background: var(--c-surface);
+}
+
+.status-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+/* REASON */
+
 .reason-box {
-  margin-top: 22px;
-  padding: 16px 18px;
+  margin-top: 20px;
+  padding: 14px 16px;
 
-  border-radius: 10px;
+  border: 1px solid var(--c-danger-line);
+  border-radius: var(--r-md);
 
-  background: #f6f6f7;
-  border: 1px solid #ececec;
+  background: var(--c-danger-tint);
 
   text-align: left;
 }
 
 .reason-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: #d32f2f;
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
   margin-bottom: 6px;
+
+  font-size: var(--fs-xs);
+  font-weight: 700;
+
+  color: var(--c-danger);
 }
 
+/* Its own line under the reason, since a full admin name is too long to share the heading row. */
 .rejected-by-label {
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+
+  gap: 4px;
+
+  margin-top: 10px;
+  padding-top: 10px;
+
+  border-top: 1px solid var(--c-danger-line);
+
+  font-size: var(--fs-2xs);
   font-weight: 500;
-  color: #666;
+
+  color: var(--c-danger-muted);
 }
 
 .reason-text {
-  font-size: 13px;
-  line-height: 1.65;
+  font-size: var(--fs-xs);
+  line-height: 1.6;
 
-  color: #444444;
+  color: var(--c-text-2);
 
   margin: 0;
 }
 
 .status-actions {
-  padding: 22px 34px 26px;
-
-  gap: 11px;
+  padding-bottom: 36px;
 }
 
 .status-btn {
   flex: 1;
-
-  height: 46px;
-
-  border-radius: 7px;
-
-  font-size: 14px;
-  font-weight: 500;
 }
 
-.primary-btn {
-  background: #bd2427;
-  color: #ffffff;
-}
+/* MOBILE */
 
-.primary-btn:hover {
-  background: #a91e21;
-}
-
-.outline-btn {
-  color: #333333;
-  border-color: #d6d6da;
-}
-
+/* Full-bleed white on phones, the same as the login page. */
 @media (max-width: 600px) {
+  .status-page {
+    align-items: stretch;
+
+    padding: 0;
+
+    background: #ffffff;
+  }
+
+  .status-dialog {
+    max-width: 100%;
+
+    border-radius: 0;
+
+    box-shadow: none;
+  }
+
+  .status-content {
+    padding: 32px 24px 8px;
+  }
+
+  .status-logo {
+    width: 110px;
+  }
+
+  .status-title {
+    font-size: 20px;
+  }
+
+  /* Stacked buttons stretch to the card's width instead of shrinking to their labels. */
   .status-actions {
     flex-direction: column;
+    align-items: stretch;
+
+    padding: 24px 24px 32px;
+  }
+
+  .status-btn {
+    flex: none;
   }
 }
 </style>
