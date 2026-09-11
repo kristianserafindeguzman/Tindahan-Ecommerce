@@ -32,6 +32,8 @@ class AuthController extends Controller
             'full_name'    => 'required|string|max:100',
             'email'        => 'required|email|max:100',
             'phone_number'    => 'required|string|max:15',
+            // A real calendar date before today, and no earlier than 1900, sent as YYYY-MM-DD.
+            'birthday'        => 'required|date_format:Y-m-d|before:today|after_or_equal:1900-01-01',
             'password'        => 'required|string|min:8|confirmed',
             'profile_picture' => 'nullable|image|max:2048',
         ]);
@@ -70,6 +72,7 @@ class AuthController extends Controller
                     'phone_number'    => $validated['phone_number'],
                     'password_hash'   => Hash::make($validated['password']),
                     'profile_picture' => $photoPath,
+                    'birthday'        => $validated['birthday'],
                 ]);
                 $user = $existingUser;
             } else {
@@ -84,6 +87,7 @@ class AuthController extends Controller
                     'email'           => $validated['email'],
                     'phone_number'    => $validated['phone_number'],
                     'password_hash'   => Hash::make($validated['password']),
+                    'birthday'        => $validated['birthday'],
                     'account_status'  => 'pending',
                     'profile_picture' => $photoPath,
                 ]);
@@ -112,6 +116,43 @@ class AuthController extends Controller
         }
     }
 
+    /** Texts a code to a would-be vendor's phone before any account exists, refusing an email or phone that is already registered. */
+    public function sendVendorOtp(Request $request)
+    {
+        $validated = $request->validate([
+            'email'        => 'required|email|max:100',
+            'phone_number' => ['required', 'string', 'regex:/^09\d{9}$/'],
+        ]);
+
+        // Deleted accounts are included, the same as consumer sign-up, so no email or phone is ever reused.
+        $taken = User::withTrashed()
+            ->where(fn ($query) => $query->where('email', $validated['email'])->orWhere('phone_number', $validated['phone_number']))
+            ->first();
+
+        if ($taken) {
+            $field = $taken->email === $validated['email'] ? 'email' : 'phone_number';
+
+            throw ValidationException::withMessages([
+                $field => [$field === 'email' ? 'This email is already registered.' : 'This phone number is already registered.'],
+            ]);
+        }
+
+        try {
+            $this->sendPhoneOtp($validated['phone_number'], 'registration');
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'We could not send a code right now. Please try again.',
+            ], 503);
+        }
+
+        return response()->json([
+            'message'  => 'A verification code has been sent.',
+            'otp_sent' => true,
+        ]);
+    }
+
     /**
      * Register a new Vendor user with store and pending approval.
      *
@@ -122,7 +163,8 @@ class AuthController extends Controller
         $validated = $request->validate([
             'full_name'     => 'required|string|max:100',
             'email'         => 'required|email|max:100|unique:users,email',
-            'phone_number'  => 'required|string|max:15',
+            'phone_number'  => ['required', 'string', 'regex:/^09\d{9}$/'],
+            'verification_token' => 'required|string',
             'password'      => 'required|string|min:8|confirmed',
             'store_name'    => 'required|string|max:150',
             'store_picture' => 'required|image|max:10240',
@@ -133,6 +175,27 @@ class AuthController extends Controller
             'longitude'     => 'required|numeric|between:-180,180',
             'address'       => 'nullable|string|max:500',
         ]);
+
+        // The phone must have been verified in the last 30 minutes by this same browser, proven by the one-time token the verification returned.
+        $verifiedCode = OtpCode::where('phone_number', $validated['phone_number'])
+            ->where('type', 'registration')
+            ->whereNotNull('verified_at')
+            ->where('verified_at', '>=', now()->subMinutes(30))
+            ->get()
+            ->first(fn ($otp) => Hash::check($validated['verification_token'], $otp->code));
+
+        if (!$verifiedCode) {
+            throw ValidationException::withMessages([
+                'phone_number' => ['Please verify your phone number again before registering.'],
+            ]);
+        }
+
+        // Same rule as the code request, so a phone already on another account can't be reused.
+        if (User::withTrashed()->where('phone_number', $validated['phone_number'])->exists()) {
+            throw ValidationException::withMessages([
+                'phone_number' => ['This phone number is already registered.'],
+            ]);
+        }
 
         // 1. Create the vendor user
         $user = User::create([
@@ -175,6 +238,9 @@ class AuthController extends Controller
             'rejection_reason' => null,
             'reviewed_at'      => null,
         ]);
+
+        // Uses up the verification so it can't register a second vendor.
+        $verifiedCode->delete();
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
@@ -250,6 +316,13 @@ class AuthController extends Controller
             'message' => 'Verification successful.',
             'verified' => true,
         ];
+
+        // A verified registration code is swapped for a one-time token, so only the browser that verified the phone can register a vendor with it.
+        if ($request->type === 'registration') {
+            $verificationToken = Str::random(64);
+            $otp->update(['code' => Hash::make($verificationToken)]);
+            $responseData['verification_token'] = $verificationToken;
+        }
 
         // Password reset flow.
         if ($request->type === 'password_reset') {
@@ -547,46 +620,36 @@ class AuthController extends Controller
         return response()->json($responseData);
     }
 
-    /**
-     * Generate a mock OTP code and store it.
-     *
-     * In production, replace the mock code with a random 6-digit
-     * number and send it via an SMS gateway (Semaphore, Twilio, etc.).
-     */
+    /** Sends a fresh code to a user's phone, where a registration code isn't tied to a user id because the account may not be active yet. */
     private function generateOtp(User $user, string $type): void
     {
-        // Invalidate any previous unverified OTP
-        // for this phone number and OTP type.
-        OtpCode::where('phone_number', $user->phone_number)
+        $this->sendPhoneOtp($user->phone_number, $type, $type === 'registration' ? null : $user->user_id);
+    }
+
+    /** Replaces any unverified code of this type for the phone with a new random one, stores only its hash, and texts it through Semaphore. */
+    private function sendPhoneOtp(string $phoneNumber, string $type, ?int $userId = null): void
+    {
+        OtpCode::where('phone_number', $phoneNumber)
             ->where('type', $type)
             ->whereNull('verified_at')
             ->delete();
 
-        // Generate a random 6-digit OTP.
-        $code = str_pad(
-            random_int(0, 999999),
-            6,
-            '0',
-            STR_PAD_LEFT
-        );
+        // SEMAPHORE_FAKE_CODE swaps in a fixed code and skips the text, but only on a local machine so it can never reach the live server.
+        $fakeCode = app()->environment('local') ? config('services.semaphore.fake_code') : null;
 
-        // Save the OTP securely as a hash.
+        $code = $fakeCode ? (string) $fakeCode : str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
         OtpCode::create([
-            'user_id' => $type === 'registration'
-                ? null
-                : $user->user_id,
-
-            'phone_number' => $user->phone_number,
-            'code' => Hash::make($code),
-            'type' => $type,
-            'expires_at' => now()->addMinutes(10),
+            'user_id'      => $userId,
+            'phone_number' => $phoneNumber,
+            'code'         => Hash::make($code),
+            'type'         => $type,
+            'expires_at'   => now()->addMinutes(10),
         ]);
 
-        // Send the plaintext OTP through Semaphore.
-        $this->semaphoreService->sendOtp(
-            $user->phone_number,
-            $code
-        );
+        if (!$fakeCode) {
+            $this->semaphoreService->sendOtp($phoneNumber, $code);
+        }
     }
 
 }

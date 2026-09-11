@@ -71,6 +71,19 @@
               </div>
             </div>
 
+            <!-- BIRTHDAY -->
+            <div class="field-group">
+              <BirthdayInput
+                v-model="form.birthday"
+                class="login-input"
+                :rules="[
+                  val => !birthdayTouched || !!val || 'Birthday is required.',
+                  val => !birthdayTouched || birthdayRule(val)
+                ]"
+                @touched="birthdayTouched = true"
+              />
+            </div>
+
             <!-- EMAIL -->
             <div class="field-group">
               <q-input
@@ -234,6 +247,8 @@ import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
+import BirthdayInput from '@/components/shared/BirthdayInput.vue'
+import { isValidBirthday } from '@/utils/birthday'
 
 const router = useRouter()
 
@@ -250,6 +265,7 @@ const showPrivacy = ref(false)
 const form = reactive({
   firstName: '',
   lastName: '',
+  birthday: '',
   email: '',
   phoneNumber: '',
   password: '',
@@ -263,9 +279,12 @@ const emailRule = val => /.+@.+\..+/.test(val) || 'Enter a valid email address.'
 const phoneRule = val => /^09\d{9}$/.test(val) || 'Mobile number must start with 09 and contain 11 digits.'
 const passwordRule = val => val.length >= 8 || 'Minimum 8 characters'
 
+const birthdayRule = val => isValidBirthday(val) || 'Enter a valid birthday.'
+
 // Gates each field's rules until touched, so rules stay silent on page load — same fix as the Login page's lazy-rules bug.
 const firstNameTouched = ref(false)
 const lastNameTouched = ref(false)
+const birthdayTouched = ref(false)
 const emailTouched = ref(false)
 const phoneTouched = ref(false)
 const passwordTouched = ref(false)
@@ -283,6 +302,7 @@ const confirmPasswordMessage = computed(() => {
 const canRegister = computed(() =>
   !!form.firstName && nameRule(form.firstName) === true &&
   !!form.lastName && nameRule(form.lastName) === true &&
+  !!form.birthday && birthdayRule(form.birthday) === true &&
   !!form.email && emailRule(form.email) === true &&
   !!form.phoneNumber && phoneRule(form.phoneNumber) === true &&
   !!form.password && passwordRule(form.password) === true &&
@@ -292,6 +312,7 @@ const canRegister = computed(() =>
 const handleRegister = async () => {
   firstNameTouched.value = true
   lastNameTouched.value = true
+  birthdayTouched.value = true
   emailTouched.value = true
   phoneTouched.value = true
   passwordTouched.value = true
@@ -309,6 +330,7 @@ const handleRegister = async () => {
   try {
     const payload = {
       full_name: `${form.firstName} ${form.lastName}`,
+      birthday: form.birthday,
       email: form.email,
       phone_number: form.phoneNumber,
       password: form.password,

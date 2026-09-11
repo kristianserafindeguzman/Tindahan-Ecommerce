@@ -212,7 +212,7 @@
           </q-card-section>
           <q-card-actions class="status-actions" vertical>
             <q-btn type="submit" label="Send Code" no-caps unelevated class="login-button full-width" :loading="forgotLoading" :disable="!canRequestReset" />
-            <button type="button" class="text-button cancel-link" @click="showForgotWarning = false">Cancel</button>
+            <q-btn outline no-caps color="grey-7" label="Cancel" class="cancel-outline full-width" @click="showForgotWarning = false" />
           </q-card-actions>
         </q-form>
       </q-card>
@@ -272,7 +272,7 @@
         </q-card-section>
         <q-card-actions class="status-actions" vertical>
           <q-btn label="Verify Code" no-caps unelevated class="login-button full-width" :loading="forgotLoading" :disable="!forgotOtpComplete" @click="verifyResetOTP" />
-          <button type="button" class="text-button cancel-link" @click="showForgotOtp = false">Cancel</button>
+          <q-btn outline no-caps color="grey-7" label="Cancel" class="cancel-outline full-width" @click="showForgotOtp = false" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -352,7 +352,7 @@
           </q-card-section>
           <q-card-actions class="status-actions" vertical>
             <q-btn type="submit" label="Reset Password" no-caps unelevated class="login-button full-width" :loading="forgotLoading" :disable="!canSubmitNewPassword" />
-            <button type="button" class="text-button cancel-link" @click="showForgotReset = false">Cancel</button>
+            <q-btn outline no-caps color="grey-7" label="Cancel" class="cancel-outline full-width" @click="showForgotReset = false" />
           </q-card-actions>
         </q-form>
       </q-card>
@@ -391,7 +391,7 @@
         </q-card-section>
         <q-card-actions class="status-actions" vertical>
           <q-btn unelevated no-caps label="Contact Support" class="login-button full-width" @click="showContactSupport = true" />
-          <button type="button" class="text-button cancel-link" @click="handleStatusLogout">Back to Login</button>
+          <q-btn outline no-caps color="grey-7" label="Back to Login" class="cancel-outline full-width" @click="handleStatusLogout" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -413,7 +413,7 @@
         </q-card-section>
         <q-card-actions class="status-actions" vertical>
           <q-btn unelevated no-caps label="Contact Support" class="login-button full-width" @click="showContactSupport = true" />
-          <button type="button" class="text-button cancel-link" @click="showInactive = false">Back to Login</button>
+          <q-btn outline no-caps color="grey-7" label="Back to Login" class="cancel-outline full-width" @click="showInactive = false" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -449,7 +449,7 @@
           </q-card-section>
           <q-card-actions class="status-actions" vertical>
             <q-btn type="submit" label="Send Code" no-caps unelevated class="login-button full-width" :loading="unverifiedLoading" :disable="phoneRule(unverifiedPhone) !== true" />
-            <button type="button" class="text-button cancel-link" @click="showUnverified = false">Back to Login</button>
+            <q-btn outline no-caps color="grey-7" label="Back to Login" class="cancel-outline full-width" @click="showUnverified = false" />
             <button type="button" class="text-button cancel-link cancel-link-quiet" @click="showContactSupport = true">Contact Support</button>
           </q-card-actions>
         </q-form>
@@ -1564,6 +1564,33 @@ const goToVendorRegister = () => {
 
 .cancel-link:hover {
   text-decoration: underline;
+}
+
+/* Cancel and Back to Login, outlined in grey like the profile dialogs' Cancel so they read as buttons under the red one. */
+.status-actions .cancel-outline {
+  height: 48px;
+  min-height: 48px;
+  margin-top: 10px;
+
+  border-radius: var(--r-sm);
+
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: var(--fs-sm);
+
+  transition: background-color 0.15s;
+}
+
+.status-actions .cancel-outline:hover {
+  background: var(--c-surface);
+}
+
+.status-actions .cancel-outline:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Contact Support stays a quiet link right under Back to Login rather than a third stacked button. */
+.status-actions .cancel-outline + .cancel-link-quiet {
+  margin-top: 6px;
 }
 
 /* TABLET */

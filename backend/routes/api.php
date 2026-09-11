@@ -29,10 +29,13 @@ Route::get('/stores', [StoreController::class, 'index']);
 // ----- Public Authentication Routes -----
 Route::post('/register/consumer', [AuthController::class, 'registerConsumer']);
 Route::post('/register/vendor', [AuthController::class, 'registerVendor']);
+// Sends a text to any unregistered number, so it is limited per IP to keep SMS spam and cost down.
+Route::post('/register/vendor/otp', [AuthController::class, 'sendVendorOtp'])->middleware('throttle:5,10');
 Route::post('/login', [AuthController::class, 'login']);
 
 // ----- Public OTP Routes -----
-Route::post('/otp/verify', [AuthController::class, 'verifyOtp']);
+// Limited so the 6-digit codes can't be found by trying them all.
+Route::post('/otp/verify', [AuthController::class, 'verifyOtp'])->middleware('throttle:10,1');
 Route::post('/otp/resend', [AuthController::class, 'resendOtp']);
 
 // ----- Public Forgot Password Routes -----

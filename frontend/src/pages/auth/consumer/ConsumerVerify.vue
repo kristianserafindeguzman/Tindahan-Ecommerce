@@ -40,7 +40,8 @@
                 :aria-label="`Digit ${index + 1} of 6`"
                 @focus="$event.target.select()"
                 class="otp-box"
-                :class="{ 'otp-error': otpError }"
+                :class="{ 'otp-error': otpError, 'otp-success': otpVerified }"
+                :disabled="otpVerified"
                 @input="handleOtpInput(index)"
                 @keydown="handleOtpKeydown(index, $event)"
                 @paste="handleOtpPaste"
@@ -60,7 +61,7 @@
                 type="button"
                 class="text-button resend-btn"
                 :class="{ 'resend-disabled': timer > 0 }"
-                :disabled="timer > 0"
+                :disabled="timer > 0 || otpVerified"
                 @click="resendCode"
               >
                 {{ timer > 0
@@ -77,7 +78,7 @@
               unelevated
               class="login-button full-width"
               :loading="loading"
-              :disable="!otpComplete"
+              :disable="!otpComplete || otpVerified"
               @click="verifyOtp"
             />
           </template>
@@ -155,6 +156,9 @@ const otp = ref(['', '', '', '', '', ''])
 const otpRefs = ref([])
 const otpError = ref('')
 const loading = ref(false)
+// Turns the boxes green for a moment once the code is accepted, the same flash as the consumer profile's phone check.
+const otpVerified = ref(false)
+let verifiedTimer = null
 
 const otpComplete = computed(() => otp.value.every(digit => digit !== ''))
 
@@ -198,6 +202,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   clearInterval(interval)
+  clearTimeout(verifiedTimer)
 })
 
 // Handle typing in OTP boxes — auto-advance to next
@@ -247,6 +252,7 @@ const handleOtpPaste = (event) => {
 }
 
 const verifyOtp = async () => {
+  if (loading.value || otpVerified.value) return
   const finalOtp = otp.value.join('')
 
   const phoneNum = history.state?.phone_number
@@ -272,7 +278,9 @@ const verifyOtp = async () => {
       type: verificationType
     })
 
-    router.push({ path: '/consumer/success', state: { phone_number: phoneNumber } })
+    otpVerified.value = true
+    // Holds the green boxes briefly before moving on to the success page.
+    verifiedTimer = setTimeout(() => router.push({ path: '/consumer/success', state: { phone_number: phoneNumber } }), 450)
   } catch (error) {
     console.error('OTP Verification Error:', error)
     otpError.value = error.response?.data?.message || 'The verification code you entered is incorrect.'
@@ -284,7 +292,7 @@ const verifyOtp = async () => {
 }
 
 const resendCode = async () => {
-  if (timer.value > 0) return
+  if (timer.value > 0 || otpVerified.value) return
 
   otpError.value = ''
   
@@ -484,6 +492,16 @@ const resendCode = async () => {
 
 .otp-box.otp-error {
   border-color: var(--c-danger);
+}
+
+/* Brief green flash on the digit boxes before the success page, the same as the consumer profile's phone check. */
+.otp-box.otp-success {
+  border-color: var(--c-success);
+
+  background: var(--c-success-tint);
+  color: var(--c-success);
+
+  transition: border-color 0.15s, background-color 0.2s, color 0.2s;
 }
 
 /* ERROR MESSAGE */
