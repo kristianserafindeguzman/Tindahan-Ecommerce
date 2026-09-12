@@ -96,7 +96,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/store/address', [\App\Http\Controllers\ProfileController::class, 'updateStoreAddress']);
         Route::post('/profile/store-image', [\App\Http\Controllers\VendorController::class, 'uploadStoreImage']);
         Route::delete('/account', [\App\Http\Controllers\ProfileController::class, 'deleteAccount']);
-        
+        // The same phone and email changes the consumer profile offers, through the same controller methods.
+        Route::post('/profile/phone-request-otp', [\App\Http\Controllers\ProfileController::class, 'requestPhoneOtp']);
+        Route::post('/profile/phone-verify-otp', [\App\Http\Controllers\ProfileController::class, 'verifyPhoneOtp']);
+        Route::post('/profile/email', [\App\Http\Controllers\ProfileController::class, 'updateEmail']);
+        // Vendor notifications, through the same controller the consumer's bell uses.
+        Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+        Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
+
         Route::get('/sales/metrics', [\App\Http\Controllers\SalesController::class, 'metrics']);
         Route::get('/sales/transactions', [\App\Http\Controllers\SalesController::class, 'transactions']);
         Route::post('/sales/manual', [\App\Http\Controllers\SalesController::class, 'storeManual']);

@@ -56,6 +56,18 @@
   --c-status-active: #ff9800;
   --c-status-active-tint: #fff3e0;
 
+  /* One colour per order status on the vendor side, each dark enough to read on its own tint. */
+  --st-placed: #1d4ed8;
+  --st-placed-bg: #dbeafe;
+  --st-preparing: #b45309;
+  --st-preparing-bg: #fef3c7;
+  --st-ready: #6d28d9;
+  --st-ready-bg: #ede9fe;
+  --st-done: #15803d;
+  --st-done-bg: #dcfce7;
+  --st-cancelled: #b91c1c;
+  --st-cancelled-bg: #fee2e2;
+
   /* Radius */
   --r-xs: 4px;    /* skeleton bars, text highlight marks */
   --r-sm: 6px;    /* buttons and small controls */
@@ -64,6 +76,12 @@
   --r-xl: 12px;   /* dialogs, icon tiles */
   --r-2xl: 16px;  /* sheets, hero and store banners */
   --r-pill: 999px;
+  /* Two radii the vendor side uses everywhere: one for controls, one for surfaces. */
+  --r-control: 8px;  /* buttons, inputs, menus, thumbnails, notes inside cards */
+  --r-surface: 12px; /* cards, dialogs, panels, banners, icon tiles */
+
+  /* The gap between cards and page sections. */
+  --sp-gap: 16px;
 
   /* Space the bottom tab bar occupies, zero at desktop widths where the bar does not render. */
   --bottom-nav-h: 0px;

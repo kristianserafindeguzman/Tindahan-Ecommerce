@@ -83,6 +83,21 @@ class OrderController extends Controller
                 'message' => "You successfully cancelled your order #{$order->order_id}.",
             ]);
 
+            // The store owner hears about the cancellation too, and a failed notice never undoes the cancellation itself.
+            try {
+                $ownerId = optional($order->store)->owner_id;
+                if ($ownerId) {
+                    \App\Models\Notification::create([
+                        'user_id' => $ownerId,
+                        'order_id' => $order->order_id,
+                        'title' => 'Order Cancelled',
+                        'message' => "A customer cancelled order #{$order->order_id}.",
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Vendor cancellation notification failed: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'message' => 'Order cancelled successfully',
                 'order' => $order

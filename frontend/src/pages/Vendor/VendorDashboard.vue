@@ -1,713 +1,347 @@
 <template>
-  <q-page class="vendor-page" :class="{ 'mobile-page-padding': $q.screen.lt.md }">
-    <!-- Decorative Ambient Background Glows -->
-    <div class="bg-glow bg-glow-primary"></div>
-    <div class="bg-glow bg-glow-secondary"></div>
+  <q-page class="dash-page">
+    <div class="dash-container">
 
-    <!-- Warm Glassmorphic Sari-Sari Store Loading Screen -->
-    <transition name="fade-fast">
-      <div v-if="checkingAccess" class="checking-access-overlay z-max flex flex-center glass-backdrop">
-        <div class="bg-glow bg-glow-primary pulse-bg-glow" style="opacity: 0.4;"></div>
-        
-        <div class="loader-glass-card column flex-center shadow-soft">
-          <div class="store-icon-wrapper relative-position flex flex-center q-mb-md">
-            <div class="soft-glow-ring"></div>
-            
-            <span class="floating-particle p-1">
-              <q-icon name="local_mall" size="22px" color="amber-8" />
+      <!-- ================= WELCOME BANNER ================= -->
+      <!-- The consumer home's red banner, turned into the store owner's daily welcome. -->
+      <!-- Its colour and icon follow the time of day, from a sunrise orange to a night indigo. -->
+      <section class="dash-hero" :class="`dash-hero--${dayPhase.key}`">
+        <div class="dash-hero-content">
+          <div class="hero-eyebrow-row">
+            <span class="hero-eyebrow">
+              <q-icon :name="dayPhase.icon" size="14px" />
+              {{ currentDate }}
             </span>
-            <span class="floating-particle p-2">
-              <span class="peso-coin shadow-soft">₱</span>
+            <!-- Shown once the store has loaded, so it never flashes "Closed now" first. -->
+            <span v-if="!loading" class="hero-status" :class="isStoreOpen ? 'hero-status--open' : 'hero-status--closed'">
+              <span class="store-status-dot" />
+              {{ isStoreOpen ? 'Open now' : 'Closed now' }}
             </span>
-            <span class="floating-particle p-3">
-              <q-icon name="receipt_long" size="22px" color="blue-7" />
-            </span>
+          </div>
 
-            <div class="store-avatar-box shadow-3 flex flex-center">
-              <q-icon name="storefront" size="44px" class="storefront-icon-anim" />
-              <div class="store-awning-bar"></div>
+          <h1 class="hero-title">{{ timeGreeting }}, {{ userName }}!</h1>
+          <p class="hero-sub">Here's how {{ vendorStore?.store_name || 'your store' }} is doing today.</p>
+
+          <div class="hero-actions">
+            <q-btn unelevated no-caps label="View Store" class="hero-cta" @click="liveStoreModal = true">
+              <q-icon name="o_storefront" size="16px" class="q-ml-xs" />
+            </q-btn>
+            <q-btn unelevated no-caps label="Manage Products" class="hero-cta hero-cta--ghost" @click="router.push('/vendor/products/list')">
+              <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
+            </q-btn>
+            <!-- Notifications ride in the banner's own row of buttons on desktop, while phones reach them from the top bar. -->
+            <q-btn unelevated class="hero-cta hero-cta--ghost hero-bell" aria-label="Notifications">
+              <q-icon name="o_notifications" />
+              <q-badge v-if="unreadCount > 0" floating rounded class="hero-bell-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</q-badge>
+              <q-menu class="notif-menu" anchor="bottom left" self="top left" :offset="[0, 8]">
+                <NotificationsPanel />
+              </q-menu>
+            </q-btn>
+          </div>
+        </div>
+
+        <!-- A large, faint sun or moon for the time of day, where the store photo used to be. -->
+        <q-icon :name="dayPhase.icon" class="hero-art" aria-hidden="true" />
+      </section>
+
+      <!-- ================= ORDER COUNTS ================= -->
+      <div class="row q-col-gutter-md q-mb-md">
+        <div v-for="kpi in kpis" :key="kpi.key" class="col-6 col-md-3">
+          <div class="dash-card kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-label">{{ kpi.label }}</span>
+              <span class="kpi-icon" :class="`vp-tone--${kpi.tone}`">
+                <q-icon :name="kpi.icon" size="20px" />
+              </span>
             </div>
-          </div>
-          
-          <div class="text-h6 text-weight-bolder text-blue-grey-9 tracking-wide q-mt-sm row items-center no-wrap">
-            <span>{{ loadingTitle }}</span>
-            <span class="loading-dots"></span>
-          </div>
-          <div class="text-caption text-blue-grey-6 q-mt-xs text-weight-medium text-center">
-            {{ loadingSubtitle }}
-          </div>
-
-          <div class="sari-loading-bar-track q-mt-md">
-            <div class="sari-loading-bar-fill"></div>
+            <q-skeleton v-if="loading" type="text" width="45%" class="kpi-skeleton" />
+            <div v-else class="kpi-value">{{ kpi.value }}</div>
           </div>
         </div>
       </div>
-    </transition>
 
-    <div v-show="!checkingAccess" class="page-container">
-      
-      <!-- ========================================================= -->
-      <!-- ==================== DESKTOP LAYOUT ===================== -->
-      <!-- ========================================================= -->
-      <div v-if="!$q.screen.lt.md" class="desktop-layout">
-        
-        <!-- ================= DYNAMIC TIME-SYNCED HEADER ================= -->
-        <div class="welcome-banner q-mb-lg q-pa-lg row items-center justify-between transition-theme card-rounded" :class="headerThemeClass">
-          <div class="col-12 col-md-7 col-lg-7">
-            <div class="row items-center q-mb-xs">
-              <q-icon name="today" size="16px" :class="subTextClass" class="q-mr-xs opacity-80" />
-              <span class="text-caption text-weight-bold tracking-wide text-uppercase" :class="subTextClass">
-                {{ currentDate }}
-              </span>
-            </div>
-            <h1 class="text-h3 text-weight-bolder q-ma-none header-title" :class="headerTextClass" style="line-height: 1.15;">
-              {{ timeGreeting }},
-              <span class="text-weight-black">{{ userName }}</span>
-            </h1>
-            <p class="text-subtitle1 q-mt-xs q-mb-none opacity-80" :class="subTextClass">
-              Here's what's happening with your neighborhood store today.
-            </p>
-          </div>
+      <div class="row q-col-gutter-md q-mb-md items-stretch">
 
-          <div class="col-12 col-md-5 col-lg-5 flex justify-end items-center">
-            <div class="unified-store-capsule row items-center no-wrap shadow-soft" :class="capsuleThemeClass">
-              <div class="store-status-section row items-center no-wrap q-px-md q-py-sm">
-                <span class="status-pulse-wrapper q-mr-sm">
-                  <span class="status-pulse-ring" :class="isStoreOpen ? 'pulse-open' : 'pulse-closed'"></span>
-                  <span class="status-pulse-core" :class="isStoreOpen ? 'core-open' : 'core-closed'"></span>
-                </span>
-                <span class="text-weight-bold text-caption status-text no-wrap" :class="capsuleTextClass">
-                  {{ isStoreOpen ? 'Store is Open' : 'Store is Closed' }}
-                </span>
+        <!-- ================= REVENUE ================= -->
+        <div class="col-12 col-md-8">
+          <div class="dash-card dash-card--fill">
+            <div class="card-header">
+              <div>
+                <div class="section-title">Revenue</div>
+                <div class="section-subtitle">Income from completed pickups.</div>
               </div>
 
-              <div class="capsule-divider"></div>
-
-              <button type="button" class="capsule-action-btn row items-center no-wrap cursor-pointer" @click="liveStoreModal = true">
-                <q-icon name="storefront" size="18px" class="q-mr-xs action-icon" />
-                <span class="text-weight-bold text-caption">Live Store</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- ================= TOP METRICS ================= -->
-        <div class="row q-col-gutter-md q-col-gutter-lg-lg q-mb-xl">
-          <div class="col-6 col-md-3">
-            <q-card class="clean-solid-card card-hover h-full">
-              <q-card-section class="q-pa-md q-pa-md-lg">
-                <div class="row items-center justify-between q-mb-sm">
-                  <div class="text-caption text-weight-bold text-blue-9 text-uppercase tracking-wide line-height-tight">Placed<br class="mobile-only"> Orders</div>
-                  <div class="icon-premium-box bg-blue-1 text-blue-7 shadow-soft">
-                    <q-icon name="shopping_cart_checkout" size="20px" />
-                  </div>
-                </div>
-                <div class="text-h4 text-md-h3 text-weight-bolder text-dark">{{ stats.placed_orders }}</div>
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <div class="col-6 col-md-3">
-            <q-card class="clean-solid-card card-hover h-full">
-              <q-card-section class="q-pa-md q-pa-md-lg">
-                <div class="row items-center justify-between q-mb-sm">
-                  <div class="text-caption text-weight-bold text-amber-9 text-uppercase tracking-wide line-height-tight">Preparing</div>
-                  <div class="icon-premium-box bg-amber-1 text-amber-7 shadow-soft">
-                    <q-icon name="inventory_2" size="20px" />
-                  </div>
-                </div>
-                <div class="text-h4 text-md-h3 text-weight-bolder text-dark">{{ stats.preparing_orders }}</div>
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <div class="col-6 col-md-3">
-            <q-card class="clean-solid-card card-hover h-full">
-              <q-card-section class="q-pa-md q-pa-md-lg">
-                <div class="row items-center justify-between q-mb-sm">
-                  <div class="text-caption text-weight-bold text-green-9 text-uppercase tracking-wide line-height-tight">Picked<br class="mobile-only"> Up</div>
-                  <div class="icon-premium-box bg-green-1 text-green-7 shadow-soft">
-                    <q-icon name="task_alt" size="20px" />
-                  </div>
-                </div>
-                <div class="text-h4 text-md-h3 text-weight-bolder text-dark">{{ stats.picked_up_orders }}</div>
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <div class="col-6 col-md-3">
-            <q-card class="clean-solid-card card-hover h-full">
-              <q-card-section class="q-pa-md q-pa-md-lg">
-                <div class="row items-center justify-between q-mb-sm">
-                  <div class="text-caption text-weight-bold text-red-9 text-uppercase tracking-wide line-height-tight">Cancelled</div>
-                  <div class="icon-premium-box bg-red-1 text-red-7 shadow-soft">
-                    <q-icon name="block" size="20px" />
-                  </div>
-                </div>
-                <div class="text-h4 text-md-h3 text-weight-bolder text-dark">{{ stats.cancelled_orders }}</div>
-              </q-card-section>
-            </q-card>
-          </div>
-        </div>
-
-        <!-- ================= REVENUE & ML PREDICTION ================= -->
-        <div class="row q-col-gutter-lg q-mb-xl">
-          <!-- Revenue Chart -->
-          <div class="col-12 col-md-7">
-            <q-card class="premium-glass-card card-rounded h-full card-hover flex column">
-              <q-card-section class="panel-header row items-center justify-between q-pa-md q-pa-md-lg">
-                <div class="text-h6 text-weight-bold text-dark row items-center q-mb-sm q-mb-sm-none">
-                  <div class="header-accent-red q-mr-md"></div>
-                  Revenue Overview
-                </div>
-                <div class="desktop-filter-toggle row items-center no-wrap">
-                  <button
-                    v-for="filter in ['Daily', 'Weekly', 'Monthly']"
-                    :key="filter"
-                    type="button"
-                    class="filter-toggle-btn"
-                    :class="{ 'filter-toggle-active': activeRevenueFilter === filter }"
-                    @click="activeRevenueFilter = filter"
-                  >
-                    {{ filter }}
-                  </button>
-                </div>
-              </q-card-section>
-
-              <q-card-section class="chart-container relative-position q-pa-none flex-grow-1">
-                <div v-if="chartLoading" class="absolute-full flex flex-center z-top" style="background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(2px); border-radius: 0 0 16px 16px;">
-                  <q-spinner-dots size="40px" color="red-8" />
-                </div>
-                <VueApexCharts
-                  v-if="!checkingAccess && chartSeries[0]?.data"
-                  class="full-width"
-                  style="width: 100%; display: block;"
-                  type="area"
-                  height="100%"
-                  width="100%"
-                  :options="chartOptions"
-                  :series="chartSeries"
-                />
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <!-- ML Demand Forecast Card -->
-          <div class="col-12 col-md-5">
-            <q-card class="ai-forecast-terminal card-rounded h-full card-hover relative-position overflow-hidden flex column">
-              <div class="ai-terminal-grid"></div>
-              <div class="ai-orb-glow"></div>
-              <div class="ai-orb-secondary"></div>
-
-              <q-card-section class="q-pa-lg relative-position z-top flex-grow-1 column">
-                <!-- Top Badge & Header -->
-                <div class="row items-center justify-between q-mb-md">
-                  <div class="row items-center no-wrap">
-                    <div class="ai-chip-pill row items-center no-wrap q-px-sm q-py-xs q-mr-sm">
-                      <span class="ai-radar-dot q-mr-xs"></span>
-                      <span class="text-caption text-weight-bolder text-amber-4 tracking-wider">AI ENGINE</span>
-                    </div>
-                    <span class="text-h6 text-weight-bolder text-white tracking-tight">Demand Forecast</span>
-                  </div>
-
-                  <span class="ai-live-tag text-caption font-monospace text-weight-bold">
-                    TODAY's PROJECTION
-                  </span>
-                </div>
-
-                <!-- State 1: Loading -->
-                <template v-if="mlForecast.loading">
-                  <div class="column items-center justify-center flex-grow-1 q-py-xl">
-                    <div class="ai-loader-ring relative-position flex flex-center q-mb-md">
-                      <q-spinner-orbit size="52px" color="amber-4" />
-                      <q-icon name="auto_awesome" size="22px" color="amber-3" class="absolute-center pulse-soft" />
-                    </div>
-                    <div class="text-body2 text-white font-monospace text-weight-bold tracking-wide">COMPUTING RECENT SALES...</div>
-                    <div class="text-caption text-blue-grey-3 q-mt-xs">Forecasting neighborhood purchase patterns</div>
-                  </div>
-                </template>
-                
-                <!-- State 2: Error -->
-                <template v-else-if="mlForecast.error">
-                  <div class="column items-center justify-center flex-grow-1 q-py-xl text-center">
-                    <div class="ai-status-circle bg-red-10 border-red q-mb-md flex flex-center">
-                      <q-icon name="sync_problem" size="32px" color="red-4" />
-                    </div>
-                    <div class="text-body2 text-red-2 text-weight-bold">Forecasting Model Unavailable</div>
-                    <div class="text-caption text-blue-grey-4 q-mt-xs">Could not sync predictions right now.</div>
-                  </div>
-                </template>
-
-                <!-- State 3: Insufficient Data -->
-                <template v-else-if="!mlForecast.has_forecast">
-                  <div class="column items-center justify-center flex-grow-1 q-py-xl text-center">
-                    <div class="ai-status-circle bg-indigo-10 border-indigo q-mb-md flex flex-center shadow-soft">
-                      <q-icon name="insights" size="36px" color="amber-3" />
-                    </div>
-                    <div class="text-body2 text-white text-weight-bold font-monospace tracking-wide">COLLECTING TRENDS</div>
-                    <p class="text-caption text-blue-grey-3 q-mt-xs q-mb-none max-w-280">
-                      Need a few more completed orders to accurately predict fast-moving sari-sari items.
-                    </p>
-                  </div>
-                </template>
-                
-                <!-- State 4: Populated Forecast List -->
-                <template v-else>
-                  <p class="text-caption text-blue-grey-2 q-mb-sm opacity-90 line-height-tight">
-                    Based on recent trends, here are your top predicted demand items for today.
-                  </p>
-
-                  <div class="ai-prediction-list flex-grow-1 q-gutter-y-xs">
-                    <div 
-                      v-for="(item, idx) in mlForecast.top_products" 
-                      :key="idx" 
-                      class="ai-product-item row items-center justify-between no-wrap q-pa-sm"
-                    >
-                      <div class="row items-center no-wrap col ellipsis q-pr-sm">
-                        <div class="ai-rank-badge flex flex-center q-mr-sm" :class="'rank-' + (idx + 1)">
-                          #{{ idx + 1 }}
-                        </div>
-
-                        <div class="ai-product-thumb q-mr-sm flex flex-center flex-shrink-0 bg-slate-50">
-                          <img 
-                            v-if="resolveProductImage(item)" 
-                            :src="resolveProductImage(item)" 
-                            class="product-real-img"
-                          />
-                          <q-icon v-else name="image" color="blue-grey-3" size="20px" />
-                        </div>
-
-                        <div class="col ellipsis">
-                          <div class="text-weight-bold text-white text-body2 ellipsis">
-                            {{ item.product_name }}
-                          </div>
-                          <div class="text-caption text-blue-grey-3 font-monospace" style="font-size: 11px;">
-                            {{ getDemandCategory(item.predicted_quantity) }}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="ai-quantity-chip row items-center no-wrap flex-shrink-0">
-                        <span class="quantity-num">{{ formatPieces(item.predicted_quantity) }}</span>
-                        <span class="quantity-unit q-ml-xs">pcs</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div v-if="mlForecast.low_data_warning" class="ai-warning-bar row items-center q-mt-sm q-px-sm q-py-xs">
-                    <q-icon name="warning_amber" size="15px" color="amber-4" class="q-mr-xs flex-shrink-0" />
-                    <span class="text-caption text-amber-2 text-weight-medium line-height-tight">
-                      {{ mlForecast.low_data_warning }}
-                    </span>
-                  </div>
-
-                  <div class="row items-center justify-between q-mt-md pt-xs border-top-glass text-caption text-blue-grey-4 font-monospace" style="font-size: 11px;">
-                    <span class="row items-center">
-                      <q-icon name="bolt" size="14px" color="amber-4" class="q-mr-xs" />
-                      Dynamic Stock Engine
-                    </span>
-                    <span class="row items-center">
-                      <q-icon name="sync" size="13px" color="blue-grey-3" class="q-mr-xs" />
-                      {{ formatLastSync(mlForecast.generated_at) }}
-                    </span>
-                  </div>
-                </template>
-              </q-card-section>
-            </q-card>
-          </div>
-        </div>
-
-        <!-- ================= RECENT ORDERS TABLE ================= -->
-        <q-card class="premium-glass-card card-rounded q-mb-xl card-hover bg-transparent-mobile">
-          <q-card-section class="panel-header row items-center justify-between q-pa-md q-pa-md-lg bg-transparent-mobile-header">
-            <div class="text-h6 text-weight-bold text-dark row items-center">
-              <div class="header-accent-red q-mr-md"></div> Recent Customer Orders
-            </div>
-            <q-btn label="View All" flat color="red-9" class="text-weight-bold border-radius-8" no-caps @click="router.push('/vendor/orders/list')" />
-          </q-card-section>
-          <q-table flat class="custom-premium-table bg-transparent" :rows="recentOrders" :columns="orderColumns" row-key="id" hide-bottom :pagination="{ rowsPerPage: 5 }">
-            <template #body-cell-id="props">
-              <q-td :props="props"><span class="text-weight-bold text-red-8 font-monospace q-px-sm q-py-xs bg-red-1" style="border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 6px;">#{{ props.row.id }}</span></q-td>
-            </template>
-            <template #body-cell-customer="props">
-              <q-td :props="props">
-                <div class="row items-center no-wrap">
-                  <q-avatar size="34px" class="q-mr-md shadow-soft border-white bg-blue-grey-1">
-                    <img v-if="props.row.avatar" :src="props.row.avatar" />
-                    <q-icon v-else name="person" color="blue-grey-6" size="22px" />
-                  </q-avatar>
-                  <div class="text-weight-bold text-blue-grey-9 text-body2">{{ props.row.customer }}</div>
-                </div>
-              </q-td>
-            </template>
-            <template #body-cell-status="props">
-              <q-td :props="props"><q-chip dense :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bold shadow-soft q-px-sm q-py-xs">{{ props.row.status }}</q-chip></q-td>
-            </template>
-            <template #body-cell-action="props">
-              <q-td :props="props" class="text-right"><q-btn flat round dense icon="chevron_right" color="blue-grey-4" class="hover-icon-btn" @click="router.push('/vendor/orders/' + props.row.id)" /></q-td>
-            </template>
-          </q-table>
-        </q-card>
-      </div>
-
-      <!-- ========================================================= -->
-      <!-- ==================== MOBILE LAYOUT ====================== -->
-      <!-- ========================================================= -->
-      <div v-else class="mobile-layout">
-        
-        <!-- Clean Airy Mobile Header -->
-        <div class="mobile-hero-banner q-mb-lg q-pa-md transition-theme" :class="headerThemeClass">
-          <div class="row items-center justify-between no-wrap q-mb-xs">
-            <div class="row items-center no-wrap">
-              <q-icon name="today" size="14px" :class="subTextClass" class="q-mr-xs opacity-80" />
-              <span class="text-caption text-weight-bold tracking-wide text-uppercase" :class="subTextClass" style="font-size: 11px;">
-                {{ currentDate }}
-              </span>
-            </div>
-            
-            <div class="mobile-status-tag row items-center no-wrap q-px-sm q-py-xs" :class="capsuleThemeClass">
-              <span class="status-pulse-wrapper q-mr-xs">
-                <span class="status-pulse-ring" :class="isStoreOpen ? 'pulse-open' : 'pulse-closed'"></span>
-                <span class="status-pulse-core" :class="isStoreOpen ? 'core-open' : 'core-closed'"></span>
-              </span>
-              <span class="text-weight-bold" :class="capsuleTextClass" style="font-size: 11px;">
-                {{ isStoreOpen ? 'Store is Open' : 'Store is Closed' }}
-              </span>
-            </div>
-          </div>
-
-          <div class="row items-center justify-between no-wrap q-pt-xs">
-            <div class="col ellipsis q-pr-md">
-              <div class="mobile-greeting-text ellipsis" :class="headerTextClass">
-                {{ timeGreeting }}, <span class="text-weight-black">{{ userName }}</span>
-              </div>
-              <!-- Improved sari-sari store phrasing -->
-              <div class="text-caption q-mt-none opacity-80 ellipsis font-medium" :class="subTextClass" style="font-size: 12px;">
-                Your sari-sari store today
-              </div>
-            </div>
-            
-            <div class="col-auto relative-position">
-              <q-avatar size="52px" class="bg-white text-red-9 cursor-pointer shadow-2 border-white" @click="liveStoreModal = true">
-                <img v-if="vendorStore?.store_picture_url" :src="vendorStore.store_picture_url" />
-                <q-icon v-else name="storefront" size="26px" color="red-9" />
-              </q-avatar>
-              <div class="avatar-preview-badge flex flex-center" @click="liveStoreModal = true">
-                <q-icon name="visibility" size="11px" color="white" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Spacious 2x2 Metric Grid -->
-        <div class="row q-col-gutter-md q-mb-lg">
-          <div class="col-6">
-            <div class="mobile-stat-card column justify-center q-pa-md">
-              <div class="row items-center justify-between q-mb-xs">
-                <div class="mobile-stat-label">Placed</div>
-                <div class="mobile-icon-tile bg-blue-1 text-blue-7 flex flex-center">
-                  <q-icon name="shopping_cart_checkout" size="18px" />
-                </div>
-              </div>
-              <div class="mobile-stat-value text-dark">{{ stats.placed_orders }}</div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="mobile-stat-card column justify-center q-pa-md">
-              <div class="row items-center justify-between q-mb-xs">
-                <div class="mobile-stat-label">Preparing</div>
-                <div class="mobile-icon-tile bg-amber-1 text-amber-8 flex flex-center">
-                  <q-icon name="inventory_2" size="18px" />
-                </div>
-              </div>
-              <div class="mobile-stat-value text-dark">{{ stats.preparing_orders }}</div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="mobile-stat-card column justify-center q-pa-md">
-              <div class="row items-center justify-between q-mb-xs">
-                <div class="mobile-stat-label">Picked Up</div>
-                <div class="mobile-icon-tile bg-green-1 text-green-7 flex flex-center">
-                  <q-icon name="task_alt" size="18px" />
-                </div>
-              </div>
-              <div class="mobile-stat-value text-dark">{{ stats.picked_up_orders }}</div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="mobile-stat-card column justify-center q-pa-md">
-              <div class="row items-center justify-between q-mb-xs">
-                <div class="mobile-stat-label">Cancelled</div>
-                <div class="mobile-icon-tile bg-red-1 text-red-7 flex flex-center">
-                  <q-icon name="block" size="18px" />
-                </div>
-              </div>
-              <div class="mobile-stat-value text-dark">{{ stats.cancelled_orders }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Mobile Revenue Card -->
-        <q-card class="mobile-clean-card q-mb-lg overflow-hidden">
-          <div class="mobile-card-header row items-center justify-between q-pa-md">
-            <div class="row items-center no-wrap">
-              <div class="header-accent-red-sm q-mr-sm"></div>
-              <span class="mobile-card-title text-dark">Revenue Overview</span>
-            </div>
-            
-            <div class="mobile-filter-tabs row items-center no-wrap">
-              <button
-                v-for="filter in ['Daily', 'Weekly', 'Monthly']"
-                :key="filter"
-                type="button"
-                class="mobile-filter-btn"
-                :class="{ 'mobile-filter-active': activeRevenueFilter === filter }"
-                @click="activeRevenueFilter = filter"
-              >
-                {{ filter }}
-              </button>
-            </div>
-          </div>
-          
-          <div class="q-px-md q-pt-md text-center">
-            <div class="mobile-revenue-caption">Total Income</div>
-            <div class="mobile-revenue-amount text-dark">₱{{ formatNumber(totalRevenue) }}</div>
-          </div>
-
-          <div class="q-pa-none" style="margin-top: -4px;">
-            <div v-if="chartLoading" class="flex flex-center q-py-lg">
-              <q-spinner-dots size="28px" color="red-8" />
-            </div>
-            <VueApexCharts
-              v-else-if="!checkingAccess && chartSeries[0]?.data"
-              class="full-width"
-              style="width: 100%; display: block;"
-              type="area"
-              height="160"
-              width="100%"
-              :options="chartOptions"
-              :series="chartSeries"
-            />
-          </div>
-        </q-card>
-
-        <!-- Mobile Demand Forecast -->
-        <q-card class="ai-forecast-terminal mobile-ml-card q-mb-lg relative-position overflow-hidden">
-          <div class="ai-terminal-grid"></div>
-          <div class="ai-orb-glow" style="width: 110px; height: 110px;"></div>
-
-          <div class="q-pa-md relative-position z-top column">
-            <div class="row items-center justify-between q-mb-sm">
-              <div class="row items-center no-wrap">
-                <div class="ai-chip-pill row items-center no-wrap q-px-xs q-py-none q-mr-xs">
-                  <span class="ai-radar-dot q-mr-xs"></span>
-                  <span class="text-caption text-weight-bolder text-amber-4" style="font-size: 10px;">AI ENGINE</span>
-                </div>
-                <span class="mobile-card-title text-white">Demand Forecast</span>
-              </div>
-              <span class="text-caption font-monospace text-amber-3 text-weight-bold" style="font-size: 10px;">
-                TODAY'S PCS
-              </span>
-            </div>
-
-            <template v-if="mlForecast.loading">
-              <div class="flex flex-center q-py-lg">
-                <q-spinner-orbit size="32px" color="amber-3" />
-                <span class="text-caption text-amber-2 q-ml-sm font-monospace">ANALYZING...</span>
-              </div>
-            </template>
-            <template v-else-if="!mlForecast.has_forecast">
-              <div class="text-center q-py-md">
-                <q-icon name="insights" size="32px" color="blue-grey-3" class="q-mb-xs opacity-60" />
-                <div class="text-caption text-white font-monospace text-weight-bold">AWAITING ORDERS</div>
-                <div class="text-caption text-blue-grey-4" style="font-size: 11px;">Gathering customer purchasing habits</div>
-              </div>
-            </template>
-            <template v-else>
-              <div class="text-caption text-blue-grey-3 q-mb-xs" style="font-size: 11px;">
-                Based on recent trends, here are your top predicted demand items for today.
-              </div>
-              <div class="q-gutter-y-xs q-mt-xs">
-                <div 
-                  v-for="(item, idx) in mlForecast.top_products.slice(0, 5)" 
-                  :key="idx" 
-                  class="ai-product-item row items-center justify-between no-wrap q-pa-xs"
+              <div class="segmented" role="tablist" aria-label="Revenue period">
+                <button
+                  v-for="filter in FILTERS"
+                  :key="filter"
+                  type="button"
+                  role="tab"
+                  class="segmented-btn"
+                  :class="{ 'segmented-btn--active': activeRevenueFilter === filter }"
+                  :aria-selected="activeRevenueFilter === filter"
+                  @click="activeRevenueFilter = filter"
                 >
-                  <div class="row items-center no-wrap col ellipsis q-pr-xs">
-                    <div class="ai-rank-badge flex flex-center q-mr-xs" :class="'rank-' + (idx + 1)">
-                      {{ idx + 1 }}
-                    </div>
-                    <div class="ai-product-thumb q-mr-xs flex flex-center flex-shrink-0 bg-slate-50" style="width: 34px; height: 34px;">
-                      <img 
-                        v-if="resolveProductImage(item)" 
-                        :src="resolveProductImage(item)" 
-                        class="product-real-img"
-                      />
-                      <q-icon v-else name="image" color="blue-grey-3" size="16px" />
-                    </div>
-                    <div class="col ellipsis">
-                      <div class="text-weight-bold text-white text-caption ellipsis" style="font-size: 12px;">
-                        {{ item.product_name }}
-                      </div>
-                    </div>
+                  {{ filter }}
+                </button>
+              </div>
+            </div>
+
+            <div class="revenue-total">
+              <div class="revenue-total-label">Total for this period</div>
+              <div class="revenue-total-value">₱{{ formatNumber(totalRevenue) }}</div>
+            </div>
+
+            <div class="chart-box">
+              <div v-if="chartLoading" class="chart-loading">
+                <q-spinner-dots size="36px" color="primary" />
+              </div>
+              <VueApexCharts
+                v-if="chartSeries[0]?.data"
+                type="area"
+                width="100%"
+                :height="chartHeight"
+                :options="chartOptions"
+                :series="chartSeries"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= DEMAND FORECAST ================= -->
+        <div class="col-12 col-md-4">
+          <!-- The forecast is the system's own prediction, so it gets a deep red card of its own. -->
+          <div class="dash-card dash-card--fill forecast-card">
+            <div class="card-header">
+              <div>
+                <div class="section-title forecast-title">
+                  <span class="forecast-badge"><q-icon name="o_auto_awesome" size="16px" /></span>
+                  Demand Forecast
+                </div>
+                <div class="section-subtitle">Items likely to sell today.</div>
+              </div>
+            </div>
+
+            <div v-if="mlForecast.loading" class="empty-state">
+              <q-spinner-dots size="32px" color="amber-3" />
+              <div class="empty-state-text">Reading your recent sales…</div>
+            </div>
+
+            <div v-else-if="mlForecast.error" class="empty-state">
+              <div class="state-icon tone-danger"><q-icon name="o_sync_problem" size="24px" /></div>
+              <div class="empty-state-title">Forecast unavailable</div>
+              <div class="empty-state-text">We couldn't load predictions right now.</div>
+            </div>
+
+            <div v-else-if="!mlForecast.has_forecast" class="empty-state">
+              <div class="state-icon tone-brand"><q-icon name="o_insights" size="24px" /></div>
+              <div class="empty-state-title">Collecting trends</div>
+              <div class="empty-state-text">A few more completed orders are needed to predict your fast-moving items.</div>
+            </div>
+
+            <template v-else>
+              <div class="forecast-list">
+                <div v-for="(item, idx) in mlForecast.top_products" :key="idx" class="forecast-item">
+                  <span class="forecast-rank" :class="{ 'forecast-rank--top': idx === 0 }">{{ idx + 1 }}</span>
+                  <div class="forecast-thumb">
+                    <img v-if="resolveProductImage(item)" :src="resolveProductImage(item)" :alt="item.product_name" />
+                    <q-icon v-else name="o_image" size="18px" />
                   </div>
-                  <div class="ai-quantity-chip row items-center no-wrap flex-shrink-0 q-px-sm q-py-xs">
-                    <span class="quantity-num" style="font-size: 12px;">{{ formatPieces(item.predicted_quantity) }}</span>
-                    <span class="quantity-unit q-ml-xs" style="font-size: 10px;">pcs</span>
+                  <div class="forecast-body">
+                    <div class="forecast-name">{{ item.product_name }}</div>
+                    <div class="forecast-meta">{{ getDemandCategory(item.predicted_quantity) }}</div>
                   </div>
+                  <span class="forecast-qty">{{ formatPieces(item.predicted_quantity) }} pcs</span>
                 </div>
               </div>
 
-              <div v-if="mlForecast.low_data_warning" class="ai-warning-bar q-mt-sm q-px-xs q-py-xs">
-                <q-icon name="warning_amber" size="12px" color="amber-4" class="q-mr-xs flex-shrink-0" />
-                <span class="text-caption text-amber-2" style="font-size: 10.5px;">{{ mlForecast.low_data_warning }}</span>
+              <div v-if="mlForecast.low_data_warning" class="forecast-warning">
+                <q-icon name="o_info" size="14px" />
+                <span>{{ mlForecast.low_data_warning }}</span>
               </div>
 
-              <div class="row items-center justify-between q-mt-sm pt-xs border-top-glass text-caption text-blue-grey-4 font-monospace" style="font-size: 10px;">
-                <span>AI Engine</span>
-                <span>{{ formatLastSync(mlForecast.generated_at) }}</span>
+              <div class="forecast-footer">
+                <q-icon name="o_sync" size="13px" />
+                {{ formatLastSync(mlForecast.generated_at) }}
               </div>
             </template>
           </div>
-        </q-card>
-
-        <!-- Mobile Recent Orders Card -->
-        <q-card class="mobile-clean-card q-mb-xl overflow-hidden">
-          <div class="mobile-card-header row items-center justify-between q-pa-md">
-            <div class="row items-center no-wrap">
-              <div class="header-accent-red-sm q-mr-sm"></div>
-              <span class="mobile-card-title text-dark">Recent Orders</span>
-            </div>
-            <q-btn flat dense color="red-9" class="text-weight-bold text-caption" label="View All" no-caps @click="router.push('/vendor/orders/list')" />
-          </div>
-          
-          <div class="q-pa-sm bg-slate-50">
-            <div v-if="recentOrders.length === 0" class="text-center text-grey-5 q-py-lg text-caption">No recent orders found.</div>
-            
-            <q-list v-else class="q-gutter-y-xs">
-              <q-item v-for="order in recentOrders.slice(0,3)" :key="order.id" clickable v-ripple @click="router.push('/vendor/orders/' + order.id)" class="mobile-order-item rounded-borders">
-                <q-item-section avatar class="q-pr-sm" style="min-width: 44px;">
-                  <q-avatar size="38px" class="shadow-1 border-white bg-blue-grey-1">
-                    <img v-if="order.avatar" :src="order.avatar" />
-                    <q-icon v-else name="person" color="blue-grey-6" size="20px" />
-                  </q-avatar>
-                </q-item-section>
-
-                <q-item-section class="q-pr-xs">
-                  <q-item-label class="text-weight-bold text-blue-grey-9 text-body2 ellipsis">{{ order.customer }}</q-item-label>
-                  <q-item-label class="q-mt-xs">
-                    <span class="mobile-order-id">#{{ order.id }}</span>
-                  </q-item-label>
-                </q-item-section>
-
-                <q-item-section side class="items-end">
-                  <q-item-label class="text-weight-bolder text-dark text-subtitle2">₱{{ formatNumber(order.price) }}</q-item-label>
-                  <q-item-label class="q-mt-xs">
-                    <q-chip dense :color="getStatusColor(order.status)" text-color="white" class="mobile-status-chip">
-                      {{ order.status }}
-                    </q-chip>
-                  </q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </div>
-        </q-card>
-
+        </div>
       </div>
+
+      <!-- ================= RECENT ORDERS ================= -->
+      <div class="dash-card">
+        <div class="card-header">
+          <div>
+            <div class="section-title">Recent Orders</div>
+            <div class="section-subtitle">The latest orders from your customers.</div>
+          </div>
+          <q-btn outline no-caps color="primary" label="View All" icon-right="o_chevron_right" class="card-action-btn" @click="router.push('/vendor/orders/list')" />
+        </div>
+
+        <!-- Placeholder rows shaped like the table on wide screens and the list on phones. -->
+        <div v-if="loading" :class="$q.screen.lt.md ? 'recent-skeleton-list' : 'orders-table-wrap'">
+          <SkeletonTable :columns="RECENT_SKELETON" :rows="5" :list="$q.screen.lt.md" />
+        </div>
+
+        <div v-else-if="!recentOrders.length" class="empty-state">
+          <div class="state-icon tone-brand"><q-icon name="o_receipt_long" size="24px" /></div>
+          <div class="empty-state-title">No orders yet</div>
+          <div class="empty-state-text">New orders from customers will show up here.</div>
+        </div>
+
+        <!-- A table on wide screens, where every column has room. -->
+        <div v-else-if="!$q.screen.lt.md" class="orders-table-wrap">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th class="col-order">Order</th>
+                <th>Customer</th>
+                <th class="col-date">Date</th>
+                <th class="text-right col-total">Total</th>
+                <th class="col-status">Status</th>
+                <th class="col-open"><span class="sr-only">Open</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="order in recentOrders.slice(0, 5)" :key="order.id" class="orders-row" @click="openOrder(order)">
+                <td><span class="order-id">#{{ order.id }}</span></td>
+                <td>
+                  <div class="order-customer">
+                    <q-avatar size="32px" class="order-avatar">
+                      <img v-if="order.avatar" :src="order.avatar" alt="" />
+                      <q-icon v-else name="o_person" size="18px" />
+                    </q-avatar>
+                    <span class="order-customer-name">{{ order.customer }}</span>
+                  </div>
+                </td>
+                <td class="order-date">{{ order.date }}</td>
+                <td class="text-right order-total">₱{{ formatNumber(order.price) }}</td>
+                <td><OrderStatusBadge :status="order.status" /></td>
+                <td class="text-right">
+                  <q-btn flat round dense icon="o_chevron_right" class="order-open-btn" :aria-label="`Open order #${order.id}`" @click.stop="openOrder(order)" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- A tappable list on phones, with the total and status on the right. -->
+        <div v-else class="orders-list">
+          <button v-for="order in recentOrders.slice(0, 5)" :key="order.id" type="button" class="orders-list-item" @click="openOrder(order)">
+            <q-avatar size="38px" class="order-avatar">
+              <img v-if="order.avatar" :src="order.avatar" alt="" />
+              <q-icon v-else name="o_person" size="20px" />
+            </q-avatar>
+            <div class="orders-list-body">
+              <div class="order-customer-name">{{ order.customer }}</div>
+              <div class="orders-list-meta">#{{ order.id }} · {{ order.date }}</div>
+            </div>
+            <div class="orders-list-side">
+              <div class="order-total">₱{{ formatNumber(order.price) }}</div>
+              <OrderStatusBadge :status="order.status" />
+            </div>
+          </button>
+        </div>
+      </div>
+
     </div>
 
-    <!-- ================= LIVE STORE MODAL (Safe Rendering & Map Life-cycle) ================= -->
+    <!-- ================= STORE PREVIEW ================= -->
+    <!-- The map is drawn once the dialog has opened, and removed when it closes. -->
     <q-dialog v-model="liveStoreModal" transition-show="scale" transition-hide="scale" @show="initMap" @hide="cleanupMap">
-      <q-card class="premium-glass-card column no-wrap live-store-modal card-rounded">
-        <q-card-section class="row items-center justify-between q-py-sm q-px-md bg-white col-auto z-top-10 border-bottom-light">
-          <div class="text-subtitle1 text-weight-bold ellipsis">{{ vendorStore?.store_name || 'My Store' }}</div>
-          <q-btn flat round dense icon="close" color="blue-grey-6" v-close-popup size="sm" />
-        </q-card-section>
-        
-        <q-card-section class="q-pa-none col scroll">
-          <div class="full-width">
-            <q-img v-if="vendorStore?.store_picture_url" :src="vendorStore.store_picture_url" class="store-banner" fit="cover" />
-            <div v-else class="bg-grey-3 flex flex-center full-width store-placeholder">
-              <q-icon name="storefront" size="70px" color="grey-6" />
-            </div>
+      <q-card class="dash-dialog">
+        <div class="dash-dialog-header">
+          <div class="dialog-icon"><q-icon name="o_storefront" size="22px" /></div>
+          <div class="dialog-header-text">
+            <div class="dialog-title">{{ vendorStore?.store_name || 'My Store' }}</div>
+            <div class="section-subtitle">How customers see your store.</div>
           </div>
-          <div class="q-pa-md">
-            <q-list>
-              <q-item class="q-px-none">
-                <q-item-section avatar><q-icon color="red-8" name="person" /></q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-weight-bold text-dark">Store Owner</q-item-label>
-                  <q-item-label caption>{{ ownerFullName || 'Not provided' }}</q-item-label>
-                </q-item-section>
-              </q-item>
-              
-              <q-item class="q-px-none">
-                <q-item-section avatar><q-icon color="red-8" name="call" /></q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-weight-bold text-dark">Contact</q-item-label>
-                  <q-item-label caption>{{ vendorPhone || 'Not provided' }}</q-item-label>
-                </q-item-section>
-              </q-item>
-              
-              <q-item class="q-px-none items-start">
-                <q-item-section avatar class="q-pt-xs"><q-icon color="red-8" name="schedule" /></q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-weight-bold text-dark q-mb-sm">Store Schedule</q-item-label>
-                  <div class="bg-grey-1 rounded-borders q-pa-sm custom-glass-input">
-                    <div v-for="day in weekDays" :key="day.name" class="row justify-between items-center q-py-xs" :class="{ 'text-dark': day.isOpen, 'text-blue-grey-4': !day.isOpen }">
-                      <span class="text-weight-medium text-body2">{{ day.name }}</span>
-                      <span v-if="day.isOpen" class="text-caption text-weight-bold">{{ formatTime(day.openTime) }} - {{ formatTime(day.closeTime) }}</span>
-                      <span v-else class="text-caption text-italic">Closed</span>
-                    </div>
-                  </div>
-                </q-item-section>
-              </q-item>
-              
-              <q-item class="q-px-none">
-                <q-item-section avatar><q-icon color="red-8" name="location_on" /></q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-weight-bold text-dark">Address</q-item-label>
-                  <q-item-label caption>{{ vendorStore?.address || 'Not provided' }}</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
+          <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close store preview" v-close-popup />
+        </div>
 
-            <!-- Store Map Container with Relative Anchor -->
-            <div class="store-preview-map-wrapper q-mt-sm">
-              <div id="store-preview-map" class="border-radius-8 overflow-hidden shadow-soft store-preview-map-container"></div>
+        <div class="dash-dialog-body">
+          <div class="preview-banner">
+            <img v-if="vendorStore?.store_picture_url" :src="vendorStore.store_picture_url" alt="Storefront" />
+            <div v-else class="preview-banner-empty"><q-icon name="o_storefront" size="48px" /></div>
+            <span class="store-status preview-status" :class="isStoreOpen ? 'store-status--open' : 'store-status--closed'">
+              <span class="store-status-dot" />
+              {{ isStoreOpen ? 'Open now' : 'Closed now' }}
+            </span>
+          </div>
+
+          <div class="info-row">
+            <div class="info-icon"><q-icon name="o_person" size="18px" /></div>
+            <div class="info-body">
+              <div class="info-label">Store Owner</div>
+              <div class="info-value">{{ ownerFullName || 'Not provided' }}</div>
             </div>
           </div>
-        </q-card-section>
-        
-        <q-separator />
-        <q-card-actions align="right" class="bg-white col-auto q-pa-sm q-px-md z-top-10">
-          <q-btn flat label="Close" color="blue-grey-8" class="text-weight-bold q-px-md" v-close-popup />
-        </q-card-actions>
+
+          <div class="info-row">
+            <div class="info-icon"><q-icon name="o_phone" size="18px" /></div>
+            <div class="info-body">
+              <div class="info-label">Contact</div>
+              <div class="info-value">{{ vendorPhone || 'Not provided' }}</div>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-icon"><q-icon name="o_place" size="18px" /></div>
+            <div class="info-body">
+              <div class="info-label">Address</div>
+              <div class="info-value">{{ vendorStore?.address || 'Not provided' }}</div>
+            </div>
+          </div>
+
+          <div class="info-row info-row-last info-row--top">
+            <div class="info-icon"><q-icon name="o_schedule" size="18px" /></div>
+            <div class="info-body">
+              <div class="info-label">Store Hours</div>
+              <div class="preview-hours">
+                <div v-for="day in weekDays" :key="day.name" class="preview-hours-row" :class="{ 'preview-hours-row--closed': !day.isOpen }">
+                  <span>{{ day.name }}</span>
+                  <span>{{ day.isOpen ? `${formatTime(day.openTime)} – ${formatTime(day.closeTime)}` : 'Closed' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="store-preview-map" class="preview-map"></div>
+        </div>
+
+        <div class="dash-dialog-actions">
+          <q-btn outline no-caps color="primary" label="Close" v-close-popup />
+          <q-btn unelevated no-caps color="primary" label="Edit Store Details" class="btn-gradient" @click="goToProfile" />
+        </div>
       </q-card>
     </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import VueApexCharts from 'vue3-apexcharts'
+import NotificationsPanel from '@/components/vendor/NotificationsPanel.vue'
+import OrderStatusBadge from '@/components/vendor/OrderStatusBadge.vue'
+import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
+import { statusIcon } from '@/utils/orderStatus'
+import { useVendorNotifications } from '@/composables/useVendorNotifications'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-let globalDashboardLoaded = false
-
-// ==========================================
-// 1. STATE & REFS
-// ==========================================
 const router = useRouter()
+const $q = useQuasar()
+// The layout loads the notifications, so the banner bell only reads the shared unread count.
+const { unreadCount } = useVendorNotifications()
 
-const isFirstTimeOpening = ref(!globalDashboardLoaded)
-const checkingAccess = ref(!globalDashboardLoaded)
+const FILTERS = ['Daily', 'Weekly', 'Monthly']
 
-const loadingTitle = computed(() => isFirstTimeOpening.value ? 'Loading Dashboard' : 'Updating Store Data')
-const loadingSubtitle = computed(() => isFirstTimeOpening.value ? 'Preparing your sari-sari store overview' : 'Syncing your latest sales and orders')
+// Shows placeholders in the cards until the first answers arrive.
+const loading = ref(true)
 
 const userName = ref('Vendor')
 const ownerFullName = ref('Vendor')
@@ -715,7 +349,6 @@ const vendorStore = ref(null)
 const vendorPhone = ref(null)
 const liveStoreModal = ref(false)
 const activeRevenueFilter = ref('Daily')
-
 const catalogProducts = ref([])
 
 const mlForecast = ref({
@@ -729,6 +362,16 @@ const mlForecast = ref({
 })
 
 const recentOrders = ref([])
+
+// The recent orders placeholder takes the table's columns: order, customer, date, total, status and the open arrow.
+const RECENT_SKELETON = [
+  { width: '11%', type: 'pill', size: 56 },
+  { type: 'avatar' },
+  { width: '22%', type: 'text' },
+  { width: '13%', type: 'text', align: 'right' },
+  { width: '17%', type: 'pill', size: 96 },
+  { width: '6%', type: 'icon', align: 'right' }
+]
 const stats = ref({
   placed_orders: 0,
   preparing_orders: 0,
@@ -736,90 +379,110 @@ const stats = ref({
   cancelled_orders: 0
 })
 
-const orderColumns = [
-  { name: 'id', label: 'Order ID', field: 'id', align: 'left', sortable: true },
-  { name: 'date', label: 'Date', field: 'date', align: 'left', sortable: true },
-  { name: 'customer', label: 'Customer', field: 'customer', align: 'left' },
-  { name: 'price', label: 'Price', field: 'price', align: 'left', sortable: true },
-  { name: 'status', label: 'Status', field: 'status', align: 'left' },
-  { name: 'action', label: '', field: 'action', align: 'right' }
-]
+// Each order count uses its status's own colour and icon, the same as the status badges.
+const kpis = computed(() => [
+  { key: 'placed', label: 'Placed Orders', icon: statusIcon('placed'), tone: 'placed', value: stats.value.placed_orders },
+  { key: 'preparing', label: 'Preparing', icon: statusIcon('preparing'), tone: 'preparing', value: stats.value.preparing_orders },
+  { key: 'picked', label: 'Picked Up', icon: statusIcon('picked_up'), tone: 'done', value: stats.value.picked_up_orders },
+  { key: 'cancelled', label: 'Cancelled', icon: statusIcon('cancelled'), tone: 'cancelled', value: stats.value.cancelled_orders }
+])
 
-// ==========================================
-// 2. CHART CONFIGURATIONS
-// ==========================================
+// --- Revenue chart ---
+
 const chartLoading = ref(false)
 const chartSeries = ref([{ name: 'Revenue', data: [] }])
+const chartHeight = computed(() => ($q.screen.lt.md ? 200 : 280))
 
-const totalRevenue = computed(() => {
-  if (!chartSeries.value[0]?.data) return 0
-  return chartSeries.value[0].data.reduce((a, b) => a + b, 0)
-})
+const totalRevenue = computed(() => (chartSeries.value[0]?.data || []).reduce((a, b) => a + b, 0))
 
+const peso = value => '₱' + Number(value).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+
+// ApexCharts draws into SVG attributes, which can't read CSS variables, so the brand and text colours are written out.
 const chartOptions = ref({
-  chart: { type: 'area', toolbar: { show: false }, zoom: { enabled: false } },
-  colors: ['#c62828'],
+  chart: { type: 'area', toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'Roboto, Arial, sans-serif' },
+  colors: ['#bd2427'],
   dataLabels: { enabled: false },
   stroke: { curve: 'smooth', width: 2.5 },
-  xaxis: { categories: [], labels: { style: { colors: '#78909c', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
-  yaxis: { labels: { style: { colors: '#78909c', fontSize: '11px' }, formatter: value => '₱' + Number(value).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) } },
-  grid: { borderColor: '#eceff1', strokeDashArray: 3 },
-  fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.05, stops: [0, 100] } }
+  xaxis: { categories: [], labels: { style: { colors: '#8992a2', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+  yaxis: { labels: { style: { colors: '#8992a2', fontSize: '11px' }, formatter: peso } },
+  grid: { borderColor: '#f0f0f0', strokeDashArray: 4 },
+  tooltip: { y: { formatter: value => '₱' + Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) } },
+  fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.28, opacityTo: 0.02, stops: [0, 100] } }
 })
 
-// ==========================================
-// 3. COMPUTED THEMES & ALIGNMENT
-// ==========================================
-const currentHour = new Date().getHours()
+const fetchChartData = async () => {
+  chartLoading.value = true
+  try {
+    const res = await api.get('/vendor/stats/chart', { params: { filter: activeRevenueFilter.value } })
+    if (res.data) {
+      chartSeries.value = [{ name: 'Revenue', data: res.data.map(item => item.total) }]
+      chartOptions.value = {
+        ...chartOptions.value,
+        xaxis: { ...chartOptions.value.xaxis, categories: res.data.map(item => item.period) }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load chart data:', error)
+  } finally {
+    chartLoading.value = false
+  }
+}
+
+watch(activeRevenueFilter, fetchChartData)
+
+// --- Greeting and store status ---
+
+// Filipino honorifics such as Aling and Mang belong with the name after them, so "Aling Nena" is greeted in full.
+const HONORIFICS = ['aling', 'mang', 'ate', 'kuya', 'manang', 'manong', 'tita', 'tito', 'lola', 'lolo']
+const greetingName = (fullName) => {
+  const parts = (fullName || '').trim().split(/\s+/)
+  if (!parts[0]) return 'Vendor'
+  return HONORIFICS.includes(parts[0].toLowerCase()) && parts[1] ? `${parts[0]} ${parts[1]}` : parts[0]
+}
+
+// A clock that ticks every minute, so the greeting, the banner's colour and the open status keep up while the page stays open.
+const clock = ref(new Date())
+const clockTimer = setInterval(() => { clock.value = new Date() }, 60000)
+onBeforeUnmount(() => clearInterval(clockTimer))
+
 const timeGreeting = computed(() => {
-  if (currentHour < 12) return 'Good morning'
-  if (currentHour < 18) return 'Good afternoon'
+  const hour = clock.value.getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
   return 'Good evening'
 })
 
-const headerThemeClass = computed(() => {
-  if (currentHour < 12) return 'header-morning'
-  if (currentHour < 18) return 'header-afternoon'
-  return 'header-evening'
+// The banner's colour and icon for each part of the day.
+const dayPhase = computed(() => {
+  const hour = clock.value.getHours()
+  if (hour >= 5 && hour < 8) return { key: 'dawn', icon: 'o_wb_twilight' }
+  if (hour >= 8 && hour < 12) return { key: 'morning', icon: 'o_light_mode' }
+  if (hour >= 12 && hour < 17) return { key: 'afternoon', icon: 'o_wb_sunny' }
+  if (hour >= 17 && hour < 19) return { key: 'evening', icon: 'o_wb_twilight' }
+  return { key: 'night', icon: 'o_dark_mode' }
 })
 
-const headerTextClass = computed(() => {
-  if (currentHour >= 18) return 'text-white'
-  return 'text-blue-grey-10'
-})
+const currentDate = computed(() =>
+  new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(clock.value)
+)
 
-const subTextClass = computed(() => {
-  if (currentHour >= 18) return 'text-indigo-1'
-  return 'text-blue-grey-8'
-})
-
-const capsuleThemeClass = computed(() => {
-  if (currentHour >= 18) return 'capsule-night'
-  return 'capsule-day'
-})
-
-const capsuleTextClass = computed(() => {
-  if (currentHour >= 18) return 'text-white'
-  return 'text-blue-grey-9'
-})
-
-const currentDate = computed(() => {
-  const options = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }
-  return new Intl.DateTimeFormat('en-US', options).format(new Date())
-})
-
+// Store hours are saved per day, while older stores only kept a list of day names with one shared time.
 const weekDays = computed(() => {
   const fullDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
   if (!vendorStore.value?.operating_days) return fullDays.map(name => ({ name, isOpen: false, openTime: null, closeTime: null }))
 
   let raw = vendorStore.value.operating_days
-  if (typeof raw === 'string') { try { raw = JSON.parse(raw) } catch (e) {} }
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw) } catch { raw = null }
+  }
 
   const defaultOpen = vendorStore.value.opening_time ? vendorStore.value.opening_time.substring(0, 5) : null
   const defaultClose = vendorStore.value.closing_time ? vendorStore.value.closing_time.substring(0, 5) : null
 
   return fullDays.map(dayName => {
-    let isOpen = false; let openTime = defaultOpen; let closeTime = defaultClose
+    let isOpen = false
+    let openTime = defaultOpen
+    let closeTime = defaultClose
     if (raw !== null && typeof raw === 'object' && !Array.isArray(raw)) {
       if (raw[dayName]) {
         isOpen = !!raw[dayName].is_open
@@ -833,143 +496,85 @@ const weekDays = computed(() => {
   })
 })
 
+// Open when today is an open day and the time falls inside its hours, including hours that run past midnight.
 const isStoreOpen = computed(() => {
   if (!vendorStore.value?.operating_days) return false
-  const dayAbbreviations = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-  const now = new Date()
-  const todayName = dayAbbreviations[now.getDay()]
-  const todaySchedule = weekDays.value.find(d => d.name === todayName)
-  
-  if (!todaySchedule || !todaySchedule.isOpen) return false
-  if (!todaySchedule.openTime || !todaySchedule.closeTime) return true
+  const now = clock.value
+  const todayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][now.getDay()]
+  const today = weekDays.value.find(d => d.name === todayName)
 
-  const currentMinutes = now.getHours() * 60 + now.getMinutes()
-  const [openH, openM] = todaySchedule.openTime.split(':').map(Number)
-  const [closeH, closeM] = todaySchedule.closeTime.split(':').map(Number)
+  if (!today || !today.isOpen) return false
+  if (!today.openTime || !today.closeTime) return true
+
+  const minutes = now.getHours() * 60 + now.getMinutes()
+  const [openH, openM] = today.openTime.split(':').map(Number)
+  const [closeH, closeM] = today.closeTime.split(':').map(Number)
   const openMinutes = openH * 60 + openM
   const closeMinutes = closeH * 60 + closeM
 
-  if (openMinutes <= closeMinutes) return currentMinutes >= openMinutes && currentMinutes <= closeMinutes
-  return currentMinutes >= openMinutes || currentMinutes <= closeMinutes
+  if (openMinutes <= closeMinutes) return minutes >= openMinutes && minutes <= closeMinutes
+  return minutes >= openMinutes || minutes <= closeMinutes
 })
 
-// ==========================================
-// 4. HELPER FUNCTIONS
-// ==========================================
-const getStatusColor = status => {
-  if (!status) return 'blue-grey-4'
-  const normalizedStatus = status.toLowerCase().replace(/\s+/g, '_')
-  switch (normalizedStatus) {
-    case 'placed': return 'blue-6'
-    case 'preparing': return 'amber-7'
-    case 'picked_up': return 'green-6'
-    case 'cancelled': return 'red-6'
-    default: return 'blue-grey-4'
-  }
-}
+// --- Helpers ---
 
-// Safe time formatting without date object parsing bugs
 const formatTime = timeString => {
   if (!timeString) return 'Not set'
-  try {
-    const parts = timeString.split(':')
-    if (parts.length >= 2) {
-      let hours = parseInt(parts[0], 10)
-      const minutes = parts[1].substring(0, 2)
-      const ampm = hours >= 12 ? 'PM' : 'AM'
-      hours = hours % 12
-      hours = hours ? hours : 12
-      return `${hours}:${minutes} ${ampm}`
-    }
-    return timeString
-  } catch (e) {
-    return timeString
-  }
+  const [h, m] = timeString.split(':')
+  const hours = parseInt(h, 10)
+  if (Number.isNaN(hours) || m === undefined) return timeString
+  return `${hours % 12 || 12}:${m.substring(0, 2)} ${hours >= 12 ? 'PM' : 'AM'}`
 }
 
 const formatNumber = num => {
-  const cleanNum = Number(String(num).replace(/[^0-9.-]+/g, ""))
-  return Number(cleanNum || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const clean = Number(String(num).replace(/[^0-9.-]+/g, ''))
+  return Number(clean || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 const formatPieces = val => {
   const parsed = parseFloat(val)
-  if (isNaN(parsed)) return '0'
-  return Math.round(parsed).toString()
+  return Number.isNaN(parsed) ? '0' : Math.round(parsed).toString()
 }
 
 const getDemandCategory = qty => {
   const parsed = parseFloat(qty)
-  if (parsed >= 10) return 'High Velocity'
-  if (parsed >= 5) return 'Steady Sales'
-  return 'Regular Demand'
+  if (parsed >= 10) return 'High demand'
+  if (parsed >= 5) return 'Steady sales'
+  return 'Regular demand'
 }
 
 const formatLastSync = timestamp => {
-  if (!timestamp) return 'Synced: Today'
-  const dateObj = new Date(timestamp)
-  if (isNaN(dateObj.getTime())) return 'Synced: Today'
-  
-  const formattedDate = dateObj.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
-  const formattedTime = dateObj.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-  
-  return `Synced: ${formattedDate} • ${formattedTime}`
+  const date = timestamp ? new Date(timestamp) : null
+  if (!date || Number.isNaN(date.getTime())) return 'Updated today'
+  const day = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  return `Updated ${day} · ${time}`
 }
 
 const normalize = str => (str ? String(str).toLowerCase().trim() : '')
 
+// A forecast item may carry its own image, and otherwise borrows it from the matching catalogue product.
 const resolveProductImage = item => {
   if (!item) return null
-
-  if (item.image_url && typeof item.image_url === 'string' && item.image_url.trim() !== '') {
-    return item.image_url.trim()
-  }
+  if (typeof item.image_url === 'string' && item.image_url.trim() !== '') return item.image_url.trim()
 
   const matched = catalogProducts.value.find(p => {
     if (item.product_id && p.product_id && Number(item.product_id) === Number(p.product_id)) return true
     if (item.inventory_id && p.inventory_id && Number(item.inventory_id) === Number(p.inventory_id)) return true
-    if (item.product_name && p.product_name && normalize(item.product_name) === normalize(p.product_name)) return true
-    return false
+    return !!(item.product_name && p.product_name && normalize(item.product_name) === normalize(p.product_name))
   })
-
-  if (matched && matched.image_url) {
-    return matched.image_url
-  }
-
-  return null
+  return matched?.image_url || null
 }
 
-// ==========================================
-// 5. API FUNCTIONS
-// ==========================================
-const fetchChartData = async () => {
-  chartLoading.value = true
-  try {
-    const res = await api.get('/vendor/stats/chart', { params: { filter: activeRevenueFilter.value } })
-    if (res.data) {
-      chartSeries.value = [{ name: 'Revenue', data: res.data.map(item => item.total) }]
-      chartOptions.value = {
-        ...chartOptions.value,
-        xaxis: { ...chartOptions.value.xaxis, categories: [...res.data.map(item => item.period)] }
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load chart data:', error)
-  } finally {
-    chartLoading.value = false
-  }
+const openOrder = order => router.push('/vendor/orders/' + order.id)
+
+const goToProfile = () => {
+  liveStoreModal.value = false
+  router.push('/vendor/profile')
 }
 
-// ==========================================
-// 6. SAFE LEAFLET PREVIEW FUNCTIONS
-// ==========================================
+// --- Store preview map ---
+
 let map = null
 
 const cleanupMap = () => {
@@ -981,20 +586,18 @@ const cleanupMap = () => {
 
 const initMap = async () => {
   await nextTick()
+  // Waits for the dialog's opening animation, since Leaflet can't measure a panel that is still scaling in.
   setTimeout(() => {
     const container = document.getElementById('store-preview-map')
     if (!container) return
 
     cleanupMap()
-
-    if (container._leaflet_id) {
-      delete container._leaflet_id
-    }
+    if (container._leaflet_id) delete container._leaflet_id
 
     const rawLat = vendorStore.value?.latitude
     const rawLng = vendorStore.value?.longitude
-    const lat = rawLat && !isNaN(Number(rawLat)) ? Number(rawLat) : 14.5995
-    const lng = rawLng && !isNaN(Number(rawLng)) ? Number(rawLng) : 120.9842
+    const lat = rawLat && !Number.isNaN(Number(rawLat)) ? Number(rawLat) : 14.5995
+    const lng = rawLng && !Number.isNaN(Number(rawLng)) ? Number(rawLng) : 120.9842
 
     try {
       map = L.map(container).setView([lat, lng], 15)
@@ -1012,33 +615,20 @@ const initMap = async () => {
         shadowSize: [41, 41]
       })
 
-      L.marker([lat, lng], { icon })
-        .addTo(map)
-        .bindPopup('<b>' + (vendorStore.value?.store_name || 'My Store') + '</b><br>Location')
-        .openPopup()
-
-      setTimeout(() => {
-        if (map) map.invalidateSize()
-      }, 200)
+      L.marker([lat, lng], { icon }).addTo(map)
+      setTimeout(() => { if (map) map.invalidateSize() }, 200)
     } catch (err) {
-      console.warn('Map preview initialization caught safely:', err)
+      console.warn('Map preview could not start:', err)
     }
   }, 180)
 }
 
-// ==========================================
-// 7. LIFECYCLE HOOKS
-// ==========================================
+// --- Loading ---
+
 onMounted(async () => {
-  const isFirstLoad = !globalDashboardLoaded
-  
-  if (isFirstLoad) {
-    checkingAccess.value = true
-  }
+  fetchChartData()
 
   try {
-    fetchChartData()
-
     const [profileRes, statsRes, productsRes] = await Promise.allSettled([
       api.get('/vendor/profile'),
       api.get('/vendor/stats'),
@@ -1047,603 +637,1420 @@ onMounted(async () => {
 
     if (profileRes.status === 'fulfilled' && profileRes.value.data) {
       const profile = profileRes.value.data
-      userName.value = profile.full_name ? profile.full_name.split(' ')[0] : 'Vendor'
+      userName.value = greetingName(profile.full_name)
       ownerFullName.value = profile.full_name || 'Vendor'
       vendorPhone.value = profile.phone_number || null
       vendorStore.value = profile.store ? { ...profile.store } : null
     }
 
     if (statsRes.status === 'fulfilled' && statsRes.value.data) {
-      stats.value.placed_orders = statsRes.value.data.placed_orders || 0
-      stats.value.preparing_orders = statsRes.value.data.preparing_orders || 0
-      stats.value.picked_up_orders = statsRes.value.data.picked_up_orders || 0
-      stats.value.cancelled_orders = statsRes.value.data.cancelled_orders || 0
-      recentOrders.value = statsRes.value.data.recent_orders || []
+      const data = statsRes.value.data
+      stats.value = {
+        placed_orders: data.placed_orders || 0,
+        preparing_orders: data.preparing_orders || 0,
+        picked_up_orders: data.picked_up_orders || 0,
+        cancelled_orders: data.cancelled_orders || 0
+      }
+      recentOrders.value = data.recent_orders || []
     }
 
     if (productsRes.status === 'fulfilled' && productsRes.value.data) {
       catalogProducts.value = productsRes.value.data || []
     }
-    
-    try {
-      const mlRes = await api.get('/vendor/demand-forecast')
-      if (mlRes.data) {
-        mlForecast.value.has_forecast = mlRes.data.has_forecast
-        mlForecast.value.low_data_warning = mlRes.data.low_data_warning || false
-        mlForecast.value.summary = mlRes.data.summary
-        mlForecast.value.top_products = mlRes.data.top_products || []
-        mlForecast.value.generated_at = mlRes.data.generated_at
-      }
-    } catch (err) {
-      console.error('Failed to load demand forecast:', err)
-      mlForecast.value.error = true
-      mlForecast.value.has_forecast = false
-    } finally {
-      mlForecast.value.loading = false
-    }
   } catch (error) {
     console.error('Dashboard init error:', error)
-    userName.value = 'Vendor'
   } finally {
-    globalDashboardLoaded = true
-    if (isFirstLoad) {
-      setTimeout(() => {
-        checkingAccess.value = false
-      }, 700)
-    } else {
-      checkingAccess.value = false
+    loading.value = false
+  }
+
+  try {
+    const { data } = await api.get('/vendor/demand-forecast')
+    if (data) {
+      mlForecast.value.has_forecast = data.has_forecast
+      mlForecast.value.low_data_warning = data.low_data_warning || false
+      mlForecast.value.summary = data.summary
+      mlForecast.value.top_products = data.top_products || []
+      mlForecast.value.generated_at = data.generated_at
     }
+  } catch (err) {
+    console.error('Failed to load demand forecast:', err)
+    mlForecast.value.error = true
+    mlForecast.value.has_forecast = false
+  } finally {
+    mlForecast.value.loading = false
   }
 })
-
-watch(activeRevenueFilter, () => { fetchChartData() })
 </script>
 
 <style scoped>
-/* ================= GLOBAL BASE ================= */
-.vendor-page { padding: 32px 24px; background-color: #f8fafc; min-height: 100vh; position: relative; overflow: hidden; }
+/* PAGE — the consumer pages' white ground, centred 1200px column and 24px gutter. */
+.dash-page {
+  background: #ffffff;
 
-.bg-glow { position: absolute; width: 600px; height: 600px; border-radius: 50%; filter: blur(140px); z-index: 0; opacity: 0.15; pointer-events: none; }
-.bg-glow-primary { top: -150px; left: -150px; background: radial-gradient(circle, rgba(185, 28, 28, 0.4) 0%, transparent 70%); }
-.bg-glow-secondary { bottom: -150px; right: -150px; background: radial-gradient(circle, rgba(15, 23, 42, 0.3) 0%, transparent 70%); }
+  font-family: 'Roboto', Arial, sans-serif;
+}
 
-.page-container { max-width: 1400px; margin: 0 auto; position: relative; z-index: 1; }
-.card-rounded { border-radius: 16px; }
-.z-top-10 { z-index: 10; }
-.z-max { z-index: 9999; }
-.h-full { height: 100%; }
-.border-radius-8 { border-radius: 8px; }
-.opacity-50 { opacity: 0.5; }
-.opacity-60 { opacity: 0.6; }
-.opacity-80 { opacity: 0.8; }
-.opacity-90 { opacity: 0.9; }
-.flex-grow-1 { flex-grow: 1; }
-.flex-shrink-0 { flex-shrink: 0; }
-.tracking-wide { letter-spacing: 0.08em; }
-.leading-relaxed { line-height: 1.6; }
-.line-height-tight { line-height: 1.2; }
-.mobile-only { display: none; }
-.bg-slate-50 { background-color: #f8fafc !important; }
-.border-bottom-light { border-bottom: 1px solid #e2e8f0; }
+.dash-container {
+  width: 100%;
+  max-width: 1200px;
+  box-sizing: border-box;
 
-/* Desktop Cards */
-.clean-solid-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05); transition: transform 0.2s ease, box-shadow 0.2s ease; }
-.premium-glass-card { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(241, 245, 249, 1); box-shadow: 0 4px 24px rgba(15, 23, 42, 0.04); }
-.card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06); }
+  margin: 0 auto;
+  padding: 24px;
+}
 
-/* Header Themes */
-.transition-theme { transition: background 0.8s ease, color 0.4s ease; }
-.header-morning { background: linear-gradient(135deg, #fffbeb 0%, #e0f2fe 100%); border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 8px 24px rgba(186, 230, 253, 0.25); }
-.header-afternoon { background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 60%, #fed7aa 100%); border: 1px solid rgba(255, 255, 255, 0.95); box-shadow: 0 10px 28px rgba(14, 165, 233, 0.15); }
-.header-evening { background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 15px 40px rgba(30, 58, 138, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+/* WELCOME BANNER — the consumer home's red banner, with its dot grid, Poppins headline and white buttons. */
 
-/* Desktop Capsule */
-.unified-store-capsule {
+.dash-hero {
+  position: relative;
+  overflow: hidden;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 32px;
+  padding: 32px 36px 36px;
+  margin-bottom: var(--sp-gap);
+
+  border-radius: var(--r-surface);
+  box-shadow: 0 4px 16px rgba(101, 16, 18, 0.2);
+
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0 0 / 26px 26px,
+    linear-gradient(145deg, var(--c-brand) 0%, var(--c-brand-deep) 55%, var(--c-brand-active) 100%);
+
+  color: #ffffff;
+
+  animation: dash-fade-up 0.5s ease both;
+}
+
+/* The banner's colour follows the time of day; midday keeps the brand red above. */
+.dash-hero--dawn {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0 0 / 26px 26px,
+    linear-gradient(145deg, #d2612e 0%, #c0392f 50%, #942133 100%);
+}
+
+.dash-hero--morning {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0 0 / 26px 26px,
+    linear-gradient(145deg, #d24d2a 0%, #bd2427 55%, #9c171b 100%);
+}
+
+.dash-hero--evening {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0 0 / 26px 26px,
+    linear-gradient(145deg, #b3304a 0%, #82204f 55%, #4a1942 100%);
+
+  box-shadow: 0 4px 16px rgba(74, 25, 66, 0.28);
+}
+
+.dash-hero--night {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.12) 1.5px, transparent 1.5px) 0 0 / 26px 26px,
+    linear-gradient(145deg, #3b2a6b 0%, #26194d 55%, #140f2b 100%);
+
+  box-shadow: 0 4px 16px rgba(20, 15, 43, 0.35);
+}
+
+/* A large, faint sun or moon on the right, in place of the store photo. */
+.hero-art {
+  position: absolute;
+  top: 50%;
+  right: 48px;
+  z-index: 0;
+
+  font-size: 170px;
+
+  color: rgba(255, 255, 255, 0.14);
+
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+@keyframes dash-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-hero {
+    animation: none;
+  }
+}
+
+.dash-hero-content {
+  position: relative;
+  z-index: 1;
+
+  min-width: 0;
+}
+
+.hero-eyebrow-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.hero-eyebrow {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
-  padding: 4px;
+
+  gap: 6px;
+  padding: 5px 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--r-pill);
+
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.capsule-day {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.95);
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+.hero-title {
+  margin: 0 0 8px;
+
+  font-family: 'Poppins', 'Roboto', Arial, sans-serif;
+  font-size: var(--fs-hero);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+
+  color: #ffffff;
 }
 
-.capsule-night {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+.hero-sub {
+  max-width: 46ch;
+  margin: 0 0 22px;
+
+  font-size: var(--fs-md);
+  line-height: 1.5;
+
+  color: rgba(255, 255, 255, 0.86);
 }
 
-.status-pulse-wrapper {
-  position: relative;
-  width: 10px;
-  height: 10px;
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 12px;
+}
+
+.hero-cta {
+  height: 42px;
+  padding: 0 20px;
+
+  border-radius: var(--r-control);
+
+  background: #ffffff;
+  color: var(--c-brand);
+
+  font-size: var(--fs-sm);
+  font-weight: 700;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+
+.hero-cta:hover {
+  background: var(--c-hairline);
+
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  transform: translateY(-1px);
+}
+
+.hero-cta:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+}
+
+/* The secondary path, so it stays an outline and doesn't compete with the white button. */
+.hero-cta--ghost {
+  border: 1px solid rgba(255, 255, 255, 0.55);
+
+  background: transparent;
+  color: #ffffff;
+
+  box-shadow: none;
+}
+
+.hero-cta--ghost:hover {
+  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+/* Open or closed, as a white pill beside the date. */
+.hero-status {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 8px;
+  height: 28px;
+  padding: 0 12px;
+
+  border-radius: var(--r-pill);
+
+  background: #ffffff;
+
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.hero-status--open {
+  color: var(--c-success);
+}
+
+.hero-status--closed {
+  color: var(--c-text-3);
+}
+
+/* The bell is a square outline button beside Manage Products, part of the banner's own row of actions. */
+.hero-bell {
+  width: 42px;
+  min-width: 42px;
+  padding: 0;
+}
+
+.hero-bell :deep(.q-icon) {
+  font-size: 20px;
+}
+
+.hero-bell-badge {
+  background: #ffb300 !important;
+  color: #3b1d00 !important;
+
+  font-weight: 800;
+}
+
+.notif-menu {
+  overflow: hidden;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-surface);
+
+  box-shadow: var(--sh-pop) !important;
+}
+
+/* Below the md breakpoint the phone top bar already has a bell, so the banner doesn't repeat it. */
+@media (max-width: 1023px) {
+  .hero-bell {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .dash-hero {
+    gap: 24px;
+    padding: 26px 28px 30px;
+  }
+
+  .hero-art {
+    right: 28px;
+
+    font-size: 130px;
+  }
+}
+
+/* Open or closed, as a tinted pill with a dot, readable without relying on colour alone. */
+.store-status {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 8px;
+  height: 32px;
+  padding: 0 14px;
+
+  border-radius: var(--r-pill);
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.store-status-dot {
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+
+  background: currentColor;
+}
+
+.store-status--open {
+  background: var(--c-success-tint);
+  color: var(--c-success);
+}
+
+.store-status--closed {
+  background: var(--c-surface);
+  color: var(--c-text-3);
+}
+
+/* CARDS — the consumer profile's white card with a hairline border and soft shadow. */
+
+.dash-card {
+  padding: 20px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-surface);
+
+  background: #ffffff;
+
+  box-shadow: var(--sh-card);
+
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.dash-card:hover {
+  border-color: var(--c-border-strong);
+
+  box-shadow: var(--sh-card-hover);
+}
+
+.dash-card--fill {
+  display: flex;
+  flex-direction: column;
+
+  height: 100%;
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  line-height: 1.3;
+
+  color: var(--c-text);
+}
+
+.section-subtitle {
+  margin-top: 2px;
+
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+
+  color: var(--c-subtle);
+}
+
+/* The consumer profile's small outline pill. */
+.card-action-btn {
+  flex-shrink: 0;
+
+  height: 32px;
+  min-height: 32px;
+  padding: 0 14px;
+
+  border-radius: var(--r-control);
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  transition: background-color 0.15s;
+}
+
+.card-action-btn:hover {
+  background: var(--c-brand-tint);
+}
+
+.card-action-btn :deep(.q-icon) {
+  font-size: 18px;
+}
+
+/* TONES — one tinted background and text colour per status, shared by the count tiles and the order chips. */
+
+.tone-info { background: var(--c-info-tint); color: var(--c-info); }
+.tone-warning { background: var(--c-warning-tint); color: var(--c-warning); }
+.tone-success { background: var(--c-success-tint); color: var(--c-success); }
+.tone-danger { background: var(--c-danger-tint); color: var(--c-danger); }
+.tone-wait { background: var(--c-status-wait-tint); color: var(--c-status-wait); }
+.tone-active { background: var(--c-status-active-tint); color: var(--c-status-active); }
+.tone-neutral { background: var(--c-surface); color: var(--c-text-3); }
+.tone-brand { background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%); color: var(--c-brand); }
+
+/* ORDER COUNTS */
+
+.kpi-card {
+  height: 100%;
+}
+
+.kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+}
+
+.kpi-label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  color: var(--c-text-3);
+}
+
+.kpi-icon {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+
+  width: 40px;
+  height: 40px;
+
+  border-radius: var(--r-surface);
 }
 
-.status-pulse-core {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  position: relative;
-  z-index: 2;
+.kpi-value {
+  margin-top: 10px;
+
+  font-size: var(--fs-4xl);
+  font-weight: 700;
+  line-height: 1.1;
+
+  color: var(--c-text);
 }
 
-.status-pulse-ring {
-  position: absolute;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  opacity: 0.6;
-  animation: pulse-ring-expand 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+.kpi-skeleton {
+  margin-top: 10px;
+  height: 30px;
 }
 
-.core-open { background-color: #10b981; }
-.pulse-open { background-color: rgba(16, 185, 129, 0.45); }
-.core-closed { background-color: #ef4444; }
-.pulse-closed { background-color: rgba(239, 68, 68, 0.45); }
+/* REVENUE */
 
-@keyframes pulse-ring-expand {
-  0% { transform: scale(0.6); opacity: 0.8; }
-  100% { transform: scale(1.6); opacity: 0; }
+/* A segmented control like the consumer filter chips, with the chosen period in the brand tint. */
+.segmented {
+  display: inline-flex;
+
+  gap: 2px;
+  padding: 3px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-control);
+
+  background: var(--c-surface-2);
 }
 
-.capsule-divider {
-  width: 1px;
-  height: 18px;
-  background: rgba(100, 116, 139, 0.2);
-  margin: 0 3px;
-}
+.segmented-btn {
+  height: 30px;
+  padding: 0 14px;
 
-.capsule-night .capsule-divider {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.capsule-action-btn {
-  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-  color: #ffffff;
   border: none;
-  outline: none;
-  border-radius: 999px;
-  padding: 6px 14px;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
-  transition: all 0.25s ease;
+  border-radius: var(--r-control);
+
+  background: transparent;
+
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  color: var(--c-text-3);
+
+  cursor: pointer;
+
+  transition: background-color 0.15s, color 0.15s;
 }
 
-.capsule-action-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.45);
-  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+.segmented-btn:hover:not(.segmented-btn--active) {
+  color: var(--c-text);
 }
 
-.icon-premium-box { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.9); }
-.shadow-soft { box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); }
-.border-white { border: 2px solid #ffffff; }
+.segmented-btn--active {
+  background: #ffffff;
+  color: var(--c-brand);
 
-/* Desktop Controls */
-.desktop-filter-toggle { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 3px; }
-.filter-toggle-btn { background: transparent; border: none; outline: none; font-size: 12px; font-weight: 600; color: #64748b; padding: 5px 14px; border-radius: 6px; cursor: pointer; }
-.filter-toggle-btn:hover:not(.filter-toggle-active) { color: #0f172a; }
-.filter-toggle-active { background: #ffffff; color: #0f172a; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08); }
-
-/* Desktop Panels & Tables */
-.panel-header { background: rgba(248, 250, 252, 0.5); border-bottom: 1px solid rgba(226, 232, 240, 0.6); border-radius: 16px 16px 0 0; }
-.header-accent-red { width: 6px; height: 24px; background: linear-gradient(180deg, #b91c1c 0%, #450a0a 100%); border-radius: 6px; }
-
-:deep(.custom-premium-table thead tr th) { background: rgba(248, 250, 252, 0.5); font-weight: 700; color: #64748b; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; padding: 16px 20px; border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
-:deep(.custom-premium-table tbody td) { padding: 16px 20px; border-bottom: 1px solid rgba(241, 245, 249, 1); }
-:deep(.custom-premium-table tbody tr:hover) { background: #ffffff; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03); }
-.hover-icon-btn { transition: transform 0.2s ease, color 0.2s ease; }
-:deep(.custom-premium-table tbody tr:hover .hover-icon-btn) { color: #b91c1c !important; transform: translateX(3px); }
-
-.chart-container { min-height: 250px; padding: 0; width: 100%; display: flex; flex-direction: column; overflow: hidden; }
-
-/* AI FORECAST TERMINAL */
-.ai-forecast-terminal {
-  background: linear-gradient(145deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 20px 50px rgba(10, 15, 30, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px rgba(17, 17, 17, 0.08);
 }
 
-.ai-terminal-grid {
+.segmented-btn:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 1px;
+}
+
+.revenue-total {
+  margin-bottom: 4px;
+}
+
+.revenue-total-label {
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
+}
+
+.revenue-total-value {
+  margin-top: 2px;
+
+  font-size: var(--fs-3xl);
+  font-weight: 700;
+
+  color: var(--c-text);
+}
+
+.chart-box {
+  position: relative;
+
+  flex: 1;
+  min-height: 200px;
+  margin: 0 -10px -10px;
+}
+
+.chart-loading {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 18px 18px;
-  pointer-events: none;
+  inset: 0;
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255, 255, 255, 0.7);
 }
 
-.ai-orb-glow {
-  position: absolute;
-  top: -30px;
-  right: -30px;
-  width: 180px;
-  height: 180px;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, transparent 70%);
-  filter: blur(28px);
-  pointer-events: none;
+/* DEMAND FORECAST */
+
+.forecast-title {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
 }
 
-.ai-orb-secondary {
-  position: absolute;
-  bottom: -40px;
-  left: -20px;
-  width: 160px;
-  height: 160px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, transparent 70%);
-  filter: blur(32px);
-  pointer-events: none;
+/* The forecast card: deep red with gold accents, so the system's own prediction stands apart from the plain cards. */
+.forecast-card {
+  border-color: transparent;
+
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.07) 1.5px, transparent 1.5px) 0 0 / 22px 22px,
+    linear-gradient(160deg, #4a0f13 0%, #7a181c 55%, #a51d22 100%);
+  color: #ffffff;
+
+  box-shadow: 0 8px 24px rgba(101, 16, 18, 0.28);
 }
 
-.ai-chip-pill {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  border-radius: 999px;
-  font-size: 10.5px;
+.forecast-card:hover {
+  border-color: transparent;
+
+  box-shadow: 0 10px 28px rgba(101, 16, 18, 0.34);
 }
 
-.ai-radar-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: #fbbf24;
-  box-shadow: 0 0 8px #fbbf24;
-  animation: pulse-dot 1.8s infinite ease-in-out;
+.forecast-card .section-title {
+  color: #ffffff;
 }
 
-@keyframes pulse-dot {
-  0%, 100% { opacity: 0.4; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.3); }
+.forecast-card .section-subtitle {
+  color: rgba(255, 255, 255, 0.72);
 }
 
-.ai-live-tag {
-  color: #94a3b8;
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 3px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.forecast-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 30px;
+  height: 30px;
+
+  border-radius: var(--r-control);
+
+  background: linear-gradient(145deg, #fde68a 0%, #f59e0b 100%);
+  color: #4a2400;
+
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
 }
 
-.ai-product-item {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
-
-.ai-product-item:hover {
+.forecast-card .forecast-item:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(245, 158, 11, 0.3);
-  transform: translateX(2px);
 }
 
-.ai-rank-badge {
+.forecast-card .forecast-rank {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.forecast-card .forecast-rank--top {
+  background: #fbbf24;
+  color: #4a2400;
+}
+
+.forecast-card .forecast-thumb {
+  border-color: transparent;
+
+  background: #ffffff;
+}
+
+.forecast-card .forecast-name {
+  color: #ffffff;
+}
+
+.forecast-card .forecast-meta {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.forecast-card .forecast-qty {
+  background: rgba(251, 191, 36, 0.18);
+  color: #fcd34d;
+}
+
+.forecast-card .forecast-warning {
+  border-color: rgba(251, 191, 36, 0.4);
+
+  background: rgba(251, 191, 36, 0.12);
+  color: #fde68a;
+}
+
+.forecast-card .forecast-footer {
+  border-top-color: rgba(255, 255, 255, 0.14);
+
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.forecast-card .empty-state-title {
+  color: #ffffff;
+}
+
+.forecast-card .empty-state-text {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.forecast-card .state-icon {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fcd34d;
+}
+
+.forecast-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+.forecast-item {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+  padding: 8px;
+  margin: 0 -8px;
+
+  border-radius: var(--r-control);
+
+  transition: background-color 0.15s;
+}
+
+.forecast-item:hover {
+  background: var(--c-surface-2);
+}
+
+.forecast-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
   width: 24px;
   height: 24px;
-  border-radius: 6px;
-  font-size: 10.5px;
-  font-weight: 800;
-  font-family: 'SFMono-Regular', Consolas, monospace;
+
+  border-radius: 50%;
+
+  background: var(--c-surface);
+
+  font-size: var(--fs-xs);
+  font-weight: 700;
+
+  color: var(--c-text-3);
 }
 
-.rank-1 { background: linear-gradient(135deg, #f59e0b, #d97706); color: #ffffff; }
-.rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: #ffffff; }
-.rank-3 { background: linear-gradient(135deg, #b45309, #78350f); color: #ffffff; }
-.rank-4 { background: linear-gradient(135deg, #6366f1, #4338ca); color: #ffffff; }
-.rank-5 { background: linear-gradient(135deg, #334155, #1e293b); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15); }
+.forecast-rank--top {
+  background: var(--c-brand);
+  color: #ffffff;
+}
 
-.ai-product-thumb {
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.forecast-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 40px;
+  height: 40px;
   overflow: hidden;
-  padding: 3px;
+
+  border: 1px solid var(--c-hairline);
+  border-radius: var(--r-control);
+
+  background: var(--c-surface-2);
+  color: var(--c-muted);
 }
 
-.product-real-img {
+.forecast-thumb img {
   width: 100%;
   height: 100%;
+
   object-fit: contain;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
 }
 
-.ai-quantity-chip {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1.5px solid rgba(245, 158, 11, 0.4);
-  border-radius: 999px;
-  padding: 4px 12px;
+.forecast-body {
+  flex: 1;
+  min-width: 0;
 }
 
-.quantity-num {
-  font-size: 14px;
-  font-weight: 900;
-  color: #fde68a;
-  font-family: 'SFMono-Regular', Consolas, monospace;
-}
-
-.quantity-unit {
-  font-size: 11px;
-  font-weight: 700;
-  color: #fef3c7;
-  text-transform: uppercase;
-}
-
-.border-top-glass {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.ai-status-circle {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-}
-.border-red { border: 1.5px solid rgba(239, 68, 68, 0.3); }
-.border-indigo { border: 1.5px solid rgba(99, 102, 241, 0.3); }
-.max-w-280 { max-width: 280px; }
-
-.ai-warning-bar {
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.25);
-  border-radius: 8px;
-}
-
-.pulse-soft {
-  animation: icon-float 2.5s ease-in-out infinite alternate;
-}
-
-@keyframes icon-float {
-  0% { transform: scale(0.95); opacity: 0.8; }
-  100% { transform: scale(1.08); opacity: 1; }
-}
-
-/* Live Store Modal */
-.live-store-modal { width: 500px; max-width: 92vw; max-height: 85vh; overflow: hidden; }
-.store-banner { height: 180px; }
-.store-placeholder { aspect-ratio: 16/9; height: 180px; }
-.custom-glass-input { border: 1px solid #e2e8f0; }
-.store-preview-map-wrapper { width: 100%; position: relative; }
-.store-preview-map-container { height: 190px; width: 100%; border: 1px solid #cfd8dc; position: relative; z-index: 1; }
-
-/* ================= LOADER STYLES ================= */
-.checking-access-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background-color: rgba(248, 250, 252, 0.85); backdrop-filter: blur(12px); }
-.glass-backdrop { background: rgba(248, 250, 252, 0.82); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-.fade-fast-enter-active, .fade-fast-leave-active { transition: opacity 0.35s ease; }
-.fade-fast-enter-from, .fade-fast-leave-to { opacity: 0; }
-
-.loader-glass-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  border-radius: 28px;
-  box-shadow: 0 20px 45px rgba(185, 28, 28, 0.08), inset 0 0 0 1px rgba(255,255,255,0.7);
-  padding: 42px 56px;
-  text-align: center;
-  position: relative;
+.forecast-name {
   overflow: hidden;
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  color: var(--c-text);
 }
 
-.store-icon-wrapper { width: 100px; height: 100px; }
-.store-avatar-box {
-  width: 82px; height: 82px; border-radius: 22px;
-  background: linear-gradient(145deg, #ffffff, #fee2e2);
-  border: 3px solid #ffffff; position: relative; z-index: 2; color: #b91c1c;
+.forecast-meta {
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
 }
 
-.storefront-icon-anim { animation: awning-lift 2.2s ease-in-out infinite; }
-.store-awning-bar { position: absolute; bottom: 12px; width: 32px; height: 4px; border-radius: 4px; background: #ef4444; opacity: 0.85; animation: awning-bar-glow 2.2s ease-in-out infinite; }
+.forecast-qty {
+  flex-shrink: 0;
 
-.floating-particle {
-  position: absolute; z-index: 3; pointer-events: none; background: transparent; padding: 0;
-  display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08));
+  padding: 4px 10px;
+
+  border-radius: var(--r-pill);
+
+  background: var(--c-brand-tint);
+
+  font-size: var(--fs-xs);
+  font-weight: 700;
+
+  color: var(--c-brand);
 }
 
-.p-1 { top: -4px; right: -4px; animation: float-orbit-1 3s ease-in-out infinite; }
-.p-2 { bottom: 0px; left: -8px; animation: float-orbit-2 3.5s ease-in-out infinite; }
-.p-3 { top: 4px; left: -6px; animation: float-orbit-3 2.8s ease-in-out infinite; }
+.forecast-warning {
+  display: flex;
+  align-items: flex-start;
 
-.peso-coin {
-  display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;
-  background: linear-gradient(135deg, #22c55e 0%, #15803d 100%); color: #ffffff;
-  font-weight: 900; font-size: 13px; border-radius: 50%; border: 1.5px solid #ffffff;
-  box-shadow: 0 2px 6px rgba(22, 101, 52, 0.35); user-select: none;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 10px;
+
+  border: 1px solid var(--c-warning-line);
+  border-radius: var(--r-control);
+
+  background: var(--c-warning-wash);
+
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+
+  color: var(--c-warning);
 }
 
-.sari-loading-bar-track { width: 140px; height: 4px; background: #f1f5f9; border-radius: 99px; overflow: hidden; position: relative; }
-.sari-loading-bar-fill { position: absolute; height: 100%; width: 50%; background: linear-gradient(90deg, #ef4444, #f59e0b); border-radius: 99px; animation: bar-slide 1.4s infinite ease-in-out; }
+.forecast-footer {
+  display: flex;
+  align-items: center;
 
-@keyframes awning-lift { 0%, 100% { transform: scale(1) translateY(0); } 50% { transform: scale(1.06) translateY(-3px); } }
-@keyframes awning-bar-glow { 0%, 100% { transform: scaleX(0.9); opacity: 0.7; } 50% { transform: scaleX(1.15); opacity: 1; } }
-@keyframes float-orbit-1 { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-8px) rotate(12deg); } }
-@keyframes float-orbit-2 { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-6px) rotate(-10deg); } }
-@keyframes float-orbit-3 { 0%, 100% { transform: translateY(0) scale(0.9); } 50% { transform: translateY(-7px) scale(1.1); } }
-@keyframes bar-slide { 0% { left: -50%; } 100% { left: 100%; } }
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 12px;
 
-.loading-dots::after { content: '...'; display: inline-block; animation: typing-dots 1.5s steps(4, end) infinite; width: 1em; text-align: left; }
-@keyframes typing-dots { 0%, 20% { content: ''; } 40% { content: '.'; } 60% { content: '..'; } 80%, 100% { content: '...'; } }
+  border-top: 1px solid var(--c-hairline);
 
-/* ============================================================= */
-/* ========== BALANCED & SPACIOUS MOBILE-ONLY UI =============== */
-/* ============================================================= */
-@media (max-width: 767px) {
-  .vendor-page.mobile-page-padding {
-    padding: 16px 14px calc(80px + env(safe-area-inset-bottom)) 14px !important;
+  font-size: var(--fs-2xs);
+
+  color: var(--c-muted);
+}
+
+/* EMPTY, LOADING AND ERROR STATES */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  flex: 1;
+  gap: 6px;
+  padding: 28px 12px;
+
+  text-align: center;
+}
+
+.state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 52px;
+  height: 52px;
+  margin-bottom: 6px;
+
+  border-radius: var(--r-surface);
+}
+
+.empty-state-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+
+  color: var(--c-text);
+}
+
+.empty-state-text {
+  max-width: 260px;
+
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+
+  color: var(--c-muted);
+}
+
+/* RECENT ORDERS */
+
+/* The phone placeholder lines up with the real list, which has no extra side padding. */
+.recent-skeleton-list :deep(.sk-list) {
+  padding: 0;
+}
+
+.orders-table-wrap {
+  overflow-x: auto;
+
+  margin: 0 -20px -20px;
+}
+
+/* Proportional column widths, so the columns spread evenly at any width instead of leaving one wide empty column. */
+.orders-table {
+  width: 100%;
+  min-width: 640px;
+
+  table-layout: fixed;
+  border-collapse: collapse;
+
+  font-size: var(--fs-sm);
+}
+
+.orders-table .col-order { width: 11%; }
+.orders-table .col-date { width: 22%; }
+.orders-table .col-total { width: 13%; }
+.orders-table .col-status { width: 17%; }
+.orders-table .col-open { width: 6%; }
+
+.orders-table th {
+  padding: 10px 20px;
+
+  border-top: 1px solid var(--c-hairline);
+  border-bottom: 1px solid var(--c-hairline);
+
+  background: var(--c-surface-2);
+
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+
+  color: var(--c-muted);
+}
+
+/* The header rule above sets every heading left, so the money column's heading is set back to the right here. */
+.orders-table .text-right {
+  text-align: right;
+}
+
+.orders-table td {
+  padding: 12px 20px;
+
+  border-bottom: 1px solid var(--c-hairline);
+
+  color: var(--c-text-2);
+}
+
+.orders-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.orders-row {
+  cursor: pointer;
+
+  transition: background-color 0.15s;
+}
+
+.orders-row:hover {
+  background: var(--c-surface-2);
+}
+
+.order-id {
+  padding: 3px 8px;
+
+  border-radius: var(--r-control);
+
+  background: var(--c-brand-tint);
+
+  font-size: var(--fs-xs);
+  font-weight: 700;
+
+  color: var(--c-brand);
+}
+
+.order-customer {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+}
+
+.order-avatar {
+  flex-shrink: 0;
+
+  background: var(--c-surface);
+  color: var(--c-muted);
+}
+
+.order-customer-name {
+  min-width: 0;
+  overflow: hidden;
+
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  color: var(--c-text);
+}
+
+.order-date {
+  white-space: nowrap;
+
+  color: var(--c-text-3);
+}
+
+.order-total {
+  font-weight: 700;
+
+  color: var(--c-text);
+}
+
+.order-open-btn {
+  color: var(--c-muted);
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+
+  margin: 0 -8px;
+}
+
+.orders-list-item {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+  width: 100%;
+  padding: 12px 8px;
+
+  border: none;
+  border-bottom: 1px solid var(--c-hairline);
+  border-radius: var(--r-control);
+
+  background: transparent;
+
+  font-family: inherit;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.orders-list-item:last-child {
+  border-bottom: none;
+}
+
+.orders-list-item:hover {
+  background: var(--c-surface-2);
+}
+
+.orders-list-item:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: -2px;
+}
+
+.orders-list-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.orders-list-body .order-customer-name {
+  overflow: hidden;
+
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.orders-list-meta {
+  margin-top: 2px;
+
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
+}
+
+.orders-list-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+
+  gap: 4px;
+}
+
+.sr-only {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* STORE PREVIEW DIALOG — the consumer profile's dialog shell. */
+
+.dash-dialog {
+  display: flex;
+  flex-direction: column;
+
+  width: 520px;
+  max-width: 92vw;
+  max-height: 88vh;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-surface);
+
+  box-shadow: 0 18px 48px rgba(17, 17, 17, 0.18) !important;
+
+  --q-transition-duration: 200ms;
+}
+
+.dash-dialog-header {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+  padding: 24px 24px 18px;
+
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.dialog-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 44px;
+  height: 44px;
+
+  border-radius: var(--r-surface);
+
+  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  color: var(--c-brand);
+}
+
+.dialog-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.dialog-title {
+  overflow: hidden;
+
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  color: var(--c-text);
+}
+
+.dialog-close-btn {
+  color: var(--c-muted);
+}
+
+.dash-dialog-body {
+  flex: 1;
+  overflow-y: auto;
+
+  padding: 20px 24px;
+}
+
+.preview-banner {
+  position: relative;
+
+  aspect-ratio: 16 / 9;
+  max-width: 100%;
+  overflow: hidden;
+  margin-bottom: 8px;
+
+  border-radius: var(--r-surface);
+
+  background: var(--c-surface);
+}
+
+.preview-banner img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.preview-banner-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 100%;
+
+  color: var(--c-muted);
+}
+
+.preview-status {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.preview-status.store-status--closed {
+  background: #ffffff;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+  padding: 12px 0;
+
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.info-row-last {
+  border-bottom: none;
+}
+
+.info-row--top {
+  align-items: flex-start;
+}
+
+.info-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 40px;
+  height: 40px;
+
+  border-radius: var(--r-surface);
+
+  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  color: var(--c-brand);
+}
+
+.info-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.info-label {
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
+}
+
+.info-value {
+  margin-top: 3px;
+
+  font-size: var(--fs-md);
+  font-weight: 500;
+
+  color: var(--c-text);
+
+  overflow-wrap: anywhere;
+}
+
+.preview-hours {
+  margin-top: 6px;
+}
+
+.preview-hours-row {
+  display: flex;
+  justify-content: space-between;
+
+  gap: 12px;
+  padding: 3px 0;
+
+  font-size: var(--fs-sm);
+
+  color: var(--c-text-2);
+}
+
+.preview-hours-row--closed {
+  color: var(--c-muted);
+}
+
+.preview-map {
+  position: relative;
+  z-index: 1;
+
+  height: 190px;
+  margin-top: 8px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-surface);
+}
+
+.dash-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+
+  gap: 10px;
+  padding: 16px 24px;
+
+  border-top: 1px solid var(--c-border);
+}
+
+.dash-dialog-actions .q-btn {
+  height: 44px;
+  min-width: 132px;
+
+  border-radius: var(--r-control);
+}
+
+/* Close uses the red outline of the Edit pill, tinting on hover. */
+.dash-dialog-actions .q-btn--outline:hover {
+  background: var(--c-brand-tint);
+}
+
+/* The consumer profile's primary button, flat red with a soft lift. */
+.btn-gradient {
+  background: var(--c-brand) !important;
+
+  box-shadow: var(--sh-brand);
+
+  transition: background-color 0.15s, box-shadow 0.2s;
+}
+
+.btn-gradient:hover {
+  background: var(--c-brand-hover) !important;
+
+  box-shadow: var(--sh-brand-hover);
+}
+
+@media (max-width: 600px) {
+  .dash-container {
+    padding: 16px;
   }
-  .mobile-only { display: block; }
-  
-  .loader-glass-card {
-    padding: 32px 24px;
-    width: 86%;
-    max-width: 320px;
+
+  .dash-hero {
+    padding: 20px 18px;
   }
 
-  .mobile-hero-banner {
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  .hero-art {
+    display: none;
   }
 
-  .mobile-status-tag {
-    border-radius: 999px;
-    padding: 3px 10px;
-    border: 1px solid rgba(255, 255, 255, 0.6);
+  .hero-status {
+    box-shadow: none;
   }
 
-  .mobile-greeting-text {
-    font-size: 21px;
-    font-weight: 800;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
+  .hero-eyebrow-row {
+    margin-bottom: 10px;
   }
 
-  .avatar-preview-badge {
-    position: absolute;
-    bottom: -2px;
-    right: -2px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #dc2626;
-    border: 2px solid #ffffff;
-    box-shadow: 0 2px 5px rgba(220, 38, 38, 0.4);
-    cursor: pointer;
+  .hero-title {
+    font-size: var(--fs-4xl);
   }
 
-  .mobile-stat-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
-    min-height: 84px;
+  .hero-sub {
+    margin-bottom: 16px;
+
+    font-size: var(--fs-sm);
   }
 
-  .mobile-icon-tile {
+  .hero-actions {
+    gap: 10px;
+  }
+
+  .hero-cta {
+    flex: 1;
+
+    padding: 0 12px;
+  }
+
+  .hero-cta :deep(.q-btn__content) {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  .dash-card {
+    padding: 16px;
+  }
+
+  .kpi-icon {
     width: 34px;
     height: 34px;
-    border-radius: 50%;
-    color: #1a237e;
-    font-size: 11px;
   }
 
-  .mobile-stat-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+  .kpi-value {
+    font-size: var(--fs-3xl);
   }
 
-  .mobile-stat-value {
-    font-size: 24px;
-    font-weight: 800;
-    line-height: 1.1;
+  .section-title {
+    font-size: var(--fs-lg);
   }
 
-  .mobile-clean-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+  .section-subtitle {
+    font-size: var(--fs-xs);
   }
 
-  .mobile-card-header {
-    background: rgba(248, 250, 252, 0.85);
-    border-bottom: 1px solid #f1f5f9;
+  .revenue-total-value {
+    font-size: var(--fs-2xl);
   }
 
-  .header-accent-red-sm {
-    width: 4px;
-    height: 18px;
-    background: linear-gradient(180deg, #b91c1c 0%, #450a0a 100%);
-    border-radius: 4px;
+  .dash-dialog-header,
+  .dash-dialog-body {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 
-  .mobile-card-title {
-    font-size: 15px;
-    font-weight: 800;
+  .dash-dialog-actions {
+    padding: 14px 18px;
   }
 
-  .mobile-filter-tabs {
-    background: #f1f5f9;
-    border-radius: 8px;
-    padding: 3px;
-    border: 1px solid #e2e8f0;
-  }
-
-  .mobile-filter-btn {
-    background: transparent;
-    border: none;
-    font-size: 11px;
-    font-weight: 600;
-    color: #64748b;
-    padding: 4px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-
-  .mobile-filter-active {
-    background: #ffffff;
-    color: #0f172a;
-    font-weight: 700;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-  }
-
-  .mobile-revenue-caption {
-    font-size: 11px;
-    font-weight: 700;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  .mobile-revenue-amount {
-    font-size: 26px;
-    font-weight: 900;
-    letter-spacing: -0.03em;
-    line-height: 1.1;
-  }
-
-  .mobile-ml-card {
-    border-radius: 16px;
-  }
-
-  .mobile-order-item {
-    background: #ffffff;
-    border: 1px solid #f1f5f9;
-    padding: 10px 12px;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
-  }
-
-  .mobile-order-id {
-    font-size: 10.5px;
-    font-weight: 700;
-    font-family: 'SFMono-Regular', Consolas, monospace;
-    color: #b91c1c;
-    background: #fef2f2;
-    border: 1px solid rgba(220, 38, 38, 0.2);
-    border-radius: 4px;
-    padding: 2px 6px;
-    display: inline-block;
-  }
-
-  .mobile-status-chip {
-    font-size: 10.5px;
-    font-weight: 700;
-    height: 20px;
-    padding: 0 8px;
-    margin: 0;
+  .dash-dialog-actions .q-btn {
+    flex: 1 1 0;
+    min-width: 0;
   }
 }
 </style>

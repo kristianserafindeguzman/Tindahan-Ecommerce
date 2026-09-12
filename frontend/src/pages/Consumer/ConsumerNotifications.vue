@@ -13,7 +13,7 @@
           v-if="unreadCount"
           unelevated
           no-caps
-          :label="`Mark all read (${unreadCount})`"
+          :label="`Mark all as read (${unreadCount})`"
           class="mark-all-btn"
           :loading="markingAll"
           @click="markAllAsRead"

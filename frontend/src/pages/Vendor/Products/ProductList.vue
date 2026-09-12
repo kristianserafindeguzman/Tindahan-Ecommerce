@@ -1,531 +1,296 @@
 <template>
-  <q-page class="vendor-page relative-position overflow-hidden" :class="{ 'mobile-page-padding': $q.screen.lt.md }">
-    <!-- Subtle Ambient Background Glows (Brand Aligned) -->
-    <div class="bg-glow bg-glow-primary desktop-only"></div>
-    <div class="bg-glow bg-glow-secondary desktop-only"></div>
+  <q-page class="vp-page">
+    <div class="vp-container">
 
-    <div class="page-container relative-position" style="z-index: 1;">      
-      
-      <!-- ================= DESKTOP HEADER AREA ================= -->
-      <div v-if="!$q.screen.lt.md" class="page-header q-mb-xl q-mt-sm row items-center justify-between">
-        <div class="row items-center">
-          <div class="glass-icon-box q-mr-md">
-            <q-icon name="inventory_2" size="26px" class="text-brand-red" />
+      <div class="vp-header">
+        <div>
+          <h1 class="vp-title">Product List</h1>
+          <p class="vp-subtitle">Monitor and update your product catalog.</p>
+        </div>
+        <div class="vp-header-actions">
+          <q-btn outline no-caps color="primary" icon="o_download" label="Export" class="vp-pill-btn" @click="openExportWizard" />
+          <q-btn unelevated no-caps color="primary" icon="add" label="Add Product" class="vp-primary-btn" @click="showAddModal = true" />
+        </div>
+      </div>
+
+      <!-- Forecast insights from the demand model. -->
+      <div class="vp-stats vp-stats--insights">
+        <div v-for="card in insightCards" :key="card.key" class="vp-card vp-stat">
+          <div class="vp-stat-top">
+            <span class="vp-stat-label">{{ card.label }}</span>
+            <span class="vp-stat-icon" :class="`vp-tone--${card.tone}`"><q-icon :name="card.icon" size="20px" /></span>
           </div>
-          <div>
-            <h1 class="text-h4 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight leading-tight">Inventory Management</h1>
-            <p class="text-body1 text-blue-grey-5 q-mt-xs q-mb-none font-medium">Monitor and update your product catalog.</p>
+          <div class="vp-stat-value vp-stat-value--text">{{ card.value }}</div>
+          <div class="vp-stat-notes">
+            <span v-for="note in card.notes" :key="note.text" class="vp-stat-note" :class="`vp-tone--${note.tone || card.tone}`">
+              <q-icon :name="note.icon" size="14px" />
+              {{ note.text }}
+            </span>
           </div>
         </div>
       </div>
 
-      <!-- ================= ML INSIGHTS (DESKTOP) ================= -->
-      <div v-if="!$q.screen.lt.md" class="row q-col-gutter-lg q-mb-xl">
-        <!-- Restock Alert Card -->
-        <div class="col-12 col-md-4">
-          <q-card class="premium-glass-card h-full flex column card-hover" style="border-radius: 16px;">
-            <q-card-section class="q-pa-lg flex-1 flex column justify-between">
-              <div>
-                <div class="row items-center q-mb-md">
-                  <q-icon name="warning_amber" size="18px" color="red-8" class="q-mr-sm" />
-                  <div class="text-subtitle2 text-grey-7 text-uppercase" style="font-size: 11px;">Restock Alert</div>
-                </div>
-                <div class="text-h6 text-weight-bold text-dark leading-tight">
-                  {{ mlInsights.restockProduct || 'Analyzing Inventory...' }}
-                </div>
-              </div>
-              <div class="insight-badge bg-red-50 text-red-9 border-red-light q-mt-md">
-                <q-icon name="schedule" size="14px" class="q-mr-xs" />
-                Predicted stock-out in {{ mlInsights.daysUntilStockout || 'N/A' }} days
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
+      <div class="vp-card">
+        <div class="vp-toolbar">
+          <div class="pl-search-row">
+            <q-input
+              v-model="search"
+              outlined
+              dense
+              clearable
+              clear-icon="o_close"
+              hide-bottom-space
+              placeholder="Search products"
+              class="vp-search"
+            >
+              <template #prepend>
+                <q-icon name="o_search" size="18px" />
+              </template>
+            </q-input>
 
-        <!-- Upcoming Trend Card -->
-        <div class="col-12 col-md-4">
-          <q-card class="premium-glass-card h-full flex column card-hover" style="border-radius: 16px;">
-            <q-card-section class="q-pa-lg flex-1 flex column justify-between">
-              <div>
-                <div class="row items-center q-mb-md">
-                  <q-icon name="trending_up" size="18px" color="blue-8" class="q-mr-sm" />
-                  <div class="text-subtitle2 text-grey-7 text-uppercase" style="font-size: 11px;">Upcoming Trend</div>
+            <!-- A dropdown on wide screens and a bottom sheet on phones, the same as the order lists. -->
+            <FilterSheet :count="activeFilterCount" :result-count="filteredProducts.length" noun="product" @clear="resetFilters">
+              <div class="pl-filter-panel">
+                <div>
+                  <label class="vp-field-label">Category</label>
+                  <q-select v-model="filters.category" :options="categorySelectOptions" emit-value map-options outlined dense options-dense behavior="menu" class="vp-input" />
                 </div>
-                <div class="text-h6 text-weight-bold text-dark leading-tight">
-                  {{ mlInsights.trendingCategory || 'Gathering Data...' }}
+                <div>
+                  <label class="vp-field-label">Stock level</label>
+                  <q-select v-model="filters.stock" :options="STOCK_OPTIONS" emit-value map-options outlined dense options-dense behavior="menu" class="vp-input" />
                 </div>
-              </div>
-              <div class="insight-badge bg-blue-50 text-blue-9 border-blue-light q-mt-md">
-                <q-icon name="insights" size="14px" class="q-mr-xs" />
-                Expected {{ mlInsights.trendMultiplier || '0' }}x demand increase
-              </div>
-              <div v-if="mlInsights.currentSeason" class="insight-badge bg-green-50 text-green-9 border-green-light q-mt-sm">
-                <q-icon name="wb_sunny" size="14px" class="q-mr-xs" />
-                Season: {{ mlInsights.currentSeason }}
-                <span v-if="mlInsights.currentHoliday" class="q-ml-xs">
-                  • {{ mlInsights.currentHoliday }}
-                </span>
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <!-- Top Performance Card (Dark Variant) -->
-        <div class="col-12 col-md-4">
-          <q-card class="premium-glass-card bg-gradient-dark text-white h-full relative-position overflow-hidden card-hover" style="border-radius: 16px;">
-            <div class="glow-amber"></div>
-            <q-card-section class="relative-position z-top q-pa-lg flex-1 flex column justify-between">
-              <div>
-                <div class="row items-center q-mb-md">
-                  <q-icon name="emoji_events" size="18px" color="amber-4" class="q-mr-sm" />
-                  <div class="text-subtitle2 text-amber-2 text-uppercase" style="font-size: 11px;">Top Performance</div>
-                </div>
-                <div class="text-h6 text-weight-bold text-white leading-tight">
-                  {{ mlInsights.topCategory || 'Calculating...' }}
+                <div>
+                  <label class="vp-field-label">Sort by price</label>
+                  <q-select v-model="filters.priceSort" :options="PRICE_OPTIONS" emit-value map-options outlined dense options-dense behavior="menu" class="vp-input" />
                 </div>
               </div>
-              <div class="insight-badge bg-amber-9 text-white q-mt-md shadow-1" style="border: 1px solid rgba(255,255,255,0.2);">
-                <q-icon name="star_outline" size="14px" class="q-mr-xs" />
-                Highest revenue driver this week
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
-      </div>
-
-      <!-- ================= DESKTOP PRODUCT LIST ================= -->
-      <q-card v-if="!$q.screen.lt.md" class="premium-glass-card card-hover" style="border-radius: 16px;">
-        <q-card-section class="panel-header q-pa-lg border-bottom">
-          <div class="row items-center justify-between q-mb-lg">
-            <div class="text-h5 text-weight-bold text-dark row items-center">
-              <div class="header-accent-red q-mr-md"></div>
-              Product Catalog
-            </div>
+            </FilterSheet>
           </div>
 
-          <!-- Controls: Unified Toolbar -->
-          <div class="row items-center justify-between q-col-gutter-sm">
-            <div class="col-12 col-md-6 row items-center no-wrap q-gutter-x-sm">
-              <q-input v-model="search" outlined dense class="custom-solid-input exact-height col-grow bg-white" placeholder="Search products...">
-                <template v-slot:prepend>
-                  <q-icon name="search" color="blue-grey-4" size="20px" />
-                </template>
-              </q-input>
-              
-              <q-btn outline icon="filter_list" label="Filter" color="grey-4" text-color="slate-700" no-caps class="btn-modern-outline exact-height text-weight-bold q-px-md">
-                <q-menu class="premium-dropdown-list shadow-4 q-mt-xs" style="width: 280px; max-width: 85vw; border-radius: 12px;" anchor="bottom right" self="top right">
-                  <div class="q-pa-md">
-                    <div class="row items-center justify-between q-mb-md">
-                      <div class="text-subtitle1 text-weight-bolder text-slate-800">Filters</div>
-                      <q-btn flat label="Clear" color="red-9" class="text-weight-bold" @click="resetFilters" v-close-popup no-caps />
-                    </div>
-                    
-                    <div class="q-mb-md">
-                      <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Category</div>
-                      <q-select v-model="filters.category" :options="[{label: 'All Categories', value: 'all'}, ...categoryOptions]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
-                    </div>
-
-                    <div class="q-mb-md">
-                      <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Stock Level</div>
-                      <q-select v-model="filters.stock" :options="[{label: 'All', value: 'all'}, {label: 'Low Stock (< 10)', value: 'low_stock'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
-                    </div>
-
-                    <div class="q-mb-md">
-                      <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Status</div>
-                      <q-select v-model="filters.status" :options="[{label: 'All', value: 'all'}, {label: 'Active', value: 'active'}, {label: 'Deactivated', value: 'deactivated'}, {label: 'Archived', value: 'archived'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
-                    </div>
-
-                    <div class="q-mb-sm">
-                      <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Price</div>
-                      <q-select v-model="filters.priceSort" :options="[{label: 'Default', value: 'default'}, {label: 'Low to High', value: 'low_to_high'}, {label: 'High to Low', value: 'high_to_low'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
-                    </div>
-                  </div>
-                </q-menu>
-              </q-btn>
-            </div>
-
-            <div class="row q-gutter-md col-12 col-md-auto justify-end">
-              <!-- Red Outlined Export Button -->
-              <q-btn outline icon="download" label="Export" color="red-9" text-color="red-9" no-caps class="btn-export-red exact-height text-weight-bold q-px-md" @click="openExportWizard" />
-              <q-btn unelevated icon="add" label="Add Product" color="red-9" no-caps class="btn-modern-solid exact-height text-white text-weight-bold q-px-md" @click="showAddModal = true" />
-            </div>
+          <div
+            ref="chipRow"
+            class="vp-chips vp-chips--scroll"
+            :class="{ 'vp-chips--more-left': chipFade.left, 'vp-chips--more-right': chipFade.right }"
+            role="tablist"
+            aria-label="Filter products by status"
+            @scroll.passive="updateChipFade"
+          >
+            <button
+              v-for="filter in STATUS_FILTERS"
+              :key="filter.key"
+              type="button"
+              role="tab"
+              class="vp-chip"
+              :class="{ 'vp-chip--active': filters.status === filter.key }"
+              :aria-selected="filters.status === filter.key"
+              @click="filters.status = filter.key"
+            >
+              {{ filter.label }}
+              <span class="vp-chip-count">{{ statusCount(filter.key) }}</span>
+            </button>
           </div>
-        </q-card-section>
+        </div>
 
-        <!-- Table with Skeleton State -->
-        <q-table
-          flat
-          class="custom-premium-table bg-transparent"
-          :rows="loading ? skeletonRows : filteredProducts"
-          :columns="columns"
-          row-key="inventory_id"
-          :pagination="{ rowsPerPage: 10 }"
-        >
-          <!-- Empty State -->
-          <template #no-data>
-            <div v-if="!loading" class="full-width row flex-center text-grey-6 q-pa-xl empty-state-glass">
-              <div class="text-center">
-                <q-icon name="inventory_2" size="48px" class="q-mb-md opacity-50 drop-shadow-icon" />
-                <div class="text-subtitle1 text-weight-bold text-blue-grey-8">No products found</div>
-                <div class="text-caption text-blue-grey-5">Your inventory is currently empty or no items match your filter.</div>
-              </div>
-            </div>
-          </template>
+        <SkeletonTable v-if="loading" :columns="SKELETON_COLUMNS" :list="$q.screen.lt.md" thumb />
 
-          <template #body-cell-image="props">
-            <q-td :props="props">
-              <q-skeleton v-if="loading" type="rect" width="44px" height="44px" style="border-radius: 8px;" />
-              <q-avatar v-else size="44px" square class="bg-slate-50 shadow-soft" style="border-radius: 8px; border: 1px solid #e2e8f0;">
-                <img v-if="props.row.image_url" :src="props.row.image_url" style="object-fit: contain; padding: 4px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));" />
-                <q-icon v-else name="image" color="blue-grey-3" size="24px" />
-              </q-avatar>
-            </q-td>
-          </template>
+        <div v-else-if="!filteredProducts.length" class="vp-empty">
+          <div class="vp-empty-icon"><q-icon name="o_inventory_2" size="24px" /></div>
+          <div class="vp-empty-title">{{ products.length ? 'No matching products' : 'No products yet' }}</div>
+          <div class="vp-empty-text">
+            {{ products.length ? 'Try another search, status or filter.' : 'Add your first product so customers can order it.' }}
+          </div>
+          <q-btn v-if="!products.length" unelevated no-caps color="primary" icon="add" label="Add Product" class="vp-primary-btn pl-empty-btn" @click="showAddModal = true" />
+        </div>
 
-          <template #body-cell-product_name="props">
-            <q-td :props="props">
-              <q-skeleton v-if="loading" type="text" width="140px" height="20px" />
-              <div v-else class="text-weight-bold text-slate-800">{{ props.row.product_name }}</div>
-            </q-td>
-          </template>
-
-          <template #body-cell-category="props">
-            <q-td :props="props">
-              <q-skeleton v-if="loading" type="text" width="100px" height="20px" />
-              <span v-else>{{ props.row.category?.category_name || 'Uncategorized' }}</span>
-            </q-td>
-          </template>
-          
-          <template #body-cell-quantity="props">
-            <q-td :props="props">
-              <template v-if="loading">
-                <q-skeleton type="text" width="70px" height="16px" />
-                <q-skeleton type="text" width="55px" height="14px" class="q-mt-xs" />
-              </template>
-              <template v-else>
-                <div class="text-weight-bold" :class="props.row.available_quantity > 0 ? 'text-blue-grey-9' : 'text-red-7'">
-                  Avail: {{ props.row.available_quantity }}
-                </div>
-                <div class="text-caption text-blue-grey-4 font-medium">
-                  Total: {{ props.row.stock_quantity }}
-                </div>
-              </template>
-            </q-td>
-          </template>
-
-          <!-- Regular (Non-bold) Price -->
-          <template #body-cell-price="props">
-            <q-td :props="props" class="q-pr-xl">
-              <q-skeleton v-if="loading" type="text" width="75px" height="20px" />
-              <div v-else class="text-slate-800 price-regular">
-                <span v-if="props.row.variants && props.row.variants.length > 0" class="text-caption text-blue-grey-4 font-medium q-mr-xs">from</span>
-                ₱{{ formatNumber(props.row.price) }}
-              </div>
-            </q-td>
-          </template>
-          
-          <!-- Restored Original Status Chip Desktop -->
-          <template #body-cell-status="props">
-            <q-td :props="props" class="q-pl-lg">
-              <q-skeleton v-if="loading" type="rect" width="92px" height="24px" style="border-radius: 6px;" />
-              <q-chip 
-                v-else
-                :color="getStatusBgColor(props.row.status)" 
-                :text-color="getStatusTextColor(props.row.status)" 
-                class="text-weight-bold q-px-md q-ma-none" 
-                style="font-size: 12px; min-height: 24px; border-radius: 6px;"
+        <!-- A table on wide screens; a row opens the product. -->
+        <div v-else-if="!$q.screen.lt.md" class="vp-table-wrap">
+          <table class="vp-table pl-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th class="col-cat">Category</th>
+                <th class="col-stock">Stock</th>
+                <th class="text-right col-price">Price</th>
+                <th class="col-status">Status</th>
+                <th class="col-act"><span class="vp-sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="product in pagedProducts"
+                :key="product.inventory_id"
+                class="vp-row"
+                tabindex="0"
+                @click="viewProduct(product)"
+                @keydown.enter="viewProduct(product)"
               >
-                {{ formatStatus(props.row.status) }}
-              </q-chip>
-            </q-td>
-          </template>
+                <td>
+                  <div class="vp-person">
+                    <span class="pl-thumb">
+                      <img v-if="product.image_url" :src="product.image_url" alt="" />
+                      <q-icon v-else name="o_image" size="20px" />
+                    </span>
+                    <span class="vp-name">{{ product.product_name }}</span>
+                  </div>
+                </td>
+                <td class="vp-muted pl-ellipsis">{{ product.category?.category_name || 'Uncategorized' }}</td>
+                <td>
+                  <span class="pl-stock" :class="stockClass(product)">{{ product.available_quantity }}</span>
+                  <span class="pl-stock-total"> of {{ product.stock_quantity }}</span>
+                </td>
+                <td class="text-right vp-amount">
+                  <span v-if="product.variants?.length" class="pl-from">from </span>₱{{ formatNumber(product.price) }}
+                </td>
+                <td><span class="vp-status" :class="`vp-status--${productTone(product.status)}`">{{ formatStatus(product.status) }}</span></td>
+                <td class="text-right" @click.stop @keydown.stop>
+                  <q-btn flat round dense icon="o_more_vert" class="vp-open-btn" :aria-label="`Actions for ${product.product_name}`">
+                    <q-menu anchor="bottom right" self="top right" auto-close>
+                      <q-list class="vp-menu-list">
+                        <q-item v-for="action in rowActions(product)" :key="action.label" clickable :class="{ 'vp-menu-item--danger': action.danger }" @click="action.run">
+                          <q-item-section avatar><q-icon :name="action.icon" size="18px" /></q-item-section>
+                          <q-item-section>{{ action.label }}</q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-menu>
+                  </q-btn>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-          <template #body-cell-action="props">
-            <q-td :props="props" class="text-right q-pr-lg">
-              <q-skeleton v-if="loading" type="QBtn" size="sm" class="float-right" />
-              <q-btn v-else flat round dense icon="more_vert" color="blue-grey-4" class="hover-action-btn">
-                <q-menu class="premium-dropdown-list shadow-10 q-mt-xs" anchor="bottom right" self="top right" auto-close transition-show="scale" transition-hide="scale">
-                  <q-list style="min-width: 130px; padding: 6px;">
-                    <q-item clickable @click="viewProduct(props.row)" class="hover-slate rounded-borders q-px-sm q-py-sm" style="min-height: 36px;">
-                      <q-item-section side class="q-pr-sm"><q-icon name="visibility" size="18px" class="text-slate-500" /></q-item-section>
-                      <q-item-section class="text-weight-medium text-slate-700">View</q-item-section>
-                    </q-item>
-                    
-                    <q-item clickable v-if="props.row.status !== 'deactivated'" @click="confirmDeactivate(props.row)" class="hover-slate rounded-borders q-px-sm q-py-sm q-mt-xs" style="min-height: 36px;">
-                      <q-item-section side class="q-pr-sm"><q-icon name="block" size="18px" class="text-slate-500" /></q-item-section>
-                      <q-item-section class="text-weight-medium text-slate-700">Deactivate</q-item-section>
-                    </q-item>
-                    
-                    <q-item clickable @click="confirmDelete(props.row)" class="hover-slate rounded-borders q-px-sm q-py-sm q-mt-xs" style="min-height: 36px;">
-                      <q-item-section side class="q-pr-sm"><q-icon name="delete" size="18px" class="text-slate-500" /></q-item-section>
-                      <q-item-section class="text-weight-medium text-slate-700">Delete</q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-menu>
-              </q-btn>
-            </q-td>
-          </template>
-        </q-table>
-      </q-card>
-
-      <!-- ================= MOBILE PRODUCT LIST ================= -->
-      <div v-else class="mobile-products-layout q-pb-xl">
-        
-        <!-- Mobile Header -->
-        <div class="page-header q-mb-lg q-mt-sm row items-center justify-between">
-          <div class="row items-center">
-            <div class="glass-icon-box q-mr-md" style="width: 44px; height: 44px;">
-              <q-icon name="inventory_2" size="22px" class="text-brand-red" />
+        <!-- A tappable list on phones, with the actions behind the three dots. -->
+        <div v-else class="vp-list">
+          <div
+            v-for="product in pagedProducts"
+            :key="product.inventory_id"
+            class="vp-list-item"
+            role="button"
+            tabindex="0"
+            @click="viewProduct(product)"
+            @keydown.enter.self="viewProduct(product)"
+          >
+            <span class="pl-thumb pl-thumb--lg">
+              <img v-if="product.image_url" :src="product.image_url" alt="" />
+              <q-icon v-else name="o_image" size="22px" />
+            </span>
+            <div class="vp-list-body">
+              <span class="vp-name">{{ product.product_name }}</span>
+              <div class="vp-list-meta">
+                {{ product.category?.category_name || 'Uncategorized' }} · <span :class="stockClass(product)">{{ product.available_quantity }}</span> of {{ product.stock_quantity }} left
+              </div>
+              <div class="pl-list-bottom">
+                <span class="vp-amount">₱{{ formatNumber(product.price) }}</span>
+                <span class="vp-status" :class="`vp-status--${productTone(product.status)}`">{{ formatStatus(product.status) }}</span>
+              </div>
             </div>
-            <div>
-              <h1 class="text-h5 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight leading-tight">Inventory Management</h1>
-              <p class="text-caption text-blue-grey-5 q-mt-xs q-mb-none font-medium">Monitor and update your catalog.</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- ML Insights -->
-        <div class="q-mb-xl q-gutter-y-md">
-          <!-- Restock Alert -->
-          <q-card class="premium-glass-card shadow-soft border-slate-light" style="border-radius: 12px;">
-            <q-card-section class="q-pa-md">
-              <div class="row items-center justify-between q-mb-xs">
-                <div class="row items-center">
-                  <q-icon name="warning_amber" size="18px" color="red-8" class="q-mr-sm" />
-                  <div class="text-weight-bold text-grey-7 text-uppercase" style="font-size: 11px;">Restock Alert</div>
-                </div>
-                <div class="text-caption text-weight-bold text-red-9 bg-red-50 q-px-sm q-py-xs rounded-borders border-red-light">
-                  {{ mlInsights.daysUntilStockout || 'N/A' }} Days
-                </div>
-              </div>
-              <div class="text-subtitle1 text-weight-bold text-dark leading-tight ellipsis q-mt-sm">{{ mlInsights.restockProduct || 'Analyzing...' }}</div>
-            </q-card-section>
-          </q-card>
-
-          <!-- Upcoming Trend -->
-          <q-card class="premium-glass-card shadow-soft border-slate-light" style="border-radius: 12px;">
-            <q-card-section class="q-pa-md">
-              <div class="row items-center justify-between q-mb-xs">
-                <div class="row items-center">
-                  <q-icon name="trending_up" size="18px" color="blue-8" class="q-mr-sm" />
-                  <div class="text-weight-bold text-grey-7 text-uppercase" style="font-size: 11px;">Upcoming Trend</div>
-                </div>
-                <div class="text-caption text-weight-bold text-blue-9 bg-blue-50 q-px-sm q-py-xs rounded-borders border-blue-light">
-                  {{ mlInsights.trendMultiplier || '0' }}x Demand
-                </div>
-              </div>
-              <div class="text-subtitle1 text-weight-bold text-dark leading-tight ellipsis q-mt-sm">{{ mlInsights.trendingCategory || 'Gathering Data...' }}</div>
-            </q-card-section>
-          </q-card>
-
-          <!-- Top Performance -->
-          <q-card class="premium-glass-card shadow-soft border-slate-light" style="border-radius: 12px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
-            <q-card-section class="q-pa-md">
-              <div class="row items-center justify-between q-mb-xs">
-                <div class="row items-center">
-                  <q-icon name="emoji_events" size="18px" color="amber-4" class="q-mr-sm" />
-                  <div class="text-weight-bold text-amber-2 text-uppercase" style="font-size: 11px;">Top Performance</div>
-                </div>
-                <div class="text-caption text-weight-bold text-white bg-amber-9 q-px-sm q-py-xs rounded-borders" style="border: 1px solid rgba(255,255,255,0.2);">
-                  #1 Sales
-                </div>
-              </div>
-              <div class="text-subtitle1 text-weight-bold text-white leading-tight ellipsis q-mt-sm">{{ mlInsights.topCategory || 'Calculating...' }}</div>
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <!-- Header & Add Button -->
-        <div class="row items-center justify-between q-mb-md">
-          <div class="row items-center">
-            <div style="width: 5px; height: 24px; background-color: #b91c1c; border-radius: 4px;" class="q-mr-sm"></div>
-            <h2 class="text-h5 text-weight-bolder text-red-9 q-ma-none tracking-tight" style="line-height: 1;">Products</h2>
-          </div>
-          <q-btn unelevated color="red-9" icon="add" label="Add Product" no-caps class="text-weight-bold shadow-1 btn-modern-solid" style="border-radius: 8px; font-size: 13px; padding: 6px 16px;" @click="showAddModal = true" />
-        </div>
-
-        <!-- Search Bar -->
-        <q-input v-model="search" outlined dense placeholder="Search products..." class="q-mb-md custom-solid-input bg-white" style="border-radius: 8px;">
-          <template v-slot:prepend><q-icon name="search" color="grey-6" size="20px" /></template>
-        </q-input>
-
-        <!-- Export & Filter Controls -->
-        <div class="row q-col-gutter-sm q-mb-lg">
-          <div class="col-6">
-            <!-- Mobile Red Outlined Export Button -->
-            <q-btn outline icon="description" label="Export" color="red-9" text-color="red-9" class="full-width btn-export-red text-weight-medium" style="height: 36px; font-size: 13px;" no-caps @click="openExportWizard" />
-          </div>
-          <div class="col-6">
-            <q-btn outline icon="filter_list" label="Filter" color="grey-4" text-color="slate-700" class="full-width btn-modern-outline text-weight-medium" style="height: 36px; font-size: 13px;" no-caps>
-              <q-menu class="premium-dropdown-list shadow-4 q-mt-xs" style="width: 280px; max-width: 85vw; border-radius: 12px;" anchor="bottom right" self="top right">
-                <div class="q-pa-md">
-                  <div class="row items-center justify-between q-mb-md">
-                    <div class="text-subtitle1 text-weight-bolder text-slate-800">Filters</div>
-                    <q-btn flat label="Clear" color="red-9" class="text-weight-bold" @click="resetFilters" v-close-popup no-caps />
-                  </div>
-                  <div class="q-mb-md">
-                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Category</div>
-                    <q-select v-model="filters.category" :options="[{label: 'All Categories', value: 'all'}, ...categoryOptions]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
-                  </div>
-                  <div class="q-mb-md">
-                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Stock Level</div>
-                    <q-select v-model="filters.stock" :options="[{label: 'All', value: 'all'}, {label: 'Low Stock (< 10)', value: 'low_stock'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
-                  </div>
-                  <div class="q-mb-md">
-                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Status</div>
-                    <q-select v-model="filters.status" :options="[{label: 'All', value: 'all'}, {label: 'Active', value: 'active'}, {label: 'Deactivated', value: 'deactivated'}, {label: 'Archived', value: 'archived'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
-                  </div>
-                  <div class="q-mb-sm">
-                    <div class="text-caption text-weight-bold text-slate-500 q-mb-xs text-uppercase" style="letter-spacing: 0.5px;">Price</div>
-                    <q-select v-model="filters.priceSort" :options="[{label: 'Default', value: 'default'}, {label: 'Low to High', value: 'low_to_high'}, {label: 'High to Low', value: 'high_to_low'}]" emit-value map-options dense outlined options-dense behavior="menu" class="custom-solid-input bg-white" />
-                  </div>
-                </div>
+            <q-btn flat round dense icon="o_more_vert" class="vp-open-btn" :aria-label="`Actions for ${product.product_name}`" @click.stop>
+              <q-menu anchor="bottom right" self="top right" auto-close>
+                <q-list class="vp-menu-list">
+                  <q-item v-for="action in rowActions(product)" :key="action.label" clickable :class="{ 'vp-menu-item--danger': action.danger }" @click="action.run">
+                    <q-item-section avatar><q-icon :name="action.icon" size="18px" /></q-item-section>
+                    <q-item-section>{{ action.label }}</q-item-section>
+                  </q-item>
+                </q-list>
               </q-menu>
             </q-btn>
           </div>
         </div>
 
-        <!-- Product List Mobile Cards / Skeletons -->
-        <div v-if="loading" class="q-gutter-y-md">
-          <q-card v-for="n in 4" :key="'mob-skel-' + n" flat bordered class="bg-white shadow-soft border-slate-light q-pa-md" style="border-radius: 12px;">
-            <div class="row items-center no-wrap">
-              <q-skeleton type="rect" width="64px" height="64px" style="border-radius: 10px;" class="q-mr-md flex-shrink-0" />
-              <div class="col">
-                <q-skeleton type="text" width="70%" height="18px" />
-                <q-skeleton type="text" width="40%" height="14px" class="q-mt-xs" />
-                <div class="row items-center justify-between q-mt-sm">
-                  <q-skeleton type="text" width="50px" height="18px" />
-                  <q-skeleton type="rect" width="65px" height="20px" style="border-radius: 4px;" />
-                </div>
-              </div>
-            </div>
-          </q-card>
-        </div>
-        <div v-else-if="filteredProducts.length === 0" class="text-center text-grey-5 q-py-xl">
-          <q-icon name="inventory_2" size="48px" class="q-mb-sm opacity-50" />
-          <div>No products found.</div>
-        </div>
-        <div v-else>
-          <div v-for="product in filteredProducts" :key="product.inventory_id" class="q-mb-md">
-            <q-card flat bordered class="bg-white relative-position shadow-soft border-slate-light" style="border-radius: 12px;">
-              
-              <!-- Absolute Top Right Action Menu -->
-              <div class="absolute-top-right q-pa-sm" style="z-index: 2;">
-                <q-btn flat round dense icon="more_vert" color="grey-7">
-                  <q-menu class="premium-dropdown-list shadow-4" anchor="bottom right" self="top right">
-                    <q-list style="min-width: 130px; padding: 6px;">
-                      <q-item clickable @click="viewProduct(product)" class="hover-slate rounded-borders q-px-sm q-py-sm" style="min-height: 36px;">
-                        <q-item-section side class="q-pr-sm"><q-icon name="visibility" size="18px" class="text-slate-500" /></q-item-section>
-                        <q-item-section class="text-weight-medium text-slate-700">View</q-item-section>
-                      </q-item>
-                      
-                      <q-item clickable v-if="product.status !== 'deactivated'" @click="confirmDeactivate(product)" class="hover-slate rounded-borders q-px-sm q-py-sm q-mt-xs" style="min-height: 36px;">
-                        <q-item-section side class="q-pr-sm"><q-icon name="block" size="18px" class="text-slate-500" /></q-item-section>
-                        <q-item-section class="text-weight-medium text-slate-700">Deactivate</q-item-section>
-                      </q-item>
-                      
-                      <q-item clickable @click="confirmDelete(product)" class="hover-slate rounded-borders q-px-sm q-py-sm q-mt-xs" style="min-height: 36px;">
-                        <q-item-section side class="q-pr-sm"><q-icon name="delete" size="18px" class="text-slate-500" /></q-item-section>
-                        <q-item-section class="text-weight-medium text-slate-700">Delete</q-item-section>
-                      </q-item>
-                    </q-list>
-                  </q-menu>
-                </q-btn>
-              </div>
-              
-              <q-card-section class="q-pa-md row items-center no-wrap">
-                <div class="q-mr-md flex flex-center bg-slate-50 shadow-soft" style="width: 64px; height: 64px; border-radius: 10px; border: 1px solid #f1f5f9; flex-shrink: 0; padding: 4px;">
-                  <img v-if="product.image_url" :src="product.image_url" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.15));" />
-                  <q-icon v-else name="inventory_2" color="grey-4" size="28px" />
-                </div>
-                
-                <div class="col" style="min-width: 0; padding-right: 20px;">
-                  <div class="text-weight-bold text-dark ellipsis" style="font-size: 14px;">{{ product.product_name }}</div>
-                  <div class="text-caption text-grey-6 ellipsis q-mb-xs" style="font-size: 12px;">{{ product.category?.category_name || 'Uncategorized' }}</div>
-                  
-                  <div class="row items-center justify-between q-mt-xs">
-                    <div class="text-slate-800 price-regular" style="font-size: 14px;">₱{{ formatNumber(product.price) }}</div>
-                    
-                    <!-- Restored Original Status Chip Mobile -->
-                    <q-chip 
-                      :color="getStatusBgColor(product.status)" 
-                      :text-color="getStatusTextColor(product.status)" 
-                      size="sm" 
-                      class="text-weight-bold q-ma-none" 
-                      style="border-radius: 4px; height: 20px;"
-                    >
-                      {{ formatStatus(product.status) }}
-                    </q-chip>
-                  </div>
-                </div>
-              </q-card-section>
-
-            </q-card>
+        <div v-if="!loading && pageCount > 1" class="vp-pager">
+          <span>Showing {{ rangeStart }}–{{ rangeEnd }} of {{ filteredProducts.length }}</span>
+          <div class="vp-pager-btns">
+            <q-btn outline no-caps color="primary" icon="o_chevron_left" class="vp-pill-btn" aria-label="Previous page" :disable="page === 1" @click="page--" />
+            <q-btn outline no-caps color="primary" icon="o_chevron_right" class="vp-pill-btn" aria-label="Next page" :disable="page === pageCount" @click="page++" />
           </div>
         </div>
       </div>
 
     </div>
 
-    <!-- Modals -->
     <AddProductModal v-model="showAddModal" @refresh="fetchProducts" />
-    <ProductDetailsModal v-model="showDetailsModal" :product="selectedProduct" :mode="detailsMode" @refresh="fetchProducts" />
+    <ProductDetailsModal v-model="showDetailsModal" :product="selectedProduct" @refresh="fetchProducts" />
 
-    <!-- Export Wizard Modal -->
-    <q-dialog v-model="showExportModal" persistent transition-show="scale" transition-hide="scale">
-      <q-card style="width: 500px; max-width: 90vw; border-radius: 16px;" class="bg-white shadow-4">
-        <q-card-section class="row items-center q-pb-none q-pt-lg q-px-lg">
-          <div class="text-h6 text-weight-bolder text-slate-800">Export Inventory</div>
-          <q-space />
-          <q-btn icon="close" flat round dense v-close-popup color="grey-6" />
-        </q-card-section>
+    <!-- Deactivate or delete, in the Log out dialog's layout: everything centred, the icon above the title, and a line above two equal buttons. -->
+    <q-dialog v-model="confirm.open" persistent>
+      <q-card class="vp-dialog pl-confirm">
+        <div class="pl-confirm-body">
+          <span class="vp-dialog-icon vp-dialog-icon--danger pl-confirm-icon">
+            <q-icon :name="confirm.kind === 'delete' ? 'o_delete' : 'o_block'" size="24px" />
+          </span>
+          <div class="pl-confirm-title">{{ confirm.kind === 'delete' ? 'Delete this product?' : 'Deactivate this product?' }}</div>
+          <p class="pl-confirm-text">
+            <template v-if="confirm.kind === 'delete'">
+              <strong>{{ confirm.product?.product_name }}</strong> will be removed for good. This can't be undone.
+            </template>
+            <template v-else>
+              Customers won't be able to buy <strong>{{ confirm.product?.product_name }}</strong> until you turn it back on.
+            </template>
+          </p>
+        </div>
+        <q-separator class="pl-confirm-sep" />
+        <div class="pl-confirm-actions">
+          <q-btn v-close-popup outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" :disable="confirm.busy" />
+          <q-btn
+            unelevated
+            no-caps
+            color="primary"
+            :label="confirm.kind === 'delete' ? 'Delete Product' : 'Deactivate'"
+            class="vp-dialog-btn"
+            :loading="confirm.busy"
+            @click="runConfirm"
+          />
+        </div>
+      </q-card>
+    </q-dialog>
 
-        <q-card-section class="q-pt-md q-px-lg q-pb-lg">
-          <!-- Step 1: Format Selection -->
-          <div v-if="exportStep === 1">
-            <p class="text-body2 text-slate-500 q-mb-lg font-medium">Choose your preferred export format for the inventory report.</p>
-            
-            <div class="row q-col-gutter-md">
-              <div class="col-6">
-                <q-card class="cursor-pointer format-card text-center q-pa-md" :class="exportFormat === 'pdf' ? 'bg-red-50 border-red-light' : 'bg-slate-50 border-slate-light'" @click="exportFormat = 'pdf'" flat bordered>
-                  <q-icon name="picture_as_pdf" size="40px" :color="exportFormat === 'pdf' ? 'red-9' : 'blue-grey-3'" class="q-mb-sm transition-ease" />
-                  <div class="text-weight-bold" :class="exportFormat === 'pdf' ? 'text-red-9' : 'text-slate-700'">PDF Document</div>
-                  <div class="text-caption text-slate-500 q-mt-xs">Professional A4 format</div>
-                </q-card>
-              </div>
-              <div class="col-6">
-                <q-card class="cursor-pointer format-card text-center q-pa-md" :class="exportFormat === 'image' ? 'bg-red-50 border-red-light' : 'bg-slate-50 border-slate-light'" @click="exportFormat = 'image'" flat bordered>
-                  <q-icon name="image" size="40px" :color="exportFormat === 'image' ? 'red-9' : 'blue-grey-3'" class="q-mb-sm transition-ease" />
-                  <div class="text-weight-bold" :class="exportFormat === 'image' ? 'text-red-9' : 'text-slate-700'">Image Snapshot</div>
-                  <div class="text-caption text-slate-500 q-mt-xs">Quick shareable image</div>
-                </q-card>
-              </div>
-            </div>
-
-            <div class="row justify-end q-mt-xl">
-              <q-btn unelevated label="Next" color="red-9" class="q-px-xl text-weight-bold btn-modern-solid" no-caps @click="proceedToPreview(exportFormat)" />
-            </div>
-          </div>
-
-          <!-- Step 2: Preview -->
-          <div v-else-if="exportStep === 2">
-            <q-banner rounded class="bg-slate-50 q-mb-lg border-slate-light q-pa-md">
-              <template v-slot:avatar>
-                <q-icon name="info" color="blue-grey-4" size="28px" />
-              </template>
-              <div class="text-weight-bolder text-slate-800 text-subtitle1">Ready to Generate</div>
-              <div class="text-body2 text-slate-600 q-mt-xs">
-                Format: <strong class="text-slate-800">{{ exportFormat.toUpperCase() }}</strong><br>
-                Total Items: <strong class="text-slate-800">{{ filteredProducts.length }}</strong>
-              </div>
-            </q-banner>
-
-            <div class="row justify-end q-mt-lg q-gutter-sm">
-              <q-btn flat label="Back" color="blue-grey-6" no-caps @click="exportStep = 1" :disable="isExporting" class="text-weight-bold" />
-              <q-btn unelevated label="Confirm & Download" color="red-9" class="q-px-lg text-weight-bold btn-modern-solid" no-caps :loading="isExporting" @click="executeFinalExport" />
+    <q-dialog v-model="showExportModal" persistent>
+      <q-card class="vp-dialog vp-dialog--wide">
+        <div class="vp-dialog-head">
+          <span class="vp-dialog-icon"><q-icon name="o_download" size="22px" /></span>
+          <div>
+            <div class="vp-dialog-title">Export inventory</div>
+            <div class="vp-dialog-text">
+              {{ exportStep === 1 ? 'Choose a format for the inventory report.' : 'Your report is ready to generate.' }}
             </div>
           </div>
-        </q-card-section>
+          <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" :disable="isExporting" />
+        </div>
+
+        <div class="vp-dialog-body">
+          <div v-if="exportStep === 1" class="pl-format-grid" role="radiogroup" aria-label="Export format">
+            <button
+              v-for="format in EXPORT_FORMATS"
+              :key="format.value"
+              type="button"
+              role="radio"
+              class="pl-format"
+              :class="{ 'pl-format--active': exportFormat === format.value }"
+              :aria-checked="exportFormat === format.value"
+              @click="exportFormat = format.value"
+            >
+              <span class="pl-format-icon"><q-icon :name="format.icon" size="24px" /></span>
+              <span class="pl-format-title">{{ format.title }}</span>
+              <span class="pl-format-sub">{{ format.sub }}</span>
+            </button>
+          </div>
+
+          <div v-else class="pl-summary">
+            <div class="pl-summary-row"><span>Format</span><strong>{{ exportFormat === 'pdf' ? 'PDF document' : 'Image snapshot' }}</strong></div>
+            <div class="pl-summary-row"><span>Products</span><strong>{{ filteredProducts.length }}</strong></div>
+          </div>
+        </div>
+
+        <div class="vp-dialog-actions">
+          <template v-if="exportStep === 1">
+            <q-btn v-close-popup outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" />
+            <q-btn unelevated no-caps color="primary" label="Next" class="vp-dialog-btn" @click="proceedToPreview(exportFormat)" />
+          </template>
+          <template v-else>
+            <q-btn outline no-caps color="primary" label="Back" class="vp-dialog-btn" :disable="isExporting" @click="exportStep = 1" />
+            <q-btn unelevated no-caps color="primary" label="Download" class="vp-dialog-btn" :loading="isExporting" @click="executeFinalExport" />
+          </template>
+        </div>
       </q-card>
     </q-dialog>
 
@@ -533,29 +298,57 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, reactive, nextTick, watch } from 'vue'
 import html2canvas from 'html2canvas'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
-import { useAuth } from '@/composables/useAuth'
+import { useRoute } from 'vue-router'
 
 import AddProductModal from '@/components/modals/AddProductModal.vue'
 import ProductDetailsModal from '@/components/modals/ProductDetailsModal.vue'
+import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
+import FilterSheet from '@/components/vendor/FilterSheet.vue'
 
 const $q = useQuasar()
-const authStore = useAuth()
+
+const STATUS_FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'active', label: 'Active' },
+  { key: 'deactivated', label: 'Deactivated' },
+  { key: 'archived', label: 'Archived' }
+]
+const STOCK_OPTIONS = [
+  { label: 'All stock levels', value: 'all' },
+  { label: 'Low stock (under 10)', value: 'low_stock' }
+]
+const PRICE_OPTIONS = [
+  { label: 'Default order', value: 'default' },
+  { label: 'Low to high', value: 'low_to_high' },
+  { label: 'High to low', value: 'high_to_low' }
+]
+const EXPORT_FORMATS = [
+  { value: 'pdf', icon: 'o_picture_as_pdf', title: 'PDF document', sub: 'Printable A4 report' },
+  { value: 'image', icon: 'o_image', title: 'Image snapshot', sub: 'Quick shareable image' }
+]
+const PAGE_SIZE = 10
+
+// The placeholder rows take the same columns as the table: photo and name, category, stock, price, status and the menu.
+const SKELETON_COLUMNS = [
+  { type: 'thumb' },
+  { width: '18%', type: 'text' },
+  { width: '13%', type: 'text' },
+  { width: '14%', type: 'text', align: 'right' },
+  { width: '14%', type: 'pill', size: 64 },
+  { width: '7%', type: 'icon', align: 'right' }
+]
+
 const search = ref('')
 const loading = ref(true)
 const products = ref([])
 const showAddModal = ref(false)
 const showDetailsModal = ref(false)
 const selectedProduct = ref(null)
-
-const detailsMode = ref('view') 
-
-const skeletonRows = Array.from({ length: 6 }, (_, index) => ({
-  inventory_id: `skeleton-${index}`
-}))
+const page = ref(1)
 
 const filters = reactive({
   stock: 'all',
@@ -574,230 +367,122 @@ const mlInsights = ref({
   currentHoliday: null
 })
 
-const columns = [
-  { name: 'image', label: 'Image', field: 'image', align: 'left' },
-  { name: 'product_name', label: 'Name', field: 'product_name', align: 'left', sortable: true },
-  { name: 'category', label: 'Category', field: row => row.category?.category_name || 'Uncategorized', align: 'left', sortable: true },
-  { name: 'quantity', label: 'QTY', field: 'stock_quantity', align: 'left', sortable: true },
-  { name: 'price', label: 'Price (₱)', field: 'price', align: 'right', sortable: true, headerClasses: 'q-pr-xl' },
-  { name: 'status', label: 'Status', field: 'status', align: 'left', headerClasses: 'q-pl-lg' },
-  { name: 'action', label: 'Actions', field: 'action', align: 'right', headerClasses: 'q-pr-lg' }
-]
+const isNumber = value => value !== null && value !== '' && !Number.isNaN(Number(value))
+
+const insightCards = computed(() => {
+  const ml = mlInsights.value
+  const days = Number(ml.daysUntilStockout)
+  const trendNotes = [{ icon: 'o_insights', text: isNumber(ml.trendMultiplier) ? `Expected ${ml.trendMultiplier}× demand` : 'Not enough data yet' }]
+  if (ml.currentSeason) {
+    trendNotes.push({ icon: 'o_wb_sunny', tone: 'success', text: `Season: ${ml.currentSeason}${ml.currentHoliday ? ` · ${ml.currentHoliday}` : ''}` })
+  }
+
+  return [
+    {
+      key: 'restock',
+      label: 'Restock alert',
+      icon: 'o_warning_amber',
+      tone: 'danger',
+      value: ml.restockProduct || 'Analyzing inventory…',
+      notes: [{ icon: 'o_schedule', text: isNumber(ml.daysUntilStockout) ? `Stock-out in about ${days} day${days === 1 ? '' : 's'}` : 'No stock-out predicted yet' }]
+    },
+    { key: 'trend', label: 'Upcoming trend', icon: 'o_trending_up', tone: 'info', value: ml.trendingCategory || 'Gathering data…', notes: trendNotes },
+    { key: 'top', label: 'Top performer', icon: 'o_emoji_events', tone: 'wait', value: ml.topCategory || 'Calculating…', notes: [{ icon: 'o_star_outline', text: 'Highest revenue this week' }] }
+  ]
+})
+
+// Search, category and stock narrow the list first, so each status chip can count what it would show.
+const baseProducts = computed(() => {
+  const needle = (search.value || '').trim().toLowerCase()
+  return products.value.filter(p =>
+    (!needle || (p.product_name || '').toLowerCase().includes(needle)) &&
+    (filters.stock !== 'low_stock' || p.stock_quantity < 10) &&
+    (filters.category === 'all' || p.category_id === filters.category)
+  )
+})
+
+const statusOf = product => String(product.status || 'active').toLowerCase()
+const statusCount = key => baseProducts.value.filter(p => key === 'all' || statusOf(p) === key).length
+
+// On phones the status chips scroll sideways; these flags fade whichever edge still has chips beyond it.
+const chipRow = ref(null)
+const chipFade = reactive({ left: false, right: false })
+
+const updateChipFade = () => {
+  const el = chipRow.value
+  if (!el) return
+  chipFade.left = el.scrollLeft > 2
+  chipFade.right = el.scrollLeft + el.clientWidth < el.scrollWidth - 2
+}
+
+// The counts change the chips' widths, so the fade is rechecked whenever they do.
+watch(() => STATUS_FILTERS.map(f => statusCount(f.key)).join(), () => nextTick(updateChipFade))
+
+onMounted(() => {
+  nextTick(updateChipFade)
+  window.addEventListener('resize', updateChipFade)
+})
+
+onBeforeUnmount(() => window.removeEventListener('resize', updateChipFade))
 
 const filteredProducts = computed(() => {
-  let result = products.value
-
-  if (search.value) {
-    const needle = search.value.toLowerCase()
-    result = result.filter(p => p.product_name.toLowerCase().includes(needle))
-  }
-
-  if (filters.stock === 'low_stock') {
-    result = result.filter(p => p.stock_quantity < 10)
-  }
-
-  if (filters.category !== 'all') {
-    result = result.filter(p => p.category_id === filters.category)
-  }
-
-  if (filters.status !== 'all') {
-    result = result.filter(p => p.status === filters.status)
-  }
-
-  if (filters.priceSort === 'low_to_high') {
-    result = result.slice().sort((a, b) => (a.price || 0) - (b.price || 0))
-  } else if (filters.priceSort === 'high_to_low') {
-    result = result.slice().sort((a, b) => (b.price || 0) - (a.price || 0))
-  }
-
+  const result = baseProducts.value.filter(p => filters.status === 'all' || statusOf(p) === filters.status)
+  if (filters.priceSort === 'low_to_high') return result.slice().sort((a, b) => (a.price || 0) - (b.price || 0))
+  if (filters.priceSort === 'high_to_low') return result.slice().sort((a, b) => (b.price || 0) - (a.price || 0))
   return result
 })
+
+const pageCount = computed(() => Math.max(1, Math.ceil(filteredProducts.value.length / PAGE_SIZE)))
+const pagedProducts = computed(() => filteredProducts.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
+const rangeStart = computed(() => (page.value - 1) * PAGE_SIZE + 1)
+const rangeEnd = computed(() => Math.min(page.value * PAGE_SIZE, filteredProducts.value.length))
+
+// Any change to what is shown starts back on the first page.
+watch(() => [search.value, filters.stock, filters.category, filters.status, filters.priceSort], () => { page.value = 1 })
+
+// A refresh that removes rows keeps the page in range.
+watch(pageCount, count => { if (page.value > count) page.value = count })
+
+const activeFilterCount = computed(() => [filters.category !== 'all', filters.stock !== 'all', filters.priceSort !== 'default'].filter(Boolean).length)
 
 const resetFilters = () => {
   filters.stock = 'all'
   filters.category = 'all'
-  filters.status = 'all'
   filters.priceSort = 'default'
-}
-
-const isExporting = ref(false)
-const showExportModal = ref(false)
-const exportStep = ref(1)
-const exportFormat = ref('pdf')
-
-const openExportWizard = () => {
-  exportStep.value = 1
-  exportFormat.value = 'pdf'
-  showExportModal.value = true
-}
-
-const proceedToPreview = (format) => {
-  exportFormat.value = format
-  exportStep.value = 2
-}
-
-const executeFinalExport = async () => {
-  if (exportFormat.value === 'pdf') {
-    try {
-      isExporting.value = true
-      const response = await api.get('/vendor/inventory/export', { responseType: 'blob' })
-      const blob = new Blob([response.data], { type: 'application/pdf' })
-      const url = window.URL.createObjectURL(blob)
-      
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `Tindahan-Inventory-Report-${Date.now()}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      
-      setTimeout(() => window.URL.revokeObjectURL(url), 1000)
-      showExportModal.value = false
-    } catch (error) {
-      console.error('PDF Export failed:', error)
-      $q.notify({ type: 'negative', message: 'Failed to generate PDF report', color: 'dark' })
-    } finally {
-      isExporting.value = false
-    }
-  } else {
-    try {
-      isExporting.value = true
-      
-      const response = await api.get('/vendor/inventory/export-html')
-      const htmlContent = response.data.html
-      
-      const container = document.createElement('div')
-      container.innerHTML = htmlContent
-      container.style.position = 'absolute'
-      container.style.left = '-9999px'
-      container.style.top = '0'
-      container.style.width = '840px'
-      document.body.appendChild(container)
-      
-      await nextTick()
-      
-      const images = container.querySelectorAll('img')
-      const imagePromises = Array.from(images).map(async (img) => {
-        if (!img.complete) {
-          await new Promise((resolve) => {
-            img.onload = resolve
-            img.onerror = resolve
-          })
-        }
-        if (img.decode) {
-          try {
-            await img.decode()
-          } catch (e) {}
-        }
-      })
-      await Promise.all([
-        ...imagePromises,
-        document.fonts ? document.fonts.ready : Promise.resolve()
-      ])
-      
-      const allImages = container.querySelectorAll('img')
-      allImages.forEach(img => {
-        if (img.src && img.src.startsWith('data:image')) {
-          try {
-            const canvas = document.createElement('canvas')
-            canvas.width = img.naturalWidth || img.width || 240
-            canvas.height = img.naturalHeight || img.height || 160
-            const ctx = canvas.getContext('2d')
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-            
-            canvas.style.cssText = img.style.cssText
-            canvas.className = img.className
-            if (img.hasAttribute('width')) canvas.style.width = img.getAttribute('width') + 'px'
-            if (img.hasAttribute('height')) canvas.style.height = img.getAttribute('height') + 'px'
-            
-            img.parentNode.replaceChild(canvas, img)
-          } catch (e) {
-            console.warn('Failed to convert image to canvas for export', e)
-          }
-        }
-      })
-      
-      const pages = container.querySelectorAll('.page')
-      if (pages.length > 0) {
-        for (let i = 0; i < pages.length; i++) {
-          const canvas = await html2canvas(pages[i], {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            logging: false,
-            backgroundColor: '#ffffff'
-          })
-          
-          const imageLink = document.createElement('a')
-          imageLink.download = `inventory-report-page-${i + 1}-${Date.now()}.png`
-          imageLink.href = canvas.toDataURL('image/png')
-          imageLink.click()
-          
-          await new Promise(r => setTimeout(r, 500))
-        }
-      } else {
-        const canvas = await html2canvas(container, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          logging: false
-        })
-        
-        const imageLink = document.createElement('a')
-        imageLink.download = `inventory-report-${Date.now()}.png`
-        imageLink.href = canvas.toDataURL('image/png')
-        imageLink.click()
-      }
-      
-      document.body.removeChild(container)
-      showExportModal.value = false
-    } catch (error) {
-      console.error('Detailed Image Export Error:', error)
-      $q.notify({ type: 'negative', message: 'Failed to generate Image report', color: 'dark' })
-    } finally {
-      isExporting.value = false
-    }
-  }
 }
 
 const categoryOptions = computed(() => {
   const cats = new Map()
   products.value.forEach(p => {
-    if (p.category) {
-      cats.set(p.category_id, p.category.category_name)
-    }
+    if (p.category) cats.set(p.category_id, p.category.category_name)
   })
   return Array.from(cats, ([value, label]) => ({ value, label }))
 })
 
-const formatStatus = (status) => {
+const categorySelectOptions = computed(() => [{ label: 'All categories', value: 'all' }, ...categoryOptions.value])
+
+const formatStatus = status => {
   if (!status) return 'Active'
   return String(status).charAt(0).toUpperCase() + String(status).slice(1).toLowerCase()
 }
 
-const getStatusBgColor = (status) => {
+const productTone = status => {
   switch (String(status || 'active').toLowerCase()) {
-    case 'active': return 'green-1'
-    case 'deactivated': 
-    case 'inactive': return 'red-1'
-    case 'archived': return 'grey-2'
-    case 'out of stock': return 'orange-1'
-    default: return 'blue-grey-1'
+    case 'active': return 'success'
+    case 'deactivated':
+    case 'inactive': return 'danger'
+    case 'out of stock': return 'warning'
+    default: return 'neutral'
   }
 }
 
-const getStatusTextColor = (status) => {
-  switch (String(status || 'active').toLowerCase()) {
-    case 'active': return 'green-8'
-    case 'deactivated': 
-    case 'inactive': return 'red-8'
-    case 'archived': return 'grey-8'
-    case 'out of stock': return 'orange-9'
-    default: return 'blue-grey-8'
-  }
+const stockClass = product => {
+  if (Number(product.available_quantity) <= 0) return 'pl-stock--out'
+  if (Number(product.stock_quantity) < 10) return 'pl-stock--low'
+  return ''
 }
 
-const formatNumber = (num) => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const formatNumber = num => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const fetchProducts = async () => {
   loading.value = true
@@ -811,80 +496,168 @@ const fetchProducts = async () => {
   }
 }
 
-// ==== ACTION MENU FUNCTIONS ====
-
-const viewProduct = (product) => {
-  detailsMode.value = 'view'
+const viewProduct = product => {
   selectedProduct.value = product
   showDetailsModal.value = true
 }
 
-const confirmDeactivate = (product) => {
-  $q.dialog({
-    title: `<div class="text-h6 text-weight-bolder text-slate-800 row items-center"><i class="q-icon material-icons text-red-9 q-mr-sm" style="font-size: 24px;">block</i> Deactivate Product</div>`,
-    message: `<div class="text-slate-600 q-mt-sm" style="font-size: 14px; line-height: 1.5;">Are you sure you want to deactivate <strong class="text-slate-800">"${product.product_name}"</strong>?<br><br>Customers will no longer be able to purchase this item.</div>`,
-    html: true,
-    style: 'border-radius: 16px; padding: 12px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1); background: #ffffff;',
-    cancel: {
-      label: 'Cancel',
-      flat: true,
-      color: 'grey-7',
-      noCaps: true,
-      class: 'text-weight-bold q-px-md'
-    },
-    ok: {
-      label: 'Deactivate',
-      unelevated: true,
-      color: 'red-9',
-      noCaps: true,
-      class: 'text-weight-bold q-px-lg shadow-2',
-      style: 'border-radius: 8px;'
-    },
-    persistent: true,
-  }).onOk(async () => {
-    try {
-      await api.patch(`/vendor/products/${product.inventory_id}/status`, { status: 'deactivated' })
-      $q.notify({ type: 'positive', message: 'Product deactivated successfully', icon: 'check_circle', color: 'dark', position: 'top' })
-      fetchProducts()
-    } catch (err) {
-      $q.notify({ type: 'negative', message: 'Failed to deactivate product', icon: 'error', color: 'dark', position: 'top' })
-      console.error(err)
-    }
-  })
+const confirm = reactive({ open: false, kind: 'delete', product: null, busy: false })
+
+const askConfirm = (kind, product) => {
+  Object.assign(confirm, { open: true, kind, product, busy: false })
 }
 
-const confirmDelete = (product) => {
-  $q.dialog({
-    title: `<div class="text-h6 text-weight-bolder text-slate-800 row items-center"><i class="q-icon material-icons text-red-9 q-mr-sm" style="font-size: 24px;">delete</i> Delete Product</div>`,
-    message: `<div class="text-slate-600 q-mt-sm" style="font-size: 14px; line-height: 1.5;">Are you sure you want to completely delete <strong class="text-slate-800">"${product.product_name}"</strong>?<br><br><span class="text-red-7 font-medium">This action is permanent and cannot be undone.</span></div>`,
-    html: true,
-    style: 'border-radius: 16px; padding: 12px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1); background: #ffffff;',
-    cancel: {
-      label: 'Cancel',
-      flat: true,
-      color: 'grey-7',
-      noCaps: true,
-      class: 'text-weight-bold q-px-md'
-    },
-    ok: {
-      label: 'Delete Product',
-      unelevated: true,
-      color: 'red-9',
-      noCaps: true,
-      class: 'text-weight-bold q-px-lg shadow-2',
-      style: 'border-radius: 8px;'
-    },
-    persistent: true,
-  }).onOk(async () => {
-    try {
+const rowActions = product => [
+  { label: 'View', icon: 'o_visibility', run: () => viewProduct(product) },
+  ...(product.status !== 'deactivated' ? [{ label: 'Deactivate', icon: 'o_block', run: () => askConfirm('deactivate', product) }] : []),
+  { label: 'Delete', icon: 'o_delete', danger: true, run: () => askConfirm('delete', product) }
+]
+
+const runConfirm = async () => {
+  const { kind, product } = confirm
+  if (!product) return
+
+  confirm.busy = true
+  try {
+    if (kind === 'delete') {
       await api.delete(`/vendor/products/${product.inventory_id}`)
-      $q.notify({ type: 'positive', message: 'Product deleted successfully', icon: 'check_circle', color: 'dark', position: 'top' })
-      fetchProducts()
-    } catch (err) {
-      $q.notify({ type: 'negative', message: 'Failed to delete product', icon: 'error', color: 'dark', position: 'top' })
-      console.error(err)
+      $q.notify({ type: 'positive', message: 'Product deleted.' })
+    } else {
+      await api.patch(`/vendor/products/${product.inventory_id}/status`, { status: 'deactivated' })
+      $q.notify({ type: 'positive', message: 'Product deactivated.' })
     }
-  })
+    confirm.open = false
+    fetchProducts()
+  } catch (err) {
+    console.error(err)
+    $q.notify({ type: 'negative', message: err.response?.data?.message || `Failed to ${kind} the product.` })
+  } finally {
+    confirm.busy = false
+  }
+}
+
+const isExporting = ref(false)
+const showExportModal = ref(false)
+const exportStep = ref(1)
+const exportFormat = ref('pdf')
+
+const openExportWizard = () => {
+  exportStep.value = 1
+  exportFormat.value = 'pdf'
+  showExportModal.value = true
+}
+
+const proceedToPreview = format => {
+  exportFormat.value = format
+  exportStep.value = 2
+}
+
+const executeFinalExport = async () => {
+  if (exportFormat.value === 'pdf') {
+    try {
+      isExporting.value = true
+      const response = await api.get('/vendor/inventory/export', { responseType: 'blob' })
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Tindahan-Inventory-Report-${Date.now()}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000)
+      showExportModal.value = false
+    } catch (error) {
+      console.error('PDF Export failed:', error)
+      $q.notify({ type: 'negative', message: 'Failed to generate the PDF report.' })
+    } finally {
+      isExporting.value = false
+    }
+  } else {
+    try {
+      isExporting.value = true
+
+      const response = await api.get('/vendor/inventory/export-html')
+      const htmlContent = response.data.html
+
+      const container = document.createElement('div')
+      container.innerHTML = htmlContent
+      container.style.position = 'absolute'
+      container.style.left = '-9999px'
+      container.style.top = '0'
+      container.style.width = '840px'
+      document.body.appendChild(container)
+
+      await nextTick()
+
+      const images = container.querySelectorAll('img')
+      const imagePromises = Array.from(images).map(async img => {
+        if (!img.complete) {
+          await new Promise(resolve => {
+            img.onload = resolve
+            img.onerror = resolve
+          })
+        }
+        if (img.decode) {
+          try {
+            await img.decode()
+          } catch {
+            // A picture that can't be decoded is left as it is.
+          }
+        }
+      })
+      await Promise.all([...imagePromises, document.fonts ? document.fonts.ready : Promise.resolve()])
+
+      // Embedded pictures are redrawn onto canvases so html2canvas captures them.
+      container.querySelectorAll('img').forEach(img => {
+        if (img.src && img.src.startsWith('data:image')) {
+          try {
+            const canvas = document.createElement('canvas')
+            canvas.width = img.naturalWidth || img.width || 240
+            canvas.height = img.naturalHeight || img.height || 160
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+
+            canvas.style.cssText = img.style.cssText
+            canvas.className = img.className
+            if (img.hasAttribute('width')) canvas.style.width = img.getAttribute('width') + 'px'
+            if (img.hasAttribute('height')) canvas.style.height = img.getAttribute('height') + 'px'
+
+            img.parentNode.replaceChild(canvas, img)
+          } catch (e) {
+            console.warn('Failed to convert image to canvas for export', e)
+          }
+        }
+      })
+
+      const pages = container.querySelectorAll('.page')
+      if (pages.length > 0) {
+        for (let i = 0; i < pages.length; i++) {
+          const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff' })
+          const imageLink = document.createElement('a')
+          imageLink.download = `inventory-report-page-${i + 1}-${Date.now()}.png`
+          imageLink.href = canvas.toDataURL('image/png')
+          imageLink.click()
+          await new Promise(r => setTimeout(r, 500))
+        }
+      } else {
+        const canvas = await html2canvas(container, { scale: 2, useCORS: true, allowTaint: true, logging: false })
+        const imageLink = document.createElement('a')
+        imageLink.download = `inventory-report-${Date.now()}.png`
+        imageLink.href = canvas.toDataURL('image/png')
+        imageLink.click()
+      }
+
+      document.body.removeChild(container)
+      showExportModal.value = false
+    } catch (error) {
+      console.error('Detailed Image Export Error:', error)
+      $q.notify({ type: 'negative', message: 'Failed to generate the image report.' })
+    } finally {
+      isExporting.value = false
+    }
+  }
 }
 
 const fetchMlInsights = async () => {
@@ -910,273 +683,300 @@ const fetchMlInsights = async () => {
   }
 }
 
+// A link from Categories carries ?category=, so the list opens already filtered to it.
+const route = useRoute()
+
 onMounted(() => {
+  const linkedCategory = Number(route.query.category)
+  if (Number.isFinite(linkedCategory) && linkedCategory > 0) filters.category = linkedCategory
   fetchProducts()
   fetchMlInsights()
 })
 </script>
 
 <style scoped>
-.vendor-page {
-  padding: 32px 24px;
-  background-color: #f8fafc;
-  min-height: 100vh;
-}
-.page-container {
-  max-width: 1400px;
-  margin: 0 auto;
+.pl-search-row {
+  display: flex;
+
+  flex: 1 1 360px;
+  gap: 8px;
+  max-width: 460px;
 }
 
-/* Brand Colors */
-.text-brand-red { color: #B91C1C !important; }
-.bg-red-50 { background-color: #fef2f2 !important; }
-.border-red-light { border: 1px solid #fca5a5 !important; }
-
-.bg-slate-50 { background-color: #f8fafc; }
-.bg-slate-100 { background-color: #f1f5f9; }
-.bg-slate-200 { background-color: #e2e8f0; }
-.text-slate-500 { color: #64748b; }
-.text-slate-600 { color: #475569; }
-.text-slate-700 { color: #334155; }
-.text-slate-800 { color: #1e293b; }
-.border-slate-light { border: 1px solid #e2e8f0; }
-
-/* Non-bold Typography Helper */
-.price-regular {
-  font-weight: 500 !important;
+.pl-search-row .vp-search {
+  max-width: none;
 }
 
-/* Subtle Ambient Glows */
-.bg-glow {
-  position: absolute;
-  width: 500px;
-  height: 500px;
-  border-radius: 50%;
-  filter: blur(140px);
-  z-index: 0;
-  opacity: 0.15; 
-  pointer-events: none;
-}
-.bg-glow-primary {
-  top: -50px;
-  left: -50px;
-  background: radial-gradient(circle, rgba(185, 28, 28, 0.25) 0%, transparent 70%); 
-}
-.bg-glow-secondary {
-  bottom: 100px;
-  right: -50px;
-  background: radial-gradient(circle, rgba(15, 23, 42, 0.25) 0%, transparent 70%);
+.pl-search-row > .q-btn {
+  flex-shrink: 0;
+
+  white-space: nowrap;
 }
 
-/* Typography Enhancements */
-.tracking-tight { letter-spacing: -0.03em; }
-.tracking-wide { letter-spacing: 0.05em; }
-.leading-tight { line-height: 1.2; }
-.font-medium { font-weight: 500; }
-.z-top { z-index: 1; }
-.shrink-none { flex-shrink: 0; }
+.pl-filter-panel {
+  display: flex;
+  flex-direction: column;
 
-/* Header Glass Icon Box */
-.glass-icon-box {
-  width: 48px;
+  gap: 12px;
+}
+
+/* CONFIRM — deactivate and delete share the Log out dialog's layout, keeping their icon and adding a line above the buttons. */
+.pl-confirm {
+  width: 400px;
+}
+
+.pl-confirm-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 28px 28px 22px;
+
+  text-align: center;
+}
+
+.pl-confirm-icon {
+  margin-bottom: 14px;
+}
+
+.pl-confirm-title {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+
+  color: var(--c-text);
+}
+
+.pl-confirm-text {
+  margin: 8px 0 0;
+
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+
+  color: var(--c-text-3);
+}
+
+.pl-confirm-text strong {
+  color: var(--c-text);
+}
+
+.pl-confirm-sep {
+  background: var(--c-hairline);
+}
+
+/* Cancel and the action share the row equally, as Cancel and Log out do. */
+.pl-confirm-actions {
+  display: flex;
+
+  gap: 12px;
+  padding: 18px 28px 24px;
+}
+
+.pl-confirm-actions .vp-dialog-btn {
+  flex: 1;
+
+  min-width: 0;
   height: 48px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 12px;
+}
+
+.pl-thumb {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.1); 
+  flex-shrink: 0;
+
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+
+  border: 1px solid var(--c-hairline);
+  border-radius: var(--r-control);
+
+  background: var(--c-surface);
+  color: var(--c-muted);
 }
 
-/* Header Accent */
-.header-accent-red {
-  width: 6px; height: 24px; background: linear-gradient(180deg, #B91C1C 0%, #450A0A 100%); border-radius: 6px; 
+/* The photo fills its rounded frame, so its own corners come out rounded instead of sitting square inside. */
+.pl-thumb img {
+  width: 100%;
+  height: 100%;
+
+  border-radius: inherit;
+
+  object-fit: cover;
 }
 
-/* Clean Glassmorphism Cards */
-.premium-glass-card {
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(241, 245, 249, 1);
-  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.04);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+.pl-thumb--lg {
+  width: 56px;
+  height: 56px;
 }
 
-.bg-gradient-dark {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border: 1px solid #334155;
-}
-.glow-amber {
-  position: absolute;
-  top: -20px;
-  right: -20px;
-  width: 100px;
-  height: 100px;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.15) 0%, transparent 70%);
-  border-radius: 50%;
-  filter: blur(20px);
+.pl-ellipsis {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
 }
 
-.h-full { height: 100%; }
-
-.insight-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  width: fit-content;
-}
-
-/* Exact Height Alignment for Toolbar */
-.exact-height :deep(.q-field__control) {
-  height: 40px !important;
-  min-height: 40px !important;
-}
-
-/* Custom Solid Modern Buttons & Inputs */
-.custom-solid-input :deep(.q-field__control) {
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-.custom-solid-input :deep(.q-field__control:before) { border: 1px solid #e2e8f0; }
-.custom-solid-input :deep(.q-field--focused .q-field__control) {
-  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.15); 
-  border-color: #B91C1C;
-}
-
-.btn-modern-outline {
-  border-radius: 8px !important;
-  background-color: #ffffff !important;
-  border: 1px solid #cbd5e1;
-  transition: all 0.2s ease;
-}
-.btn-modern-outline:hover {
-  border-color: #94a3b8;
-  background-color: #f8fafc !important;
-}
-
-/* Red Outlined Export Button */
-.btn-export-red {
-  border-radius: 8px !important;
-  background-color: #ffffff !important;
-  border: 1px solid #b91c1c !important;
-  color: #b91c1c !important;
-  transition: all 0.2s ease;
-}
-.btn-export-red:hover {
-  background-color: #fef2f2 !important;
-  border-color: #991b1b !important;
-  color: #991b1b !important;
-  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.15);
-}
-
-.btn-modern-solid {
-  border-radius: 8px !important;
-  transition: all 0.2s ease;
-}
-.btn-modern-solid:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.25);
-}
-
-/* Utilities */
-.border-bottom { border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
-.panel-header {
-  background: rgba(248, 250, 252, 0.5);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 16px 16px 0 0;
-}
-.transition-ease { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-.shadow-soft { box-shadow: 0 2px 8px rgba(15,23,42,0.06); }
-
-/* Custom Premium Table Styling */
-:deep(.custom-premium-table thead tr th) {
-  background: rgba(248, 250, 252, 0.5); 
+.pl-stock {
   font-weight: 700;
-  color: #64748b; 
-  text-transform: uppercase; 
-  font-size: 11px; 
-  letter-spacing: 0.05em; 
-  padding: 16px 20px; 
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+
+  color: var(--c-text);
 }
-:deep(.custom-premium-table tbody td) {
-  padding: 16px 20px; 
-  border-bottom: 1px solid rgba(241, 245, 249, 1);
-  transition: all 0.2s ease;
-  color: #334155;
+
+.pl-stock--low {
+  color: var(--c-warning);
+}
+
+.pl-stock--out {
+  color: var(--c-danger);
+}
+
+.pl-stock-total {
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
+}
+
+.pl-from {
+  font-size: var(--fs-xs);
   font-weight: 500;
+
+  color: var(--c-muted);
 }
-:deep(.custom-premium-table tbody tr) {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+
+.pl-table .col-cat { width: 18%; }
+.pl-table .col-stock { width: 13%; }
+.pl-table .col-price { width: 14%; }
+.pl-table .col-status { width: 14%; }
+.pl-table .col-act { width: 7%; }
+
+.pl-list-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+  margin-top: 6px;
 }
-:deep(.custom-premium-table tbody tr:hover) {
+
+.pl-empty-btn {
+  margin-top: 10px;
+}
+
+.pl-format-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  gap: 12px;
+}
+
+.pl-format {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 6px;
+  padding: 18px 12px;
+
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-surface);
+
   background: #ffffff;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-  transform: scale(1.002);
-  z-index: 5;
-  position: relative;
-}
-:deep(.custom-premium-table tbody tr:hover td) {
-  border-bottom-color: transparent;
+
+  font-family: inherit;
+  text-align: center;
+
+  cursor: pointer;
+
+  transition: border-color 0.15s, background-color 0.15s;
 }
 
-/* Enhanced 3-dots action button hover effect */
-.hover-action-btn {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-:deep(.custom-premium-table tbody tr:hover .hover-action-btn) {
-  color: #B91C1C !important; 
-  background: rgba(185, 28, 28, 0.08);
-  transform: scale(1.05);
-}
-.hover-action-btn:active, .hover-action-btn:focus {
-  background: rgba(185, 28, 28, 0.15) !important;
-  transform: scale(0.95) !important;
+.pl-format:hover {
+  border-color: var(--c-border-strong);
 }
 
-/* Dropdown styling & Neutral Hover Action */
-.premium-dropdown-list {
+.pl-format:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
+}
+
+.pl-format--active,
+.pl-format--active:hover {
+  border-color: var(--c-brand);
+
+  background: var(--c-brand-tint);
+}
+
+.pl-format-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 44px;
+  height: 44px;
+  margin-bottom: 2px;
+
+  border-radius: var(--r-surface);
+
+  background: var(--c-surface);
+  color: var(--c-muted);
+}
+
+.pl-format--active .pl-format-icon {
   background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 8px;
-}
-.rounded-borders { border-radius: 6px; }
-
-/* Unified Monochrome Hover State */
-.hover-slate:hover { background: rgba(241, 245, 249, 0.8); }
-
-/* Empty State Styling */
-.empty-state-glass {
-  background: rgba(248, 250, 252, 0.6);
-  border: 1px dashed rgba(203, 213, 225, 0.8);
-  border-radius: 12px;
-  margin: 16px;
-  width: calc(100% - 32px);
-  min-height: 300px;
-}
-.drop-shadow-icon { filter: drop-shadow(0 4px 6px rgba(15, 23, 42, 0.05)); }
-.format-card {
-  transition: all 0.2s ease;
-  border-radius: 12px;
-}
-.format-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  color: var(--c-brand);
 }
 
-/* Mobile specific styling */
-@media (max-width: 767px) {
-  .vendor-page.mobile-page-padding { padding: 16px 16px calc(90px + env(safe-area-inset-bottom)) 16px !important; }
-  .desktop-only { display: none !important; }
+.pl-format-title {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+
+  color: var(--c-text);
+}
+
+.pl-format-sub {
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
+}
+
+.pl-summary {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+  padding: 14px 16px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-control);
+
+  background: var(--c-surface-2);
+}
+
+.pl-summary-row {
+  display: flex;
+  justify-content: space-between;
+
+  font-size: var(--fs-sm);
+
+  color: var(--c-text-3);
+}
+
+.pl-summary-row strong {
+  color: var(--c-text);
+}
+
+@media (max-width: 600px) {
+  .vp-header-actions {
+    width: 100%;
+  }
+
+  .vp-header-actions .q-btn {
+    flex: 1;
+  }
+
+  .pl-search-row {
+    max-width: none;
+  }
 }
 </style>

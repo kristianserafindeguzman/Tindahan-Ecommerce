@@ -1,202 +1,11 @@
 <template>
   <q-layout view="hHh LpR fFf" class="vendor-layout">
 
-    <!-- ================= SARI-SARI STOREFRONT LOADING SCREEN ================= -->
-    <transition name="fade-fast">
-      <div v-if="isGlobalLoading" class="sari-loading-backdrop fixed-full flex flex-center z-max">
-        <div class="sari-loading-card column flex-center text-center">
-          
-          <!-- Authentic Store Awning & Logo Frame -->
-          <div class="storefront-card-top column flex-center q-mb-md">
-            <div class="awning-roof row no-wrap">
-              <span class="awning-red"></span><span class="awning-white"></span>
-              <span class="awning-red"></span><span class="awning-white"></span>
-              <span class="awning-red"></span><span class="awning-white"></span>
-              <span class="awning-red"></span>
-            </div>
-            
-            <div class="store-badge-frame flex flex-center">
-              <img 
-                src="@/assets/tindahan-logo.png" 
-                alt="Tindahan Logo" 
-                class="loading-store-logo" 
-                @error="$event.target.style.display='none'"
-              />
-              <div class="store-logo-fallback row items-center no-wrap">
-                <q-icon name="storefront" size="28px" color="red-9" class="q-mr-xs" />
-                <span class="text-weight-bolder text-red-9 text-subtitle1">Tindahan</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="text-h6 text-weight-bolder text-dark tracking-tight row items-center justify-center no-wrap">
-            <span>Opening Your Store</span>
-            <span class="loading-dots"></span>
-          </div>
-          
-          <div class="text-caption text-grey-7 q-mt-xs text-weight-medium">
-            Setting up your sari-sari store dashboard
-          </div>
-
-          <div class="counter-progress-track q-mt-md">
-            <div class="counter-progress-fill"></div>
-          </div>
-        </div>
-      </div>
-    </transition>
-
-    <!-- ================= DESKTOP HEADER (Brand Red Sari-Sari Storefront) ================= -->
-    <q-header v-if="!$q.screen.lt.md" elevated class="sari-brand-header">
-      <q-toolbar class="q-px-lg toolbar-desktop">
-        
-        <!-- Left: Drawer Toggle & Brand Logo -->
-        <div class="row items-center no-wrap">
-          <q-btn
-            flat
-            dense
-            round
-            icon="menu"
-            color="white"
-            class="header-action-btn q-mr-md"
-            @click="drawerOpen = !drawerOpen"
-          />
-          
-          <!-- Desktop Logo (Transparent) -->
-          <div 
-            class="header-logo-card flex flex-center cursor-pointer q-mr-md"
-            @click="router.push('/vendor/dashboard')"
-          >
-            <img 
-              src="@/assets/tindahan-logo.png" 
-              alt="Tindahan Logo" 
-              class="header-logo-img" 
-              @error="$event.target.style.display='none'"
-            />
-            <div class="header-logo-fallback row items-center no-wrap">
-              <q-icon name="storefront" size="28px" color="white" class="q-mr-xs" />
-              <span class="text-weight-bolder text-white text-h6">Tindahan</span>
-            </div>
-          </div>
-
-          <!-- Store Title Tag -->
-          <div class="store-title-badge column justify-center q-px-md q-py-xs">
-            <span class="badge-sub-label">STORE MANAGEMENT</span>
-            <span class="badge-store-title ellipsis">{{ storeName }}</span>
-          </div>
-        </div>
-
-        <q-space />
-
-        <!-- Right: Notification Bell & Profile Dropdown -->
-        <div class="row items-center no-wrap q-gutter-x-sm">
-          
-          <!-- Desktop Notification Bell -->
-          <q-btn flat round dense icon="notifications" color="white" class="header-action-btn relative-position">
-            <q-badge v-if="unreadCount > 0" color="amber-9" text-color="white" floating rounded class="text-weight-bolder">
-              {{ unreadCount > 99 ? '99+' : unreadCount }}
-            </q-badge>
-            
-            <q-menu class="solid-paper-menu no-shadow" :offset="[0, 12]" anchor="bottom right" self="top right" style="border-radius: 12px; width: 340px; border: 2px solid #e2e8f0;">
-              <div class="q-pa-md bg-white border-bottom-solid row items-center justify-between sticky-top z-top">
-                <div class="row items-center">
-                  <div style="width: 4px; height: 16px; background-color: #b91c1c; border-radius: 2px;" class="q-mr-sm"></div>
-                  <div class="text-weight-bolder text-dark text-subtitle2">Notifications</div>
-                </div>
-                <q-btn flat dense no-caps label="Mark all read" color="grey-7" size="11px" class="text-weight-bold" @click="markAllAsRead" :disable="unreadCount === 0" />
-              </div>
-              
-              <q-list class="scroll bg-grey-1" style="max-height: 50vh;">
-                <div v-if="notifications.length === 0" class="q-pa-xl text-center text-grey-5 flex flex-center column">
-                  <q-icon name="notifications_off" size="32px" class="q-mb-sm opacity-50" />
-                  <span class="text-weight-medium">No notifications yet</span>
-                </div>
-
-                <q-item 
-                  v-for="notif in notifications" 
-                  :key="notif.id" 
-                  clickable 
-                  v-ripple 
-                  @click="markAsRead(notif)" 
-                  class="q-pa-md notification-card-item" 
-                  :class="{ 'unread-paper-notification': !notif.read_at }"
-                >
-                  <q-item-section avatar top class="q-pr-sm min-w-0">
-                    <div class="solid-icon-stamp" :class="!notif.read_at ? 'bg-red-1 text-red-9' : 'bg-grey-2 text-grey-7'">
-                      <q-icon :name="notif.data?.icon || 'shopping_bag'" size="20px" />
-                    </div>
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label class="text-weight-bolder text-dark text-body2">{{ notif.data?.title || 'Notification' }}</q-item-label>
-                    <q-item-label caption class="text-grey-7 q-mt-xs font-medium leading-snug">{{ notif.data?.message || notif.message }}</q-item-label>
-                    <q-item-label caption class="text-weight-bold q-mt-xs" :class="!notif.read_at ? 'text-red-9' : 'text-grey-5'" style="font-size: 11px;">
-                      {{ formatTime(notif.created_at) }}
-                    </q-item-label>
-                  </q-item-section>
-                  <q-item-section side top v-if="!notif.read_at">
-                    <div class="unread-solid-tag"></div>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-              
-              <div class="q-pa-sm bg-white border-top-solid text-center sticky-bottom z-top">
-                <q-btn unelevated no-caps label="View All Notifications" color="red-1" text-color="red-9" class="full-width text-weight-bold" style="border-radius: 8px;" />
-              </div>
-            </q-menu>
-          </q-btn>
-
-          <!-- Profile Trigger -->
-          <q-btn flat no-caps class="vendor-profile-btn q-px-sm q-py-xs">
-            <div class="row items-center no-wrap">
-              <q-avatar size="34px" class="profile-frame q-mr-sm">
-                <img :src="userProfilePicture" v-if="userProfilePicture" />
-                <q-icon name="person" color="red-9" size="20px" v-else />
-              </q-avatar>
-              
-              <div class="column text-left q-mr-sm">
-                <span class="text-weight-bolder text-white ellipsis text-body2 leading-tight">{{ userName }}</span>
-                <span class="text-caption text-red-2 leading-tight">Store Owner</span>
-              </div>
-              
-              <q-icon name="keyboard_arrow_down" size="18px" color="white" />
-            </div>
-
-            <q-menu auto-close class="solid-paper-menu" :offset="[0, 10]">
-              <div class="q-pa-md bg-grey-2 border-bottom-solid row items-center no-wrap">
-                <q-avatar size="40px" class="q-mr-md bg-white border-solid-red">
-                  <img :src="userProfilePicture" v-if="userProfilePicture" />
-                  <q-icon name="person" color="red-9" size="22px" v-else />
-                </q-avatar>
-                <div class="column ellipsis">
-                  <span class="text-weight-bolder text-dark text-body2 ellipsis">{{ userName }}</span>
-                  <span class="text-caption text-grey-7 ellipsis">{{ storeName }}</span>
-                </div>
-              </div>
-
-              <q-list style="min-width: 190px" class="q-py-xs">
-                <q-item clickable v-ripple @click="router.push('/vendor/profile')" class="paper-menu-item q-my-xs">
-                  <q-item-section avatar style="min-width: 32px">
-                    <q-icon name="manage_accounts" color="grey-8" size="18px" />
-                  </q-item-section>
-                  <q-item-section class="text-weight-bold text-dark" style="font-size: 13px;">Profile Settings</q-item-section>
-                </q-item>
-                
-                <q-separator class="q-my-xs" />
-
-                <q-item clickable v-ripple @click="handleLogout" class="paper-menu-item logout-paper-item q-my-xs">
-                  <q-item-section avatar style="min-width: 32px">
-                    <q-icon name="logout" color="red-9" size="18px" />
-                  </q-item-section>
-                  <q-item-section class="text-weight-bold text-red-9" style="font-size: 13px;">Sign Out</q-item-section>
-                </q-item>
-              </q-list>
-            </q-menu>
-          </q-btn>
-        </div>
-      </q-toolbar>
-    </q-header>
 
     <!-- ================= MOBILE HEADER ================= -->
-    <q-header v-else elevated class="sari-brand-header z-top">
+    <!-- Phones keep a slim top bar for the logo and notifications, since they use the bottom tabs instead of the sidebar. -->
+    <!-- Left at Quasar's own header level, so dialogs and their dimmed backdrop cover it instead of it covering their tops. -->
+    <q-header v-if="$q.screen.lt.md" class="sari-brand-header">
       <q-toolbar class="q-px-md toolbar-mobile">
         
         <!-- Mobile Logo (Transparent) -->
@@ -219,58 +28,11 @@
         <q-space />
 
         <div class="row items-center no-wrap q-gutter-x-xs">
-          <!-- Notification Button -->
-          <q-btn flat round dense icon="notifications" color="white" class="header-action-btn relative-position">
+          <!-- On phones the bell opens the notifications page, which has room for the whole list. -->
+          <q-btn flat round dense icon="notifications" color="white" class="header-action-btn relative-position" to="/vendor/notifications" aria-label="Notifications">
             <q-badge v-if="unreadCount > 0" color="amber-9" text-color="white" floating rounded class="text-weight-bolder">
               {{ unreadCount > 99 ? '99+' : unreadCount }}
             </q-badge>
-            
-            <q-menu class="solid-paper-menu no-shadow" :offset="[0, 12]" anchor="bottom right" self="top right" style="border-radius: 12px; width: 330px; max-width: 90vw; border: 2px solid #e2e8f0;">
-              <div class="q-pa-md bg-white border-bottom-solid row items-center justify-between sticky-top z-top">
-                <div class="row items-center">
-                  <div style="width: 4px; height: 16px; background-color: #b91c1c; border-radius: 2px;" class="q-mr-sm"></div>
-                  <div class="text-weight-bolder text-dark text-subtitle2">Notifications</div>
-                </div>
-                <q-btn flat dense no-caps label="Mark all read" color="grey-7" size="11px" class="text-weight-bold" @click="markAllAsRead" :disable="unreadCount === 0" />
-              </div>
-              
-              <q-list class="scroll bg-grey-1" style="max-height: 50vh;">
-                <div v-if="notifications.length === 0" class="q-pa-xl text-center text-grey-5 flex flex-center column">
-                  <q-icon name="notifications_off" size="32px" class="q-mb-sm opacity-50" />
-                  <span class="text-weight-medium">No notifications yet</span>
-                </div>
-
-                <q-item 
-                  v-for="notif in notifications" 
-                  :key="notif.id" 
-                  clickable 
-                  v-ripple 
-                  @click="markAsRead(notif)" 
-                  class="q-pa-md notification-card-item" 
-                  :class="{ 'unread-paper-notification': !notif.read_at }"
-                >
-                  <q-item-section avatar top class="q-pr-sm min-w-0">
-                    <div class="solid-icon-stamp" :class="!notif.read_at ? 'bg-red-1 text-red-9' : 'bg-grey-2 text-grey-7'">
-                      <q-icon :name="notif.data?.icon || 'shopping_bag'" size="20px" />
-                    </div>
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label class="text-weight-bolder text-dark text-body2">{{ notif.data?.title || 'Notification' }}</q-item-label>
-                    <q-item-label caption class="text-grey-7 q-mt-xs font-medium leading-snug">{{ notif.data?.message || notif.message }}</q-item-label>
-                    <q-item-label caption class="text-weight-bold q-mt-xs" :class="!notif.read_at ? 'text-red-9' : 'text-grey-5'" style="font-size: 11px;">
-                      {{ formatTime(notif.created_at) }}
-                    </q-item-label>
-                  </q-item-section>
-                  <q-item-section side top v-if="!notif.read_at">
-                    <div class="unread-solid-tag"></div>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-              
-              <div class="q-pa-sm bg-white border-top-solid text-center sticky-bottom z-top">
-                <q-btn unelevated no-caps label="View All Notifications" color="red-1" text-color="red-9" class="full-width text-weight-bold" style="border-radius: 8px;" />
-              </div>
-            </q-menu>
           </q-btn>
           
           <q-btn flat round dense icon="logout" color="white" class="header-action-btn" @click="handleLogout" />
@@ -279,52 +41,32 @@
       </q-toolbar>
     </q-header>
 
-    <!-- ================= SARI-SARI RED SIDEBAR ================= -->
+    <!-- ================= SIDEBAR ================= -->
+    <!-- On desktop the sidebar is the whole frame: the logo on top, the menu, and the account at the bottom. -->
     <q-drawer
       v-model="drawerOpen"
       :show-if-above="!$q.screen.lt.md"
-      :width="270"
+      :width="264"
       :breakpoint="1024"
       class="sari-sidebar-drawer"
     >
-      <div class="sidebar-layout column full-height">
+      <div class="sidebar-layout column full-height no-wrap">
 
-        <!-- Store Identity Section with Awning Header -->
-        <div class="sidebar-brand-section q-pa-md">
-          <div class="store-slate-container column flex-center text-center">
-            <div class="slate-awning-strip row no-wrap">
-              <span class="aw-red"></span><span class="aw-white"></span>
-              <span class="aw-red"></span><span class="aw-white"></span>
-              <span class="aw-red"></span><span class="aw-white"></span>
-              <span class="aw-red"></span>
-            </div>
-            
-            <!-- Store Emblem Box -->
-            <div class="store-emblem-circle q-my-sm">
-              <q-icon name="storefront" size="26px" color="red-9" />
-            </div>
-            
-            <div class="text-weight-bolder text-white text-subtitle2 ellipsis full-width q-px-sm">
-              {{ storeName }}
-            </div>
-            <div class="store-subtag q-mt-xs">
-              SARI-SARI STORE PARTNER
-            </div>
-          </div>
+        <!-- The sidebar's header is just the logo, with the menu below a divider. -->
+        <div class="sidebar-top">
+          <button type="button" class="sidebar-logo" aria-label="Go to dashboard" @click="router.push('/vendor/dashboard')">
+            <img src="@/assets/tindahan-logo.png" alt="Tindahan" class="sidebar-logo-img" />
+          </button>
         </div>
 
-        <!-- Navigation Links (Aligned & Consistent Padding) -->
-        <div class="sidebar-links-container col scroll q-px-md">
-          <div class="sidebar-category-header q-px-sm q-pt-sm q-pb-xs">
-            MAIN MENU
-          </div>
-
-          <q-list class="q-gutter-y-xs">
-            <template v-for="(item, index) in navItems" :key="index">
-              
-              <!-- Direct Menu Item -->
+        <!-- Every page is one tap away, grouped under small headings instead of hidden in dropdowns. -->
+        <nav class="sidebar-links-container col scroll" aria-label="Store menu">
+          <div v-for="group in navGroups" :key="group.label" class="sidebar-group">
+            <div class="sidebar-category-header">{{ group.label }}</div>
+            <q-list class="sidebar-group-list">
               <q-item
-                v-if="!item.children"
+                v-for="item in group.items"
+                :key="item.path"
                 :to="item.path"
                 clickable
                 v-ripple
@@ -332,49 +74,31 @@
                 class="solid-nav-item uniform-menu-item"
               >
                 <q-item-section avatar class="nav-avatar-slot">
-                  <q-icon :name="item.icon" size="22px" class="nav-icon-glyph" />
+                  <q-icon :name="item.icon" size="20px" class="nav-icon-glyph" />
                 </q-item-section>
-                <q-item-section class="nav-label-text text-weight-bold">
-                  {{ item.label }}
-                </q-item-section>
-              </q-item>
+                <q-item-section class="nav-label-text">{{ item.label }}</q-item-section>
+              </q-item>            </q-list>
+          </div>
+        </nav>
 
-              <!-- Expandable Menu Item -->
-              <q-expansion-item
-                v-else
-                :icon="item.icon"
-                :label="item.label"
-                class="solid-nav-item solid-expansion-item uniform-menu-item"
-                header-class="uniform-expansion-header"
-                expand-icon-class="text-white opacity-80"
-              >
-                <q-list class="solid-subnav-list">
-                  <q-item
-                    v-for="(child, childIndex) in item.children"
-                    :key="childIndex"
-                    :to="child.path"
-                    clickable
-                    v-ripple
-                    active-class="solid-sub-active"
-                    class="solid-subnav-item"
-                  >
-                    <q-item-section class="subnav-label-text text-weight-bold">
-                      {{ child.label }}
-                    </q-item-section>
-                  </q-item>
-                </q-list>
-              </q-expansion-item>
-
-            </template>
-          </q-list>
-        </div>
-
-        <!-- Sidebar Footer Action (Logout) -->
-        <div class="sidebar-footer-area q-pa-md">
-          <button type="button" class="sidebar-logout-card row items-center justify-center full-width cursor-pointer" @click="handleLogout">
-            <q-icon name="logout" size="18px" class="q-mr-sm" />
-            <span class="text-weight-bold" style="font-size: 13px;">Sign Out Account</span>
-          </button>
+        <div class="sidebar-footer-area">
+          <!-- Who is signed in, with sign-out one tap away, since Profile Settings now lives in the menu above. -->
+          <div class="sidebar-account">
+            <q-avatar size="36px" class="sidebar-account-avatar">
+              <img v-if="userProfilePicture" :src="userProfilePicture" alt="" />
+              <q-icon v-else name="o_person" size="20px" />
+            </q-avatar>
+            <div class="sidebar-account-text">
+              <div class="sidebar-account-name">
+                <q-skeleton v-if="profileLoading" dark type="text" width="104px" />
+                <template v-else>{{ userName }}</template>
+              </div>
+              <div class="sidebar-account-role">Store Owner</div>
+            </div>
+            <q-btn flat round dense icon="o_logout" class="sidebar-signout" aria-label="Sign out" @click="handleLogout">
+              <q-tooltip>Sign out</q-tooltip>
+            </q-btn>
+          </div>
         </div>
 
       </div>
@@ -386,150 +110,92 @@
     </q-page-container>
 
     <!-- ================= MOBILE BOTTOM NAVIGATION ================= -->
-    <q-footer v-if="$q.screen.lt.md" class="bg-white text-grey-8" style="box-shadow: 0 -3px 12px rgba(0,0,0,0.06); z-index: 2000; border-top: 1px solid #e2e8f0;">
-      <div class="row no-wrap items-center justify-around bottom-nav-container relative-position" style="padding-bottom: env(safe-area-inset-bottom);">
-        
-        <!-- Orders -->
-        <q-btn flat round dense no-caps class="nav-action-btn no-hover" :class="$route.path.includes('/vendor/orders') ? 'text-red-9' : 'text-grey-6'">
-          <q-icon :name="$route.path.includes('/vendor/orders') ? 'receipt_long' : 'receipt_long'" size="24px" />
-          
-          <q-menu anchor="top middle" self="bottom middle" transition-show="jump-up" transition-hide="jump-down" class="solid-paper-menu no-shadow" :offset="[0, 14]">
-            <q-list style="min-width: 200px" class="q-py-xs bg-grey-1">
+    <!-- The consumer's tab bar, an icon in a pill over its label, with the current section lit in the brand tint. -->
+    <q-footer v-if="$q.screen.lt.md" class="vendor-bottom-nav bg-white">
+      <nav class="bottom-nav-inner" aria-label="Store menu">
+        <q-btn flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path === '/vendor/dashboard' }" to="/vendor/dashboard">
+          <span class="bottom-nav-pill"><q-icon name="o_home" size="24px" /></span>
+          <span class="bottom-nav-label">Home</span>
+        </q-btn>
+        <q-btn flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/orders') }">
+          <span class="bottom-nav-pill"><q-icon name="o_receipt_long" size="24px" /></span>
+          <span class="bottom-nav-label">Orders</span>
+          <q-menu anchor="top middle" self="bottom middle" transition-show="jump-up" transition-hide="jump-down" class="solid-paper-menu" :offset="[0, 10]">
+            <q-list style="min-width: 200px" class="q-py-xs">
               <q-item clickable v-ripple to="/vendor/orders/list" active-class="active-popup-item" class="popup-action-item">
                 <q-item-section avatar class="q-pr-sm min-w-0">
-                  <div class="popup-icon-stamp"><q-icon name="list_alt" size="18px"/></div>
+                  <div class="popup-icon-stamp"><q-icon name="list_alt" size="18px" /></div>
                 </q-item-section>
                 <q-item-section class="text-weight-bold text-caption">Order List</q-item-section>
               </q-item>
-              
               <q-item clickable v-ripple to="/vendor/orders/customers" active-class="active-popup-item" class="popup-action-item">
                 <q-item-section avatar class="q-pr-sm min-w-0">
-                  <div class="popup-icon-stamp"><q-icon name="people_outline" size="18px"/></div>
+                  <div class="popup-icon-stamp"><q-icon name="people_outline" size="18px" /></div>
                 </q-item-section>
                 <q-item-section class="text-weight-bold text-caption">Customer Orders</q-item-section>
               </q-item>
             </q-list>
           </q-menu>
         </q-btn>
-
-        <!-- Products -->
-        <q-btn flat round dense no-caps class="nav-action-btn no-hover" :class="$route.path.includes('/vendor/products') ? 'text-red-9' : 'text-grey-6'">
-          <q-icon :name="$route.path.includes('/vendor/products') ? 'inventory_2' : 'inventory_2'" size="24px" />
-          
-          <q-menu anchor="top middle" self="bottom middle" transition-show="jump-up" transition-hide="jump-down" class="solid-paper-menu no-shadow" :offset="[0, 14]">
-            <q-list style="min-width: 200px" class="q-py-xs bg-grey-1">
+        <q-btn flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/products') }">
+          <span class="bottom-nav-pill"><q-icon name="o_inventory_2" size="24px" /></span>
+          <span class="bottom-nav-label">Products</span>
+          <q-menu anchor="top middle" self="bottom middle" transition-show="jump-up" transition-hide="jump-down" class="solid-paper-menu" :offset="[0, 10]">
+            <q-list style="min-width: 200px" class="q-py-xs">
               <q-item clickable v-ripple to="/vendor/products/list" active-class="active-popup-item" class="popup-action-item">
                 <q-item-section avatar class="q-pr-sm min-w-0">
-                  <div class="popup-icon-stamp"><q-icon name="format_list_bulleted" size="18px"/></div>
+                  <div class="popup-icon-stamp"><q-icon name="format_list_bulleted" size="18px" /></div>
                 </q-item-section>
                 <q-item-section class="text-weight-bold text-caption">Product List</q-item-section>
               </q-item>
-              
               <q-item clickable v-ripple to="/vendor/products/categories" active-class="active-popup-item" class="popup-action-item">
                 <q-item-section avatar class="q-pr-sm min-w-0">
-                  <div class="popup-icon-stamp"><q-icon name="category" size="18px"/></div>
+                  <div class="popup-icon-stamp"><q-icon name="category" size="18px" /></div>
                 </q-item-section>
                 <q-item-section class="text-weight-bold text-caption">Categories</q-item-section>
               </q-item>
             </q-list>
           </q-menu>
         </q-btn>
-
-        <!-- Center Home Button -->
-        <div class="nav-placeholder flex flex-center relative-position">
-          <div class="center-cutout flex flex-center">
-            <q-btn 
-              round 
-              unelevated 
-              to="/vendor/dashboard"
-              class="shadow-2 center-store-home-btn"
-              :class="$route.path === '/vendor/dashboard' ? 'bg-red-10' : 'bg-red-9'"
-            >
-              <q-icon name="home" size="24px" color="white" />
-            </q-btn>
-          </div>
-        </div>
-
-        <!-- Sales -->
-        <q-btn flat round dense no-caps class="nav-action-btn no-hover" :class="$route.path.includes('/vendor/sales') ? 'text-red-9' : 'text-grey-6'" to="/vendor/sales">
-          <q-icon :name="$route.path.includes('/vendor/sales') ? 'analytics' : 'analytics'" size="24px" />
+        <q-btn flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/sales') }" to="/vendor/sales">
+          <span class="bottom-nav-pill"><q-icon name="o_analytics" size="24px" /></span>
+          <span class="bottom-nav-label">Sales</span>
         </q-btn>
-
-        <!-- Profile -->
-        <q-btn flat round dense no-caps class="nav-action-btn no-hover" :class="$route.path.includes('/vendor/profile') ? 'text-red-9' : 'text-grey-6'" to="/vendor/profile">
-          <q-icon :name="$route.path.includes('/vendor/profile') ? 'person' : 'person_outline'" size="26px" />
+        <q-btn flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/profile') }" to="/vendor/profile">
+          <span class="bottom-nav-pill"><q-icon name="o_person" size="24px" /></span>
+          <span class="bottom-nav-label">Profile</span>
         </q-btn>
-        
-      </div>
+      </nav>
     </q-footer>
 
-    <!-- ================= LOGOUT MODAL ================= -->
-    <q-dialog v-model="showLogoutModal" persistent backdrop-filter="blur(4px)" :position="$q.screen.lt.md ? 'bottom' : 'standard'">
-      <q-card 
-        class="bg-white text-center overflow-hidden" 
-        :style="$q.screen.lt.md ? 'width: 100%; border-radius: 20px 20px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom));' : 'width: 380px; max-width: 90vw; border-radius: 16px;'"
-      >
-        <q-card-section class="q-pt-xl q-pb-md">
-          <q-icon name="logout" size="44px" color="red-9" class="q-mb-md" />
-          <h3 class="text-h6 text-weight-bolder text-dark q-mt-none q-mb-xs">Ready to Sign Out?</h3>
-          <p class="text-body2 text-grey-7 q-mb-none font-medium q-px-md leading-snug">
-            Are you sure you want to log out of your Tindahan vendor dashboard?
-          </p>
-        </q-card-section>
-        
-        <q-card-actions class="q-px-lg q-pt-sm q-pb-lg column q-gutter-y-sm">
-          <q-btn 
-            unelevated 
-            label="Yes, Sign Out" 
-            color="red-9" 
-            @click="confirmLogout" 
-            no-caps 
-            class="full-width text-weight-bold" 
-            size="md" 
-            style="border-radius: 8px; height: 42px;"
-            :loading="isLoggingOut" 
-          />
-          <q-btn 
-            flat 
-            label="Cancel" 
-            text-color="grey-7" 
-            v-close-popup 
-            no-caps 
-            class="full-width text-weight-bold q-ma-none" 
-            size="md" 
-            style="border-radius: 8px; background-color: #f1f5f9; height: 42px;" 
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
 
   </q-layout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
+import { useAuth } from '@/composables/useAuth'
+import { useVendorNotifications } from '@/composables/useVendorNotifications'
+// The shared look every vendor page builds on, loaded once with the layout.
+import '@/css/vendor-pages.scss'
 
 const router = useRouter()
 
 const drawerOpen = ref(false)
-const showLogoutModal = ref(false)
-const isLoggingOut = ref(false)
-const isGlobalLoading = ref(true)
+// True until the signed-in owner loads, so the sidebar shows a placeholder instead of a stand-in name; each page loads behind its own skeleton.
+const profileLoading = ref(true)
 
 const userName = ref('Vendor')
 const userProfilePicture = ref(null)
 const storeName = ref('Loading...')
 
-// Notifications State
-const notifications = ref([])
-const unreadCount = computed(() => notifications.value.filter(n => !n.read_at).length)
+// Shared with the dashboard bell, so every place shows the same unread count.
+const { unreadCount, fetchNotifications } = useVendorNotifications()
 
 onMounted(async () => {
   try {
-    isGlobalLoading.value = true
-    
     // Fetch User Profile
     const res = await api.get('/user')
     if (res.data && res.data.user) {
@@ -547,216 +213,80 @@ onMounted(async () => {
     userName.value = 'Vendor'
     storeName.value = 'Store Unavailable'
   } finally {
-    isGlobalLoading.value = false
+    profileLoading.value = false
   }
 })
 
-const fetchNotifications = async () => {
-  try {
-    const res = await api.get('/vendor/notifications')
-    // Handle standard laravel response structures
-    notifications.value = res.data.data || res.data || []
-  } catch (error) {
-    console.error('Failed to fetch notifications', error)
-  }
-}
 
-const markAsRead = async (notification) => {
-  if (notification.read_at) return
-  
-  try {
-    await api.post(`/vendor/notifications/${notification.id}/mark-read`)
-    notification.read_at = new Date().toISOString()
-  } catch (error) {
-    console.error('Failed to mark notification as read', error)
-  }
-}
-
-const markAllAsRead = async () => {
-  try {
-    await api.post('/vendor/notifications/mark-all-read')
-    notifications.value.forEach(n => {
-      if (!n.read_at) n.read_at = new Date().toISOString()
-    })
-  } catch (error) {
-    console.error('Failed to mark all notifications as read', error)
-  }
-}
-
-const formatTime = (dateString) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffInSeconds = Math.floor((now - date) / 1000)
-  
-  if (diffInSeconds < 60) return 'Just now'
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
-  return `${Math.floor(diffInSeconds / 86400)}d ago`
-}
-
-const navItems = [
-  { label: 'Dashboard', icon: 'dashboard', path: '/vendor/dashboard' },
-  { 
-    label: 'Orders', 
-    icon: 'receipt_long', 
-    children: [
-      { label: 'Order List', path: '/vendor/orders/list' },
-      { label: 'Customer Orders', path: '/vendor/orders/customers' }
-    ] 
+// The sidebar's pages in three groups, each shown directly rather than inside a dropdown.
+const navGroups = [
+  {
+    label: 'Overview',
+    items: [
+      { label: 'Dashboard', icon: 'o_dashboard', path: '/vendor/dashboard' },
+      { label: 'Sales Reports', icon: 'o_insights', path: '/vendor/sales' }
+    ]
   },
-  { 
-    label: 'Products', 
-    icon: 'inventory_2', 
-    children: [
-      { label: 'Product List', path: '/vendor/products/list' },
-      { label: 'Categories', path: '/vendor/products/categories' }
-    ] 
+  {
+    label: 'Orders',
+    items: [
+      { label: 'Order List', icon: 'o_receipt_long', path: '/vendor/orders/list' },
+      { label: 'Customer Orders', icon: 'o_people', path: '/vendor/orders/customers' }
+    ]
   },
-  { label: 'Sales Reports', icon: 'insights', path: '/vendor/sales' }
+  {
+    label: 'Products',
+    items: [
+      { label: 'Product List', icon: 'o_inventory_2', path: '/vendor/products/list' },
+      { label: 'Categories', icon: 'o_category', path: '/vendor/products/categories' }
+    ]
+  },
+  {
+    label: 'Account',
+    items: [
+      { label: 'Profile Settings', icon: 'o_manage_accounts', path: '/vendor/profile' }
+    ]
+  }
 ]
 
-const handleLogout = () => {
-  showLogoutModal.value = true
-}
-
-const confirmLogout = async () => {
-  isLoggingOut.value = true
-  try {
-    await api.post('/logout')
-  } catch { 
-    // Ignore error
-  }
-  localStorage.removeItem('auth_token')
-  localStorage.removeItem('auth_user')
-  localStorage.removeItem('auth_role')
-  router.push('/login')
-  isLoggingOut.value = false
-}
+// The same log-out confirmation as the consumer pages, which also clears every saved sign-in value.
+const { logout } = useAuth()
+const handleLogout = () => logout()
 </script>
 
 <style scoped>
-/* ================= GLOBAL BASE & PALETTE ================= */
+/* GROUND — the consumer pages' plain white. */
 .vendor-layout {
-  background-color: #f8fafc;
+  background-color: #ffffff;
 }
 
 .leading-tight { line-height: 1.15; }
-.border-bottom-solid { border-bottom: 1px solid #e2e8f0; }
-.border-top-solid { border-top: 1px solid #e2e8f0; }
-.border-solid-red { border: 2px solid #fee2e2; }
+.border-bottom-solid { border-bottom: 1px solid var(--c-border); }
+.border-top-solid { border-top: 1px solid var(--c-border); }
+.border-solid-red { border: 2px solid var(--c-brand-tint-2); }
 
-/* ==========================================================
-   AUTHENTIC SARI-SARI LOADING SCREEN (SOLID & CENTERED)
-========================================================== */
-.sari-loading-backdrop {
-  background-color: rgba(248, 250, 252, 0.96);
-  z-index: 99999;
-}
-
-.fade-fast-enter-active, .fade-fast-leave-active { transition: opacity 0.25s ease; }
-.fade-fast-enter-from, .fade-fast-leave-to { opacity: 0; }
-
-.sari-loading-card {
-  background: #ffffff;
-  border: 2px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 34px 38px;
-  width: 90%;
-  max-width: 320px;
-  box-shadow: 0 8px 24px rgba(185, 28, 28, 0.08);
-}
-
-.storefront-card-top {
-  width: 140px;
-  background: #ffffff;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
-}
-
-.awning-roof {
-  width: 100%;
-  height: 10px;
-  display: flex;
-}
-
-.awning-red { flex: 1; background: #b91c1c; }
-.awning-white { flex: 1; background: #ffffff; }
-
-.store-badge-frame {
-  padding: 12px 14px;
-}
-
-.loading-store-logo {
-  height: 28px;
-  width: auto;
-  object-fit: contain;
-  display: block;
-}
-
-.store-logo-fallback {
-  display: none;
-}
-.loading-store-logo[style*="display: none"] + .store-logo-fallback {
-  display: flex !important;
-}
-
-.counter-progress-track {
-  width: 130px;
-  height: 5px;
-  background: #e2e8f0;
-  border-radius: 99px;
-  overflow: hidden;
-  position: relative;
-}
-
-.counter-progress-fill {
-  position: absolute;
-  height: 100%;
-  width: 45%;
-  background: #b91c1c;
-  border-radius: 99px;
-  animation: bar-cycle 1.4s infinite ease-in-out;
-}
-
-@keyframes bar-cycle {
-  0% { left: -45%; }
-  100% { left: 100%; }
-}
-
-.loading-dots::after {
-  content: '...';
-  display: inline-block;
-  animation: dots-sequence 1.5s steps(4, end) infinite;
-  width: 1em;
-  text-align: left;
-}
-@keyframes dots-sequence { 0%, 20% { content: ''; } 40% { content: '.'; } 60% { content: '..'; } 80%, 100% { content: '...'; } }
-
-/* ==========================================================
-   SARI-SARI RED HEADERS
-========================================================== */
+/* HEADER — the consumer header's red gradient and soft shadow. */
 .sari-brand-header {
-  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 60%, #7f1d1d 100%) !important;
-  border-bottom: 2px solid #7f1d1d;
+  background: linear-gradient(90deg, #af2424 0%, #490f0f 100%) !important;
   color: #ffffff !important;
+  box-shadow: var(--sh-header);
 }
 
 .toolbar-desktop { min-height: 68px; }
 .toolbar-mobile { min-height: 60px; }
 
+/* Plain white icons like the consumer header's bell and cart, with a light wash on hover. */
 .header-action-btn {
-  background: rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: background-color 0.15s;
+}
+.header-action-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
-/* Transparent Logo Container Box */
 .header-logo-card {
   background: transparent;
-  border-radius: 8px;
-  padding: 0px 4px;
+  border-radius: var(--r-control);
+  padding: 0 4px;
 }
 
 .header-logo-img {
@@ -774,32 +304,30 @@ const confirmLogout = async () => {
   display: flex !important;
 }
 
-/* Store Title Plate */
+/* The store name sits in a soft pill, like the consumer header's address pill. */
 .store-title-badge {
-  background: rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--r-control);
 }
 
 .badge-sub-label {
-  font-size: 8.5px;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 700;
   letter-spacing: 0.08em;
-  color: #fecaca;
+  color: rgba(255, 255, 255, 0.72);
   line-height: 1;
 }
 
 .badge-store-title {
-  font-size: 13.5px;
-  font-weight: 800;
+  font-size: var(--fs-sm);
+  font-weight: 700;
   color: #ffffff;
   max-width: 220px;
 }
 
 .vendor-profile-btn {
-  background: rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--r-control);
   padding: 4px 10px;
 }
 
@@ -807,30 +335,30 @@ const confirmLogout = async () => {
   background: #ffffff;
 }
 
-/* Solid Dropdown Menus */
+/* MENUS — the consumer dropdowns' hairline border, rounded corners and soft shadow. */
 .solid-paper-menu {
+  overflow: hidden;
   background: #ffffff;
-  border: 2px solid #cbd5e1;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-surface);
+  box-shadow: var(--sh-pop) !important;
 }
 
-.paper-menu-item { border-radius: 6px; margin: 2px 8px; }
-.paper-menu-item:hover { background: #f1f5f9; }
-.logout-paper-item:hover { background: #fef2f2; }
+.paper-menu-item { border-radius: var(--r-control); margin: 2px 8px; }
+.paper-menu-item:hover { background: var(--c-surface); }
+.logout-paper-item:hover { background: var(--c-brand-tint); }
 
 .notification-card-item {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--c-hairline);
 }
 .unread-paper-notification {
-  background: #fef2f2;
+  background: var(--c-brand-tint);
 }
 
 .solid-icon-stamp {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
-  border: 1px solid #fee2e2;
+  border-radius: var(--r-control);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -840,17 +368,17 @@ const confirmLogout = async () => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #b91c1c;
+  background-color: var(--c-brand);
 }
 
-/* ==========================================================
-   RED SARI-SARI SIDEBAR & MENU ALIGNMENT FIX
-========================================================== */
+/* SIDEBAR — the header's red gradient as a full-height frame, with the dashboard banner's dot texture and the current page as a white pill. */
 :deep(.q-drawer.sari-sidebar-drawer),
 :deep(.sari-sidebar-drawer) {
-  background: linear-gradient(180deg, #991b1b 0%, #7f1d1d 100%) !important;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.07) 1.5px, transparent 1.5px) 0 0 / 22px 22px,
+    linear-gradient(180deg, #a82323 0%, #7a1818 55%, #490f0f 100%) !important;
   color: #ffffff !important;
-  border-right: 2px solid #661212 !important;
+  border-right: none !important;
 }
 
 .sidebar-layout {
@@ -858,202 +386,311 @@ const confirmLogout = async () => {
   background: transparent;
 }
 
-.sidebar-brand-section {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.store-slate-container {
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  padding: 14px 10px;
-  position: relative;
-  overflow: hidden;
-}
-
-.slate-awning-strip {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  display: flex;
-}
-.slate-awning-strip span { flex: 1; }
-.aw-red { background: #b91c1c; }
-.aw-white { background: #fee2e2; }
-
-.store-emblem-circle {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: #ffffff;
+/* The logo alone, centred and large, as the sidebar's header. */
+.sidebar-top {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  padding: 26px 20px 8px;
+}
+
+.sidebar-logo {
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sidebar-logo:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 4px;
+  border-radius: var(--r-control);
+}
+
+.sidebar-logo-img {
+  display: block;
+  height: 112px;
+  max-width: 220px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* The store as a compact frosted card, with its own photo beside the name. */
+.sidebar-store {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 16px 0;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--r-surface);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-store-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border: 2px solid #ffffff;
+  border-radius: var(--r-surface);
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-store-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sidebar-store-text {
+  min-width: 0;
+}
+
+.sidebar-store-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: #ffffff;
 }
 
 .store-subtag {
-  color: #fecaca;
-  font-size: 10.5px;
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
+/* NAV GROUPS */
+.sidebar-links-container {
+  margin-top: 18px;
+  padding: 18px 12px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sidebar-group + .sidebar-group {
+  margin-top: 18px;
+}
+
 .sidebar-category-header {
+  padding: 0 12px 6px;
   font-size: 10px;
-  font-weight: 800;
-  color: #fca5a5;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
-/* ==========================================================
-   PERFECT VERTICAL AND HORIZONTAL MENU ALIGNMENT
-========================================================== */
+.sidebar-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .uniform-menu-item {
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.88);
-  min-height: 44px;
+  border-radius: var(--r-control);
+  color: rgba(255, 255, 255, 0.86);
+  min-height: 42px;
   padding: 8px 12px !important;
-  transition: all 0.18s ease;
+  transition: background-color 0.15s, color 0.15s;
 }
 
-/* Ensure q-expansion-item internal header matches exact padding of q-item */
-:deep(.uniform-expansion-header) {
-  padding: 8px 12px !important;
-  min-height: 44px !important;
-  border-radius: 8px;
-}
-
-.nav-avatar-slot,
-:deep(.uniform-expansion-header .q-item__section--avatar) {
-  min-width: 36px !important;
-  max-width: 36px !important;
+.nav-avatar-slot {
+  min-width: 32px !important;
+  max-width: 32px !important;
   padding-right: 12px !important;
   display: flex;
   align-items: center;
 }
 
-.nav-icon-glyph,
-:deep(.uniform-expansion-header .q-icon) {
-  font-size: 22px !important;
+.nav-icon-glyph {
+  color: rgba(255, 255, 255, 0.75);
 }
 
-.nav-label-text,
-:deep(.uniform-expansion-header .q-item__section--main) {
-  font-size: 13.5px !important;
-  letter-spacing: -0.01em;
-  font-weight: 700 !important;
+.nav-label-text {
+  font-size: var(--fs-sm) !important;
+  font-weight: 600 !important;
 }
 
-.solid-nav-item:hover,
-:deep(.uniform-expansion-header:hover) {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-}
-
-.solid-nav-active {
-  background: #ffffff !important;
-  color: #991b1b !important;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-}
-
-.solid-nav-active .nav-icon-glyph {
-  color: #991b1b !important;
-}
-
-/* Submenu Items */
-.solid-subnav-list {
-  margin-left: 20px;
-  padding-left: 8px;
-  border-left: 2px solid rgba(255, 255, 255, 0.2);
-  margin-top: 2px;
-  margin-bottom: 6px;
-}
-
-.solid-subnav-item {
-  border-radius: 6px;
-  padding: 8px 12px;
-  color: rgba(255, 255, 255, 0.78);
-  min-height: 36px;
-}
-
-.solid-subnav-item:hover {
+.solid-nav-item:hover {
   background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
 }
 
-.solid-sub-active {
-  background: rgba(255, 255, 255, 0.2) !important;
-  color: #ffffff !important;
+.solid-nav-active,
+.solid-nav-active:hover {
+  background: #ffffff !important;
+  color: var(--c-brand) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
 }
 
-.subnav-label-text {
-  font-size: 12.5px;
+.solid-nav-active .nav-icon-glyph {
+  color: var(--c-brand) !important;
 }
 
-/* Sidebar Logout Card */
+/* ACCOUNT — the owner's card at the foot of the sidebar, with its sign-out button. */
 .sidebar-footer-area {
+  padding: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.sidebar-logout-card {
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #fecaca;
-  border-radius: 8px;
-  padding: 10px;
-  transition: all 0.2s ease;
-}
-
-.sidebar-logout-card:hover {
-  background: #b91c1c;
+.sidebar-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--r-surface);
+  background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
-  border-color: #b91c1c;
+  font-family: inherit;
+  text-align: left;
 }
 
-/* ==========================================================
-   MOBILE BOTTOM NAVIGATION
-========================================================== */
-.bottom-nav-container { height: 60px; }
-.nav-action-btn { width: 44px; height: 44px; }
-.nav-placeholder { width: 52px; height: 100%; }
-
-.center-cutout {
-  position: absolute;
-  top: -18px;
-  width: 58px;
-  height: 58px;
+.sidebar-account-avatar {
+  flex-shrink: 0;
   background: #ffffff;
-  border-radius: 50%;
-  border: 2px solid #e2e8f0;
-  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.05);
-  z-index: 2001;
+  color: var(--c-brand);
 }
 
-.center-store-home-btn { width: 46px; height: 46px; }
+.sidebar-account-text {
+  flex: 1;
+  min-width: 0;
+}
 
-.popup-action-item { border-radius: 8px; margin: 4px 6px; color: #1e293b; }
-.popup-action-item:hover { background: #e2e8f0; }
-.active-popup-item { background: #fee2e2 !important; color: #991b1b !important; }
+.sidebar-account-name {
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sidebar-account-role {
+  font-size: var(--fs-2xs);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sidebar-signout {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.8);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.sidebar-signout:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+/* BOTTOM NAV — the consumer's tab bar, 64px cells with the icon in a pill over its label. */
+.vendor-bottom-nav {
+  z-index: 2000;
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--c-border);
+  box-shadow: var(--sh-dock);
+}
+
+.bottom-nav-inner {
+  display: flex;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 6px;
+}
+
+.bottom-nav-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 64px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  color: var(--c-subtle);
+  transition: color 0.15s;
+}
+
+.bottom-nav-tab :deep(.q-btn__content) {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+/* Quasar's hover wash would fill the whole cell, so the pill is the hover state instead. */
+.bottom-nav-tab :deep(.q-focus-helper) {
+  display: none;
+}
+
+.bottom-nav-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 30px;
+  border-radius: var(--r-pill);
+  transition: background-color 0.2s;
+}
+
+.bottom-nav-label {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.bottom-nav-tab--active {
+  color: var(--c-brand);
+}
+
+.bottom-nav-tab--active .bottom-nav-pill {
+  background: var(--c-brand-tint);
+}
+
+.bottom-nav-tab--active .bottom-nav-label {
+  font-weight: 700;
+}
+
+.bottom-nav-tab:not(.bottom-nav-tab--active):hover .bottom-nav-pill {
+  background: var(--c-surface);
+}
+
+.bottom-nav-tab:focus-visible .bottom-nav-pill {
+  box-shadow: 0 0 0 2px var(--c-brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav-tab,
+  .bottom-nav-pill {
+    transition: none;
+  }
+}
+
+.popup-action-item { border-radius: var(--r-control); margin: 4px 6px; color: var(--c-text-2); }
+.popup-action-item:hover { background: var(--c-surface); }
+.active-popup-item { background: var(--c-brand-tint) !important; color: var(--c-brand) !important; }
 
 .popup-icon-stamp {
   width: 30px;
   height: 30px;
-  border-radius: 6px;
+  border-radius: var(--r-control);
   background: #ffffff;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--c-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: var(--c-subtle);
 }
 
 .active-popup-item .popup-icon-stamp {
-  background: #991b1b;
-  border-color: #991b1b;
+  background: var(--c-brand);
+  border-color: var(--c-brand);
   color: #ffffff;
 }
 
