@@ -102,7 +102,7 @@
                   </template>
                   <template v-else>
                     <q-btn unelevated no-caps color="primary" label="Save Photo" :loading="savingPhoto" @click="savePhoto" class="full-width q-mb-sm btn-gradient" />
-                    <q-btn outline no-caps color="grey-7" label="Cancel" class="full-width" :disable="savingPhoto" @click="cancelPhoto" />
+                    <q-btn outline no-caps color="primary" label="Cancel" class="full-width" :disable="savingPhoto" @click="cancelPhoto" />
                   </template>
                 </div>
                 <div class="text-center photo-hint">JPG, PNG or GIF. Max size of 2MB.</div>
@@ -167,7 +167,7 @@
 
     <!-- EDIT PERSONAL INFORMATION DIALOG -->
     <q-dialog v-model="showEditPersonalModal" persistent transition-show="scale" transition-hide="scale">
-      <q-card class="profile-dialog-card edit-personal-card" style="width: 620px; max-width: 90vw;">
+      <q-card class="profile-dialog-card edit-personal-card" style="width: 560px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_person" size="22px" /></div>
           <div class="dialog-header-text">
@@ -239,7 +239,7 @@
         </q-form>
 
         <q-card-actions align="right">
-          <q-btn outline no-caps label="Cancel" color="grey-7" :disable="savingPersonal" @click="attemptCloseEditPersonal" />
+          <q-btn outline no-caps label="Cancel" color="primary" :disable="savingPersonal" @click="attemptCloseEditPersonal" />
           <q-btn
             unelevated
             no-caps
@@ -254,17 +254,15 @@
       </q-card>
     </q-dialog>
 
-    <!-- DISCARD CHANGES CONFIRMATION (Edit Personal Information / Change Password) -->
+    <!-- DISCARD CHANGES CONFIRMATION (Edit Personal Information / Change Password), in the Log out dialog's layout: centred text over two equal buttons. -->
     <q-dialog v-model="showDiscardConfirm" :persistent="discardingChanges" transition-show="scale" transition-hide="scale">
-      <q-card class="profile-dialog-card discard-confirm-card" style="width: 420px; max-width: 90vw;">
-        <q-card-section class="dialog-header discard-confirm-header">
-          <div class="dialog-header-text">
-            <div class="text-h6">Discard Changes?</div>
-            <div class="section-subtitle">You have unsaved changes. If you leave now, your changes will not be saved.</div>
-          </div>
+      <q-card class="discard-dialog">
+        <q-card-section class="discard-content">
+          <div class="discard-title">Discard Changes?</div>
+          <p class="discard-message">You have unsaved changes. If you leave now, your changes will not be saved.</p>
         </q-card-section>
-        <q-card-actions class="discard-confirm-actions">
-          <q-btn outline no-caps label="Keep Editing" color="grey-7" autofocus :disable="discardingChanges" v-close-popup />
+        <q-card-actions class="discard-actions">
+          <q-btn outline no-caps label="Keep Editing" color="primary" autofocus :disable="discardingChanges" v-close-popup />
           <q-btn unelevated no-caps label="Discard" class="btn-danger-gradient" :loading="discardingChanges" :disable="discardingChanges" @click="confirmDiscardChanges" />
         </q-card-actions>
       </q-card>
@@ -272,7 +270,7 @@
 
     <!-- SUCCESS DIALOG (shared: personal info, password, photo updates) -->
     <q-dialog v-model="showSuccessModal" transition-show="scale" transition-hide="scale">
-      <q-card class="profile-dialog-card success-card" style="width: 500px; max-width: 90vw;">
+      <q-card class="profile-dialog-card success-card" style="width: 440px; max-width: 90vw;">
         <q-card-section class="text-center">
           <div class="success-icon">
             <q-icon name="o_check" size="32px" />
@@ -299,7 +297,7 @@
           <PhotoCropper ref="cropperRef" :src="originalPhotoUrl || ''" round :aspect="1" :output-width="512" @ready="cropReady = true" />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn outline no-caps label="Cancel" color="grey-7" @click="showCropModal = false" />
+          <q-btn outline no-caps label="Cancel" color="primary" @click="showCropModal = false" />
           <q-btn unelevated no-caps color="primary" label="Apply Crop" :disable="!cropReady" class="btn-gradient" @click="applyCrop" />
         </q-card-actions>
       </q-card>
@@ -307,7 +305,7 @@
 
     <!-- CHANGE PASSWORD DIALOG -->
     <q-dialog v-model="showPasswordModal" persistent transition-show="scale" transition-hide="scale">
-      <q-card class="profile-dialog-card" style="width: 480px; max-width: 90vw;">
+      <q-card class="profile-dialog-card" style="width: 460px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_lock" size="22px" /></div>
           <div class="dialog-header-text">
@@ -393,7 +391,7 @@
         </q-form>
 
         <q-card-actions align="right">
-          <q-btn outline no-caps label="Cancel" color="grey-7" :disable="savingPassword" @click="attemptClosePasswordModal" />
+          <q-btn outline no-caps label="Cancel" color="primary" :disable="savingPassword" @click="attemptClosePasswordModal" />
           <q-btn
             unelevated
             no-caps
@@ -410,7 +408,7 @@
 
     <!-- OTP VERIFICATION DIALOG -->
     <q-dialog v-model="showOtpModal" persistent transition-show="scale" transition-hide="scale">
-      <q-card class="profile-dialog-card" style="width: 500px; max-width: 90vw;">
+      <q-card class="profile-dialog-card" style="width: 440px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_sms" size="22px" /></div>
           <div class="dialog-header-text">
@@ -455,7 +453,7 @@
           </div>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn outline no-caps label="Cancel" color="grey-7" :disable="verifyingOtp" @click="cancelOtp" />
+          <q-btn outline no-caps label="Cancel" color="primary" :disable="verifyingOtp" @click="cancelOtp" />
           <q-btn unelevated no-caps color="primary" label="Verify & Save" :loading="verifyingOtp" :disable="!canVerifyOtp" class="btn-gradient" @click="verifyOtp" />
         </q-card-actions>
       </q-card>
@@ -463,7 +461,7 @@
 
     <!-- DELETE ACCOUNT DIALOG -->
     <q-dialog v-model="showDeleteModal" persistent transition-show="scale" transition-hide="scale">
-      <q-card class="profile-dialog-card delete-dialog-card" style="width: 540px; max-width: 90vw;">
+      <q-card class="profile-dialog-card delete-dialog-card" style="width: 480px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon dialog-icon--danger"><q-icon name="o_delete" size="22px" /></div>
           <div class="dialog-header-text">
@@ -490,7 +488,7 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn outline no-caps label="Cancel" color="grey-7" :disable="deletingAccount" @click="cancelDeleteModal" />
+          <q-btn outline no-caps label="Cancel" color="primary" :disable="deletingAccount" @click="cancelDeleteModal" />
           <q-btn
             unelevated
             no-caps
@@ -507,7 +505,7 @@
     <!-- ACCOUNT DELETED CONFIRMATION -->
     <!-- No close button, since the account and its session are already gone and the only way out is Go to Home. -->
     <q-dialog v-model="showAccountDeletedModal" persistent transition-show="scale" transition-hide="scale">
-      <q-card class="profile-dialog-card success-card" style="width: 500px; max-width: 90vw;">
+      <q-card class="profile-dialog-card success-card" style="width: 440px; max-width: 90vw;">
         <q-card-section class="text-center">
           <div class="success-icon">
             <q-icon name="o_check" size="32px" />
@@ -1511,27 +1509,21 @@ const goHomeAfterDelete = () => {
   background: var(--c-brand-tint);
 }
 
-/* Grey outline buttons (Cancel, Keep Editing), shared by every dialog and the photo card. */
-.profile-container :deep(.q-btn--outline.text-grey-7),
-.profile-dialog-card :deep(.q-btn--outline.text-grey-7) {
+/* Red outline buttons (Cancel, Keep Editing), the same design as the Edit pill, shared by every dialog and the photo card. */
+.profile-container :deep(.q-btn--outline.text-primary),
+.profile-dialog-card :deep(.q-btn--outline.text-primary) {
   transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
-.profile-container :deep(.q-btn--outline.text-grey-7:hover),
-.profile-dialog-card :deep(.q-btn--outline.text-grey-7:hover) {
-  border-color: var(--c-border-strong);
-  background: var(--c-surface);
+.profile-dialog-card :deep(.q-btn--outline.text-primary:hover),
+.profile-dialog-card :deep(.q-btn--outline.text-primary:active) {
+  background: var(--c-brand-tint);
 }
 
-.profile-container :deep(.q-btn--outline.text-grey-7:active),
-.profile-dialog-card :deep(.q-btn--outline.text-grey-7:active) {
-  background: var(--c-surface);
-}
-
-.profile-container :deep(.q-btn--outline.text-grey-7:focus-visible),
-.profile-dialog-card :deep(.q-btn--outline.text-grey-7:focus-visible) {
+.profile-container :deep(.q-btn--outline.text-primary:focus-visible),
+.profile-dialog-card :deep(.q-btn--outline.text-primary:focus-visible) {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
 }
 
 /* DANGER ZONE */
@@ -1624,10 +1616,10 @@ const goHomeAfterDelete = () => {
   margin-top: 0;
 }
 
-/* One 18px gap between every field at all widths, three times the 6px label gap, so each label reads as belonging to the field below it. */
+/* A 16px gap between fields, well over the 6px label gap, so each label reads as belonging to the field below it. */
 .edit-field,
 .edit-field-tight {
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 .edit-field:first-child {
@@ -1817,7 +1809,7 @@ const goHomeAfterDelete = () => {
 }
 
 .success-card .q-btn {
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 /* DIALOGS (crop / password / OTP / edit / success) */
@@ -1856,20 +1848,20 @@ const goHomeAfterDelete = () => {
   color: var(--c-brand-deep);
 }
 
-/* 32px baseline padding; .dialog-header/.dialog-body trim top/bottom so adjacent sections don't double up into a 64px gap. */
+/* 24px all round, with the header and body trimming theirs so neighbouring sections never double up. */
 .profile-dialog-card :deep(.q-card__section) {
-  padding: 32px;
+  padding: 24px;
 }
 
 .profile-dialog-card :deep(.dialog-header:not(.discard-confirm-header)) {
-  padding-bottom: 20px;
+  padding-bottom: 16px;
 
   border-bottom: 1px solid var(--c-hairline);
 }
 
 .profile-dialog-card :deep(.dialog-body) {
-  padding-top: 24px;
-  padding-bottom: 24px;
+  padding-top: 20px;
+  padding-bottom: 20px;
 }
 
 .profile-dialog-card :deep(.q-card__actions) {
@@ -1877,7 +1869,7 @@ const goHomeAfterDelete = () => {
   justify-content: flex-end;
 
   gap: 10px;
-  padding: 20px 32px;
+  padding: 16px 24px;
 
   /* Hairline only — the divider gives the actions their own band without tinting them. */
   border-top: 1px solid var(--c-border);
@@ -1889,32 +1881,79 @@ const goHomeAfterDelete = () => {
 }
 
 /* Discard-confirm has no .dialog-body, so its header keeps the body's 24px above the actions; the .profile-dialog-card prefix matches the section rule's weight so this one wins. */
-.profile-dialog-card .discard-confirm-header {
-  padding-bottom: 24px;
+/* DISCARD CHANGES — the Log out dialog's layout: a centred title and message over two buttons that share the row. */
+.discard-dialog {
+  width: 400px;
+  max-width: 90vw;
+
+  border-radius: var(--r-xl);
+
+  font-family: 'Roboto', Arial, sans-serif;
 }
 
-.discard-confirm-actions {
-  display: flex;
-  justify-content: flex-end;
+.discard-content {
+  padding: 28px 28px 0;
 
-  gap: 10px;
-  padding: 20px 32px;
+  text-align: center;
 }
 
-/* Zeroes Quasar's own .q-card__actions--horiz margin-left so flex `gap` is the only spacing. */
-.discard-confirm-actions :deep(.q-btn-item + .q-btn-item) {
-  margin-left: 0;
+.discard-title {
+  margin-bottom: 10px;
+
+  font-size: 19px;
+  font-weight: 700;
+
+  color: var(--c-text);
+}
+
+.discard-message {
+  margin: 0;
+
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+
+  color: var(--c-text-3);
+}
+
+.discard-actions {
+  flex-wrap: nowrap;
+
+  gap: 12px;
+  padding: 20px 28px 28px;
+}
+
+/* Quasar spaces neighbouring card buttons with its own margin, which would double up with the gap. */
+.discard-actions .q-btn {
+  flex: 1;
+
+  height: 48px;
+  margin: 0;
+
+  border-radius: var(--r-sm);
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+/* Keep Editing is focused as the dialog opens, so Quasar's tint shows for keyboard focus and hover, not for that automatic focus alone. */
+.discard-actions :deep(.q-btn:focus:not(:focus-visible):not(:hover) > .q-focus-helper) {
+  opacity: 0;
+}
+
+/* Hovering it then shows Quasar's plain hover strength, the same as Cancel in the Log out dialog, rather than its stronger focus tint. */
+.discard-actions :deep(.q-btn:focus:not(:focus-visible):hover > .q-focus-helper) {
+  opacity: 0.15;
 }
 
 /* Paired dialog buttons share one width, so Cancel doesn't shrink beside a longer label like Update Password; !important beats Quasar's own dialog-actions rule. */
 .profile-dialog-card :deep(.q-card__actions .q-btn) {
-  min-width: 160px !important;
+  min-width: 132px !important;
 }
 
 /* Buttons — 48px tall everywhere except the round close (×) button, matching the canonical .login-button/.btn-gradient recipe. */
 .profile-dialog-card :deep(.q-btn:not(.q-btn--round)) {
-  height: 48px;
-  min-height: 48px;
+  height: 44px;
+  min-height: 44px;
 
   border-radius: var(--r-sm);
   font-size: var(--fs-sm);
@@ -2048,7 +2087,7 @@ const goHomeAfterDelete = () => {
 
   /* Quasar's "minimized" dialog positioning adds its own 24px padding; :global()+:has() reaches .q-dialog__inner since it's an ancestor, not a descendant, of .profile-dialog-card. */
   :global(.q-dialog__inner--minimized:has(.profile-dialog-card)) {
-    padding: 16px;
+    padding: 12px;
   }
 
   /* Overrides each dialog's inline max-width:90vw, which read as extra uneven margin on top of the 16px padding at phone widths. */
@@ -2058,12 +2097,12 @@ const goHomeAfterDelete = () => {
 
   /* Dialog shell — same rhythm as desktop, scaled down to 24px for small screens. */
   .profile-dialog-card :deep(.q-card__section) {
-    padding: 24px;
+    padding: 18px;
   }
 
   /* Header-to-first-field and last-field-to-actions gaps matched (~20px each) for a symmetrical form, instead of desktop's lopsided 20px/8px split. */
   .profile-dialog-card :deep(.dialog-header) {
-    padding-bottom: 20px;
+    padding-bottom: 16px;
 
     /* Align close (×) button to the top instead of centering against the title+subtitle block. */
     align-items: flex-start;
@@ -2071,8 +2110,8 @@ const goHomeAfterDelete = () => {
 
   /* Clears the header's divider, which the blanket .q-card__section rule would otherwise double into a 48px gap. */
   .profile-dialog-card :deep(.dialog-body) {
-    padding-top: 20px;
-    padding-bottom: 20px;
+    padding-top: 16px;
+    padding-bottom: 16px;
   }
 
   /* Cancel and primary buttons split the footer evenly, with even padding on their tinted band. */
@@ -2080,7 +2119,7 @@ const goHomeAfterDelete = () => {
     display: flex;
 
     gap: 10px;
-    padding: 16px 24px;
+    padding: 14px 18px;
   }
 
   /* Zeroes the buttons' leftover q-mr-sm margin so flex `gap` above is the only spacing in play. */

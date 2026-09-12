@@ -191,9 +191,11 @@ const orderAddressText = (order) => {
   return address || dist || 'Address unavailable'
 }
 
+// Sentence case, such as "Ready for pickup", matching the vendor badges.
 const formatStatus = (status) => {
   if (!status) return ''
-  return status.split('_').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  const text = String(status).split('_').join(' ').toLowerCase()
+  return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
 const viewOrder = (order) => {
@@ -590,29 +592,30 @@ const reorderItems = async (order) => {
   font-weight: 600;
 }
 
+/* The same status palette as the vendor badges: blue placed, amber preparing, violet ready, green picked up, red cancelled. */
 .status-badge-placed {
-  background: var(--c-info-tint);
-  color: var(--c-info);
+  background: var(--st-placed-bg);
+  color: var(--st-placed);
 }
 
 .status-badge-preparing {
-  background: var(--c-status-wait-tint);
-  color: var(--c-status-wait);
+  background: var(--st-preparing-bg);
+  color: var(--st-preparing);
 }
 
 .status-badge-ready {
-  background: var(--c-status-active-tint);
-  color: var(--c-status-active);
+  background: var(--st-ready-bg);
+  color: var(--st-ready);
 }
 
 .status-badge-picked-up {
-  background: var(--c-success-tint);
-  color: var(--c-success);
+  background: var(--st-done-bg);
+  color: var(--st-done);
 }
 
 .status-badge-cancelled {
-  background: var(--c-danger-tint);
-  color: var(--c-danger);
+  background: var(--st-cancelled-bg);
+  color: var(--st-cancelled);
 }
 
 .status-badge-default {

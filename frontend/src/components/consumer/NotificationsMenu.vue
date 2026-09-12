@@ -23,7 +23,7 @@
           dense
           no-caps
           size="sm"
-          label="Mark all read"
+          label="Mark all as read"
           color="primary"
           @click="markAllAsRead"
         />

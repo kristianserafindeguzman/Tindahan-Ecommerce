@@ -1,478 +1,382 @@
 <template>
-  <q-page class="vendor-page relative-position" :class="{ 'mobile-page-padding': $q.screen.lt.md }">
-    <!-- Subtle Ambient Background Glows -->
-    <div class="bg-glow bg-glow-primary desktop-only"></div>
-    <div class="bg-glow bg-glow-secondary desktop-only"></div>
+  <q-page class="vp-page">
+    <div class="vp-container">
 
-    <div class="page-container relative-position" style="z-index: 1;">
-      
-      <!-- ================= DESKTOP HEADER AREA ================= -->
-      <div v-if="!$q.screen.lt.md" class="page-header q-mb-xl q-mt-sm">
-        <div class="row items-center q-mb-sm">
-          <div class="glass-icon-box q-mr-md">
-            <q-icon name="point_of_sale" size="26px" color="red-8" />
-          </div>
-          <div>
-            <h1 class="text-h4 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight">Sales Management</h1>
-            <p class="text-body1 text-blue-grey-5 q-mt-xs q-mb-none">Monitor metrics, process manual entries, and view predictions.</p>
-          </div>
+      <div class="vp-header">
+        <div>
+          <h1 class="vp-title">Sales Reports</h1>
+          <p class="vp-subtitle">Track revenue, record walk-in sales and review each day.</p>
+        </div>
+        <div class="vp-header-actions">
+          <!-- Picking a day loads it straight away; All time and Today are one tap. -->
+          <q-btn outline no-caps color="primary" icon="o_calendar_month" :label="displayDate" class="vp-pill-btn sr-date-btn">
+            <q-popup-proxy ref="datePopup" anchor="bottom right" self="top right" :offset="[0, 8]">
+              <div class="sr-calendar">
+                <q-date v-model="selectedDate" mask="YYYY/MM/DD" color="primary" flat minimal class="sr-date" @update:model-value="closeDatePopup" />
+                <div class="sr-calendar-foot">
+                  <q-btn v-close-popup flat dense no-caps label="All time" class="sr-quick" :class="{ 'sr-quick--on': !selectedDate }" @click="clearDate" />
+                  <q-btn v-close-popup flat dense no-caps label="Today" class="sr-quick" :class="{ 'sr-quick--on': isToday }" @click="setToday" />
+                </div>
+              </div>
+            </q-popup-proxy>
+          </q-btn>
+          <q-btn v-if="$q.screen.lt.lg" unelevated no-caps color="primary" icon="add" label="Record Sale" class="vp-primary-btn" @click="showMobileManualModal = true" />
         </div>
       </div>
 
-      <!-- ================= MOBILE HEADER AREA ================= -->
-      <div v-else class="page-header q-mb-lg q-mt-sm">
-        <div class="row items-center">
-          <div class="glass-icon-box q-mr-md" style="width: 44px; height: 44px;">
-            <q-icon name="point_of_sale" size="22px" class="text-brand-red" />
+      <div class="sr-grid">
+        <div class="sr-main">
+
+          <!-- REVENUE — the total, what it came from, and a small bar chart of the records behind it. -->
+          <section class="sr-hero">
+            <div class="sr-hero-main">
+              <div class="sr-hero-top">
+                <span class="sr-eyebrow"><q-icon name="o_payments" size="16px" /> Revenue · {{ displayDate }}</span>
+                <span v-if="metrics.growthRate" class="sr-growth"><q-icon name="trending_up" size="16px" /> +{{ metrics.growthRate }}% vs yesterday</span>
+              </div>
+              <div class="sr-hero-value">₱{{ formatNumber(metrics.revenue) }}</div>
+              <div class="sr-hero-facts">
+                <span class="sr-fact">
+                  <q-icon name="o_receipt_long" size="16px" />
+                  {{ recordCount }} {{ shownDate ? 'order' : 'day' }}{{ recordCount === 1 ? '' : 's' }}
+                </span>
+                <span class="sr-fact">
+                  <q-icon name="o_shopping_basket" size="16px" />
+                  {{ itemsSold }} item{{ itemsSold === 1 ? '' : 's' }} sold
+                </span>
+                <span class="sr-fact">
+                  <q-icon name="o_sell" size="16px" />
+                  ₱{{ formatNumber(metrics.avgOrderValue) }} per order
+                </span>
+              </div>
+            </div>
+
+            <div v-if="heroBars.length" class="sr-hero-chart">
+              <div class="sr-bars" role="img" :aria-label="shownDate ? 'Total of each order on this day' : 'Revenue for each of the last 14 days'">
+                <span v-for="bar in heroBars" :key="bar.key" class="sr-bar" :style="{ height: `${bar.height}%` }" :title="bar.title" />
+              </div>
+              <div class="sr-bars-label">{{ shownDate ? 'Each order on this day' : 'Last 14 days' }}</div>
+            </div>
+            <q-icon v-else name="o_insights" class="sr-hero-art" aria-hidden="true" />
+          </section>
+
+          <div class="vp-stats sr-stats">
+            <div class="vp-card vp-stat">
+              <div class="vp-stat-top">
+                <span class="vp-stat-label">Avg order value</span>
+                <span class="vp-stat-icon vp-tone--info"><q-icon name="o_receipt_long" size="20px" /></span>
+              </div>
+              <div class="vp-stat-value">₱{{ formatNumber(metrics.avgOrderValue) }}</div>
+            </div>
+            <div class="vp-card vp-stat">
+              <div class="vp-stat-top">
+                <span class="vp-stat-label">Cancellation rate</span>
+                <span class="vp-stat-icon vp-tone--danger"><q-icon name="o_remove_shopping_cart" size="20px" /></span>
+              </div>
+              <div class="vp-stat-value">{{ metrics.cancellationRate }}%</div>
+            </div>
+            <div class="vp-card vp-stat vp-stat--wide">
+              <div class="vp-stat-top">
+                <span class="vp-stat-label">Best seller</span>
+                <span class="vp-stat-icon vp-tone--wait"><q-icon name="o_emoji_events" size="20px" /></span>
+              </div>
+              <div class="vp-stat-value vp-stat-value--text">{{ metrics.bestSellingCategory || 'No data yet' }}</div>
+            </div>
           </div>
-          <div>
-            <h1 class="text-h5 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight leading-tight">Sales Management</h1>
-            <p class="text-caption text-blue-grey-5 q-mt-xs q-mb-none font-medium">Monitor metrics and track revenue.</p>
+
+          <!-- SALES RECORDS -->
+          <div class="vp-card">
+            <div class="sr-card-head">
+              <div>
+                <div class="sr-card-title">Sales Records</div>
+                <div class="sr-card-sub">{{ selectedDate ? `Orders on ${displayDate}` : 'Daily totals for all time' }}</div>
+              </div>
+              <q-skeleton v-if="loading" type="rect" width="30px" height="20px" class="sr-count-sk" />
+              <span v-else class="sr-count">{{ transactions.length }}</span>
+            </div>
+
+            <!-- Placeholder rows in the columns of the view being loaded: one day's orders, or All time's daily totals. -->
+            <SkeletonTable
+              v-if="loading"
+              :columns="selectedDate ? DAY_SKELETON : ALL_TIME_SKELETON"
+              :rows="5"
+              :list="$q.screen.lt.md"
+              :lead="false"
+              :pill="!!selectedDate"
+              class="sr-skeleton"
+            />
+
+            <div v-else-if="!transactions.length" class="vp-empty">
+              <div class="vp-empty-icon"><q-icon name="o_query_stats" size="24px" /></div>
+              <div class="vp-empty-title">No sales found</div>
+              <div class="vp-empty-text">Nothing was recorded for {{ displayDate }}. Orders and walk-in sales will show up here.</div>
+            </div>
+
+            <div v-else-if="!$q.screen.lt.md" class="vp-table-wrap">
+              <table v-if="shownDate" class="vp-table sr-table">
+                <thead>
+                  <tr>
+                    <th class="col-order">Order</th>
+                    <th>Product</th>
+                    <th class="col-items">Items</th>
+                    <th class="text-right col-total">Total</th>
+                    <th class="col-status">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(row, index) in pagedRows" :key="`${row.order_id}-${index}`">
+                    <td><span class="vp-id">#{{ row.order_id }}</span></td>
+                    <td class="sr-product">{{ row.product }}</td>
+                    <td class="vp-muted">{{ row.quantity }}</td>
+                    <td class="text-right vp-amount">₱{{ formatNumber(row.total) }}</td>
+                    <td><OrderStatusBadge :status="row.status" /></td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <table v-else class="vp-table sr-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th class="col-sold">Products sold</th>
+                    <th class="text-right col-revenue">Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in pagedRows" :key="row.sale_date">
+                    <td class="sr-product">{{ row.sale_date }}</td>
+                    <td class="vp-muted">{{ row.total_items }}</td>
+                    <td class="text-right vp-amount">₱{{ formatNumber(row.daily_revenue) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div v-else class="vp-list">
+              <div v-for="(row, index) in pagedRows" :key="`${row.order_id || row.sale_date}-${index}`" class="sr-list-item">
+                <div class="vp-list-body">
+                  <span class="vp-name">{{ shownDate ? `Order #${row.order_id}` : row.sale_date }}</span>
+                  <div class="vp-list-meta">{{ shownDate ? `${row.product} · Qty ${row.quantity}` : `${row.total_items} items sold` }}</div>
+                </div>
+                <div class="vp-list-side">
+                  <span class="vp-amount">₱{{ formatNumber(shownDate ? row.total : row.daily_revenue) }}</span>
+                  <OrderStatusBadge v-if="shownDate" :status="row.status" />
+                </div>
+              </div>
+            </div>
+
+            <div v-if="!loading && transactions.length > PAGE_SIZES[0]" class="vp-pager">
+              <span>Showing {{ rangeStart }}–{{ rangeEnd }} of {{ transactions.length }}</span>
+              <div class="sr-pager-right">
+                <label class="sr-page-size">
+                  Rows
+                  <q-select v-model="pageSize" :options="PAGE_SIZES" dense outlined options-dense behavior="menu" class="vp-input sr-page-select" aria-label="Rows per page" />
+                </label>
+              </div>
+              <div class="vp-pager-btns">
+                <q-btn outline no-caps color="primary" icon="o_chevron_left" class="vp-pill-btn" aria-label="Previous page" :disable="page === 1" @click="page--" />
+                <q-btn outline no-caps color="primary" icon="o_chevron_right" class="vp-pill-btn" aria-label="Next page" :disable="page === pageCount" @click="page++" />
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="row q-col-gutter-lg q-col-gutter-md-xl">
-        
-        <!-- ================= LEFT COLUMN / MAIN CONTENT ================= -->
-        <div class="col-12 col-md-8">
-          
-          <!-- Revenue Card with Integrated Date Picker -->
-          <q-card class="q-mb-lg text-white" :class="$q.screen.lt.md ? 'bg-brand-red q-pa-md shadow-2' : 'premium-glass-card q-pa-md bg-gradient-red'" :style="$q.screen.lt.md ? 'border-radius: 12px;' : ''">
-            <q-card-section :class="{ 'q-pa-sm': $q.screen.lt.md }">
-              <div class="row items-center justify-between q-mb-sm">
-                <div class="text-white opacity-80 text-uppercase text-weight-bold" :style="$q.screen.lt.md ? 'font-size: 11px; letter-spacing: 0.5px;' : ''">
-                  REVENUE FOR {{ displayDate.toUpperCase() }}
-                </div>
-                
-                <!-- Calendar Button -->
-                <q-btn 
-                  outline 
-                  dense 
-                  no-caps 
-                  icon="calendar_month" 
-                  label="Select Date" 
-                  class="text-white text-weight-bold transition-ease hover-bg-white-20" 
-                  style="border-radius: 8px; border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.1); padding: 4px 12px; font-size: 11.5px; letter-spacing: 0.3px;"
-                >
-                  <q-popup-proxy anchor="bottom right" self="top right" :offset="[0, 8]" transition-show="jump-down" transition-hide="jump-up">
-                    <q-card class="calendar-popover-card shadow-soft overflow-hidden" style="width: 320px; max-width: 90vw; border-radius: 14px; border: 1px solid #e2e8f0;">
-                      <div class="calendar-popover-header row items-center justify-between q-px-md q-py-sm bg-gradient-red text-white">
-                        <div class="row items-center no-wrap">
-                          <q-icon name="event" size="18px" class="q-mr-xs" />
-                          <span class="text-caption text-weight-bolder text-uppercase tracking-wide">Select Date</span>
-                        </div>
-                        <span class="text-caption text-weight-bold opacity-80">{{ selectedDate ? selectedDate.replace(/\//g, '-') : 'All Time' }}</span>
-                      </div>
-                      
-                      <q-date v-model="selectedDate" mask="YYYY/MM/DD" color="red-9" flat class="custom-flat-date full-width" />
-                      
-                      <div class="row items-center justify-between q-pa-sm calendar-popover-footer border-top-solid bg-slate-50">
-                        <div class="row q-gutter-x-xs">
-                          <q-btn label="All Time" color="blue-grey-7" flat dense size="12px" class="text-weight-bold q-px-xs" @click="clearDate" v-close-popup />
-                          <q-btn label="Today" color="blue-8" flat dense size="12px" class="text-weight-bold q-px-xs" @click="setToday" v-close-popup />
-                        </div>
-                        <q-btn label="Apply" color="red-9" unelevated dense size="12px" class="text-weight-bold q-px-md" style="border-radius: 6px;" @click="fetchSalesData" v-close-popup />
-                      </div>
-                    </q-card>
-                  </q-popup-proxy>
-                </q-btn>
-              </div>
-
-              <div class="row items-center justify-between">
-                <div class="text-weight-bolder" :class="$q.screen.lt.md ? 'text-h3' : 'text-h2'" style="letter-spacing: -0.02em;">₱{{ formatNumber(metrics.revenue) }}</div>
-                
-                <!-- Dynamic Growth Rate (Hidden if no data) -->
-                <div v-if="metrics.growthRate" class="row items-center text-green-3 text-weight-bold" :style="$q.screen.lt.md ? 'font-size: 12px;' : ''">
-                  <q-icon name="trending_up" :size="$q.screen.lt.md ? '18px' : '24px'" class="q-mr-xs" />
-                  +{{ metrics.growthRate }}% vs Yesterday
-                </div>
-              </div>
-            </q-card-section>
-          </q-card>
-
-          <!-- Desktop Metrics Grid -->
-          <div v-if="!$q.screen.lt.md" class="row q-col-gutter-md q-mb-lg items-stretch">
-            <div class="col-12 col-sm-4">
-              <q-card class="premium-glass-card h-full">
-                <q-card-section class="column justify-between h-full">
-                  <div class="row items-center justify-between q-mb-md">
-                    <div class="text-subtitle2 text-grey-7 text-uppercase">Avg Order Value</div>
-                    <q-avatar size="32px" color="grey-2" text-color="blue-grey-8" icon="receipt_long" />
-                  </div>
-                  <div class="text-h5 text-weight-bold text-dark">₱{{ formatNumber(metrics.avgOrderValue) }}</div>
-                </q-card-section>
-              </q-card>
-            </div>
-            
-            <div class="col-12 col-sm-4">
-              <q-card class="premium-glass-card h-full">
-                <q-card-section class="column justify-between h-full">
-                  <div class="row items-center justify-between q-mb-md">
-                    <div class="text-subtitle2 text-grey-7 text-uppercase">Cancellation Rate</div>
-                    <q-avatar size="32px" color="grey-2" text-color="red-8" icon="remove_shopping_cart" />
-                  </div>
-                  <div class="text-h5 text-weight-bold text-dark">{{ metrics.cancellationRate }}%</div>
-                </q-card-section>
-              </q-card>
-            </div>
-
-            <div class="col-12 col-sm-4">
-              <q-card class="premium-glass-card ml-blueprint-card bg-gradient-dark text-white h-full relative-position overflow-hidden">
-                <div class="glow-amber"></div>
-                <q-card-section class="relative-position z-top column justify-between h-full">
-                  <div class="row items-center q-mb-md">
-                    <q-icon name="auto_awesome" size="18px" color="amber-4" class="q-mr-sm" />
-                    <div class="text-subtitle2 text-amber-2 text-uppercase" style="font-size: 11px;">BEST SELLER FOR {{ displayDate.toUpperCase() }}</div>
-                  </div>
-                  <div class="text-h6 text-weight-bold text-white leading-tight">
-                    {{ metrics.bestSellingCategory || 'No Data' }}
-                  </div>
-                </q-card-section>
-              </q-card>
+        <!-- RECORD A SALE — beside the records on wide screens, in a sheet on smaller ones. -->
+        <aside v-if="!$q.screen.lt.lg" class="vp-card sr-entry">
+          <div class="sr-entry-head">
+            <span class="vp-stat-icon vp-tone--brand"><q-icon name="o_add_shopping_cart" size="20px" /></span>
+            <div>
+              <div class="sr-card-title">Record a Sale</div>
+              <div class="sr-card-sub">Add a walk-in sale for {{ displayDate }}.</div>
             </div>
           </div>
 
-          <!-- Mobile Metrics Stacked Cards -->
-          <div v-else class="q-mb-xl q-gutter-y-md">
-            <!-- Avg Order Value -->
-            <q-card bordered flat class="bg-white shadow-soft" style="border-radius: 10px; border-color: #e2e8f0;">
-              <q-card-section class="q-pa-md row items-center justify-between">
-                <div>
-                  <div class="text-caption text-weight-bold text-blue-grey-6 text-uppercase q-mb-xs" style="font-size: 11px;">Avg Order Value</div>
-                  <div class="text-h6 text-weight-bold text-slate-800 leading-tight">₱{{ formatNumber(metrics.avgOrderValue) }}</div>
-                </div>
-                <q-avatar size="38px" color="grey-2" text-color="blue-grey-6" icon="receipt_long" />
-              </q-card-section>
-            </q-card>
-
-            <!-- Cancellation Rate -->
-            <q-card bordered flat class="bg-white shadow-soft" style="border-radius: 10px; border-color: #e2e8f0;">
-              <q-card-section class="q-pa-md row items-center justify-between">
-                <div>
-                  <div class="text-caption text-weight-bold text-blue-grey-6 text-uppercase q-mb-xs" style="font-size: 11px;">Cancellation Rate</div>
-                  <div class="text-h6 text-weight-bold text-slate-800 leading-tight">{{ metrics.cancellationRate }}%</div>
-                </div>
-                <q-avatar size="38px" color="red-50" text-color="red-8" icon="remove_shopping_cart" />
-              </q-card-section>
-            </q-card>
-
-            <!-- Best Seller Card -->
-            <q-card class="shadow-soft" style="border-radius: 10px; background-color: #1e293b; border: 1px solid #334155;">
-              <q-card-section class="q-pa-md row items-center justify-between no-wrap">
-                <div class="col q-pr-sm">
-                  <div class="text-caption text-weight-bold text-amber-5 text-uppercase q-mb-xs" style="font-size: 11px;">Best Seller</div>
-                  <div class="text-h6 text-weight-bold text-white leading-tight ellipsis">{{ metrics.bestSellingCategory || 'No Data' }}</div>
-                </div>
-                <q-avatar size="38px" color="amber-9" text-color="white" icon="emoji_events" />
-              </q-card-section>
-            </q-card>
+          <div v-if="!selectedDate" class="sr-locked">
+            <div class="vp-empty-icon"><q-icon name="o_edit_calendar" size="24px" /></div>
+            <div class="vp-empty-title">Pick a day first</div>
+            <div class="vp-empty-text">Choose a specific date to record a sale. All time can't take new entries.</div>
           </div>
 
-          <!-- Transactions Table Container / Header (Mobile Clean Title) -->
-          <div class="row items-center justify-between q-mb-md">
-            <div class="row items-center">
-              <div v-if="$q.screen.lt.md" style="width: 4px; height: 20px; background-color: #b91c1c; border-radius: 2px;" class="q-mr-sm"></div>
-              <h2 class="text-h6 text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight" :class="{ 'text-red-9': $q.screen.lt.md }" style="line-height: 1;">Sales Records</h2>
-            </div>
-          </div>
-
-          <!-- Desktop Table -->
-          <q-card v-if="!$q.screen.lt.md" class="premium-glass-card">
-            <q-card-section class="panel-header q-pa-md">
-              <div class="text-subtitle1 text-weight-bolder text-dark row items-center" style="font-size: 17px;">
-                <div class="header-accent-red q-mr-md"></div>
-                Sales for {{ displayDate }}
-              </div>
-            </q-card-section>
-
-            <q-table
-              v-if="transactions.length > 0"
-              flat
-              class="custom-premium-table bg-transparent"
-              :rows="transactions"
-              :columns="columns"
-              row-key="order_id"
-              hide-bottom
-              :pagination="{ rowsPerPage: 5 }"
-            >
-              <template #body-cell-order_id="props">
-                <q-td :props="props">
-                  <span class="order-id-badge text-weight-bold text-red-8 q-px-sm q-py-xs bg-red-1 transition-ease" style="border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 6px;">
-                    #{{ props.row.order_id }}
-                  </span>
-                </q-td>
-              </template>
-              <template #body-cell-status="props">
-                <q-td :props="props">
-                  <q-chip :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bolder status-chip q-px-md shadow-1" style="font-size: 13px;">
-                    {{ formatStatus(props.row.status) }}
-                  </q-chip>
-                </q-td>
-              </template>
-              <template #body-cell-total="props">
-                <q-td :props="props" class="text-weight-bold text-blue-grey-9">₱{{ formatNumber(props.row.total) }}</q-td>
-              </template>
-              <template #body-cell-daily_revenue="props">
-                <q-td :props="props" class="text-weight-bold text-blue-grey-9">₱{{ formatNumber(props.row.daily_revenue) }}</q-td>
-              </template>
-            </q-table>
-
-            <div v-else class="full-width q-pa-lg flex flex-center">
-              <div class="bg-slate-50 border-slate-light rounded-borders q-pa-lg text-center shadow-soft" style="max-width: 420px; border-style: dashed; border-width: 2px;">
-                <q-icon name="query_stats" size="56px" color="blue-grey-3" class="q-mb-md" />
-                <div class="text-h6 text-weight-bolder text-blue-grey-9 q-mb-xs">No Sales Data Found</div>
-                <div class="text-body2 text-blue-grey-6 q-mb-none">
-                  There are no recorded transactions for <strong>{{ displayDate }}</strong>. As you process orders or add manual sales, they will appear here.
-                </div>
-              </div>
-            </div>
-          </q-card>
-
-          <!-- MOBILE SALES RECORDS LIST -->
-          <div v-if="$q.screen.lt.md" class="q-pb-xl">
-            <!-- Empty State Feedback Dialog for Mobile with Single Primary Button -->
-            <div v-if="transactions.length === 0" class="full-width text-center bg-slate-50 shadow-soft q-pa-lg border-slate-light" style="border-radius: 12px; border-style: dashed; border-width: 2px;">
-              <q-icon name="query_stats" size="48px" color="blue-grey-3" class="q-mb-md drop-shadow-icon" />
-              <div class="text-subtitle1 text-weight-bolder text-blue-grey-9 q-mb-xs">No Sales Data Found</div>
-              <div class="text-caption text-blue-grey-6 q-mb-md">
-                There are no recorded transactions for <strong>{{ displayDate }}</strong>.
-              </div>
-              <q-btn unelevated color="red-9" icon="add" label="Record a Sale" no-caps class="text-weight-bold full-width" style="border-radius: 8px; padding: 8px 16px;" @click="showMobileManualModal = true" />
-            </div>
-
-            <!-- Mobile Transactions Rendering -->
-            <div v-else>
-              <div v-for="row in transactions" :key="row.order_id || row.sale_date" class="q-mb-md">
-                <q-card flat bordered class="bg-white shadow-soft" style="border-radius: 10px; border-color: #e2e8f0;">
-                  <q-card-section class="q-pa-md">
-                    <div class="row justify-between items-center q-mb-sm">
-                      <div class="text-weight-bold text-slate-800" style="font-size: 15px;">
-                        {{ selectedDate ? 'Order #' + row.order_id : row.sale_date }}
-                      </div>
-                      <q-chip v-if="selectedDate" :color="getStatusColor(row.status)" text-color="white" size="sm" class="text-weight-bolder q-ma-none" style="border-radius: 6px; height: 24px; padding: 0 10px;">
-                        {{ formatStatus(row.status) }}
-                      </q-chip>
-                      <div v-else class="text-caption text-slate-500 font-medium">{{ row.total_items }} Items Sold</div>
-                    </div>
-                    
-                    <div v-if="selectedDate" class="text-body2 text-slate-700 q-mb-sm font-medium" style="font-size: 13px;">{{ row.product }}</div>
-                    
-                    <div class="row justify-between items-end q-mt-sm">
-                      <div v-if="selectedDate" class="text-caption text-slate-500">Qty: {{ row.quantity }}</div>
-                      <div v-else class="text-caption text-slate-500">Daily Total Revenue</div>
-                      <div class="text-weight-bold text-brand-red" style="font-size: 16px;">₱{{ formatNumber(selectedDate ? row.total : row.daily_revenue) }}</div>
-                    </div>
-                  </q-card-section>
-                </q-card>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- ================= RIGHT COLUMN (Manual Entry - Desktop Only) ================= -->
-        <div v-if="!$q.screen.lt.md" class="col-12 col-md-4">
-          <q-card class="premium-glass-card q-pa-sm manual-entry-card relative-position overflow-hidden">
-            
-            <div v-if="!selectedDate" class="absolute-full flex flex-center z-top" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); border-radius: inherit;">
-              <div class="text-center q-pa-md">
-                <q-icon name="edit_calendar" size="44px" color="blue-grey-4" class="q-mb-xs" />
-                <div class="text-subtitle1 text-weight-bold text-dark leading-tight q-mb-xs">Select a Date</div>
-                <div class="text-caption text-blue-grey-6">All Time date is selected. Please select a specific date from the calendar to manual entry sales.</div>
-              </div>
-            </div>
-            
-            <q-card-section class="q-pb-none q-pt-md">
-              <div class="row items-center q-mb-xs">
-                <div class="icon-compact-box bg-grey-2 border-grey-light text-red-8 q-mr-sm">
-                  <q-icon name="add_shopping_cart" size="20px" />
-                </div>
-                <div class="text-h6 text-weight-bold text-dark leading-tight">Manual Entry</div>
-              </div>
-            </q-card-section>
-
-            <q-card-section class="q-pt-sm q-pb-md">
-              <q-form @submit.prevent="confirmManualSale">
-                <div class="q-mb-md">
-                  <div class="text-caption text-weight-bold text-blue-grey-8 q-mb-xs" style="font-size: 13px;">
-                    Product Name <span class="text-red">*</span>
-                  </div>
-                  <q-select 
-                    v-model="manualForm.product" 
-                    :options="inventoryOptions" 
-                    option-value="inventory_id" 
-                    option-label="product_name" 
-                    :use-input="!manualForm.product" 
-                    clearable 
-                    @clear="manualForm.unitPrice = 0" 
-                    input-debounce="0" 
-                    @filter="filterInventory" 
-                    @update:model-value="onProductSelected" 
-                    outlined 
-                    dense 
-                    class="manual-modal-input-grey" 
-                    placeholder="Search product..." 
-                    :rules="[val => !!val || 'Product is required']" 
-                    hide-bottom-space 
-                  >
-                    <template v-slot:no-option><q-item><q-item-section class="text-italic text-grey-6">No products found</q-item-section></q-item></template>
-                  </q-select>
-                </div>
-                
-                <div class="row q-col-gutter-md q-mb-md">
-                  <div class="col-6">
-                    <div class="text-caption text-weight-bold text-blue-grey-8 q-mb-xs" style="font-size: 13px;">Quantity</div>
-                    <q-input v-model.number="manualForm.quantity" type="number" outlined dense class="manual-modal-input-grey" :rules="[val => val > 0 || 'Must be > 0']" hide-bottom-space />
-                  </div>
-                  <div class="col-6">
-                    <div class="text-caption text-weight-bold text-blue-grey-8 q-mb-xs" style="font-size: 13px;">Unit Price (₱)</div>
-                    <q-input v-model.number="manualForm.unitPrice" type="number" outlined dense class="manual-modal-input-grey" :rules="[val => val >= 0 || 'Invalid price']" hide-bottom-space />
-                  </div>
-                </div>
-
-                <div class="q-pa-md q-mb-md" style="border-radius: 6px; border: 1px solid #e2e8f0; background: #fff;">
-                  <div class="row items-center justify-between">
-                    <div class="text-subtitle2 text-blue-grey-8 text-weight-bold">Estimated Total</div>
-                    <div class="text-h6 text-weight-bolder text-red-9">₱{{ formatNumber(estimatedTotal) }}</div>
-                  </div>
-                </div>
-
-                <div>
-                  <q-btn type="submit" label="Record Sale" unelevated class="full-width bg-brand-red text-white text-weight-bold" style="border-radius: 8px; padding: 12px 0; font-size: 15px;" no-caps :loading="submitting" />
-                </div>
-              </q-form>
-            </q-card-section>
-          </q-card>
-        </div>
-
-      </div>
-
-    </div>
-
-    <!-- Mobile Manual Sale Modal -->
-    <q-dialog v-model="showMobileManualModal" position="bottom">
-      <q-card style="width: 100%; border-radius: 20px 20px 0 0; padding-bottom: 24px;" class="bg-white overflow-hidden">
-        
-        <q-card-section class="row items-center justify-between q-py-md q-px-lg bg-gradient-red text-white">
-          <div class="text-h6 text-weight-bolder tracking-tight">Add Manual Sale</div>
-          <q-btn icon="close" flat round dense v-close-popup class="opacity-80 hover-opacity-100 text-white" size="sm" />
-        </q-card-section>
-        
-        <q-card-section class="q-px-lg q-pt-lg">
-          
-          <div v-if="!selectedDate" class="bg-red-50 text-red-9 q-pa-md rounded-borders q-mb-md" style="border: 1px solid #fca5a5;">
-            <div class="row items-center q-mb-xs">
-              <q-icon name="warning" size="18px" class="q-mr-xs" />
-              <span class="text-weight-bold" style="font-size: 14px;">Date Selection Required</span>
-            </div>
-            <div style="font-size: 13px;">You must select a specific date from the calendar to record a manual sale.</div>
-          </div>
-
-          <q-form v-else @submit.prevent="confirmManualSale">
-            <div class="q-mb-md">
-              <div class="text-caption text-weight-bold text-blue-grey-8 q-mb-xs" style="font-size: 13px;">
-                Product Name <span class="text-red">*</span>
-              </div>
-              <q-select 
-                v-model="manualForm.product" 
-                :options="inventoryOptions" 
-                option-value="inventory_id" 
-                option-label="product_name" 
-                :use-input="!manualForm.product" 
-                clearable 
-                @clear="manualForm.unitPrice = 0" 
-                input-debounce="0" 
-                @filter="filterInventory" 
-                @update:model-value="onProductSelected" 
-                outlined 
-                dense 
-                placeholder="Search product..." 
-                :rules="[val => !!val || 'Product is required']"
-                bg-color="white"
-                class="manual-modal-input"
+          <q-form v-else ref="asideForm" class="sr-form" @submit.prevent="askToRecord">
+            <div>
+              <label class="vp-field-label">Product <span class="sr-req">*</span></label>
+              <q-select
+                v-model="manualForm.product"
+                :options="inventoryOptions"
+                option-value="inventory_id"
+                option-label="product_name"
+                :use-input="!manualForm.product"
+                clearable
+                input-debounce="0"
                 behavior="menu"
-                menu-anchor="bottom left"
-                menu-self="top left"
+                outlined
+                dense
+                placeholder="Search product"
+                hide-bottom-space
+                class="vp-input"
+                :rules="[val => !!val || 'Choose a product.']"
+                @clear="manualForm.unitPrice = 0"
+                @filter="filterInventory"
+                @update:model-value="onProductSelected"
               >
-                <template v-slot:no-option>
-                  <q-item><q-item-section class="text-italic text-grey-6">No products found</q-item-section></q-item>
+                <template #no-option>
+                  <q-item><q-item-section class="sr-no-option">No products found</q-item-section></q-item>
                 </template>
               </q-select>
             </div>
-
-            <div class="row q-col-gutter-md q-mb-md">
-              <div class="col-6">
-                <div class="text-caption text-weight-bold text-blue-grey-8 q-mb-xs" style="font-size: 13px;">Quantity</div>
-                <q-input 
-                  v-model.number="manualForm.quantity" 
-                  type="number" 
-                  outlined 
-                  dense 
-                  class="manual-modal-input-grey"
-                  :rules="[val => val > 0 || 'Must be > 0']"
-                  hide-bottom-space
-                />
+            <div class="sr-form-row">
+              <div>
+                <label class="vp-field-label">Quantity</label>
+                <q-input v-model.number="manualForm.quantity" type="number" min="1" :max="maxQuantity" outlined dense hide-bottom-space class="vp-input" :rules="quantityRules" />
               </div>
-              <div class="col-6">
-                <div class="text-caption text-weight-bold text-blue-grey-8 q-mb-xs" style="font-size: 13px;">Unit Price (₱)</div>
-                <q-input 
-                  v-model.number="manualForm.unitPrice" 
-                  type="number" 
-                  outlined 
-                  dense 
-                  class="manual-modal-input-grey"
-                  :rules="[val => val >= 0 || 'Invalid price']"
-                  hide-bottom-space
-                />
+              <div>
+                <label class="vp-field-label">Unit price (₱)</label>
+                <q-input v-model.number="manualForm.unitPrice" type="number" min="0" :max="MAX_PRICE" step="0.01" outlined dense hide-bottom-space class="vp-input" :rules="priceRules" />
               </div>
             </div>
-
-            <div class="q-pa-md q-mb-md" style="border-radius: 6px; border: 1px solid #e2e8f0; background: #fff;">
-              <div class="row items-center justify-between">
-                <div class="text-subtitle2 text-blue-grey-8 text-weight-bold">Estimated Total</div>
-                <div class="text-h6 text-weight-bolder text-red-9">₱{{ formatNumber(estimatedTotal) }}</div>
-              </div>
+            <div class="sr-estimate">
+              <span>Estimated total</span>
+              <strong>{{ estimateText }}</strong>
             </div>
-
-            <div>
-              <q-btn type="submit" label="Record Sale" unelevated class="full-width bg-brand-red text-white text-weight-bold" style="border-radius: 8px; padding: 12px 0; font-size: 15px;" no-caps :loading="submitting" />
-            </div>
-
+            <q-btn type="submit" unelevated no-caps color="primary" label="Record Sale" class="vp-primary-btn sr-submit" :loading="submitting" />
           </q-form>
-        </q-card-section>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Below desktop, where the entry form isn't beside the records, Record a Sale opens as a centred dialog at every width. -->
+    <q-dialog v-model="showMobileManualModal">
+      <q-card class="sr-dialog">
+        <div class="sr-entry-head sr-dialog-head">
+          <span class="vp-stat-icon vp-tone--brand"><q-icon name="o_add_shopping_cart" size="20px" /></span>
+          <div>
+            <div class="sr-card-title">Record a Sale</div>
+            <div class="sr-card-sub">Add a walk-in sale for {{ displayDate }}.</div>
+          </div>
+          <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
+        </div>
+
+        <div v-if="!selectedDate" class="sr-locked">
+          <div class="vp-empty-icon"><q-icon name="o_edit_calendar" size="24px" /></div>
+          <div class="vp-empty-title">Pick a day first</div>
+          <div class="vp-empty-text">Choose a specific date from the calendar to record a sale.</div>
+        </div>
+
+        <q-form v-else ref="sheetForm" class="sr-form" @submit.prevent="askToRecord">
+          <div>
+            <label class="vp-field-label">Product <span class="sr-req">*</span></label>
+            <q-select
+              v-model="manualForm.product"
+              :options="inventoryOptions"
+              option-value="inventory_id"
+              option-label="product_name"
+              :use-input="!manualForm.product"
+              clearable
+              input-debounce="0"
+              behavior="menu"
+              outlined
+              dense
+              placeholder="Search product"
+              hide-bottom-space
+              class="vp-input"
+              :rules="[val => !!val || 'Choose a product.']"
+              @clear="manualForm.unitPrice = 0"
+              @filter="filterInventory"
+              @update:model-value="onProductSelected"
+            >
+              <template #no-option>
+                <q-item><q-item-section class="sr-no-option">No products found</q-item-section></q-item>
+              </template>
+            </q-select>
+          </div>
+          <div class="sr-form-row">
+            <div>
+              <label class="vp-field-label">Quantity</label>
+              <q-input v-model.number="manualForm.quantity" type="number" min="1" :max="maxQuantity" outlined dense hide-bottom-space class="vp-input" :rules="quantityRules" />
+            </div>
+            <div>
+              <label class="vp-field-label">Unit price (₱)</label>
+              <q-input v-model.number="manualForm.unitPrice" type="number" min="0" :max="MAX_PRICE" step="0.01" outlined dense hide-bottom-space class="vp-input" :rules="priceRules" />
+            </div>
+          </div>
+          <div class="sr-estimate">
+            <span>Estimated total</span>
+            <strong>{{ estimateText }}</strong>
+          </div>
+          <q-btn type="submit" unelevated no-caps color="primary" label="Record Sale" class="vp-primary-btn sr-submit" :loading="submitting" />
+        </q-form>
       </q-card>
     </q-dialog>
 
+    <q-dialog v-model="confirmOpen" persistent>
+      <q-card class="vp-dialog">
+        <div class="vp-dialog-head">
+          <span class="vp-dialog-icon"><q-icon name="o_point_of_sale" size="22px" /></span>
+          <div>
+            <div class="vp-dialog-title">Record this sale?</div>
+            <div class="vp-dialog-text">
+              <strong>{{ manualForm.quantity }} × {{ manualForm.product?.product_name }}</strong> for <strong>{{ estimateText }}</strong>
+              on {{ displayDate }}. This updates your revenue and stock.
+            </div>
+          </div>
+        </div>
+        <div class="vp-dialog-actions">
+          <q-btn v-close-popup outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" :disable="submitting" />
+          <q-btn unelevated no-caps color="primary" label="Record Sale" class="vp-dialog-btn" :loading="submitting" @click="recordSale" />
+        </div>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useQuasar, date } from 'quasar'
 import { api } from '@/boot/axios'
+import OrderStatusBadge from '@/components/vendor/OrderStatusBadge.vue'
+import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 
 const $q = useQuasar()
 
-const timeStamp = Date.now()
-const selectedDate = ref(date.formatDate(timeStamp, 'YYYY/MM/DD'))
+const PAGE_SIZES = [10, 25, 50]
+
+// The placeholder rows take the same columns as the two records tables.
+const DAY_SKELETON = [
+  { width: '14%', type: 'pill', size: 56 },
+  { type: 'text' },
+  { width: '11%', type: 'text' },
+  { width: '16%', type: 'text', align: 'right' },
+  { width: '20%', type: 'pill', size: 96 }
+]
+const ALL_TIME_SKELETON = [
+  { type: 'text' },
+  { width: '30%', type: 'text' },
+  { width: '30%', type: 'text', align: 'right' }
+]
+const todayKey = () => date.formatDate(Date.now(), 'YYYY/MM/DD')
+
+const selectedDate = ref(todayKey())
 const showMobileManualModal = ref(false)
+const confirmOpen = ref(false)
+const datePopup = ref(null)
+const asideForm = ref(null)
+const sheetForm = ref(null)
+const loading = ref(true)
+const page = ref(1)
+const pageSize = ref(PAGE_SIZES[0])
+// The date the loaded rows belong to, so switching dates never reads old rows in the new layout while the new ones load.
+const shownDate = ref(null)
 
 const displayDate = computed(() => {
   if (!selectedDate.value) return 'All Time'
-  const d = new Date(selectedDate.value.replace(/\//g, '-'))
-  return date.formatDate(d, 'MMM DD, YYYY')
+  return date.formatDate(new Date(selectedDate.value.replace(/\//g, '-')), 'MMM DD, YYYY')
 })
 
-const clearDate = () => {
-  selectedDate.value = null
-  fetchSalesData()
-}
+const isToday = computed(() => selectedDate.value === todayKey())
 
-const setToday = () => {
-  selectedDate.value = date.formatDate(Date.now(), 'YYYY/MM/DD')
-  fetchSalesData()
-}
+const closeDatePopup = () => datePopup.value?.hide()
+const clearDate = () => { selectedDate.value = null }
+const setToday = () => { selectedDate.value = todayKey() }
 
 const metrics = reactive({
   revenue: 0,
@@ -484,45 +388,34 @@ const metrics = reactive({
 const transactions = ref([])
 const submitting = ref(false)
 
-const columns = computed(() => {
-  if (!selectedDate.value) {
-    return [
-      { name: 'sale_date', label: 'Date', field: 'sale_date', align: 'left', sortable: true },
-      { name: 'total_items', label: 'Products Sold', field: 'total_items', align: 'left', sortable: true },
-      { name: 'daily_revenue', label: 'Revenue (₱)', field: 'daily_revenue', align: 'left', sortable: true }
-    ]
-  }
-  return [
-    { name: 'order_id', label: 'Order ID', field: 'order_id', align: 'left', sortable: true },
-    { name: 'product', label: 'Product', field: 'product', align: 'left' },
-    { name: 'quantity', label: 'Items', field: 'quantity', align: 'left', sortable: true },
-    { name: 'total', label: 'Total (₱)', field: 'total', align: 'left', sortable: true },
-    { name: 'status', label: 'Status', field: 'status', align: 'left' }
-  ]
+const pageCount = computed(() => Math.max(1, Math.ceil(transactions.value.length / pageSize.value)))
+const pagedRows = computed(() => transactions.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value))
+const rangeStart = computed(() => (page.value - 1) * pageSize.value + 1)
+const rangeEnd = computed(() => Math.min(page.value * pageSize.value, transactions.value.length))
+
+watch(pageSize, () => { page.value = 1 })
+
+const formatNumber = num => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+// A day's rows are order items, so orders are counted once each; All time counts the days.
+const recordCount = computed(() => (shownDate.value ? new Set(transactions.value.map(row => row.order_id)).size : transactions.value.length))
+
+const itemsSold = computed(() => transactions.value.reduce((sum, row) => sum + Number((shownDate.value ? row.quantity : row.total_items) || 0), 0))
+
+// The hero's bars: each record's total on one day, or the last 14 days' revenue for All time, scaled to the largest.
+const heroBars = computed(() => {
+  const rows = shownDate.value
+    ? [...transactions.value].sort((a, b) => Number(a.order_id) - Number(b.order_id)).slice(-16)
+    : [...transactions.value].sort((a, b) => new Date(a.sale_date) - new Date(b.sale_date)).slice(-14)
+  const values = rows.map(row => Number((shownDate.value ? row.total : row.daily_revenue) || 0))
+  const max = Math.max(0, ...values)
+  if (!max) return []
+  return rows.map((row, i) => ({
+    key: `${row.order_id || row.sale_date}-${i}`,
+    height: Math.max(6, Math.round((values[i] / max) * 100)),
+    title: `${shownDate.value ? `Order #${row.order_id}` : row.sale_date}: ₱${formatNumber(values[i])}`
+  }))
 })
-
-const getStatusColor = (status) => {
-  const normalizedStatus = String(status).toLowerCase().replace(/\s+/g, '_')
-  
-  switch (normalizedStatus) {
-    case 'placed': return 'blue-6'
-    case 'preparing': return 'purple-5'
-    case 'ready_for_pickup': return 'orange-6'
-    case 'picked_up': return 'green-6'
-    case 'cancelled': return 'red-6'
-    case 'pending': return 'orange-8'
-    default: return 'grey-6'
-  }
-}
-
-const formatStatus = (status) => {
-  if (!status) return ''
-  return String(status).split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-}
-
-const formatNumber = (num) => {
-  return Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
 
 const manualForm = reactive({
   product: null,
@@ -530,307 +423,652 @@ const manualForm = reactive({
   unitPrice: 0
 })
 
-const estimatedTotal = computed(() => {
-  return (manualForm.quantity || 0) * (manualForm.unitPrice || 0)
+const estimatedTotal = computed(() => (manualForm.quantity || 0) * (manualForm.unitPrice || 0))
+
+// Limits that keep a sale realistic: no more than the chosen product has in stock, and a price up to one million.
+const MAX_PRICE = 1000000
+const maxQuantity = computed(() => {
+  const product = manualForm.product
+  const stock = Number(product?.available_quantity ?? product?.stock_quantity)
+  return product && Number.isFinite(stock) ? stock : 9999
+})
+
+const quantityRules = [
+  val => (Number.isInteger(Number(val)) && Number(val) > 0) || 'Enter a whole number above 0.',
+  val => Number(val) <= maxQuantity.value || `Only ${maxQuantity.value} in stock.`
+]
+
+const priceRules = [
+  val => (val !== '' && val !== null && Number(val) >= 0) || 'Enter a valid price.',
+  val => Number(val) <= MAX_PRICE || 'Enter a price up to ₱1,000,000.'
+]
+
+// The total only shows once both fields pass their checks, so an out-of-range entry never prints a meaningless figure.
+const estimateText = computed(() => {
+  const valid = [...quantityRules.map(rule => rule(manualForm.quantity)), ...priceRules.map(rule => rule(manualForm.unitPrice))].every(result => result === true)
+  return valid ? `₱${formatNumber(estimatedTotal.value)}` : '—'
 })
 
 const inventoryData = ref([])
 const inventoryOptions = ref([])
 
 const filterInventory = (val, update) => {
-  if (val === '') {
-    update(() => {
-      inventoryOptions.value = inventoryData.value
-    })
-    return
-  }
   update(() => {
     const needle = val.toLowerCase()
-    inventoryOptions.value = inventoryData.value.filter(v => v.product_name.toLowerCase().indexOf(needle) > -1)
+    inventoryOptions.value = needle ? inventoryData.value.filter(v => v.product_name.toLowerCase().includes(needle)) : inventoryData.value
   })
 }
 
-const onProductSelected = (val) => {
-  if (val) {
-    manualForm.unitPrice = val.price || 0
-  } else {
+const onProductSelected = val => {
+  manualForm.unitPrice = val ? val.price || 0 : 0
+}
+
+// The form's own rules run first, then the sale is confirmed before it is saved.
+const askToRecord = () => {
+  confirmOpen.value = true
+}
+
+const recordSale = async () => {
+  submitting.value = true
+  try {
+    await api.post('/vendor/sales/manual', {
+      inventory_id: manualForm.product.inventory_id,
+      quantity: manualForm.quantity,
+      unit_price: manualForm.unitPrice,
+      total_amount: estimatedTotal.value,
+      sale_date: selectedDate.value ? selectedDate.value.replace(/\//g, '-') : date.formatDate(Date.now(), 'YYYY-MM-DD')
+    })
+    $q.notify({ type: 'positive', message: 'Sale recorded.', position: 'top-right' })
+    confirmOpen.value = false
+    showMobileManualModal.value = false
+    manualForm.product = null
+    manualForm.quantity = 1
     manualForm.unitPrice = 0
+    // Clearing the form shouldn't flag the empty product field as an error.
+    nextTick(() => {
+      asideForm.value?.resetValidation()
+      sheetForm.value?.resetValidation()
+    })
+    await fetchSalesData()
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to record the sale.', position: 'top-right' })
+  } finally {
+    submitting.value = false
   }
 }
 
-const confirmManualSale = () => {
-  $q.dialog({
-    title: 'Confirm Manual Sale',
-    message: 'Are you sure you want to record this manual sale? This will affect your revenue and inventory counts.',
-    class: 'premium-glass-card',
-    cancel: { flat: true, color: 'grey-7', noCaps: true },
-    ok: { unelevated: true, color: 'red-8', label: 'Record Sale', noCaps: true },
-    persistent: true
-  }).onOk(async () => {
-    try {
-      submitting.value = true
-      const payload = {
-        inventory_id: manualForm.product.inventory_id,
-        quantity: manualForm.quantity,
-        unit_price: manualForm.unitPrice,
-        total_amount: estimatedTotal.value,
-        sale_date: selectedDate.value ? selectedDate.value.replace(/\//g, '-') : date.formatDate(Date.now(), 'YYYY-MM-DD')
-      }
-      await api.post('/vendor/sales/manual', payload)
-      $q.notify({ type: 'positive', message: 'Manual sale recorded successfully.', position: 'top-right' })
-      manualForm.product = null
-      manualForm.quantity = 1
-      manualForm.unitPrice = 0
-      showMobileManualModal.value = false
-      
-      await fetchSalesData()
-    } catch (error) {
-      $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to record manual sale.', position: 'top-right' })
-    } finally {
-      submitting.value = false
-    }
-  })
-}
+let lastRequest = 0
 
 const fetchSalesData = async () => {
+  const requestId = ++lastRequest
+  const requestedDate = selectedDate.value
+  loading.value = true
   try {
-    const requestParams = selectedDate.value 
-      ? { start_date: selectedDate.value.replace(/\//g, '-'), end_date: selectedDate.value.replace(/\//g, '-') } 
-      : {};
+    const day = requestedDate ? requestedDate.replace(/\//g, '-') : null
+    const requestParams = day ? { start_date: day, end_date: day } : {}
 
     const [metricsRes, transRes, invRes] = await Promise.all([
       api.get('/vendor/sales/metrics', { params: requestParams }),
       api.get('/vendor/sales/transactions', { params: requestParams }),
       api.get('/vendor/products')
     ])
-    
+
+    // A slower answer for a date that is no longer chosen is dropped.
+    if (requestId !== lastRequest) return
+
     if (metricsRes.data) {
       metrics.revenue = metricsRes.data.revenue || 0
-      metrics.growthRate = metricsRes.data.growth_rate || null 
+      metrics.growthRate = metricsRes.data.growth_rate || null
       metrics.avgOrderValue = metricsRes.data.avg_order_value || 0
       metrics.cancellationRate = metricsRes.data.cancellation_rate || 0
       metrics.bestSellingCategory = metricsRes.data.best_selling_category || null
     }
-    
+
     transactions.value = transRes.data || []
     inventoryData.value = invRes.data || []
+    shownDate.value = requestedDate
+    page.value = 1
   } catch (error) {
     console.error('Failed to load sales data', error)
+  } finally {
+    if (requestId === lastRequest) loading.value = false
   }
 }
 
-onMounted(() => {
-  fetchSalesData()
-})
+watch(selectedDate, fetchSalesData)
+
+onMounted(fetchSalesData)
 </script>
 
 <style scoped>
-/* Core Page Styling */
-.vendor-page {
-  padding: 32px 24px;
-  background-color: #f8fafc;
-  min-height: 100vh;
-}
-.page-container {
-  max-width: 1300px;
-  margin: 0 auto;
+.sr-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  align-items: start;
+
+  gap: var(--sp-gap);
 }
 
-/* Subtle Ambient Glows */
-.bg-glow {
+.sr-main {
+  display: flex;
+  flex-direction: column;
+
+  gap: 16px;
+  min-width: 0;
+}
+
+.sr-stats {
+  margin-bottom: 0;
+}
+
+.sr-hero {
+  position: relative;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 24px;
+  padding: 22px 24px 24px;
+  overflow: hidden;
+
+  border-radius: var(--r-surface);
+
+  background:
+    radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px) 0 0 / 16px 16px,
+    linear-gradient(145deg, var(--c-brand) 0%, var(--c-brand-deep) 60%, var(--c-brand-active) 100%);
+  color: #ffffff;
+
+  box-shadow: var(--sh-header);
+}
+
+.sr-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+
+  gap: 8px;
+}
+
+.sr-eyebrow {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 6px;
+  padding: 5px 12px;
+
+  border-radius: var(--r-pill);
+
+  background: rgba(255, 255, 255, 0.14);
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.sr-growth {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 4px;
+  padding: 5px 10px;
+
+  border-radius: var(--r-pill);
+
+  background: #ffffff;
+
+  font-size: var(--fs-xs);
+  font-weight: 700;
+
+  color: var(--c-success);
+}
+
+.sr-hero-value {
+  margin-top: 16px;
+
+  font-family: 'Poppins', 'Roboto', Arial, sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.sr-hero-main {
+  position: relative;
+  z-index: 1;
+
+  flex: 1;
+  min-width: 0;
+}
+
+/* Quick facts under the total, as soft white pills. */
+.sr-hero-facts {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.sr-fact {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 6px;
+  padding: 5px 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--r-pill);
+
+  background: rgba(255, 255, 255, 0.12);
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* A small gold bar chart of the records behind the total. */
+.sr-hero-chart {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+
+  width: 280px;
+  max-width: 42%;
+}
+
+.sr-bars {
+  display: flex;
+  align-items: flex-end;
+
+  gap: 4px;
+  height: 104px;
+  padding: 10px 10px 0;
+
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--r-control);
+
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.sr-bar {
+  flex: 1;
+
+  min-width: 4px;
+
+  border-radius: 3px 3px 0 0;
+
+  background: linear-gradient(180deg, #fde68a 0%, #f59e0b 100%);
+
+  opacity: 0.92;
+
+  transition: opacity 0.15s;
+}
+
+.sr-bar:hover {
+  opacity: 1;
+}
+
+.sr-bars-label {
+  margin-top: 6px;
+
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  text-align: right;
+
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.sr-hero-art {
   position: absolute;
-  width: 500px;
-  height: 500px;
-  border-radius: 50%;
-  filter: blur(140px);
-  z-index: 0;
-  opacity: 0.15; 
+  right: 28px;
+  bottom: -14px;
+
+  font-size: 150px;
+
+  color: rgba(255, 255, 255, 0.1);
+
   pointer-events: none;
 }
-.bg-glow-primary {
-  top: -50px;
-  left: -50px;
-  background: radial-gradient(circle, rgba(185, 28, 28, 0.4) 0%, transparent 70%); 
-}
-.bg-glow-secondary {
-  bottom: 100px;
-  right: -50px;
-  background: radial-gradient(circle, rgba(185, 28, 28, 0.3) 0%, transparent 70%); 
-}
 
-/* Typography Utilities */
-.text-brand-red { color: #b91c1c !important; }
-.bg-brand-red { background-color: #b91c1c !important; }
-.bg-white-20 { background-color: rgba(255,255,255,0.15) !important; }
-.hover-bg-white-20:hover { background-color: rgba(255,255,255,0.25) !important; }
-.transition-ease { transition: all 0.2s ease; }
-.tracking-tight { letter-spacing: -0.02em; }
-.leading-tight { line-height: 1.2; }
-.opacity-80 { opacity: 0.8; }
-.h-full { height: 100%; }
-.shrink-none { flex-shrink: 0; }
-.border-none { border: none !important; }
-.border-radius-6 { border-radius: 6px; }
-.bg-slate-50 { background-color: #f8fafc; }
-
-/* Header Glass Icon Box */
-.glass-icon-box {
-  width: 48px;
-  height: 48px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 12px;
+.sr-card-head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.08);
+  justify-content: space-between;
+
+  gap: 12px;
+  padding: 16px 20px;
+
+  border-bottom: 1px solid var(--c-hairline);
 }
 
-/* Clean Glassmorphism Cards */
-.premium-glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+.sr-card-title {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+
+  color: var(--c-text);
 }
 
-/* Calendar Popover Styling */
-.calendar-popover-card {
+.sr-card-sub {
+  margin-top: 2px;
+
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
+}
+
+.sr-count {
+  padding: 2px 10px;
+
+  border-radius: var(--r-pill);
+
+  background: var(--c-surface);
+
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+
+  color: var(--c-text-3);
+}
+
+.sr-count-sk {
+  border-radius: var(--r-pill);
+}
+
+/* The placeholder rows are as tall as the records table's, so nothing jumps when the real rows arrive. */
+.sr-skeleton :deep(.sk-table td) {
+  padding-block: 14px;
+}
+
+.sr-product {
+  overflow: hidden;
+
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  color: var(--c-text);
+}
+
+.sr-table {
+  min-width: 560px;
+}
+
+/* Larger type than the other tables, since this is where the money gets read. */
+.sr-table {
+  font-size: var(--fs-md);
+}
+
+.sr-table th {
+  font-size: var(--fs-xs);
+}
+
+.sr-table td {
+  padding-block: 14px;
+}
+
+.sr-table .vp-amount {
+  font-size: var(--fs-lg);
+}
+
+.sr-table .vp-id,
+.sr-table .vp-status {
+  font-size: var(--fs-sm);
+}
+
+.sr-list-item .vp-name {
+  font-size: var(--fs-md);
+}
+
+.sr-list-item .vp-list-meta {
+  font-size: var(--fs-sm);
+}
+
+.sr-list-item .vp-amount {
+  font-size: var(--fs-lg);
+}
+
+.sr-pager-right {
+  display: flex;
+  align-items: center;
+
+  margin-left: auto;
+}
+
+.sr-page-size {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
+}
+
+.sr-page-select {
+  width: 76px;
+}
+
+.sr-table .col-order { width: 14%; }
+.sr-table .col-items { width: 11%; }
+.sr-table .col-total { width: 16%; }
+.sr-table .col-status { width: 20%; }
+.sr-table .col-sold { width: 30%; }
+.sr-table .col-revenue { width: 30%; }
+
+.sr-list-item {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+  padding: 12px 8px;
+
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.sr-list-item:last-child {
+  border-bottom: none;
+}
+
+.sr-entry {
+  position: sticky;
+  top: 24px;
+
+  overflow: hidden;
+}
+
+.sr-entry-head {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+  padding: 18px 20px;
+
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.sr-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 6px;
+  padding: 36px 20px;
+
+  text-align: center;
+}
+
+.sr-form {
+  display: flex;
+  flex-direction: column;
+
+  gap: 14px;
+  padding: 18px 20px 20px;
+}
+
+.sr-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  gap: 12px;
+}
+
+.sr-req {
+  color: var(--c-brand);
+}
+
+.sr-no-option {
+  font-style: italic;
+
+  color: var(--c-muted);
+}
+
+.sr-estimate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+  padding: 12px 14px;
+
+  border-radius: var(--r-control);
+
+  background: var(--c-brand-tint);
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  color: var(--c-text-2);
+}
+
+.sr-estimate strong {
+  font-size: var(--fs-xl);
+
+  color: var(--c-brand);
+}
+
+/* A long total wraps inside the box instead of running past its edge. */
+.sr-estimate {
+  flex-wrap: wrap;
+}
+
+.sr-estimate span {
+  white-space: nowrap;
+}
+
+.sr-estimate strong {
+  flex: 1 1 auto;
+
+  min-width: 0;
+
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.sr-submit {
+  width: 100%;
+  height: 44px;
+}
+
+.sr-calendar {
+  width: 300px;
+  max-width: calc(100vw - 32px);
+
   background: #ffffff;
-  border-radius: 14px;
-  border: 1px solid #e2e8f0;
 }
-.calendar-popover-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-.custom-flat-date {
+
+.sr-date {
   width: 100%;
 }
-.custom-flat-date :deep(.q-date__header) {
-  display: none;
-}
-.border-top-solid {
-  border-top: 1px solid #e2e8f0;
-}
 
-/* Gradients */
-.bg-gradient-red {
-  background: linear-gradient(135deg, #B91C1C 0%, #7F1D1D 100%);
-  border: none;
-  box-shadow: 0 15px 35px rgba(185, 28, 28, 0.2);
-}
-.bg-gradient-dark {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border: 1px solid #334155;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-}
-
-/* Panel Header */
-.panel-header {
-  background: linear-gradient(90deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 100%);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-}
-.header-accent-red {
-  width: 4px;
-  height: 24px;
-  background: #B91C1C;
-  border-radius: 4px;
-  box-shadow: 2px 0 8px rgba(185, 28, 28, 0.3);
-}
-
-/* ML Card Specifics */
-.glow-amber {
-  position: absolute;
-  top: -20px;
-  right: -20px;
-  width: 100px;
-  height: 100px;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.2) 0%, transparent 70%);
-  border-radius: 50%;
-  filter: blur(20px);
-}
-
-/* Compact Icon Box for Manual Entry */
-.icon-compact-box {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+.sr-calendar-foot {
   display: flex;
-  align-items: center;
-  justify-content: center;
+
+  gap: 6px;
+  padding: 8px 10px;
+
+  border-top: 1px solid var(--c-hairline);
+
+  background: var(--c-surface-2);
 }
 
-/* Mobile Manual Modal Inputs */
-.manual-modal-input :deep(.q-field__control) {
-  border-radius: 6px;
-  border: 1px solid #cbd5e1;
-}
-.manual-modal-input :deep(.q-field__control:before) {
-  border: none;
-}
-.manual-modal-input-grey :deep(.q-field__control) {
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  background-color: #f8fafc !important;
-}
-.manual-modal-input-grey :deep(.q-field__control:before) {
-  border: none;
+.sr-quick {
+  padding: 4px 12px;
+
+  border-radius: var(--r-pill);
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  color: var(--c-text-3);
 }
 
-/* Buttons */
-.btn-glass-outline {
-  border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.8) !important;
-  border: 1px solid rgba(203, 213, 225, 0.8);
-  transition: all 0.2s ease;
-}
-.btn-glass-outline:hover {
-  background: #ffffff !important;
-  border-color: #e2e8f0;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-  transform: translateY(-1px);
-}
-.btn-premium {
-  border-radius: 8px !important;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.25);
-  transition: all 0.2s ease;
-}
-.btn-premium:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(185, 28, 28, 0.35);
+.sr-quick--on {
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
 }
 
-/* Utilities */
-.border-grey-light { border: 1px solid rgba(226, 232, 240, 0.8); }
-.border-slate-light { border: 1px solid #e2e8f0; }
-.shadow-soft { box-shadow: 0 2px 8px rgba(15,23,42,0.06); }
+/* Record a Sale below desktop: a centred card, rounded all round like the page's other dialogs. */
+.sr-dialog {
+  width: 440px;
+  max-width: calc(100vw - 32px);
 
-/* Custom Premium Table Styling */
-:deep(.custom-premium-table thead tr th) {
-  background: rgba(248, 250, 252, 0.7);
-  backdrop-filter: blur(8px);
-  font-weight: 700;
-  color: #64748B; 
-  text-transform: uppercase; 
-  font-size: 10px;
-  letter-spacing: 0.05em; 
-  padding: 8px 16px; 
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8); 
-}
-:deep(.custom-premium-table tbody td) {
-  padding: 8px 16px; 
-  border-bottom: 1px solid rgba(226, 232, 240, 0.5); 
+  border-radius: var(--r-surface) !important;
+
+  box-shadow: var(--sh-pop);
 }
 
-/* Empty State Styling */
-.drop-shadow-icon { filter: drop-shadow(0 4px 6px rgba(15, 23, 42, 0.05)); opacity: 0.5; }
+/* Leaves room for the close button in the corner. */
+.sr-dialog-head {
+  padding-right: 52px;
+}
 
-/* Mobile specific styling */
-@media (max-width: 767px) {
-  .vendor-page.mobile-page-padding { padding: 16px 16px 32px 16px !important; }
-  .desktop-only { display: none !important; }
+/* Below desktop the records take the full width and the entry form moves to a dialog. */
+@media (max-width: 1439px) {
+  .sr-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .sr-hero {
+    padding: 18px 18px 22px;
+  }
+
+  .sr-hero-value {
+    font-size: 32px;
+  }
+
+  .sr-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sr-hero-chart {
+    width: 100%;
+    max-width: none;
+  }
+
+  .sr-bars {
+    height: 80px;
+  }
+
+  .sr-hero-art {
+    display: none;
+  }
+
+  .sr-card-head {
+    padding: 14px 16px;
+  }
+
+  .vp-header-actions {
+    width: 100%;
+  }
+
+  .vp-header-actions .q-btn {
+    flex: 1;
+  }
 }
 </style>

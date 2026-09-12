@@ -138,6 +138,10 @@ const routes = [
         component: () => import('@/pages/Vendor/VendorDashboard.vue'),
       },
       {
+        path: 'notifications',
+        component: () => import('@/pages/Vendor/VendorNotifications.vue'),
+      },
+      {
         path: 'products/list',
         component: () => import('@/pages/Vendor/Products/ProductList.vue'),
       },

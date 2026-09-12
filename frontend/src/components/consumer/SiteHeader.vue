@@ -214,7 +214,7 @@
                 <div class="cart-menu-inner notifications-inner">
                   <div class="cart-menu-title notifications-title">
                     Notifications
-                    <q-btn v-if="unreadNotificationCount" flat dense no-caps label="Mark all read" color="primary" size="sm" @click="markAllAsRead" />
+                    <q-btn v-if="unreadNotificationCount" flat dense no-caps label="Mark all as read" color="primary" size="sm" @click="markAllAsRead" />
                   </div>
 
                   <div v-if="!notifications.length" class="cart-menu-empty">No notifications yet.</div>
@@ -1058,29 +1058,23 @@ const goToTab = (tab) => {
 .notification-item {
   align-items: flex-start;
 
-  /* Bled out and re-inset so an unread row's tint reads as a band with room either side of the text. */
-  margin: 0 -8px;
-  padding: 10px 8px;
-
-  border-radius: var(--r-sm);
+  /* Runs edge to edge across the panel with square corners, so an unread row's tint is a clean full-width band. */
+  margin: 0 -14px;
+  padding: 10px 14px;
 
   cursor: pointer;
 }
 
+/* A clearer divider than the panel's hairlines, so each notification reads as its own row, tinted or not. */
 .notification-item + .notification-item {
-  border-top: 1px solid var(--c-hairline);
+  border-top: 1px solid var(--c-border);
 }
 
 .notification-item--unread {
   background: var(--c-brand-tint);
 }
 
-/* The hairline under a tinted row is hidden, since the tint already separates it and the line would cut its rounded corner. */
-.notification-item--unread + .notification-item {
-  border-top-color: transparent;
-}
-
-/* Title/"Mark all read" row stays outside .notifications-scroll below, so it never scrolls out of view. */
+/* Title/"Mark all as read" row stays outside .notifications-scroll below, so it never scrolls out of view. */
 .notifications-title {
   display: flex;
   align-items: center;

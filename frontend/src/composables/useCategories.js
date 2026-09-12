@@ -13,6 +13,9 @@ const CATEGORY_STYLES = {
 
 const DEFAULT_STYLE = { icon: 'category', tone: 'brand' }
 
+// A category's icon and tone, shared with the vendor Categories page so both sides show a category the same way.
+export const categoryStyle = name => CATEGORY_STYLES[name] || DEFAULT_STYLE
+
 // Shared like useProducts, so the header and the page no longer fetch the same categories twice.
 const categories = ref([])
 const loading = ref(false)
@@ -26,8 +29,8 @@ const load = async () => {
     const mapped = (data || []).map((category) => ({
       id: category.category_id,
       label: category.category_name,
-      icon: (CATEGORY_STYLES[category.category_name] || DEFAULT_STYLE).icon,
-      tone: (CATEGORY_STYLES[category.category_name] || DEFAULT_STYLE).tone
+      icon: categoryStyle(category.category_name).icon,
+      tone: categoryStyle(category.category_name).tone
     }))
 
     // Others is a catch-all, so it always sorts last instead of alphabetically.

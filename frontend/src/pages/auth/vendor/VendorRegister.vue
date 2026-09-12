@@ -2207,17 +2207,13 @@ function handleLocationSelected(location) {
   margin-left: 0;
 }
 
+/* The red outline of the profile's Edit pill, with Quasar drawing the border in the text colour. */
 .crop-cancel {
-  color: var(--c-text-2);
-}
-
-/* Quasar draws the outline on ::before in the text colour, so the softer border has to be set there. */
-.crop-cancel::before {
-  border-color: var(--c-border-strong);
+  color: var(--c-brand);
 }
 
 .crop-cancel:hover {
-  background: var(--c-surface);
+  background: var(--c-brand-tint);
 }
 
 .crop-apply {

@@ -110,17 +110,13 @@ const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } = useDialogPluginC
   box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
 }
 
+/* The red outline of the profile's Edit pill, with Quasar drawing the border in the text colour. */
 .logout-cancel {
-  color: var(--c-text-2);
-}
-
-/* Quasar draws the outline on ::before in the text colour, so the softer border has to be set there. */
-.logout-cancel::before {
-  border-color: var(--c-border-strong);
+  color: var(--c-brand);
 }
 
 .logout-cancel:hover {
-  background: var(--c-surface);
+  background: var(--c-brand-tint);
 }
 
 /* The vendor and admin dark theme darkens every dialog, so the text lightens with it. */

@@ -1,418 +1,235 @@
 <template>
-  <q-page class="vendor-page relative-position" :class="{ 'mobile-page-padding': $q.screen.lt.md }">
-    <!-- Subtle Ambient Background Glows -->
-    <div class="bg-glow bg-glow-primary desktop-only"></div>
-    <div class="bg-glow bg-glow-secondary desktop-only"></div>
+  <q-page class="vp-page">
+    <div class="vp-container">
 
-    <div class="page-container relative-position" style="z-index: 1;">
-      
-      <!-- ================= HEADER AREA ================= -->
-      <div 
-        v-if="!selectedOrder || !$q.screen.lt.md" 
-        class="page-header q-mb-lg q-mt-sm row items-center justify-between"
-      >
-        <div class="row items-center no-wrap">
-          <div class="glass-icon-box q-mr-md" :style="$q.screen.lt.md ? 'width: 44px; height: 44px;' : 'width: 48px; height: 48px;'">
-            <q-icon name="people" :size="$q.screen.lt.md ? '22px' : '26px'" class="text-brand-red" />
-          </div>
-          <div>
-            <h1 :class="$q.screen.lt.md ? 'text-h5' : 'text-h4'" class="text-weight-bolder text-slate-800 q-ma-none tracking-tight leading-tight">
-              Customer Orders
-            </h1>
-            <p :class="$q.screen.lt.md ? 'text-caption' : 'text-body1'" class="text-slate-500 q-mt-xs q-mb-none font-medium">
-              View order history, filter statuses, and export reports per customer.
-            </p>
-          </div>
+      <div v-if="!selectedOrder" class="vp-header">
+        <div>
+          <h1 class="vp-title">Customer Orders</h1>
+          <p class="vp-subtitle">See each customer's order history and export it as a report.</p>
         </div>
       </div>
 
-      <!-- Main Columns Grid -->
-      <div class="row q-col-gutter-lg q-col-gutter-md-xl" :class="{ 'h-full-container': !$q.screen.lt.md }">
-        
-        <!-- ================= LEFT COLUMN: CUSTOMERS DIRECTORY ================= -->
-        <div class="col-12 col-md-4" v-if="!selectedOrder || !$q.screen.lt.md">
-          <q-card class="premium-glass-card h-full flex column">
-            <!-- Directory Header & Search -->
-            <q-card-section class="q-pa-md border-bottom-light">
-              <div class="row items-center justify-between no-wrap q-mb-sm text-left">
-                <div class="row items-center no-wrap">
-                  <span class="header-accent-red q-mr-sm"></span>
-                  <span class="text-weight-bold text-slate-800 text-subtitle1">Customer Directory</span>
-                </div>
-                <div class="text-caption text-slate-500 font-medium">
-                  {{ customersLoading ? 'Loading...' : `${filteredCustomers.length} Customer(s)` }}
-                </div>
-              </div>
+      <!-- An open order takes the full width, so its cards have room for two columns. -->
+      <div class="co-grid" :class="{ 'co-grid--full': selectedOrder }">
 
-              <q-input 
-                v-model="customerSearch" 
-                outlined 
-                dense 
-                class="custom-glass-input q-mt-sm" 
-                placeholder="Search customer by name..." 
-                hide-bottom-space
-              >
-                <template v-slot:prepend>
-                  <q-icon name="search" size="18px" color="blue-grey-4" />
-                </template>
-                <template v-if="customerSearch" v-slot:append>
-                  <q-icon name="close" size="16px" class="cursor-pointer text-slate-400" @click="customerSearch = ''" />
-                </template>
-              </q-input>
-            </q-card-section>
-            
-            <!-- Customers Scrollable List (Natural Left Alignment on Mobile) -->
-            <q-card-section class="q-pa-none scroll flex-1 text-left" :style="$q.screen.lt.md ? 'max-height: 280px;' : 'max-height: calc(100vh - 300px);'">
-              
-              <!-- Customer Skeletons -->
-              <div v-if="customersLoading" class="q-pa-xs">
-                <div v-for="n in 5" :key="'cust-skel-' + n" class="row items-center no-wrap q-pa-sm q-my-xs text-left">
-                  <q-skeleton type="QAvatar" size="38px" class="q-mr-sm flex-shrink-0" />
-                  <div class="col">
-                    <q-skeleton type="text" width="65%" height="18px" />
-                    <q-skeleton type="text" width="45%" height="14px" class="q-mt-xs" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Empty State -->
-              <div v-else-if="filteredCustomers.length === 0" class="full-width column flex-center q-pa-xl text-center">
-                <div class="empty-icon-box q-mb-sm">
-                  <q-icon name="group_off" size="32px" color="blue-grey-4" />
-                </div>
-                <div class="text-weight-bold text-slate-700">No customers found</div>
-                <div class="text-caption text-slate-400 q-mt-xs">Try searching with a different keyword.</div>
-              </div>
-
-              <!-- Loaded Customer List -->
-              <q-list v-else class="q-pa-xs text-left">
-                <q-item
-                  v-for="customer in filteredCustomers"
-                  :key="customer.user_id"
-                  clickable
-                  v-ripple
-                  :active="selectedCustomer?.user_id === customer.user_id"
-                  active-class="active-customer-item"
-                  @click="selectCustomer(customer)"
-                  class="customer-item q-my-xs rounded-borders text-left"
-                >
-                  <q-item-section avatar class="min-w-0 q-pr-sm">
-                    <q-avatar size="38px" class="shadow-soft" style="border: 1.5px solid rgba(226, 232, 240, 0.8);">
-                      <img :src="customer.profile_picture_url || 'https://cdn.quasar.dev/img/avatar.png'">
-                    </q-avatar>
-                  </q-item-section>
-                  
-                  <q-item-section class="text-left">
-                    <q-item-label class="text-weight-bold" :class="selectedCustomer?.user_id === customer.user_id ? 'text-brand-red' : 'text-slate-800'">
-                      {{ customer.full_name }}
-                    </q-item-label>
-                    <q-item-label caption class="text-slate-500 row items-center q-mt-xs font-medium">
-                      <q-icon name="call" size="13px" class="q-mr-xs text-slate-400" />
-                      {{ customer.phone_number || 'No phone number' }}
-                    </q-item-label>
-                  </q-item-section>
-
-                  <q-item-section side>
-                    <q-icon 
-                      name="chevron_right" 
-                      size="18px" 
-                      :color="selectedCustomer?.user_id === customer.user_id ? 'red-9' : 'grey-4'" 
-                      class="transition-ease"
-                    />
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <!-- ================= RIGHT COLUMN: CUSTOMER ORDERS ================= -->
-        <div class="col-12 col-md-8">
-          
-          <!-- MOBILE VIEW (When Order is Selected) -->
-          <div v-if="selectedOrder && $q.screen.lt.md" class="mobile-details-wrapper full-width">
-            <OrderDetails 
-              :orderId="selectedOrder.order_id" 
-              isEmbedded 
-              @back="selectedOrder = null" 
-            />
+        <!-- CUSTOMER DIRECTORY -->
+        <aside v-if="!selectedOrder" class="vp-card co-directory">
+          <div class="co-directory-head">
+            <div class="co-card-title">
+              Customers
+              <span class="co-count">{{ customersLoading ? '…' : filteredCustomers.length }}</span>
+            </div>
+            <q-input
+              v-model="customerSearch"
+              outlined
+              dense
+              clearable
+              clear-icon="o_close"
+              hide-bottom-space
+              placeholder="Search customer name"
+              class="vp-search co-directory-search"
+            >
+              <template #prepend>
+                <q-icon name="o_search" size="18px" />
+              </template>
+            </q-input>
           </div>
 
-          <!-- DESKTOP VIEW OR ORDERS LIST MODE -->
-          <q-card v-else class="premium-glass-card h-full flex column">
-            
-            <!-- Panel Header -->
-            <q-card-section v-if="!selectedOrder" class="q-pa-md border-bottom-light">
-              <div 
-                class="row items-center justify-between no-wrap q-mb-sm"
-                :class="{ 'mobile-selected-center': selectedCustomer && $q.screen.lt.md }"
-              >
-                <div class="row items-center no-wrap col min-w-0" :class="{ 'justify-center': selectedCustomer && $q.screen.lt.md }">
-                  <span class="header-accent-red q-mr-sm"></span>
-                  <span class="text-weight-bold text-slate-800 text-subtitle1 ellipsis">
-                    {{ selectedCustomer ? `${selectedCustomer.full_name}'s Orders` : 'Order History' }}
-                  </span>
-                </div>
-                
-                <!-- Desktop Export Button -->
-                <div v-if="!$q.screen.lt.md" class="row items-center q-gutter-x-sm">
-                  <q-btn
-                    flat
-                    no-caps
-                    dense
-                    icon="download"
-                    label="Export Report"
-                    class="export-report-btn q-px-md q-py-xs"
-                    :disable="!selectedCustomer || filteredCustomerOrders.length === 0 || ordersLoading"
-                    :loading="isExporting"
-                    @click="exportCustomerOrdersPDF"
-                  />
+          <div class="co-directory-list">
+            <div v-if="customersLoading" class="co-directory-skeletons">
+              <div v-for="n in 5" :key="n" class="co-skeleton-row">
+                <q-skeleton type="QAvatar" size="38px" />
+                <div class="co-skeleton-lines">
+                  <q-skeleton type="text" width="65%" />
+                  <q-skeleton type="text" width="40%" />
                 </div>
               </div>
+            </div>
 
-              <!-- Filter & Search Toolbar (Desktop: 2 cols | Mobile: ONE LINE Search + Filter + Export) -->
-              <div v-if="selectedCustomer" class="q-pt-xs">
-                <!-- Desktop Layout -->
-                <div v-if="!$q.screen.lt.md" class="row items-center q-col-gutter-sm">
-                  <div class="col-12 col-sm-7">
-                    <q-input 
-                      v-model="orderSearch" 
-                      outlined 
-                      dense 
-                      class="custom-glass-input" 
-                      placeholder="Search by Order ID..." 
-                      hide-bottom-space
-                    >
-                      <template v-slot:prepend>
-                        <q-icon name="search" size="18px" color="blue-grey-4" />
-                      </template>
-                      <template v-if="orderSearch" v-slot:append>
-                        <q-icon name="close" size="16px" class="cursor-pointer text-slate-400" @click="orderSearch = ''" />
-                      </template>
-                    </q-input>
-                  </div>
+            <div v-else-if="!filteredCustomers.length" class="vp-empty co-empty-small">
+              <div class="vp-empty-icon"><q-icon name="o_group_off" size="24px" /></div>
+              <div class="vp-empty-title">No customers found</div>
+              <div class="vp-empty-text">{{ customers.length ? 'Try another name.' : 'Customers appear here after their first order.' }}</div>
+            </div>
 
-                  <div class="col-12 col-sm-5">
-                    <q-select
-                      v-model="selectedStatusFilter"
-                      :options="statusFilterOptions"
-                      emit-value
-                      map-options
-                      outlined
-                      dense
-                      class="custom-glass-input"
-                      hide-bottom-space
-                    >
-                      <template v-slot:prepend>
-                        <q-icon name="filter_list" size="18px" color="blue-grey-4" />
-                      </template>
-                    </q-select>
+            <template v-else>
+              <button
+                v-for="customer in filteredCustomers"
+                :key="customer.user_id"
+                type="button"
+                class="co-customer"
+                :class="{ 'co-customer--active': selectedCustomer?.user_id === customer.user_id }"
+                :aria-pressed="selectedCustomer?.user_id === customer.user_id"
+                @click="selectCustomer(customer)"
+              >
+                <q-avatar size="38px" font-size="13px" class="vp-avatar co-avatar">
+                  <img v-if="customer.profile_picture_url" :src="customer.profile_picture_url" alt="" />
+                  <span v-else>{{ initials(customer.full_name) }}</span>
+                </q-avatar>
+                <span class="co-customer-body">
+                  <span class="vp-name">{{ customer.full_name }}</span>
+                  <span class="co-customer-phone">{{ customer.phone_number || 'No phone number' }}</span>
+                </span>
+                <q-icon name="o_chevron_right" size="18px" class="co-customer-arrow" />
+              </button>
+            </template>
+          </div>
+        </aside>
+
+        <!-- ORDERS OR THE CHOSEN ORDER -->
+        <section class="co-main">
+          <OrderDetails v-if="selectedOrder" :orderId="selectedOrder.order_id" isEmbedded @back="selectedOrder = null" @status-changed="onStatusChanged" />
+
+          <div v-else class="vp-card">
+            <div v-if="!selectedCustomer" class="vp-empty co-pick">
+              <div class="vp-empty-icon"><q-icon name="o_person_search" size="24px" /></div>
+              <div class="vp-empty-title">Choose a customer</div>
+              <div class="vp-empty-text">Pick someone from the list to see their orders.</div>
+            </div>
+
+            <template v-else>
+              <div class="co-orders-head">
+                <div class="co-person">
+                  <q-avatar size="44px" font-size="13px" class="vp-avatar co-avatar">
+                    <img v-if="selectedCustomer.profile_picture_url" :src="selectedCustomer.profile_picture_url" alt="" />
+                    <span v-else>{{ initials(selectedCustomer.full_name) }}</span>
+                  </q-avatar>
+                  <div class="co-person-text">
+                    <div class="co-card-title co-person-name">{{ selectedCustomer.full_name }}</div>
+                    <div class="co-person-meta">
+                      {{ ordersLoading ? 'Loading orders…' : `${customerOrders.length} order${customerOrders.length === 1 ? '' : 's'}` }}
+                    </div>
                   </div>
                 </div>
+                <q-btn
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="o_download"
+                  label="Export Report"
+                  class="vp-pill-btn"
+                  :disable="!filteredCustomerOrders.length || ordersLoading"
+                  :loading="isExporting"
+                  @click="exportCustomerOrdersPDF"
+                />
+              </div>
 
-                <!-- Mobile Layout: ONE LINE (Search + Filter Pill Button + Export) -->
-                <div v-else class="row items-center no-wrap q-gutter-x-xs full-width">
-                  <!-- Compact Search Input -->
-                  <q-input 
-                    v-model="orderSearch" 
-                    outlined 
-                    dense 
-                    class="custom-glass-input col" 
-                    placeholder="Search Order ID..." 
+              <div class="vp-toolbar">
+                <div class="vp-search-row">
+                  <q-input
+                    v-model="orderSearch"
+                    outlined
+                    dense
+                    clearable
+                    clear-icon="o_close"
                     hide-bottom-space
+                    placeholder="Search order ID"
+                    class="vp-search"
                   >
-                    <template v-slot:prepend>
-                      <q-icon name="search" size="16px" color="blue-grey-4" />
-                    </template>
-                    <template v-if="orderSearch" v-slot:append>
-                      <q-icon name="close" size="14px" class="cursor-pointer text-slate-400" @click="orderSearch = ''" />
+                    <template #prepend>
+                      <q-icon name="o_search" size="18px" />
                     </template>
                   </q-input>
+                  <OrderTableFilters v-model="filters" :result-count="filteredCustomerOrders.length" />
+                </div>
 
-                  <!-- Filter Menu Button shows 'Filter' instead of 'All' -->
-                  <q-btn 
-                    outline 
-                    dense 
-                    color="blue-grey-7" 
-                    class="btn-mobile-toolbar bg-white flex-shrink-0"
-                    no-caps
+                <div class="vp-chips" role="tablist" aria-label="Filter orders by status">
+                  <button
+                    v-for="filter in FILTERS"
+                    :key="filter.key"
+                    type="button"
+                    role="tab"
+                    class="vp-chip"
+                    :class="{ 'vp-chip--active': selectedStatusFilter === filter.key }"
+                    :aria-selected="selectedStatusFilter === filter.key"
+                    @click="selectedStatusFilter = filter.key"
                   >
-                    <q-icon name="filter_list" size="18px" />
-                    <span class="q-ml-xs text-caption text-weight-bold">{{ getShortStatusLabel(selectedStatusFilter) }}</span>
-                    <q-menu class="premium-dropdown-list shadow-4" auto-close anchor="bottom right" self="top right">
-                      <q-list style="min-width: 170px;">
-                        <q-item 
-                          v-for="opt in statusFilterOptions" 
-                          :key="opt.value" 
-                          clickable 
-                          @click="selectedStatusFilter = opt.value"
-                          :class="{ 'bg-red-50 text-brand-red text-weight-bold': selectedStatusFilter === opt.value }"
-                        >
-                          <q-item-section>{{ opt.label }}</q-item-section>
-                        </q-item>
-                      </q-list>
-                    </q-menu>
-                  </q-btn>
-
-                  <!-- Mobile Export PDF Action -->
-                  <q-btn
-                    outline
-                    dense
-                    color="red-9"
-                    class="btn-mobile-toolbar bg-white flex-shrink-0"
-                    icon="download"
-                    :disable="!selectedCustomer || filteredCustomerOrders.length === 0 || ordersLoading"
-                    :loading="isExporting"
-                    @click="exportCustomerOrdersPDF"
-                  >
-                    <q-tooltip>Export PDF</q-tooltip>
-                  </q-btn>
+                    {{ filter.label }}
+                    <span class="vp-chip-count">{{ countFor(filter.key) }}</span>
+                  </button>
                 </div>
               </div>
-            </q-card-section>
 
-            <!-- DESKTOP Embedded Order Details -->
-            <div v-if="selectedOrder" class="flex-1 scroll q-pa-md">
-              <OrderDetails 
-                :orderId="selectedOrder.order_id" 
-                isEmbedded 
-                @back="selectedOrder = null" 
-              />
-            </div>
+              <!-- The filters in use, each removable with one tap. -->
+              <div v-if="filterChips.length" class="vp-filter-summary">
+                <span class="vp-filter-summary-label">Filtered by</span>
+                <button v-for="chip in filterChips" :key="chip.key" type="button" class="vp-filter-chip" :aria-label="`Remove ${chip.label}`" @click="clearFilter(filters, chip.key)">
+                  {{ chip.label }}
+                  <q-icon name="o_close" size="14px" />
+                </button>
+                <button type="button" class="vp-filter-clear" @click="resetOrderFilters(filters)">Clear all</button>
+              </div>
 
-            <!-- Orders Table Mode -->
-            <div v-else class="flex-1 flex column">
-              <q-table
-                flat
-                class="custom-premium-table flex-1"
-                :rows="ordersLoading ? skeletonOrders : filteredCustomerOrders"
-                :columns="columns"
-                row-key="order_id"
-                hide-bottom
-                :pagination="{ rowsPerPage: 10 }"
-                @row-click="onRowClick"
-                :grid="$q.screen.lt.md"
-              >
-                <!-- EMPTY STATE -->
-                <template #no-data>
-                  <div v-if="!ordersLoading" class="full-width column flex-center q-pa-xl text-center">
-                    <div class="empty-icon-box q-mb-md">
-                      <q-icon name="receipt_long" size="40px" color="blue-grey-3" />
-                    </div>
-                    <div class="text-subtitle1 text-weight-bold text-slate-800">
-                      {{ selectedCustomer ? (customerOrders.length === 0 ? 'No orders recorded' : 'No matching orders found') : 'No Customer Selected' }}
-                    </div>
-                    <div class="text-caption text-slate-500 q-mt-xs font-medium" style="max-width: 320px;">
-                      {{ selectedCustomer ? (customerOrders.length === 0 ? 'This customer has not placed any orders yet.' : 'Try changing your search query or status filter.') : 'Pick a customer from the directory to review their order history and details.' }}
-                    </div>
-                  </div>
-                </template>
+              <SkeletonTable v-if="ordersLoading" :columns="SKELETON_COLUMNS" :rows="5" :list="$q.screen.lt.md" />
 
-                <!-- DESKTOP ORDER ID -->
-                <template #body-cell-order_id="props">
-                  <q-td :props="props">
-                    <q-skeleton v-if="ordersLoading" type="rect" width="60px" height="22px" style="border-radius: 6px;" />
-                    <span v-else class="order-id-badge">
-                      #{{ props.row.order_id }}
-                    </span>
-                  </q-td>
-                </template>
+              <div v-else-if="!filteredCustomerOrders.length" class="vp-empty">
+                <div class="vp-empty-icon"><q-icon name="o_receipt_long" size="24px" /></div>
+                <div class="vp-empty-title">{{ customerOrders.length ? 'No matching orders' : 'No orders yet' }}</div>
+                <div class="vp-empty-text">
+                  {{ customerOrders.length ? 'Try another order ID, status or filter.' : 'This customer has not placed any orders yet.' }}
+                </div>
+                <q-btn v-if="customerOrders.length && filterChips.length" outline no-caps color="primary" label="Clear filters" class="vp-pill-btn co-empty-btn" @click="resetOrderFilters(filters)" />
+              </div>
 
-                <!-- DESKTOP DATE -->
-                <template #body-cell-date="props">
-                  <q-td :props="props">
-                    <q-skeleton v-if="ordersLoading" type="text" width="130px" height="20px" />
-                    <span v-else class="text-slate-600 font-medium">{{ formatDate(props.row.created_at) }}</span>
-                  </q-td>
-                </template>
-
-                <!-- DESKTOP PRICE -->
-                <template #body-cell-price="props">
-                  <q-td :props="props">
-                    <q-skeleton v-if="ordersLoading" type="text" width="80px" height="20px" />
-                    <span v-else class="text-slate-800 price-regular">
-                      ₱{{ formatNumber(props.row.total_amount) }}
-                    </span>
-                  </q-td>
-                </template>
-
-                <!-- DESKTOP STATUS BADGE -->
-                <template #body-cell-status="props">
-                  <q-td :props="props">
-                    <q-skeleton v-if="ordersLoading" type="rect" width="94px" height="26px" style="border-radius: 7px;" />
-                    <q-chip 
-                      v-else
-                      dense
-                      square
-                      :color="getStatusColor(props.row.status)" 
-                      text-color="white" 
-                      class="status-box-chip q-px-md"
+              <div v-else-if="!$q.screen.lt.md" class="vp-table-wrap">
+                <table class="vp-table co-table">
+                  <thead>
+                    <tr>
+                      <th class="col-order" :aria-sort="ariaSort('id')">
+                        <button type="button" class="vp-sort" :class="{ 'vp-sort--on': sortDirection(filters.sort, 'id') }" @click="sortBy('id')">
+                          Order <q-icon :name="sortIcon('id')" size="14px" />
+                        </button>
+                      </th>
+                      <th class="col-date" :aria-sort="ariaSort('date')">
+                        <button type="button" class="vp-sort" :class="{ 'vp-sort--on': sortDirection(filters.sort, 'date') }" @click="sortBy('date')">
+                          Date <q-icon :name="sortIcon('date')" size="14px" />
+                        </button>
+                      </th>
+                      <th class="text-right col-total" :aria-sort="ariaSort('total')">
+                        <button type="button" class="vp-sort" :class="{ 'vp-sort--on': sortDirection(filters.sort, 'total') }" @click="sortBy('total')">
+                          Total <q-icon :name="sortIcon('total')" size="14px" />
+                        </button>
+                      </th>
+                      <th class="col-status">Status</th>
+                      <th class="col-open"><span class="vp-sr-only">Open</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="order in filteredCustomerOrders"
+                      :key="order.order_id"
+                      class="vp-row"
+                      tabindex="0"
+                      @click="goToOrder(order)"
+                      @keydown.enter="goToOrder(order)"
                     >
-                      {{ formatStatus(props.row.status) }}
-                    </q-chip>
-                  </q-td>
-                </template>
+                      <td><span class="vp-id">#{{ order.order_id }}</span></td>
+                      <td class="vp-muted">{{ formatDate(order.created_at) }}</td>
+                      <td class="text-right vp-amount">₱{{ formatNumber(order.total_amount) }}</td>
+                      <td><OrderStatusBadge :status="order.status" /></td>
+                      <td class="text-right">
+                        <q-btn flat round dense icon="o_chevron_right" class="vp-open-btn" :aria-label="`Open order #${order.order_id}`" @click.stop="goToOrder(order)" />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-                <!-- DESKTOP ACTION -->
-                <template #body-cell-action="props">
-                  <q-td :props="props" class="text-right">
-                    <q-skeleton v-if="ordersLoading" type="QBtn" size="sm" class="float-right" />
-                    <q-btn v-else flat round dense icon="chevron_right" color="blue-grey-4" class="hover-text-dark" @click.stop="goToOrder(props.row)" />
-                  </q-td>
-                </template>
-
-                <!-- MOBILE GRID FORMATTER -->
-                <template v-slot:item="props">
-                  <div class="col-12 q-pa-sm">
-                    <!-- Mobile Skeleton -->
-                    <q-card v-if="ordersLoading" flat class="bg-white border-slate-light shadow-soft rounded-borders q-pa-md">
-                      <div class="row items-center justify-between q-mb-sm">
-                        <q-skeleton type="rect" width="85px" height="24px" style="border-radius: 6px;" />
-                        <q-skeleton type="rect" width="85px" height="24px" style="border-radius: 7px;" />
-                      </div>
-                      <q-separator color="grey-2" class="q-my-sm" />
-                      <div class="row items-center justify-between text-caption q-mt-md q-pt-xs">
-                        <q-skeleton type="text" width="100px" height="18px" />
-                        <q-skeleton type="text" width="70px" height="18px" />
-                      </div>
-                    </q-card>
-
-                    <!-- Mobile Loaded Card -->
-                    <q-card v-else flat class="bg-white border-slate-light shadow-soft cursor-pointer rounded-borders q-pa-md" @click="goToOrder(props.row)">
-                      <div class="row items-center justify-between q-mb-xs">
-                        <span class="order-id-badge" style="font-size: 13px; padding: 4px 10px;">
-                          Order #{{ props.row.order_id }}
-                        </span>
-                        
-                        <q-chip 
-                          dense
-                          square
-                          :color="getStatusColor(props.row.status)" 
-                          text-color="white" 
-                          class="status-box-chip q-ma-none"
-                          style="font-size: 11.5px; height: 26px; padding: 0 12px;"
-                        >
-                          {{ formatStatus(props.row.status) }}
-                        </q-chip>
-                      </div>
-                      
-                      <q-separator color="grey-2" class="q-my-sm" />
-
-                      <div class="row items-center justify-between text-caption text-slate-500 q-mt-md q-pt-xs">
-                        <span class="text-slate-600 font-medium">{{ formatDate(props.row.created_at) }}</span>
-                        <div class="row items-center">
-                          <span class="text-slate-800 price-regular text-subtitle2 q-mr-xs">₱{{ formatNumber(props.row.total_amount) }}</span>
-                          <q-icon name="chevron_right" size="18px" color="blue-grey-4" />
-                        </div>
-                      </div>
-                    </q-card>
+              <div v-else class="vp-list">
+                <button v-for="order in filteredCustomerOrders" :key="order.order_id" type="button" class="vp-list-item" @click="goToOrder(order)">
+                  <div class="vp-list-body">
+                    <span class="vp-name">Order #{{ order.order_id }}</span>
+                    <div class="vp-list-meta">{{ formatDate(order.created_at) }}</div>
                   </div>
-                </template>
-              </q-table>
-            </div>
-
-          </q-card>
-        </div>
+                  <div class="vp-list-side">
+                    <span class="vp-amount">₱{{ formatNumber(order.total_amount) }}</span>
+                    <OrderStatusBadge :status="order.status" />
+                  </div>
+                </button>
+              </div>
+            </template>
+          </div>
+        </section>
 
       </div>
     </div>
@@ -424,12 +241,36 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
 import OrderDetails from './OrderDetails.vue'
+import OrderStatusBadge from '@/components/vendor/OrderStatusBadge.vue'
+import OrderTableFilters from '@/components/vendor/OrderTableFilters.vue'
+import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
+import { statusKey } from '@/utils/orderStatus'
+import { emptyOrderFilters, applyOrderFilters, describeFilters, clearFilter, resetOrderFilters, toggleSort, sortDirection } from '@/utils/orderFilters'
 
 const $q = useQuasar()
+
+const FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'placed', label: 'Placed' },
+  { key: 'preparing', label: 'Preparing' },
+  { key: 'ready_for_pickup', label: 'Ready for pickup' },
+  { key: 'picked_up', label: 'Picked up' },
+  { key: 'cancelled', label: 'Cancelled' }
+]
+
+// The placeholder rows take the same columns as the orders table.
+const SKELETON_COLUMNS = [
+  { width: '16%', type: 'pill', size: 56 },
+  { type: 'text' },
+  { width: '18%', type: 'text', align: 'right' },
+  { width: '22%', type: 'pill', size: 96 },
+  { width: '8%', type: 'icon', align: 'right' }
+]
 
 const customerSearch = ref('')
 const orderSearch = ref('')
 const selectedStatusFilter = ref('all')
+const filters = ref(emptyOrderFilters())
 
 const customers = ref([])
 const selectedCustomer = ref(null)
@@ -440,71 +281,43 @@ const customersLoading = ref(true)
 const ordersLoading = ref(false)
 const isExporting = ref(false)
 
-const skeletonOrders = Array.from({ length: 6 }, (_, index) => ({
-  order_id: `skeleton-${index}`
-}))
-
-const statusFilterOptions = [
-  { label: 'All Statuses', value: 'all' },
-  { label: 'Placed', value: 'placed' },
-  { label: 'Preparing', value: 'preparing' },
-  { label: 'Ready for Pickup', value: 'ready_for_pickup' },
-  { label: 'Picked Up', value: 'picked_up' },
-  { label: 'Cancelled', value: 'cancelled' }
-]
-
-const columns = [
-  { name: 'order_id', label: 'ORDER ID', field: 'order_id', align: 'left', sortable: true },
-  { name: 'date', label: 'DATE', field: row => formatDate(row.created_at), align: 'left', sortable: true },
-  { name: 'price', label: 'PRICE', field: row => row.total_amount, align: 'left', sortable: true },
-  { name: 'status', label: 'STATUS', field: row => formatStatus(row.status), align: 'left' },
-  { name: 'action', label: '', field: 'action', align: 'right' }
-]
-
 const filteredCustomers = computed(() => {
-  if (!customerSearch.value) return customers.value
-  const needle = customerSearch.value.toLowerCase()
+  const needle = (customerSearch.value || '').trim().toLowerCase()
+  if (!needle) return customers.value
   return customers.value.filter(c => (c.full_name || '').toLowerCase().includes(needle))
 })
 
-const filteredCustomerOrders = computed(() => {
-  return customerOrders.value.filter(order => {
-    const matchesSearch = !orderSearch.value || String(order.order_id).toLowerCase().includes(orderSearch.value.trim().toLowerCase().replace('#', ''))
-    const matchesStatus = selectedStatusFilter.value === 'all' || String(order.status).toLowerCase() === selectedStatusFilter.value.toLowerCase()
-    return matchesSearch && matchesStatus
-  })
-})
-
-// Ensures mobile pill displays "Filter" by default instead of "All"
-const getShortStatusLabel = (val) => {
-  if (!val || val === 'all') return 'Filter'
-  if (val === 'ready_for_pickup') return 'Ready'
-  if (val === 'picked_up') return 'Picked'
-  return formatStatus(val)
+const matchesSearch = order => {
+  const term = (orderSearch.value || '').trim().toLowerCase().replace('#', '')
+  return !term || String(order.order_id).toLowerCase().includes(term)
 }
 
-const getStatusColor = (status) => {
-  switch (String(status).toLowerCase()) {
-    case 'placed': return 'blue-6'
-    case 'preparing': return 'purple-5'
-    case 'ready_for_pickup': return 'orange-6'
-    case 'picked_up': return 'green-6'
-    case 'cancelled': return 'red-6'
-    default: return 'grey-6'
-  }
+const matchesStatus = (order, key) => key === 'all' || statusKey(order.status) === key
+
+// Search and the filter panel apply first, so each status chip counts what it would show.
+const baseOrders = computed(() => applyOrderFilters(customerOrders.value.filter(matchesSearch), filters.value))
+
+const countFor = key => baseOrders.value.filter(order => matchesStatus(order, key)).length
+
+const filteredCustomerOrders = computed(() => baseOrders.value.filter(order => matchesStatus(order, selectedStatusFilter.value)))
+
+const filterChips = computed(() => describeFilters(filters.value))
+
+const sortBy = field => { filters.value.sort = toggleSort(filters.value.sort, field) }
+const sortIcon = field => ({ asc: 'o_arrow_upward', desc: 'o_arrow_downward' }[sortDirection(filters.value.sort, field)] || 'o_unfold_more')
+const ariaSort = field => ({ asc: 'ascending', desc: 'descending' }[sortDirection(filters.value.sort, field)] || 'none')
+
+const initials = name => {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean)
+  if (!parts.length) return '?'
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase()
 }
 
-const formatStatus = (status) => {
-  if (!status) return ''
-  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-}
+const formatNumber = num => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-const formatNumber = (num) => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-
-const formatDate = (dateString) => {
+const formatDate = dateString => {
   if (!dateString) return ''
-  const d = new Date(dateString)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+  return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
 const fetchCustomers = async () => {
@@ -519,321 +332,335 @@ const fetchCustomers = async () => {
   }
 }
 
-const selectCustomer = async (customer) => {
+const selectCustomer = async customer => {
   selectedCustomer.value = customer
   selectedOrder.value = null
   customerOrders.value = []
   orderSearch.value = ''
   selectedStatusFilter.value = 'all'
+  filters.value = emptyOrderFilters()
   ordersLoading.value = true
   try {
     const res = await api.get(`/vendor/customers/${customer.user_id}/orders`)
-    customerOrders.value = res.data || []
+    // Ignores a slow reply for a customer who is no longer selected.
+    if (selectedCustomer.value?.user_id === customer.user_id) customerOrders.value = res.data || []
   } catch (error) {
     console.error('Failed to load customer orders', error)
   } finally {
-    ordersLoading.value = false
+    if (selectedCustomer.value?.user_id === customer.user_id) ordersLoading.value = false
   }
 }
 
+const downloadPdf = (data, filename) => {
+  const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', filename)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  setTimeout(() => window.URL.revokeObjectURL(url), 1000)
+}
+
 const exportCustomerOrdersPDF = async () => {
-  if (!selectedCustomer.value || filteredCustomerOrders.value.length === 0) return
+  if (!selectedCustomer.value || !filteredCustomerOrders.value.length) return
 
   const customerName = (selectedCustomer.value.full_name || 'Customer').replace(/[^a-zA-Z0-9]/g, '_')
-  const dateStr = new Date().toISOString().split('T')[0]
+  const filename = `Customer_Orders_${customerName}_${new Date().toISOString().split('T')[0]}.pdf`
 
+  isExporting.value = true
   try {
-    isExporting.value = true
-    
-    const response = await api.get(`/vendor/customers/${selectedCustomer.value.user_id}/orders/export`, {
-      responseType: 'blob'
-    })
-    
-    const blob = new Blob([response.data], { type: 'application/pdf' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', `Customer_Orders_${customerName}_${dateStr}.pdf`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    setTimeout(() => window.URL.revokeObjectURL(url), 1000)
-    
-    $q.notify({
-      type: 'positive',
-      message: 'Customer order report downloaded successfully',
-      position: 'top-right'
-    })
-  } catch (error) {
+    const response = await api.get(`/vendor/customers/${selectedCustomer.value.user_id}/orders/export`, { responseType: 'blob' })
+    downloadPdf(response.data, filename)
+    $q.notify({ type: 'positive', message: 'Customer order report downloaded.', position: 'top-right' })
+  } catch {
+    // Falls back to the general export filtered to this customer.
     try {
       const fallbackRes = await api.get('/vendor/orders/export', {
         params: { customer_id: selectedCustomer.value.user_id },
         responseType: 'blob'
       })
-      const blob = new Blob([fallbackRes.data], { type: 'application/pdf' })
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', `Customer_Orders_${customerName}_${dateStr}.pdf`)
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      setTimeout(() => window.URL.revokeObjectURL(url), 1000)
+      downloadPdf(fallbackRes.data, filename)
     } catch (err) {
       console.error('PDF Export failed:', err)
-      $q.notify({
-        type: 'negative',
-        message: 'Failed to download PDF report. Please try again.',
-        position: 'top-right'
-      })
+      $q.notify({ type: 'negative', message: 'Failed to download the PDF report. Please try again.', position: 'top-right' })
     }
   } finally {
     isExporting.value = false
   }
 }
 
-const goToOrder = (row) => {
-  if (ordersLoading.value) return
-  selectedOrder.value = row
-  if ($q.screen.lt.md) {
-    nextTick(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    })
-  }
+// A status changed inside the open order is copied into the list, so its badge and the status counts are right on the way back.
+const onStatusChanged = ({ orderId, status, cancellationReason }) => {
+  const listed = customerOrders.value.find(o => Number(o.order_id) === Number(orderId))
+  if (!listed) return
+  listed.status = status
+  if (cancellationReason) listed.cancellation_reason = cancellationReason
 }
 
-const onRowClick = (evt, row) => {
+const goToOrder = order => {
   if (ordersLoading.value) return
-  goToOrder(row)
+  selectedOrder.value = order
+  if ($q.screen.lt.md) nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
 }
 
-onMounted(() => {
-  fetchCustomers()
-})
+onMounted(fetchCustomers)
 </script>
 
 <style scoped>
-/* Page Layout */
-.vendor-page {
-  padding: 32px 24px;
-  background-color: #f8fafc;
-  min-height: 100vh;
-}
-.page-container {
-  max-width: 1300px;
-  margin: 0 auto;
+.co-grid {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  align-items: start;
+
+  gap: var(--sp-gap);
 }
 
-/* Regular Font Weight for Prices */
-.price-regular {
-  font-weight: 500 !important;
+.co-grid--full {
+  grid-template-columns: minmax(0, 1fr);
 }
 
-/* Mobile Details Viewport Escape */
-.mobile-details-wrapper {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-}
+.co-directory {
+  position: sticky;
+  top: 24px;
 
-/* Background Ambient Glows */
-.bg-glow {
-  position: absolute;
-  width: 500px;
-  height: 500px;
-  border-radius: 50%;
-  filter: blur(140px);
-  z-index: 0;
-  opacity: 0.15; 
-  pointer-events: none;
-}
-.bg-glow-primary {
-  top: -50px;
-  left: -50px;
-  background: radial-gradient(circle, rgba(185, 28, 28, 0.4) 0%, transparent 70%); 
-}
-.bg-glow-secondary {
-  bottom: 100px;
-  right: -50px;
-  background: radial-gradient(circle, rgba(185, 28, 28, 0.3) 0%, transparent 70%); 
-}
+  display: flex;
+  flex-direction: column;
 
-/* Typography & Layout Utilities */
-.tracking-tight { letter-spacing: -0.02em; }
-.leading-tight { line-height: 1.2; }
-.text-brand-red { color: #B91C1C !important; }
-.text-slate-800 { color: #1e293b; }
-.text-slate-700 { color: #334155; }
-.text-slate-600 { color: #475569; }
-.text-slate-500 { color: #64748b; }
-.text-slate-400 { color: #94a3b8; }
-.font-medium { font-weight: 500; }
-.min-w-0 { min-width: 0 !important; }
-.h-full-container { height: calc(100vh - 180px); min-height: 600px; }
-.h-full { height: 100%; }
-.flex-1 { flex: 1; }
-
-/* Structural Card Styling */
-.premium-glass-card {
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
   overflow: hidden;
 }
 
-.glass-icon-box {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 12px;
+.co-directory-head {
+  padding: 16px;
+
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.co-card-title {
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.08);
+
+  gap: 8px;
+
+  font-size: var(--fs-lg);
+  font-weight: 700;
+
+  color: var(--c-text);
 }
 
-.empty-icon-box {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: #f1f5f9;
-  display: inline-flex;
+.co-count {
+  padding: 1px 8px;
+
+  border-radius: var(--r-pill);
+
+  background: var(--c-surface);
+
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+
+  color: var(--c-text-3);
+}
+
+.co-directory-search {
+  max-width: none;
+  margin-top: 12px;
+}
+
+.co-directory-list {
+  max-height: calc(100vh - 260px);
+  padding: 6px;
+  overflow-y: auto;
+}
+
+.co-directory-skeletons {
+  padding: 4px;
+}
+
+.co-skeleton-row {
+  display: flex;
   align-items: center;
-  justify-content: center;
+
+  gap: 10px;
+  padding: 8px 6px;
 }
 
-/* Standalone Header Accent Line */
-.header-accent-red {
-  display: inline-block;
-  width: 4px;
-  height: 18px;
-  background: #b91c1c;
-  border-radius: 4px;
-  flex-shrink: 0;
+.co-skeleton-lines {
+  flex: 1;
 }
 
-/* Outlined Red Export Button */
-.export-report-btn {
-  background-color: #ffffff;
-  color: #b91c1c !important;
-  border: 1.5px solid #b91c1c;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: -0.01em;
-  transition: all 0.2s ease;
+.co-empty-small {
+  padding: 32px 12px;
 }
 
-.export-report-btn:hover:not(:disabled) {
-  background-color: #fef2f2;
-}
+.co-customer {
+  position: relative;
 
-.export-report-btn:disabled {
-  opacity: 0.45 !important;
-  border-color: #cbd5e1 !important;
-  color: #94a3b8 !important;
-}
-
-/* Compact Mobile Toolbar Buttons */
-.btn-mobile-toolbar {
-  height: 38px !important;
-  border-radius: 8px !important;
-  border: 1px solid #e2e8f0 !important;
-  padding: 0 10px !important;
-}
-
-/* Order ID Badge */
-.order-id-badge {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 4px 10px;
-  border-radius: 6px;
-  background-color: #fff1f2;
-  border: 1px solid #fecdd3;
-  color: #e11d48;
-  font-weight: 700;
-  font-size: 13px;
-  line-height: 1;
-}
 
-/* Soft Box Status Chip */
-.status-box-chip {
-  border-radius: 7px !important;
-  font-size: 12.5px !important;
-  font-weight: 700 !important;
-  min-height: 28px;
-  height: 28px;
-  border: none !important;
-  box-shadow: none !important;
-  letter-spacing: -0.01em;
-}
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
 
-/* Inputs */
-.custom-glass-input :deep(.q-field__control) {
-  background: #f8fafc;
-  border-radius: 8px;
-  height: 38px;
-  transition: all 0.2s ease;
-}
-.custom-glass-input :deep(.q-field__control:before) { border: 1px solid #e2e8f0; }
-.custom-glass-input :deep(.q-field__control:hover) { background: #ffffff; }
-.custom-glass-input :deep(.q-field--focused .q-field__control) {
-  background: #ffffff;
-  border-color: #B91C1C;
-  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.1);
-}
+  border: none;
+  border-radius: var(--r-control);
 
-/* Customer Directory Items */
-.customer-item {
-  border-radius: 10px;
-  padding: 10px 12px;
-  transition: all 0.2s ease;
-}
-.customer-item:hover {
-  background: #f1f5f9;
-}
-.active-customer-item {
-  background: #fef2f2 !important;
-  border-left: 3px solid #B91C1C;
-}
+  background: transparent;
 
-/* Table Styling */
-:deep(.custom-premium-table thead tr th) {
-  background: #ffffff;
-  font-weight: 700;
-  color: #64748b;
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f1f5f9;
-}
-:deep(.custom-premium-table tbody td) {
-  padding: 16px 20px;
-  border-bottom: 1px solid #f8fafc;
+  font-family: inherit;
+  text-align: left;
+
   cursor: pointer;
-  transition: all 0.2s ease;
-}
-:deep(.custom-premium-table tbody tr:hover td) {
-  background: #f8fafc;
+
+  transition: background-color 0.15s;
 }
 
-/* Borders & Utility */
-.border-bottom-light { border-bottom: 1px solid #e2e8f0; }
-.border-top-light { border-top: 1px solid #e2e8f0; }
-.border-slate-light { border: 1px solid #e2e8f0; }
-.shadow-soft { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04); }
-.transition-ease { transition: all 0.25s ease; }
-.hover-text-dark:hover { color: #0f172a !important; }
+.co-customer:hover {
+  background: var(--c-surface-2);
+}
 
-@media (max-width: 767px) {
-  .vendor-page.mobile-page-padding { 
-    padding: 12px 12px 32px 12px !important; 
+.co-customer:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: -2px;
+}
+
+.co-customer--active,
+.co-customer--active:hover {
+  background: var(--c-brand-tint);
+}
+
+/* A short brand bar marks the chosen customer. */
+.co-customer--active::before {
+  content: '';
+
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+
+  width: 3px;
+
+  border-radius: var(--r-pill);
+
+  background: var(--c-brand);
+}
+
+.co-customer--active .vp-name {
+  color: var(--c-brand);
+}
+
+.co-avatar {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
+.co-customer-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+
+  min-width: 0;
+
+  font-size: var(--fs-sm);
+}
+
+.co-customer-phone {
+  margin-top: 2px;
+
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
+}
+
+.co-customer-arrow {
+  flex-shrink: 0;
+
+  color: var(--c-border-strong);
+}
+
+.co-customer--active .co-customer-arrow {
+  color: var(--c-brand);
+}
+
+.co-pick {
+  padding-block: 72px;
+}
+
+.co-orders-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+
+  gap: 12px;
+  padding: 16px 20px;
+
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.co-person {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+  min-width: 0;
+}
+
+.co-person-text {
+  min-width: 0;
+}
+
+.co-person-name {
+  display: block;
+  overflow: hidden;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.co-person-meta {
+  margin-top: 2px;
+
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
+}
+
+.co-table {
+  min-width: 560px;
+}
+
+.co-empty-btn {
+  margin-top: 10px;
+}
+
+.co-table .col-order { width: 16%; }
+.co-table .col-total { width: 18%; }
+.co-table .col-status { width: 22%; }
+.co-table .col-open { width: 8%; }
+
+/* Tablets and phones stack the directory above the orders. */
+@media (max-width: 1023px) {
+  .co-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .desktop-only { display: none !important; }
-  .mobile-selected-center {
-    justify-content: center !important;
-    text-align: center !important;
+
+  .co-directory {
+    position: static;
+  }
+
+  .co-directory-list {
+    max-height: 280px;
+  }
+}
+
+@media (max-width: 600px) {
+  .co-orders-head {
+    padding: 14px 16px;
+  }
+
+  .co-orders-head .vp-pill-btn {
+    width: 100%;
   }
 }
 </style>

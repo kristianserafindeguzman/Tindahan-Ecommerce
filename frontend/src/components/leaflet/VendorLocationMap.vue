@@ -24,6 +24,11 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { getCurrentPosition, reverseGeocode } from '@/utils/geolocation'
 
+const props = defineProps({
+  // A saved pin to open on, which also skips jumping to the device's location; left out, the map behaves as before.
+  initial: { type: Object, default: null }
+})
+
 const emit = defineEmits(['location-selected'])
 
 const mapContainer = ref(null)
@@ -45,11 +50,14 @@ const defaultLocation = {
 
 onMounted(() => {
 
+  const hasInitial = props.initial?.latitude != null && props.initial?.longitude != null
+  const start = hasInitial ? props.initial : defaultLocation
+
   map = L.map(mapContainer.value, {
     zoomControl: true
   }).setView(
-    [defaultLocation.latitude, defaultLocation.longitude],
-    15
+    [start.latitude, start.longitude],
+    hasInitial ? 17 : 15
   )
 
   // OpenStreetMap tiles
@@ -77,8 +85,12 @@ onMounted(() => {
   })
 
 
-  // Try browser location
-  useCurrentLocation()
+  // A saved pin is shown as it is, and otherwise the map tries the browser's location.
+  if (hasInitial) {
+    marker = L.marker([start.latitude, start.longitude]).addTo(map)
+  } else {
+    useCurrentLocation()
+  }
 
 })
 
