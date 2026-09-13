@@ -8,6 +8,7 @@
           <p class="vp-subtitle">{{ t('subtitle') }}</p>
         </div>
         <div class="vp-header-actions">
+          <q-btn flat dense no-caps icon="o_refresh" :label="t('refreshInsights')" :loading="insightsRefreshing" class="vp-pill-btn" @click="refreshInsights" />
           <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" @click="openExportWizard" />
           <q-btn unelevated no-caps color="primary" icon="add" :label="t('addBtn')" class="vp-primary-btn" @click="showAddModal = true" />
         </div>
@@ -583,6 +584,22 @@ const insightCards = computed(() => {
     }
   ]
 })
+
+const insightsRefreshing = ref(false)
+
+const refreshInsights = async () => {
+  insightsRefreshing.value = true
+  try {
+    // Trigger the shared forecast refresh
+    await api.post('/vendor/demand-forecast/refresh')
+    // Then re-fetch insights
+    await fetchMlInsights()
+  } catch (err) {
+    console.error('Failed to refresh insights:', err)
+  } finally {
+    insightsRefreshing.value = false
+  }
+}
 
 // Search, category and stock narrow the list first, so each status chip can count what it would show.
 const baseProducts = computed(() => {

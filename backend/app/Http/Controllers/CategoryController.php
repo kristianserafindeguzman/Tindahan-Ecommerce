@@ -29,15 +29,19 @@ class CategoryController extends Controller
      */
     public function store(Request $request)
     {
-        // Skeleton logic for now. 
-        // Validates and simulates a successful creation response.
         $request->validate([
-            'category_name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'category_name' => 'required|string|max:50|unique:categories,category_name',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        $category = \App\Models\Category::create([
+            'category_name' => $request->category_name,
+            'description' => $request->description,
         ]);
 
         return response()->json([
-            'message' => 'Category added successfully (Skeleton)'
+            'message' => 'Category added successfully.',
+            'category' => $category,
         ], 201);
     }
 
