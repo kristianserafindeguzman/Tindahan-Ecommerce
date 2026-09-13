@@ -29,8 +29,10 @@
                 <div class="pm-name">{{ product?.product_name || 'Unnamed product' }}</div>
                 <div class="pm-price-row">
                   <span class="pm-price"><span v-if="productHasVariants" class="pm-from">from </span>₱{{ formatNumber(displayPrice) }}</span>
-                  <span class="pm-dot" aria-hidden="true" />
-                  <span class="pm-sold">{{ totalSales }} sold</span>
+                  <template v-if="salesLoaded && !salesError">
+                    <span class="pm-dot" aria-hidden="true" />
+                    <span class="pm-sold">{{ totalSales }} sold</span>
+                  </template>
                 </div>
               </div>
 
@@ -76,7 +78,7 @@
                   <span class="pm-block-note">{{ salesDateRange }}</span>
                 </div>
                 <div class="pm-chart">
-                  <div v-if="!hasSalesData" class="pm-chart-empty">No sales yet</div>
+                  <div v-if="!hasSalesData" class="pm-chart-empty">{{ salesLoading ? 'Loading sales…' : salesError ? 'Couldn’t load sales' : 'No sales yet' }}</div>
                   <VueApexCharts
                     v-if="renderChart"
                     type="area"
@@ -86,6 +88,19 @@
                     :series="dynamicChartSeries"
                     :class="{ 'pm-chart--muted': !hasSalesData }"
                   />
+                </div>
+                <!-- This week's figures for the chart above: revenue against the week before, and the revenue itself. -->
+                <div class="pm-sales-stats">
+                  <div class="pm-sales-stat" title="Revenue in the last 7 days compared with the 7 days before">
+                    <span class="pm-sales-stat-label">Growth</span>
+                    <q-skeleton v-if="salesLoading" type="text" width="55%" height="28px" />
+                    <span v-else class="pm-sales-stat-value" :class="`pm-sales-stat-value--${salesError ? 'flat' : growth.tone}`">{{ salesError ? '—' : growth.text }}</span>
+                  </div>
+                  <div class="pm-sales-stat" title="Picked-up orders and walk-in sales in the last 7 days">
+                    <span class="pm-sales-stat-label">Revenue</span>
+                    <q-skeleton v-if="salesLoading" type="text" width="70%" height="28px" />
+                    <span v-else class="pm-sales-stat-value">{{ salesError ? '—' : '₱' + formatNumber(weekRevenue) }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -341,6 +356,7 @@ watch(() => props.modelValue, async val => {
   isOpen.value = val
   if (val && props.product) {
     populateForm()
+    fetchProductSales()
     await nextTick()
     setTimeout(() => {
       renderChart.value = true
@@ -359,7 +375,6 @@ const saving = ref(false)
 const fileInput = ref(null)
 const imagePreview = ref(null)
 
-const totalSales = computed(() => props.product?.sales_count || 0)
 const productHasVariants = computed(() => (props.product?.variants?.length || 0) > 0)
 
 const displayPrice = computed(() => {
@@ -369,24 +384,94 @@ const displayPrice = computed(() => {
 
 const formatNumber = num => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-const hasSalesData = computed(() => props.product?.sales_history && props.product.sales_history.length > 0)
+// --- Sales, from this store's picked-up orders (walk-in sales included), the same ones the Sales page counts ---
+
+const salesOrders = ref([])
+const salesLoading = ref(false)
+// Set after the first answer, so the sold count isn't shown as 0 before the orders arrive.
+const salesLoaded = ref(false)
+// Set when the orders couldn't be loaded, so the cards and chart say so instead of showing zeros.
+const salesError = ref(false)
+// The day the figures count back from, refreshed on every open so a page left open overnight moves on to the new week.
+const salesToday = ref(new Date())
+let salesRequest = 0
+
+const fetchProductSales = async () => {
+  if (!props.product?.inventory_id) return
+  const requestId = ++salesRequest
+  salesToday.value = new Date()
+  salesLoading.value = true
+  try {
+    const { data } = await api.get('/vendor/orders')
+    // A slower answer for a product that is no longer open is dropped.
+    if (requestId === salesRequest) {
+      salesOrders.value = Array.isArray(data) ? data : data?.data || []
+      salesLoaded.value = true
+      salesError.value = false
+    }
+  } catch (error) {
+    console.error('Failed to load sales for this product', error)
+    if (requestId === salesRequest) {
+      salesOrders.value = []
+      salesError.value = true
+    }
+  } finally {
+    if (requestId === salesRequest) salesLoading.value = false
+  }
+}
+
+const dayKey = value => date.formatDate(value, 'YYYY-MM-DD')
+
+// Every picked-up sale of this product, dated by the day it was picked up, in local time.
+const productSales = computed(() => {
+  const id = Number(props.product?.inventory_id)
+  return salesOrders.value
+    .filter(order => order.status === 'picked_up')
+    .flatMap(order => (order.items || [])
+      .filter(item => Number(item.inventory_id) === id)
+      .map(item => ({ day: dayKey(new Date(order.updated_at || order.created_at)), units: Number(item.quantity) || 0, amount: Number(item.subtotal) || 0 })))
+})
+
+// Fourteen days ending today, oldest first: the week before, then this week.
+const fortnight = computed(() => Array.from({ length: 14 }, (_, i) => {
+  const day = new Date(salesToday.value)
+  day.setHours(0, 0, 0, 0)
+  day.setDate(day.getDate() - (13 - i))
+  return day
+}))
+const thisWeek = computed(() => fortnight.value.slice(7))
+const lastWeek = computed(() => fortnight.value.slice(0, 7))
+
+const sumFor = (days, field) => {
+  const keys = new Set(days.map(dayKey))
+  return productSales.value.filter(sale => keys.has(sale.day)).reduce((total, sale) => total + sale[field], 0)
+}
+
+const totalSales = computed(() => productSales.value.reduce((total, sale) => total + sale.units, 0))
+const weekRevenue = computed(() => sumFor(thisWeek.value, 'amount'))
+
+// This week's revenue against the week before; "New" when the week before had none.
+const growth = computed(() => {
+  const current = weekRevenue.value
+  const previous = sumFor(lastWeek.value, 'amount')
+  if (!previous) return current ? { text: 'New', tone: 'up' } : { text: '—', tone: 'flat' }
+  const rounded = Math.round(((current - previous) / previous) * 1000) / 10
+  if (rounded === 0) return { text: '0.0%', tone: 'flat' }
+  return { text: `${rounded > 0 ? '+' : '−'}${Math.abs(rounded).toFixed(1)}%`, tone: rounded > 0 ? 'up' : 'down' }
+})
+
+const salesHistory = computed(() => thisWeek.value.map(day => ({ date: day, total_sold: sumFor([day], 'units') })))
+const hasSalesData = computed(() => salesHistory.value.some(record => record.total_sold > 0))
 
 // Without sales, a faint sample curve sits behind the "No sales yet" label.
 const dynamicChartSeries = computed(() => {
   if (!hasSalesData.value) return [{ name: 'No Data', data: [15, 30, 20, 45, 25, 40, 50] }]
-  return [{ name: 'Sales', data: props.product.sales_history.map(record => record.total_sold) }]
+  return [{ name: 'Sold', data: salesHistory.value.map(record => record.total_sold) }]
 })
 
-const dynamicChartCategories = computed(() => {
-  if (!hasSalesData.value) return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-  return props.product.sales_history.map(record => date.formatDate(new Date(record.date), 'ddd'))
-})
+const dynamicChartCategories = computed(() => salesHistory.value.map(record => date.formatDate(record.date, 'ddd')))
 
-const salesDateRange = computed(() => {
-  if (!hasSalesData.value) return 'Last 7 days'
-  const history = props.product.sales_history
-  return `${date.formatDate(new Date(history[0].date), 'MMM D')} – ${date.formatDate(new Date(history[history.length - 1].date), 'MMM D')}`
-})
+const salesDateRange = computed(() => `${date.formatDate(thisWeek.value[0], 'MMM D')} – ${date.formatDate(thisWeek.value[6], 'MMM D')}`)
 
 // ApexCharts needs plain hex colours, so the brand red is written out here.
 const dynamicChartOptions = computed(() => ({
@@ -1028,6 +1113,59 @@ const submitForm = async () => {
   opacity: 0.3;
 
   filter: grayscale(100%);
+}
+
+/* Growth and Revenue under the chart, for the same seven days. */
+.pm-sales-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.pm-sales-stat {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 14px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-control);
+
+  background: var(--c-surface-2);
+}
+
+.pm-sales-stat-label {
+  font-size: var(--fs-sm);
+
+  color: var(--c-text-3);
+}
+
+.pm-sales-stat-value {
+  overflow: hidden;
+
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: var(--c-text);
+}
+
+.pm-sales-stat-value--up {
+  color: var(--c-success);
+}
+
+.pm-sales-stat-value--down {
+  color: var(--c-danger);
+}
+
+.pm-sales-stat-value--flat {
+  color: var(--c-text-3);
 }
 
 /* EDIT */

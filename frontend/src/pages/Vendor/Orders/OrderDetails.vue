@@ -222,7 +222,7 @@
   </component>
 
   <q-dialog v-model="showCancelDialog" persistent>
-    <q-card class="od-dialog">
+    <q-card class="od-dialog od-cancel-dialog">
       <div class="od-dialog-head">
         <span class="od-dialog-icon"><q-icon name="o_cancel" size="22px" /></span>
         <div>
@@ -231,24 +231,44 @@
         </div>
       </div>
 
-      <div class="od-dialog-body">
-        <q-checkbox v-model="cancelReasonOutOfStock" dense color="primary" label="Item(s) out of stock" class="od-dialog-check" />
+      <q-separator class="od-cancel-sep" />
+
+      <!-- One reason per card, like the consumer's cancel dialog; "Other" opens a box for your own words. -->
+      <div class="od-dialog-body od-cancel-body">
+        <div class="od-reason-list" role="radiogroup" aria-label="Cancellation reason">
+          <button
+            v-for="reason in CANCEL_REASONS"
+            :key="reason"
+            type="button"
+            role="radio"
+            :aria-checked="cancelReason === reason"
+            class="od-reason"
+            :class="{ 'od-reason--selected': cancelReason === reason }"
+            @click="cancelReason = reason"
+          >
+            <span class="od-reason-radio" aria-hidden="true" />
+            <span class="od-reason-label">{{ reason }}</span>
+          </button>
+        </div>
+        <!-- The reason is stored in a 255-character column, so the box stops there. -->
         <q-input
-          v-model="cancelReasonText"
+          v-if="cancelReason === 'Other'"
+          v-model="cancelOtherText"
           type="textarea"
           outlined
           autogrow
           autofocus
-          label="Reason"
-          color="primary"
-          :rules="[val => !!(val && val.trim()) || 'Enter a reason.']"
-          class="od-dialog-input"
+          counter
+          maxlength="255"
+          placeholder="Tell the customer why…"
+          aria-label="Your reason"
+          class="od-reason-input"
         />
       </div>
 
       <div class="od-dialog-actions">
         <q-btn v-close-popup outline no-caps color="primary" label="Keep Order" class="od-dialog-btn" />
-        <q-btn unelevated no-caps color="primary" label="Cancel Order" class="od-dialog-btn" :loading="isUpdating" @click="confirmCancelOrder" />
+        <q-btn unelevated no-caps color="primary" label="Cancel Order" class="od-dialog-btn" :disable="!cancelReasonValid" :loading="isUpdating" @click="confirmCancelOrder" />
       </div>
     </q-card>
   </q-dialog>
@@ -279,8 +299,11 @@ const isUpdating = ref(false)
 const isExporting = ref(false)
 
 const showCancelDialog = ref(false)
-const cancelReasonOutOfStock = ref(false)
-const cancelReasonText = ref('')
+// The reasons a vendor picks from, as cards like the consumer's cancel dialog; "Other" opens a box for their own words.
+const CANCEL_REASONS = ['Item(s) out of stock', 'Store closed / cannot fulfill right now', 'Order not picked up in time', 'Other']
+const cancelReason = ref('')
+const cancelOtherText = ref('')
+const cancelReasonValid = computed(() => (cancelReason.value === 'Other' ? !!cancelOtherText.value.trim() : !!cancelReason.value))
 
 const FLOW = ['placed', 'preparing', 'ready_for_pickup', 'picked_up']
 
@@ -296,17 +319,9 @@ const hasRoute = computed(() => {
   return [o?.store?.latitude, o?.store?.longitude, o?.consumer_latitude, o?.consumer_longitude].every(v => v !== null && v !== undefined && v !== '')
 })
 
-watch(cancelReasonOutOfStock, val => {
-  if (val) {
-    cancelReasonText.value = 'Item out of stock'
-  } else if (cancelReasonText.value === 'Item out of stock') {
-    cancelReasonText.value = ''
-  }
-})
-
 const promptCancelOrder = () => {
-  cancelReasonOutOfStock.value = false
-  cancelReasonText.value = ''
+  cancelReason.value = ''
+  cancelOtherText.value = ''
   showCancelDialog.value = true
 }
 
@@ -408,13 +423,10 @@ const updateStatus = async (newStatus, reason = null) => {
   }
 }
 
+// Sends the chosen reason's wording, or the vendor's own words for "Other".
 const confirmCancelOrder = () => {
-  const reason = (cancelReasonText.value || '').trim()
-  if (!reason) {
-    $q.notify({ type: 'warning', message: 'Please give a cancellation reason.' })
-    return
-  }
-  updateStatus('cancelled', reason)
+  if (!cancelReasonValid.value) return
+  updateStatus('cancelled', cancelReason.value === 'Other' ? cancelOtherText.value.trim() : cancelReason.value)
 }
 
 const openDirections = () => {
@@ -1327,34 +1339,132 @@ onMounted(fetchOrderDetails)
   padding: 18px 24px 4px;
 }
 
-.od-dialog-check {
-  margin-bottom: 14px;
+/* A thin line under the heading, as in the consumer's cancel dialog. */
+.od-cancel-sep {
+  margin: 18px 24px 0;
 
-  font-size: var(--fs-sm);
-
-  color: var(--c-text-2);
+  background: var(--c-hairline);
 }
 
-.od-dialog-input :deep(.q-field__control) {
+.od-cancel-body {
+  padding-top: 16px;
+}
+
+.od-reason-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+}
+
+/* Each reason is a card with a round radio mark; the chosen one takes the brand red. */
+.od-reason {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-control);
+
+  background: #ffffff;
+
+  font-family: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.od-reason:hover {
+  border-color: var(--c-border-strong);
+}
+
+.od-reason:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
+}
+
+.od-reason--selected,
+.od-reason--selected:hover {
+  border-color: var(--c-brand);
+
+  background: var(--c-brand-tint);
+}
+
+.od-reason-radio {
+  flex-shrink: 0;
+  box-sizing: border-box;
+
+  width: 18px;
+  height: 18px;
+
+  border: 2px solid var(--c-border);
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  transition: border-color 0.15s, border-width 0.15s;
+}
+
+.od-reason--selected .od-reason-radio {
+  border-width: 6px;
+  border-color: var(--c-brand);
+}
+
+.od-reason-label {
+  font-size: var(--fs-md);
+  font-weight: 600;
+
+  color: var(--c-text);
+}
+
+.od-reason-input {
+  margin-top: 12px;
+}
+
+.od-reason-input :deep(.q-field__control) {
   border-radius: var(--r-control);
 }
 
+/* Keep Order and Cancel Order share the row equally, as in the consumer's dialog. */
 .od-dialog-actions {
   display: flex;
-  justify-content: flex-end;
 
   gap: 10px;
-  padding: 12px 24px 24px;
+  padding: 18px 24px 24px;
 }
 
 .od-dialog-btn {
-  min-width: 132px;
-  height: 44px;
+  flex: 1;
+
+  min-width: 0;
+  height: 48px;
 
   border-radius: var(--r-control);
 
   font-size: var(--fs-sm);
   font-weight: 600;
+}
+
+/* On a short screen the reasons scroll between the fixed heading and buttons. */
+.od-cancel-dialog {
+  display: flex;
+  flex-direction: column;
+
+  max-height: calc(100vh - 48px);
+}
+
+.od-cancel-dialog > :not(.od-cancel-body) {
+  flex-shrink: 0;
+}
+
+.od-cancel-body {
+  min-height: 0;
+  overflow-y: auto;
 }
 
 @media (max-width: 480px) {
@@ -1364,6 +1474,10 @@ onMounted(fetchOrderDetails)
 
   .od-dialog-body {
     padding: 16px 18px 4px;
+  }
+
+  .od-cancel-sep {
+    margin: 16px 18px 0;
   }
 
   .od-dialog-actions {
