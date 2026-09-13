@@ -144,13 +144,21 @@
                   >
                 </td>
                 <td class="text-right">
-                  <div class="adm-row-actions" @click.stop @keydown.enter.stop>
+                  <div class="adm-row-actions" style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px;" @click.stop @keydown.enter.stop>
                     <q-btn
                       flat
                       no-caps
                       label="View"
                       class="adm-btn adm-btn--view"
                       @click="openView(vendor)"
+                    />
+                    <q-btn
+                      flat
+                      no-caps
+                      label="View Store Products"
+                      class="adm-btn adm-btn--view"
+                      style="white-space: nowrap; padding: 0 12px;"
+                      @click="openProducts(vendor)"
                     />
                     <q-btn
                       v-if="!vendor.deleted"
@@ -205,12 +213,13 @@
                 {{ formatActivity(vendor.last_activity_at) }}</div
               >
             </div>
-            <div class="vp-list-side">
+            <div class="vp-list-side" style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
               <span
                 class="vp-status"
                 :class="`vp-status--${accountStatusTone(statusOf(vendor))}`"
                 >{{ accountStatusLabel(statusOf(vendor)) }}</span
               >
+              <q-btn flat no-caps dense size="sm" label="View Store Products" color="primary" @click.stop="openProducts(vendor)" />
             </div>
           </button>
         </div>
@@ -313,6 +322,89 @@
         </q-btn>
       </template>
     </StoreProfileDialog>
+
+    <!-- PRODUCTS VIEW DIALOG -->
+    <q-dialog v-model="productsOpen" full-width>
+      <q-card class="vp-dialog vp-card" style="position: relative; display: flex; flex-direction: column; max-width: 1000px; max-height: calc(100vh - 48px);">
+        
+        <q-btn
+          v-close-popup
+          round
+          dense
+          unelevated
+          icon="o_close"
+          class="vp-dialog-close-float"
+          aria-label="Close"
+        />
+
+        <div style="flex: 1 1 auto; overflow-y: auto; padding: 24px 24px 20px; min-height: 0;">
+          <div class="vp-dialog-title" style="margin-bottom: 24px;">
+            Viewing Live Products from {{ viewingVendor?.store_name || 'Unnamed store' }}
+          </div>
+          
+          <div v-if="productsLoading" class="q-pa-xl text-center">
+            <q-spinner-dots size="40px" color="primary" />
+          </div>
+          <div v-else-if="!vendorProducts.length" class="q-pa-xl text-center">
+            <q-icon name="o_inventory_2" size="48px" color="grey-4" />
+            <div class="text-h6 text-grey-6 q-mt-md">No products found</div>
+          </div>
+          <div v-else class="vp-table-wrap">
+            <table class="vp-table vd-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th class="text-right">Selling Price</th>
+                  <th class="text-right">In Stock</th>
+                  <th>Product Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="prod in vendorProducts" :key="prod.inventory_id">
+                  <td>
+                    <div class="vp-person">
+                      <span class="adm-thumb">
+                        <img v-if="prod.image_url && !prod.imageError" :src="prod.image_url" alt="" @error="prod.imageError = true" />
+                        <q-icon v-else name="o_image" size="20px" />
+                      </span>
+                      <span class="vp-name">{{ prod.product_name }}</span>
+                    </div>
+                  </td>
+                  <td>{{ prod.category?.category_name || 'N/A' }}</td>
+                  <td class="text-right">
+                    <div class="text-weight-bold">₱{{ Number(prod.price).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}</div>
+                    <div v-if="prod.variants && prod.variants.length > 0" class="text-caption text-grey-7" style="margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">
+                      <div v-for="v in prod.variants" :key="v.name">
+                        {{ v.name }}: ₱{{ Number(v.price).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-right">{{ prod.available_quantity }}</td>
+                  <td>
+                    <span
+                      class="vp-status"
+                      :class="`vp-status--${prod.status === 'active' ? 'placed' : 'cancelled'}`"
+                    >{{ prod.status }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="vp-dialog-actions" style="flex-shrink: 0; border-top: 1px solid var(--c-hairline);">
+          <q-btn
+            v-close-popup
+            outline
+            no-caps
+            color="primary"
+            label="Close"
+            class="vp-dialog-btn"
+          />
+        </div>
+      </q-card>
+    </q-dialog>
 
     <AccountStatusDialog
       ref="statusDialog"
@@ -495,7 +587,7 @@ const viewStats = computed(() =>
   viewing.value
     ? [
         {
-          label: 'Active products',
+          label: 'Products',
           value: viewing.value.active_products ?? 0,
           icon: 'o_inventory_2'
         },
@@ -507,6 +599,33 @@ const viewStats = computed(() =>
       ]
     : []
 )
+
+const productsOpen = ref(false)
+const productsLoading = ref(false)
+const viewingVendor = ref(null)
+const vendorProducts = ref([])
+
+const openProducts = async (vendor) => {
+  viewingVendor.value = vendor
+  productsOpen.value = true
+  productsLoading.value = true
+  vendorProducts.value = []
+  
+  try {
+    const { data } = await api.get(`/admin/vendors/${vendor.store_id}/products`)
+    if (data && data.products) {
+      vendorProducts.value = data.products
+    }
+  } catch (err) {
+    console.error('Failed to load products for vendor:', err)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to load products for this vendor.'
+    })
+  } finally {
+    productsLoading.value = false
+  }
+}
 
 const openView = vendor => {
   viewing.value = vendor
@@ -615,6 +734,23 @@ onMounted(fetchVendors)
   width: 11%;
 }
 .vd-table .col-actions {
-  width: 130px;
+  width: auto;
+}
+
+.vp-dialog-close-float {
+  position: absolute;
+  top: 34px;
+  right: 34px;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  color: var(--c-text-2);
+}
+
+@media (max-width: 600px) {
+  .vp-dialog-close-float {
+    top: 24px;
+    right: 24px;
+  }
 }
 </style>

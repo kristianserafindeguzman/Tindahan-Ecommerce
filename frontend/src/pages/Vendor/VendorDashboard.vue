@@ -120,6 +120,9 @@
                 </div>
                 <div class="section-subtitle">{{ t('forecastSub') }}</div>
               </div>
+              <q-btn flat round dense icon="o_refresh" size="sm" class="forecast-refresh-btn"
+                :loading="mlForecast.refreshing"
+                @click="refreshForecast" />
             </div>
 
             <div v-if="mlForecast.loading" class="empty-state">
@@ -529,6 +532,7 @@ const catalogProducts = ref([])
 
 const mlForecast = ref({
   loading: true,
+  refreshing: false,
   has_forecast: false,
   low_data_warning: false,
   error: false,
@@ -856,6 +860,24 @@ onMounted(async () => {
     mlForecast.value.loading = false
   }
 })
+
+const refreshForecast = async () => {
+  mlForecast.value.refreshing = true
+  try {
+    const { data } = await api.post('/vendor/demand-forecast/refresh')
+    if (data) {
+      mlForecast.value.has_forecast = data.has_forecast
+      mlForecast.value.low_data_warning = data.low_data_warning || false
+      mlForecast.value.summary = data.summary
+      mlForecast.value.top_products = data.top_products || []
+      mlForecast.value.generated_at = data.generated_at
+    }
+  } catch (err) {
+    console.error('Failed to refresh forecast:', err)
+  } finally {
+    mlForecast.value.refreshing = false
+  }
+}
 </script>
 
 <style scoped>

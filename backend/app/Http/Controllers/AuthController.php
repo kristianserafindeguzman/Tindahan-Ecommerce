@@ -649,7 +649,10 @@ class AuthController extends Controller
             ->whereNull('verified_at')
             ->delete();
 
-        // SEMAPHORE_FAKE_CODE swaps in a fixed code and skips the text, but only on a local machine so it can never reach the live server.
+        // TEMPORARY LOCAL DEVELOPMENT OTP BYPASS
+        // Accept the value of SEMAPHORE_FAKE_CODE (e.g., 123456) while testing against localhost.
+        // REMOVE/REVERT THIS BEFORE RETURNING TO THE CLOUD DATABASE AND REAL OTP SERVICE.
+        // The bypass only works if APP_ENV=local, ensuring it can never reach the live server.
         $fakeCode = app()->environment('local') ? config('services.semaphore.fake_code') : null;
 
         $code = $fakeCode ? (string) $fakeCode : str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);

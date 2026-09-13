@@ -252,6 +252,27 @@ class AdminController extends Controller
     }
 
     /**
+     * Get products for a specific vendor's store.
+     *
+     * GET /api/admin/vendors/{storeId}/products
+     */
+    public function getVendorProducts($storeId)
+    {
+        $store = \App\Models\Store::findOrFail($storeId);
+        
+        $products = \App\Models\Inventory::where('store_id', $storeId)
+            ->with('category')
+            ->where('status', '!=', 'archived')
+            ->get()
+            ->each->setAppends(['image_url', 'available_quantity']);
+
+        return response()->json([
+            'store' => $store,
+            'products' => $products,
+        ]);
+    }
+
+    /**
      * Export registered vendors as a PDF.
      *
      * GET /api/admin/vendors/export
