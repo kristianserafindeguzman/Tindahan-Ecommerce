@@ -50,27 +50,6 @@
         <CategoryCarousel v-else :categories="categories" @select="goToCategory" />
       </SectionBlock>
 
-      <!-- Two promo tiles that route into the catalogue, styled as navigation rather than as another content section. -->
-      <div class="promo-tiles">
-        <button type="button" class="promo-tile promo-tile--brand" @click="router.push('/consumer/products')">
-          <span class="promo-icon"><q-icon name="o_shopping_basket" size="22px" /></span>
-          <span class="promo-body">
-            <span class="promo-title">Shop everyday essentials</span>
-            <span class="promo-text">Rice, drinks, snacks and household goods from stores near you.</span>
-          </span>
-          <q-icon name="o_arrow_forward" size="20px" class="promo-arrow" />
-        </button>
-
-        <button type="button" class="promo-tile promo-tile--solid" @click="router.push('/consumer/stores')">
-          <span class="promo-icon"><q-icon name="o_storefront" size="22px" /></span>
-          <span class="promo-body">
-            <span class="promo-title">Browse local stores</span>
-            <span class="promo-text">See opening hours and how far each store is from you.</span>
-          </span>
-          <q-icon name="o_arrow_forward" size="20px" class="promo-arrow" />
-        </button>
-      </div>
-
       <!-- RECOMMENDED / POPULAR PRODUCTS -->
       <SectionBlock :title="resultsSectionTitle" view-all @view-all="router.push(resultsViewAllPath)">
         <div v-if="isLoggedIn ? loadingPersonalized : productsLoading" class="products-grid">
@@ -478,113 +457,6 @@ const visibleDiscoverProducts = computed(() =>
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* PROMO TILES */
-.promo-tiles {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-
-  margin-bottom: 24px;
-}
-
-.promo-tile {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-
-  width: 100%;
-  padding: 16px 18px;
-
-  border: none;
-  border-radius: var(--r-xl);
-
-  font-family: inherit;
-  text-align: left;
-
-  cursor: pointer;
-
-  transition: box-shadow 0.2s, transform 0.2s;
-}
-
-.promo-tile:hover {
-  box-shadow: 0 10px 24px rgba(17, 17, 17, 0.14);
-  transform: translateY(-2px);
-}
-
-.promo-tile:focus-visible {
-  outline: 2px solid var(--c-brand);
-  outline-offset: 3px;
-}
-
-/* One tinted and one solid tile, using depths of the same brand red so the two panels do not read as one block. */
-.promo-tile--brand {
-  background: linear-gradient(135deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
-  color: var(--c-brand-deep);
-}
-
-.promo-tile--solid {
-  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-deep) 100%);
-  color: #ffffff;
-}
-
-.promo-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  width: 40px;
-  height: 40px;
-
-  border-radius: var(--r-lg);
-}
-
-.promo-tile--brand .promo-icon {
-  background: rgba(255, 255, 255, 0.6);
-  color: var(--c-brand);
-}
-
-.promo-tile--solid .promo-icon {
-  /* 0.12 read as a disc on the old near-black; on brand red it needs a touch more. */
-  background: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-}
-
-.promo-body {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-
-  min-width: 0;
-  flex: 1;
-}
-
-.promo-title {
-  font-size: var(--fs-md);
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.promo-text {
-  font-size: var(--fs-xs);
-  line-height: 1.4;
-
-  /* White at 0.85 opacity clears 4.5:1 on --c-brand at 4.76, where 0.78 measured only 4.22. */
-  opacity: 0.85;
-}
-
-.promo-arrow {
-  flex-shrink: 0;
-  opacity: 0.6;
-
-  transition: transform 0.2s ease;
-}
-
-.promo-tile:hover .promo-arrow {
-  transform: translateX(3px);
-  opacity: 1;
-}
-
 /* SELLER BAND */
 .seller-band {
   display: flex;
@@ -790,30 +662,6 @@ const visibleDiscoverProducts = computed(() =>
 @media (max-width: 600px) {
   .home-content {
     padding: 16px;
-  }
-
-  /* Icon and label share one line on phones, dropping the description and arrow rather than squeezing them into a 172px tile. */
-  .promo-tile {
-    gap: 10px;
-    padding: 14px 12px;
-  }
-
-  .promo-icon {
-    width: 34px;
-    height: 34px;
-  }
-
-  .promo-icon :deep(.q-icon) {
-    font-size: 18px;
-  }
-
-  .promo-text,
-  .promo-arrow {
-    display: none;
-  }
-
-  .promo-title {
-    font-size: var(--fs-sm);
   }
 
   /* Trims the phone hero from 468px, over half an 844px screen, back to roughly a third of the viewport. */

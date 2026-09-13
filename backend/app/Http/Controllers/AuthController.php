@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApprovalStatus;
+use App\Models\Notification;
 use App\Models\OtpCode;
 use App\Models\Store;
 use App\Models\User;
@@ -238,6 +239,20 @@ class AuthController extends Controller
             'rejection_reason' => null,
             'reviewed_at'      => null,
         ]);
+
+        // Lets every admin know there's a new store to review; the bell on the admin pages shows it.
+        // The account and store are already saved, so a failed notice is logged rather than failing the sign-up.
+        try {
+            User::where('role', 'Admin')->pluck('user_id')->each(function ($adminId) use ($store, $user) {
+                Notification::create([
+                    'user_id' => $adminId,
+                    'title'   => 'New store application',
+                    'message' => "{$store->store_name} by {$user->full_name} is waiting for your review.",
+                ]);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         // Uses up the verification so it can't register a second vendor.
         $verifiedCode->delete();
