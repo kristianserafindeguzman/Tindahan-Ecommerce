@@ -22,6 +22,7 @@ class VendorController extends Controller
                 'preparing_orders' => 0,
                 'picked_up_orders' => 0,
                 'cancelled_orders' => 0,
+                'total_orders' => 0,
                 'recent_orders' => []
             ]);
         }
@@ -32,6 +33,8 @@ class VendorController extends Controller
         $preparing = \App\Models\Order::where('store_id', $storeId)->where('status', 'preparing')->count();
         $picked_up = \App\Models\Order::where('store_id', $storeId)->where('status', 'picked_up')->count();
         $cancelled = \App\Models\Order::where('store_id', $storeId)->where('status', 'cancelled')->count();
+        // Every order that wasn't cancelled, for the store profile's order count.
+        $totalOrders = \App\Models\Order::where('store_id', $storeId)->where('status', '!=', 'cancelled')->count();
 
         $recentOrders = \App\Models\Order::with('consumer')
             ->where('store_id', $storeId)
@@ -54,6 +57,7 @@ class VendorController extends Controller
             'preparing_orders' => $preparing,
             'picked_up_orders' => $picked_up,
             'cancelled_orders' => $cancelled,
+            'total_orders' => $totalOrders,
             'recent_orders' => $recentOrders
         ]);
     }
