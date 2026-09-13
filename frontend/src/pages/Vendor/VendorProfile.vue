@@ -2,27 +2,26 @@
   <q-page class="profile-page">
     <div class="profile-container">
       <div class="page-header-block">
-        <h1 class="page-title">Profile Settings</h1>
-        <p class="page-subtitle">Manage your personal information, store details and security.</p>
+        <h1 class="page-title">{{ t('pageTitle') }}</h1>
+        <p class="page-subtitle">{{ t('pageSubtitle') }}</p>
       </div>
 
       <div class="row q-col-gutter-md items-stretch">
 
-        <!-- ================= PERSONAL INFO ================= -->
         <div class="col-12 col-md-8">
           <q-card flat bordered class="profile-card profile-card-fill">
             <q-card-section>
               <div class="card-header">
                 <div>
-                  <div class="section-title">Personal Information</div>
-                  <div class="section-subtitle">View and update the store owner's details.</div>
+                  <div class="section-title">{{ t('personalInfoTitle') }}</div>
+                  <div class="section-subtitle">{{ t('personalInfoSubtitle') }}</div>
                 </div>
                 <q-btn
                   outline
                   no-caps
                   color="primary"
                   icon="o_edit"
-                  label="Edit"
+                  :label="t('editBtn')"
                   class="card-action-btn"
                   :disable="!profileLoaded"
                   @click="startEditPersonal"
@@ -32,42 +31,40 @@
               <div class="info-row">
                 <div class="info-icon"><q-icon name="o_person" size="18px" /></div>
                 <div class="info-body">
-                  <div class="info-label">Name</div>
-                  <div class="info-value">{{ user.full_name || 'Not set' }}</div>
+                  <div class="info-label">{{ t('nameLabel') }}</div>
+                  <div class="info-value">{{ user.full_name || t('notSet') }}</div>
                 </div>
               </div>
 
               <div class="info-row">
                 <div class="info-icon"><q-icon name="o_phone" size="18px" /></div>
                 <div class="info-body">
-                  <div class="info-label">Phone Number</div>
-                  <div class="info-value">{{ user.phone_number || 'Not set' }}</div>
+                  <div class="info-label">{{ t('phoneLabel') }}</div>
+                  <div class="info-value">{{ user.phone_number || t('notSet') }}</div>
                 </div>
               </div>
 
               <div class="info-row">
                 <div class="info-icon"><q-icon name="o_mail" size="18px" /></div>
                 <div class="info-body">
-                  <div class="info-label">Email Address</div>
-                  <div class="info-value">{{ user.email || 'Not set' }}</div>
+                  <div class="info-label">{{ t('emailLabel') }}</div>
+                  <div class="info-value">{{ user.email || t('notSet') }}</div>
                 </div>
               </div>
             </q-card-section>
           </q-card>
         </div>
 
-        <!-- ================= STORE PHOTO ================= -->
         <div class="col-12 col-md-4 col-photo">
           <q-card flat bordered class="profile-card profile-card-fill">
             <q-card-section class="photo-card-section">
               <div>
-                <div class="section-title">Store Photo</div>
-                <div class="section-subtitle">Customers see this on your store page.</div>
+                <div class="section-title">{{ t('storePhotoTitle') }}</div>
+                <div class="section-subtitle">{{ t('storePhotoSubtitle') }}</div>
               </div>
 
               <div class="photo-card-body">
                 <div class="q-mb-md">
-                  <!-- A 16:9 frame in place of the consumer's round avatar, since it shows the storefront. -->
                   <div class="store-photo-wrap">
                     <img v-if="shownStorePhoto" :src="shownStorePhoto" alt="Storefront" class="store-photo" />
                     <div v-else class="store-photo store-photo--empty">
@@ -84,14 +81,14 @@
 
                 <div class="text-center">
                   <template v-if="!photoFile">
-                    <q-btn outline no-caps color="primary" label="Change Photo" class="full-width" @click="triggerUpload" />
+                    <q-btn outline no-caps color="primary" :label="t('changePhotoBtn')" class="full-width" @click="triggerUpload" />
                   </template>
                   <template v-else>
-                    <q-btn unelevated no-caps color="primary" label="Save Photo" :loading="savingPhoto" class="full-width q-mb-sm btn-gradient" @click="savePhoto" />
-                    <q-btn outline no-caps color="primary" label="Cancel" class="full-width" :disable="savingPhoto" @click="cancelPhoto" />
+                    <q-btn unelevated no-caps color="primary" :label="t('savePhotoBtn')" :loading="savingPhoto" class="full-width q-mb-sm btn-gradient" @click="savePhoto" />
+                    <q-btn outline no-caps color="primary" :label="t('cancelBtn')" class="full-width" :disable="savingPhoto" @click="cancelPhoto" />
                   </template>
                 </div>
-                <div class="text-center photo-hint">JPG, PNG or GIF. Max size of 2MB.</div>
+                <div class="text-center photo-hint">{{ t('photoHint') }}</div>
               </div>
             </q-card-section>
           </q-card>
@@ -99,65 +96,63 @@
 
         <div class="col-12">
 
-          <!-- ================= STORE DETAILS ================= -->
           <q-card flat bordered class="profile-card q-mb-md">
             <q-card-section>
               <div class="card-header">
                 <div>
-                  <div class="section-title">Store Details</div>
-                  <div class="section-subtitle">What customers see about your store.</div>
+                  <div class="section-title">{{ t('storeDetailsTitle') }}</div>
+                  <div class="section-subtitle">{{ t('storeDetailsSubtitle') }}</div>
                 </div>
               </div>
 
               <div class="info-row">
                 <div class="info-icon"><q-icon name="o_storefront" size="18px" /></div>
                 <div class="info-body">
-                  <div class="info-label">Store Name</div>
-                  <div class="info-value">{{ store.store_name || 'Not set' }}</div>
+                  <div class="info-label">{{ t('storeNameLabel') }}</div>
+                  <div class="info-value">{{ store.store_name || t('notSet') }}</div>
                 </div>
-                <q-btn outline no-caps color="primary" icon="o_edit" label="Edit" class="card-action-btn" aria-label="Edit store name" :disable="!profileLoaded" @click="startEditStoreName" />
+                <q-btn outline no-caps color="primary" icon="o_edit" :label="t('editBtn')" class="card-action-btn" aria-label="Edit store name" :disable="!profileLoaded" @click="startEditStoreName" />
               </div>
 
               <div class="info-row">
                 <div class="info-icon"><q-icon name="o_place" size="18px" /></div>
                 <div class="info-body">
-                  <div class="info-label">Address</div>
-                  <div class="info-value">{{ store.address || 'Not set' }}</div>
+                  <div class="info-label">{{ t('addressLabel') }}</div>
+                  <div class="info-value">{{ store.address || t('notSet') }}</div>
                   <div class="info-meta" :class="{ 'info-meta--ok': hasPin }">
                     <q-icon :name="hasPin ? 'o_check_circle' : 'o_location_off'" size="14px" />
-                    {{ hasPin ? 'Pinned on the map for nearby customers.' : 'No map pin yet, so nearby customers can\'t find you.' }}
+                    {{ hasPin ? t('pinOkDesc') : t('pinMissingDesc') }}
                   </div>
                 </div>
-                <q-btn outline no-caps color="primary" icon="o_edit" label="Edit" class="card-action-btn" aria-label="Edit address" :disable="!profileLoaded" @click="startEditAddress" />
+                <q-btn outline no-caps color="primary" icon="o_edit" :label="t('editBtn')" class="card-action-btn" aria-label="Edit address" :disable="!profileLoaded" @click="startEditAddress" />
               </div>
 
               <div class="info-row info-row-last">
                 <div class="info-icon"><q-icon name="o_schedule" size="18px" /></div>
                 <div class="info-body">
-                  <div class="info-label">Store Hours</div>
+                  <div class="info-label">{{ t('storeHoursLabel') }}</div>
                   <div class="hours-lines">
                     <div v-for="line in hoursLines" :key="line" class="hours-line">{{ line }}</div>
                   </div>
                 </div>
-                <q-btn outline no-caps color="primary" icon="o_edit" label="Edit" class="card-action-btn" aria-label="Edit store hours" :disable="!profileLoaded" @click="startEditHours" />
+                <q-btn outline no-caps color="primary" icon="o_edit" :label="t('editBtn')" class="card-action-btn" aria-label="Edit store hours" :disable="!profileLoaded" @click="startEditHours" />
               </div>
             </q-card-section>
           </q-card>
 
-          <!-- ================= SECURITY ================= -->
           <q-card flat bordered class="profile-card q-mb-md">
             <q-card-section>
               <div class="card-header">
                 <div>
-                  <div class="section-title">Security</div>
-                  <div class="section-subtitle">Keep your account secure.</div>
+                  <div class="section-title">{{ t('securityTitle') }}</div>
+                  <div class="section-subtitle">{{ t('securitySubtitle') }}</div>
                 </div>
               </div>
 
               <div class="info-row info-row-last">
                 <div class="info-icon"><q-icon name="o_lock" size="18px" /></div>
                 <div class="info-body">
-                  <div class="info-label">Password</div>
+                  <div class="info-label">{{ t('passwordLabel') }}</div>
                   <div class="info-value">••••••••••••</div>
                 </div>
                 <q-btn
@@ -165,7 +160,7 @@
                   no-caps
                   color="primary"
                   icon="o_lock"
-                  label="Change Password"
+                  :label="t('changePwdBtn')"
                   class="card-action-btn"
                   @click="showPasswordModal = true"
                 />
@@ -173,17 +168,16 @@
             </q-card-section>
           </q-card>
 
-          <!-- ================= DANGER ZONE ================= -->
           <q-card flat bordered class="profile-card danger-card">
             <q-card-section>
-              <div class="section-title text-red-9">Danger Zone</div>
-              <div class="section-subtitle q-mb-md">Actions here are permanent and cannot be undone.</div>
+              <div class="section-title text-red-9">{{ t('dangerZoneTitle') }}</div>
+              <div class="section-subtitle q-mb-md">{{ t('dangerZoneSubtitle') }}</div>
 
               <div class="danger-row" role="button" tabindex="0" @click="confirmDeleteAccount" @keydown.enter="confirmDeleteAccount">
                 <div class="info-icon danger-icon"><q-icon name="o_delete" size="18px" /></div>
                 <div class="info-body">
-                  <div class="danger-title">Delete My Store Account</div>
-                  <div class="danger-desc">Permanently delete your store, products and sales records.</div>
+                  <div class="danger-title">{{ t('deleteAccountTitle') }}</div>
+                  <div class="danger-desc">{{ t('deleteAccountDesc') }}</div>
                 </div>
                 <q-icon name="o_chevron_right" size="20px" color="red-4" />
               </div>
@@ -194,14 +188,13 @@
       </div>
     </div>
 
-    <!-- EDIT PERSONAL INFORMATION DIALOG -->
     <q-dialog v-model="showEditPersonalModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card" style="width: 560px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_person" size="22px" /></div>
           <div class="dialog-header-text">
-            <div class="text-h6">Edit Personal Information</div>
-            <div class="section-subtitle">Update your personal details below.</div>
+            <div class="text-h6">{{ t('editPersonalTitle') }}</div>
+            <div class="section-subtitle">{{ t('editPersonalSubtitle') }}</div>
           </div>
           <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close edit profile" :disable="savingPersonal" @click="attemptCloseEditPersonal" />
         </q-card-section>
@@ -210,18 +203,18 @@
           <q-card-section class="dialog-body">
             <div class="edit-field-row">
               <div class="edit-field">
-                <div class="edit-field-label">First Name</div>
-                <q-input v-model="editForm.firstName" outlined dense no-error-icon hide-bottom-space :rules="[val => !!val?.trim() || 'Required']" />
+                <div class="edit-field-label">{{ t('firstNameLabel') }}</div>
+                <q-input v-model="editForm.firstName" outlined dense no-error-icon hide-bottom-space :rules="[val => !!val?.trim() || t('requiredRule')]" />
               </div>
 
               <div class="edit-field">
-                <div class="edit-field-label">Last Name</div>
-                <q-input v-model="editForm.lastName" outlined dense no-error-icon hide-bottom-space :rules="[val => !!val?.trim() || 'Required']" />
+                <div class="edit-field-label">{{ t('lastNameLabel') }}</div>
+                <q-input v-model="editForm.lastName" outlined dense no-error-icon hide-bottom-space :rules="[val => !!val?.trim() || t('requiredRule')]" />
               </div>
             </div>
 
             <div class="edit-field edit-field-tight">
-              <div class="edit-field-label">Phone Number</div>
+              <div class="edit-field-label">{{ t('phoneLabel') }}</div>
               <q-input
                 v-model="editForm.phone_number"
                 outlined
@@ -238,7 +231,7 @@
             </div>
 
             <div class="edit-field edit-field-tight">
-              <div class="edit-field-label">Email Address</div>
+              <div class="edit-field-label">{{ t('emailLabel') }}</div>
               <q-input
                 v-model="editForm.email"
                 outlined
@@ -254,20 +247,19 @@
         </q-form>
 
         <q-card-actions align="right">
-          <q-btn outline no-caps label="Cancel" color="primary" :disable="savingPersonal" @click="attemptCloseEditPersonal" />
-          <q-btn unelevated no-caps color="primary" label="Save Changes" :loading="savingPersonal" :disable="!canSavePersonal" class="btn-gradient" @click="savePersonal" />
+          <q-btn outline no-caps :label="t('cancelBtn')" color="primary" :disable="savingPersonal" @click="attemptCloseEditPersonal" />
+          <q-btn unelevated no-caps color="primary" :label="t('saveChangesBtn')" :loading="savingPersonal" :disable="!canSavePersonal" class="btn-gradient" @click="savePersonal" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- EDIT STORE NAME DIALOG -->
     <q-dialog v-model="showStoreNameModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card" style="width: 460px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_storefront" size="22px" /></div>
           <div class="dialog-header-text">
-            <div class="text-h6">Edit Store Name</div>
-            <div class="section-subtitle">This is the name customers see.</div>
+            <div class="text-h6">{{ t('editStoreNameTitle') }}</div>
+            <div class="section-subtitle">{{ t('editStoreNameSubtitle') }}</div>
           </div>
           <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close edit store name" :disable="savingStoreName" @click="attemptCloseStoreName" />
         </q-card-section>
@@ -275,28 +267,26 @@
         <q-form ref="storeNameFormRef" greedy>
           <q-card-section class="dialog-body">
             <div class="edit-field">
-              <div class="edit-field-label">Store Name</div>
-              <q-input v-model="storeNameInput" outlined dense no-error-icon hide-bottom-space maxlength="150" :rules="[val => !!val?.trim() || 'Store name is required.']" />
+              <div class="edit-field-label">{{ t('storeNameLabel') }}</div>
+              <q-input v-model="storeNameInput" outlined dense no-error-icon hide-bottom-space maxlength="150" :rules="[val => !!val?.trim() || t('storeNameRule')]" />
             </div>
           </q-card-section>
         </q-form>
 
         <q-card-actions align="right">
-          <q-btn outline no-caps label="Cancel" color="primary" :disable="savingStoreName" @click="attemptCloseStoreName" />
-          <q-btn unelevated no-caps color="primary" label="Save Changes" :loading="savingStoreName" :disable="!canSaveStoreName" class="btn-gradient" @click="saveStoreName" />
+          <q-btn outline no-caps :label="t('cancelBtn')" color="primary" :disable="savingStoreName" @click="attemptCloseStoreName" />
+          <q-btn unelevated no-caps color="primary" :label="t('saveChangesBtn')" :loading="savingStoreName" :disable="!canSaveStoreName" class="btn-gradient" @click="saveStoreName" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- EDIT ADDRESS DIALOG -->
-    <!-- The map mounts once the dialog has finished opening, since Leaflet can't measure a panel that is still scaling in. -->
     <q-dialog v-model="showAddressModal" persistent transition-show="scale" transition-hide="scale" @show="addressMapReady = true" @hide="addressMapReady = false">
       <q-card class="profile-dialog-card" style="width: 560px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_place" size="22px" /></div>
           <div class="dialog-header-text">
-            <div class="text-h6">Edit Address</div>
-            <div class="section-subtitle">Tap the map to move your pin, then check the address below.</div>
+            <div class="text-h6">{{ t('editAddressTitle') }}</div>
+            <div class="section-subtitle">{{ t('editAddressSubtitle') }}</div>
           </div>
           <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close edit address" :disable="savingAddress" @click="attemptCloseAddress" />
         </q-card-section>
@@ -308,11 +298,11 @@
             </div>
             <div class="edit-field-hint" :class="{ 'edit-field-hint-success': editAddress.latitude !== null }">
               <q-icon v-if="editAddress.latitude !== null" name="o_check_circle" size="12px" />
-              {{ editAddress.latitude !== null ? 'Pin placed.' : 'Tap the map to drop a pin on your store.' }}
+              {{ editAddress.latitude !== null ? t('pinPlaced') : t('pinMissing') }}
             </div>
 
             <div class="edit-field">
-              <div class="edit-field-label">Street, building, house no.</div>
+              <div class="edit-field-label">{{ t('addressFieldLabel') }}</div>
               <q-input
                 v-model="editAddress.address"
                 type="textarea"
@@ -323,42 +313,40 @@
                 hide-bottom-space
                 maxlength="255"
                 class="address-input"
-                :rules="[val => !!val?.trim() || 'Address is required.']"
+                :rules="[val => !!val?.trim() || t('addressRule')]"
               />
             </div>
           </q-card-section>
         </q-form>
 
         <q-card-actions align="right">
-          <q-btn outline no-caps label="Cancel" color="primary" :disable="savingAddress" @click="attemptCloseAddress" />
-          <q-btn unelevated no-caps color="primary" label="Save Address" :loading="savingAddress" :disable="!canSaveAddress" class="btn-gradient" @click="saveAddress" />
+          <q-btn outline no-caps :label="t('cancelBtn')" color="primary" :disable="savingAddress" @click="attemptCloseAddress" />
+          <q-btn unelevated no-caps color="primary" :label="t('saveAddressBtn')" :loading="savingAddress" :disable="!canSaveAddress" class="btn-gradient" @click="saveAddress" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- EDIT STORE HOURS DIALOG -->
     <q-dialog v-model="showHoursModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card hours-dialog" style="width: 480px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_schedule" size="22px" /></div>
           <div class="dialog-header-text">
-            <div class="text-h6">Edit Store Hours</div>
-            <div class="section-subtitle">Set when customers can pick up orders.</div>
+            <div class="text-h6">{{ t('editHoursTitle') }}</div>
+            <div class="section-subtitle">{{ t('editHoursSubtitle') }}</div>
           </div>
           <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close store hours" :disable="savingHours" @click="attemptCloseHours" />
         </q-card-section>
 
         <q-card-section class="dialog-body">
           <div class="hours-toolbar">
-            <span class="hours-toolbar-hint">Switch a day off to mark it closed.</span>
-            <q-btn outline no-caps color="primary" icon="o_content_copy" label="Copy Monday to all" class="hours-copy-btn" @click="applyMondayToAll" />
+            <span class="hours-toolbar-hint">{{ t('hoursHint') }}</span>
+            <q-btn outline no-caps color="primary" icon="o_content_copy" :label="t('copyMondayBtn')" class="hours-copy-btn" @click="applyMondayToAll" />
           </div>
 
-          <!-- Each day is one compact row, with its times picked from half-hour dropdowns rather than typed. -->
           <div v-for="day in editHours" :key="day.name" class="hours-row" :class="{ 'hours-row--closed': !day.isOpen }">
             <div class="hours-day">
-              <q-toggle v-model="day.isOpen" color="primary" dense :aria-label="`${day.name} open`" />
-              <span class="hours-day-name">{{ day.name }}</span>
+              <q-toggle v-model="day.isOpen" color="primary" dense :aria-label="`${t('day_' + day.name)} open`" />
+              <span class="hours-day-name">{{ t('day_' + day.name) }}</span>
             </div>
 
             <div v-if="day.isOpen" class="hours-times">
@@ -378,9 +366,9 @@
                 class="hours-select"
                 no-error-icon
                 :error="invalidDay(day)"
-                :aria-label="`${day.name} opening time`"
+                :aria-label="`${t('day_' + day.name)} opening time`"
               />
-              <span class="hours-sep">to</span>
+              <span class="hours-sep">{{ t('toLabel') }}</span>
               <q-select
                 v-model="day.closeTime"
                 :options="TIME_OPTIONS"
@@ -397,39 +385,37 @@
                 class="hours-select"
                 no-error-icon
                 :error="invalidDay(day)"
-                :aria-label="`${day.name} closing time`"
+                :aria-label="`${t('day_' + day.name)} closing time`"
               />
             </div>
-            <div v-else class="hours-closed">Closed</div>
+            <div v-else class="hours-closed">{{ t('closedLabel') }}</div>
 
-            <div v-if="invalidDay(day)" class="edit-field-hint edit-field-hint-error hours-error">Closing time must be later than opening time.</div>
+            <div v-if="invalidDay(day)" class="edit-field-hint edit-field-hint-error hours-error">{{ t('timeErrorMsg') }}</div>
           </div>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn outline no-caps label="Cancel" color="primary" :disable="savingHours" @click="attemptCloseHours" />
-          <q-btn unelevated no-caps color="primary" label="Save Hours" :loading="savingHours" :disable="!canSaveHours" class="btn-gradient" @click="saveHours" />
+          <q-btn outline no-caps :label="t('cancelBtn')" color="primary" :disable="savingHours" @click="attemptCloseHours" />
+          <q-btn unelevated no-caps color="primary" :label="t('saveHoursBtn')" :loading="savingHours" :disable="!canSaveHours" class="btn-gradient" @click="saveHours" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- DISCARD CHANGES CONFIRMATION (shared by every edit dialog) -->
     <q-dialog v-model="showDiscardConfirm" :persistent="discardingChanges" transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card discard-confirm-card" style="width: 400px; max-width: 90vw;">
         <q-card-section class="dialog-header discard-confirm-header">
           <div class="dialog-header-text">
-            <div class="text-h6">Discard Changes?</div>
-            <div class="section-subtitle">You have unsaved changes. If you leave now, your changes will not be saved.</div>
+            <div class="text-h6">{{ t('discardTitle') }}</div>
+            <div class="section-subtitle">{{ t('discardSubtitle') }}</div>
           </div>
         </q-card-section>
         <q-card-actions class="discard-confirm-actions">
-          <q-btn outline no-caps label="Keep Editing" color="primary" autofocus :disable="discardingChanges" v-close-popup />
-          <q-btn unelevated no-caps label="Discard" class="btn-danger-gradient" :loading="discardingChanges" :disable="discardingChanges" @click="confirmDiscardChanges" />
+          <q-btn outline no-caps :label="t('keepEditingBtn')" color="primary" autofocus :disable="discardingChanges" v-close-popup />
+          <q-btn unelevated no-caps :label="t('discardBtn')" class="btn-danger-gradient" :loading="discardingChanges" :disable="discardingChanges" @click="confirmDiscardChanges" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- SUCCESS DIALOG (shared by every save) -->
     <q-dialog v-model="showSuccessModal" transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card success-card" style="width: 440px; max-width: 90vw;">
         <q-card-section class="text-center">
@@ -438,19 +424,18 @@
           </div>
           <div class="text-h6">{{ successModal.title }}</div>
           <p class="section-subtitle">{{ successModal.message }}</p>
-          <q-btn unelevated no-caps color="primary" label="Done" class="full-width btn-gradient" autofocus v-close-popup />
+          <q-btn unelevated no-caps color="primary" :label="t('doneBtn')" class="full-width btn-gradient" autofocus v-close-popup />
         </q-card-section>
       </q-card>
     </q-dialog>
 
-    <!-- CROP DIALOG -->
     <q-dialog v-model="showCropModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card" style="width: 560px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_crop" size="22px" /></div>
           <div class="dialog-header-text">
-            <div class="text-h6">Crop Store Photo</div>
-            <div class="section-subtitle">Drag the photo to move it, and zoom until the frame shows your storefront.</div>
+            <div class="text-h6">{{ t('cropTitle') }}</div>
+            <div class="section-subtitle">{{ t('cropSubtitle') }}</div>
           </div>
           <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close photo cropper" @click="showCropModal = false" />
         </q-card-section>
@@ -458,20 +443,19 @@
           <PhotoCropper ref="cropperRef" :src="originalPhotoUrl || ''" :aspect="16 / 9" :output-width="1280" @ready="cropReady = true" />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn outline no-caps label="Cancel" color="primary" @click="showCropModal = false" />
-          <q-btn unelevated no-caps color="primary" label="Apply Crop" :disable="!cropReady" class="btn-gradient" @click="applyCrop" />
+          <q-btn outline no-caps :label="t('cancelBtn')" color="primary" @click="showCropModal = false" />
+          <q-btn unelevated no-caps color="primary" :label="t('applyCropBtn')" :disable="!cropReady" class="btn-gradient" @click="applyCrop" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- CHANGE PASSWORD DIALOG -->
     <q-dialog v-model="showPasswordModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card" style="width: 460px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_lock" size="22px" /></div>
           <div class="dialog-header-text">
-            <div class="text-h6">Change Password</div>
-            <div class="section-subtitle">Keep your account secure with a strong password.</div>
+            <div class="text-h6">{{ t('changePwdTitle') }}</div>
+            <div class="section-subtitle">{{ t('changePwdSubtitle') }}</div>
           </div>
           <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close change password" :disable="savingPassword" @click="attemptClosePasswordModal" />
         </q-card-section>
@@ -479,7 +463,7 @@
         <q-form ref="passwordFormRef">
           <q-card-section class="dialog-body">
             <div class="edit-field">
-              <div class="edit-field-label">Current Password</div>
+              <div class="edit-field-label">{{ t('currentPwdLabel') }}</div>
               <q-input
                 v-model="passwords.current"
                 outlined
@@ -488,7 +472,7 @@
                 hide-bottom-space
                 autocomplete="current-password"
                 :type="showCurrentPassword ? 'text' : 'password'"
-                :rules="[val => !!val || 'Current password is required']"
+                :rules="[val => !!val || t('currentPwdRule')]"
               >
                 <template #append>
                   <q-icon :name="showCurrentPassword ? 'o_visibility' : 'o_visibility_off'" class="password-icon cursor-pointer" @click="showCurrentPassword = !showCurrentPassword" />
@@ -497,7 +481,7 @@
             </div>
 
             <div class="edit-field edit-field-tight">
-              <div class="edit-field-label">New Password</div>
+              <div class="edit-field-label">{{ t('newPwdLabel') }}</div>
               <q-input
                 v-model="passwords.new"
                 outlined
@@ -519,7 +503,7 @@
             </div>
 
             <div class="edit-field edit-field-tight">
-              <div class="edit-field-label">Confirm New Password</div>
+              <div class="edit-field-label">{{ t('confirmPwdLabel') }}</div>
               <q-input
                 v-model="passwords.confirm"
                 outlined
@@ -543,20 +527,19 @@
         </q-form>
 
         <q-card-actions align="right">
-          <q-btn outline no-caps label="Cancel" color="primary" :disable="savingPassword" @click="attemptClosePasswordModal" />
-          <q-btn unelevated no-caps color="primary" label="Update Password" :loading="savingPassword" :disable="!canSavePassword" class="btn-gradient" @click="savePassword" />
+          <q-btn outline no-caps :label="t('cancelBtn')" color="primary" :disable="savingPassword" @click="attemptClosePasswordModal" />
+          <q-btn unelevated no-caps color="primary" :label="t('updatePwdBtn')" :loading="savingPassword" :disable="!canSavePassword" class="btn-gradient" @click="savePassword" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- OTP VERIFICATION DIALOG -->
     <q-dialog v-model="showOtpModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card" style="width: 440px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_sms" size="22px" /></div>
           <div class="dialog-header-text">
-            <div class="text-h6">Verify New Phone</div>
-            <div class="section-subtitle">Enter the 6-digit verification code sent to {{ maskedPhone }}. Sent via SMS.</div>
+            <div class="text-h6">{{ t('otpTitle') }}</div>
+            <div class="section-subtitle">{{ t('otpSubtitle').replace('{phone}', maskedPhone) }}</div>
           </div>
           <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close verification" :disable="verifyingOtp" @click="cancelOtp" />
         </q-card-section>
@@ -585,68 +568,65 @@
           <div class="otp-meta">
             <span class="otp-resend">
               <template v-if="canResendOtp">
-                Didn't receive the code?
-                <a href="#" class="otp-resend-link" @click.prevent="resendOtpCode">Resend Code</a>
+                {{ t('otpDidntReceive') }}
+                <a href="#" class="otp-resend-link" @click.prevent="resendOtpCode">{{ t('otpResendBtn') }}</a>
               </template>
               <template v-else>
-                Didn't receive the code? Resend in {{ resendSecondsLeft }}s
+                {{ t('otpResendWait').replace('{seconds}', resendSecondsLeft) }}
               </template>
             </span>
           </div>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn outline no-caps label="Cancel" color="primary" :disable="verifyingOtp" @click="cancelOtp" />
-          <q-btn unelevated no-caps color="primary" label="Verify & Save" :loading="verifyingOtp" :disable="!canVerifyOtp || otpVerifiedFlash" class="btn-gradient" @click="verifyOtp" />
+          <q-btn outline no-caps :label="t('cancelBtn')" color="primary" :disable="verifyingOtp" @click="cancelOtp" />
+          <q-btn unelevated no-caps color="primary" :label="t('otpVerifySaveBtn')" :loading="verifyingOtp" :disable="!canVerifyOtp || otpVerifiedFlash" class="btn-gradient" @click="verifyOtp" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- DELETE ACCOUNT DIALOG -->
     <q-dialog v-model="showDeleteModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card" style="width: 480px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon dialog-icon--danger"><q-icon name="o_delete" size="22px" /></div>
           <div class="dialog-header-text">
-            <div class="text-h6">Delete Store Account</div>
-            <div class="section-subtitle">This action cannot be undone.</div>
+            <div class="text-h6">{{ t('deleteDialogTitle') }}</div>
+            <div class="section-subtitle">{{ t('deleteDialogSubtitle') }}</div>
           </div>
           <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close delete account" :disable="deletingAccount" @click="cancelDeleteModal" />
         </q-card-section>
 
         <q-card-section class="dialog-body">
           <p class="delete-warning">
-            Are you absolutely sure you want to delete your store account? Your store, products, orders and sales records will be permanently removed. This cannot be undone.
+            {{ t('deleteWarningText') }}
           </p>
 
           <div class="edit-field edit-field-tight">
             <div class="edit-field-label">
-              Type "{{ deleteConfirmName }}" below to confirm account deletion.
+              {{ t('deleteTypeConfirm').replace('{name}', deleteConfirmName) }}
             </div>
             <q-input v-model="deleteConfirmInput" outlined dense no-error-icon :placeholder="deleteConfirmName" />
             <div v-if="deleteConfirmInput && !deleteConfirmMatches" class="edit-field-hint edit-field-hint-error">
-              Name doesn't match. Please type "{{ deleteConfirmName }}" exactly.
+              {{ t('deleteMatchError').replace('{name}', deleteConfirmName) }}
             </div>
           </div>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn outline no-caps label="Cancel" color="primary" :disable="deletingAccount" @click="cancelDeleteModal" />
-          <q-btn unelevated no-caps label="Delete Account" :loading="deletingAccount" :disable="!deleteConfirmMatches" class="btn-danger-gradient" @click="deleteAccount" />
+          <q-btn outline no-caps :label="t('cancelBtn')" color="primary" :disable="deletingAccount" @click="cancelDeleteModal" />
+          <q-btn unelevated no-caps :label="t('deleteAccountConfirmBtn')" :loading="deletingAccount" :disable="!deleteConfirmMatches" class="btn-danger-gradient" @click="deleteAccount" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- ACCOUNT DELETED CONFIRMATION -->
-    <!-- No close button, since the account and its session are already gone and the only way out is Go to Login. -->
     <q-dialog v-model="showAccountDeletedModal" persistent transition-show="scale" transition-hide="scale">
       <q-card class="profile-dialog-card success-card" style="width: 440px; max-width: 90vw;">
         <q-card-section class="text-center">
           <div class="success-icon">
             <q-icon name="o_check" size="32px" />
           </div>
-          <div class="text-h6">Account Deleted!</div>
-          <p class="section-subtitle">Your store account has been permanently deleted. Thank you for being part of Tindahan.</p>
-          <q-btn unelevated no-caps color="primary" label="Go to Login" class="full-width btn-gradient" autofocus @click="router.push('/login')" />
+          <div class="text-h6">{{ t('deletedSuccessTitle') }}</div>
+          <p class="section-subtitle">{{ t('deletedSuccessDesc') }}</p>
+          <q-btn unelevated no-caps color="primary" :label="t('goToLoginBtn')" class="full-width btn-gradient" autofocus @click="router.push('/login')" />
         </q-card-section>
       </q-card>
     </q-dialog>
@@ -662,9 +642,283 @@ import { api } from '@/boot/axios'
 import { clearAuthStorage } from '@/utils/authStorage'
 import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
+import { useLanguage } from '@/composables/useLanguage'
 
 const $q = useQuasar()
 const router = useRouter()
+
+const vendorProfileDict = {
+  en: {
+    pageTitle: 'Profile Settings',
+    pageSubtitle: 'Manage your personal information, store details and security.',
+    personalInfoTitle: 'Personal Information',
+    personalInfoSubtitle: "View and update the store owner's details.",
+    editBtn: 'Edit',
+    nameLabel: 'Name',
+    phoneLabel: 'Phone Number',
+    emailLabel: 'Email Address',
+    notSet: 'Not set',
+    storePhotoTitle: 'Store Photo',
+    storePhotoSubtitle: 'Customers see this on your store page.',
+    changePhotoBtn: 'Change Photo',
+    savePhotoBtn: 'Save Photo',
+    cancelBtn: 'Cancel',
+    photoHint: 'JPG, PNG or GIF. Max size of 2MB.',
+    storeDetailsTitle: 'Store Details',
+    storeDetailsSubtitle: 'What customers see about your store.',
+    storeNameLabel: 'Store Name',
+    addressLabel: 'Address',
+    pinOkDesc: 'Pinned on the map for nearby customers.',
+    pinMissingDesc: "No map pin yet, so nearby customers can't find you.",
+    storeHoursLabel: 'Store Hours',
+    closedEveryDay: 'Closed every day',
+    securityTitle: 'Security',
+    securitySubtitle: 'Keep your account secure.',
+    passwordLabel: 'Password',
+    changePwdBtn: 'Change Password',
+    dangerZoneTitle: 'Danger Zone',
+    dangerZoneSubtitle: 'Actions here are permanent and cannot be undone.',
+    deleteAccountTitle: 'Delete My Store Account',
+    deleteAccountDesc: 'Permanently delete your store, products and sales records.',
+    editPersonalTitle: 'Edit Personal Information',
+    editPersonalSubtitle: 'Update your personal details below.',
+    firstNameLabel: 'First Name',
+    lastNameLabel: 'Last Name',
+    requiredRule: 'Required',
+    phoneRule: 'Phone number must start with 09 and contain 11 digits.',
+    phoneHelper: "We'll send an OTP to verify your new phone number.",
+    emailRule: 'Enter a valid email address.',
+    emailHelper: 'You will sign in with this email from now on.',
+    saveChangesBtn: 'Save Changes',
+    editStoreNameTitle: 'Edit Store Name',
+    editStoreNameSubtitle: 'This is the name customers see.',
+    storeNameRule: 'Store name is required.',
+    editAddressTitle: 'Edit Address',
+    editAddressSubtitle: 'Tap the map to move your pin, then check the address below.',
+    pinPlaced: 'Pin placed.',
+    pinMissing: 'Tap the map to drop a pin on your store.',
+    addressFieldLabel: 'Street, building, house no.',
+    addressRule: 'Address is required.',
+    saveAddressBtn: 'Save Address',
+    editHoursTitle: 'Edit Store Hours',
+    editHoursSubtitle: 'Set when customers can pick up orders.',
+    hoursHint: 'Switch a day off to mark it closed.',
+    copyMondayBtn: 'Copy Monday to all',
+    closedLabel: 'Closed',
+    toLabel: 'to',
+    timeErrorMsg: 'Closing time must be later than opening time.',
+    saveHoursBtn: 'Save Hours',
+    discardTitle: 'Discard Changes?',
+    discardSubtitle: 'You have unsaved changes. If you leave now, your changes will not be saved.',
+    keepEditingBtn: 'Keep Editing',
+    discardBtn: 'Discard',
+    doneBtn: 'Done',
+    cropTitle: 'Crop Store Photo',
+    cropSubtitle: 'Drag the photo to move it, and zoom until the frame shows your storefront.',
+    applyCropBtn: 'Apply Crop',
+    changePwdTitle: 'Change Password',
+    changePwdSubtitle: 'Keep your account secure with a strong password.',
+    currentPwdLabel: 'Current Password',
+    currentPwdRule: 'Current password is required',
+    newPwdLabel: 'New Password',
+    newPwdRuleLength: 'Minimum 8 characters',
+    newPwdSuccess: 'Strong password.',
+    confirmPwdLabel: 'Confirm New Password',
+    confirmPwdError: 'Passwords do not match.',
+    confirmPwdSuccess: 'Passwords match.',
+    updatePwdBtn: 'Update Password',
+    otpTitle: 'Verify New Phone',
+    otpSubtitle: 'Enter the 6-digit verification code sent to {phone}. Sent via SMS.',
+    otpExpired: 'Code expired. Please resend a new code.',
+    otpDidntReceive: "Didn't receive the code?",
+    otpResendBtn: 'Resend Code',
+    otpResendWait: 'Didn\'t receive the code? Resend in {seconds}s',
+    otpVerifySaveBtn: 'Verify & Save',
+    otpInvalid: 'Invalid verification code. Please try again.',
+    deleteDialogTitle: 'Delete Store Account',
+    deleteDialogSubtitle: 'This action cannot be undone.',
+    deleteWarningText: 'Are you absolutely sure you want to delete your store account? Your store, products, orders and sales records will be permanently removed. This cannot be undone.',
+    deleteTypeConfirm: 'Type "{name}" below to confirm account deletion.',
+    deleteMatchError: 'Name doesn\'t match. Please type "{name}" exactly.',
+    deleteAccountConfirmBtn: 'Delete Account',
+    deletedSuccessTitle: 'Account Deleted!',
+    deletedSuccessDesc: 'Your store account has been permanently deleted. Thank you for being part of Tindahan.',
+    goToLoginBtn: 'Go to Login',
+    errLoadProfile: 'Failed to load your profile.',
+    errUpdateName: 'Failed to update your name.',
+    errUpdateEmail: 'Failed to update your email.',
+    successInfoTitle: 'Information Updated!',
+    successInfoMsg: 'Your personal information has been updated successfully.',
+    errSendOtp: 'Failed to send a verification code.',
+    errResendOtp: 'Failed to resend the code.',
+    errUpdatePhoto: 'Failed to update the store photo.',
+    successPhotoTitle: 'Photo Updated!',
+    successPhotoMsg: 'Your store photo has been updated successfully.',
+    errUpdateStoreName: 'Failed to update the store name.',
+    successStoreTitle: 'Store Updated!',
+    successStoreMsg: 'Your store name has been updated successfully.',
+    errUpdateAddress: 'Failed to update the address.',
+    successAddressTitle: 'Address Updated!',
+    successAddressMsg: 'Your store address has been updated successfully.',
+    errUpdateHours: 'Failed to update store hours.',
+    successHoursTitle: 'Store Hours Updated!',
+    successHoursMsg: 'Your store hours have been updated successfully.',
+    errUpdatePwd: 'Failed to update password.',
+    successPwdTitle: 'Password Updated!',
+    successPwdMsg: 'Your password has been changed successfully.',
+    errDeleteAccount: 'Failed to delete account.',
+    day_Monday: 'Monday',
+    day_Tuesday: 'Tuesday',
+    day_Wednesday: 'Wednesday',
+    day_Thursday: 'Thursday',
+    day_Friday: 'Friday',
+    day_Saturday: 'Saturday',
+    day_Sunday: 'Sunday',
+    short_Monday: 'Mon',
+    short_Tuesday: 'Tue',
+    short_Wednesday: 'Wed',
+    short_Thursday: 'Thu',
+    short_Friday: 'Fri',
+    short_Saturday: 'Sat',
+    short_Sunday: 'Sun'
+  },
+  ph: {
+    pageTitle: 'Mga Setting ng Profile',
+    pageSubtitle: 'I-manage ang personal na impormasyon, detalye ng tindahan, at security.',
+    personalInfoTitle: 'Personal na Impormasyon',
+    personalInfoSubtitle: 'Tingnan o baguhin ang detalye ng may-ari.',
+    editBtn: 'I-edit',
+    nameLabel: 'Pangalan',
+    phoneLabel: 'Phone Number',
+    emailLabel: 'Email Address',
+    notSet: 'Wala pa',
+    storePhotoTitle: 'Picture ng Tindahan',
+    storePhotoSubtitle: 'Ito ang nakikita ng customers sa iyong tindahan.',
+    changePhotoBtn: 'Palitan ang Picture',
+    savePhotoBtn: 'I-save ang Picture',
+    cancelBtn: 'I-cancel',
+    photoHint: 'JPG, PNG o GIF. Hanggang 2MB lang.',
+    storeDetailsTitle: 'Detalye ng Tindahan',
+    storeDetailsSubtitle: 'Ang impormasyong nakikita ng customers.',
+    storeNameLabel: 'Pangalan ng Tindahan',
+    addressLabel: 'Address',
+    pinOkDesc: 'Naka-pin sa mapa para madaling mahanap ng malapit na customers.',
+    pinMissingDesc: "Wala pang pin sa mapa kaya hindi ka mahanap ng customers.",
+    storeHoursLabel: 'Oras ng Bukas',
+    closedEveryDay: 'Sarado araw-araw',
+    securityTitle: 'Security',
+    securitySubtitle: 'Panatilihing secure ang iyong account.',
+    passwordLabel: 'Password',
+    changePwdBtn: 'Palitan ang Password',
+    dangerZoneTitle: 'Danger Zone',
+    dangerZoneSubtitle: 'Pangmatagalan ang mga aksyon dito at hindi na mababago.',
+    deleteAccountTitle: 'I-delete ang Account',
+    deleteAccountDesc: 'Tuluyang burahin ang iyong tindahan, paninda at records ng benta.',
+    editPersonalTitle: 'I-edit ang Personal na Impormasyon',
+    editPersonalSubtitle: 'Baguhin ang iyong mga detalye sa ibaba.',
+    firstNameLabel: 'Pangalan (First Name)',
+    lastNameLabel: 'Apelyido (Last Name)',
+    requiredRule: 'Kailangan itong sagutan',
+    phoneRule: 'Dapat mag-umpisa sa 09 at may 11 numero.',
+    phoneHelper: "Magse-send kami ng OTP para ma-verify ang bagong numero.",
+    emailRule: 'Ilagay ang tamang email address.',
+    emailHelper: 'Dito ka na magsa-sign in gamit ang email na ito.',
+    saveChangesBtn: 'I-save',
+    editStoreNameTitle: 'I-edit ang Pangalan ng Tindahan',
+    editStoreNameSubtitle: 'Ito ang pangalang makikita ng customers.',
+    storeNameRule: 'Kailangan ang pangalan ng tindahan.',
+    editAddressTitle: 'I-edit ang Address',
+    editAddressSubtitle: 'I-tap ang map para ilipat ang pin, tapos i-check ang address sa ibaba.',
+    pinPlaced: 'Nailagay na ang pin.',
+    pinMissing: 'I-tap ang map para ilagay ang pin ng tindahan mo.',
+    addressFieldLabel: 'Street, building, house no.',
+    addressRule: 'Kailangan ang address.',
+    saveAddressBtn: 'I-save ang Address',
+    editHoursTitle: 'I-edit ang Oras ng Bukas',
+    editHoursSubtitle: 'Ilagay kung kailan pwedeng mag-pick up ang customers.',
+    hoursHint: 'I-off ang isang araw kung sarado ang tindahan.',
+    copyMondayBtn: 'Kopyahin ang Monday sa lahat',
+    closedLabel: 'Sarado',
+    toLabel: 'hanggang',
+    timeErrorMsg: 'Dapat mas late ang oras ng sara kaysa bukas.',
+    saveHoursBtn: 'I-save ang Oras',
+    discardTitle: 'Huwag i-save ang binago?',
+    discardSubtitle: 'Mayroon kang mga hindi nai-save na binago. Kapag umalis ka ngayon, mawawala ang mga ito.',
+    keepEditingBtn: 'Ipagpatuloy ang pag-edit',
+    discardBtn: 'Huwag i-save',
+    doneBtn: 'Tapos na',
+    cropTitle: 'I-crop ang Picture',
+    cropSubtitle: 'I-drag ang picture para i-move, at i-zoom hanggang sakto ang tindahan mo sa frame.',
+    applyCropBtn: 'I-crop',
+    changePwdTitle: 'Palitan ang Password',
+    changePwdSubtitle: 'Panatilihing ligtas ang account gamit ang matibay na password.',
+    currentPwdLabel: 'Kasalukuyang Password',
+    currentPwdRule: 'Kailangan ang kasalukuyang password',
+    newPwdLabel: 'Bagong Password',
+    newPwdRuleLength: 'Kailangan hindi bababa sa 8 characters',
+    newPwdSuccess: 'Matibay na password.',
+    confirmPwdLabel: 'Ulitin ang Bagong Password',
+    confirmPwdError: 'Hindi magkapareho ang password.',
+    confirmPwdSuccess: 'Pareho ang password.',
+    updatePwdBtn: 'I-update ang Password',
+    otpTitle: 'I-verify ang Bagong Phone',
+    otpSubtitle: 'Ilagay ang 6-digit verification code na nai-send sa {phone} via SMS.',
+    otpExpired: 'Expired na ang code. Mag-request ulit ng bago.',
+    otpDidntReceive: "Hindi nakuha ang code?",
+    otpResendBtn: 'I-send ulit ang Code',
+    otpResendWait: 'Hindi nakuha ang code? Mag-resend sa loob ng {seconds}s',
+    otpVerifySaveBtn: 'I-verify at I-save',
+    otpInvalid: 'Mali ang verification code. Paki-try ulit.',
+    deleteDialogTitle: 'I-delete ang Account',
+    deleteDialogSubtitle: 'Hindi na ito maibabalik pagkatapos.',
+    deleteWarningText: 'Sigurado ka ba na gusto mong burahin ang iyong account? Ang iyong tindahan, paninda, order at benta ay tuluyan nang mawawala. Hindi na ito maibabalik.',
+    deleteTypeConfirm: 'I-type ang "{name}" sa ibaba para ituloy ang pagbura ng account.',
+    deleteMatchError: 'Hindi tugma ang pangalan. I-type nang saktong-sakto ang "{name}".',
+    deleteAccountConfirmBtn: 'I-delete ang Account',
+    deletedSuccessTitle: 'Burado na ang Account!',
+    deletedSuccessDesc: 'Ang iyong account ay tuluyan nang nabura. Maraming salamat sa pagiging bahagi ng Tindahan.',
+    goToLoginBtn: 'Pumunta sa Login',
+    errLoadProfile: 'Hindi ma-load ang iyong profile.',
+    errUpdateName: 'Hindi ma-update ang pangalan.',
+    errUpdateEmail: 'Hindi ma-update ang email.',
+    successInfoTitle: 'Updated na ang Impormasyon!',
+    successInfoMsg: 'Na-update nang matagumpay ang iyong personal na impormasyon.',
+    errSendOtp: 'Failed mag-send ng verification code.',
+    errResendOtp: 'Failed ma-resend ang code.',
+    errUpdatePhoto: 'Failed ma-update ang picture ng tindahan.',
+    successPhotoTitle: 'Updated na ang Picture!',
+    successPhotoMsg: 'Na-update nang matagumpay ang picture ng tindahan.',
+    errUpdateStoreName: 'Failed ma-update ang pangalan ng tindahan.',
+    successStoreTitle: 'Updated na ang Tindahan!',
+    successStoreMsg: 'Na-update nang matagumpay ang pangalan ng tindahan.',
+    errUpdateAddress: 'Failed ma-update ang address.',
+    successAddressTitle: 'Updated na ang Address!',
+    successAddressMsg: 'Na-update nang matagumpay ang address ng tindahan.',
+    errUpdateHours: 'Failed ma-update ang oras ng bukas.',
+    successHoursTitle: 'Updated na ang Oras ng Bukas!',
+    successHoursMsg: 'Na-update nang matagumpay ang oras ng tindahan.',
+    errUpdatePwd: 'Failed ma-update ang password.',
+    successPwdTitle: 'Updated na ang Password!',
+    successPwdMsg: 'Matagumpay na napalitan ang iyong password.',
+    errDeleteAccount: 'Failed ma-delete ang account.',
+    day_Monday: 'Lunes',
+    day_Tuesday: 'Martes',
+    day_Wednesday: 'Miyerkules',
+    day_Thursday: 'Huwebes',
+    day_Friday: 'Biyernes',
+    day_Saturday: 'Sabado',
+    day_Sunday: 'Linggo',
+    short_Monday: 'Lun',
+    short_Tuesday: 'Mar',
+    short_Wednesday: 'Miy',
+    short_Thursday: 'Huw',
+    short_Friday: 'Biy',
+    short_Saturday: 'Sab',
+    short_Sunday: 'Lin'
+  }
+}
+
+const { t } = useLanguage(vendorProfileDict)
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -744,15 +998,13 @@ onMounted(async () => {
     savedHours.value = parseHours(store.value)
     profileLoaded.value = true
   } catch {
-    $q.notify({ type: 'negative', message: 'Failed to load your profile.' })
+    $q.notify({ type: 'negative', message: t('errLoadProfile') })
   }
 })
 
 // --- Store details shown on the page ---
 
 const hasPin = computed(() => store.value.latitude != null && store.value.longitude != null && store.value.latitude !== '' && store.value.longitude !== '')
-
-const SHORT_DAY = { Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun' }
 
 const formatTime = (value) => {
   if (!value) return ''
@@ -770,15 +1022,15 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 const hoursLines = computed(() => {
   const groups = []
   for (const day of savedHours.value) {
-    const label = day.isOpen ? `${formatTime(day.openTime)} – ${formatTime(day.closeTime)}` : 'Closed'
+    const label = day.isOpen ? `${formatTime(day.openTime)} – ${formatTime(day.closeTime)}` : t('closedLabel')
     const last = groups[groups.length - 1]
     if (last && last.label === label) last.days.push(day.name)
     else groups.push({ label, days: [day.name] })
   }
-  if (groups.length === 1 && groups[0].label === 'Closed') return ['Closed every day']
+  if (groups.length === 1 && groups[0].label === t('closedLabel')) return [t('closedEveryDay')]
   return groups.map(g => {
-    const first = SHORT_DAY[g.days[0]]
-    const span = g.days.length > 1 ? `${first}–${SHORT_DAY[g.days[g.days.length - 1]]}` : first
+    const first = t('short_' + g.days[0])
+    const span = g.days.length > 1 ? `${first}–${t('short_' + g.days[g.days.length - 1])}` : first
     return `${span} · ${g.label}`
   })
 })
@@ -799,14 +1051,14 @@ const isEmailValid = computed(() => /.+@.+\..+/.test(editForm.email || ''))
 
 // One message per field: error, then a note about what a change will do, then nothing.
 const phoneMessage = computed(() => {
-  if (!isPhoneValid.value) return { type: 'error', text: 'Phone number must start with 09 and contain 11 digits.' }
-  if (phoneChanged.value) return { type: 'helper', text: "We'll send an OTP to verify your new phone number." }
+  if (!isPhoneValid.value) return { type: 'error', text: t('phoneRule') }
+  if (phoneChanged.value) return { type: 'helper', text: t('phoneHelper') }
   return null
 })
 
 const emailMessage = computed(() => {
-  if (!isEmailValid.value) return { type: 'error', text: 'Enter a valid email address.' }
-  if (emailChanged.value) return { type: 'helper', text: 'You will sign in with this email from now on.' }
+  if (!isEmailValid.value) return { type: 'error', text: t('emailRule') }
+  if (emailChanged.value) return { type: 'helper', text: t('emailHelper') }
   return null
 })
 
@@ -855,7 +1107,7 @@ const saveName = async (fullName) => {
     localStorage.setItem('auth_user', JSON.stringify(lsUser))
     return true
   } catch (err) {
-    $q.notify({ type: 'negative', message: errorMessage(err, 'Failed to update your name.') })
+    $q.notify({ type: 'negative', message: errorMessage(err, t('errUpdateName')) })
     return false
   }
 }
@@ -866,7 +1118,7 @@ const saveEmail = async (email) => {
     user.value.email = email
     return true
   } catch (err) {
-    $q.notify({ type: 'negative', message: errorMessage(err, 'Failed to update your email.') })
+    $q.notify({ type: 'negative', message: errorMessage(err, t('errUpdateEmail')) })
     return false
   }
 }
@@ -892,7 +1144,7 @@ const savePersonal = async () => {
     }
 
     showEditPersonalModal.value = false
-    openSuccessModal('Information Updated!', 'Your personal information has been updated successfully.')
+    openSuccessModal(t('successInfoTitle'), t('successInfoMsg'))
   } finally {
     savingPersonal.value = false
   }
@@ -931,7 +1183,7 @@ const startOtpTimers = () => {
     if (resendSecondsLeft.value > 0) resendSecondsLeft.value -= 1
     if (otpSecondsLeft.value <= 0) {
       clearInterval(otpTimerHandle)
-      if (!otpVerifiedFlash.value) otpError.value = 'Code expired. Please resend a new code.'
+      if (!otpVerifiedFlash.value) otpError.value = t('otpExpired')
     }
   }, 1000)
 }
@@ -954,7 +1206,7 @@ const requestPhoneOtp = async (phone) => {
     startOtpTimers()
     return true
   } catch (err) {
-    $q.notify({ type: 'negative', message: errorMessage(err, 'Failed to send a verification code.') })
+    $q.notify({ type: 'negative', message: errorMessage(err, t('errSendOtp')) })
     return false
   }
 }
@@ -968,7 +1220,7 @@ const resendOtpCode = async () => {
     startOtpTimers()
     otpRefs.value[0]?.focus()
   } catch (err) {
-    $q.notify({ type: 'negative', message: errorMessage(err, 'Failed to resend the code.') })
+    $q.notify({ type: 'negative', message: errorMessage(err, t('errResendOtp')) })
   }
 }
 
@@ -1024,10 +1276,10 @@ const verifyOtp = async () => {
     // Flashes green briefly, then hands over to the shared success dialog.
     setTimeout(() => {
       showOtpModal.value = false
-      openSuccessModal('Information Updated!', 'Your personal information has been updated successfully.')
+      openSuccessModal(t('successInfoTitle'), t('successInfoMsg'))
     }, 450)
   } catch (err) {
-    otpError.value = errorMessage(err, 'Invalid verification code. Please try again.')
+    otpError.value = errorMessage(err, t('otpInvalid'))
   } finally {
     verifyingOtp.value = false
   }
@@ -1091,9 +1343,9 @@ const savePhoto = async () => {
     store.value.store_picture_url = data?.store_picture_url || photoPreview.value
     photoFile.value = null
     photoPreview.value = null
-    openSuccessModal('Photo Updated!', 'Your store photo has been updated successfully.')
+    openSuccessModal(t('successPhotoTitle'), t('successPhotoMsg'))
   } catch (err) {
-    $q.notify({ type: 'negative', message: errorMessage(err, 'Failed to update the store photo.') })
+    $q.notify({ type: 'negative', message: errorMessage(err, t('errUpdatePhoto')) })
   } finally {
     savingPhoto.value = false
   }
@@ -1127,9 +1379,9 @@ const saveStoreName = async () => {
     await saveStoreInfo({ store_name: name })
     store.value.store_name = name
     showStoreNameModal.value = false
-    openSuccessModal('Store Updated!', 'Your store name has been updated successfully.')
+    openSuccessModal(t('successStoreTitle'), t('successStoreMsg'))
   } catch (err) {
-    $q.notify({ type: 'negative', message: errorMessage(err, 'Failed to update the store name.') })
+    $q.notify({ type: 'negative', message: errorMessage(err, t('errUpdateStoreName')) })
   } finally {
     savingStoreName.value = false
   }
@@ -1183,9 +1435,9 @@ const saveAddress = async () => {
     await api.put('/vendor/store/address', payload)
     Object.assign(store.value, payload)
     showAddressModal.value = false
-    openSuccessModal('Address Updated!', 'Your store address has been updated successfully.')
+    openSuccessModal(t('successAddressTitle'), t('successAddressMsg'))
   } catch (err) {
-    $q.notify({ type: 'negative', message: errorMessage(err, 'Failed to update the address.') })
+    $q.notify({ type: 'negative', message: errorMessage(err, t('errUpdateAddress')) })
   } finally {
     savingAddress.value = false
   }
@@ -1222,9 +1474,9 @@ const saveHours = async () => {
     await api.put('/vendor/profile/hours', { operatingDays: editHours.value })
     savedHours.value = editHours.value.map(day => ({ ...day }))
     showHoursModal.value = false
-    openSuccessModal('Store Hours Updated!', 'Your store hours have been updated successfully.')
+    openSuccessModal(t('successHoursTitle'), t('successHoursMsg'))
   } catch (err) {
-    $q.notify({ type: 'negative', message: errorMessage(err, 'Failed to update store hours.') })
+    $q.notify({ type: 'negative', message: errorMessage(err, t('errUpdateHours')) })
   } finally {
     savingHours.value = false
   }
@@ -1245,14 +1497,14 @@ const isNewPasswordValid = computed(() => passwords.new.length >= 8)
 
 const newPasswordMessage = computed(() => {
   if (!passwords.new) return null
-  if (!isNewPasswordValid.value) return { type: 'error', text: 'Minimum 8 characters' }
-  return { type: 'success', text: 'Strong password.' }
+  if (!isNewPasswordValid.value) return { type: 'error', text: t('newPwdRuleLength') }
+  return { type: 'success', text: t('newPwdSuccess') }
 })
 
 const confirmPasswordMessage = computed(() => {
   if (!passwords.confirm) return null
-  if (passwords.confirm !== passwords.new) return { type: 'error', text: 'Passwords do not match.' }
-  return { type: 'success', text: 'Passwords match.' }
+  if (passwords.confirm !== passwords.new) return { type: 'error', text: t('confirmPwdError') }
+  return { type: 'success', text: t('confirmPwdSuccess') }
 })
 
 const canSavePassword = computed(() => !!passwords.current && isNewPasswordValid.value && passwords.confirm === passwords.new)
@@ -1283,9 +1535,9 @@ const savePassword = async () => {
       new_password_confirmation: passwords.confirm
     })
     cancelPasswordModal()
-    openSuccessModal('Password Updated!', 'Your password has been changed successfully.')
+    openSuccessModal(t('successPwdTitle'), t('successPwdMsg'))
   } catch (err) {
-    $q.notify({ type: 'negative', message: errorMessage(err, 'Failed to update password.') })
+    $q.notify({ type: 'negative', message: errorMessage(err, t('errUpdatePwd')) })
   } finally {
     savingPassword.value = false
   }
@@ -1322,7 +1574,7 @@ const deleteAccount = async () => {
     showDeleteModal.value = false
     showAccountDeletedModal.value = true
   } catch (err) {
-    $q.notify({ type: 'negative', message: errorMessage(err, 'Failed to delete account.') })
+    $q.notify({ type: 'negative', message: errorMessage(err, t('errDeleteAccount')) })
   } finally {
     deletingAccount.value = false
   }

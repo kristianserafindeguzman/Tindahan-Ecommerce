@@ -15,18 +15,18 @@
             <!-- Shown once the store has loaded, so it never flashes "Closed now" first. -->
             <span v-if="!loading" class="hero-status" :class="isStoreOpen ? 'hero-status--open' : 'hero-status--closed'">
               <span class="store-status-dot" />
-              {{ isStoreOpen ? 'Open now' : 'Closed now' }}
+              {{ isStoreOpen ? t('openNow') : t('closedNow') }}
             </span>
           </div>
 
           <h1 class="hero-title">{{ timeGreeting }}, {{ userName }}!</h1>
-          <p class="hero-sub">Here's how {{ vendorStore?.store_name || 'your store' }} is doing today.</p>
+          <p class="hero-sub">{{ t('heroSub').replace('{store}', vendorStore?.store_name || t('yourStoreFallback')) }}</p>
 
           <div class="hero-actions">
-            <q-btn unelevated no-caps label="View Store" class="hero-cta" @click="liveStoreModal = true">
+            <q-btn unelevated no-caps :label="t('viewStore')" class="hero-cta" @click="liveStoreModal = true">
               <q-icon name="o_storefront" size="16px" class="q-ml-xs" />
             </q-btn>
-            <q-btn unelevated no-caps label="Manage Products" class="hero-cta hero-cta--ghost" @click="router.push('/vendor/products/list')">
+            <q-btn unelevated no-caps :label="t('manageProducts')" class="hero-cta hero-cta--ghost" @click="router.push('/vendor/products/list')">
               <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
             </q-btn>
             <!-- Notifications ride in the banner's own row of buttons on desktop, while phones reach them from the top bar. -->
@@ -67,28 +67,28 @@
           <div class="dash-card dash-card--fill">
             <div class="card-header">
               <div>
-                <div class="section-title">Revenue</div>
-                <div class="section-subtitle">Income from completed pickups.</div>
+                <div class="section-title">{{ t('revenueTitle') }}</div>
+                <div class="section-subtitle">{{ t('revenueSub') }}</div>
               </div>
 
               <div class="segmented" role="tablist" aria-label="Revenue period">
                 <button
-                  v-for="filter in FILTERS"
-                  :key="filter"
+                  v-for="filter in localizedFilters"
+                  :key="filter.value"
                   type="button"
                   role="tab"
                   class="segmented-btn"
-                  :class="{ 'segmented-btn--active': activeRevenueFilter === filter }"
-                  :aria-selected="activeRevenueFilter === filter"
-                  @click="activeRevenueFilter = filter"
+                  :class="{ 'segmented-btn--active': activeRevenueFilter === filter.value }"
+                  :aria-selected="activeRevenueFilter === filter.value"
+                  @click="activeRevenueFilter = filter.value"
                 >
-                  {{ filter }}
+                  {{ filter.label }}
                 </button>
               </div>
             </div>
 
             <div class="revenue-total">
-              <div class="revenue-total-label">Total for this period</div>
+              <div class="revenue-total-label">{{ t('totalPeriod') }}</div>
               <div class="revenue-total-value">₱{{ formatNumber(totalRevenue) }}</div>
             </div>
 
@@ -116,27 +116,27 @@
               <div>
                 <div class="section-title forecast-title">
                   <span class="forecast-badge"><q-icon name="o_auto_awesome" size="16px" /></span>
-                  Demand Forecast
+                  {{ t('forecastTitle') }}
                 </div>
-                <div class="section-subtitle">Items likely to sell today.</div>
+                <div class="section-subtitle">{{ t('forecastSub') }}</div>
               </div>
             </div>
 
             <div v-if="mlForecast.loading" class="empty-state">
               <q-spinner-dots size="32px" color="amber-3" />
-              <div class="empty-state-text">Reading your recent sales…</div>
+              <div class="empty-state-text">{{ t('forecastLoading') }}</div>
             </div>
 
             <div v-else-if="mlForecast.error" class="empty-state">
               <div class="state-icon tone-danger"><q-icon name="o_sync_problem" size="24px" /></div>
-              <div class="empty-state-title">Forecast unavailable</div>
-              <div class="empty-state-text">We couldn't load predictions right now.</div>
+              <div class="empty-state-title">{{ t('forecastErrorTitle') }}</div>
+              <div class="empty-state-text">{{ t('forecastErrorSub') }}</div>
             </div>
 
             <div v-else-if="!mlForecast.has_forecast" class="empty-state">
               <div class="state-icon tone-brand"><q-icon name="o_insights" size="24px" /></div>
-              <div class="empty-state-title">Collecting trends</div>
-              <div class="empty-state-text">A few more completed orders are needed to predict your fast-moving items.</div>
+              <div class="empty-state-title">{{ t('forecastEmptyTitle') }}</div>
+              <div class="empty-state-text">{{ t('forecastEmptySub') }}</div>
             </div>
 
             <template v-else>
@@ -151,7 +151,7 @@
                     <div class="forecast-name">{{ item.product_name }}</div>
                     <div class="forecast-meta">{{ getDemandCategory(item.predicted_quantity) }}</div>
                   </div>
-                  <span class="forecast-qty">{{ formatPieces(item.predicted_quantity) }} pcs</span>
+                  <span class="forecast-qty">{{ formatPieces(item.predicted_quantity) }} {{ t('pcs') }}</span>
                 </div>
               </div>
 
@@ -173,10 +173,10 @@
       <div class="dash-card">
         <div class="card-header">
           <div>
-            <div class="section-title">Recent Orders</div>
-            <div class="section-subtitle">The latest orders from your customers.</div>
+            <div class="section-title">{{ t('recentOrdersTitle') }}</div>
+            <div class="section-subtitle">{{ t('recentOrdersSub') }}</div>
           </div>
-          <q-btn outline no-caps color="primary" label="View All" icon-right="o_chevron_right" class="card-action-btn" @click="router.push('/vendor/orders/list')" />
+          <q-btn outline no-caps color="primary" :label="t('viewAll')" icon-right="o_chevron_right" class="card-action-btn" @click="router.push('/vendor/orders/list')" />
         </div>
 
         <!-- Placeholder rows shaped like the table on wide screens and the list on phones. -->
@@ -186,8 +186,8 @@
 
         <div v-else-if="!recentOrders.length" class="empty-state">
           <div class="state-icon tone-brand"><q-icon name="o_receipt_long" size="24px" /></div>
-          <div class="empty-state-title">No orders yet</div>
-          <div class="empty-state-text">New orders from customers will show up here.</div>
+          <div class="empty-state-title">{{ t('emptyOrdersTitle') }}</div>
+          <div class="empty-state-text">{{ t('emptyOrdersSub') }}</div>
         </div>
 
         <!-- A table on wide screens, where every column has room. -->
@@ -195,11 +195,11 @@
           <table class="orders-table">
             <thead>
               <tr>
-                <th class="col-order">Order</th>
-                <th>Customer</th>
-                <th class="col-date">Date</th>
-                <th class="text-right col-total">Total</th>
-                <th class="col-status">Status</th>
+                <th class="col-order">{{ t('colOrder') }}</th>
+                <th>{{ t('colCustomer') }}</th>
+                <th class="col-date">{{ t('colDate') }}</th>
+                <th class="text-right col-total">{{ t('colTotal') }}</th>
+                <th class="col-status">{{ t('colStatus') }}</th>
                 <th class="col-open"><span class="sr-only">Open</span></th>
               </tr>
             </thead>
@@ -217,7 +217,11 @@
                 </td>
                 <td class="order-date">{{ order.date }}</td>
                 <td class="text-right order-total">₱{{ formatNumber(order.price) }}</td>
-                <td><OrderStatusBadge :status="order.status" /></td>
+                <td>
+                  <span class="vp-status" :class="`vp-status--${getStatusTone(order.status)}`">
+                    {{ translateStatus(order.status) }}
+                  </span>
+                </td>
                 <td class="text-right">
                   <q-btn flat round dense icon="o_chevron_right" class="order-open-btn" :aria-label="`Open order #${order.id}`" @click.stop="openOrder(order)" />
                 </td>
@@ -239,7 +243,9 @@
             </div>
             <div class="orders-list-side">
               <div class="order-total">₱{{ formatNumber(order.price) }}</div>
-              <OrderStatusBadge :status="order.status" />
+              <span class="vp-status" :class="`vp-status--${getStatusTone(order.status)}`">
+                {{ translateStatus(order.status) }}
+              </span>
             </div>
           </button>
         </div>
@@ -254,8 +260,8 @@
         <div class="dash-dialog-header">
           <div class="dialog-icon"><q-icon name="o_storefront" size="22px" /></div>
           <div class="dialog-header-text">
-            <div class="dialog-title">{{ vendorStore?.store_name || 'My Store' }}</div>
-            <div class="section-subtitle">How customers see your store.</div>
+            <div class="dialog-title">{{ vendorStore?.store_name || t('myStoreFallback') }}</div>
+            <div class="section-subtitle">{{ t('storePreviewSub') }}</div>
           </div>
           <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close store preview" v-close-popup />
         </div>
@@ -266,42 +272,42 @@
             <div v-else class="preview-banner-empty"><q-icon name="o_storefront" size="48px" /></div>
             <span class="store-status preview-status" :class="isStoreOpen ? 'store-status--open' : 'store-status--closed'">
               <span class="store-status-dot" />
-              {{ isStoreOpen ? 'Open now' : 'Closed now' }}
+              {{ isStoreOpen ? t('openNow') : t('closedNow') }}
             </span>
           </div>
 
           <div class="info-row">
             <div class="info-icon"><q-icon name="o_person" size="18px" /></div>
             <div class="info-body">
-              <div class="info-label">Store Owner</div>
-              <div class="info-value">{{ ownerFullName || 'Not provided' }}</div>
+              <div class="info-label">{{ t('storeOwnerLabel') }}</div>
+              <div class="info-value">{{ ownerFullName || t('notProvided') }}</div>
             </div>
           </div>
 
           <div class="info-row">
             <div class="info-icon"><q-icon name="o_phone" size="18px" /></div>
             <div class="info-body">
-              <div class="info-label">Contact</div>
-              <div class="info-value">{{ vendorPhone || 'Not provided' }}</div>
+              <div class="info-label">{{ t('contactLabel') }}</div>
+              <div class="info-value">{{ vendorPhone || t('notProvided') }}</div>
             </div>
           </div>
 
           <div class="info-row">
             <div class="info-icon"><q-icon name="o_place" size="18px" /></div>
             <div class="info-body">
-              <div class="info-label">Address</div>
-              <div class="info-value">{{ vendorStore?.address || 'Not provided' }}</div>
+              <div class="info-label">{{ t('addressLabel') }}</div>
+              <div class="info-value">{{ vendorStore?.address || t('notProvided') }}</div>
             </div>
           </div>
 
           <div class="info-row info-row-last info-row--top">
             <div class="info-icon"><q-icon name="o_schedule" size="18px" /></div>
             <div class="info-body">
-              <div class="info-label">Store Hours</div>
+              <div class="info-label">{{ t('storeHoursLabel') }}</div>
               <div class="preview-hours">
                 <div v-for="day in weekDays" :key="day.name" class="preview-hours-row" :class="{ 'preview-hours-row--closed': !day.isOpen }">
-                  <span>{{ day.name }}</span>
-                  <span>{{ day.isOpen ? `${formatTime(day.openTime)} – ${formatTime(day.closeTime)}` : 'Closed' }}</span>
+                  <span>{{ t('day_' + day.name) }}</span>
+                  <span>{{ day.isOpen ? `${formatTime(day.openTime)} – ${formatTime(day.closeTime)}` : t('closed') }}</span>
                 </div>
               </div>
             </div>
@@ -311,8 +317,8 @@
         </div>
 
         <div class="dash-dialog-actions">
-          <q-btn outline no-caps color="primary" label="Close" v-close-popup />
-          <q-btn unelevated no-caps color="primary" label="Edit Store Details" class="btn-gradient" @click="goToProfile" />
+          <q-btn outline no-caps color="primary" :label="t('closeBtn')" v-close-popup />
+          <q-btn unelevated no-caps color="primary" :label="t('editStoreDetails')" class="btn-gradient" @click="goToProfile" />
         </div>
       </q-card>
     </q-dialog>
@@ -326,19 +332,189 @@ import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import VueApexCharts from 'vue3-apexcharts'
 import NotificationsPanel from '@/components/vendor/NotificationsPanel.vue'
-import OrderStatusBadge from '@/components/vendor/OrderStatusBadge.vue'
 import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 import { statusIcon } from '@/utils/orderStatus'
 import { useVendorNotifications } from '@/composables/useVendorNotifications'
+import { useLanguage } from '@/composables/useLanguage'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 const router = useRouter()
 const $q = useQuasar()
+
+const dashboardDict = {
+  en: {
+    openNow: 'Open now',
+    closedNow: 'Closed now',
+    greetingMorning: 'Good morning',
+    greetingAfternoon: 'Good afternoon',
+    greetingEvening: 'Good evening',
+    heroSub: "Here's how {store} is doing today.",
+    yourStoreFallback: 'your store',
+    viewStore: 'View Store',
+    manageProducts: 'Manage Products',
+    kpiPlaced: 'Placed Orders',
+    kpiPreparing: 'Preparing',
+    kpiPicked: 'Picked Up',
+    kpiCancelled: 'Cancelled',
+    revenueTitle: 'Revenue',
+    revenueSub: 'Income from completed pickups.',
+    filterDaily: 'Daily',
+    filterWeekly: 'Weekly',
+    filterMonthly: 'Monthly',
+    totalPeriod: 'Total for this period',
+    forecastTitle: 'Demand Forecast',
+    forecastSub: 'Items likely to sell today.',
+    forecastLoading: 'Reading your recent sales…',
+    forecastErrorTitle: 'Forecast unavailable',
+    forecastErrorSub: "We couldn't load predictions right now.",
+    forecastEmptyTitle: 'Collecting trends',
+    forecastEmptySub: 'A few more completed orders are needed to predict your fast-moving items.',
+    pcs: 'pcs',
+    demandHigh: 'High demand',
+    demandSteady: 'Steady sales',
+    demandRegular: 'Regular demand',
+    updatedToday: 'Updated today',
+    updatedFormat: 'Updated {day} · {time}',
+    recentOrdersTitle: 'Recent Orders',
+    recentOrdersSub: 'The latest orders from your customers.',
+    viewAll: 'View All',
+    emptyOrdersTitle: 'No orders yet',
+    emptyOrdersSub: 'New orders from customers will show up here.',
+    colOrder: 'Order',
+    colCustomer: 'Customer',
+    colDate: 'Date',
+    colTotal: 'Total',
+    colStatus: 'Status',
+    myStoreFallback: 'My Store',
+    storePreviewSub: 'How customers see your store.',
+    storeOwnerLabel: 'Store Owner',
+    notProvided: 'Not provided',
+    contactLabel: 'Contact',
+    addressLabel: 'Address',
+    storeHoursLabel: 'Store Hours',
+    closed: 'Closed',
+    closeBtn: 'Close',
+    editStoreDetails: 'Edit Store Details',
+    day_Monday: 'Monday',
+    day_Tuesday: 'Tuesday',
+    day_Wednesday: 'Wednesday',
+    day_Thursday: 'Thursday',
+    day_Friday: 'Friday',
+    day_Saturday: 'Saturday',
+    day_Sunday: 'Sunday'
+  },
+  ph: {
+    openNow: 'Bukas ngayon',
+    closedNow: 'Sarado ngayon',
+    greetingMorning: 'Magandang umaga',
+    greetingAfternoon: 'Magandang hapon',
+    greetingEvening: 'Magandang gabi',
+    heroSub: 'Ganito ang lagay ng {store} ngayong araw.',
+    yourStoreFallback: 'iyong tindahan',
+    viewStore: 'Tingnan ang Tindahan',
+    manageProducts: 'I-manage ang Paninda',
+    kpiPlaced: 'Mga Order',
+    kpiPreparing: 'Inihahanda',
+    kpiPicked: 'Nakuha Na',
+    kpiCancelled: 'Kinansela',
+    revenueTitle: 'Kita',
+    revenueSub: 'Kita mula sa mga nakuhang order.',
+    filterDaily: 'Araw-araw',
+    filterWeekly: 'Lingguhan',
+    filterMonthly: 'Buwanan',
+    totalPeriod: 'Kabuuan para sa panahong ito',
+    forecastTitle: 'Demand Forecast',
+    forecastSub: 'Panindang malamang na mabenta ngayon.',
+    forecastLoading: 'Binabasa ang mga benta mo…',
+    forecastErrorTitle: 'Walang forecast',
+    forecastErrorSub: 'Hindi ma-load ang mga prediction ngayon.',
+    forecastEmptyTitle: 'Kinukuha pa ang trends',
+    forecastEmptySub: 'Kailangan pa ng ilang order para mahulaan ang mga mabilis mabentang paninda.',
+    pcs: 'piraso',
+    demandHigh: 'Mataas ang demand',
+    demandSteady: 'Steady ang benta',
+    demandRegular: 'Pangkaraniwang demand',
+    updatedToday: 'Updated ngayong araw',
+    updatedFormat: 'Updated noong {day} · {time}',
+    recentOrdersTitle: 'Mga Bagong Order',
+    recentOrdersSub: 'Pinakabagong order mula sa customers.',
+    viewAll: 'Tingnan Lahat',
+    emptyOrdersTitle: 'Wala pang order',
+    emptyOrdersSub: 'Dito lalabas ang mga bagong order mula sa customers.',
+    colOrder: 'Order',
+    colCustomer: 'Customer',
+    colDate: 'Petsa',
+    colTotal: 'Kabuuan',
+    colStatus: 'Status',
+    myStoreFallback: 'Aking Tindahan',
+    storePreviewSub: 'Kung paano nakikita ng customers ang tindahan mo.',
+    storeOwnerLabel: 'May-ari ng Tindahan',
+    notProvided: 'Wala',
+    contactLabel: 'Contact',
+    addressLabel: 'Address',
+    storeHoursLabel: 'Oras ng Bukas',
+    closed: 'Sarado',
+    closeBtn: 'I-close',
+    editStoreDetails: 'I-edit ang Detalye',
+    day_Monday: 'Lunes',
+    day_Tuesday: 'Martes',
+    day_Wednesday: 'Miyerkules',
+    day_Thursday: 'Huwebes',
+    day_Friday: 'Biyernes',
+    day_Saturday: 'Sabado',
+    day_Sunday: 'Linggo'
+  }
+}
+
+const { t, lang } = useLanguage(dashboardDict)
+
+// Determines the correct color class for the order status badges
+const getStatusTone = (status) => {
+  const s = String(status || '').toLowerCase().trim().replace(/[\s_-]+/g, '_')
+  if (s.includes('ready')) return 'ready'
+  if (s.includes('picked') || s.includes('complete')) return 'done'
+  if (s.includes('cancel')) return 'cancelled'
+  if (s.includes('prepar')) return 'preparing'
+  return 'placed'
+}
+
+// Directly translates the status string based on active language
+const translateStatus = (status) => {
+  if (!status) return ''
+  const key = String(status).toLowerCase().trim().replace(/[\s-]+/g, '_')
+  
+  const statusDict = {
+    en: {
+      placed: 'Placed',
+      preparing: 'Preparing',
+      ready_for_pickup: 'Ready for pickup',
+      picked_up: 'Picked up',
+      cancelled: 'Cancelled',
+      completed: 'Completed'
+    },
+    ph: {
+      placed: 'Na-order',
+      preparing: 'Inihahanda',
+      ready_for_pickup: 'Pwede nang kunin',
+      picked_up: 'Nakuha na',
+      cancelled: 'Kinansela',
+      completed: 'Tapos na'
+    }
+  }
+
+  return statusDict[lang.value]?.[key] || status
+}
+
 // The layout loads the notifications, so the banner bell only reads the shared unread count.
 const { unreadCount } = useVendorNotifications()
 
-const FILTERS = ['Daily', 'Weekly', 'Monthly']
+// We keep the internal values intact but display the translated labels in the UI.
+const localizedFilters = computed(() => [
+  { value: 'Daily', label: t('filterDaily') },
+  { value: 'Weekly', label: t('filterWeekly') },
+  { value: 'Monthly', label: t('filterMonthly') }
+])
 
 // Shows placeholders in the cards until the first answers arrive.
 const loading = ref(true)
@@ -381,10 +557,10 @@ const stats = ref({
 
 // Each order count uses its status's own colour and icon, the same as the status badges.
 const kpis = computed(() => [
-  { key: 'placed', label: 'Placed Orders', icon: statusIcon('placed'), tone: 'placed', value: stats.value.placed_orders },
-  { key: 'preparing', label: 'Preparing', icon: statusIcon('preparing'), tone: 'preparing', value: stats.value.preparing_orders },
-  { key: 'picked', label: 'Picked Up', icon: statusIcon('picked_up'), tone: 'done', value: stats.value.picked_up_orders },
-  { key: 'cancelled', label: 'Cancelled', icon: statusIcon('cancelled'), tone: 'cancelled', value: stats.value.cancelled_orders }
+  { key: 'placed', label: t('kpiPlaced'), icon: statusIcon('placed'), tone: 'placed', value: stats.value.placed_orders },
+  { key: 'preparing', label: t('kpiPreparing'), icon: statusIcon('preparing'), tone: 'preparing', value: stats.value.preparing_orders },
+  { key: 'picked', label: t('kpiPicked'), icon: statusIcon('picked_up'), tone: 'done', value: stats.value.picked_up_orders },
+  { key: 'cancelled', label: t('kpiCancelled'), icon: statusIcon('cancelled'), tone: 'cancelled', value: stats.value.cancelled_orders }
 ])
 
 // --- Revenue chart ---
@@ -447,9 +623,9 @@ onBeforeUnmount(() => clearInterval(clockTimer))
 
 const timeGreeting = computed(() => {
   const hour = clock.value.getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
+  if (hour < 12) return t('greetingMorning')
+  if (hour < 18) return t('greetingAfternoon')
+  return t('greetingEvening')
 })
 
 // The banner's colour and icon for each part of the day.
@@ -519,7 +695,7 @@ const isStoreOpen = computed(() => {
 // --- Helpers ---
 
 const formatTime = timeString => {
-  if (!timeString) return 'Not set'
+  if (!timeString) return t('notProvided')
   const [h, m] = timeString.split(':')
   const hours = parseInt(h, 10)
   if (Number.isNaN(hours) || m === undefined) return timeString
@@ -538,17 +714,17 @@ const formatPieces = val => {
 
 const getDemandCategory = qty => {
   const parsed = parseFloat(qty)
-  if (parsed >= 10) return 'High demand'
-  if (parsed >= 5) return 'Steady sales'
-  return 'Regular demand'
+  if (parsed >= 10) return t('demandHigh')
+  if (parsed >= 5) return t('demandSteady')
+  return t('demandRegular')
 }
 
 const formatLastSync = timestamp => {
   const date = timestamp ? new Date(timestamp) : null
-  if (!date || Number.isNaN(date.getTime())) return 'Updated today'
+  if (!date || Number.isNaN(date.getTime())) return t('updatedToday')
   const day = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-  return `Updated ${day} · ${time}`
+  return t('updatedFormat').replace('{day}', day).replace('{time}', time)
 }
 
 const normalize = str => (str ? String(str).toLowerCase().trim() : '')
@@ -683,6 +859,44 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* Status Badge Styles */
+.vp-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 13px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.vp-status--placed {
+  background-color: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+.vp-status--preparing {
+  background-color: #fef3c7 !important;
+  color: #b45309 !important;
+}
+
+.vp-status--ready {
+  background-color: #e0e7ff !important;
+  color: #4338ca !important;
+}
+
+.vp-status--done {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+}
+
+.vp-status--cancelled {
+  background-color: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+
 /* PAGE — the consumer pages' white ground, centred 1200px column and 24px gutter. */
 .dash-page {
   background: #ffffff;
@@ -1002,6 +1216,8 @@ onMounted(async () => {
 /* CARDS — the consumer profile's white card with a hairline border and soft shadow. */
 
 .dash-card {
+  box-sizing: border-box;
+
   padding: 20px;
 
   border: 1px solid var(--c-border);
@@ -1025,6 +1241,7 @@ onMounted(async () => {
   flex-direction: column;
 
   height: 100%;
+  min-width: 0;
 }
 
 .card-header {
@@ -1213,6 +1430,13 @@ onMounted(async () => {
   flex: 1;
   min-height: 200px;
   margin: 0 -10px -10px;
+
+  overflow: hidden;
+}
+
+/* ApexCharts sizes itself off its own wrapper, so that wrapper needs an explicit box it can measure against. */
+.chart-box :deep(.apexcharts-canvas) {
+  max-width: 100%;
 }
 
 .chart-loading {
@@ -2036,6 +2260,37 @@ onMounted(async () => {
 
   .revenue-total-value {
     font-size: var(--fs-2xl);
+  }
+
+  /* Revenue card — the segmented control and chart both need their own row and a
+     contained width on phones, or the card overflows and the chart mismeasures. */
+  .card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .segmented {
+    display: flex;
+
+    width: 100%;
+  }
+
+  .segmented-btn {
+    flex: 1;
+
+    padding: 0 8px;
+
+    font-size: var(--fs-2xs);
+  }
+
+  .chart-box {
+    min-height: 180px;
+    margin: 0 -8px -8px;
+  }
+
+  .chart-box :deep(.apexcharts-canvas),
+  .chart-box :deep(.apexcharts-svg) {
+    width: 100% !important;
   }
 
   .dash-dialog-header,

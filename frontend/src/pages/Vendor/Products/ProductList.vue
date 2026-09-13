@@ -4,12 +4,12 @@
 
       <div class="vp-header">
         <div>
-          <h1 class="vp-title">Product List</h1>
-          <p class="vp-subtitle">Monitor and update your product catalog.</p>
+          <h1 class="vp-title">{{ t('title') }}</h1>
+          <p class="vp-subtitle">{{ t('subtitle') }}</p>
         </div>
         <div class="vp-header-actions">
-          <q-btn outline no-caps color="primary" icon="o_download" label="Export" class="vp-pill-btn" @click="openExportWizard" />
-          <q-btn unelevated no-caps color="primary" icon="add" label="Add Product" class="vp-primary-btn" @click="showAddModal = true" />
+          <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" @click="openExportWizard" />
+          <q-btn unelevated no-caps color="primary" icon="add" :label="t('addBtn')" class="vp-primary-btn" @click="showAddModal = true" />
         </div>
       </div>
 
@@ -40,7 +40,7 @@
               clearable
               clear-icon="o_close"
               hide-bottom-space
-              placeholder="Search products"
+              :placeholder="t('searchPlaceholder')"
               class="vp-search"
             >
               <template #prepend>
@@ -49,19 +49,19 @@
             </q-input>
 
             <!-- A dropdown on wide screens and a bottom sheet on phones, the same as the order lists. -->
-            <FilterSheet :count="activeFilterCount" :result-count="filteredProducts.length" noun="product" @clear="resetFilters">
+            <FilterSheet :count="activeFilterCount" :result-count="filteredProducts.length" :noun="t('product')" @clear="resetFilters">
               <div class="pl-filter-panel">
                 <div>
-                  <label class="vp-field-label">Category</label>
+                  <label class="vp-field-label">{{ t('filterCategory') }}</label>
                   <q-select v-model="filters.category" :options="categorySelectOptions" emit-value map-options outlined dense options-dense behavior="menu" class="vp-input" />
                 </div>
                 <div>
-                  <label class="vp-field-label">Stock level</label>
-                  <q-select v-model="filters.stock" :options="STOCK_OPTIONS" emit-value map-options outlined dense options-dense behavior="menu" class="vp-input" />
+                  <label class="vp-field-label">{{ t('filterStock') }}</label>
+                  <q-select v-model="filters.stock" :options="localizedStockOptions" emit-value map-options outlined dense options-dense behavior="menu" class="vp-input" />
                 </div>
                 <div>
-                  <label class="vp-field-label">Sort by price</label>
-                  <q-select v-model="filters.priceSort" :options="PRICE_OPTIONS" emit-value map-options outlined dense options-dense behavior="menu" class="vp-input" />
+                  <label class="vp-field-label">{{ t('filterPrice') }}</label>
+                  <q-select v-model="filters.priceSort" :options="localizedPriceOptions" emit-value map-options outlined dense options-dense behavior="menu" class="vp-input" />
                 </div>
               </div>
             </FilterSheet>
@@ -76,7 +76,7 @@
             @scroll.passive="updateChipFade"
           >
             <button
-              v-for="filter in STATUS_FILTERS"
+              v-for="filter in localizedStatusFilters"
               :key="filter.key"
               type="button"
               role="tab"
@@ -95,11 +95,11 @@
 
         <div v-else-if="!filteredProducts.length" class="vp-empty">
           <div class="vp-empty-icon"><q-icon name="o_inventory_2" size="24px" /></div>
-          <div class="vp-empty-title">{{ products.length ? 'No matching products' : 'No products yet' }}</div>
+          <div class="vp-empty-title">{{ products.length ? t('noMatchTitle') : t('emptyTitle') }}</div>
           <div class="vp-empty-text">
-            {{ products.length ? 'Try another search, status or filter.' : 'Add your first product so customers can order it.' }}
+            {{ products.length ? t('noMatchDesc') : t('emptyDesc') }}
           </div>
-          <q-btn v-if="!products.length" unelevated no-caps color="primary" icon="add" label="Add Product" class="vp-primary-btn pl-empty-btn" @click="showAddModal = true" />
+          <q-btn v-if="!products.length" unelevated no-caps color="primary" icon="add" :label="t('addBtn')" class="vp-primary-btn pl-empty-btn" @click="showAddModal = true" />
         </div>
 
         <!-- A table on wide screens; a row opens the product. -->
@@ -107,11 +107,11 @@
           <table class="vp-table pl-table">
             <thead>
               <tr>
-                <th>Product</th>
-                <th class="col-cat">Category</th>
-                <th class="col-stock">Stock</th>
-                <th class="text-right col-price">Price</th>
-                <th class="col-status">Status</th>
+                <th>{{ t('colProduct') }}</th>
+                <th class="col-cat">{{ t('colCategory') }}</th>
+                <th class="col-stock">{{ t('colStock') }}</th>
+                <th class="text-right col-price">{{ t('colPrice') }}</th>
+                <th class="col-status">{{ t('colStatus') }}</th>
                 <th class="col-act"><span class="vp-sr-only">Actions</span></th>
               </tr>
             </thead>
@@ -133,13 +133,13 @@
                     <span class="vp-name">{{ product.product_name }}</span>
                   </div>
                 </td>
-                <td class="vp-muted pl-ellipsis">{{ product.category?.category_name || 'Uncategorized' }}</td>
+                <td class="vp-muted pl-ellipsis">{{ product.category?.category_name || t('uncategorized') }}</td>
                 <td>
                   <span class="pl-stock" :class="stockClass(product)">{{ product.available_quantity }}</span>
-                  <span class="pl-stock-total"> of {{ product.stock_quantity }}</span>
+                  <span class="pl-stock-total"> {{ t('ofWord') }} {{ product.stock_quantity }}</span>
                 </td>
                 <td class="text-right vp-amount">
-                  <span v-if="product.variants?.length" class="pl-from">from </span>₱{{ formatNumber(product.price) }}
+                  <span v-if="product.variants?.length" class="pl-from">{{ t('fromWord') }} </span>₱{{ formatNumber(product.price) }}
                 </td>
                 <td><span class="vp-status" :class="`vp-status--${productTone(product.status)}`">{{ formatStatus(product.status) }}</span></td>
                 <td class="text-right" @click.stop @keydown.stop>
@@ -177,7 +177,7 @@
             <div class="vp-list-body">
               <span class="vp-name">{{ product.product_name }}</span>
               <div class="vp-list-meta">
-                {{ product.category?.category_name || 'Uncategorized' }} · <span :class="stockClass(product)">{{ product.available_quantity }}</span> of {{ product.stock_quantity }} left
+                {{ product.category?.category_name || t('uncategorized') }} · <span :class="stockClass(product)">{{ product.available_quantity }}</span> {{ t('ofWord') }} {{ product.stock_quantity }} {{ t('leftWord') }}
               </div>
               <div class="pl-list-bottom">
                 <span class="vp-amount">₱{{ formatNumber(product.price) }}</span>
@@ -198,7 +198,7 @@
         </div>
 
         <div v-if="!loading && pageCount > 1" class="vp-pager">
-          <span>Showing {{ rangeStart }}–{{ rangeEnd }} of {{ filteredProducts.length }}</span>
+          <span>{{ t('showingWord') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('ofWord') }} {{ filteredProducts.length }}</span>
           <div class="vp-pager-btns">
             <q-btn outline no-caps color="primary" icon="o_chevron_left" class="vp-pill-btn" aria-label="Previous page" :disable="page === 1" @click="page--" />
             <q-btn outline no-caps color="primary" icon="o_chevron_right" class="vp-pill-btn" aria-label="Next page" :disable="page === pageCount" @click="page++" />
@@ -218,24 +218,24 @@
           <span class="vp-dialog-icon vp-dialog-icon--danger pl-confirm-icon">
             <q-icon :name="confirm.kind === 'delete' ? 'o_delete' : 'o_block'" size="24px" />
           </span>
-          <div class="pl-confirm-title">{{ confirm.kind === 'delete' ? 'Delete this product?' : 'Deactivate this product?' }}</div>
+          <div class="pl-confirm-title">{{ confirm.kind === 'delete' ? t('confirmDeleteTitle') : t('confirmDeactivateTitle') }}</div>
           <p class="pl-confirm-text">
             <template v-if="confirm.kind === 'delete'">
-              <strong>{{ confirm.product?.product_name }}</strong> will be removed for good. This can't be undone.
+              <strong>{{ confirm.product?.product_name }}</strong> {{ t('confirmDeleteDesc') }}
             </template>
             <template v-else>
-              Customers won't be able to buy <strong>{{ confirm.product?.product_name }}</strong> until you turn it back on.
+              {{ t('confirmDeactivateDesc1') }} <strong>{{ confirm.product?.product_name }}</strong> {{ t('confirmDeactivateDesc2') }}
             </template>
           </p>
         </div>
         <q-separator class="pl-confirm-sep" />
         <div class="pl-confirm-actions">
-          <q-btn v-close-popup outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" :disable="confirm.busy" />
+          <q-btn v-close-popup outline no-caps color="primary" :label="t('cancelBtn')" class="vp-dialog-btn" :disable="confirm.busy" />
           <q-btn
             unelevated
             no-caps
             color="primary"
-            :label="confirm.kind === 'delete' ? 'Delete Product' : 'Deactivate'"
+            :label="confirm.kind === 'delete' ? t('confirmDeleteBtn') : t('confirmDeactivateBtn')"
             class="vp-dialog-btn"
             :loading="confirm.busy"
             @click="runConfirm"
@@ -249,9 +249,9 @@
         <div class="vp-dialog-head">
           <span class="vp-dialog-icon"><q-icon name="o_download" size="22px" /></span>
           <div>
-            <div class="vp-dialog-title">Export inventory</div>
+            <div class="vp-dialog-title">{{ t('exportWizardTitle') }}</div>
             <div class="vp-dialog-text">
-              {{ exportStep === 1 ? 'Choose a format for the inventory report.' : 'Your report is ready to generate.' }}
+              {{ exportStep === 1 ? t('exportWizardDesc1') : t('exportWizardDesc2') }}
             </div>
           </div>
           <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" :disable="isExporting" />
@@ -260,7 +260,7 @@
         <div class="vp-dialog-body">
           <div v-if="exportStep === 1" class="pl-format-grid" role="radiogroup" aria-label="Export format">
             <button
-              v-for="format in EXPORT_FORMATS"
+              v-for="format in localizedExportFormats"
               :key="format.value"
               type="button"
               role="radio"
@@ -276,19 +276,19 @@
           </div>
 
           <div v-else class="pl-summary">
-            <div class="pl-summary-row"><span>Format</span><strong>{{ exportFormat === 'pdf' ? 'PDF document' : 'Image snapshot' }}</strong></div>
-            <div class="pl-summary-row"><span>Products</span><strong>{{ filteredProducts.length }}</strong></div>
+            <div class="pl-summary-row"><span>{{ t('exportSummaryFormat') }}</span><strong>{{ exportFormat === 'pdf' ? t('formatPdfTitle') : t('formatImageTitle') }}</strong></div>
+            <div class="pl-summary-row"><span>{{ t('exportSummaryProducts') }}</span><strong>{{ filteredProducts.length }}</strong></div>
           </div>
         </div>
 
         <div class="vp-dialog-actions">
           <template v-if="exportStep === 1">
-            <q-btn v-close-popup outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" />
-            <q-btn unelevated no-caps color="primary" label="Next" class="vp-dialog-btn" @click="proceedToPreview(exportFormat)" />
+            <q-btn v-close-popup outline no-caps color="primary" :label="t('cancelBtn')" class="vp-dialog-btn" />
+            <q-btn unelevated no-caps color="primary" :label="t('nextBtn')" class="vp-dialog-btn" @click="proceedToPreview(exportFormat)" />
           </template>
           <template v-else>
-            <q-btn outline no-caps color="primary" label="Back" class="vp-dialog-btn" :disable="isExporting" @click="exportStep = 1" />
-            <q-btn unelevated no-caps color="primary" label="Download" class="vp-dialog-btn" :loading="isExporting" @click="executeFinalExport" />
+            <q-btn outline no-caps color="primary" :label="t('backBtn')" class="vp-dialog-btn" :disable="isExporting" @click="exportStep = 1" />
+            <q-btn unelevated no-caps color="primary" :label="t('downloadBtn')" class="vp-dialog-btn" :loading="isExporting" @click="executeFinalExport" />
           </template>
         </div>
       </q-card>
@@ -303,6 +303,7 @@ import html2canvas from 'html2canvas'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
 import { useRoute } from 'vue-router'
+import { useLanguage } from '@/composables/useLanguage'
 
 import AddProductModal from '@/components/modals/AddProductModal.vue'
 import ProductDetailsModal from '@/components/modals/ProductDetailsModal.vue'
@@ -311,25 +312,191 @@ import FilterSheet from '@/components/vendor/FilterSheet.vue'
 
 const $q = useQuasar()
 
-const STATUS_FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'active', label: 'Active' },
-  { key: 'deactivated', label: 'Deactivated' },
-  { key: 'archived', label: 'Archived' }
-]
-const STOCK_OPTIONS = [
-  { label: 'All stock levels', value: 'all' },
-  { label: 'Low stock (under 10)', value: 'low_stock' }
-]
-const PRICE_OPTIONS = [
-  { label: 'Default order', value: 'default' },
-  { label: 'Low to high', value: 'low_to_high' },
-  { label: 'High to low', value: 'high_to_low' }
-]
-const EXPORT_FORMATS = [
-  { value: 'pdf', icon: 'o_picture_as_pdf', title: 'PDF document', sub: 'Printable A4 report' },
-  { value: 'image', icon: 'o_image', title: 'Image snapshot', sub: 'Quick shareable image' }
-]
+const productListDict = {
+  en: {
+    title: 'Product List',
+    subtitle: 'Monitor and update your product catalog.',
+    exportBtn: 'Export',
+    addBtn: 'Add Product',
+    insightRestockAlert: 'Restock alert',
+    insightUpcomingTrend: 'Upcoming trend',
+    insightTopPerformer: 'Top performer',
+    insightAnalyzing: 'Analyzing inventory…',
+    insightGathering: 'Gathering data…',
+    insightCalculating: 'Calculating…',
+    insightNotEnoughData: 'Not enough data yet',
+    insightExpectedDemand: 'Expected {x}× demand',
+    insightSeason: 'Season',
+    insightStockOutPlural: 'Stock-out in about {x} days',
+    insightStockOutSingular: 'Stock-out in about {x} day',
+    insightNoStockOut: 'No stock-out predicted yet',
+    insightHighestRevenue: 'Highest revenue this week',
+    insightAwaitingData: 'Awaiting more data',
+    insightNA: 'N/A',
+    searchPlaceholder: 'Search products',
+    filterCategory: 'Category',
+    filterStock: 'Stock level',
+    filterPrice: 'Sort by price',
+    optAllCategories: 'All categories',
+    optAllStock: 'All stock levels',
+    optLowStock: 'Low stock (under 10)',
+    optDefaultOrder: 'Default order',
+    optLowToHigh: 'Low to high',
+    optHighToLow: 'High to low',
+    statusAll: 'All',
+    statusActive: 'Active',
+    statusDeactivated: 'Deactivated',
+    statusArchived: 'Archived',
+    product: 'product',
+    noMatchTitle: 'No matching products',
+    emptyTitle: 'No products yet',
+    noMatchDesc: 'Try another search, status or filter.',
+    emptyDesc: 'Add your first product so customers can order it.',
+    colProduct: 'Product',
+    colCategory: 'Category',
+    colStock: 'Stock',
+    colPrice: 'Price',
+    colStatus: 'Status',
+    uncategorized: 'Uncategorized',
+    ofWord: 'of',
+    leftWord: 'left',
+    fromWord: 'from',
+    showingWord: 'Showing',
+    actionView: 'View',
+    actionDeactivate: 'Deactivate',
+    actionDelete: 'Delete',
+    confirmDeleteTitle: 'Delete this product?',
+    confirmDeactivateTitle: 'Deactivate this product?',
+    confirmDeleteDesc: 'will be removed for good. This can\'t be undone.',
+    confirmDeactivateDesc1: 'Customers won\'t be able to buy',
+    confirmDeactivateDesc2: 'until you turn it back on.',
+    cancelBtn: 'Cancel',
+    confirmDeleteBtn: 'Delete Product',
+    confirmDeactivateBtn: 'Deactivate',
+    notifyProductDeleted: 'Product deleted.',
+    notifyProductDeactivated: 'Product deactivated.',
+    notifyFailedAction: 'Failed to {kind} the product.',
+    exportWizardTitle: 'Export inventory',
+    exportWizardDesc1: 'Choose a format for the inventory report.',
+    exportWizardDesc2: 'Your report is ready to generate.',
+    formatPdfTitle: 'PDF document',
+    formatPdfSub: 'Printable A4 report',
+    formatImageTitle: 'Image snapshot',
+    formatImageSub: 'Quick shareable image',
+    exportSummaryFormat: 'Format',
+    exportSummaryProducts: 'Products',
+    nextBtn: 'Next',
+    backBtn: 'Back',
+    downloadBtn: 'Download',
+    notifyExportPdfFailed: 'Failed to generate the PDF report.',
+    notifyExportImgFailed: 'Failed to generate the image report.'
+  },
+  ph: {
+    title: 'Listahan ng Paninda',
+    subtitle: 'Bantayan at i-update ang iyong mga paninda.',
+    exportBtn: 'I-export',
+    addBtn: 'Magdagdag',
+    insightRestockAlert: 'Restock alert',
+    insightUpcomingTrend: 'Bagong trend',
+    insightTopPerformer: 'Mataas ang benta',
+    insightAnalyzing: 'Sinusuri ang inventory…',
+    insightGathering: 'Nangongolekta ng data…',
+    insightCalculating: 'Kinakalkula…',
+    insightNotEnoughData: 'Wala pang sapat na data',
+    insightExpectedDemand: 'Inaasahang {x}× na demand',
+    insightSeason: 'Panahon',
+    insightStockOutPlural: 'Mauubos sa loob ng {x} araw',
+    insightStockOutSingular: 'Mauubos sa loob ng {x} araw',
+    insightNoStockOut: 'Walang hula na maubusan ng stock',
+    insightHighestRevenue: 'Pinakamataas na kita ngayong linggo',
+    insightAwaitingData: 'Naghahantay pa ng data',
+    insightNA: 'N/A',
+    searchPlaceholder: 'Hanapin ang paninda',
+    filterCategory: 'Kategorya',
+    filterStock: 'Dami ng Stock',
+    filterPrice: 'I-sort sa presyo',
+    optAllCategories: 'Lahat ng kategorya',
+    optAllStock: 'Lahat ng dami ng stock',
+    optLowStock: 'Paubos na (mababa sa 10)',
+    optDefaultOrder: 'Default order',
+    optLowToHigh: 'Mababa pataas',
+    optHighToLow: 'Mataas pababa',
+    statusAll: 'Lahat',
+    statusActive: 'Active',
+    statusDeactivated: 'Naka-deactivate',
+    statusArchived: 'Naka-archive',
+    product: 'paninda',
+    noMatchTitle: 'Walang nahanap na paninda',
+    emptyTitle: 'Wala pang paninda',
+    noMatchDesc: 'Subukang ibahin ang search, status o filter.',
+    emptyDesc: 'Ilagay ang iyong unang paninda para maka-order ang customers.',
+    colProduct: 'Paninda',
+    colCategory: 'Kategorya',
+    colStock: 'Stock',
+    colPrice: 'Presyo',
+    colStatus: 'Status',
+    uncategorized: 'Walang Kategorya',
+    ofWord: 'mula sa',
+    leftWord: 'na natitira',
+    fromWord: 'mula',
+    showingWord: 'Pinapakita',
+    actionView: 'Tingnan',
+    actionDeactivate: 'I-deactivate',
+    actionDelete: 'Burahin',
+    confirmDeleteTitle: 'Burahin ang panindang ito?',
+    confirmDeactivateTitle: 'I-deactivate ang panindang ito?',
+    confirmDeleteDesc: 'ay mabubura nang tuluyan. Hindi na ito maibabalik.',
+    confirmDeactivateDesc1: 'Hindi na mabibili ang',
+    confirmDeactivateDesc2: 'hangga\'t hindi mo binabalik.',
+    cancelBtn: 'I-cancel',
+    confirmDeleteBtn: 'Burahin',
+    confirmDeactivateBtn: 'I-deactivate',
+    notifyProductDeleted: 'Nabura na ang paninda.',
+    notifyProductDeactivated: 'Na-deactivate na ang paninda.',
+    notifyFailedAction: 'Failed ma-{kind} ang paninda.',
+    exportWizardTitle: 'I-export ang inventory',
+    exportWizardDesc1: 'Pumili ng format para sa report.',
+    exportWizardDesc2: 'Handa nang i-generate ang report mo.',
+    formatPdfTitle: 'PDF document',
+    formatPdfSub: 'A4 report na pwede i-print',
+    formatImageTitle: 'Image snapshot',
+    formatImageSub: 'Mabilis ma-share na picture',
+    exportSummaryFormat: 'Format',
+    exportSummaryProducts: 'Mga Paninda',
+    nextBtn: 'Next',
+    backBtn: 'Bumalik',
+    downloadBtn: 'I-download',
+    notifyExportPdfFailed: 'Failed ma-generate ang PDF report.',
+    notifyExportImgFailed: 'Failed ma-generate ang image report.'
+  }
+}
+
+const { t, lang } = useLanguage(productListDict)
+
+// Reactive filters/options so they switch instantly
+const localizedStatusFilters = computed(() => [
+  { key: 'all', label: t('statusAll') },
+  { key: 'active', label: t('statusActive') },
+  { key: 'deactivated', label: t('statusDeactivated') },
+  { key: 'archived', label: t('statusArchived') }
+])
+
+const localizedStockOptions = computed(() => [
+  { label: t('optAllStock'), value: 'all' },
+  { label: t('optLowStock'), value: 'low_stock' }
+])
+
+const localizedPriceOptions = computed(() => [
+  { label: t('optDefaultOrder'), value: 'default' },
+  { label: t('optLowToHigh'), value: 'low_to_high' },
+  { label: t('optHighToLow'), value: 'high_to_low' }
+])
+
+const localizedExportFormats = computed(() => [
+  { value: 'pdf', icon: 'o_picture_as_pdf', title: t('formatPdfTitle'), sub: t('formatPdfSub') },
+  { value: 'image', icon: 'o_image', title: t('formatImageTitle'), sub: t('formatImageSub') }
+])
+
 const PAGE_SIZE = 10
 
 // The placeholder rows take the same columns as the table: photo and name, category, stock, price, status and the menu.
@@ -372,22 +539,48 @@ const isNumber = value => value !== null && value !== '' && !Number.isNaN(Number
 const insightCards = computed(() => {
   const ml = mlInsights.value
   const days = Number(ml.daysUntilStockout)
-  const trendNotes = [{ icon: 'o_insights', text: isNumber(ml.trendMultiplier) ? `Expected ${ml.trendMultiplier}× demand` : 'Not enough data yet' }]
+  const trendNotes = [{ 
+    icon: 'o_insights', 
+    text: isNumber(ml.trendMultiplier) ? t('insightExpectedDemand').replace('{x}', ml.trendMultiplier) : t('insightNotEnoughData') 
+  }]
   if (ml.currentSeason) {
-    trendNotes.push({ icon: 'o_wb_sunny', tone: 'success', text: `Season: ${ml.currentSeason}${ml.currentHoliday ? ` · ${ml.currentHoliday}` : ''}` })
+    trendNotes.push({ 
+      icon: 'o_wb_sunny', 
+      tone: 'success', 
+      text: `${t('insightSeason')}: ${ml.currentSeason}${ml.currentHoliday ? ` · ${ml.currentHoliday}` : ''}` 
+    })
   }
 
   return [
     {
       key: 'restock',
-      label: 'Restock alert',
+      label: t('insightRestockAlert'),
       icon: 'o_warning_amber',
       tone: 'danger',
-      value: ml.restockProduct || 'Analyzing inventory…',
-      notes: [{ icon: 'o_schedule', text: isNumber(ml.daysUntilStockout) ? `Stock-out in about ${days} day${days === 1 ? '' : 's'}` : 'No stock-out predicted yet' }]
+      value: ml.restockProduct || t('insightAnalyzing'),
+      notes: [{ 
+        icon: 'o_schedule', 
+        text: isNumber(ml.daysUntilStockout) 
+          ? (days === 1 ? t('insightStockOutSingular').replace('{x}', days) : t('insightStockOutPlural').replace('{x}', days)) 
+          : t('insightNoStockOut') 
+      }]
     },
-    { key: 'trend', label: 'Upcoming trend', icon: 'o_trending_up', tone: 'info', value: ml.trendingCategory || 'Gathering data…', notes: trendNotes },
-    { key: 'top', label: 'Top performer', icon: 'o_emoji_events', tone: 'wait', value: ml.topCategory || 'Calculating…', notes: [{ icon: 'o_star_outline', text: 'Highest revenue this week' }] }
+    { 
+      key: 'trend', 
+      label: t('insightUpcomingTrend'), 
+      icon: 'o_trending_up', 
+      tone: 'info', 
+      value: ml.trendingCategory || t('insightGathering'), 
+      notes: trendNotes 
+    },
+    { 
+      key: 'top', 
+      label: t('insightTopPerformer'), 
+      icon: 'o_emoji_events', 
+      tone: 'wait', 
+      value: ml.topCategory || t('insightCalculating'), 
+      notes: [{ icon: 'o_star_outline', text: t('insightHighestRevenue') }] 
+    }
   ]
 })
 
@@ -416,7 +609,7 @@ const updateChipFade = () => {
 }
 
 // The counts change the chips' widths, so the fade is rechecked whenever they do.
-watch(() => STATUS_FILTERS.map(f => statusCount(f.key)).join(), () => nextTick(updateChipFade))
+watch(() => localizedStatusFilters.value.map(f => statusCount(f.key)).join(), () => nextTick(updateChipFade))
 
 onMounted(() => {
   nextTick(updateChipFade)
@@ -459,11 +652,14 @@ const categoryOptions = computed(() => {
   return Array.from(cats, ([value, label]) => ({ value, label }))
 })
 
-const categorySelectOptions = computed(() => [{ label: 'All categories', value: 'all' }, ...categoryOptions.value])
+const categorySelectOptions = computed(() => [{ label: t('optAllCategories'), value: 'all' }, ...categoryOptions.value])
 
 const formatStatus = status => {
-  if (!status) return 'Active'
-  return String(status).charAt(0).toUpperCase() + String(status).slice(1).toLowerCase()
+  const s = String(status || 'active').toLowerCase()
+  if (s === 'active') return t('statusActive')
+  if (s === 'deactivated') return t('statusDeactivated')
+  if (s === 'archived') return t('statusArchived')
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 const productTone = status => {
@@ -508,9 +704,9 @@ const askConfirm = (kind, product) => {
 }
 
 const rowActions = product => [
-  { label: 'View', icon: 'o_visibility', run: () => viewProduct(product) },
-  ...(product.status !== 'deactivated' ? [{ label: 'Deactivate', icon: 'o_block', run: () => askConfirm('deactivate', product) }] : []),
-  { label: 'Delete', icon: 'o_delete', danger: true, run: () => askConfirm('delete', product) }
+  { label: t('actionView'), icon: 'o_visibility', run: () => viewProduct(product) },
+  ...(product.status !== 'deactivated' ? [{ label: t('actionDeactivate'), icon: 'o_block', run: () => askConfirm('deactivate', product) }] : []),
+  { label: t('actionDelete'), icon: 'o_delete', danger: true, run: () => askConfirm('delete', product) }
 ]
 
 const runConfirm = async () => {
@@ -521,16 +717,16 @@ const runConfirm = async () => {
   try {
     if (kind === 'delete') {
       await api.delete(`/vendor/products/${product.inventory_id}`)
-      $q.notify({ type: 'positive', message: 'Product deleted.' })
+      $q.notify({ type: 'positive', message: t('notifyProductDeleted') })
     } else {
       await api.patch(`/vendor/products/${product.inventory_id}/status`, { status: 'deactivated' })
-      $q.notify({ type: 'positive', message: 'Product deactivated.' })
+      $q.notify({ type: 'positive', message: t('notifyProductDeactivated') })
     }
     confirm.open = false
     fetchProducts()
   } catch (err) {
     console.error(err)
-    $q.notify({ type: 'negative', message: err.response?.data?.message || `Failed to ${kind} the product.` })
+    $q.notify({ type: 'negative', message: err.response?.data?.message || t('notifyFailedAction').replace('{kind}', kind) })
   } finally {
     confirm.busy = false
   }
@@ -571,7 +767,7 @@ const executeFinalExport = async () => {
       showExportModal.value = false
     } catch (error) {
       console.error('PDF Export failed:', error)
-      $q.notify({ type: 'negative', message: 'Failed to generate the PDF report.' })
+      $q.notify({ type: 'negative', message: t('notifyExportPdfFailed') })
     } finally {
       isExporting.value = false
     }
@@ -653,7 +849,7 @@ const executeFinalExport = async () => {
       showExportModal.value = false
     } catch (error) {
       console.error('Detailed Image Export Error:', error)
-      $q.notify({ type: 'negative', message: 'Failed to generate the image report.' })
+      $q.notify({ type: 'negative', message: t('notifyExportImgFailed') })
     } finally {
       isExporting.value = false
     }
@@ -667,16 +863,16 @@ const fetchMlInsights = async () => {
       mlInsights.value.restockProduct = res.data.restockProduct
       mlInsights.value.daysUntilStockout = res.data.daysUntilStockout
       mlInsights.value.trendingCategory = res.data.trendingCategory
-      mlInsights.value.trendMultiplier = res.data.trendMultiplier ?? 'N/A'
+      mlInsights.value.trendMultiplier = res.data.trendMultiplier ?? t('insightNA')
       mlInsights.value.topCategory = res.data.topCategory
       mlInsights.value.currentSeason = res.data.currentSeason ?? null
       mlInsights.value.currentHoliday = res.data.currentHoliday ?? null
     } else {
-      mlInsights.value.restockProduct = 'Awaiting more data'
-      mlInsights.value.daysUntilStockout = 'N/A'
-      mlInsights.value.trendingCategory = 'Awaiting more data'
-      mlInsights.value.trendMultiplier = 'N/A'
-      mlInsights.value.topCategory = 'Awaiting more data'
+      mlInsights.value.restockProduct = t('insightAwaitingData')
+      mlInsights.value.daysUntilStockout = t('insightNA')
+      mlInsights.value.trendingCategory = t('insightAwaitingData')
+      mlInsights.value.trendMultiplier = t('insightNA')
+      mlInsights.value.topCategory = t('insightAwaitingData')
     }
   } catch (err) {
     console.error('Failed to load ML insights:', err)
