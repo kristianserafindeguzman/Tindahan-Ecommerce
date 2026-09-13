@@ -4,17 +4,17 @@
 
       <div class="vp-header">
         <div>
-          <h1 class="vp-title">Notifications</h1>
-          <p class="vp-subtitle">New orders and cancellations from your store, newest first.</p>
+          <h1 class="vp-title">{{ t('title') }}</h1>
+          <p class="vp-subtitle">{{ t('subtitle') }}</p>
         </div>
-        <q-btn outline no-caps color="primary" icon="o_done_all" label="Mark all as read" class="vp-pill-btn" :disable="!unreadCount" @click="markAllAsRead" />
+        <q-btn outline no-caps color="primary" icon="o_done_all" :label="t('markAllAsRead')" class="vp-pill-btn" :disable="!unreadCount" @click="markAllAsRead" />
       </div>
 
       <div class="vp-card">
         <div class="vp-toolbar">
-          <div class="vp-chips" role="tablist" aria-label="Filter notifications">
+          <div class="vp-chips" role="tablist" :aria-label="t('filterAria')">
             <button
-              v-for="filter in FILTERS"
+              v-for="filter in localizedFilters"
               :key="filter.key"
               type="button"
               role="tab"
@@ -43,9 +43,9 @@
 
         <div v-else-if="!filtered.length" class="vp-empty">
           <div class="vp-empty-icon"><q-icon name="o_notifications_none" size="24px" /></div>
-          <div class="vp-empty-title">{{ active === 'unread' ? "You're all caught up" : 'Nothing here yet' }}</div>
+          <div class="vp-empty-title">{{ active === 'unread' ? t('emptyUnreadTitle') : t('emptyAllTitle') }}</div>
           <div class="vp-empty-text">
-            {{ active === 'unread' ? 'Every notification has been read.' : 'New orders and cancellations will show up here.' }}
+            {{ active === 'unread' ? t('emptyUnreadDesc') : t('emptyAllDesc') }}
           </div>
         </div>
 
@@ -67,7 +67,7 @@
               <span class="nt-body">
                 <span class="nt-title">
                   {{ notif.title }}
-                  <span v-if="!notif.is_read" class="nt-new">New</span>
+                  <span v-if="!notif.is_read" class="nt-new">{{ t('newBadge') }}</span>
                 </span>
                 <span class="nt-message">{{ notif.message }}</span>
               </span>
@@ -80,10 +80,10 @@
           </section>
 
           <div v-if="pageCount > 1" class="vp-pager">
-            <span>Showing {{ rangeStart }}–{{ rangeEnd }} of {{ filtered.length }}</span>
+            <span>{{ t('showingWord') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('ofWord') }} {{ filtered.length }}</span>
             <div class="vp-pager-btns">
-              <q-btn outline no-caps color="primary" icon="o_chevron_left" class="vp-pill-btn" aria-label="Previous page" :disable="page === 1" @click="page--" />
-              <q-btn outline no-caps color="primary" icon="o_chevron_right" class="vp-pill-btn" aria-label="Next page" :disable="page === pageCount" @click="page++" />
+              <q-btn outline no-caps color="primary" icon="o_chevron_left" class="vp-pill-btn" :aria-label="t('prevPage')" :disable="page === 1" @click="page--" />
+              <q-btn outline no-caps color="primary" icon="o_chevron_right" class="vp-pill-btn" :aria-label="t('nextPage')" :disable="page === pageCount" @click="page++" />
             </div>
           </div>
         </template>
@@ -97,16 +97,69 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useVendorNotifications, notificationKind } from '@/composables/useVendorNotifications'
+import { useLanguage } from '@/composables/useLanguage'
 
 const router = useRouter()
 const { notifications, loading, unreadCount, fetchNotifications, markAsRead, markAllAsRead, timeAgo } = useVendorNotifications()
 
-const FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'unread', label: 'Unread' },
-  { key: 'order', label: 'Orders' },
-  { key: 'cancelled', label: 'Cancellations' }
-]
+// Language Dictionary for Notifications
+const vendorNotificationsDict = {
+  en: {
+    title: 'Notifications',
+    subtitle: 'New orders and cancellations from your store, newest first.',
+    markAllAsRead: 'Mark all as read',
+    filterAria: 'Filter notifications',
+    filterAll: 'All',
+    filterUnread: 'Unread',
+    filterOrders: 'Orders',
+    filterCancelled: 'Cancellations',
+    emptyUnreadTitle: "You're all caught up",
+    emptyUnreadDesc: 'Every notification has been read.',
+    emptyAllTitle: 'Nothing here yet',
+    emptyAllDesc: 'New orders and cancellations will show up here.',
+    newBadge: 'New',
+    showingWord: 'Showing',
+    ofWord: 'of',
+    prevPage: 'Previous page',
+    nextPage: 'Next page',
+    dayEarlier: 'Earlier',
+    dayToday: 'Today',
+    dayYesterday: 'Yesterday'
+  },
+  ph: {
+    title: 'Mga Notification',
+    subtitle: 'Mga bagong order at cancellation mula sa tindahan mo, pinakabago una.',
+    markAllAsRead: 'I-mark lahat as read',
+    filterAria: 'I-filter ang notifications',
+    filterAll: 'Lahat',
+    filterUnread: 'Unread',
+    filterOrders: 'Mga Order',
+    filterCancelled: 'Mga Kinansela',
+    emptyUnreadTitle: 'Wala nang bagong notification',
+    emptyUnreadDesc: 'Nabasang lahat ang bawat notification.',
+    emptyAllTitle: 'Wala pang notification',
+    emptyAllDesc: 'Dito lalabas ang mga bagong order at cancellations.',
+    newBadge: 'Bago',
+    showingWord: 'Pinapakita ang',
+    ofWord: 'mula sa',
+    prevPage: 'Nakaraang pahina',
+    nextPage: 'Susunod na pahina',
+    dayEarlier: 'Nakaraan',
+    dayToday: 'Ngayon',
+    dayYesterday: 'Kahapon'
+  }
+}
+
+const { t } = useLanguage(vendorNotificationsDict)
+
+// Reactive filters using translations
+const localizedFilters = computed(() => [
+  { key: 'all', label: t('filterAll') },
+  { key: 'unread', label: t('filterUnread') },
+  { key: 'order', label: t('filterOrders') },
+  { key: 'cancelled', label: t('filterCancelled') }
+])
+
 const PAGE_SIZE = 20
 
 const active = ref('all')
@@ -139,12 +192,12 @@ watch(pageCount, count => { if (page.value > count) page.value = count })
 // "Today", "Yesterday", or the date, for each day's heading.
 const dayLabel = dateString => {
   const date = new Date(dateString)
-  if (Number.isNaN(date.getTime())) return 'Earlier'
+  if (Number.isNaN(date.getTime())) return t('dayEarlier')
   const today = new Date()
   const yesterday = new Date()
   yesterday.setDate(today.getDate() - 1)
-  if (date.toDateString() === today.toDateString()) return 'Today'
-  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
+  if (date.toDateString() === today.toDateString()) return t('dayToday')
+  if (date.toDateString() === yesterday.toDateString()) return t('dayYesterday')
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
 }
 

@@ -4,12 +4,12 @@
 
       <div class="vp-header">
         <div>
-          <h1 class="vp-title">Categories</h1>
-          <p class="vp-subtitle">Organize your products so customers can find them.</p>
+          <h1 class="vp-title">{{ t('title') }}</h1>
+          <p class="vp-subtitle">{{ t('subtitle') }}</p>
         </div>
         <div class="vp-header-actions">
-          <q-btn outline no-caps color="primary" icon="o_download" label="Export" class="vp-pill-btn" :loading="isExporting" @click="exportCategories" />
-          <q-btn unelevated no-caps color="primary" icon="add" label="Add Category" class="vp-primary-btn" @click="openAddModal" />
+          <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" :loading="isExporting" @click="exportCategories" />
+          <q-btn unelevated no-caps color="primary" icon="add" :label="t('addBtn')" class="vp-primary-btn" @click="openAddModal" />
         </div>
       </div>
 
@@ -22,23 +22,23 @@
             clearable
             clear-icon="o_close"
             hide-bottom-space
-            placeholder="Search categories"
+            :placeholder="t('searchPlaceholder')"
             class="vp-search"
           >
             <template #prepend>
               <q-icon name="o_search" size="18px" />
             </template>
           </q-input>
-          <span v-if="!loading" class="cat-total">{{ filteredCategories.length }} {{ filteredCategories.length === 1 ? 'category' : 'categories' }}</span>
+          <span v-if="!loading" class="cat-total">{{ filteredCategories.length }} {{ filteredCategories.length === 1 ? t('category') : t('categories') }}</span>
         </div>
 
         <SkeletonTable v-if="loading" :columns="SKELETON_COLUMNS" :rows="5" :list="$q.screen.lt.md" thumb />
 
         <div v-else-if="!filteredCategories.length" class="vp-empty">
           <div class="vp-empty-icon"><q-icon name="o_style" size="24px" /></div>
-          <div class="vp-empty-title">{{ categories.length ? 'No matching categories' : 'No categories yet' }}</div>
+          <div class="vp-empty-title">{{ categories.length ? t('noMatchTitle') : t('emptyTitle') }}</div>
           <div class="vp-empty-text">
-            {{ categories.length ? 'Try another name.' : 'Add a category to start grouping your products.' }}
+            {{ categories.length ? t('noMatchDesc') : t('emptyDesc') }}
           </div>
         </div>
 
@@ -46,9 +46,9 @@
           <table class="vp-table cat-table">
             <thead>
               <tr>
-                <th>Category</th>
-                <th class="col-count">Products</th>
-                <th class="text-right col-act">Actions</th>
+                <th>{{ t('colCategory') }}</th>
+                <th class="col-count">{{ t('colProducts') }}</th>
+                <th class="text-right col-act">{{ t('colActions') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -61,18 +61,18 @@
                     <div class="cat-text">
                       <div class="vp-name">{{ category.category_name }}</div>
                       <div class="cat-desc" :class="{ 'cat-desc--empty': !category.description }">
-                        {{ category.description || 'No description added' }}
+                        {{ category.description || t('noDesc') }}
                       </div>
                     </div>
                   </div>
                 </td>
                 <td><span class="cat-count"><q-icon name="o_inventory_2" size="14px" /> {{ countLabel(category) }}</span></td>
                 <td class="text-right">
-                  <q-btn flat round dense icon="o_edit" class="cat-action" :aria-label="`Edit ${category.category_name}`" @click="openEditModal(category)">
-                    <q-tooltip>Edit</q-tooltip>
+                  <q-btn flat round dense icon="o_edit" class="cat-action" :aria-label="`${t('editLabel')} ${category.category_name}`" @click="openEditModal(category)">
+                    <q-tooltip>{{ t('editLabel') }}</q-tooltip>
                   </q-btn>
-                  <q-btn flat round dense icon="o_delete" class="cat-action cat-action--danger" :aria-label="`Delete ${category.category_name}`" @click="openDeleteModal(category)">
-                    <q-tooltip>Delete</q-tooltip>
+                  <q-btn flat round dense icon="o_delete" class="cat-action cat-action--danger" :aria-label="`${t('deleteLabel')} ${category.category_name}`" @click="openDeleteModal(category)">
+                    <q-tooltip>{{ t('deleteLabel') }}</q-tooltip>
                   </q-btn>
                 </td>
               </tr>
@@ -91,8 +91,8 @@
               <div v-if="category.description" class="cat-desc cat-desc--wrap">{{ category.description }}</div>
             </div>
             <div class="cat-item-actions">
-              <q-btn flat round dense icon="o_edit" class="cat-action" :aria-label="`Edit ${category.category_name}`" @click="openEditModal(category)" />
-              <q-btn flat round dense icon="o_delete" class="cat-action cat-action--danger" :aria-label="`Delete ${category.category_name}`" @click="openDeleteModal(category)" />
+              <q-btn flat round dense icon="o_edit" class="cat-action" :aria-label="`${t('editLabel')} ${category.category_name}`" @click="openEditModal(category)" />
+              <q-btn flat round dense icon="o_delete" class="cat-action cat-action--danger" :aria-label="`${t('deleteLabel')} ${category.category_name}`" @click="openDeleteModal(category)" />
             </div>
           </div>
         </div>
@@ -106,40 +106,40 @@
           <div class="vp-dialog-head">
             <span class="vp-dialog-icon"><q-icon name="o_library_add" size="22px" /></span>
             <div>
-              <div class="vp-dialog-title">Add category</div>
-              <div class="vp-dialog-text">Group related products under one name.</div>
+              <div class="vp-dialog-title">{{ t('addModalTitle') }}</div>
+              <div class="vp-dialog-text">{{ t('addModalDesc') }}</div>
             </div>
           </div>
           <div class="vp-dialog-body">
             <div>
-              <label class="vp-field-label" for="cat-add-name">Category name</label>
+              <label class="vp-field-label" for="cat-add-name">{{ t('catNameLabel') }}</label>
               <q-input
                 v-model="categoryForm.category_name"
                 for="cat-add-name"
                 outlined
                 dense
                 autofocus
-                placeholder="e.g. Beverages, Snacks & Sweets"
+                :placeholder="t('catNamePlaceholder')"
                 class="vp-input"
-                :rules="[val => !!(val && val.trim()) || 'Enter a category name.']"
+                :rules="[val => !!(val && val.trim()) || t('catNameRule')]"
               />
             </div>
             <div>
-              <label class="vp-field-label" for="cat-add-desc">Description <span class="vp-field-optional">(optional)</span></label>
+              <label class="vp-field-label" for="cat-add-desc">{{ t('descLabel') }} <span class="vp-field-optional">{{ t('optional') }}</span></label>
               <q-input
                 v-model="categoryForm.description"
                 for="cat-add-desc"
                 type="textarea"
                 outlined
                 autogrow
-                placeholder="What belongs in this category?"
+                :placeholder="t('descPlaceholderAdd')"
                 class="vp-input cat-textarea"
               />
             </div>
           </div>
           <div class="vp-dialog-actions">
-            <q-btn v-close-popup outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" :disable="submitting" />
-            <q-btn type="submit" unelevated no-caps color="primary" label="Save Category" class="vp-dialog-btn" :loading="submitting" />
+            <q-btn v-close-popup outline no-caps color="primary" :label="t('cancelBtn')" class="vp-dialog-btn" :disable="submitting" />
+            <q-btn type="submit" unelevated no-caps color="primary" :label="t('saveCatBtn')" class="vp-dialog-btn" :loading="submitting" />
           </div>
         </q-form>
       </q-card>
@@ -151,13 +151,13 @@
           <div class="vp-dialog-head">
             <span class="vp-dialog-icon"><q-icon name="o_edit_note" size="22px" /></span>
             <div>
-              <div class="vp-dialog-title">Edit category</div>
-              <div class="vp-dialog-text">Update the description shown with this category.</div>
+              <div class="vp-dialog-title">{{ t('editModalTitle') }}</div>
+              <div class="vp-dialog-text">{{ t('editModalDesc') }}</div>
             </div>
           </div>
           <div class="vp-dialog-body">
             <div>
-              <label class="vp-field-label">Category name</label>
+              <label class="vp-field-label">{{ t('catNameLabel') }}</label>
               <div class="cat-locked">
                 <span class="cat-icon" :class="`cat-tone--${categoryKind(editCategoryForm.category_name).tone}`">
                   <q-icon :name="categoryKind(editCategoryForm.category_name).icon" size="18px" />
@@ -165,24 +165,24 @@
                 <span class="cat-locked-name">{{ editCategoryForm.category_name }}</span>
                 <q-icon name="o_lock" size="16px" class="cat-locked-icon" />
               </div>
-              <div class="cat-hint">Names can't be changed, to keep the catalog consistent.</div>
+              <div class="cat-hint">{{ t('catNameHint') }}</div>
             </div>
             <div>
-              <label class="vp-field-label" for="cat-edit-desc">Description</label>
+              <label class="vp-field-label" for="cat-edit-desc">{{ t('descLabel') }}</label>
               <q-input
                 v-model="editCategoryForm.description"
                 for="cat-edit-desc"
                 type="textarea"
                 outlined
                 autogrow
-                placeholder="Add notes or examples for this category"
+                :placeholder="t('descPlaceholderEdit')"
                 class="vp-input cat-textarea"
               />
             </div>
           </div>
           <div class="vp-dialog-actions">
-            <q-btn v-close-popup outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" :disable="submitting" />
-            <q-btn type="submit" unelevated no-caps color="primary" label="Save Changes" class="vp-dialog-btn" :loading="submitting" />
+            <q-btn v-close-popup outline no-caps color="primary" :label="t('cancelBtn')" class="vp-dialog-btn" :disable="submitting" />
+            <q-btn type="submit" unelevated no-caps color="primary" :label="t('saveChangesBtn')" class="vp-dialog-btn" :loading="submitting" />
           </div>
         </q-form>
       </q-card>
@@ -195,10 +195,10 @@
           <div class="vp-dialog-head">
             <span class="vp-dialog-icon cat-icon--warn"><q-icon name="o_inventory_2" size="22px" /></span>
             <div>
-              <div class="vp-dialog-title">Move its products first</div>
+              <div class="vp-dialog-title">{{ t('moveProductsTitle') }}</div>
               <div class="vp-dialog-text">
-                <strong>{{ categoryToDelete.category_name }}</strong> still has {{ countLabel(categoryToDelete) }}.
-                A category can only be deleted once it's empty.
+                <strong>{{ categoryToDelete.category_name }}</strong> {{ t('moveProductsText1') }} {{ countLabel(categoryToDelete) }}.
+                {{ t('moveProductsText2') }}
               </div>
             </div>
             <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
@@ -206,7 +206,7 @@
 
           <div class="vp-dialog-body">
             <div class="cat-preview">
-              <div class="cat-preview-label">In this category</div>
+              <div class="cat-preview-label">{{ t('inThisCategory') }}</div>
               <div v-if="blockedLoading" class="cat-preview-list">
                 <div v-for="n in Math.min(3, categoryToDelete.products_count)" :key="n" class="cat-preview-item">
                   <q-skeleton type="rect" width="32px" height="32px" class="cat-preview-skeleton" />
@@ -222,19 +222,19 @@
                   <span class="cat-preview-name">{{ product.product_name }}</span>
                 </li>
                 <li v-if="categoryToDelete.products_count > blockedProducts.length" class="cat-preview-more">
-                  and {{ categoryToDelete.products_count - blockedProducts.length }} more
+                  {{ t('and') }} {{ categoryToDelete.products_count - blockedProducts.length }} {{ t('more') }}
                 </li>
               </ul>
             </div>
             <div class="cat-tip">
               <q-icon name="o_lightbulb" size="16px" />
-              <span>Open each product and pick another category, or delete the ones you no longer sell. Then come back to delete this category.</span>
+              <span>{{ t('deleteTip') }}</span>
             </div>
           </div>
 
           <div class="vp-dialog-actions">
-            <q-btn v-close-popup outline no-caps color="primary" label="Close" class="vp-dialog-btn" />
-            <q-btn unelevated no-caps color="primary" icon-right="o_arrow_forward" label="View Products" class="vp-dialog-btn" @click="viewCategoryProducts" />
+            <q-btn v-close-popup outline no-caps color="primary" :label="t('closeBtn')" class="vp-dialog-btn" />
+            <q-btn unelevated no-caps color="primary" icon-right="o_arrow_forward" :label="t('viewProductsBtn')" class="vp-dialog-btn" @click="viewCategoryProducts" />
           </div>
         </template>
 
@@ -243,8 +243,8 @@
           <div class="vp-dialog-head">
             <span class="vp-dialog-icon vp-dialog-icon--danger"><q-icon name="o_delete" size="22px" /></span>
             <div>
-              <div class="vp-dialog-title">Delete this category?</div>
-              <div class="vp-dialog-text">It has no products, so nothing else changes. This can't be undone.</div>
+              <div class="vp-dialog-title">{{ t('deleteModalTitle') }}</div>
+              <div class="vp-dialog-text">{{ t('deleteModalDesc') }}</div>
             </div>
           </div>
           <div class="vp-dialog-body">
@@ -253,12 +253,12 @@
                 <q-icon :name="categoryKind(categoryToDelete.category_name).icon" size="18px" />
               </span>
               <span class="cat-locked-name">{{ categoryToDelete.category_name }}</span>
-              <span class="cat-count">0 products</span>
+              <span class="cat-count">{{ t('zeroProducts') }}</span>
             </div>
           </div>
           <div class="vp-dialog-actions">
-            <q-btn v-close-popup outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" :disable="submitting" />
-            <q-btn unelevated no-caps color="primary" icon="o_delete" label="Delete Category" class="vp-dialog-btn" :loading="submitting" @click="confirmDelete" />
+            <q-btn v-close-popup outline no-caps color="primary" :label="t('cancelBtn')" class="vp-dialog-btn" :disable="submitting" />
+            <q-btn unelevated no-caps color="primary" icon="o_delete" :label="t('deleteCatBtn')" class="vp-dialog-btn" :loading="submitting" @click="confirmDelete" />
           </div>
         </template>
       </q-card>
@@ -273,9 +273,130 @@ import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
 import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 import { categoryStyle } from '@/composables/useCategories'
+import { useLanguage } from '@/composables/useLanguage'
 
 const $q = useQuasar()
 const router = useRouter()
+
+// Language Dictionary for this page
+const categoriesDict = {
+  en: {
+    title: 'Categories',
+    subtitle: 'Organize your products so customers can find them.',
+    exportBtn: 'Export',
+    addBtn: 'Add Category',
+    searchPlaceholder: 'Search categories',
+    category: 'category',
+    categories: 'categories',
+    noMatchTitle: 'No matching categories',
+    noMatchDesc: 'Try another name.',
+    emptyTitle: 'No categories yet',
+    emptyDesc: 'Add a category to start grouping your products.',
+    colCategory: 'Category',
+    colProducts: 'Products',
+    colActions: 'Actions',
+    noDesc: 'No description added',
+    product: 'product',
+    products: 'products',
+    editLabel: 'Edit',
+    deleteLabel: 'Delete',
+    addModalTitle: 'Add category',
+    addModalDesc: 'Group related products under one name.',
+    catNameLabel: 'Category name',
+    catNamePlaceholder: 'e.g. Beverages, Snacks & Sweets',
+    catNameRule: 'Enter a category name.',
+    descLabel: 'Description',
+    optional: '(optional)',
+    descPlaceholderAdd: 'What belongs in this category?',
+    cancelBtn: 'Cancel',
+    saveCatBtn: 'Save Category',
+    editModalTitle: 'Edit category',
+    editModalDesc: 'Update the description shown with this category.',
+    catNameHint: "Names can't be changed, to keep the catalog consistent.",
+    descPlaceholderEdit: 'Add notes or examples for this category',
+    saveChangesBtn: 'Save Changes',
+    moveProductsTitle: 'Move its products first',
+    moveProductsText1: 'still has',
+    moveProductsText2: "A category can only be deleted once it's empty.",
+    inThisCategory: 'In this category',
+    and: 'and',
+    more: 'more',
+    deleteTip: 'Open each product and pick another category, or delete the ones you no longer sell. Then come back to delete this category.',
+    closeBtn: 'Close',
+    viewProductsBtn: 'View Products',
+    deleteModalTitle: 'Delete this category?',
+    deleteModalDesc: "It has no products, so nothing else changes. This can't be undone.",
+    zeroProducts: '0 products',
+    deleteCatBtn: 'Delete Category',
+    notifyAddSuccess: 'Category added.',
+    notifyAddFail: 'Failed to add the category.',
+    notifyExportFail: 'Failed to generate the category report.',
+    notifyEditSuccess: 'Category updated.',
+    notifyEditFail: 'Failed to update the category.',
+    notifyDeleteSuccess: 'was deleted.',
+    notifyDeleteFail: "Couldn't delete",
+    notifyDeleteFailTryAgain: 'Please try again.'
+  },
+  ph: {
+    title: 'Mga Kategorya',
+    subtitle: 'I-organize ang paninda para madaling mahanap ng customers.',
+    exportBtn: 'I-export',
+    addBtn: 'Magdagdag ng Kategorya',
+    searchPlaceholder: 'Hanapin sa kategorya',
+    category: 'kategorya',
+    categories: 'mga kategorya',
+    noMatchTitle: 'Walang nahanap na kategorya',
+    noMatchDesc: 'Subukang ibahin ang pangalan.',
+    emptyTitle: 'Wala pang kategorya',
+    emptyDesc: 'Magdagdag ng kategorya para ma-grupo ang mga paninda.',
+    colCategory: 'Kategorya',
+    colProducts: 'Paninda',
+    colActions: 'Aksyon',
+    noDesc: 'Walang description',
+    product: 'paninda',
+    products: 'mga paninda',
+    editLabel: 'I-edit',
+    deleteLabel: 'Burahin',
+    addModalTitle: 'Magdagdag ng kategorya',
+    addModalDesc: 'I-grupo ang mga magkakaparehong paninda.',
+    catNameLabel: 'Pangalan ng kategorya',
+    catNamePlaceholder: 'hal. Inumin, Tsitsirya',
+    catNameRule: 'Ilagay ang pangalan ng kategorya.',
+    descLabel: 'Description',
+    optional: '(optional)',
+    descPlaceholderAdd: 'Anu-ano ang kasama sa kategoryang ito?',
+    cancelBtn: 'I-cancel',
+    saveCatBtn: 'I-save ang Kategorya',
+    editModalTitle: 'I-edit ang kategorya',
+    editModalDesc: 'I-update ang description ng kategoryang ito.',
+    catNameHint: 'Hindi pwedeng baguhin ang pangalan para pantay-pantay ang catalog.',
+    descPlaceholderEdit: 'Magdagdag ng notes o halimbawa',
+    saveChangesBtn: 'I-save ang Pagbabago',
+    moveProductsTitle: 'I-move muna ang mga paninda',
+    moveProductsText1: 'ay may',
+    moveProductsText2: 'Pwede lang burahin ang kategorya kapag wala na itong laman.',
+    inThisCategory: 'Nasa kategoryang ito',
+    and: 'at',
+    more: 'pa',
+    deleteTip: 'Buksan ang bawat paninda at ilipat sa ibang kategorya, o burahin ang mga hindi na tinitinda. Saka balikan ito para burahin ang kategorya.',
+    closeBtn: 'I-close',
+    viewProductsBtn: 'Tingnan ang Paninda',
+    deleteModalTitle: 'Burahin ang kategoryang ito?',
+    deleteModalDesc: 'Wala na itong laman kaya walang ibang magbabago. Hindi na ito maibabalik.',
+    zeroProducts: '0 paninda',
+    deleteCatBtn: 'Burahin',
+    notifyAddSuccess: 'Naidagdag na ang kategorya.',
+    notifyAddFail: 'Failed ma-add ang kategorya.',
+    notifyExportFail: 'Failed ma-generate ang category report.',
+    notifyEditSuccess: 'Na-update na ang kategorya.',
+    notifyEditFail: 'Failed ma-update ang kategorya.',
+    notifyDeleteSuccess: 'ay nabura na.',
+    notifyDeleteFail: "Hindi mabura ang",
+    notifyDeleteFailTryAgain: 'Paki-try ulit.'
+  }
+}
+
+const { t } = useLanguage(categoriesDict)
 
 // The placeholder rows take the same columns as the table: icon and name, product count, and the two actions.
 const SKELETON_COLUMNS = [
@@ -306,7 +427,7 @@ const categoryKind = name => categoryStyle((name || '').trim())
 
 const countLabel = category => {
   const count = Number(category.products_count || 0)
-  return `${count} product${count === 1 ? '' : 's'}`
+  return `${count} ${count === 1 ? t('product') : t('products')}`
 }
 
 // "Others" is the catch-all, so it always sits last; everything else reads A to Z.
@@ -348,12 +469,12 @@ const submitCategory = async () => {
       category_name: categoryForm.value.category_name.trim(),
       description: categoryForm.value.description
     })
-    $q.notify({ type: 'positive', message: 'Category added.', position: 'top-right' })
+    $q.notify({ type: 'positive', message: t('notifyAddSuccess'), position: 'top-right' })
     showAddModal.value = false
     categoryForm.value = { category_name: '', description: '' }
     await fetchCategories()
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add the category.', position: 'top-right' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || t('notifyAddFail'), position: 'top-right' })
   } finally {
     submitting.value = false
   }
@@ -373,7 +494,7 @@ const exportCategories = async () => {
     setTimeout(() => window.URL.revokeObjectURL(url), 1000)
   } catch (error) {
     console.error('Export failed:', error)
-    $q.notify({ type: 'negative', message: 'Failed to generate the category report.', position: 'top-right' })
+    $q.notify({ type: 'negative', message: t('notifyExportFail'), position: 'top-right' })
   } finally {
     isExporting.value = false
   }
@@ -394,11 +515,11 @@ const submitEditCategory = async () => {
     await api.patch(`/categories/${editCategoryForm.value.category_id}`, {
       description: editCategoryForm.value.description
     })
-    $q.notify({ type: 'positive', message: 'Category updated.', position: 'top-right' })
+    $q.notify({ type: 'positive', message: t('notifyEditSuccess'), position: 'top-right' })
     showEditModal.value = false
     await fetchCategories()
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to update the category.', position: 'top-right' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || t('notifyEditFail'), position: 'top-right' })
   } finally {
     submitting.value = false
   }
@@ -436,12 +557,12 @@ const confirmDelete = async () => {
   submitting.value = true
   try {
     await api.delete(`/categories/${categoryToDelete.value.category_id}`)
-    $q.notify({ type: 'positive', icon: 'o_check_circle', message: `“${name}” was deleted.`, position: 'top-right' })
+    $q.notify({ type: 'positive', icon: 'o_check_circle', message: `“${name}” ${t('notifyDeleteSuccess')}`, position: 'top-right' })
     showDeleteModal.value = false
     categoryToDelete.value = null
     await fetchCategories()
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || `Couldn't delete “${name}”. Please try again.`, position: 'top-right' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || `${t('notifyDeleteFail')} “${name}”. ${t('notifyDeleteFailTryAgain')}`, position: 'top-right' })
   } finally {
     submitting.value = false
   }

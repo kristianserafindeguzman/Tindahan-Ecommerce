@@ -6,10 +6,10 @@
       <!-- An order that can't be loaded says so instead of spinning forever. -->
       <div v-if="loadError" class="vp-card vp-empty od-missing">
         <div class="vp-empty-icon"><q-icon name="o_receipt_long" size="24px" /></div>
-        <div class="vp-empty-title">Order not found</div>
-        <div class="vp-empty-text">It may belong to another store, or it was removed.</div>
-        <q-btn v-if="isEmbedded" outline no-caps color="primary" icon="o_arrow_back" label="Back to orders" class="vp-pill-btn od-missing-btn" @click="$emit('back')" />
-        <q-btn v-else outline no-caps color="primary" icon="o_arrow_back" label="Back to Order List" to="/vendor/orders/list" class="vp-pill-btn od-missing-btn" />
+        <div class="vp-empty-title">{{ t('orderNotFound') }}</div>
+        <div class="vp-empty-text">{{ t('orderNotFoundDesc') }}</div>
+        <q-btn v-if="isEmbedded" outline no-caps color="primary" icon="o_arrow_back" :label="t('backToOrders')" class="vp-pill-btn od-missing-btn" @click="$emit('back')" />
+        <q-btn v-else outline no-caps color="primary" icon="o_arrow_back" :label="t('backToOrderList')" to="/vendor/orders/list" class="vp-pill-btn od-missing-btn" />
       </div>
 
       <div v-else-if="!order" class="od-loading">
@@ -21,16 +21,16 @@
         <!-- HEADER — the back button beside the order number, its status and the actions. -->
         <header class="od-header">
           <div class="od-heading">
-            <q-btn v-if="isEmbedded" flat dense icon="o_arrow_back" class="od-back-btn" aria-label="Back to orders" @click="$emit('back')">
-              <q-tooltip>Back to orders</q-tooltip>
+            <q-btn v-if="isEmbedded" flat dense icon="o_arrow_back" class="od-back-btn" :aria-label="t('backToOrders')" @click="$emit('back')">
+              <q-tooltip>{{ t('backToOrders') }}</q-tooltip>
             </q-btn>
-            <q-btn v-else flat dense icon="o_arrow_back" class="od-back-btn" aria-label="Back to Order List" to="/vendor/orders/list">
-              <q-tooltip>Back to Order List</q-tooltip>
+            <q-btn v-else flat dense icon="o_arrow_back" class="od-back-btn" :aria-label="t('backToOrderList')" to="/vendor/orders/list">
+              <q-tooltip>{{ t('backToOrderList') }}</q-tooltip>
             </q-btn>
 
             <div class="od-heading-text">
               <div class="od-title-row">
-                <component :is="isEmbedded ? 'h2' : 'h1'" class="od-title">Order #{{ order.order_id }}</component>
+                <component :is="isEmbedded ? 'h2' : 'h1'" class="od-title">{{ t('orderId') }} #{{ order.order_id }}</component>
                 <OrderStatusBadge :status="order.status" />
               </div>
               <div class="od-meta">
@@ -44,14 +44,14 @@
           </div>
 
           <div class="od-actions">
-            <q-btn outline no-caps color="primary" icon="o_print" label="Print Receipt" class="vp-pill-btn od-action" :loading="isExporting" @click="printOrder" />
+            <q-btn outline no-caps color="primary" icon="o_print" :label="t('printReceipt')" class="vp-pill-btn od-action" :loading="isExporting" @click="printOrder" />
 
             <q-btn-dropdown
               v-if="!isFinal"
               unelevated
               no-caps
               color="primary"
-              label="Update Status"
+              :label="t('updateStatus')"
               dropdown-icon="o_expand_more"
               class="od-update-btn od-action"
               :loading="isUpdating"
@@ -59,33 +59,33 @@
               <q-list class="od-status-list">
                 <q-item v-if="order.status === 'placed'" v-close-popup clickable @click="updateStatus('preparing')">
                   <q-item-section avatar><span class="od-menu-icon vp-tone--preparing"><q-icon :name="statusIcon('preparing')" size="18px" /></span></q-item-section>
-                  <q-item-section>Start preparing</q-item-section>
+                  <q-item-section>{{ t('startPreparing') }}</q-item-section>
                 </q-item>
                 <q-item v-if="['placed', 'preparing'].includes(order.status)" v-close-popup clickable @click="updateStatus('ready_for_pickup')">
                   <q-item-section avatar><span class="od-menu-icon vp-tone--ready"><q-icon :name="statusIcon('ready_for_pickup')" size="18px" /></span></q-item-section>
-                  <q-item-section>Ready for pickup</q-item-section>
+                  <q-item-section>{{ t('readyForPickup') }}</q-item-section>
                 </q-item>
                 <q-item v-if="order.status === 'ready_for_pickup'" v-close-popup clickable @click="updateStatus('picked_up')">
                   <q-item-section avatar><span class="od-menu-icon vp-tone--done"><q-icon :name="statusIcon('picked_up')" size="18px" /></span></q-item-section>
-                  <q-item-section>Picked up</q-item-section>
+                  <q-item-section>{{ t('pickedUp') }}</q-item-section>
                 </q-item>
                 <q-separator class="od-menu-sep" />
                 <q-item v-close-popup clickable class="od-menu-danger" @click="promptCancelOrder">
                   <q-item-section avatar><span class="od-menu-icon vp-tone--cancelled"><q-icon :name="statusIcon('cancelled')" size="18px" /></span></q-item-section>
-                  <q-item-section>Cancel order</q-item-section>
+                  <q-item-section>{{ t('cancelOrder') }}</q-item-section>
                 </q-item>
               </q-list>
             </q-btn-dropdown>
 
-            <span v-else class="od-final"><q-icon name="o_lock" size="16px" /> Order finalized</span>
+            <span v-else class="od-final"><q-icon name="o_lock" size="16px" /> {{ t('orderFinalized') }}</span>
           </div>
         </header>
 
         <div v-if="order.status === 'cancelled'" class="od-cancel-note">
           <q-icon name="o_info" size="18px" class="od-cancel-note-icon" />
           <div>
-            <div class="od-cancel-note-title">This order was cancelled</div>
-            <div>{{ order.cancellation_reason || 'No reason was given.' }}</div>
+            <div class="od-cancel-note-title">{{ t('orderWasCancelled') }}</div>
+            <div>{{ order.cancellation_reason || t('noReasonGiven') }}</div>
           </div>
         </div>
 
@@ -95,7 +95,7 @@
 
             <section class="vp-card od-card od-card--progress">
               <div class="od-card-head">
-                <span class="od-card-title">Order Progress</span>
+                <span class="od-card-title">{{ t('orderProgress') }}</span>
               </div>
               <ol class="od-steps" aria-label="Order progress">
                 <li
@@ -117,7 +117,7 @@
 
             <section class="vp-card od-card od-card--items">
               <div class="od-card-head">
-                <span class="od-card-title">Items</span>
+                <span class="od-card-title">{{ t('items') }}</span>
                 <span class="od-pill">{{ productCount }}</span>
               </div>
 
@@ -128,7 +128,7 @@
                     <q-icon v-else name="o_inventory_2" size="22px" />
                   </span>
                   <div class="od-item-body">
-                    <div class="od-item-name">{{ item.inventory?.product_name || item.product_name || 'Product' }}</div>
+                    <div class="od-item-name">{{ item.inventory?.product_name || item.product_name || t('productFallback') }}</div>
                     <div class="od-item-meta">₱{{ formatNumber(unitPrice(item)) }} × {{ item.quantity }}</div>
                   </div>
                   <div class="od-item-price">₱{{ formatNumber(lineTotal(item)) }}</div>
@@ -137,11 +137,11 @@
 
               <dl class="od-totals">
                 <div v-if="Number(order.platform_fee)" class="od-total-row">
-                  <dt>Platform fee</dt>
+                  <dt>{{ t('platformFee') }}</dt>
                   <dd>₱{{ formatNumber(order.platform_fee) }}</dd>
                 </div>
                 <div class="od-total-row od-total-row--grand">
-                  <dt>Total</dt>
+                  <dt>{{ t('total') }}</dt>
                   <dd>₱{{ formatNumber(order.total_amount) }}</dd>
                 </div>
               </dl>
@@ -152,7 +152,7 @@
 
             <section class="vp-card od-card od-card--customer">
               <div class="od-card-head">
-                <span class="od-card-title">Customer</span>
+                <span class="od-card-title">{{ t('customer') }}</span>
               </div>
               <div class="od-card-body">
                 <div class="od-person">
@@ -162,17 +162,17 @@
                   </q-avatar>
                   <div class="od-person-text">
                     <div class="od-strong">{{ customerName }}</div>
-                    <div class="od-sub">{{ customerOrderCount }} order{{ customerOrderCount === 1 ? '' : 's' }} from your store</div>
+                    <div class="od-sub">{{ customerOrderCount }} {{ customerOrderCount === 1 ? t('orderFromStore') : t('ordersFromStore') }}</div>
                   </div>
                 </div>
                 <dl class="od-contact">
                   <div class="od-contact-row">
                     <dt><q-icon name="o_mail" size="16px" /><span class="vp-sr-only">Email</span></dt>
-                    <dd>{{ order.consumer?.email || 'No email provided' }}</dd>
+                    <dd>{{ order.consumer?.email || t('noEmail') }}</dd>
                   </div>
                   <div class="od-contact-row">
                     <dt><q-icon name="o_call" size="16px" /><span class="vp-sr-only">Phone</span></dt>
-                    <dd>{{ order.consumer?.phone_number || order.customer_phone || 'No phone provided' }}</dd>
+                    <dd>{{ order.consumer?.phone_number || order.customer_phone || t('noPhone') }}</dd>
                   </div>
                 </dl>
               </div>
@@ -180,13 +180,13 @@
 
             <section class="vp-card od-card od-card--pickup">
               <div class="od-card-head">
-                <span class="od-card-title">Pickup Location</span>
+                <span class="od-card-title">{{ t('pickupLocation') }}</span>
                 <q-btn
                   outline
                   no-caps
                   color="primary"
                   icon="o_directions"
-                  label="Directions"
+                  :label="t('directions')"
                   class="vp-pill-btn od-head-btn"
                   :disable="!hasRoute"
                   @click="openDirections"
@@ -195,8 +195,8 @@
               <div class="od-card-body od-place">
                 <span class="od-place-icon"><q-icon name="o_storefront" size="18px" /></span>
                 <div class="od-place-text">
-                  <div class="od-strong">{{ order.store?.store_name || 'Store' }}</div>
-                  <div class="od-sub">{{ order.store?.address || 'No address saved' }}</div>
+                  <div class="od-strong">{{ order.store?.store_name || t('storeFallback') }}</div>
+                  <div class="od-sub">{{ order.store?.address || t('noAddress') }}</div>
                 </div>
               </div>
               <div v-if="hasRoute" class="od-map">
@@ -212,7 +212,7 @@
               </div>
               <div v-else class="od-map-note">
                 <q-icon name="o_location_off" size="16px" />
-                The customer's location wasn't recorded, so there's no route to show.
+                {{ t('noRouteNote') }}
               </div>
             </section>
           </div>
@@ -226,8 +226,8 @@
       <div class="od-dialog-head">
         <span class="od-dialog-icon"><q-icon name="o_cancel" size="22px" /></span>
         <div>
-          <div class="od-dialog-title">Cancel order #{{ order?.order_id }}?</div>
-          <div class="od-dialog-text">Choose or write a reason. This can't be undone.</div>
+          <div class="od-dialog-title">{{ t('cancelDialogTitle') }} #{{ order?.order_id }}?</div>
+          <div class="od-dialog-text">{{ t('cancelDialogDesc') }}</div>
         </div>
       </div>
 
@@ -237,17 +237,17 @@
       <div class="od-dialog-body od-cancel-body">
         <div class="od-reason-list" role="radiogroup" aria-label="Cancellation reason">
           <button
-            v-for="reason in CANCEL_REASONS"
-            :key="reason"
+            v-for="opt in cancelOptions"
+            :key="opt.value"
             type="button"
             role="radio"
-            :aria-checked="cancelReason === reason"
+            :aria-checked="cancelReason === opt.value"
             class="od-reason"
-            :class="{ 'od-reason--selected': cancelReason === reason }"
-            @click="cancelReason = reason"
+            :class="{ 'od-reason--selected': cancelReason === opt.value }"
+            @click="cancelReason = opt.value"
           >
             <span class="od-reason-radio" aria-hidden="true" />
-            <span class="od-reason-label">{{ reason }}</span>
+            <span class="od-reason-label">{{ opt.label }}</span>
           </button>
         </div>
         <!-- The reason is stored in a 255-character column, so the box stops there. -->
@@ -260,15 +260,15 @@
           autofocus
           counter
           maxlength="255"
-          placeholder="Tell the customer why…"
+          :placeholder="t('placeholderCancel')"
           aria-label="Your reason"
           class="od-reason-input"
         />
       </div>
 
       <div class="od-dialog-actions">
-        <q-btn v-close-popup outline no-caps color="primary" label="Keep Order" class="od-dialog-btn" />
-        <q-btn unelevated no-caps color="primary" label="Cancel Order" class="od-dialog-btn" :disable="!cancelReasonValid" :loading="isUpdating" @click="confirmCancelOrder" />
+        <q-btn v-close-popup outline no-caps color="primary" :label="t('keepOrderBtn')" class="od-dialog-btn" />
+        <q-btn unelevated no-caps color="primary" :label="t('cancelOrderBtn')" class="od-dialog-btn" :disable="!cancelReasonValid" :loading="isUpdating" @click="confirmCancelOrder" />
       </div>
     </q-card>
   </q-dialog>
@@ -282,6 +282,7 @@ import { useQuasar, QPage } from 'quasar'
 import OrderTrackingMap from '@/components/shared/OrderTrackingMap.vue'
 import OrderStatusBadge from '@/components/vendor/OrderStatusBadge.vue'
 import { statusIcon, statusLabel } from '@/utils/orderStatus'
+import { useLanguage } from '@/composables/useLanguage'
 
 const props = defineProps({
   orderId: { type: [String, Number], default: null },
@@ -298,18 +299,136 @@ const loadError = ref(false)
 const isUpdating = ref(false)
 const isExporting = ref(false)
 
+// Language Dictionary
+const orderDetailsDict = {
+  en: {
+    orderNotFound: 'Order not found',
+    orderNotFoundDesc: 'It may belong to another store, or it was removed.',
+    backToOrders: 'Back to orders',
+    backToOrderList: 'Back to Order List',
+    orderId: 'Order',
+    printReceipt: 'Print Receipt',
+    updateStatus: 'Update Status',
+    startPreparing: 'Start preparing',
+    readyForPickup: 'Ready for pickup',
+    pickedUp: 'Picked up',
+    cancelOrder: 'Cancel order',
+    orderFinalized: 'Order finalized',
+    orderWasCancelled: 'This order was cancelled',
+    noReasonGiven: 'No reason was given.',
+    orderProgress: 'Order Progress',
+    items: 'Items',
+    productFallback: 'Product',
+    platformFee: 'Platform fee',
+    total: 'Total',
+    customer: 'Customer',
+    customerFallback: 'Customer',
+    ordersFromStore: 'orders from your store',
+    orderFromStore: 'order from your store',
+    noEmail: 'No email provided',
+    noPhone: 'No phone provided',
+    pickupLocation: 'Pickup Location',
+    directions: 'Directions',
+    storeFallback: 'Store',
+    noAddress: 'No address saved',
+    noRouteNote: "The customer's location wasn't recorded, so there's no route to show.",
+    cancelDialogTitle: 'Cancel order',
+    cancelDialogDesc: "Choose or write a reason. This can't be undone.",
+    placeholderCancel: 'Tell the customer why…',
+    keepOrderBtn: 'Keep Order',
+    cancelOrderBtn: 'Cancel Order',
+    reason1: 'Item(s) out of stock',
+    reason2: 'Store closed / cannot fulfill right now',
+    reason3: 'Order not picked up in time',
+    reason4: 'Other',
+    stepPlaced: 'Placed',
+    stepCancelled: 'Cancelled',
+    stepPreparing: 'Preparing',
+    stepReady: 'Ready for pickup',
+    stepPickedUp: 'Picked up',
+    stepInProgress: 'In progress',
+    stepAtCounter: 'At the counter',
+    stepDone: 'Done',
+    stepPending: 'Pending',
+    notifyPrintFail: 'Failed to generate the receipt.',
+    notifyUpdateSuccess: 'Order status updated to',
+    notifyUpdateFail: 'Something went wrong.'
+  },
+  ph: {
+    orderNotFound: 'Hindi nahanap ang order',
+    orderNotFoundDesc: 'Maaaring sa ibang tindahan ito, o tinanggal na.',
+    backToOrders: 'Bumalik sa orders',
+    backToOrderList: 'Bumalik sa Listahan ng Order',
+    orderId: 'Order',
+    printReceipt: 'I-print ang Resibo',
+    updateStatus: 'I-update ang Status',
+    startPreparing: 'Umpisahang ihanda',
+    readyForPickup: 'Ready for pickup',
+    pickedUp: 'Nakuha na',
+    cancelOrder: 'I-cancel ang order',
+    orderFinalized: 'Finalized na ang order',
+    orderWasCancelled: 'Kinansela ang order na ito',
+    noReasonGiven: 'Walang ibinigay na dahilan.',
+    orderProgress: 'Status ng Order',
+    items: 'Mga Paninda',
+    productFallback: 'Paninda',
+    platformFee: 'Platform fee',
+    total: 'Kabuuan',
+    customer: 'Customer',
+    customerFallback: 'Customer',
+    ordersFromStore: 'order mula sa tindahan mo',
+    orderFromStore: 'order mula sa tindahan mo',
+    noEmail: 'Walang email na nilagay',
+    noPhone: 'Walang phone number',
+    pickupLocation: 'Lugar ng Pickup',
+    directions: 'Direksyon',
+    storeFallback: 'Tindahan',
+    noAddress: 'Walang naka-save na address',
+    noRouteNote: "Walang record ng lokasyon ang customer, kaya walang map na maipakita.",
+    cancelDialogTitle: 'I-cancel ang order',
+    cancelDialogDesc: "Pumili o magsulat ng dahilan. Hindi na ito maibabalik.",
+    placeholderCancel: 'Sabihin sa customer kung bakit…',
+    keepOrderBtn: 'I-keep ang Order',
+    cancelOrderBtn: 'I-cancel ang Order',
+    reason1: 'Out of stock ang paninda',
+    reason2: 'Sarado ang tindahan / hindi magawa ngayon',
+    reason3: 'Hindi nakuha ang order sa oras',
+    reason4: 'Iba pa',
+    stepPlaced: 'Placed',
+    stepCancelled: 'Kinansela',
+    stepPreparing: 'Inihahanda',
+    stepReady: 'Ready for pickup',
+    stepPickedUp: 'Nakuha na',
+    stepInProgress: 'Kasalukuyang inihahanda',
+    stepAtCounter: 'Nasa counter na',
+    stepDone: 'Tapos na',
+    stepPending: 'Nakabinbin (Pending)',
+    notifyPrintFail: 'Hindi ma-generate ang resibo.',
+    notifyUpdateSuccess: 'Na-update ang order status sa',
+    notifyUpdateFail: 'May nangyaring mali.'
+  }
+}
+
+const { t } = useLanguage(orderDetailsDict)
+
 const showCancelDialog = ref(false)
-// The reasons a vendor picks from, as cards like the consumer's cancel dialog; "Other" opens a box for their own words.
-const CANCEL_REASONS = ['Item(s) out of stock', 'Store closed / cannot fulfill right now', 'Order not picked up in time', 'Other']
 const cancelReason = ref('')
 const cancelOtherText = ref('')
 const cancelReasonValid = computed(() => (cancelReason.value === 'Other' ? !!cancelOtherText.value.trim() : !!cancelReason.value))
+
+// Map the English core values (for the database) to the reactive translations
+const cancelOptions = computed(() => [
+  { value: 'Item(s) out of stock', label: t('reason1') },
+  { value: 'Store closed / cannot fulfill right now', label: t('reason2') },
+  { value: 'Order not picked up in time', label: t('reason3') },
+  { value: 'Other', label: t('reason4') }
+])
 
 const FLOW = ['placed', 'preparing', 'ready_for_pickup', 'picked_up']
 
 const items = computed(() => order.value?.items || [])
 const productCount = computed(() => items.value.length)
-const customerName = computed(() => order.value?.consumer?.full_name || order.value?.customer_name || 'Customer')
+const customerName = computed(() => order.value?.consumer?.full_name || order.value?.customer_name || t('customerFallback'))
 const customerOrderCount = computed(() => Number(order.value?.consumer?.total_orders || order.value?.customer_orders_count || 1))
 const isFinal = computed(() => ['picked_up', 'cancelled', 'completed'].includes(order.value?.status))
 
@@ -358,17 +477,17 @@ const steps = computed(() => {
 
   const list = o.status === 'cancelled'
     ? [
-        { key: 'placed', label: 'Placed', icon: statusIcon('placed'), state: 'done', time: formatStepTime(o.created_at) },
-        { key: 'cancelled', label: 'Cancelled', icon: 'close', state: 'cancelled', time: formatStepTime(o.updated_at) }
+        { key: 'placed', label: t('stepPlaced'), icon: statusIcon('placed'), state: 'done', time: formatStepTime(o.created_at) },
+        { key: 'cancelled', label: t('stepCancelled'), icon: 'close', state: 'cancelled', time: formatStepTime(o.updated_at) }
       ]
     : [
-        { key: 'placed', label: 'Placed', icon: statusIcon('placed'), time: formatStepTime(o.created_at) },
-        { key: 'preparing', label: 'Preparing', icon: statusIcon('preparing'), time: o.preparing_at ? formatStepTime(o.preparing_at) : 'In progress' },
-        { key: 'ready_for_pickup', label: 'Ready for pickup', icon: statusIcon('ready_for_pickup'), time: o.ready_at ? formatStepTime(o.ready_at) : 'At the counter' },
-        { key: 'picked_up', label: 'Picked up', icon: statusIcon('picked_up'), time: o.picked_up_at ? formatStepTime(o.picked_up_at) : 'Done' }
+        { key: 'placed', label: t('stepPlaced'), icon: statusIcon('placed'), time: formatStepTime(o.created_at) },
+        { key: 'preparing', label: t('stepPreparing'), icon: statusIcon('preparing'), time: o.preparing_at ? formatStepTime(o.preparing_at) : t('stepInProgress') },
+        { key: 'ready_for_pickup', label: t('stepReady'), icon: statusIcon('ready_for_pickup'), time: o.ready_at ? formatStepTime(o.ready_at) : t('stepAtCounter') },
+        { key: 'picked_up', label: t('stepPickedUp'), icon: statusIcon('picked_up'), time: o.picked_up_at ? formatStepTime(o.picked_up_at) : t('stepDone') }
       ].map(step => {
         const reached = isStatusActive(step.key)
-        return { ...step, state: reached ? 'done' : 'upcoming', time: reached ? step.time : 'Pending' }
+        return { ...step, state: reached ? 'done' : 'upcoming', time: reached ? step.time : t('stepPending') }
       })
 
   const lastReached = list.map(s => s.state !== 'upcoming').lastIndexOf(true)
@@ -395,7 +514,7 @@ const printOrder = async () => {
     setTimeout(() => window.URL.revokeObjectURL(url), 1000)
   } catch (error) {
     console.error('Print failed:', error)
-    $q.notify({ type: 'negative', message: 'Failed to generate the receipt.' })
+    $q.notify({ type: 'negative', message: t('notifyPrintFail') })
   } finally {
     isExporting.value = false
   }
@@ -413,11 +532,11 @@ const updateStatus = async (newStatus, reason = null) => {
     order.value.status = res.data.order.status
     if (res.data.order.cancellation_reason) order.value.cancellation_reason = res.data.order.cancellation_reason
     emit('status-changed', { orderId: order.value.order_id, status: order.value.status, cancellationReason: order.value.cancellation_reason || null })
-    $q.notify({ type: 'positive', message: `Order status updated to ${statusLabel(newStatus)}.` })
+    $q.notify({ type: 'positive', message: `${t('notifyUpdateSuccess')} ${statusLabel(newStatus)}.` })
     showCancelDialog.value = false
   } catch (err) {
     console.error(err.response?.data || err)
-    $q.notify({ type: 'negative', message: err.response?.data?.message || err.message || 'Something went wrong.' })
+    $q.notify({ type: 'negative', message: err.response?.data?.message || err.message || t('notifyUpdateFail') })
   } finally {
     isUpdating.value = false
   }
