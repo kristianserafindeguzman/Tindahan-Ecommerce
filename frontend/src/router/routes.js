@@ -202,6 +202,11 @@ children: [
   {
     path: 'consumers',
     component: () => import('@/pages/Admin/AdminConsumers.vue')
+  },
+
+  {
+    path: 'notifications',
+    component: () => import('@/pages/Admin/AdminNotifications.vue')
   }
 ]
   },

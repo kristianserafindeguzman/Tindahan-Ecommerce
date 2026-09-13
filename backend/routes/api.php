@@ -74,6 +74,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/consumers/export', [AdminController::class, 'exportConsumers']);
         Route::patch('/consumers/{userId}/status', [AdminController::class, 'updateConsumerStatus']);
         Route::delete('/consumers/{userId}', [AdminController::class, 'deleteConsumer']);
+
+        // Admin notifications, through the same controller the vendor and consumer bells use.
+        Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+        Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
     });
 
     // ----- Vendor Routes -----

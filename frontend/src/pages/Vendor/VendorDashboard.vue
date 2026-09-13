@@ -248,74 +248,34 @@
     </div>
 
     <!-- ================= STORE PREVIEW ================= -->
-    <!-- The map is drawn once the dialog has opened, and removed when it closes. -->
-    <q-dialog v-model="liveStoreModal" transition-show="scale" transition-hide="scale" @show="initMap" @hide="cleanupMap">
-      <q-card class="dash-dialog">
-        <div class="dash-dialog-header">
-          <div class="dialog-icon"><q-icon name="o_storefront" size="22px" /></div>
-          <div class="dialog-header-text">
-            <div class="dialog-title">{{ vendorStore?.store_name || 'My Store' }}</div>
-            <div class="section-subtitle">How customers see your store.</div>
-          </div>
-          <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close store preview" v-close-popup />
-        </div>
-
-        <div class="dash-dialog-body">
-          <div class="preview-banner">
-            <img v-if="vendorStore?.store_picture_url" :src="vendorStore.store_picture_url" alt="Storefront" />
-            <div v-else class="preview-banner-empty"><q-icon name="o_storefront" size="48px" /></div>
-            <span class="store-status preview-status" :class="isStoreOpen ? 'store-status--open' : 'store-status--closed'">
-              <span class="store-status-dot" />
-              {{ isStoreOpen ? 'Open now' : 'Closed now' }}
-            </span>
-          </div>
-
-          <div class="info-row">
-            <div class="info-icon"><q-icon name="o_person" size="18px" /></div>
-            <div class="info-body">
-              <div class="info-label">Store Owner</div>
-              <div class="info-value">{{ ownerFullName || 'Not provided' }}</div>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-icon"><q-icon name="o_phone" size="18px" /></div>
-            <div class="info-body">
-              <div class="info-label">Contact</div>
-              <div class="info-value">{{ vendorPhone || 'Not provided' }}</div>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-icon"><q-icon name="o_place" size="18px" /></div>
-            <div class="info-body">
-              <div class="info-label">Address</div>
-              <div class="info-value">{{ vendorStore?.address || 'Not provided' }}</div>
-            </div>
-          </div>
-
-          <div class="info-row info-row-last info-row--top">
-            <div class="info-icon"><q-icon name="o_schedule" size="18px" /></div>
-            <div class="info-body">
-              <div class="info-label">Store Hours</div>
-              <div class="preview-hours">
-                <div v-for="day in weekDays" :key="day.name" class="preview-hours-row" :class="{ 'preview-hours-row--closed': !day.isOpen }">
-                  <span>{{ day.name }}</span>
-                  <span>{{ day.isOpen ? `${formatTime(day.openTime)} – ${formatTime(day.closeTime)}` : 'Closed' }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div id="store-preview-map" class="preview-map"></div>
-        </div>
-
-        <div class="dash-dialog-actions">
-          <q-btn outline no-caps color="primary" label="Close" v-close-popup />
-          <q-btn unelevated no-caps color="primary" label="Edit Store Details" class="btn-gradient" @click="goToProfile" />
-        </div>
-      </q-card>
-    </q-dialog>
+    <!-- How customers see the store, in the same layout the admin reviews stores with. -->
+    <StoreProfileDialog
+      v-model="liveStoreModal"
+      :name="vendorStore?.store_name || 'My Store'"
+      :owner="ownerFullName"
+      :photo="vendorStore?.store_picture_url"
+      :operating-days="vendorStore?.operating_days"
+      :opening-time="vendorStore?.opening_time"
+      :closing-time="vendorStore?.closing_time"
+      :email="vendorEmail"
+      :phone="vendorPhone"
+      :latitude="vendorStore?.latitude"
+      :longitude="vendorStore?.longitude"
+      :address="vendorStore?.address"
+      :info="storeInfo"
+      :stats="storeStats"
+    >
+      <template #badge>
+        <span class="store-status preview-status" :class="isStoreOpen ? 'store-status--open' : 'store-status--closed'">
+          <span class="store-status-dot" />
+          {{ isStoreOpen ? 'Open now' : 'Closed now' }}
+        </span>
+      </template>
+      <template #actions>
+        <q-btn v-close-popup outline no-caps color="primary" label="Close" class="vp-dialog-btn" />
+        <q-btn unelevated no-caps color="primary" label="Edit Store Details" class="vp-dialog-btn" @click="goToProfile" />
+      </template>
+    </StoreProfileDialog>
   </q-page>
 </template>
 
@@ -330,8 +290,7 @@ import OrderStatusBadge from '@/components/vendor/OrderStatusBadge.vue'
 import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 import { statusIcon } from '@/utils/orderStatus'
 import { useVendorNotifications } from '@/composables/useVendorNotifications'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import StoreProfileDialog from '@/components/shared/StoreProfileDialog.vue'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -347,6 +306,8 @@ const userName = ref('Vendor')
 const ownerFullName = ref('Vendor')
 const vendorStore = ref(null)
 const vendorPhone = ref(null)
+const vendorEmail = ref(null)
+const totalOrders = ref(0)
 const liveStoreModal = ref(false)
 const activeRevenueFilter = ref('Daily')
 const catalogProducts = ref([])
@@ -516,6 +477,24 @@ const isStoreOpen = computed(() => {
   return minutes >= openMinutes || minutes <= closeMinutes
 })
 
+// The store profile's middle card: who owns the store and today's hours.
+const storeInfo = computed(() => {
+  const todayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][clock.value.getDay()]
+  const today = weekDays.value.find(d => d.name === todayName)
+  let hours = 'Closed today'
+  if (today?.isOpen) hours = today.openTime && today.closeTime ? `${formatTime(today.openTime)} – ${formatTime(today.closeTime)}` : 'Open today'
+  return [
+    { label: 'Store owner', value: ownerFullName.value },
+    { label: `Today · ${todayName}`, value: hours }
+  ]
+})
+
+// The store profile's counts: products on sale, and orders that weren't cancelled.
+const storeStats = computed(() => [
+  { label: 'Active products', value: catalogProducts.value.filter(p => String(p.status || 'active').toLowerCase() === 'active').length, icon: 'o_inventory_2' },
+  { label: 'Orders', value: totalOrders.value, icon: 'o_receipt_long' }
+])
+
 // --- Helpers ---
 
 const formatTime = timeString => {
@@ -573,56 +552,6 @@ const goToProfile = () => {
   router.push('/vendor/profile')
 }
 
-// --- Store preview map ---
-
-let map = null
-
-const cleanupMap = () => {
-  if (map) {
-    map.remove()
-    map = null
-  }
-}
-
-const initMap = async () => {
-  await nextTick()
-  // Waits for the dialog's opening animation, since Leaflet can't measure a panel that is still scaling in.
-  setTimeout(() => {
-    const container = document.getElementById('store-preview-map')
-    if (!container) return
-
-    cleanupMap()
-    if (container._leaflet_id) delete container._leaflet_id
-
-    const rawLat = vendorStore.value?.latitude
-    const rawLng = vendorStore.value?.longitude
-    const lat = rawLat && !Number.isNaN(Number(rawLat)) ? Number(rawLat) : 14.5995
-    const lng = rawLng && !Number.isNaN(Number(rawLng)) ? Number(rawLng) : 120.9842
-
-    try {
-      map = L.map(container).setView([lat, lng], 15)
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map)
-
-      const icon = L.icon({
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
-      })
-
-      L.marker([lat, lng], { icon }).addTo(map)
-      setTimeout(() => { if (map) map.invalidateSize() }, 200)
-    } catch (err) {
-      console.warn('Map preview could not start:', err)
-    }
-  }, 180)
-}
-
 // --- Loading ---
 
 onMounted(async () => {
@@ -640,6 +569,7 @@ onMounted(async () => {
       userName.value = greetingName(profile.full_name)
       ownerFullName.value = profile.full_name || 'Vendor'
       vendorPhone.value = profile.phone_number || null
+      vendorEmail.value = profile.email || null
       vendorStore.value = profile.store ? { ...profile.store } : null
     }
 
@@ -652,6 +582,7 @@ onMounted(async () => {
         cancelled_orders: data.cancelled_orders || 0
       }
       recentOrders.value = data.recent_orders || []
+      totalOrders.value = data.total_orders ?? 0
     }
 
     if (productsRes.status === 'fulfilled' && productsRes.value.data) {
@@ -1732,239 +1663,10 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-/* STORE PREVIEW DIALOG — the consumer profile's dialog shell. */
-
-.dash-dialog {
-  display: flex;
-  flex-direction: column;
-
-  width: 520px;
-  max-width: 92vw;
-  max-height: 88vh;
-
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-surface);
-
-  box-shadow: 0 18px 48px rgba(17, 17, 17, 0.18) !important;
-
-  --q-transition-duration: 200ms;
-}
-
-.dash-dialog-header {
-  display: flex;
-  align-items: center;
-
-  gap: 12px;
-  padding: 24px 24px 18px;
-
-  border-bottom: 1px solid var(--c-hairline);
-}
-
-.dialog-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  width: 44px;
-  height: 44px;
-
-  border-radius: var(--r-surface);
-
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
-  color: var(--c-brand);
-}
-
-.dialog-header-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.dialog-title {
-  overflow: hidden;
-
-  font-size: var(--fs-xl);
-  font-weight: 700;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-
-  color: var(--c-text);
-}
-
-.dialog-close-btn {
-  color: var(--c-muted);
-}
-
-.dash-dialog-body {
-  flex: 1;
-  overflow-y: auto;
-
-  padding: 20px 24px;
-}
-
-.preview-banner {
-  position: relative;
-
-  aspect-ratio: 16 / 9;
-  max-width: 100%;
-  overflow: hidden;
-  margin-bottom: 8px;
-
-  border-radius: var(--r-surface);
-
-  background: var(--c-surface);
-}
-
-.preview-banner img {
-  width: 100%;
-  height: 100%;
-
-  object-fit: cover;
-}
-
-.preview-banner-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  height: 100%;
-
-  color: var(--c-muted);
-}
-
-.preview-status {
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
-
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-}
+/* STORE PREVIEW — the open or closed pill on the photo, white when closed so it reads on any picture. */
 
 .preview-status.store-status--closed {
   background: #ffffff;
-}
-
-.info-row {
-  display: flex;
-  align-items: center;
-
-  gap: 14px;
-  padding: 12px 0;
-
-  border-bottom: 1px solid var(--c-hairline);
-}
-
-.info-row-last {
-  border-bottom: none;
-}
-
-.info-row--top {
-  align-items: flex-start;
-}
-
-.info-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  width: 40px;
-  height: 40px;
-
-  border-radius: var(--r-surface);
-
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
-  color: var(--c-brand);
-}
-
-.info-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.info-label {
-  font-size: var(--fs-xs);
-
-  color: var(--c-muted);
-}
-
-.info-value {
-  margin-top: 3px;
-
-  font-size: var(--fs-md);
-  font-weight: 500;
-
-  color: var(--c-text);
-
-  overflow-wrap: anywhere;
-}
-
-.preview-hours {
-  margin-top: 6px;
-}
-
-.preview-hours-row {
-  display: flex;
-  justify-content: space-between;
-
-  gap: 12px;
-  padding: 3px 0;
-
-  font-size: var(--fs-sm);
-
-  color: var(--c-text-2);
-}
-
-.preview-hours-row--closed {
-  color: var(--c-muted);
-}
-
-.preview-map {
-  position: relative;
-  z-index: 1;
-
-  height: 190px;
-  margin-top: 8px;
-
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-surface);
-}
-
-.dash-dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-
-  gap: 10px;
-  padding: 16px 24px;
-
-  border-top: 1px solid var(--c-border);
-}
-
-.dash-dialog-actions .q-btn {
-  height: 44px;
-  min-width: 132px;
-
-  border-radius: var(--r-control);
-}
-
-/* Close uses the red outline of the Edit pill, tinting on hover. */
-.dash-dialog-actions .q-btn--outline:hover {
-  background: var(--c-brand-tint);
-}
-
-/* The consumer profile's primary button, flat red with a soft lift. */
-.btn-gradient {
-  background: var(--c-brand) !important;
-
-  box-shadow: var(--sh-brand);
-
-  transition: background-color 0.15s, box-shadow 0.2s;
-}
-
-.btn-gradient:hover {
-  background: var(--c-brand-hover) !important;
-
-  box-shadow: var(--sh-brand-hover);
 }
 
 @media (max-width: 600px) {
@@ -2036,21 +1738,6 @@ onMounted(async () => {
 
   .revenue-total-value {
     font-size: var(--fs-2xl);
-  }
-
-  .dash-dialog-header,
-  .dash-dialog-body {
-    padding-left: 18px;
-    padding-right: 18px;
-  }
-
-  .dash-dialog-actions {
-    padding: 14px 18px;
-  }
-
-  .dash-dialog-actions .q-btn {
-    flex: 1 1 0;
-    min-width: 0;
   }
 }
 </style>

@@ -9,7 +9,7 @@
       <div v-if="!notifications.length" class="notif-empty">
         <div class="notif-empty-icon"><q-icon name="o_notifications_none" size="24px" /></div>
         <div class="notif-empty-title">You're all caught up</div>
-        <div class="notif-empty-text">New orders and cancellations will show up here.</div>
+        <div class="notif-empty-text">{{ emptyText }}</div>
       </div>
 
       <!-- Only the latest five; tapping one marks it read and, when it belongs to an order, opens that order. -->
@@ -22,8 +22,8 @@
         :class="{ 'notif-item--unread': !notif.is_read }"
         @click="openNotification(notif)"
       >
-        <span class="notif-icon" :class="`vp-tone--${notificationKind(notif).tone}`">
-          <q-icon :name="notificationKind(notif).icon" size="18px" />
+        <span class="notif-icon" :class="`vp-tone--${kindOf(notif).tone}`">
+          <q-icon :name="kindOf(notif).icon" size="18px" />
         </span>
         <span class="notif-body">
           <span class="notif-item-title">{{ notif.title }}</span>
@@ -44,7 +44,7 @@
         icon-right="o_chevron_right"
         :label="notifications.length > LIMIT ? `View all ${notifications.length} notifications` : 'View all notifications'"
         class="notif-view-all"
-        @click="router.push('/vendor/notifications')"
+        @click="router.push(viewAllPath)"
       />
     </div>
   </div>
@@ -57,14 +57,24 @@ import { useVendorNotifications, notificationKind } from '@/composables/useVendo
 
 const LIMIT = 5
 
+// The vendor's bell by default; the admin bell passes its own list, kinds and links.
+const props = defineProps({
+  feed: { type: Object, default: null },
+  kindOf: { type: Function, default: notificationKind },
+  linkFor: { type: Function, default: notif => (notif.order_id ? `/vendor/orders/${notif.order_id}` : null) },
+  viewAllPath: { type: String, default: '/vendor/notifications' },
+  emptyText: { type: String, default: 'New orders and cancellations will show up here.' }
+})
+
 const router = useRouter()
-const { notifications, unreadCount, markAsRead, markAllAsRead, timeAgo } = useVendorNotifications()
+const { notifications, unreadCount, markAsRead, markAllAsRead, timeAgo } = props.feed || useVendorNotifications()
 
 const latest = computed(() => [...notifications.value].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, LIMIT))
 
 const openNotification = (notif) => {
   markAsRead(notif)
-  if (notif.order_id) router.push(`/vendor/orders/${notif.order_id}`)
+  const link = props.linkFor(notif)
+  if (link) router.push(link)
 }
 </script>
 

@@ -1,3376 +1,1451 @@
 <template>
-  <q-page class="admin-dashboard" :class="{ 'dark-mode-active': $q.dark.isActive }">
-    <!-- Ambient Canvas & Background Accents -->
-    <div class="ambient-mesh-bg"></div>
-    <div class="enterprise-dot-pattern"></div>
-
-    <div class="dashboard-container">
-      <!-- ================= CLEAN GREETINGS HEADER ================= -->
-      <div
-        class="welcome-banner q-mb-lg row items-center justify-between q-pa-lg transition-theme shadow-premium"
-        :class="[$q.dark.isActive ? 'theme-dark-banner' : timeOfDayTheme]"
+  <q-page class="vp-page">
+    <div class="vp-container">
+      <!-- ================= GREETINGS HEADER ================= -->
+      <!-- The vendor dashboard's banner, its colour following the time of day, with the admin's greeting, alert, sync, bell and clock. -->
+      <AdminHero
+        icon="o_dashboard"
+        eyebrow="Tindahan Admin Panel"
+        :eyebrow-icon="dayPhase.icon"
+        :phase="dayPhase.key"
+        :title="`${greeting}, ${userName}!`"
+        subtitle="Here is the executive overview of your marketplace today."
+        :status="attention"
+        status-to="/admin/approvals"
+        :loading="loading"
+        :actions="heroActions"
+        bell
+        @action="onHeroAction"
       >
-        <!-- Left: Tag, Greeting, and Status -->
-        <div class="row items-center col-12 col-md-8 banner-content-layer">
-          <div>
-            <div class="row items-center no-wrap q-mb-xs">
-              <span class="header-tag-pill row items-center no-wrap q-px-sm q-py-xs">
-                <q-icon name="admin_panel_settings" size="13px" class="q-mr-xs text-white" />
-                <span class="text-overline text-white tracking-widest line-height-tight">
-                  TINDAHAN ADMIN PANEL
-                </span>
-              </span>
-            </div>
-
-            <h1
-              class="text-h4 text-weight-bolder text-white q-mt-xs q-mb-xs line-height-tight letter-spacing-tight"
-            >
-              {{ timeBasedGreeting }},
-              <span class="header-name-highlight">{{ userName }}</span>
-            </h1>
-
-            <div class="text-white opacity-90 row items-center text-body2 text-weight-medium q-mt-xs">
-              <span>Here is the executive overview of your marketplace today.</span>
-
-              <div
-                v-if="stats.pending_approvals > 0"
-                class="attention-badge q-ml-md flex items-center text-caption text-weight-bolder shadow-premium cursor-pointer hover-scale"
-                @click="$router.push('/admin/approvals')"
-              >
-                <div class="pulse-dot-white q-mr-sm"></div>
-                Action Required: {{ stats.pending_approvals }} tasks
-              </div>
-            </div>
+        <template #side>
+          <div class="db-clock">
+            <span class="db-clock-date">{{ clockDate }}</span>
+            <span class="db-clock-time">{{ clockTime }}</span>
           </div>
-        </div>
+        </template>
+      </AdminHero>
 
-        <!-- Right: Time Counter, Dark Mode Toggle & Sync Action -->
-        <div
-          class="col-12 col-md-auto row items-center justify-end q-mt-lg q-mt-md-none banner-content-layer q-gutter-x-sm"
+      <!-- ================= KEY NUMBERS ================= -->
+      <!-- The vendor dashboard's KPI cards: the label and its icon, the number with the week's change, and a note; the ones that count a page open it. -->
+      <div class="db-kpis">
+        <component
+          :is="card.to ? 'button' : 'div'"
+          v-for="card in kpis"
+          :key="card.key"
+          :type="card.to ? 'button' : undefined"
+          class="vp-card db-kpi"
+          :class="{
+            'db-kpi--link': card.to,
+            'db-kpi--alert': card.key === 'attention'
+          }"
+          @click="card.to && router.push(card.to)"
         >
-          <!-- Dark Mode Toggle Button -->
-          <q-btn
-            flat
-            round
-            color="white"
-            :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'"
-            size="sm"
-            class="header-tool-btn hover-scale"
-            @click="toggleDarkMode"
-          >
-            <q-tooltip class="bg-dark text-white text-weight-medium border-radius-sm">
-              {{ $q.dark.isActive ? 'Switch to Light Mode' : 'Switch to Dark Mode' }}
-            </q-tooltip>
-          </q-btn>
-
-          <!-- Sync Action Button -->
-          <q-btn
-            flat
-            round
-            color="white"
-            icon="sync"
-            size="sm"
-            class="header-tool-btn hover-rotate"
-            :loading="loading"
-            @click="refreshDashboard"
-          >
-            <q-tooltip class="bg-dark text-white text-weight-medium border-radius-sm">
-              Sync Data
-            </q-tooltip>
-          </q-btn>
-
-          <!-- Time & Date Capsule -->
-          <div class="time-card-glass premium-lift">
-            <div class="column text-right">
-              <span
-                class="text-caption text-white opacity-80 text-weight-bold text-uppercase tracking-widest q-mb-xs font-mono"
-                style="font-size: 10px"
-              >
-                {{ currentDate }}
-              </span>
-
-              <span class="text-h6 text-white text-weight-bolder tracking-tight line-height-tight font-mono">
-                {{ currentTime }}
-              </span>
-            </div>
+          <div class="db-kpi-top">
+            <span class="db-kpi-label">{{ card.label }}</span>
+            <span class="db-kpi-icon" :class="`vp-tone--${card.tone}`"
+              ><q-icon :name="card.icon" size="20px"
+            /></span>
           </div>
-        </div>
-      </div>
-
-      <!-- ================= ASYMMETRIC BENTO METRICS ================= -->
-      <div class="row q-col-gutter-lg q-mb-xl">
-        <!-- Hero Metric: Pending Approvals -->
-        <div class="col-12 col-lg-5 flex">
-          <q-card
-            flat
-            ref="heroCardRef"
-            class="premium-glass-card hero-card fit column justify-between cursor-pointer overflow-hidden"
-            @mousemove="handleHeroHover"
-            @mouseleave="resetHeroHover"
-            :style="{ '--mouse-x': mouseX, '--mouse-y': mouseY }"
-            @click="$router.push('/admin/approvals')"
-          >
-            <div class="metric-bg-watermark watermark-red">
-              <q-icon name="pending_actions" />
-            </div>
-
-            <div class="interactive-hue-layer"></div>
-            <div class="hero-accent-line"></div>
-
-            <q-card-section class="q-pa-lg column justify-between full-height card-content-layer">
-              <div class="row justify-between items-center q-mb-md">
-                <div
-                  class="icon-badge-box bg-red-badge text-red-9 border-red-soft shadow-xs flex flex-center"
-                >
-                  <q-icon name="pending_actions" size="24px" />
-                </div>
-
-                <q-chip
-                  v-if="stats.pending_approvals > 0"
-                  color="red-9"
-                  text-color="white"
-                  class="text-weight-bolder shadow-xs q-ma-none tracking-wide"
-                  size="sm"
-                >
-                  PRIORITY
-                </q-chip>
-              </div>
-
-              <div class="hero-text-content">
-                <div
-                  class="text-overline text-red-9 text-uppercase tracking-widest q-mb-xs text-weight-bolder"
-                >
-                  Needs Attention
-                </div>
-
-                <div
-                  class="text-h3 text-weight-bolder text-heading line-height-tight q-mb-xs letter-spacing-tight hero-number"
-                >
-                  {{ stats.pending_approvals }}
-                </div>
-
-                <div class="text-body2 text-subtext text-weight-medium">
-                  Pending vendor applications awaiting review and authorization.
-                </div>
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <!-- Secondary Metrics Grid -->
-        <div class="col-12 col-lg-7">
-          <div class="row q-col-gutter-lg full-height">
-            <!-- Approved Vendors -->
-            <div class="col-12 col-sm-6 flex">
-              <q-card
-                flat
-                class="premium-glass-card fit cursor-pointer card-hover-lift overflow-hidden border-accent-blue"
-                @click="$router.push('/admin/vendors')"
-              >
-                <div class="metric-bg-watermark watermark-blue">
-                  <q-icon name="storefront" />
-                </div>
-
-                <div class="card-glow-blue"></div>
-
-                <q-card-section
-                  class="q-pa-lg row items-center no-wrap card-content-layer full-height"
-                >
-                  <div
-                    class="icon-badge-box-sm bg-blue-badge text-blue-9 border-blue-soft q-mr-md flex flex-center"
-                  >
-                    <q-icon name="storefront" size="22px" />
-                  </div>
-
-                  <div class="col">
-                    <div
-                      class="text-caption text-weight-bolder text-subtext text-uppercase tracking-wider q-mb-xs"
-                    >
-                      Approved Vendors
-                    </div>
-
-                    <div
-                      class="text-h4 text-weight-bolder text-heading letter-spacing-tight line-height-tight"
-                    >
-                      {{ stats.total_vendors }}
-                    </div>
-                  </div>
-                </q-card-section>
-              </q-card>
-            </div>
-
-            <!-- Active Consumers -->
-            <div class="col-12 col-sm-6 flex">
-              <q-card
-                flat
-                class="premium-glass-card fit cursor-pointer card-hover-lift overflow-hidden border-accent-green"
-                @click="$router.push('/admin/consumers')"
-              >
-                <div class="metric-bg-watermark watermark-green">
-                  <q-icon name="groups" />
-                </div>
-
-                <div class="card-glow-green"></div>
-
-                <q-card-section
-                  class="q-pa-lg row items-center no-wrap card-content-layer full-height"
-                >
-                  <div
-                    class="icon-badge-box-sm bg-green-badge text-green-9 border-green-soft q-mr-md flex flex-center"
-                  >
-                    <q-icon name="groups" size="22px" />
-                  </div>
-
-                  <div class="col">
-                    <div
-                      class="text-caption text-weight-bolder text-subtext text-uppercase tracking-wider q-mb-xs"
-                    >
-                      Active Consumers
-                    </div>
-
-                    <div
-                      class="text-h4 text-weight-bolder text-heading letter-spacing-tight line-height-tight"
-                    >
-                      {{ stats.total_consumers }}
-                    </div>
-                  </div>
-                </q-card-section>
-              </q-card>
-            </div>
-
-            <!-- Total Platform Users -->
-            <div class="col-12 flex">
-              <q-card
-                flat
-                class="premium-glass-card fit card-hover-lift overflow-hidden border-accent-slate"
-              >
-                <div class="metric-bg-watermark watermark-slate">
-                  <q-icon name="public" />
-                </div>
-
-                <div class="card-glow-slate"></div>
-
-                <q-card-section
-                  class="q-pa-lg row items-center justify-between no-wrap card-content-layer full-height"
-                >
-                  <div class="row items-center no-wrap">
-                    <div
-                      class="icon-badge-box bg-slate-box border-slate-soft q-mr-md flex flex-center shadow-xs"
-                    >
-                      <q-icon name="public" size="24px" />
-                    </div>
-
-                    <div>
-                      <div
-                        class="text-caption text-weight-bolder text-subtext text-uppercase tracking-wider q-mb-xs"
-                      >
-                        Total Platform Users
-                      </div>
-
-                      <div class="text-body2 text-subtext text-weight-medium">
-                        Combined aggregate of registered marketplace accounts
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    class="text-h4 text-weight-bolder text-heading letter-spacing-tight line-height-tight q-ml-md"
-                  >
-                    {{ stats.total_users }}
-                  </div>
-                </q-card-section>
-              </q-card>
-            </div>
+          <q-skeleton v-if="loading" type="text" width="45%" height="40px" />
+          <div v-else class="db-kpi-figures">
+            <span class="db-kpi-value">{{ card.value }}</span>
+            <span v-if="card.delta > 0" class="db-kpi-delta"
+              ><q-icon name="o_arrow_upward" size="13px" />+{{
+                card.delta
+              }}
+              this week</span
+            >
           </div>
-        </div>
-      </div>
-
-      <!-- ================= ANALYTICS & INSIGHTS CHARTS ================= -->
-      <div class="row q-col-gutter-lg q-mb-xl">
-        <!-- Registration Trend -->
-        <div class="col-12 col-lg-8">
-          <q-card flat class="premium-glass-card h-full column justify-between registration-chart-card">
-            <q-card-section
-              class="panel-header row items-center justify-between q-pa-md q-pa-md-lg"
-            >
-              <div class="row items-center no-wrap">
-                <div class="header-accent-red q-mr-md"></div>
-
-                <div>
-                  <div class="text-subtitle1 text-weight-bolder text-heading line-height-tight">
-                    Platform User Registrations
-                  </div>
-
-                  <div class="text-caption text-subtext text-weight-medium">
-                    Registration trend across the selected periods
-                  </div>
-                </div>
-              </div>
-
-              <div class="row items-center no-wrap q-gutter-x-sm">
-                <span class="legend-badge legend-vendor text-caption">
-                  <span class="legend-dot vendor-dot"></span>
-                  Vendors
-                </span>
-
-                <span class="legend-badge legend-consumer text-caption">
-                  <span class="legend-dot consumer-dot"></span>
-                  Consumers
-                </span>
-              </div>
-            </q-card-section>
-
-            <q-card-section class="q-pa-md q-pt-sm flex-grow-1 relative-position">
-              <div
-                v-if="chartLoading"
-                class="absolute-full flex flex-center z-top bg-chart-overlay"
-              >
-                <q-spinner-dots size="36px" color="red-9" />
-              </div>
-
-              <VueApexCharts
-                type="area"
-                height="270"
-                width="100%"
-                :options="registrationChartOptions"
-                :series="registrationChartSeries"
-              />
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <!-- Ecosystem Distribution -->
-        <div class="col-12 col-lg-4">
-          <q-card flat class="premium-glass-card h-full column justify-between">
-            <q-card-section
-              class="panel-header row items-center justify-between q-pa-md q-pa-md-lg"
-            >
-              <div class="row items-center no-wrap">
-                <div class="header-accent-red q-mr-md"></div>
-
-                <div>
-                  <div class="text-subtitle1 text-weight-bolder text-heading line-height-tight">
-                    Ecosystem Ratio
-                  </div>
-
-                  <div class="text-caption text-subtext text-weight-medium">
-                    Active user distribution
-                  </div>
-                </div>
-              </div>
-            </q-card-section>
-
-            <q-card-section
-              class="q-pa-md flex-grow-1 flex flex-center relative-position"
-            >
-              <VueApexCharts
-                type="donut"
-                height="220"
-                width="100%"
-                :options="donutChartOptions"
-                :series="donutChartSeries"
-              />
-            </q-card-section>
-          </q-card>
-        </div>
-      </div>
-
-      <!-- ================= PENDING APPLICATIONS TABLE ================= -->
-      <q-card flat class="premium-glass-card table-glass-container q-mb-xl">
-        <div class="panel-header row items-center justify-between q-pa-lg no-wrap">
-          <div class="row items-center no-wrap col">
-            <div class="header-accent-red q-mr-md"></div>
-
-            <div>
-              <h2
-                class="text-h6 text-weight-bolder text-heading q-ma-none letter-spacing-tight line-height-tight"
-              >
-                Latest Applications
-              </h2>
-
-              <div class="text-caption text-subtext text-weight-medium q-mt-xs">
-                Merchants requesting to join Tindahan.
-              </div>
-            </div>
-          </div>
-
-          <div class="col-auto q-pl-md">
-            <q-btn
-              unelevated
-              color="red-9"
-              icon-right="arrow_forward"
-              label="View Directory"
-              size="sm"
-              no-caps
-              class="btn-view-directory text-weight-bolder no-wrap"
-              @click="$router.push('/admin/approvals')"
+          <div class="db-kpi-foot">
+            <span class="db-kpi-note">{{ card.note }}</span>
+            <q-icon
+              v-if="card.to"
+              name="o_arrow_forward"
+              size="16px"
+              class="db-kpi-go"
             />
           </div>
-        </div>
-
-        <q-table
-          flat
-          class="custom-premium-table"
-          :rows="pendingApplications"
-          :columns="columns"
-          row-key="approval_id"
-          :loading="loading"
-          hide-bottom
-          :rows-per-page-options="[0]"
-        >
-          <template #loading>
-            <q-inner-loading showing color="red-9" class="bg-table-glass">
-              <q-spinner-dots size="40px" />
-            </q-inner-loading>
-          </template>
-
-          <template #body-cell-store_name="props">
-            <q-td :props="props">
-              <div class="row items-center no-wrap">
-                <div class="store-mini-avatar q-mr-sm flex flex-center shadow-xs">
-                  <q-icon name="storefront" size="16px" color="red-9" />
-                </div>
-
-                <span class="text-weight-bold text-heading text-body2">
-                  {{ props.row.store_name }}
-                </span>
-              </div>
-            </q-td>
-          </template>
-
-          <template #body-cell-owner_name="props">
-            <q-td :props="props">
-              <span class="text-subtext text-weight-medium text-caption">
-                {{ props.row.owner_name }}
-              </span>
-            </q-td>
-          </template>
-
-          <template #body-cell-applied_at="props">
-            <q-td :props="props">
-              <q-chip
-                dense
-                class="premium-chip text-red-9 text-weight-bold q-px-sm shadow-xs"
-                icon="schedule"
-                size="sm"
-              >
-                {{ formatDate(props.row.applied_at) }}
-              </q-chip>
-            </q-td>
-          </template>
-
-          <template #body-cell-action="props">
-            <q-td :props="props" align="right">
-              <q-btn
-                outline
-                color="red-9"
-                icon="remove_red_eye"
-                label="Review"
-                size="sm"
-                padding="4px 12px"
-                no-caps
-                class="btn-premium-outline action-btn-hover"
-                @click="viewApplication(props.row)"
-              />
-            </q-td>
-          </template>
-
-          <template #no-data>
-            <div class="full-width column flex-center q-py-xl empty-state-glass">
-              <div class="empty-icon-shield q-mb-md flex flex-center shadow-xs">
-                <q-icon name="assignment_late" size="32px" />
-              </div>
-
-              <div
-                class="text-h6 text-weight-bolder text-heading letter-spacing-tight q-mb-xs"
-              >
-                There are no applications yet.
-              </div>
-
-              <div
-                class="text-body2 text-subtext text-weight-medium text-center q-px-md"
-              >
-                New vendor registration requests will automatically appear here for
-                verification and review.
-              </div>
-            </div>
-          </template>
-        </q-table>
-      </q-card>
-
-      <!-- ================= QUICK ACTIONS ================= -->
-      <div class="text-h6 text-weight-bolder text-heading q-mb-md letter-spacing-tight">
-        Quick Navigation
+        </component>
       </div>
 
-      <div class="row q-col-gutter-lg">
-        <div class="col-12 col-md-4">
-          <q-card
-            flat
-            class="premium-glass-card hover-lift-action cursor-pointer action-card overflow-hidden"
-            @click="$router.push('/admin/approvals')"
-          >
-            <div class="action-card-glow text-red-9"></div>
+      <div class="db-grid">
+        <!-- ================= NEEDS ATTENTION ================= -->
+        <section class="vp-card db-panel db-area-attention">
+          <div class="db-panel-head">
+            <h2 class="db-panel-title">
+              <span class="db-panel-icon vp-tone--brand"
+                ><q-icon name="o_pending_actions" size="18px"
+              /></span>
+              Needs Attention
+            </h2>
+            <router-link to="/admin/approvals" class="db-link"
+              >View all<q-icon name="o_arrow_forward" size="16px"
+            /></router-link>
+          </div>
 
-            <q-card-section class="row items-center no-wrap q-pa-lg card-content-layer">
-              <div
-                class="action-icon-stamp bg-red-badge text-red-9 border-red-soft q-mr-md flex flex-center"
-              >
-                <q-icon name="fact_check" size="22px" />
-              </div>
+          <div class="db-cols db-att-grid">
+            <span /><span>Application</span
+            ><span class="db-att-date">Applied</span><span />
+          </div>
 
-              <div class="col">
-                <div
-                  class="text-subtitle2 text-weight-bolder text-heading line-height-tight"
-                >
-                  Approvals Center
-                </div>
-
-                <div
-                  class="text-caption text-subtext text-weight-medium line-height-tight q-mt-xs"
-                >
-                  Process store applications
-                </div>
-              </div>
-
-              <q-icon
-                name="chevron_right"
-                color="grey-5"
-                size="22px"
-                class="action-arrow"
+          <div v-if="loading" class="db-rows-loading">
+            <div v-for="n in 3" :key="n" class="db-att-grid db-skel-row">
+              <q-skeleton
+                type="rect"
+                width="36px"
+                height="36px"
+                class="db-skel-tile"
               />
-            </q-card-section>
-          </q-card>
+              <div class="db-two-lines">
+                <q-skeleton type="text" width="55%" />
+                <q-skeleton type="text" width="78%" height="12px" />
+              </div>
+              <div class="db-two-lines db-skel-end">
+                <q-skeleton type="text" width="76px" />
+                <q-skeleton type="text" width="48px" height="12px" />
+              </div>
+            </div>
+          </div>
+          <div v-else-if="!pending.length" class="db-empty">
+            <q-icon name="o_task_alt" size="22px" />
+            No applications waiting for review.
+          </div>
+          <template v-else>
+            <button
+              v-for="app in pending"
+              :key="app.approval_id"
+              type="button"
+              class="db-row db-att-grid db-att-row"
+              @click="actions.openReview(app)"
+            >
+              <span class="db-row-icon vp-tone--brand"
+                ><q-icon name="o_storefront" size="18px"
+              /></span>
+              <span class="db-two-lines">
+                <span class="db-strong">{{
+                  app.store_name || 'Unnamed store'
+                }}</span>
+                <span class="db-soft db-ellipsis"
+                  >Vendor application · Pending review</span
+                >
+              </span>
+              <span class="db-two-lines db-att-date">
+                <span>{{ formatShortDate(app.applied_at) }}</span>
+                <span class="db-soft">{{ formatTime(app.applied_at) }}</span>
+              </span>
+              <q-icon name="o_chevron_right" size="20px" class="db-row-arrow" />
+            </button>
+          </template>
+        </section>
+
+        <!-- ================= PLATFORM OVERVIEW ================= -->
+        <!-- Vendors and consumers on each of the last seven days, counted back from today's totals using approval and sign-up dates. -->
+        <section class="vp-card db-panel db-area-overview db-overview">
+          <div class="db-panel-head">
+            <h2 class="db-panel-title">
+              <span class="db-panel-icon vp-tone--brand"
+                ><q-icon name="o_insights" size="18px"
+              /></span>
+              Platform Overview
+            </h2>
+            <div class="db-legend-inline">
+              <span
+                ><span
+                  class="db-dot"
+                  :style="{ background: VENDOR_COLOR }"
+                />Vendors</span
+              >
+              <span
+                ><span
+                  class="db-dot"
+                  :style="{ background: CONSUMER_COLOR }"
+                />Consumers</span
+              >
+            </div>
+          </div>
+          <div class="db-chart">
+            <q-skeleton v-if="loading" type="rect" height="220px" />
+            <VueApexCharts
+              v-else
+              type="area"
+              height="240"
+              width="100%"
+              :options="overviewOptions"
+              :series="overviewSeries"
+            />
+          </div>
+        </section>
+
+        <!-- ================= SIDE ================= -->
+        <div class="db-area-side">
+          <section class="vp-card db-panel db-ratio">
+            <div class="db-panel-head">
+              <h2 class="db-panel-title">Ecosystem Ratio</h2>
+            </div>
+            <div class="db-ratio-body">
+              <div class="db-ratio-chart">
+                <div v-if="loading" class="db-skel-ring">
+                  <q-skeleton type="circle" size="150px" />
+                  <span class="db-skel-hole" />
+                </div>
+                <div v-else-if="!mixTotal" class="db-soft">No accounts yet</div>
+                <template v-else>
+                  <VueApexCharts
+                    type="donut"
+                    height="170"
+                    width="170"
+                    :options="donutOptions"
+                    :series="donutSeries"
+                  />
+                  <div class="db-ratio-center">
+                    <span :style="{ color: VENDOR_COLOR }">{{
+                      mixRows[0].share
+                    }}</span>
+                    <span :style="{ color: CONSUMER_COLOR }">{{
+                      mixRows[1].share
+                    }}</span>
+                  </div>
+                </template>
+              </div>
+              <ul class="db-ratio-legend">
+                <li v-for="row in mixRows" :key="row.label">
+                  <span class="db-dot" :style="{ background: row.color }" />
+                  <span class="db-ratio-label">{{ row.label }}</span>
+                  <span class="db-ratio-value"
+                    >{{ loading ? '—' : row.value }}
+                    <span class="db-soft">{{
+                      loading ? '' : `(${row.share})`
+                    }}</span></span
+                  >
+                </li>
+              </ul>
+            </div>
+          </section>
         </div>
 
-        <div class="col-12 col-md-4">
-          <q-card
-            flat
-            class="premium-glass-card hover-lift-action cursor-pointer action-card overflow-hidden"
-            @click="$router.push('/admin/vendors')"
-          >
-            <div class="action-card-glow text-red-9"></div>
+        <!-- ================= RECENT ACTIVITY ================= -->
+        <!-- The latest applications, decisions and sign-ups, newest first. -->
+        <section class="vp-card db-panel db-area-activity">
+          <div class="db-panel-head">
+            <h2 class="db-panel-title">
+              <span class="db-panel-icon vp-tone--info"
+                ><q-icon name="o_history" size="18px"
+              /></span>
+              Recent Activity
+            </h2>
+          </div>
 
-            <q-card-section class="row items-center no-wrap q-pa-lg card-content-layer">
-              <div
-                class="action-icon-stamp bg-blue-badge text-blue-9 border-blue-soft q-mr-md flex flex-center"
+          <div class="db-cols db-act-grid">
+            <span>Time</span><span>Activity</span><span>User</span><span />
+          </div>
+
+          <div v-if="loading" class="db-rows-loading">
+            <div v-for="n in 3" :key="n" class="db-act-grid db-skel-row">
+              <div class="db-act-time">
+                <q-skeleton type="text" width="84px" />
+                <q-skeleton type="text" width="52px" height="12px" />
+              </div>
+              <q-skeleton type="text" width="70%" class="db-act-text" />
+              <div class="db-act-user">
+                <q-skeleton
+                  type="rect"
+                  width="28px"
+                  height="28px"
+                  class="db-skel-tile"
+                />
+                <q-skeleton type="text" width="60%" />
+              </div>
+            </div>
+          </div>
+          <div v-else-if="!activity.length" class="db-empty">
+            <q-icon name="o_history" size="22px" />
+            Nothing has happened yet.
+          </div>
+          <template v-else>
+            <button
+              v-for="item in activity"
+              :key="item.key"
+              type="button"
+              class="db-row db-act-grid db-activity-row"
+              @click="router.push(item.to)"
+            >
+              <span class="db-act-time"
+                >{{ formatShortDate(item.at) }}
+                <span class="db-soft">{{ formatTime(item.at) }}</span></span
               >
-                <q-icon name="storefront" size="22px" />
-              </div>
-
-              <div class="col">
-                <div
-                  class="text-subtitle2 text-weight-bolder text-heading line-height-tight"
-                >
-                  Vendors Directory
-                </div>
-
-                <div
-                  class="text-caption text-subtext text-weight-medium line-height-tight q-mt-xs"
-                >
-                  Manage active vendors
-                </div>
-              </div>
-
-              <q-icon
-                name="chevron_right"
-                color="grey-5"
-                size="22px"
-                class="action-arrow"
-              />
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <div class="col-12 col-md-4">
-          <q-card
-            flat
-            class="premium-glass-card hover-lift-action cursor-pointer action-card overflow-hidden"
-            @click="$router.push('/admin/consumers')"
-          >
-            <div class="action-card-glow text-red-9"></div>
-
-            <q-card-section class="row items-center no-wrap q-pa-lg card-content-layer">
-              <div
-                class="action-icon-stamp bg-green-badge text-green-9 border-green-soft q-mr-md flex flex-center"
-              >
-                <q-icon name="groups" size="22px" />
-              </div>
-
-              <div class="col">
-                <div
-                  class="text-subtitle2 text-weight-bolder text-heading line-height-tight"
-                >
-                  Consumer Accounts
-                </div>
-
-                <div
-                  class="text-caption text-subtext text-weight-medium line-height-tight q-mt-xs"
-                >
-                  View registered shoppers
-                </div>
-              </div>
-
-              <q-icon
-                name="chevron_right"
-                color="grey-5"
-                size="22px"
-                class="action-arrow"
-              />
-            </q-card-section>
-          </q-card>
-        </div>
+              <span class="db-act-text">{{ item.text }}</span>
+              <span class="db-act-user">
+                <q-icon
+                  :name="item.icon"
+                  size="16px"
+                  :class="`db-act-icon--${item.kind}`"
+                />
+                <span class="db-act-name">{{ item.who }}</span>
+              </span>
+              <q-icon name="o_chevron_right" size="20px" class="db-row-arrow" />
+            </button>
+          </template>
+        </section>
       </div>
     </div>
 
-    <!-- ================= REVIEW DIALOG ================= -->
-    <q-dialog
-      v-model="showApplicationDialog"
-      transition-show="scale"
-      transition-hide="scale"
-    >
-      <q-card class="review-dialog-glass vendor-info-dialog">
-        <q-card-section class="row items-center justify-between q-pa-md panel-header">
-          <div class="text-h6 text-weight-bold text-heading row items-center">
-            <div class="header-accent-red q-mr-sm"></div>
-            Application Review
-          </div>
-
-          <q-btn
-            icon="close"
-            flat
-            round
-            dense
-            class="text-subtext"
-            @click="showApplicationDialog = false"
-          />
-        </q-card-section>
-
-        <q-card-section
-          class="q-pa-lg scroll"
-          style="max-height: 65vh"
-          v-if="selectedApplication"
-        >
-          <div class="text-center q-mb-lg">
-            <div class="info-store-name text-heading q-mb-xs">
-              {{
-                selectedApplication.store?.store_name ||
-                selectedApplication.store_name ||
-                'N/A'
-              }}
-            </div>
-
-            <div class="info-owner-name text-subtext q-mb-md">
-              Owned by:
-              {{
-                selectedApplication.store?.owner?.full_name ||
-                selectedApplication.owner_name
-              }}
-            </div>
-
-            <div class="image-frame-container">
-              <q-img
-                v-if="
-                  selectedApplication.store?.store_picture_url &&
-                  selectedApplication.store.store_picture_url !== 'null' &&
-                  selectedApplication.store.store_picture_url.trim() !== ''
-                "
-                :src="selectedApplication.store.store_picture_url"
-                style="width: 100%; height: 220px"
-                fit="cover"
-                class="rounded-borders"
-              >
-                <template #error>
-                  <div class="absolute-full flex flex-center empty-state-glass">
-                    <q-icon name="storefront" size="64px" color="grey-5" />
-                  </div>
-                </template>
-              </q-img>
-
-              <div
-                v-else
-                class="empty-state-glass flex flex-center full-width rounded-borders"
-                style="height: 220px"
-              >
-                <q-icon name="storefront" size="64px" color="grey-5" />
-              </div>
-            </div>
-          </div>
-
-          <div class="row q-col-gutter-y-md q-col-gutter-x-xl q-mb-lg">
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-subtext text-uppercase text-weight-bold">
-                Contact Email
-              </div>
-
-              <div class="text-subtitle2 text-weight-bold text-heading">
-                {{ selectedApplication.email }}
-              </div>
-            </div>
-
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-subtext text-uppercase text-weight-bold">
-                Contact Phone
-              </div>
-
-              <div class="text-subtitle2 text-weight-bold text-heading">
-                {{ selectedApplication.phone || 'N/A' }}
-              </div>
-            </div>
-
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-subtext text-uppercase text-weight-bold">
-                Operating Days
-              </div>
-
-              <div class="text-subtitle2 text-weight-bold text-heading">
-                {{ formatOperatingDays(selectedApplication.store?.operating_days) }}
-              </div>
-            </div>
-
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-subtext text-uppercase text-weight-bold">
-                Business Hours
-              </div>
-
-              <div class="text-subtitle2 text-weight-bold text-heading">
-                {{ selectedApplication.store?.opening_time || 'N/A' }} -
-                {{ selectedApplication.store?.closing_time || 'N/A' }}
-              </div>
-            </div>
-          </div>
-
-          <div
-            class="map-container-box"
-            v-if="isValidLocation(selectedApplication)"
-          >
-            <iframe
-              :src="
-                getMapUrl(
-                  selectedApplication.store.latitude,
-                  selectedApplication.store.longitude
-                )
-              "
-              width="100%"
-              height="200"
-              style="border: none; border-radius: 8px"
-              allowfullscreen
-              loading="lazy"
-            ></iframe>
-
-            <div class="q-mt-md text-right">
-              <q-btn
-                label="Open in Google Maps"
-                no-caps
-                class="btn-outline-custom q-px-md"
-                text-color="blue-8"
-                icon="map"
-                :href="
-                  `https://www.google.com/maps/dir/?api=1&destination=${selectedApplication.store.latitude},${selectedApplication.store.longitude}`
-                "
-                target="_blank"
-              />
-            </div>
-          </div>
-        </q-card-section>
-
-        <q-separator />
-
-        <q-card-actions align="right" class="q-pa-md dialog-actions-glass">
-          <q-btn
-            flat
-            label="Cancel"
-            class="btn-outline-custom q-px-md text-subtext"
-            no-caps
-            @click="showApplicationDialog = false"
-          />
-
-          <q-btn
-            flat
-            label="Reject Application"
-            color="red-8"
-            no-caps
-            class="btn-reject-custom q-px-md q-ml-sm"
-            @click="
-              openRejectModal(selectedApplication);
-              showApplicationDialog = false;
-            "
-          />
-
-          <q-btn
-            unelevated
-            label="Approve Vendor"
-            icon="check_circle"
-            color="green-7"
-            no-caps
-            class="btn-approve-custom q-px-md q-ml-sm"
-            @click="
-              handleApprove(selectedApplication);
-              showApplicationDialog = false;
-            "
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
-    <!-- ================= REJECT MODAL ================= -->
-    <q-dialog
-      v-model="showRejectModal"
-      persistent
-      transition-show="scale"
-      transition-hide="scale"
-    >
-      <q-card class="review-dialog-glass text-center">
-        <q-card-section
-          class="q-pt-xl q-pb-md relative-position"
-          style="z-index: 2"
-        >
-          <div
-            class="modal-stamp-disc bg-red-badge text-red-9 q-mb-md q-mx-auto flex flex-center"
-          >
-            <q-icon name="warning" size="32px" />
-          </div>
-
-          <div class="text-h5 text-weight-bold text-heading q-mb-sm">
-            Reject Application
-          </div>
-
-          <p class="text-body2 text-subtext q-px-md">
-            Action requires justification. Please provide a reason for rejecting this
-            application.
-          </p>
-
-          <q-input
-            v-model="rejectionReason"
-            type="textarea"
-            outlined
-            dense
-            placeholder="e.g., Incomplete documentation, suspicious activity..."
-            class="custom-glass-input text-left q-mt-md"
-            autofocus
-          />
-        </q-card-section>
-
-        <q-card-actions align="center" class="q-pa-md dialog-actions-glass">
-          <q-btn
-            flat
-            label="Cancel"
-            class="btn-outline-custom q-px-md q-mr-sm text-subtext"
-            no-caps
-            v-close-popup
-          />
-
-          <q-btn
-            unelevated
-            label="Confirm Rejection"
-            color="red-9"
-            no-caps
-            class="btn-reject-confirm q-px-md"
-            :loading="actionLoading"
-            @click="handleRejectConfirm"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
-    <!-- ================= APPROVE MODAL ================= -->
-    <q-dialog
-      v-model="showApproveModal"
-      persistent
-      transition-show="scale"
-      transition-hide="scale"
-    >
-      <q-card class="review-dialog-glass text-center">
-        <q-card-section
-          class="q-pt-xl q-pb-md relative-position"
-          style="z-index: 2"
-        >
-          <div
-            class="modal-stamp-disc bg-green-badge text-green-7 q-mb-md q-mx-auto flex flex-center"
-          >
-            <q-icon name="check_circle" size="32px" />
-          </div>
-
-          <div class="text-h5 text-weight-bold text-heading q-mb-sm">
-            Approve Vendor
-          </div>
-
-          <p class="text-body1 text-subtext q-px-md">
-            Are you sure you want to approve this application?
-            <strong>{{ approveTarget?.store_name }}</strong>
-            will gain immediate access.
-          </p>
-        </q-card-section>
-
-        <q-card-actions align="center" class="q-pa-md dialog-actions-glass">
-          <q-btn
-            flat
-            label="Cancel"
-            class="btn-outline-custom q-px-md q-mr-sm text-subtext"
-            no-caps
-            v-close-popup
-          />
-
-          <q-btn
-            unelevated
-            label="Confirm Approval"
-            color="green-7"
-            no-caps
-            class="btn-approve-custom q-px-md"
-            :loading="actionLoading"
-            @click="handleApproveConfirm"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+    <ApplicationActions ref="actions" @decided="onDecided" />
   </q-page>
 </template>
 
 <script setup>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { api } from '@/boot/axios'
 import VueApexCharts from 'vue3-apexcharts'
+import { api } from '@/boot/axios'
+import AdminHero from '@/components/admin/AdminHero.vue'
+import ApplicationActions from '@/components/admin/ApplicationActions.vue'
+import { useAdminNotifications } from '@/composables/useAdminNotifications'
+import { formatShortDate } from '@/utils/accountStatus'
+import '@/css/admin-pages.scss'
 
+const router = useRouter()
 const $q = useQuasar()
+const { fetchNotifications } = useAdminNotifications()
 
-// ==========================================================
-// STATE
-// ==========================================================
+// Vendors in blue and consumers in green, the colours of their cards.
+const VENDOR_COLOR = '#2563eb'
+const CONSUMER_COLOR = '#16a34a'
+const DAY = 86400000
 
+const loading = ref(true)
+const syncing = ref(false)
 const stats = ref({
-  pending_approvals: 0,
   total_vendors: 0,
+  pending_approvals: 0,
   total_consumers: 0,
   total_users: 0
 })
+// Every application (pending, approved and rejected) and the active consumers, for the lists, the week's changes and the chart.
+const applications = ref([])
+const consumers = ref([])
+// The day the numbers were loaded, so the chart only redraws when they are.
+const loadedAt = ref(new Date())
+const actions = ref(null)
 
-const pendingApplications = ref([])
-
-const showApplicationDialog = ref(false)
-const loading = ref(false)
-const chartLoading = ref(false)
-
-const selectedApplication = ref({
-  approval_id: null,
-  store_id: null,
-  store_name: '',
-  owner_name: '',
-  email: '',
-  phone: '',
-  applied_at: ''
-})
-
-const showApproveModal = ref(false)
-const showRejectModal = ref(false)
-
-const approveTarget = ref(null)
-const rejectTarget = ref(null)
-
-const actionLoading = ref(false)
-const rejectionReason = ref('')
-
-// ==========================================================
-// INTERACTIVE HERO CARD
-// ==========================================================
-
-const heroCardRef = ref(null)
-const mouseX = ref('80%')
-const mouseY = ref('80%')
-
-const handleHeroHover = e => {
-  if (!heroCardRef.value) return
-
-  const rect = heroCardRef.value.$el.getBoundingClientRect()
-
-  mouseX.value = `${e.clientX - rect.left}px`
-  mouseY.value = `${e.clientY - rect.top}px`
-}
-
-const resetHeroHover = () => {
-  mouseX.value = '80%'
-  mouseY.value = '80%'
-}
-
-// ==========================================================
-// TABLE CONFIGURATION
-// ==========================================================
-
-const columns = [
-  {
-    name: 'store_name',
-    label: 'Store Profile',
-    field: 'store_name',
-    align: 'left'
-  },
-  {
-    name: 'owner_name',
-    label: 'Owner Details',
-    field: 'owner_name',
-    align: 'left'
-  },
-  {
-    name: 'applied_at',
-    label: 'Date Applied',
-    field: 'applied_at',
-    align: 'left'
-  },
-  {
-    name: 'action',
-    label: 'Review Action',
-    field: 'action',
-    align: 'right'
+// The signed-in admin's name from the sign-in record, as the old dashboard greeted them.
+const userName = (() => {
+  try {
+    return (
+      JSON.parse(localStorage.getItem('auth_user') || '{}').full_name || 'Admin'
+    )
+  } catch {
+    return 'Admin'
   }
-]
+})()
 
-// ==========================================================
-// DATE & TIME
-// ==========================================================
+// CLOCK — the banner's live date and time.
+const now = ref(new Date())
+let clockTimer = null
 
-const currentDate = ref('')
-const currentTime = ref('')
-const currentHour = ref(new Date().getHours())
-
-let timer = null
-
-const timeBasedGreeting = computed(() => {
-  if (currentHour.value < 12) return 'Good morning'
-  if (currentHour.value < 18) return 'Good afternoon'
+const greeting = computed(() => {
+  const hour = now.value.getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
   return 'Good evening'
 })
 
-const timeOfDayTheme = computed(() => {
-  if (currentHour.value >= 5 && currentHour.value < 12) {
-    return 'theme-morning'
-  }
-
-  if (currentHour.value >= 12 && currentHour.value < 18) {
-    return 'theme-afternoon'
-  }
-
-  return 'theme-evening'
+// The banner's colour and icon for each part of the day, the same hours as the vendor dashboard; the clock ticks, so it changes on its own.
+const dayPhase = computed(() => {
+  const hour = now.value.getHours()
+  if (hour >= 5 && hour < 8) return { key: 'dawn', icon: 'o_wb_twilight' }
+  if (hour >= 8 && hour < 12) return { key: 'morning', icon: 'o_light_mode' }
+  if (hour >= 12 && hour < 17) return { key: 'afternoon', icon: 'o_wb_sunny' }
+  if (hour >= 17 && hour < 19) return { key: 'evening', icon: 'o_wb_twilight' }
+  return { key: 'night', icon: 'o_dark_mode' }
 })
 
-// ==========================================================
-// DARK MODE
-// ==========================================================
-
-const toggleDarkMode = () => {
-  $q.dark.toggle()
-
-  localStorage.setItem(
-    'admin_dark_mode',
-    $q.dark.isActive ? 'true' : 'false'
-  )
-
-  updateChartThemes()
-}
-
-// ==========================================================
-// REGISTRATION TREND ANALYTICS
-// ==========================================================
-
-const registrationCategories = ref([
-  '2 Weeks Ago',
-  'Last Week',
-  'This Week'
-])
-
-const registrationVendorData = ref([0, 0, 0])
-const registrationConsumerData = ref([0, 0, 0])
-
-/*
- * Line/Area Chart
- *
- * Instead of visually comparing separate bars, this chart emphasizes
- * movement and registration trends over time.
- */
-const registrationChartSeries = computed(() => [
-  {
-    name: 'Vendors',
-    data: registrationVendorData.value
-  },
-  {
-    name: 'Consumers',
-    data: registrationConsumerData.value
-  }
-])
-
-const registrationChartOptions = ref({
-  chart: {
-    type: 'area',
-    height: 270,
-    toolbar: {
-      show: false
-    },
-    zoom: {
-      enabled: false
-    },
-    animations: {
-      enabled: true,
-      easing: 'easeinout',
-      speed: 700
-    },
-    fontFamily: 'inherit'
-  },
-
-  colors: ['#2563eb', '#16a34a'],
-
-  stroke: {
-    curve: 'smooth',
-    width: 3
-  },
-
-  markers: {
-    size: 4,
-    strokeWidth: 2,
-    strokeColors: '#ffffff',
-    hover: {
-      size: 7
-    }
-  },
-
-  fill: {
-    type: 'gradient',
-    gradient: {
-      shadeIntensity: 1,
-      opacityFrom: 0.24,
-      opacityTo: 0.02,
-      stops: [0, 90, 100]
-    }
-  },
-
-  dataLabels: {
-    enabled: false
-  },
-
-  xaxis: {
-    categories: registrationCategories.value,
-    labels: {
-      style: {
-        colors: '#64748b',
-        fontSize: '11px',
-        fontWeight: 600
-      }
-    },
-    axisBorder: {
-      show: false
-    },
-    axisTicks: {
-      show: false
-    },
-    tooltip: {
-      enabled: false
-    }
-  },
-
-  yaxis: {
-    min: 0,
-    forceNiceScale: true,
-    labels: {
-      style: {
-        colors: '#64748b',
-        fontSize: '11px',
-        fontWeight: 600
-      },
-      formatter: value => Math.round(value)
-    }
-  },
-
-  grid: {
-    borderColor: '#e2e8f0',
-    strokeDashArray: 5,
-    padding: {
-      left: 8,
-      right: 8,
-      top: 0,
-      bottom: 0
-    }
-  },
-
-  legend: {
-    show: false
-  },
-
-  tooltip: {
-    theme: 'light',
-    shared: true,
-    intersect: false,
-    x: {
-      show: true
-    },
-    y: {
-      formatter: value => `${value} registration${value === 1 ? '' : 's'}`
-    }
-  },
-
-  responsive: [
-    {
-      breakpoint: 767,
-      options: {
-        chart: {
-          height: 250
-        },
-
-        stroke: {
-          width: 2.5
-        },
-
-        markers: {
-          size: 3
-        },
-
-        xaxis: {
-          labels: {
-            rotate: -35,
-            style: {
-              fontSize: '10px'
-            }
-          }
-        }
-      }
-    }
-  ]
-})
-
-// ==========================================================
-// DONUT CHART
-// ==========================================================
-
-const donutChartSeries = computed(() => {
-  const vendors = Number(stats.value.total_vendors) || 0
-  const consumers = Number(stats.value.total_consumers) || 0
-
-  return vendors === 0 && consumers === 0
-    ? [1, 1]
-    : [vendors, consumers]
-})
-
-const donutChartOptions = ref({
-  chart: {
-    type: 'donut'
-  },
-
-  colors: ['#2563eb', '#16a34a'],
-
-  labels: [
-    'Approved Vendors',
-    'Active Consumers'
-  ],
-
-  dataLabels: {
-    enabled: false
-  },
-
-  legend: {
-    position: 'bottom',
-    labels: {
-      colors: '#64748b'
-    },
-    fontWeight: 600,
-    fontSize: '11px'
-  },
-
-  plotOptions: {
-    pie: {
-      donut: {
-        size: '72%',
-
-        labels: {
-          show: true,
-
-          total: {
-            show: true,
-            label: 'Total Accounts',
-            color: '#64748b',
-            fontSize: '11px',
-            fontWeight: 700,
-
-            formatter: () => {
-              return String(stats.value.total_users || 0)
-            }
-          }
-        }
-      }
-    }
-  },
-
-  stroke: {
-    width: 0
-  }
-})
-
-// ==========================================================
-// UPDATE CHART THEMES
-// ==========================================================
-
-const updateChartThemes = () => {
-  const isDark = $q.dark.isActive
-
-  const fontColor = isDark
-    ? '#94a3b8'
-    : '#64748b'
-
-  const gridColor = isDark
-    ? 'rgba(255,255,255,0.08)'
-    : '#e2e8f0'
-
-  const tooltipTheme = isDark
-    ? 'dark'
-    : 'light'
-
-  // Registration trend chart
-  registrationChartOptions.value = {
-    ...registrationChartOptions.value,
-
-    theme: {
-      mode: isDark ? 'dark' : 'light'
-    },
-
-    xaxis: {
-      ...registrationChartOptions.value.xaxis,
-
-      categories: registrationCategories.value,
-
-      labels: {
-        ...registrationChartOptions.value.xaxis.labels,
-
-        style: {
-          colors: fontColor,
-          fontSize: '11px',
-          fontWeight: 600
-        }
-      }
-    },
-
-    yaxis: {
-      ...registrationChartOptions.value.yaxis,
-
-      labels: {
-        ...registrationChartOptions.value.yaxis.labels,
-
-        style: {
-          colors: fontColor,
-          fontSize: '11px',
-          fontWeight: 600
-        }
-      }
-    },
-
-    grid: {
-      ...registrationChartOptions.value.grid,
-      borderColor: gridColor
-    },
-
-    tooltip: {
-      ...registrationChartOptions.value.tooltip,
-      theme: tooltipTheme
-    },
-
-    markers: {
-      ...registrationChartOptions.value.markers,
-      strokeColors: isDark ? '#0f172a' : '#ffffff'
-    }
-  }
-
-  // Donut chart
-  donutChartOptions.value = {
-    ...donutChartOptions.value,
-
-    theme: {
-      mode: isDark ? 'dark' : 'light'
-    },
-
-    legend: {
-      ...donutChartOptions.value.legend,
-
-      labels: {
-        colors: fontColor
-      }
-    },
-
-    plotOptions: {
-      pie: {
-        donut: {
-          ...donutChartOptions.value.plotOptions.pie.donut,
-
-          labels: {
-            ...donutChartOptions.value.plotOptions.pie.donut.labels,
-
-            total: {
-              ...donutChartOptions.value.plotOptions.pie.donut.labels.total,
-              color: fontColor
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-watch(
-  () => $q.dark.isActive,
-  () => {
-    updateChartThemes()
-  }
-)
-
-watch(
-  registrationCategories,
-  () => {
-    updateChartThemes()
-  },
-  { deep: true }
-)
-
-// ==========================================================
-// DATE / TIME UPDATE
-// ==========================================================
-
-const updateDateTime = () => {
-  const now = new Date()
-
-  currentHour.value = now.getHours()
-
-  currentDate.value = now.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
+const clockDate = computed(() =>
+  now.value.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
     day: 'numeric',
     year: 'numeric'
   })
-
-  currentTime.value = now.toLocaleTimeString('en-US', {
+)
+const clockTime = computed(() =>
+  now.value.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit'
   })
+)
+
+const formatTime = value => {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? ''
+    : date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
-// ==========================================================
-// HELPERS
-// ==========================================================
-
-const formatDate = date => {
-  if (!date) return '-'
-
-  return new Date(date).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-const userName = computed(() => {
-  try {
-    const user = JSON.parse(
-      localStorage.getItem('auth_user') || '{}'
-    )
-
-    return user.full_name || 'Admin'
-  } catch {
-    return 'Admin'
-  }
+// The old banner's "Action required" alert, shown while any store is waiting.
+const attention = computed(() => {
+  const count = Number(stats.value.pending_approvals) || 0
+  return count > 0
+    ? `Action required: ${count} ${count === 1 ? 'task' : 'tasks'}`
+    : ''
 })
 
-const formatOperatingDays = days => {
-  if (!days) return 'N/A'
+const heroActions = computed(() => [
+  { key: 'review', label: 'Review Applications', icon: 'o_arrow_forward' },
+  {
+    key: 'sync',
+    label: 'Sync Data',
+    icon: 'o_sync',
+    ghost: true,
+    loading: syncing.value
+  }
+])
 
-  try {
-    const parsed =
-      typeof days === 'string'
-        ? JSON.parse(days)
-        : days
+// THE WEEK — approvals and sign-ups in the last seven days, from their own dates.
+const toTime = value => {
+  const time = new Date(value).getTime()
+  return Number.isNaN(time) ? null : time
+}
+const approvedTimes = computed(() =>
+  applications.value
+    .filter(app => app.status === 'approved')
+    .map(app => toTime(app.reviewed_at))
+    .filter(Boolean)
+)
+const signupTimes = computed(() =>
+  consumers.value.map(c => toTime(c.created_at)).filter(Boolean)
+)
+const weekStart = computed(() => loadedAt.value.getTime() - 7 * DAY)
+const newVendors = computed(
+  () => approvedTimes.value.filter(t => t > weekStart.value).length
+)
+const newConsumers = computed(
+  () => signupTimes.value.filter(t => t > weekStart.value).length
+)
 
-    if (
-      parsed !== null &&
-      typeof parsed === 'object' &&
-      !Array.isArray(parsed)
-    ) {
-      const openDays = Object.entries(parsed)
-        .filter(([_, data]) => data.is_open)
-        .map(([day, data]) => {
-          if (
-            data.opening_time &&
-            data.closing_time
-          ) {
-            const open = data.opening_time.substring(0, 5)
-            const close = data.closing_time.substring(0, 5)
+const kpis = computed(() => [
+  {
+    key: 'attention',
+    label: 'Needs attention',
+    note: 'Pending vendor applications awaiting review and authorization.',
+    value: stats.value.pending_approvals ?? 0,
+    icon: 'o_pending_actions',
+    tone: 'brand',
+    delta: 0,
+    to: '/admin/approvals'
+  },
+  {
+    key: 'vendors',
+    label: 'Approved vendors',
+    note: 'Stores approved to sell on Tindahan.',
+    value: stats.value.total_vendors ?? 0,
+    icon: 'o_storefront',
+    tone: 'info',
+    delta: newVendors.value,
+    to: '/admin/vendors'
+  },
+  {
+    key: 'consumers',
+    label: 'Active consumers',
+    note: 'Registered consumers on the platform.',
+    value: stats.value.total_consumers ?? 0,
+    icon: 'o_groups',
+    tone: 'success',
+    delta: newConsumers.value,
+    to: '/admin/consumers'
+  },
+  {
+    key: 'users',
+    label: 'Total platform users',
+    note: 'Vendors + consumers',
+    value: stats.value.total_users ?? 0,
+    icon: 'o_people_alt',
+    tone: 'neutral',
+    delta: newVendors.value + newConsumers.value,
+    to: null
+  }
+])
 
-            return `${day} (${open}-${close})`
-          }
+// NEEDS ATTENTION — the newest applications still waiting.
+const pending = computed(() =>
+  applications.value
+    .filter(app => app.status === 'pending')
+    .sort((a, b) => new Date(b.applied_at) - new Date(a.applied_at))
+    .slice(0, 4)
+)
 
-          return day
-        })
-
-      return openDays.length > 0
-        ? openDays.join(', ')
-        : 'N/A'
+// PLATFORM OVERVIEW — each of the last seven days, counting back from today's totals: anyone approved or signed up after that day is taken off.
+const overviewDays = computed(() =>
+  Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(loadedAt.value)
+    day.setHours(23, 59, 59, 999)
+    day.setDate(day.getDate() - (6 - i))
+    return day
+  })
+)
+const countOn = (times, total, day) =>
+  Math.max(0, total - times.filter(t => t > day.getTime()).length)
+const overviewSeries = computed(() => [
+  {
+    name: 'Vendors',
+    data: overviewDays.value.map(day =>
+      countOn(approvedTimes.value, Number(stats.value.total_vendors) || 0, day)
+    )
+  },
+  {
+    name: 'Consumers',
+    data: overviewDays.value.map(day =>
+      countOn(signupTimes.value, Number(stats.value.total_consumers) || 0, day)
+    )
+  }
+])
+const overviewOptions = computed(() => ({
+  chart: {
+    type: 'area',
+    background: 'transparent',
+    toolbar: { show: false },
+    zoom: { enabled: false },
+    fontFamily: 'Roboto, Arial, sans-serif'
+  },
+  colors: [VENDOR_COLOR, CONSUMER_COLOR],
+  dataLabels: { enabled: false },
+  legend: { show: false },
+  stroke: { curve: 'straight', width: 2.5 },
+  fill: {
+    type: 'gradient',
+    gradient: {
+      shadeIntensity: 1,
+      opacityFrom: 0.22,
+      opacityTo: 0.02,
+      stops: [0, 95, 100]
     }
-
-    if (Array.isArray(parsed)) {
-      return parsed.length > 0
-        ? parsed.join(', ')
-        : 'N/A'
+  },
+  markers: { size: 4, strokeWidth: 0, hover: { size: 6 } },
+  grid: {
+    borderColor: '#f0ebe7',
+    strokeDashArray: 0,
+    padding: { left: 6, right: 10 }
+  },
+  xaxis: {
+    categories: overviewDays.value.map(day =>
+      day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    ),
+    axisBorder: { show: false },
+    axisTicks: { show: false },
+    labels: { style: { colors: '#77716d', fontSize: '11.5px' } }
+  },
+  yaxis: {
+    min: 0,
+    forceNiceScale: true,
+    labels: {
+      formatter: value => Math.round(value),
+      style: { colors: '#77716d', fontSize: '11.5px' }
     }
+  },
+  tooltip: { y: { formatter: value => `${value} accounts` } }
+}))
 
-    return 'N/A'
-  } catch {
-    return 'N/A'
+// ECOSYSTEM RATIO
+const mixTotal = computed(
+  () =>
+    (Number(stats.value.total_vendors) || 0) +
+    (Number(stats.value.total_consumers) || 0)
+)
+const share = value =>
+  mixTotal.value ? `${Math.round((value / mixTotal.value) * 100)}%` : '0%'
+const mixRows = computed(() => {
+  const vendors = Number(stats.value.total_vendors) || 0
+  const shoppers = Number(stats.value.total_consumers) || 0
+  return [
+    {
+      label: 'Vendors',
+      value: vendors,
+      color: VENDOR_COLOR,
+      share: share(vendors)
+    },
+    {
+      label: 'Consumers',
+      value: shoppers,
+      color: CONSUMER_COLOR,
+      share: share(shoppers)
+    }
+  ]
+})
+const donutSeries = computed(() => mixRows.value.map(row => row.value))
+const donutOptions = computed(() => ({
+  chart: {
+    type: 'donut',
+    background: 'transparent',
+    fontFamily: 'Roboto, Arial, sans-serif'
+  },
+  labels: ['Vendors', 'Consumers'],
+  colors: [VENDOR_COLOR, CONSUMER_COLOR],
+  legend: { show: false },
+  dataLabels: { enabled: false },
+  stroke: { width: 3, colors: ['#ffffff'] },
+  tooltip: { y: { formatter: value => `${value} accounts` } },
+  plotOptions: { pie: { donut: { size: '66%', labels: { show: false } } } }
+}))
+
+// RECENT ACTIVITY — applications, decisions and sign-ups, each from its own date.
+const activity = computed(() => {
+  const items = []
+  for (const app of applications.value) {
+    const who = app.store_name || 'Unnamed store'
+    if (app.applied_at)
+      items.push({
+        key: `applied-${app.approval_id}`,
+        at: app.applied_at,
+        text: 'New vendor application submitted',
+        who,
+        icon: 'o_storefront',
+        kind: 'store',
+        to: '/admin/approvals'
+      })
+    if (app.reviewed_at && app.status === 'approved')
+      items.push({
+        key: `approved-${app.approval_id}`,
+        at: app.reviewed_at,
+        text: 'Vendor application approved',
+        who,
+        icon: 'o_storefront',
+        kind: 'store',
+        to: '/admin/vendors'
+      })
+    if (app.reviewed_at && app.status === 'rejected')
+      items.push({
+        key: `rejected-${app.approval_id}`,
+        at: app.reviewed_at,
+        text: 'Vendor application rejected',
+        who,
+        icon: 'o_storefront',
+        kind: 'store',
+        to: '/admin/approvals'
+      })
   }
-}
-
-const isValidLocation = vendor => {
-  if (
-    !vendor?.store?.latitude ||
-    !vendor?.store?.longitude
-  ) {
-    return false
+  for (const consumer of consumers.value) {
+    if (consumer.created_at)
+      items.push({
+        key: `joined-${consumer.user_id}`,
+        at: consumer.created_at,
+        text: 'Consumer registered',
+        who: consumer.full_name || 'Unnamed consumer',
+        icon: 'o_person',
+        kind: 'person',
+        to: '/admin/consumers'
+      })
   }
+  return items.sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 5)
+})
 
-  return (
-    !isNaN(parseFloat(vendor.store.latitude)) &&
-    !isNaN(parseFloat(vendor.store.longitude))
-  )
-}
-
-const getMapUrl = (lat, lng) => {
-  const parsedLat = parseFloat(lat)
-  const parsedLng = parseFloat(lng)
-
-  if (
-    isNaN(parsedLat) ||
-    isNaN(parsedLng)
-  ) {
-    return ''
-  }
-
-  const bbox =
-    `${parsedLng - 0.01}%2C` +
-    `${parsedLat - 0.01}%2C` +
-    `${parsedLng + 0.01}%2C` +
-    `${parsedLat + 0.01}`
-
-  return (
-    `https://www.openstreetmap.org/export/embed.html?` +
-    `bbox=${bbox}` +
-    `&layer=mapnik` +
-    `&marker=${parsedLat}%2C${parsedLng}`
-  )
-}
-
-// ==========================================================
-// LOAD DASHBOARD
-// ==========================================================
+const listOf = res =>
+  Array.isArray(res.data) ? res.data : res.data?.data || []
 
 const loadDashboard = async () => {
-  loading.value = true
-  chartLoading.value = true
-
   try {
-    const [statsRes, pendingRes] = await Promise.all([
+    const [statsRes, appsRes, consumersRes] = await Promise.all([
       api.get('/admin/stats'),
-      api.get('/admin/vendors/pending')
+      api.get('/admin/vendors/pending'),
+      api.get('/admin/consumers', { params: { tab: 'active' } })
     ])
-
-    stats.value = statsRes.data
-
-    pendingApplications.value = (pendingRes.data || [])
-      .filter(app => app.status === 'pending')
-      .slice(0, 5)
-
-    // ======================================================
-    // REGISTRATION DATA
-    // ======================================================
-
-    try {
-      const regRes = await api.get(
-        '/admin/stats/registrations'
-      )
-
-      if (regRes.data) {
-        registrationCategories.value =
-          regRes.data.categories ||
-          ['2 Wks Ago', 'Last Wk', 'This Wk']
-
-        registrationVendorData.value =
-          regRes.data.vendors ||
-          [0, 0, 0]
-
-        registrationConsumerData.value =
-          regRes.data.consumers ||
-          [0, 0, 0]
-      }
-    } catch (error) {
-      /*
-       * Do NOT fabricate historical data.
-       *
-       * If the backend does not provide a period breakdown,
-       * only display the current total in the latest period.
-       */
-
-      const totalV =
-        Number(stats.value.total_vendors) || 0
-
-      const totalC =
-        Number(stats.value.total_consumers) || 0
-
-      registrationVendorData.value = [
-        0,
-        0,
-        totalV
-      ]
-
-      registrationConsumerData.value = [
-        0,
-        0,
-        totalC
-      ]
-    }
-
-    updateChartThemes()
+    stats.value = { ...stats.value, ...statsRes.data }
+    applications.value = listOf(appsRes)
+    consumers.value = listOf(consumersRes)
+    loadedAt.value = new Date()
   } catch (error) {
-    console.error(
-      'Failed to load admin dashboard:',
-      error
-    )
+    console.error('Failed to load the admin dashboard', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Couldn’t load the dashboard. Please refresh.'
+    })
   } finally {
     loading.value = false
-    chartLoading.value = false
   }
 }
 
-// ==========================================================
-// REFRESH DASHBOARD
-// ==========================================================
-
-const refreshDashboard = async () => {
-  await loadDashboard()
-
-  $q.notify({
-    type: 'positive',
-    message: 'Dashboard synced successfully.',
-    position: 'bottom-right',
-    timeout: 2000
-  })
+// Sync reloads the numbers, the lists and the bell together, as the old sync button did.
+const syncDashboard = async () => {
+  syncing.value = true
+  await Promise.all([loadDashboard(), fetchNotifications()])
+  syncing.value = false
+  $q.notify({ type: 'positive', message: 'Dashboard synced.' })
 }
 
-// ==========================================================
-// APPLICATION ACTIONS
-// ==========================================================
-
-const viewApplication = row => {
-  selectedApplication.value = {
-    ...row
-  }
-
-  showApplicationDialog.value = true
+const onHeroAction = key => {
+  if (key === 'review') router.push('/admin/approvals')
+  if (key === 'sync') syncDashboard()
 }
 
-const handleApprove = row => {
-  approveTarget.value = row
-  showApproveModal.value = true
-}
-
-const handleApproveConfirm = async () => {
-  if (!approveTarget.value) return
-
-  actionLoading.value = true
-
-  try {
-    await api.post(
-      `/admin/vendors/${approveTarget.value.store_id}/approve`
-    )
-
-    showApproveModal.value = false
-    showApplicationDialog.value = false
-
-    await loadDashboard()
-
-    $q.notify({
-      type: 'positive',
-      message: 'Vendor approved successfully.',
-      position: 'top-right'
-    })
-  } catch (error) {
-    console.error(error)
-
-    $q.notify({
-      type: 'negative',
-      message: 'Unable to approve vendor.',
-      position: 'top-right'
-    })
-  } finally {
-    actionLoading.value = false
-  }
-}
-
-const openRejectModal = row => {
-  rejectTarget.value = row
-  rejectionReason.value = ''
-  showRejectModal.value = true
-}
-
-const handleRejectConfirm = async () => {
-  if (
-    !rejectionReason.value ||
-    !rejectTarget.value
-  ) {
-    $q.notify({
-      type: 'warning',
-      message: 'Please provide a rejection reason.',
-      position: 'top-right'
-    })
-
-    return
-  }
-
-  actionLoading.value = true
-
-  try {
-    await api.post(
-      `/admin/vendors/${rejectTarget.value.store_id}/reject`,
-      {
-        rejection_reason:
-          rejectionReason.value
-      }
-    )
-
-    showRejectModal.value = false
-    showApplicationDialog.value = false
-
-    await loadDashboard()
-
-    $q.notify({
-      type: 'positive',
-      message: 'Vendor rejected successfully.',
-      position: 'top-right'
-    })
-  } catch (error) {
-    console.error(error)
-
-    $q.notify({
-      type: 'negative',
-      message: 'Unable to reject vendor.',
-      position: 'top-right'
-    })
-  } finally {
-    actionLoading.value = false
-  }
-}
-
-// ==========================================================
-// LIFECYCLE
-// ==========================================================
-
-onMounted(async () => {
-  const savedDarkMode =
-    localStorage.getItem('admin_dark_mode')
-
-  if (savedDarkMode === 'true') {
-    $q.dark.set(true)
-  }
-
-  updateDateTime()
-  updateChartThemes()
-
-  timer = setInterval(
-    updateDateTime,
-    1000
+// A decided application leaves Needs Attention, shows up in Recent Activity, and the counts follow.
+const onDecided = ({ storeId, status, reason }) => {
+  applications.value = applications.value.map(app =>
+    app.store_id === storeId
+      ? {
+          ...app,
+          status,
+          reviewed_at: new Date().toISOString(),
+          rejection_reason: reason || app.rejection_reason
+        }
+      : app
   )
-
-  await loadDashboard()
-})
-
-onUnmounted(() => {
-  if (timer) {
-    clearInterval(timer)
+  stats.value.pending_approvals = Math.max(
+    0,
+    (Number(stats.value.pending_approvals) || 0) - 1
+  )
+  if (status === 'approved') {
+    stats.value.total_vendors = (Number(stats.value.total_vendors) || 0) + 1
+    stats.value.total_users = (Number(stats.value.total_users) || 0) + 1
   }
+}
+
+onMounted(() => {
+  loadDashboard()
+  clockTimer = setInterval(() => {
+    now.value = new Date()
+  }, 1000)
 })
+
+onBeforeUnmount(() => clearInterval(clockTimer))
 </script>
 
 <style scoped>
-/* ==========================================================
-   GLOBAL PAGE LAYER & DYNAMIC THEMES
-========================================================== */
+/* CLOCK — the date and time in the banner's frosted glass. */
+.db-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 
-.admin-dashboard {
-  background: linear-gradient(
-    135deg,
-    #f0f4f8 0%,
-    #e2e8f0 100%
-  );
+  gap: 6px;
+  min-width: 170px;
+  padding: 16px 22px;
 
-  min-height: 100vh;
-  color: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--r-surface);
 
-  overflow-x: hidden;
+  background: rgba(255, 255, 255, 0.12);
 
-  transition:
-    background 0.4s ease,
-    color 0.4s ease;
-}
-
-.text-heading {
-  color: #0f172a;
-}
-
-.text-subtext {
-  color: #64748b;
-}
-
-.bg-slate-box {
-  background-color: #f1f5f9;
-  color: #1e293b;
-}
-
-.bg-red-badge {
-  background-color: #fee2e2;
-}
-
-.bg-blue-badge {
-  background-color: #dbeafe;
-}
-
-.bg-green-badge {
-  background-color: #dcfce7;
-}
-
-/* ==========================================================
-   DARK MODE
-========================================================== */
-
-.dark-mode-active {
-  background: linear-gradient(
-    135deg,
-    #090d16 0%,
-    #0f172a 100%
-  ) !important;
-
-  color: #f8fafc !important;
-}
-
-.dark-mode-active .text-heading {
-  color: #f8fafc !important;
-}
-
-.dark-mode-active .text-subtext {
-  color: #94a3b8 !important;
-}
-
-.dark-mode-active .bg-slate-box {
-  background-color: rgba(
-    255,
-    255,
-    255,
-    0.08
-  ) !important;
-
-  color: #f8fafc !important;
-}
-
-.dark-mode-active .bg-red-badge {
-  background-color: rgba(
-    185,
-    28,
-    28,
-    0.22
-  ) !important;
-}
-
-.dark-mode-active .bg-blue-badge {
-  background-color: rgba(
-    37,
-    99,
-    235,
-    0.22
-  ) !important;
-}
-
-.dark-mode-active .bg-green-badge {
-  background-color: rgba(
-    22,
-    163,
-    74,
-    0.22
-  ) !important;
-}
-
-.dark-mode-active .border-red-soft {
-  border-color: rgba(
-    239,
-    68,
-    68,
-    0.35
-  ) !important;
-}
-
-.dark-mode-active .border-blue-soft {
-  border-color: rgba(
-    59,
-    130,
-    246,
-    0.35
-  ) !important;
-}
-
-.dark-mode-active .border-green-soft {
-  border-color: rgba(
-    34,
-    197,
-    94,
-    0.35
-  ) !important;
-}
-
-.dark-mode-active .border-slate-soft {
-  border-color: rgba(
-    255,
-    255,
-    255,
-    0.12
-  ) !important;
-}
-
-.dark-mode-active .premium-glass-card {
-  background: rgba(
-    15,
-    23,
-    42,
-    0.78
-  ) !important;
-
-  border-color: rgba(
-    255,
-    255,
-    255,
-    0.09
-  ) !important;
-
-  box-shadow:
-    0 4px 20px -2px rgba(
-      0,
-      0,
-      0,
-      0.4
-    ),
-    inset 0 1px 1px rgba(
-      255,
-      255,
-      255,
-      0.05
-    ) !important;
-}
-
-.dark-mode-active .panel-header {
-  background: rgba(
-    30,
-    41,
-    59,
-    0.6
-  ) !important;
-
-  border-bottom-color: rgba(
-    255,
-    255,
-    255,
-    0.08
-  ) !important;
-}
-
-.dark-mode-active :deep(.custom-premium-table thead tr th) {
-  background: rgba(
-    30,
-    41,
-    59,
-    0.75
-  ) !important;
-
-  color: #94a3b8 !important;
-
-  border-bottom-color: rgba(
-    255,
-    255,
-    255,
-    0.08
-  ) !important;
-}
-
-.dark-mode-active :deep(.custom-premium-table tbody td) {
-  border-bottom-color: rgba(
-    255,
-    255,
-    255,
-    0.05
-  ) !important;
-}
-
-.dark-mode-active :deep(.custom-premium-table tbody tr:hover td) {
-  background-color: rgba(
-    255,
-    255,
-    255,
-    0.04
-  ) !important;
-}
-
-.dark-mode-active .store-mini-avatar {
-  background: rgba(
-    185,
-    28,
-    28,
-    0.25
-  ) !important;
-}
-
-.dark-mode-active .premium-chip {
-  background: rgba(
-    185,
-    28,
-    28,
-    0.25
-  ) !important;
-
-  border-color: rgba(
-    239,
-    68,
-    68,
-    0.4
-  ) !important;
-
-  color: #fca5a5 !important;
-}
-
-.dark-mode-active .empty-state-glass {
-  background: rgba(
-    15,
-    23,
-    42,
-    0.65
-  ) !important;
-}
-
-.dark-mode-active .empty-icon-shield {
-  background: rgba(
-    255,
-    255,
-    255,
-    0.06
-  ) !important;
-
-  border-color: rgba(
-    255,
-    255,
-    255,
-    0.12
-  ) !important;
-
-  color: #94a3b8 !important;
-}
-
-.dark-mode-active .bg-table-glass {
-  background: rgba(
-    15,
-    23,
-    42,
-    0.8
-  ) !important;
-}
-
-.dark-mode-active .btn-premium-outline {
-  background: transparent !important;
-
-  border-color: rgba(
-    239,
-    68,
-    68,
-    0.5
-  ) !important;
-
-  color: #fca5a5 !important;
-}
-
-.dark-mode-active .btn-premium-outline:hover {
-  background: rgba(
-    185,
-    28,
-    28,
-    0.2
-  ) !important;
-}
-
-.dark-mode-active .review-dialog-glass {
-  background: #0f172a !important;
-
-  border: 1px solid rgba(
-    255,
-    255,
-    255,
-    0.12
-  ) !important;
-
-  color: #f8fafc !important;
-}
-
-.dark-mode-active .dialog-actions-glass {
-  background: #1e293b !important;
-
-  border-top: 1px solid rgba(
-    255,
-    255,
-    255,
-    0.08
-  ) !important;
-}
-
-.dark-mode-active .image-frame-container {
-  background: #1e293b !important;
-
-  border-color: rgba(
-    255,
-    255,
-    255,
-    0.1
-  ) !important;
-}
-
-.dark-mode-active .map-container-box {
-  background: #1e293b !important;
-
-  border-color: rgba(
-    255,
-    255,
-    255,
-    0.1
-  ) !important;
-}
-
-.dark-mode-active .custom-glass-input :deep(.q-field__control) {
-  background: #1e293b !important;
-}
-
-.dark-mode-active .btn-outline-custom {
-  background: transparent !important;
-
-  border-color: rgba(
-    255,
-    255,
-    255,
-    0.2
-  ) !important;
-
-  color: #94a3b8 !important;
-}
-
-/* ==========================================================
-   BACKGROUND
-========================================================== */
-
-.ambient-mesh-bg {
-  position: fixed;
-  inset: 0;
-
-  background-image:
-    radial-gradient(
-      circle at 15% 10%,
-      rgba(
-        239,
-        68,
-        68,
-        0.08
-      ) 0%,
-      transparent 500px
-    ),
-    radial-gradient(
-      circle at 85% 80%,
-      rgba(
-        59,
-        130,
-        246,
-        0.08
-      ) 0%,
-      transparent 600px
-    );
-
-  z-index: -1;
-  pointer-events: none;
-}
-
-.enterprise-dot-pattern {
-  position: fixed;
-  inset: 0;
-
-  background-image:
-    radial-gradient(
-      #94a3b8 1.5px,
-      transparent 1.5px
-    );
-
-  background-size: 28px 28px;
-
-  opacity: 0.12;
-
-  z-index: -1;
-  pointer-events: none;
-}
-
-.dashboard-container {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 32px 24px;
-}
-
-.card-content-layer,
-.banner-content-layer {
-  position: relative;
-  z-index: 2;
-}
-
-/* ==========================================================
-   UTILITIES
-========================================================== */
-
-.tracking-widest {
-  letter-spacing: 0.1em;
-}
-
-.tracking-wider {
-  letter-spacing: 0.05em;
-}
-
-.tracking-wide {
-  letter-spacing: 0.04em;
-}
-
-.tracking-tight {
-  letter-spacing: -0.01em;
-}
-
-.letter-spacing-tight {
-  letter-spacing: -0.03em;
-}
-
-.line-height-tight {
-  line-height: 1.15;
-}
-
-.font-mono {
-  font-family:
-    'SFMono-Regular',
-    Consolas,
-    Menlo,
-    monospace;
-}
-
-.shadow-xs {
-  box-shadow:
-    0 1px 3px rgba(
-      0,
-      0,
-      0,
-      0.05
-    );
-}
-
-.shadow-soft {
-  box-shadow:
-    0 4px 20px -2px rgba(
-      0,
-      0,
-      0,
-      0.05
-    );
-}
-
-.shadow-premium {
-  box-shadow:
-    0 10px 30px -5px rgba(
-      0,
-      0,
-      0,
-      0.1
-    ),
-    0 4px 10px -5px rgba(
-      0,
-      0,
-      0,
-      0.04
-    );
-}
-
-/* ==========================================================
-   DYNAMIC TIME HEADER
-========================================================== */
-
-.welcome-banner {
-  border-radius: 20px;
-  position: relative;
-  overflow: hidden;
-
-  border: 1px solid rgba(
-    255,
-    255,
-    255,
-    0.1
-  );
-}
-
-.transition-theme {
-  transition:
-    background 2s ease-in-out;
-}
-
-.theme-morning {
-  background: linear-gradient(
-    135deg,
-    #1d4ed8 0%,
-    #0284c7 50%,
-    #38bdf8 100%
-  );
-}
-
-.theme-afternoon {
-  background: linear-gradient(
-    135deg,
-    #c2410c 0%,
-    #ea580c 50%,
-    #f97316 100%
-  );
-}
-
-.theme-evening {
-  background: linear-gradient(
-    135deg,
-    #090d16 0%,
-    #1e1b4b 60%,
-    #311042 100%
-  );
-}
-
-.theme-dark-banner {
-  background: linear-gradient(
-    135deg,
-    #0f172a 0%,
-    #1e1b4b 50%,
-    #881337 100%
-  ) !important;
-}
-
-.header-tag-pill {
-  background: rgba(
-    255,
-    255,
-    255,
-    0.12
-  );
-
-  border: 1px solid rgba(
-    255,
-    255,
-    255,
-    0.2
-  );
-
-  border-radius: 999px;
-
-  backdrop-filter: blur(8px);
-}
-
-.header-name-highlight {
   color: #ffffff;
 }
 
-.attention-badge {
-  background: rgba(
-    255,
-    255,
-    255,
-    0.15
-  );
+.db-clock-date {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 
-  border: 1px solid rgba(
-    255,
-    255,
-    255,
-    0.3
-  );
-
-  padding: 4px 12px;
-
-  border-radius: 100px;
-
-  backdrop-filter: blur(8px);
-
-  transition: all 0.3s ease;
+  color: rgba(255, 255, 255, 0.8);
 }
 
-.time-card-glass,
-.header-tool-btn {
-  background: rgba(
-    255,
-    255,
-    255,
-    0.1
-  );
-
-  border: 1px solid rgba(
-    255,
-    255,
-    255,
-    0.2
-  );
-
-  backdrop-filter: blur(16px);
-
-  border-radius: 12px;
-}
-
-.time-card-glass {
-  padding: 10px 20px;
-}
-
-.header-tool-btn {
-  transition:
-    all 0.4s
-    cubic-bezier(
-      0.25,
-      0.8,
-      0.25,
-      1
-    );
-}
-
-.hover-rotate:hover {
-  background: rgba(
-    255,
-    255,
-    255,
-    0.25
-  );
-
-  transform:
-    rotate(180deg)
-    scale(1.05);
-}
-
-/* ==========================================================
-   CARDS
-========================================================== */
-
-.premium-glass-card {
-  background: rgba(
-    255,
-    255,
-    255,
-    0.88
-  );
-
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-
-  border: 1px solid rgba(
-    255,
-    255,
-    255,
-    0.95
-  );
-
-  border-radius: 16px;
-
-  box-shadow:
-    0 4px 20px -2px rgba(
-      0,
-      0,
-      0,
-      0.03
-    ),
-    inset 0 1px 1px rgba(
-      255,
-      255,
-      255,
-      1
-    );
-
-  transition:
-    all 0.3s
-    cubic-bezier(
-      0.25,
-      0.8,
-      0.25,
-      1
-    );
-
-  position: relative;
-}
-
-.card-hover-lift {
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.card-hover-lift:hover {
-  transform: translateY(-3px);
-
-  box-shadow:
-    0 12px 28px -5px rgba(
-      15,
-      23,
-      42,
-      0.08
-    );
-}
-
-.hover-scale:hover {
-  transform: scale(1.02);
-}
-
-/* ==========================================================
-   WATERMARKS
-========================================================== */
-
-.metric-bg-watermark {
-  position: absolute;
-
-  right: 12px;
-  bottom: 6px;
-
-  font-size: 72px;
+.db-clock-time {
+  font-family: 'Poppins', 'Roboto', Arial, sans-serif;
+  font-size: 30px;
+  font-weight: 800;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
 
-  pointer-events: none;
+/* KEY NUMBERS — the vendor dashboard's KPI cards: white, a soft shadow, the label beside a tone tile, and a firmer edge on hover. */
+.db-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 
-  z-index: 1;
+  gap: var(--sp-gap);
+  margin-bottom: var(--sp-gap);
+}
+
+.db-kpi {
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+  min-width: 0;
+  padding: 20px;
+
+  font-family: inherit;
+  text-align: left;
+}
+
+.db-kpi--link {
+  cursor: pointer;
 
   transition:
-    transform 0.3s ease,
-    opacity 0.3s ease;
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
-.watermark-red {
-  color: #b91c1c;
-  opacity: 0.05;
+.db-kpi--link:hover {
+  border-color: var(--c-border-strong);
+  box-shadow: var(--sh-card-hover);
 }
 
-.watermark-blue {
-  color: #2563eb;
-  opacity: 0.05;
+.db-kpi--link:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
 }
 
-.watermark-green {
-  color: #16a34a;
-  opacity: 0.05;
+.db-kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
 }
 
-.watermark-slate {
-  color: #475569;
-  opacity: 0.05;
+.db-kpi-label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  color: var(--c-text-3);
 }
 
-.premium-glass-card:hover .metric-bg-watermark {
-  transform:
-    scale(1.06)
-    rotate(-3deg);
+.db-kpi-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 
-  opacity: 0.09;
+  width: 40px;
+  height: 40px;
+
+  border-radius: var(--r-surface);
 }
 
-.border-accent-blue {
-  border-left: 4px solid #2563eb !important;
+.db-kpi-figures {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+
+  gap: 4px 10px;
 }
 
-.border-accent-green {
-  border-left: 4px solid #16a34a !important;
+.db-kpi-value {
+  font-size: var(--fs-4xl);
+  font-weight: 700;
+  line-height: 1.1;
+
+  color: var(--c-text);
 }
 
-.border-accent-slate {
-  border-left: 4px solid #475569 !important;
+/* The pending count reads in brand red, since it is the one that asks for action. */
+.db-kpi--alert .db-kpi-value {
+  color: var(--c-brand);
 }
 
-/* ==========================================================
-   HERO METRIC
-========================================================== */
+.db-kpi-delta {
+  display: inline-flex;
+  align-items: center;
 
-.hero-card {
-  border: 1.5px solid rgba(
-    254,
-    202,
-    202,
-    0.8
-  ) !important;
+  gap: 2px;
+  padding: 2px 8px;
+
+  border-radius: var(--r-pill);
+
+  background: var(--c-success-wash);
+
+  font-size: var(--fs-xs);
+  font-weight: 700;
+
+  color: var(--c-success);
+}
+
+.db-kpi-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 8px;
+  margin-top: auto;
+}
+
+.db-kpi-note {
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+
+  color: var(--c-subtle);
+}
+
+.db-kpi-go {
+  flex-shrink: 0;
+
+  color: var(--c-border-strong);
 
   transition:
-    transform 0.3s
-      cubic-bezier(
-        0.25,
-        0.8,
-        0.25,
-        1
-      ),
-    box-shadow 0.3s ease;
+    color 0.15s,
+    transform 0.2s;
 }
 
-.hero-card:hover {
-  transform: translateY(-3px);
+.db-kpi--link:hover .db-kpi-go {
+  color: var(--c-brand);
 
-  box-shadow:
-    0 20px 40px -10px rgba(
-      239,
-      68,
-      68,
-      0.2
-    );
-
-  border-color: rgba(
-    254,
-    202,
-    202,
-    1
-  ) !important;
-}
-
-.interactive-hue-layer {
-  position: absolute;
-  inset: 0;
-
-  pointer-events: none;
-
-  z-index: 1;
-
-  transition:
-    background 0.15s ease-out;
-
-  background: radial-gradient(
-    circle 350px at
-      var(--mouse-x)
-      var(--mouse-y),
-    rgba(
-      239,
-      68,
-      68,
-      0.05
-    ),
-    transparent 70%
-  );
-}
-
-.hero-card:hover .interactive-hue-layer {
-  background: radial-gradient(
-    circle 400px at
-      var(--mouse-x)
-      var(--mouse-y),
-    rgba(
-      239,
-      68,
-      68,
-      0.1
-    ),
-    transparent 70%
-  );
-}
-
-.hero-accent-line {
-  position: absolute;
-
-  top: 0;
-  left: 20px;
-  right: 20px;
-
-  height: 3px;
-
-  background: linear-gradient(
-    90deg,
-    #ef4444 0%,
-    transparent 100%
-  );
-
-  border-radius:
-    0 0 3px 3px;
-
-  z-index: 2;
-}
-
-.hero-text-content {
-  transition:
-    transform 0.2s ease;
-}
-
-.hero-card:hover .hero-text-content {
   transform: translateX(3px);
 }
 
-.hero-number {
-  transition:
-    color 0.2s ease;
+/* PANELS — Needs Attention and the chart side by side, the red card and the ratio down the right, Recent Activity along the bottom. */
+.db-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.2fr) minmax(0, 0.9fr);
+  grid-template-areas:
+    'attention overview side'
+    'activity activity side';
+
+  gap: var(--sp-gap);
+  align-items: start;
 }
 
-.hero-card:hover .hero-number {
-  color: #b91c1c !important;
+.db-area-attention {
+  grid-area: attention;
 }
 
-/* ==========================================================
-   GLOWS & ICON STAMPS
-========================================================== */
-
-.card-glow-blue {
-  position: absolute;
-
-  top: 0;
-  left: 0;
-
-  width: 140px;
-  height: 140px;
-
-  background: radial-gradient(
-    circle,
-    rgba(
-      59,
-      130,
-      246,
-      0.05
-    ) 0%,
-    transparent 70%
-  );
-
-  pointer-events: none;
-  z-index: 1;
+.db-area-overview {
+  grid-area: overview;
 }
 
-.card-glow-green {
-  position: absolute;
+.db-area-side {
+  grid-area: side;
 
-  top: 0;
-  left: 0;
+  display: flex;
+  flex-direction: column;
 
-  width: 140px;
-  height: 140px;
-
-  background: radial-gradient(
-    circle,
-    rgba(
-      34,
-      197,
-      94,
-      0.05
-    ) 0%,
-    transparent 70%
-  );
-
-  pointer-events: none;
-  z-index: 1;
+  gap: var(--sp-gap);
 }
 
-.card-glow-slate {
-  position: absolute;
-
-  bottom: 0;
-  right: 0;
-
-  width: 200px;
-  height: 200px;
-
-  background: radial-gradient(
-    circle,
-    rgba(
-      15,
-      23,
-      42,
-      0.03
-    ) 0%,
-    transparent 70%
-  );
-
-  pointer-events: none;
-  z-index: 1;
+.db-area-activity {
+  grid-area: activity;
 }
 
-.icon-badge-box {
-  width: 48px;
-  height: 48px;
-
-  border-radius: 12px;
+.db-area-attention,
+.db-area-overview {
+  align-self: stretch;
 }
 
-.icon-badge-box-sm {
-  width: 44px;
-  height: 44px;
-
-  border-radius: 10px;
+.db-panel {
+  min-width: 0;
+  padding-bottom: 8px;
 }
 
-.border-red-soft {
-  border: 1.5px solid #fee2e2;
+.db-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+
+  gap: 10px;
+  padding: 18px 20px 12px;
 }
 
-.border-blue-soft {
-  border: 1.5px solid #dbeafe;
-}
+.db-panel-title {
+  display: flex;
+  align-items: center;
 
-.border-green-soft {
-  border: 1.5px solid #dcfce7;
-}
+  gap: 10px;
+  margin: 0;
 
-.border-slate-soft {
-  border: 1.5px solid #e2e8f0;
-}
-
-/* ==========================================================
-   REGISTRATION TREND CHART
-========================================================== */
-
-.registration-chart-card {
-  min-height: 350px;
-}
-
-.legend-badge {
-  padding: 5px 9px;
-
-  border-radius: 7px;
-
+  font-size: var(--fs-lg);
   font-weight: 700;
-  font-size: 11px;
+  line-height: 1.3;
 
+  color: var(--c-text);
+}
+
+.db-panel-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+
+  border-radius: var(--r-control);
+}
+
+.db-link {
   display: inline-flex;
   align-items: center;
+
+  gap: 4px;
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-decoration: none;
+
+  color: var(--c-brand);
+}
+
+.db-link .q-icon {
+  transition: transform 0.2s;
+}
+
+.db-link:hover .q-icon {
+  transform: translateX(3px);
+}
+
+/* ROWS — a small column heading line, then rows that open what they describe. */
+.db-cols {
+  padding: 8px 20px;
+
+  border-top: 1px solid var(--c-hairline);
+  border-bottom: 1px solid var(--c-hairline);
+
+  background: var(--c-surface-2);
+
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+
+  color: var(--c-muted);
+}
+
+.db-att-grid {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto 20px;
+  align-items: center;
+
+  gap: 12px;
+}
+
+.db-act-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1.3fr) 20px;
+  align-items: center;
+
+  gap: 12px;
+}
+
+.db-row {
+  width: 100%;
+  padding: 12px 20px;
+
+  border: none;
+  border-bottom: 1px solid var(--c-hairline);
+
+  background: transparent;
+
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+
+  color: var(--c-text-2);
+
+  cursor: pointer;
+
+  transition: background-color 0.15s;
+}
+
+.db-row:last-child {
+  border-bottom: none;
+}
+
+.db-row:hover {
+  background: var(--c-surface-2);
+}
+
+/* Focus shows as a soft bar down the left edge rather than a box, since it also lands here when a dialog closes. */
+.db-row:focus-visible {
+  outline: none;
+
+  background: var(--c-surface-2);
+  box-shadow: inset 3px 0 0 var(--c-brand);
+}
+
+.db-row-arrow {
+  color: var(--c-border-strong);
+
+  transition:
+    color 0.15s,
+    transform 0.2s;
+}
+
+.db-row:hover .db-row-arrow {
+  color: var(--c-brand);
+
+  transform: translateX(2px);
+}
+
+.db-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 36px;
+  height: 36px;
+
+  border-radius: var(--r-control);
+}
+
+.db-att-type {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+  min-width: 0;
+}
+
+.db-att-type-label {
+  font-weight: 600;
+
+  color: var(--c-brand);
+}
+
+.db-two-lines {
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+  min-width: 0;
+}
+
+.db-strong {
+  overflow: hidden;
+
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: var(--c-text);
+}
+
+.db-soft {
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
+}
+
+.db-att-date {
+  font-size: var(--fs-xs);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.db-ellipsis {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.db-rows-loading {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Placeholder rows shaped like the real ones: the same columns, a tile, two lines and the date. */
+.db-skel-row {
+  padding: 12px 20px;
+
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.db-skel-row:last-child {
+  border-bottom: none;
+}
+
+.db-skel-tile {
+  border-radius: var(--r-control);
+}
+
+.db-skel-end {
+  align-items: flex-end;
+}
+
+/* The donut's placeholder is a ring, not a disc. */
+.db-skel-ring {
+  position: relative;
+
+  width: 150px;
+  height: 150px;
+}
+
+.db-skel-hole {
+  position: absolute;
+  inset: 26px;
+  z-index: 2;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+}
+
+.db-empty {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+  padding: 24px 20px;
+
+  font-size: var(--fs-sm);
+
+  color: var(--c-muted);
+}
+
+.db-act-time {
+  display: flex;
+  flex-direction: column;
+
+  font-weight: 600;
+  white-space: nowrap;
+
+  color: var(--c-text);
+}
+
+.db-act-text {
+  color: var(--c-text-2);
+}
+
+.db-act-user {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+  min-width: 0;
+}
+
+.db-act-name {
+  overflow: hidden;
+
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: var(--c-text);
+}
+
+/* Each store or person sits in a small tile in its colour: red for stores, as in Needs Attention, and green for consumers, as in the charts. */
+.db-act-user .q-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 28px;
+  height: 28px;
+
+  border-radius: var(--r-control);
+}
+
+.db-act-icon--store {
+  background: var(--c-brand-tint);
+
+  color: var(--c-brand);
+}
+
+.db-act-icon--person {
+  background: var(--c-success-tint);
+
+  color: var(--c-success);
+}
+
+/* PLATFORM OVERVIEW */
+.db-legend-inline {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 14px;
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  color: var(--c-text-2);
+}
+
+.db-legend-inline > span {
+  display: inline-flex;
+  align-items: center;
+
   gap: 6px;
 }
 
-.legend-vendor {
-  background: rgba(
-    37,
-    99,
-    235,
-    0.12
-  );
+.db-dot {
+  flex-shrink: 0;
 
-  color: #2563eb;
-}
-
-.legend-consumer {
-  background: rgba(
-    22,
-    163,
-    74,
-    0.12
-  );
-
-  color: #16a34a;
-}
-
-.legend-dot {
-  width: 7px;
-  height: 7px;
+  width: 9px;
+  height: 9px;
 
   border-radius: 50%;
-
-  display: inline-block;
 }
 
-.vendor-dot {
-  background: #2563eb;
+.db-chart {
+  padding: 0 12px 4px;
 }
 
-.consumer-dot {
-  background: #16a34a;
+/* ECOSYSTEM RATIO — the donut with both shares in its middle, and the counts beside it. */
+.db-ratio-body {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+
+  gap: 8px 16px;
+  padding: 0 16px 12px;
 }
 
-.bg-chart-overlay {
-  background: rgba(
-    255,
-    255,
-    255,
-    0.6
-  );
+.db-ratio-chart {
+  position: relative;
 
-  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 170px;
+  height: 170px;
 }
 
-.dark-mode-active .bg-chart-overlay {
-  background: rgba(
-    15,
-    23,
-    42,
-    0.65
-  );
-}
-
-/* ==========================================================
-   TABLE
-========================================================== */
-
-.table-glass-container {
-  overflow: hidden;
-}
-
-.panel-header {
-  background: rgba(
-    248,
-    250,
-    252,
-    0.8
-  );
-
-  border-bottom: 1.5px solid #e2e8f0;
-}
-
-.header-accent-red {
-  width: 4px;
-  height: 24px;
-
-  background: #b91c1c;
-
-  border-radius: 4px;
-}
-
-.btn-view-directory {
-  border-radius: 8px !important;
-
-  padding: 8px 18px !important;
-
-  font-size: 12px;
-
-  white-space: nowrap !important;
-
-  flex-shrink: 0 !important;
-
-  min-width: 140px;
-
-  box-shadow:
-    0 2px 8px rgba(
-      185,
-      28,
-      28,
-      0.25
-    );
-
-  transition:
-    all 0.2s ease;
-}
-
-.btn-view-directory:hover {
-  background: #991b1b !important;
-
-  transform: translateY(-1px);
-}
-
-.custom-premium-table :deep(thead tr th) {
-  background: rgba(
-    248,
-    250,
-    252,
-    0.85
-  );
-
-  font-weight: 800;
-
-  color: #64748b;
-
-  text-transform: uppercase;
-
-  font-size: 11px;
-
-  letter-spacing: 0.05em;
-
-  padding: 14px 18px;
-
-  border-bottom: 1.5px solid #e2e8f0;
-}
-
-.custom-premium-table :deep(tbody td) {
-  padding: 14px 18px;
-
-  border-bottom: 1px solid rgba(
-    226,
-    232,
-    240,
-    0.6
-  );
-
-  transition:
-    background 0.2s ease;
-}
-
-.custom-premium-table :deep(tbody tr:hover td) {
-  background-color: rgba(
-    255,
-    255,
-    255,
-    0.95
-  );
-}
-
-.store-mini-avatar {
-  width: 30px;
-  height: 30px;
-
-  border-radius: 8px;
-
-  background: #fee2e2;
-}
-
-.premium-chip {
-  background: rgba(
-    254,
-    226,
-    226,
-    0.6
-  ) !important;
-
-  border: 1px solid #fecaca;
-}
-
-.empty-state-glass {
-  background: rgba(
-    248,
-    250,
-    252,
-    0.6
-  );
-}
-
-.empty-icon-shield {
-  width: 58px;
-  height: 58px;
-
-  border-radius: 50%;
-
-  background: #ffffff;
-
-  border: 1.5px solid #e2e8f0;
-}
-
-.bg-table-glass {
-  background: rgba(
-    255,
-    255,
-    255,
-    0.7
-  );
-
-  backdrop-filter: blur(4px);
-}
-
-/* ==========================================================
-   QUICK ACTIONS
-========================================================== */
-
-.action-card-glow {
+.db-ratio-center {
   position: absolute;
+  inset: 0;
 
-  top: 50%;
-  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 
-  width: 0;
-  height: 0;
-
-  background: radial-gradient(
-    circle,
-    rgba(
-      239,
-      68,
-      68,
-      0.08
-    ) 0%,
-    transparent 70%
-  );
-
-  transform:
-    translate(
-      -50%,
-      -50%
-    );
-
-  transition:
-    width 0.3s ease,
-    height 0.3s ease;
-
-  border-radius: 50%;
-
-  z-index: 1;
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  line-height: 1.35;
 
   pointer-events: none;
 }
 
-.hover-lift-action:hover {
-  transform: translateY(-3px);
+.db-ratio-legend {
+  display: flex;
+  flex-direction: column;
 
-  box-shadow:
-    0 10px 24px -5px rgba(
-      0,
-      0,
-      0,
-      0.06
-    );
+  gap: 10px;
+  margin: 0;
+  padding: 0;
 
-  border-color: rgba(
-    254,
-    202,
-    202,
-    0.8
-  );
+  list-style: none;
 }
 
-.hover-lift-action:hover .action-card-glow {
-  width: 250px;
-  height: 250px;
+.db-ratio-legend li {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  font-size: var(--fs-sm);
 }
 
-.hover-lift-action:hover .action-arrow {
-  transform: translateX(4px);
+.db-ratio-label {
+  min-width: 76px;
 
-  color: #b91c1c !important;
+  font-weight: 600;
+
+  color: var(--c-text-2);
 }
 
-.action-icon-stamp {
-  width: 44px;
-  height: 44px;
-
-  border-radius: 10px;
-
-  flex-shrink: 0;
-}
-
-.action-arrow {
-  transition:
-    transform 0.2s
-      cubic-bezier(
-        0.25,
-        0.8,
-        0.25,
-        1
-      ),
-    color 0.2s ease;
-}
-
-.btn-premium-outline {
-  border-radius: 8px !important;
-
+.db-ratio-value {
   font-weight: 700;
 
-  background: #ffffff !important;
-
-  border: 1px solid currentColor;
-
-  transition:
-    all 0.2s ease;
+  color: var(--c-text);
 }
 
-.action-btn-hover:hover {
-  background: #fef2f2 !important;
-
-  color: #991b1b !important;
-}
-
-/* ==========================================================
-   REVIEW DIALOG
-========================================================== */
-
-.review-dialog-glass {
-  width: 500px;
-  max-width: 95vw;
-
-  border-radius: 16px !important;
-
-  background: #ffffff;
-
-  border: 1px solid rgba(
-    255,
-    255,
-    255,
-    0.8
-  );
-
-  box-shadow:
-    0 20px 40px rgba(
-      0,
-      0,
-      0,
-      0.12
-    );
-
-  overflow: hidden;
-}
-
-.vendor-info-dialog {
-  width: 620px;
-}
-
-.info-store-name {
-  font-size: 22px;
-
-  font-weight: 800;
-
-  line-height: 1.2;
-}
-
-.info-owner-name {
-  font-size: 14px;
-}
-
-.image-frame-container {
-  border-radius: 8px;
-
-  padding: 4px;
-
-  background: #ffffff;
-
-  border: 1px solid #e2e8f0;
-}
-
-.map-container-box {
-  border-radius: 10px;
-
-  padding: 6px;
-
-  background: #f8fafc;
-
-  border: 1px solid #e2e8f0;
-}
-
-.custom-glass-input :deep(.q-field__control) {
-  background: #f8fafc;
-
-  border-radius: 8px;
-}
-
-.btn-approve-custom {
-  border-radius: 8px !important;
-
-  font-weight: 700;
-
-  background: #10b981 !important;
-
-  transition:
-    all 0.2s ease;
-}
-
-.btn-approve-custom:hover {
-  background: #059669 !important;
-
-  transform: translateY(-1.5px);
-}
-
-.btn-reject-custom {
-  border-radius: 8px !important;
-
-  font-weight: 700;
-
-  transition:
-    all 0.2s ease;
-}
-
-.btn-reject-custom:hover {
-  background: #fef2f2 !important;
-
-  color: #991b1b !important;
-}
-
-.btn-outline-custom {
-  border-radius: 8px !important;
-
-  font-weight: 700;
-
-  background: #ffffff !important;
-
-  border: 1px solid #e2e8f0;
-
-  transition:
-    all 0.2s ease;
-}
-
-.btn-outline-custom:hover {
-  background: #f8fafc !important;
-}
-
-.btn-reject-confirm {
-  border-radius: 8px !important;
-
-  font-weight: 700;
-}
-
-.modal-stamp-disc {
-  width: 56px;
-  height: 56px;
-
-  border-radius: 50%;
-
-  border: 1.5px solid currentColor;
-}
-
-/* ==========================================================
-   PULSE
-========================================================== */
-
-.pulse-dot-white {
-  width: 6px;
-  height: 6px;
-
-  background-color: #ffffff;
-
-  border-radius: 50%;
-
-  animation:
-    pulse-white 1.5s infinite;
-}
-
-@keyframes pulse-white {
-  0% {
-    box-shadow:
-      0 0 0 0 rgba(
-        255,
-        255,
-        255,
-        0.8
-      );
-  }
-
-  100% {
-    box-shadow:
-      0 0 0 6px rgba(
-        255,
-        255,
-        255,
-        0
-      );
+/* Narrower screens: two cards to a row, and the panels in two columns, then one. */
+@media (max-width: 1399px) {
+  .db-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'attention overview'
+      'activity side';
   }
 }
 
-/* ==========================================================
-   RESPONSIVE
-========================================================== */
-
-@media (max-width: 1024px) {
-  .dashboard-container {
-    padding: 24px 16px;
+@media (max-width: 1279px) {
+  .db-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 767px) {
-  .dashboard-container {
-    padding: 16px 12px;
+@media (max-width: 1023px) {
+  .db-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'attention'
+      'overview'
+      'side'
+      'activity';
   }
 
-  .welcome-banner {
-    flex-direction: column;
+  .db-area-side {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
 
-    align-items: flex-start;
+@media (max-width: 600px) {
+  .db-clock {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
 
-    padding: 20px;
+    min-width: 0;
+    padding: 12px 16px;
   }
 
-  .time-card-glass {
-    margin-top: 14px;
+  .db-clock-time {
+    font-size: 22px;
   }
 
-  .registration-chart-card {
-    min-height: 330px;
+  .db-kpis {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .legend-badge {
-    padding: 4px 7px;
-    font-size: 10px;
+  .db-kpi-value {
+    font-size: 30px;
+  }
+
+  .db-panel-head {
+    padding: 16px 16px 10px;
+  }
+
+  /* Phones drop the column headings and fold each row into the icon, the details and the arrow. */
+  .db-cols {
+    display: none;
+  }
+
+  .db-row {
+    padding: 12px 16px;
+  }
+
+  .db-act-grid {
+    grid-template-columns: minmax(0, 1fr) 20px;
+    grid-template-areas:
+      'text arrow'
+      'user arrow'
+      'time arrow';
+
+    gap: 2px 12px;
+  }
+
+  .db-act-text {
+    grid-area: text;
+
+    font-weight: 600;
+
+    color: var(--c-text);
+  }
+
+  .db-act-user {
+    grid-area: user;
+  }
+
+  .db-act-time {
+    grid-area: time;
+    flex-direction: row;
+
+    gap: 6px;
+
+    font-size: var(--fs-xs);
+    font-weight: 400;
+
+    color: var(--c-muted);
+  }
+
+  .db-activity-row .db-row-arrow {
+    grid-area: arrow;
   }
 }
 </style>

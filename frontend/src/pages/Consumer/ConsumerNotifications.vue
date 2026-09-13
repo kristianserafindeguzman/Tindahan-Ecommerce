@@ -87,13 +87,13 @@ const markingAll = ref(false)
 
 const unreadCount = computed(() => notifications.value.filter((n) => !n.is_read).length)
 
-/* Notifications have no status field, so the stage is matched on keywords and shown with the same icons as the order tracker. */
+/* Notifications have no status field, so the stage is matched on keywords and shown with the order tracker's icon in the colours of that status's pill. */
 const NOTIF_STAGES = [
-  { test: /cancel|reject|fail/, icon: 'o_cancel', tone: 'danger' },
-  { test: /picked up|collected|complete/, icon: 'o_task_alt', tone: 'success' },
-  { test: /ready/, icon: 'o_storefront', tone: 'success' },
-  { test: /prepar|process/, icon: 'o_inventory_2', tone: 'active' },
-  { test: /placed|order received|confirmed/, icon: 'o_shopping_cart', tone: 'brand' }
+  { test: /cancel|reject|fail/, icon: 'o_cancel', tone: 'cancelled' },
+  { test: /picked up|collected|complete/, icon: 'o_task_alt', tone: 'done' },
+  { test: /ready/, icon: 'o_storefront', tone: 'ready' },
+  { test: /prepar|process/, icon: 'o_inventory_2', tone: 'preparing' },
+  { test: /placed|order received|confirmed/, icon: 'o_shopping_cart', tone: 'placed' }
 ]
 
 const DEFAULT_STAGE = { icon: 'o_notifications', tone: 'brand' }
@@ -284,13 +284,11 @@ onMounted(fetchNotifications)
   background: var(--c-brand-tint);
 }
 
-/* These two discs share the unread ground's hue, so they step a shade deeper to stay visible against it. */
-.notif-row--unread .notif-icon--brand {
-  background: linear-gradient(145deg, var(--c-brand-tint-2) 0%, var(--c-brand-tint-3) 100%);
-}
-
-.notif-row--unread .notif-icon--danger {
-  background: var(--c-danger-tint-2);
+/* Unread ones fill their disc with the status colour and a soft ring of its pill tint, so the newest news carries the emphasis. */
+.notif-row--unread .notif-icon {
+  background: var(--tone);
+  color: #ffffff;
+  box-shadow: 0 0 0 4px var(--tone-bg);
 }
 
 .notif-icon {
@@ -303,26 +301,40 @@ onMounted(fetchNotifications)
   height: 40px;
 
   border-radius: var(--r-xl);
+
+  background: var(--tone-bg);
+  color: var(--tone);
+}
+
+/* Each stage wears its status pill's colours: blue placed, amber preparing, purple ready, green picked up, red cancelled; anything else stays brand red. */
+.notif-icon--placed {
+  --tone: var(--st-placed);
+  --tone-bg: var(--st-placed-bg);
+}
+
+.notif-icon--preparing {
+  --tone: var(--st-preparing);
+  --tone-bg: var(--st-preparing-bg);
+}
+
+.notif-icon--ready {
+  --tone: var(--st-ready);
+  --tone-bg: var(--st-ready-bg);
+}
+
+.notif-icon--done {
+  --tone: var(--st-done);
+  --tone-bg: var(--st-done-bg);
+}
+
+.notif-icon--cancelled {
+  --tone: var(--st-cancelled);
+  --tone-bg: var(--st-cancelled-bg);
 }
 
 .notif-icon--brand {
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
-  color: var(--c-brand);
-}
-
-.notif-icon--success {
-  background: var(--c-success-tint);
-  color: var(--c-success);
-}
-
-.notif-icon--active {
-  background: var(--c-status-active-tint);
-  color: var(--c-status-active);
-}
-
-.notif-icon--danger {
-  background: var(--c-danger-tint);
-  color: var(--c-danger);
+  --tone: var(--c-brand);
+  --tone-bg: var(--c-brand-tint);
 }
 
 .notif-row-body {

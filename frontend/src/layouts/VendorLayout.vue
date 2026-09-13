@@ -477,13 +477,24 @@ const handleLogout = () => logout()
   margin-top: 18px;
 }
 
+/* Each heading is followed by a thin rule, so the groups read as sections, as on the admin sidebar. */
 .sidebar-category-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 0 12px 6px;
   font-size: 10px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.55);
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.sidebar-category-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .sidebar-group-list {
