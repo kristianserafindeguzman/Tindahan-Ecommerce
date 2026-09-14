@@ -113,6 +113,27 @@
 
         <div class="col-12">
 
+          <!-- ================= PREFERENCES ================= -->
+          <q-card flat bordered tag="section" class="profile-card q-mb-lg" aria-labelledby="preferences-title">
+            <q-card-section>
+              <div class="card-header">
+                <div>
+                  <h2 id="preferences-title" class="section-title preferences-title">{{ t('Preferences') }}</h2>
+                  <div class="section-subtitle">{{ t('Manage your shopping preferences.') }}</div>
+                </div>
+              </div>
+
+              <div class="info-row info-row-last preferences-row">
+                <div class="info-icon"><q-icon name="o_language" size="18px" /></div>
+                <div class="info-body">
+                  <div class="info-label preferences-label">{{ t('Language') }}</div>
+                  <div class="section-subtitle">{{ t('Choose the language used across the site.') }}</div>
+                </div>
+                <LanguageSwitcher settings class="preferences-language" />
+              </div>
+            </q-card-section>
+          </q-card>
+
           <!-- ================= SECURITY ================= -->
           <q-card flat bordered class="profile-card q-mb-lg">
             <q-card-section>
@@ -530,6 +551,7 @@ import { api } from '@/boot/axios'
 import { useAuth } from '@/composables/useAuth'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
+import LanguageSwitcher from '@/components/consumer/LanguageSwitcher.vue'
 import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 import BirthdayInput from '@/components/shared/BirthdayInput.vue'
 import { formatBirthday } from '@/utils/birthday'
@@ -1447,6 +1469,66 @@ const goHomeAfterDelete = () => {
 
 .info-value-row .info-value {
   margin-top: 0;
+}
+
+.preferences-title {
+  margin: 0;
+}
+
+.preferences-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  margin: 0;
+  padding: 12px 0 0;
+}
+
+.preferences-row:hover {
+  background: transparent;
+}
+
+.preferences-label {
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.preferences-language {
+  width: 240px;
+  min-width: 0;
+}
+
+.profile-container .preferences-language :deep(.q-btn) {
+  border-radius: var(--r-sm);
+}
+
+@media (max-width: 1023px) {
+  .preferences-row {
+    grid-template-columns: 44px minmax(0, 1fr);
+    row-gap: 16px;
+  }
+
+  .preferences-language {
+    grid-column: 2;
+    width: 100%;
+    max-width: 320px;
+  }
+}
+
+@media (max-width: 600px) {
+  .preferences-row {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px 0 0;
+  }
+
+  .preferences-language {
+    grid-column: 1 / -1;
+    max-width: none;
+  }
+
+  .profile-container .preferences-language :deep(.q-btn) {
+    min-height: 44px;
+  }
 }
 
 /* PROFILE PHOTO */

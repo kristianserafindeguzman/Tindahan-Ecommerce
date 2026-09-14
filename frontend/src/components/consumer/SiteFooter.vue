@@ -13,10 +13,6 @@
     </div>
 
     <div class="footer-bottom">
-      <div v-if="!isLoggedIn && !$q.screen.lt.md" class="footer-language">
-        <span class="footer-language-label">{{ t('Language') }}</span>
-        <LanguageSwitcher />
-      </div>
       <p>&copy; {{ currentYear }} {{ t('Tindahan App. All rights reserved.') }}</p>
     </div>
 
@@ -28,17 +24,13 @@
 
 <script setup>
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
-import LanguageSwitcher from '@/components/consumer/LanguageSwitcher.vue'
 
 import { ref, computed } from 'vue'
-import { useQuasar } from 'quasar'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
 
 const { t } = useConsumerLanguage()
-const $q = useQuasar()
-const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
 const showTerms = ref(false)
 const showPrivacy = ref(false)
@@ -109,27 +101,11 @@ const currentYear = computed(() => new Date().getFullYear())
 .footer-bottom {
   border-top: 1px solid var(--c-surface);
 
-  padding: 14px 24px;
-}
-
-.footer-language {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.footer-language-label {
-  font-size: var(--fs-xs);
-  font-weight: 500;
-  color: var(--c-muted);
+  padding: 10px 24px;
 }
 
 .footer-bottom p {
   max-width: 1200px;
-
   margin: 0 auto;
 
   font-size: var(--fs-xs);

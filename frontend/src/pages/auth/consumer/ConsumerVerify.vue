@@ -1,5 +1,6 @@
 <template>
   <q-page class="login-page">
+    <AuthLanguageSwitcher />
     <div class="login-card">
 
       <!-- LEFT BRANDING PANEL -->
@@ -21,10 +22,10 @@
         <div class="login-content">
 
           <template v-if="hasPhone">
-            <h1>Verify your account</h1>
+            <h1>{{ t('Verify your account') }}</h1>
 
             <p class="subtitle">
-              We sent a 6-digit verification code to <strong>{{ displayPhone }}</strong>.
+              {{ t('We sent a 6-digit verification code to') }} <strong>{{ displayPhone }}</strong>.
             </p>
 
             <!-- OTP INPUT BOXES -->
@@ -37,7 +38,7 @@
                 type="text"
                 inputmode="numeric"
                 :autocomplete="index === 0 ? 'one-time-code' : 'off'"
-                :aria-label="`Digit ${index + 1} of 6`"
+                :aria-label="t('Digit {number} of 6', { number: index + 1 })"
                 @focus="$event.target.select()"
                 class="otp-box"
                 :class="{ 'otp-error': otpError, 'otp-success': otpVerified }"
@@ -50,12 +51,12 @@
 
             <!-- OTP ERROR -->
             <div v-if="otpError" class="error-message">
-              {{ otpError }}
+              {{ t(otpError) }}
             </div>
 
             <!-- RESEND -->
             <div class="resend-section">
-              <span>Didn't receive a code?</span>
+              <span>{{ t('Didn\'t receive a code?') }}</span>
 
               <button
                 type="button"
@@ -65,15 +66,15 @@
                 @click="resendCode"
               >
                 {{ timer > 0
-                  ? `Resend in ${formattedTimer}`
-                  : 'Resend Code'
+                  ? t('Resend in {time}', { time: formattedTimer })
+                  : t('Resend Code')
                 }}
               </button>
             </div>
 
             <!-- VERIFY BUTTON -->
             <q-btn
-              label="Verify"
+              :label="t('Verify')"
               no-caps
               unelevated
               class="login-button full-width"
@@ -89,14 +90,14 @@
               <q-icon name="o_sms_failed" size="32px" />
             </div>
 
-            <h1>We don't know which number to verify</h1>
+            <h1>{{ t('We don\'t know which number to verify') }}</h1>
 
             <p class="subtitle">
-              Open this page right after signing up, or sign up again with the same details and we'll text you a new code.
+              {{ t('Open this page right after signing up, or sign up again with the same details and we\'ll text you a new code.') }}
             </p>
 
             <q-btn
-              label="Log in"
+              :label="t('Log in')"
               no-caps
               unelevated
               class="login-button full-width"
@@ -104,7 +105,7 @@
             />
 
             <button type="button" class="text-button secondary-link" @click="router.push('/consumer/register')">
-              Create an account
+              {{ t('Create an account') }}
             </button>
           </div>
 
@@ -112,10 +113,12 @@
 
           <!-- TERMS -->
           <p class="terms">
-            By continuing, you agree to our
-            <a href="#" @click.prevent="showTerms = true">Terms and Conditions</a>
-            and
-            <a href="#" @click.prevent="showPrivacy = true">Privacy Policy</a>.
+            <span class="terms-intro">{{ t('By continuing, you agree to our') }}</span>
+            <span class="terms-links">
+              <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
+              {{ t('and') }}
+              <span class="terms-policy"><a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.</span>
+            </span>
           </p>
 
         </div>
@@ -130,11 +133,15 @@
 </template>
 
 <script setup>
+import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import { api } from '@/boot/axios'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 const route = useRoute()
@@ -148,7 +155,7 @@ const displayPhone = computed(() => {
   if (phoneNumber.length >= 10) {
     return phoneNumber.slice(0, 4) + '***' + phoneNumber.slice(-4)
   }
-  return phoneNumber || 'your mobile number'
+  return phoneNumber || t('your mobile number')
 })
 
 // OTP state
@@ -321,6 +328,7 @@ const resendCode = async () => {
 /* PAGE */
 
 .login-page {
+  position: relative;
   min-height: 100vh;
   width: 100%;
   box-sizing: border-box;
@@ -642,9 +650,23 @@ const resendCode = async () => {
   color: var(--c-muted);
 }
 
-/* Vertical padding on an inline link widens its tap area without changing the line height. */
+.terms-intro {
+  display: block;
+  text-wrap: balance;
+}
+
+.terms-links {
+  display: block;
+  margin-top: 2px;
+}
+
+.terms-policy {
+  white-space: nowrap;
+}
+
 .terms a {
-  padding: 16px 0;
+  display: inline-block;
+  white-space: nowrap;
 
   color: var(--c-text-2);
 
@@ -744,7 +766,7 @@ const resendCode = async () => {
 
     justify-content: center;
 
-    padding: 28px 0 8px;
+    padding: 60px 0 8px;
   }
 
   .tindahan-logo-desktop {

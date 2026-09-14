@@ -1,11 +1,12 @@
 <template>
   <q-page class="vendor-page">
+    <AuthLanguageSwitcher />
     <div class="vendor-card">
 
       <!-- Leaves the form without submitting, going back when there is history and otherwise to the storefront, since this page can also be opened straight from a link. -->
       <button type="button" class="vendor-back" @click="goBack">
         <q-icon name="o_arrow_back" size="18px" />
-        <span>Back</span>
+        <span>{{ t('Back') }}</span>
       </button>
 
       <!-- HEADER -->
@@ -16,20 +17,20 @@
           class="tindahan-logo"
         />
 
-        <h1>Vendor Registration</h1>
+        <h1>{{ t('Vendor Registration') }}</h1>
 
         <p class="subtitle">
-          Join our ecosystem of successful micro-entrepreneurs today.
+          {{ t('Join our ecosystem of successful micro-entrepreneurs today.') }}
         </p>
       </div>
 
       <!-- Shows how far through the six steps the vendor is. -->
       <div class="wizard-progress">
-        <div class="wizard-step-label">Step {{ step }} of {{ STEPS.length }} · {{ STEPS[step - 1] }}</div>
+        <div class="wizard-step-label">{{ t('Step {step} of {total}', { step, total: STEPS.length }) }} · {{ t(STEPS[step - 1]) }}</div>
         <div
           class="wizard-bar"
           role="progressbar"
-          aria-label="Registration progress"
+          :aria-label="t('Registration progress')"
           aria-valuemin="1"
           :aria-valuemax="STEPS.length"
           :aria-valuenow="step"
@@ -45,8 +46,8 @@
 
       <!-- STEP 1: OWNER ACCOUNT -->
       <q-form v-show="step === 1" ref="accountForm" greedy class="vendor-form" @submit.prevent="submitAccount">
-        <div class="section-title">Owner Account</div>
-        <p class="step-hint">We'll text a code to your phone number to make sure it's yours.</p>
+        <div class="section-title">{{ t('Owner Account') }}</div>
+        <p class="step-hint">{{ t('We\'ll text a code to your phone number to make sure it\'s yours.') }}</p>
 
         <div class="field-group">
           <q-input
@@ -55,11 +56,12 @@
             dense
             no-error-icon
             hide-bottom-space
-            label="Store owner name"
+            :label="t('Store owner name')"
             autocomplete="name"
             class="login-input"
+            reactive-rules
             :rules="[
-              val => !ownerNameTouched || !!val || 'Store owner name is required.',
+              val => !ownerNameTouched || !!val || t('Store owner name is required.'),
               val => !ownerNameTouched || nameRule(val)
             ]"
             @blur="ownerNameTouched = true"
@@ -74,11 +76,12 @@
             no-error-icon
             hide-bottom-space
             type="email"
-            label="Email address"
+            :label="t('Email address')"
             autocomplete="email"
             class="login-input"
+            reactive-rules
             :rules="[
-              val => !emailTouched || !!val || 'Email is required.',
+              val => !emailTouched || !!val || t('Email is required.'),
               val => !emailTouched || emailRule(val)
             ]"
             @blur="emailTouched = true"
@@ -92,12 +95,13 @@
             dense
             no-error-icon
             hide-bottom-space
-            label="Phone number"
+            :label="t('Phone number')"
             type="tel"
             autocomplete="tel"
             class="login-input phone-input"
+            reactive-rules
             :rules="[
-              val => !phoneTouched || !!val || 'Phone number is required.',
+              val => !phoneTouched || !!val || t('Phone number is required.'),
               val => !phoneTouched || phoneRule(val)
             ]"
             @blur="phoneTouched = true"
@@ -116,11 +120,12 @@
             no-error-icon
             hide-bottom-space
             :type="showPassword ? 'text' : 'password'"
-            label="Create a password"
+            :label="t('Create a password')"
             autocomplete="new-password"
             class="login-input"
+            reactive-rules
             :rules="[
-              val => !passwordTouched || !!val || 'Password is required.',
+              val => !passwordTouched || !!val || t('Password is required.'),
               val => !passwordTouched || passwordRule(val)
             ]"
             @blur="passwordTouched = true"
@@ -135,7 +140,7 @@
           </q-input>
           <div v-if="passwordStrong" class="field-message field-message-success">
             <q-icon name="check_circle" size="12px" />
-            Strong password.
+            {{ t('Strong password.') }}
           </div>
         </div>
 
@@ -147,7 +152,7 @@
             no-error-icon
             hide-bottom-space
             :type="showConfirmPassword ? 'text' : 'password'"
-            label="Retype password"
+            :label="t('Retype password')"
             autocomplete="new-password"
             class="login-input"
             :error="confirmPasswordMessage?.type === 'error'"
@@ -162,19 +167,19 @@
           </q-input>
           <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
             <q-icon v-if="confirmPasswordMessage.type === 'success'" name="check_circle" size="12px" />
-            {{ confirmPasswordMessage.text }}
+            {{ t(confirmPasswordMessage.text) }}
           </div>
         </div>
 
-        <div v-if="stepError && step === 1" class="error-message">{{ stepError }}</div>
+        <div v-if="stepError && step === 1" class="error-message">{{ t(stepError) }}</div>
 
-        <q-btn type="submit" label="Continue" no-caps unelevated class="login-button full-width" :loading="sendingCode" />
+        <q-btn type="submit" :label="t('Continue')" no-caps unelevated class="login-button full-width" :loading="sendingCode" />
       </q-form>
 
       <!-- STEP 2: VERIFY PHONE -->
       <div v-show="step === 2" class="vendor-form">
-        <div class="section-title">Verify Your Phone</div>
-        <p class="step-hint">Enter the 6-digit code we sent to <strong>{{ maskedPhone }}</strong>.</p>
+        <div class="section-title">{{ t('Verify Your Phone') }}</div>
+        <p class="step-hint">{{ t('Enter the 6-digit code we sent to') }} <strong>{{ maskedPhone }}</strong>.</p>
 
         <div class="otp-row">
           <input
@@ -185,7 +190,7 @@
             type="text"
             inputmode="numeric"
             :autocomplete="index === 0 ? 'one-time-code' : 'off'"
-            :aria-label="`Digit ${index + 1} of 6`"
+            :aria-label="t('Digit {number} of 6', { number: index + 1 })"
             class="otp-box"
             :class="{ 'otp-error': otpError, 'otp-success': otpVerified }"
             :disabled="otpVerified"
@@ -196,10 +201,10 @@
           />
         </div>
 
-        <div v-if="otpError" class="error-message">{{ otpError }}</div>
+        <div v-if="otpError" class="error-message">{{ otpErrorText }}</div>
 
         <div class="resend-section">
-          <span>Didn't receive a code?</span>
+          <span>{{ t('Didn\'t receive a code?') }}</span>
           <button
             type="button"
             class="resend-btn"
@@ -207,20 +212,20 @@
             :disabled="resendTimer > 0 || sendingCode || otpVerified"
             @click="resendCode"
           >
-            {{ resendTimer > 0 ? `Resend in ${formattedResendTimer}` : 'Resend Code' }}
+            {{ resendTimer > 0 ? t('Resend in {time}', { time: formattedResendTimer }) : t('Resend Code') }}
           </button>
         </div>
 
         <div class="wizard-actions">
-          <q-btn outline no-caps label="Change number" class="wizard-back" @click="previousStep" />
-          <q-btn unelevated no-caps label="Verify" class="login-button" :loading="verifyingCode" :disable="!otpComplete || otpVerified" @click="verifyCode" />
+          <q-btn outline no-caps :label="t('Change number')" class="wizard-back" @click="previousStep" />
+          <q-btn unelevated no-caps :label="t('Verify')" class="login-button" :loading="verifyingCode" :disable="!otpComplete || otpVerified" @click="verifyCode" />
         </div>
       </div>
 
       <!-- STEP 3: STORE -->
       <q-form v-show="step === 3" ref="storeForm" greedy class="vendor-form" @submit.prevent="nextFromStore">
-        <div class="section-title">Your Store</div>
-        <p class="step-hint">Both are required, and customers will see this name and photo.</p>
+        <div class="section-title">{{ t('Your Store') }}</div>
+        <p class="step-hint">{{ t('Both are required, and customers will see this name and photo.') }}</p>
 
         <div class="field-group">
           <q-input
@@ -229,12 +234,13 @@
             dense
             no-error-icon
             hide-bottom-space
-            label="Store name"
+            :label="t('Store name')"
             autocomplete="organization"
             maxlength="150"
             class="login-input"
+            reactive-rules
             :rules="[
-              val => !storeNameTouched || !!val?.trim() || 'Store name is required.'
+              val => !storeNameTouched || !!val?.trim() || t('Store name is required.')
             ]"
             @blur="storeNameTouched = true"
           />
@@ -251,19 +257,19 @@
 
           <template v-if="!photoPreview">
             <q-icon name="add_a_photo" class="upload-icon" />
-            <div class="upload-label">Upload Store Exterior Photo</div>
-            <div class="upload-hint">PNG, JPG, GIF up to 10MB</div>
+            <div class="upload-label">{{ t('Upload Store Exterior Photo') }}</div>
+            <div class="upload-hint">{{ t('PNG, JPG, GIF up to 10MB') }}</div>
           </template>
 
           <div v-else class="preview-container">
             <img
               :src="photoPreview"
-              alt="Store exterior preview"
+              :alt="t('Store exterior preview')"
               class="upload-preview"
             />
             <div class="preview-overlay" @click.prevent="openCropModal">
               <q-icon name="crop" size="18px" />
-              <span>Edit / Crop</span>
+              <span>{{ t('Edit / Crop') }}</span>
             </div>
           </div>
         </label>
@@ -271,25 +277,25 @@
         <div v-if="photoFile" class="photo-info">
           <q-icon name="image" size="14px" />
           <span>{{ photoFile.name }}</span>
-          <button type="button" class="remove-photo" aria-label="Remove photo" @click="removePhoto">
+          <button type="button" class="remove-photo" :aria-label="t('Remove photo')" @click="removePhoto">
             <q-icon name="close" size="14px" />
           </button>
         </div>
 
-        <div v-if="photoMissing" class="photo-error" role="alert">Add a photo of your storefront.</div>
+        <div v-if="photoMissing" class="photo-error" role="alert">{{ t('Add a photo of your storefront.') }}</div>
 
-        <div v-if="stepError && step === 3" class="error-message step-error">{{ stepError }}</div>
+        <div v-if="stepError && step === 3" class="error-message step-error">{{ t(stepError) }}</div>
 
         <div class="wizard-actions">
-          <q-btn outline no-caps label="Back" class="wizard-back" @click="previousStep" />
-          <q-btn type="submit" unelevated no-caps label="Continue" class="login-button" />
+          <q-btn outline no-caps :label="t('Back')" class="wizard-back" @click="previousStep" />
+          <q-btn type="submit" unelevated no-caps :label="t('Continue')" class="login-button" />
         </div>
       </q-form>
 
       <!-- STEP 4: HOURS -->
       <div v-show="step === 4" class="vendor-form">
-        <div class="section-title">Business Hours</div>
-        <p class="step-hint">Let customers know when your store is open.</p>
+        <div class="section-title">{{ t('Business Hours') }}</div>
+        <p class="step-hint">{{ t('Let customers know when your store is open.') }}</p>
 
         <div class="hours-row">
           <div class="field-group">
@@ -300,7 +306,7 @@
               hide-bottom-space
               emit-value
               map-options
-              label="Opening time"
+              :label="t('Opening time')"
               class="login-input"
               :options="timeOptions"
               :disable="alwaysOpen"
@@ -319,7 +325,7 @@
               hide-bottom-space
               emit-value
               map-options
-              label="Closing time"
+              :label="t('Closing time')"
               class="login-input"
               :options="timeOptions"
               :disable="alwaysOpen"
@@ -332,11 +338,11 @@
         </div>
 
         <div class="operating-days-block">
-          <div class="detected-address-label">Operating Days</div>
+          <div class="detected-address-label">{{ t('Operating Days') }}</div>
 
           <q-toggle
             v-model="alwaysOpen"
-            label="Always Open (24/7)"
+            :label="t('Always Open (24/7)')"
             color="red-9"
             class="always-open-toggle"
             @update:model-value="handleAlwaysOpenToggle"
@@ -356,27 +362,27 @@
           </div>
         </div>
 
-        <div v-if="stepError && step === 4" class="error-message step-error">{{ stepError }}</div>
+        <div v-if="stepError && step === 4" class="error-message step-error">{{ t(stepError) }}</div>
 
         <div class="wizard-actions">
-          <q-btn outline no-caps label="Back" class="wizard-back" @click="previousStep" />
-          <q-btn unelevated no-caps label="Continue" class="login-button" @click="nextFromHours" />
+          <q-btn outline no-caps :label="t('Back')" class="wizard-back" @click="previousStep" />
+          <q-btn unelevated no-caps :label="t('Continue')" class="login-button" @click="nextFromHours" />
         </div>
       </div>
 
       <!-- STEP 5: LOCATION, mounted on first visit because Leaflet can't size a map inside a hidden panel. -->
       <div v-if="locationVisited" v-show="step === 5" class="vendor-form">
-        <div class="section-title">Store Location</div>
-        <p class="step-hint">Move the pin to where your store is, or type the address below.</p>
+        <div class="section-title">{{ t('Store Location') }}</div>
+        <p class="step-hint">{{ t('Move the pin to where your store is, or type the address below.') }}</p>
 
         <div class="map-placeholder">
-          <VendorLocationMap @location-selected="handleLocationSelected" />
+          <VendorLocationMap :translate="t" @location-selected="handleLocationSelected" />
         </div>
 
         <div class="detected-address">
-          <div class="detected-address-label">Detected address</div>
+          <div class="detected-address-label">{{ t('Detected address') }}</div>
           <div class="detected-address-value">
-            {{ form.detectedAddress || 'Waiting for location…' }}
+            {{ form.detectedAddress || t('Waiting for location…') }}
           </div>
         </div>
 
@@ -387,102 +393,102 @@
             dense
             no-error-icon
             hide-bottom-space
-            label="Manual address entry"
+            :label="t('Manual address entry')"
             class="login-input"
           />
         </div>
 
-        <div v-if="stepError && step === 5" class="error-message">{{ stepError }}</div>
+        <div v-if="stepError && step === 5" class="error-message">{{ t(stepError) }}</div>
 
         <div class="wizard-actions">
-          <q-btn outline no-caps label="Back" class="wizard-back" @click="previousStep" />
-          <q-btn unelevated no-caps label="Continue" class="login-button" @click="nextFromLocation" />
+          <q-btn outline no-caps :label="t('Back')" class="wizard-back" @click="previousStep" />
+          <q-btn unelevated no-caps :label="t('Continue')" class="login-button" @click="nextFromLocation" />
         </div>
       </div>
 
       <!-- STEP 6: REVIEW -->
       <div v-show="step === 6" class="vendor-form">
-        <div class="section-title">Review &amp; Submit</div>
-        <p class="step-hint">Check your details before sending your application.</p>
+        <div class="section-title">{{ t('Review & Submit') }}</div>
+        <p class="step-hint">{{ t('Check your details before sending your application.') }}</p>
 
         <div class="review-list">
           <div class="review-row">
             <div class="review-body">
-              <div class="review-label">Owner</div>
+              <div class="review-label">{{ t('Owner') }}</div>
               <div class="review-value">{{ form.ownerName }}</div>
               <div class="review-sub">{{ form.email }}</div>
             </div>
-            <button type="button" class="review-edit" @click="editStep(1)">Edit</button>
+            <button type="button" class="review-edit" @click="editStep(1)">{{ t('Edit') }}</button>
           </div>
 
           <div class="review-row">
             <div class="review-body">
-              <div class="review-label">Phone</div>
+              <div class="review-label">{{ t('Phone') }}</div>
               <div class="review-value">
                 {{ form.phoneNumber }}
                 <span v-if="phoneVerified" class="review-verified">
                   <q-icon name="o_verified" size="14px" />
-                  Verified
+                  {{ t('Verified') }}
                 </span>
               </div>
             </div>
-            <button type="button" class="review-edit" @click="editStep(1)">Edit</button>
+            <button type="button" class="review-edit" @click="editStep(1)">{{ t('Edit') }}</button>
           </div>
 
           <div class="review-row">
-            <img v-if="photoPreview" :src="photoPreview" alt="Store photo" class="review-thumb" />
+            <img v-if="photoPreview" :src="photoPreview" :alt="t('Store photo')" class="review-thumb" />
             <div class="review-body">
-              <div class="review-label">Store</div>
+              <div class="review-label">{{ t('Store') }}</div>
               <div class="review-value">{{ form.storeName }}</div>
             </div>
-            <button type="button" class="review-edit" @click="editStep(3)">Edit</button>
+            <button type="button" class="review-edit" @click="editStep(3)">{{ t('Edit') }}</button>
           </div>
 
           <div class="review-row">
             <div class="review-body">
-              <div class="review-label">Hours</div>
+              <div class="review-label">{{ t('Hours') }}</div>
               <div class="review-value">{{ hoursSummary }}</div>
               <div class="review-sub">{{ daysSummary }}</div>
             </div>
-            <button type="button" class="review-edit" @click="editStep(4)">Edit</button>
+            <button type="button" class="review-edit" @click="editStep(4)">{{ t('Edit') }}</button>
           </div>
 
           <div class="review-row">
             <div class="review-body">
-              <div class="review-label">Location</div>
-              <div class="review-value">{{ finalAddress || 'Pinned on the map' }}</div>
+              <div class="review-label">{{ t('Location') }}</div>
+              <div class="review-value">{{ finalAddress || t('Pinned on the map') }}</div>
             </div>
-            <button type="button" class="review-edit" @click="editStep(5)">Edit</button>
+            <button type="button" class="review-edit" @click="editStep(5)">{{ t('Edit') }}</button>
           </div>
         </div>
 
-        <div v-if="registerError" class="error-message step-error">{{ registerError }}</div>
+        <div v-if="registerError" class="error-message step-error">{{ t(registerError) }}</div>
 
         <div class="wizard-actions">
-          <q-btn outline no-caps label="Back" class="wizard-back" @click="previousStep" />
-          <q-btn unelevated no-caps label="Register Store" class="login-button" :loading="loading" :disable="!canRegister" @click="handleVendorRegister" />
+          <q-btn outline no-caps :label="t('Back')" class="wizard-back" @click="previousStep" />
+          <q-btn unelevated no-caps :label="t('Register Store')" class="login-button" :loading="loading" :disable="!canRegister" @click="handleVendorRegister" />
         </div>
       </div>
 
       <!-- LOGIN LINK -->
       <div class="register-section">
-        <span>Already a partner?</span>
+        <span>{{ t('Already a partner?') }}</span>
 
         <button
           type="button"
           class="text-button create-account"
           @click="goToLogin"
         >
-          Log in
+          {{ t('Log in') }}
         </button>
       </div>
 
       <!-- TERMS -->
       <p class="terms">
-        By signing up, you agree to our
-        <a href="#" @click.prevent="showTerms = true">Terms and Conditions</a>
-        and
-        <a href="#" @click.prevent="showPrivacy = true">Privacy Policy</a>.
+        {{ t('By signing up, you agree to our') }}
+        <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
+        {{ t('and') }}
+        <a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.
       </p>
 
     </div>
@@ -493,17 +499,17 @@
         <q-card-section class="crop-header">
           <div class="crop-icon"><q-icon name="o_crop" size="22px" /></div>
           <div class="crop-header-text">
-            <div class="crop-title">Crop Store Photo</div>
-            <div class="crop-subtitle">Drag the photo to move it, and zoom until the frame shows your storefront.</div>
+            <div class="crop-title">{{ t('Crop Store Photo') }}</div>
+            <div class="crop-subtitle">{{ t('Drag the photo to move it, and zoom until the frame shows your storefront.') }}</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="crop-close" aria-label="Close photo cropper" @click="showCropModal = false" />
+          <q-btn flat round dense icon="o_close" class="crop-close" :aria-label="t('Close photo cropper')" @click="showCropModal = false" />
         </q-card-section>
         <q-card-section class="crop-body">
           <PhotoCropper ref="cropperRef" :src="originalPhotoUrl || ''" :aspect="16 / 9" :output-width="1280" @ready="cropReady = true" />
         </q-card-section>
         <q-card-actions class="crop-actions">
-          <q-btn outline no-caps label="Cancel" class="crop-cancel" @click="showCropModal = false" />
-          <q-btn unelevated no-caps label="Apply Crop" class="crop-apply" :disable="!cropReady" @click="applyCrop" />
+          <q-btn outline no-caps :label="t('Cancel')" class="crop-cancel" @click="showCropModal = false" />
+          <q-btn unelevated no-caps :label="t('Apply Crop')" class="crop-apply" :disable="!cropReady" @click="applyCrop" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -517,25 +523,23 @@
             <q-icon name="o_check" size="32px" />
           </div>
 
-          <div class="success-title">Application Submitted!</div>
+          <div class="success-title">{{ t('Application Submitted!') }}</div>
 
           <p class="success-message">
-            Your vendor application has been submitted and is currently
-            under review. Our team will process your application within
-            1–3 business days.
+            {{ t('Your vendor application has been submitted and is currently under review. Our team will process your application within 1–3 business days.') }}
           </p>
         </q-card-section>
 
         <q-card-actions class="success-actions" vertical>
           <q-btn
-            label="Close"
+            :label="t('Close')"
             no-caps
             unelevated
             class="success-btn primary-btn"
             @click="handleSuccessClose"
           />
           <q-btn
-            label="Contact Support"
+            :label="t('Contact Support')"
             no-caps
             flat
             class="success-btn flat-btn"
@@ -555,14 +559,18 @@
 </template>
 
 <script setup>
+import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
 import { computed, nextTick, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 import PhotoCropper from '@/components/shared/PhotoCropper.vue'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 
@@ -631,11 +639,11 @@ for (let minutes = 0; minutes < 24 * 60; minutes += 30) {
 }
 
 const nameRule = val =>
-  /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || 'Only letters are allowed'
+  /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || t('Only letters are allowed')
 
-const emailRule = val => /.+@.+\..+/.test(val) || 'Enter a valid email'
-const phoneRule = val => /^09\d{9}$/.test(val) || 'Phone must be exactly 11 digits starting with 09'
-const passwordRule = val => val.length >= 8 || 'Minimum 8 characters'
+const emailRule = val => /.+@.+\..+/.test(val) || t('Enter a valid email')
+const phoneRule = val => /^09\d{9}$/.test(val) || t('Phone must be exactly 11 digits starting with 09')
+const passwordRule = val => val.length >= 8 || t('Minimum 8 characters')
 
 // Shown once the password passes its rule, the same positive state as the consumer sign-up and profile password fields.
 const passwordStrong = computed(() => !!form.password && passwordRule(form.password) === true)
@@ -670,6 +678,14 @@ const verifyingCode = ref(false)
 const otp = ref(['', '', '', '', '', ''])
 const otpRefs = ref([])
 const otpError = ref('')
+const otpErrorText = computed(() => {
+  const resendSuffix = ' We sent you a new code.'
+  return otpError.value.endsWith(resendSuffix)
+    ? t('{error} We sent you a new code.', {
+        error: t(otpError.value.slice(0, -resendSuffix.length))
+      })
+    : t(otpError.value)
+})
 // Turns the boxes green for a moment once the code is accepted, the same flash as the consumer profile's phone check.
 const otpVerified = ref(false)
 let verifiedTimer = null
@@ -699,7 +715,7 @@ const formattedResendTimer = computed(() => `${Math.floor(resendTimer.value / 60
 
 const finalAddress = computed(() => form.manualAddress.trim() || form.detectedAddress)
 const timeLabel = value => timeOptions.find(option => option.value === value)?.label || value
-const hoursSummary = computed(() => (alwaysOpen.value ? 'Always open (24/7)' : `${timeLabel(form.openingTime)} – ${timeLabel(form.closingTime)}`))
+const hoursSummary = computed(() => (alwaysOpen.value ? t('Always open (24/7)') : `${timeLabel(form.openingTime)} – ${timeLabel(form.closingTime)}`))
 const daysSummary = computed(() => DAY_ORDER.filter(day => form.operatingDays.includes(day)).join(', '))
 
 const startResendTimer = () => {
@@ -1058,12 +1074,13 @@ function handleLocationSelected(location) {
 
 /* Same red gradient as the login and sign-up pages. */
 .vendor-page {
+  position: relative;
   min-height: 100vh;
 
   display: flex;
   justify-content: center;
 
-  padding: 48px 24px;
+  padding: 76px 24px 48px;
 
   background:
     linear-gradient(

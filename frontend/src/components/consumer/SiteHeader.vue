@@ -314,13 +314,6 @@
                 >
                 <div class="cart-menu-inner account-menu-inner">
                   <q-list>
-                    <q-item class="account-menu-language" @click.stop>
-                      <q-item-section>
-                        <div class="menu-language-label">{{ t('Language') }}</div>
-                        <LanguageSwitcher compact />
-                      </q-item-section>
-                    </q-item>
-                    <q-separator />
                     <q-item clickable @click="accountMenuOpen = false; router.push('/consumer/profile')">
                       <q-item-section>{{ t('My Profile') }}</q-item-section>
                     </q-item>
@@ -376,18 +369,6 @@
         <div class="mobile-menu-scroll">
 
           <q-list v-if="isLoggedIn" padding>
-            <q-item class="mobile-menu-item mobile-menu-language" @click.stop>
-              <q-item-section avatar class="mobile-menu-avatar">
-                <q-icon name="translate" size="22px" />
-              </q-item-section>
-              <q-item-section>
-                <div class="menu-language-label">{{ t('Language') }}</div>
-                <LanguageSwitcher />
-              </q-item-section>
-            </q-item>
-
-            <q-separator v-if="isLoggedIn" />
-
             <q-item v-if="isLoggedIn" v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/profile')">
               <q-item-section avatar class="mobile-menu-avatar">
                 <q-icon name="o_person" size="22px" />
@@ -415,10 +396,6 @@
           <div v-if="!isLoggedIn" class="mobile-menu-auth">
             <q-btn v-close-popup unelevated no-caps :label="t('Log in')" class="mobile-menu-login" @click="goToLogin" />
             <q-btn v-close-popup unelevated no-caps :label="t('Sign up')" class="mobile-menu-signup" @click="goToSignup" />
-            <div class="mobile-menu-guest-language">
-              <div class="menu-language-label">{{ t('Language') }}</div>
-              <LanguageSwitcher />
-            </div>
           </div>
         </div>
       </q-card>
@@ -472,7 +449,6 @@
 </template>
 
 <script setup>
-import LanguageSwitcher from '@/components/consumer/LanguageSwitcher.vue'
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 
 import { ref, computed, watch, onMounted } from 'vue'
@@ -990,30 +966,6 @@ const goToTab = (tab) => {
   flex-shrink: 0;
 }
 
-.menu-language-label {
-  font-size: var(--fs-xs);
-  font-weight: 500;
-  color: var(--c-muted);
-}
-
-.account-menu-language {
-  min-width: 200px;
-}
-
-.account-menu-language :deep(.q-item__section--main) {
-  align-items: flex-start;
-  gap: 2px;
-}
-
-.account-menu-language .menu-language-label {
-  line-height: 18px;
-}
-
-.mobile-menu-language {
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-
 /* Wraps each header icon button so it centres vertically in the action cluster. */
 .icon-btn-wrap {
   display: flex;
@@ -1502,17 +1454,6 @@ const goToTab = (tab) => {
 
   gap: 10px;
   padding: 16px 18px;
-}
-
-.mobile-menu-guest-language {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  gap: 4px;
-  margin-top: 6px;
-  padding-top: 16px;
-  border-top: 1px solid var(--c-border);
 }
 
 .mobile-menu-login,

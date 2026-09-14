@@ -1,5 +1,6 @@
 <template>
   <q-page class="login-page">
+    <AuthLanguageSwitcher />
     <div class="login-card">
 
       <!-- LEFT BRANDING PANEL -->
@@ -25,15 +26,14 @@
               <q-icon name="o_check" size="36px" />
             </div>
 
-            <h1>Verification Successful</h1>
+            <h1>{{ t('Verification Successful') }}</h1>
 
             <p class="subtitle">
-              Your account has been verified. You can now log in to start
-              exploring local sari-sari stores.
+              {{ t('Your account has been verified. You can now log in to start exploring local sari-sari stores.') }}
             </p>
 
             <q-btn
-              label="Log in"
+              :label="t('Log in')"
               no-caps
               unelevated
               class="login-button full-width"
@@ -48,7 +48,11 @@
 </template>
 
 <script setup>
+import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { useRouter } from 'vue-router'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 
@@ -62,6 +66,7 @@ const goToLogin = () => {
 /* PAGE */
 
 .login-page {
+  position: relative;
   min-height: 100vh;
   width: 100%;
   box-sizing: border-box;
@@ -324,7 +329,7 @@ const goToLogin = () => {
 
     justify-content: center;
 
-    padding: 28px 0 8px;
+    padding: 60px 0 8px;
   }
 
   .tindahan-logo-desktop {

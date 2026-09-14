@@ -153,6 +153,10 @@ const resetValidation = () => {
   touched.value = false
 }
 
+watch([() => props.rules, () => props.locale], () => {
+  if (touched.value || errorMessage.value) validate()
+})
+
 // Lets the parent QForm check this field on submit like any other input.
 useFormChild({ validate, resetValidation, requiresQForm: false })
 
