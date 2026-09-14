@@ -8,7 +8,14 @@
           <p class="vp-subtitle">{{ t('subtitle') }}</p>
         </div>
         <div class="vp-header-actions">
-          <q-btn flat dense no-caps icon="o_refresh" :label="t('refreshInsights')" :loading="insightsRefreshing" class="vp-pill-btn" @click="refreshInsights" />
+          <q-btn no-caps unelevated :loading="insightsRefreshing" class="pl-refresh-btn" @click="refreshInsights">
+            <span class="pl-refresh-icon"><q-icon name="o_refresh" size="16px" /></span>
+            <span class="pl-refresh-label">{{ t('refreshInsights') }}</span>
+            <template #loading>
+              <span class="pl-refresh-icon pl-refresh-icon--spin"><q-icon name="o_refresh" size="16px" /></span>
+              <span class="pl-refresh-label">{{ t('refreshingInsights') }}</span>
+            </template>
+          </q-btn>
           <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" @click="openExportWizard" />
           <q-btn unelevated no-caps color="primary" icon="add" :label="t('addBtn')" class="vp-primary-btn" @click="showAddModal = true" />
         </div>
@@ -136,8 +143,10 @@
                 </td>
                 <td class="vp-muted pl-ellipsis">{{ product.category?.category_name || t('uncategorized') }}</td>
                 <td>
-                  <span class="pl-stock" :class="stockClass(product)">{{ product.available_quantity }}</span>
-                  <span class="pl-stock-total"> {{ t('ofWord') }} {{ product.stock_quantity }}</span>
+                  <div class="pl-stock-row">
+                    <span class="pl-stock" :class="stockClass(product)">{{ product.available_quantity }}</span>
+                    <span class="pl-stock-total">{{ t('ofWord') }} {{ product.stock_quantity }}</span>
+                  </div>
                 </td>
                 <td class="text-right vp-amount">
                   <span v-if="product.variants?.length" class="pl-from">{{ t('fromWord') }} </span>₱{{ formatNumber(product.price) }}
@@ -178,7 +187,11 @@
             <div class="vp-list-body">
               <span class="vp-name">{{ product.product_name }}</span>
               <div class="vp-list-meta">
-                {{ product.category?.category_name || t('uncategorized') }} · <span :class="stockClass(product)">{{ product.available_quantity }}</span> {{ t('ofWord') }} {{ product.stock_quantity }} {{ t('leftWord') }}
+                {{ product.category?.category_name || t('uncategorized') }} · 
+                <span class="pl-stock-row pl-stock-row--inline">
+                  <span :class="stockClass(product)">{{ product.available_quantity }}</span>
+                  <span>{{ t('ofWord') }} {{ product.stock_quantity }} {{ t('leftWord') }}</span>
+                </span>
               </div>
               <div class="pl-list-bottom">
                 <span class="vp-amount">₱{{ formatNumber(product.price) }}</span>
@@ -319,6 +332,8 @@ const productListDict = {
     subtitle: 'Monitor and update your product catalog.',
     exportBtn: 'Export',
     addBtn: 'Add Product',
+    refreshInsights: 'Refresh Insights',
+    refreshingInsights: 'Refreshing…',
     insightRestockAlert: 'Restock alert',
     insightUpcomingTrend: 'Upcoming trend',
     insightTopPerformer: 'Top performer',
@@ -397,6 +412,8 @@ const productListDict = {
     subtitle: 'Bantayan at i-update ang iyong mga paninda.',
     exportBtn: 'I-export',
     addBtn: 'Magdagdag',
+    refreshInsights: 'I-refresh',
+    refreshingInsights: 'Nire-refresh…',
     insightRestockAlert: 'Restock alert',
     insightUpcomingTrend: 'Bagong trend',
     insightTopPerformer: 'Mataas ang benta',
@@ -537,6 +554,22 @@ const mlInsights = ref({
 
 const isNumber = value => value !== null && value !== '' && !Number.isNaN(Number(value))
 
+// Picks an icon that actually matches the season/holiday text from the model,
+// instead of always showing a sun regardless of what season it names.
+const seasonIcon = (season, holiday) => {
+  const text = `${season || ''} ${holiday || ''}`.toLowerCase()
+  if (text.includes('rain') || text.includes('ulan') || text.includes('habagat')) return 'o_umbrella'
+  if (text.includes('typhoon') || text.includes('bagyo') || text.includes('storm')) return 'o_thunderstorm'
+  if (text.includes('school') || text.includes('eskwela') || text.includes('paaralan') || text.includes('klase')) return 'o_school'
+  if (text.includes('christmas') || text.includes('pasko')) return 'o_ac_unit'
+  if (text.includes('new year') || text.includes('bagong taon')) return 'o_celebration'
+  if (text.includes('holy week') || text.includes('semana santa')) return 'o_church'
+  if (text.includes('valentine')) return 'o_favorite'
+  if (text.includes('harvest') || text.includes('ani')) return 'o_agriculture'
+  if (text.includes('summer') || text.includes('tag-init') || text.includes('dry')) return 'o_wb_sunny'
+  return 'o_calendar_month'
+}
+
 const insightCards = computed(() => {
   const ml = mlInsights.value
   const days = Number(ml.daysUntilStockout)
@@ -546,7 +579,7 @@ const insightCards = computed(() => {
   }]
   if (ml.currentSeason) {
     trendNotes.push({ 
-      icon: 'o_wb_sunny', 
+      icon: seasonIcon(ml.currentSeason, ml.currentHoliday), 
       tone: 'success', 
       text: `${t('insightSeason')}: ${ml.currentSeason}${ml.currentHoliday ? ` · ${ml.currentHoliday}` : ''}` 
     })
@@ -910,7 +943,6 @@ onMounted(() => {
 <style scoped>
 .pl-search-row {
   display: flex;
-
   flex: 1 1 360px;
   gap: 8px;
   max-width: 460px;
@@ -922,117 +954,92 @@ onMounted(() => {
 
 .pl-search-row > .q-btn {
   flex-shrink: 0;
-
   white-space: nowrap;
 }
 
 .pl-filter-panel {
   display: flex;
   flex-direction: column;
-
   gap: 12px;
 }
 
-/* CONFIRM — deactivate and delete share the Log out dialog's layout, keeping their icon and adding a line above the buttons. */
-.pl-confirm {
-  width: 400px;
-}
-
-.pl-confirm-body {
-  display: flex;
-  flex-direction: column;
+/* REFRESH INSIGHTS BUTTON */
+.pl-refresh-btn {
+  display: inline-flex;
   align-items: center;
-
-  padding: 28px 28px 22px;
-
-  text-align: center;
+  flex-shrink: 0;
+  gap: 10px;
+  height: 38px;
+  margin-right: 6px;
+  padding: 0 16px 0 6px;
+  border: 1px solid var(--c-brand-tint-2, rgba(101, 16, 18, 0.16));
+  border-radius: var(--r-pill, 9999px);
+  background: var(--c-brand-tint, rgba(101, 16, 18, 0.05));
+  color: var(--c-brand, #651012);
+  font-size: var(--fs-sm, 13px);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.pl-confirm-icon {
-  margin-bottom: 14px;
+.pl-refresh-btn:hover:not(.disabled) {
+  background: var(--c-brand-tint-2, rgba(101, 16, 18, 0.1));
+  border-color: var(--c-brand, #651012);
+  box-shadow: 0 3px 10px rgba(101, 16, 18, 0.12);
+  transform: translateY(-1px);
 }
 
-.pl-confirm-title {
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 1.3;
-
-  color: var(--c-text);
+.pl-refresh-btn:active:not(.disabled) {
+  transform: translateY(0);
 }
 
-.pl-confirm-text {
-  margin: 8px 0 0;
-
-  font-size: var(--fs-sm);
-  line-height: 1.6;
-
-  color: var(--c-text-3);
-}
-
-.pl-confirm-text strong {
-  color: var(--c-text);
-}
-
-.pl-confirm-sep {
-  background: var(--c-hairline);
-}
-
-/* Cancel and the action share the row equally, as Cancel and Log out do. */
-.pl-confirm-actions {
-  display: flex;
-
-  gap: 12px;
-  padding: 18px 28px 24px;
-}
-
-.pl-confirm-actions .vp-dialog-btn {
-  flex: 1;
-
-  min-width: 0;
-  height: 48px;
-}
-
-.pl-thumb {
+.pl-refresh-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-
-  width: 44px;
-  height: 44px;
-  overflow: hidden;
-
-  border: 1px solid var(--c-hairline);
-  border-radius: var(--r-control);
-
-  background: var(--c-surface);
-  color: var(--c-muted);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--c-brand, #651012);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-/* The photo fills its rounded frame, so its own corners come out rounded instead of sitting square inside. */
-.pl-thumb img {
-  width: 100%;
-  height: 100%;
-
-  border-radius: inherit;
-
-  object-fit: cover;
+.pl-refresh-icon--spin :deep(.q-icon) {
+  animation: pl-spin 0.9s linear infinite;
 }
 
-.pl-thumb--lg {
-  width: 56px;
-  height: 56px;
+.pl-refresh-label {
+  white-space: nowrap;
 }
 
-.pl-ellipsis {
-  overflow: hidden;
+@keyframes pl-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
-  text-overflow: ellipsis;
+@media (prefers-reduced-motion: reduce) {
+  .pl-refresh-icon--spin :deep(.q-icon) {
+    animation: none;
+  }
+}
+
+/* STOCK CELL */
+.pl-stock-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.pl-stock-row--inline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
 }
 
 .pl-stock {
   font-weight: 700;
-
   color: var(--c-text);
 }
 
@@ -1046,14 +1053,12 @@ onMounted(() => {
 
 .pl-stock-total {
   font-size: var(--fs-xs);
-
   color: var(--c-muted);
 }
 
 .pl-from {
   font-size: var(--fs-xs);
   font-weight: 500;
-
   color: var(--c-muted);
 }
 
@@ -1063,11 +1068,92 @@ onMounted(() => {
 .pl-table .col-status { width: 14%; }
 .pl-table .col-act { width: 7%; }
 
+/* CONFIRM MODAL */
+.pl-confirm {
+  width: 400px;
+}
+
+.pl-confirm-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 28px 22px;
+  text-align: center;
+}
+
+.pl-confirm-icon {
+  margin-bottom: 14px;
+}
+
+.pl-confirm-title {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--c-text);
+}
+
+.pl-confirm-text {
+  margin: 8px 0 0;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--c-text-3);
+}
+
+.pl-confirm-text strong {
+  color: var(--c-text);
+}
+
+.pl-confirm-sep {
+  background: var(--c-hairline);
+}
+
+.pl-confirm-actions {
+  display: flex;
+  gap: 12px;
+  padding: 18px 28px 24px;
+}
+
+.pl-confirm-actions .vp-dialog-btn {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+}
+
+.pl-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border: 1px solid var(--c-hairline);
+  border-radius: var(--r-control);
+  background: var(--c-surface);
+  color: var(--c-muted);
+}
+
+.pl-thumb img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.pl-thumb--lg {
+  width: 56px;
+  height: 56px;
+}
+
+.pl-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .pl-list-bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   gap: 8px;
   margin-top: 6px;
 }
@@ -1079,7 +1165,6 @@ onMounted(() => {
 .pl-format-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-
   gap: 12px;
 }
 
@@ -1087,20 +1172,14 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-
   gap: 6px;
   padding: 18px 12px;
-
   border: 1.5px solid var(--c-border);
   border-radius: var(--r-surface);
-
   background: #ffffff;
-
   font-family: inherit;
   text-align: center;
-
   cursor: pointer;
-
   transition: border-color 0.15s, background-color 0.15s;
 }
 
@@ -1116,7 +1195,6 @@ onMounted(() => {
 .pl-format--active,
 .pl-format--active:hover {
   border-color: var(--c-brand);
-
   background: var(--c-brand-tint);
 }
 
@@ -1124,13 +1202,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-
   width: 44px;
   height: 44px;
   margin-bottom: 2px;
-
   border-radius: var(--r-surface);
-
   background: var(--c-surface);
   color: var(--c-muted);
 }
@@ -1143,35 +1218,28 @@ onMounted(() => {
 .pl-format-title {
   font-size: var(--fs-sm);
   font-weight: 700;
-
   color: var(--c-text);
 }
 
 .pl-format-sub {
   font-size: var(--fs-xs);
-
   color: var(--c-muted);
 }
 
 .pl-summary {
   display: flex;
   flex-direction: column;
-
   gap: 8px;
   padding: 14px 16px;
-
   border: 1px solid var(--c-border);
   border-radius: var(--r-control);
-
   background: var(--c-surface-2);
 }
 
 .pl-summary-row {
   display: flex;
   justify-content: space-between;
-
   font-size: var(--fs-sm);
-
   color: var(--c-text-3);
 }
 
@@ -1186,6 +1254,14 @@ onMounted(() => {
 
   .vp-header-actions .q-btn {
     flex: 1;
+  }
+
+  .pl-refresh-btn {
+    flex: 1 1 100% !important;
+    order: -1;
+    justify-content: center;
+    margin-right: 0;
+    margin-bottom: 8px;
   }
 
   .pl-search-row {
