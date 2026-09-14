@@ -8,16 +8,16 @@
 
       <div class="page-header-row">
         <div>
-          <h1 class="page-title">Nearby Stores</h1>
-          <p class="page-subtitle">Browse all sari-sari stores near you.</p>
+          <h1 class="page-title">{{ t('Nearby Stores') }}</h1>
+          <p class="page-subtitle">{{ t('Browse all sari-sari stores near you.') }}</p>
         </div>
 
         <div class="page-header-actions">
           <div class="sort-inline">
-            <span class="sort-label">Sort by:</span>
+            <span class="sort-label">{{ t('Sort by:') }}</span>
             <q-select
               v-model="sortBy"
-              :options="SORT_OPTIONS"
+              :options="translateOptions(SORT_OPTIONS)"
               dense
               outlined
               emit-value
@@ -37,7 +37,7 @@
             no-caps
             dense
             icon="o_tune"
-            label="Filters"
+            :label="t('Filters')"
             class="filters-toggle-btn"
             @click="filtersOpen = !filtersOpen"
           >
@@ -57,7 +57,7 @@
           </div>
 
           <p v-if="!storesLoading && !filteredStores.length" class="stores-empty">
-            No stores match your filters.
+            {{ t('No stores match your filters.') }}
           </p>
         </div>
 
@@ -99,6 +99,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
@@ -110,6 +112,8 @@ import AppPagination from '@/components/consumer/AppPagination.vue'
 import { useStores } from '@/composables/useStores'
 import { useGridColumns } from '@/composables/useGridColumns'
 import { useReveal } from '@/composables/useReveal'
+
+const { t, translateOptions } = useConsumerLanguage()
 
 const $q = useQuasar()
 

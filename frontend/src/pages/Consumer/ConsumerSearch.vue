@@ -7,17 +7,17 @@
     <div class="page-content">
 
       <div class="page-header-row">
-        <h1 class="page-title">{{ query ? 'Search Results' : 'Search' }}</h1>
+        <h1 class="page-title">{{ query ? t('Search Results') : t('Search') }}</h1>
         <p class="page-subtitle">{{ subtitleText }}</p>
       </div>
 
       <!-- EMPTY QUERY STATE -->
       <div v-if="!query" class="search-prompt">
         <q-icon name="o_search" size="40px" class="search-prompt-icon" />
-        <p class="search-prompt-text">Start typing to search products and stores.</p>
+        <p class="search-prompt-text">{{ t('Start typing to search products and stores.') }}</p>
 
         <div v-if="recentSearches.length" class="search-prompt-recent">
-          <div class="search-prompt-recent-title">Recent Searches</div>
+          <div class="search-prompt-recent-title">{{ t('Recent Searches') }}</div>
           <div class="search-prompt-recent-chips">
             <q-chip
               v-for="term in recentSearches"
@@ -47,7 +47,7 @@
                 class="section-link"
                 @click="storesExpanded = !storesExpanded"
               >
-                {{ storesExpanded ? 'Show less' : `Show all ${matchedStores.length} stores` }}
+                {{ storesExpanded ? t('Show less') : t('Show all {count} stores', { count: matchedStores.length }) }}
               </button>
             </div>
 
@@ -88,7 +88,7 @@
                   <span class="store-row-meta">
                     <span class="store-row-status" :class="{ 'store-row-status--closed': !store.isOpen }">
                       <span class="store-row-dot" :class="{ 'store-row-dot--closed': !store.isOpen }" />
-                      {{ store.isOpen ? 'Open' : 'Closed' }}
+                      {{ store.isOpen ? t('Open') : t('Closed') }}
                     </span>
                     <span v-if="storeMetaText(store)" class="store-row-sub">{{ storeMetaText(store) }}</span>
                   </span>
@@ -126,13 +126,13 @@
             </q-infinite-scroll>
 
             <p v-if="allProductsShown && filteredProducts.length > PAGE_SIZE" class="results-end">
-              That's all {{ filteredProducts.length }} results.
+              {{ t('That\'s all {count} results.', { count: filteredProducts.length }) }}
             </p>
           </template>
 
           <!-- RELATED PRODUCTS (fills out the page when the search itself only turned up 1-2 results) -->
           <div v-if="!isSearching && showRelatedProducts" class="related-section">
-            <h2 class="results-section-title">You May Also Like</h2>
+            <h2 class="results-section-title">{{ t('You May Also Like') }}</h2>
             <div class="products-grid">
               <ProductCard v-for="product in relatedProducts" :key="`related-${product.id}`" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
             </div>
@@ -142,8 +142,8 @@
         <!-- EMPTY RESULTS STATE -->
         <div v-else class="results-empty">
           <q-icon name="o_search_off" size="32px" class="results-empty-icon" />
-          <p class="results-empty-title">No results found for "{{ query }}".</p>
-          <p class="results-empty-text">Try searching for a different keyword.</p>
+          <p class="results-empty-title">{{ t('No results found for "{query}".', { query }) }}</p>
+          <p class="results-empty-text">{{ t('Try searching for a different keyword.') }}</p>
         </div>
 
       </template>
@@ -158,6 +158,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
@@ -173,6 +175,8 @@ import { useCategories } from '@/composables/useCategories'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'
+
+const { t } = useConsumerLanguage()
 
 const $q = useQuasar()
 const route = useRoute()
@@ -194,9 +198,9 @@ const handleAddToCart = async (product) => {
 
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to add to cart.') })
   }
 }
 
@@ -272,11 +276,11 @@ const goToStore = (store) => router.push(`/consumer/stores/${store.slug || store
 
 // The page subtitle reports the query and its total result count.
 const subtitleText = computed(() => {
-  if (!query.value) return 'Search for products and stores near you.'
-  if (isSearching.value) return `Searching for "${query.value}"…`
+  if (!query.value) return t('Search for products and stores near you.')
+  if (isSearching.value) return t('Searching for "{query}"…', { query: query.value })
 
   const total = filteredProducts.value.length + matchedStores.value.length
-  return `Showing ${total} result${total === 1 ? '' : 's'} for "${query.value}".`
+  return t(total === 1 ? 'Showing {count} result for "{query}".' : 'Showing {count} results for "{query}".', { count: total, query: query.value })
 })
 
 // Shows for any non-empty search — zero results gets its own empty state instead.

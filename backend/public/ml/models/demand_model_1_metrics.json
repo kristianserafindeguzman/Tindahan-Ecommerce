@@ -1,1 +1,1 @@
-{"data_sufficiency": "low_data", "training_rows": 14, "distinct_dates": 5, "model_metrics": {"rmse": null, "mape": null, "r2": null}}
+{"data_sufficiency": "low_data", "training_rows": 17, "distinct_dates": 4, "model_metrics": {"rmse": null, "mape": null, "r2": null}}

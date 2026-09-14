@@ -22,7 +22,7 @@
             v-for="tab in tabs"
             :key="tab.value"
             :name="tab.value"
-            :label="tab.label"
+            :label="t(tab.label)"
             @click="goToTab(tab)"
           />
         </q-tabs>
@@ -35,7 +35,7 @@
               dense
               borderless
               clearable
-              placeholder="Search products and stores"
+              :placeholder="t('Search products and stores')"
               class="header-search-input"
               autocomplete="off"
               @keyup.enter="submitSearch"
@@ -51,7 +51,7 @@
               unelevated
               dense
               icon="o_search"
-              aria-label="Search"
+              :aria-label="t('Search')"
               class="header-search-btn"
               @click="submitSearch"
             />
@@ -61,8 +61,8 @@
             <template v-if="!searchInput.trim()">
               <div v-if="recentSearches.length" class="suggestions-section">
                 <div class="suggestions-section-header">
-                  <span>Recent Searches</span>
-                  <span class="suggestions-clear" @click="clearRecentSearches">Clear</span>
+                  <span>{{ t('Recent Searches') }}</span>
+                  <span class="suggestions-clear" @click="clearRecentSearches">{{ t('Clear') }}</span>
                 </div>
                 <div
                   v-for="(term, i) in recentSearches"
@@ -75,12 +75,12 @@
                   <span class="suggestion-text">{{ term }}</span>
                 </div>
               </div>
-              <div v-else class="suggestions-empty">Start typing to search products and stores.</div>
+              <div v-else class="suggestions-empty">{{ t('Start typing to search products and stores.') }}</div>
             </template>
 
             <template v-else>
               <div v-if="productSuggestions.length" class="suggestions-section">
-                <div class="suggestions-section-header"><span>Products</span></div>
+                <div class="suggestions-section-header"><span>{{ t('Products') }}</span></div>
                 <div
                   v-for="(product, i) in productSuggestions"
                   :key="`p${product.id}`"
@@ -99,7 +99,7 @@
               </div>
 
               <div v-if="storeSuggestions.length" class="suggestions-section">
-                <div class="suggestions-section-header"><span>Stores</span></div>
+                <div class="suggestions-section-header"><span>{{ t('Stores') }}</span></div>
                 <div
                   v-for="(store, i) in storeSuggestions"
                   :key="`s${store.id}`"
@@ -118,13 +118,13 @@
               </div>
 
               <div v-if="!productSuggestions.length && !storeSuggestions.length" class="suggestions-empty">
-                No matches for "{{ searchInput }}"
+                {{ t('No matches for "{query}"', { query: searchInput }) }}
               </div>
             </template>
           </div>
         </div>
 
-        <div class="header-location" :title="address || 'Enter Address'" @click="toggleAddressMenu">
+        <div class="header-location" :title="address || t('Enter Address')" @click="toggleAddressMenu">
           <span class="header-location-pill" :class="{ 'header-location-expanded': addressMenuOpen }">
             <q-icon name="o_location_on" size="15px" />
             <span>{{ displayAddress }}</span>
@@ -145,7 +145,7 @@
             <div class="address-menu-scroll">
               <div class="address-menu-title">
                 <q-icon name="o_location_on" size="16px" class="address-menu-title-icon" />
-                <span>Address</span>
+                <span>{{ t('Address') }}</span>
               </div>
 
               <q-input
@@ -153,7 +153,7 @@
                 dense
                 outlined
                 hide-bottom-space
-                placeholder="Enter your address"
+                :placeholder="t('Enter your address')"
                 class="address-menu-input"
                 @keyup.enter="confirmAddress"
               />
@@ -165,7 +165,7 @@
               <q-btn
                 unelevated
                 no-caps
-                label="Confirm Address"
+                :label="t('Confirm Address')"
                 class="address-menu-confirm"
                 :disable="!draftAddress.trim()"
                 @click="confirmAddress"
@@ -184,7 +184,7 @@
             dense
             round
             icon="o_shopping_cart"
-            :aria-label="isLoggedIn && cartItemCount ? `Cart, ${cartItemCount} items` : 'Cart'"
+            :aria-label="isLoggedIn && cartItemCount ? t('Cart, {count} items', { count: cartItemCount }) : t('Cart')"
             class="header-mobile-btn"
             @click="router.push('/consumer/cart')"
           >
@@ -213,11 +213,11 @@
                 >
                 <div class="cart-menu-inner notifications-inner">
                   <div class="cart-menu-title notifications-title">
-                    Notifications
-                    <q-btn v-if="unreadNotificationCount" flat dense no-caps label="Mark all as read" color="primary" size="sm" @click="markAllAsRead" />
+                    {{ t('Notifications') }}
+                    <q-btn v-if="unreadNotificationCount" flat dense no-caps :label="t('Mark all as read')" color="primary" size="sm" @click="markAllAsRead" />
                   </div>
 
-                  <div v-if="!notifications.length" class="cart-menu-empty">No notifications yet.</div>
+                  <div v-if="!notifications.length" class="cart-menu-empty">{{ t('No notifications yet.') }}</div>
 
                   <div v-else class="notifications-scroll">
                     <div
@@ -238,7 +238,7 @@
                   <q-btn
                     unelevated
                     no-caps
-                    label="View All Notifications"
+                    :label="t('View All Notifications')"
                     class="cart-menu-view-all"
                     @click="notificationsMenuOpen = false; router.push('/consumer/notifications')"
                   />
@@ -263,9 +263,9 @@
                   class="header-menu"
                 >
                 <div class="cart-menu-inner">
-                  <div class="cart-menu-title">My Cart</div>
+                  <div class="cart-menu-title">{{ t('My Cart') }}</div>
 
-                  <div v-if="!cartItems.length" class="cart-menu-empty">Your cart is empty.</div>
+                  <div v-if="!cartItems.length" class="cart-menu-empty">{{ t('Your cart is empty.') }}</div>
 
                   <template v-else>
                     <div v-for="item in cartItems.slice(0, 4)" :key="item.cartId" class="cart-menu-item">
@@ -275,18 +275,18 @@
                       </div>
                       <div class="cart-menu-item-info">
                         <div class="cart-menu-item-name">{{ item.name }}</div>
-                        <div class="cart-menu-item-meta">Qty {{ item.quantity }} · ₱{{ item.price.toFixed(2) }}</div>
+                        <div class="cart-menu-item-meta">{{ t('Qty') }} {{ item.quantity }} · ₱{{ item.price.toFixed(2) }}</div>
                       </div>
                     </div>
                     <div v-if="cartItems.length > 4" class="cart-menu-more">
-                      +{{ cartItems.length - 4 }} more item{{ cartItems.length - 4 === 1 ? '' : 's' }}
+                      +{{ t(cartItems.length - 4 === 1 ? '{count} more item' : '{count} more items', { count: cartItems.length - 4 }) }}
                     </div>
                   </template>
 
                   <q-btn
                     unelevated
                     no-caps
-                    label="View All Cart"
+                    :label="t('View All Cart')"
                     class="cart-menu-view-all"
                     @click="cartMenuOpen = false; router.push('/consumer/cart')"
                   />
@@ -314,15 +314,22 @@
                 >
                 <div class="cart-menu-inner account-menu-inner">
                   <q-list>
+                    <q-item class="account-menu-language" @click.stop>
+                      <q-item-section>
+                        <div class="menu-language-label">{{ t('Language') }}</div>
+                        <LanguageSwitcher compact />
+                      </q-item-section>
+                    </q-item>
+                    <q-separator />
                     <q-item clickable @click="accountMenuOpen = false; router.push('/consumer/profile')">
-                      <q-item-section>My Profile</q-item-section>
+                      <q-item-section>{{ t('My Profile') }}</q-item-section>
                     </q-item>
                     <q-item clickable @click="accountMenuOpen = false; router.push('/consumer/orders')">
-                      <q-item-section>My Orders</q-item-section>
+                      <q-item-section>{{ t('My Orders') }}</q-item-section>
                     </q-item>
                     <q-separator />
                     <q-item clickable @click="accountMenuOpen = false; handleLogout()">
-                      <q-item-section class="text-red-9">Logout</q-item-section>
+                      <q-item-section class="text-red-9">{{ t('Logout') }}</q-item-section>
                     </q-item>
                   </q-list>
                 </div>
@@ -334,7 +341,7 @@
           <!-- GUEST -->
           <template v-else>
             <q-btn
-              label="Log in"
+              :label="t('Log in')"
               no-caps
               flat
               dense
@@ -343,7 +350,7 @@
               @click="goToLogin"
             />
             <q-btn
-              label="Sign up"
+              :label="t('Sign up')"
               no-caps
               unelevated
               dense
@@ -360,7 +367,7 @@
       <q-card class="mobile-menu">
         <div class="mobile-menu-head">
           <img src="@/assets/tindahan-mobile.png" alt="Tindahan" class="mobile-menu-logo" />
-          <q-btn v-close-popup flat round dense icon="close" aria-label="Close menu" class="mobile-menu-close" />
+          <q-btn v-close-popup flat round dense icon="close" :aria-label="t('Close menu')" class="mobile-menu-close" />
         </div>
 
         <q-separator />
@@ -369,31 +376,49 @@
         <div class="mobile-menu-scroll">
 
           <q-list v-if="isLoggedIn" padding>
-            <q-item v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/orders')">
+            <q-item class="mobile-menu-item mobile-menu-language" @click.stop>
               <q-item-section avatar class="mobile-menu-avatar">
-                <q-icon name="o_receipt_long" size="22px" />
+                <q-icon name="translate" size="22px" />
               </q-item-section>
-              <q-item-section>My Orders</q-item-section>
+              <q-item-section>
+                <div class="menu-language-label">{{ t('Language') }}</div>
+                <LanguageSwitcher />
+              </q-item-section>
             </q-item>
 
-            <q-item v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/profile')">
+            <q-separator v-if="isLoggedIn" />
+
+            <q-item v-if="isLoggedIn" v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/profile')">
               <q-item-section avatar class="mobile-menu-avatar">
                 <q-icon name="o_person" size="22px" />
               </q-item-section>
-              <q-item-section>My Profile</q-item-section>
+              <q-item-section>{{ t('My Profile') }}</q-item-section>
             </q-item>
 
-            <q-item v-close-popup clickable class="mobile-menu-item mobile-menu-logout" @click="handleLogout">
+            <q-item v-if="isLoggedIn" v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/orders')">
+              <q-item-section avatar class="mobile-menu-avatar">
+                <q-icon name="o_receipt_long" size="22px" />
+              </q-item-section>
+              <q-item-section>{{ t('My Orders') }}</q-item-section>
+            </q-item>
+
+            <q-separator v-if="isLoggedIn" />
+
+            <q-item v-if="isLoggedIn" v-close-popup clickable class="mobile-menu-item mobile-menu-logout" @click="handleLogout">
               <q-item-section avatar class="mobile-menu-avatar">
                 <q-icon name="o_logout" size="22px" />
               </q-item-section>
-              <q-item-section>Logout</q-item-section>
+              <q-item-section>{{ t('Logout') }}</q-item-section>
             </q-item>
           </q-list>
 
-          <div v-else class="mobile-menu-auth">
-            <q-btn v-close-popup unelevated no-caps label="Log in" class="mobile-menu-login" @click="goToLogin" />
-            <q-btn v-close-popup unelevated no-caps label="Sign up" class="mobile-menu-signup" @click="goToSignup" />
+          <div v-if="!isLoggedIn" class="mobile-menu-auth">
+            <q-btn v-close-popup unelevated no-caps :label="t('Log in')" class="mobile-menu-login" @click="goToLogin" />
+            <q-btn v-close-popup unelevated no-caps :label="t('Sign up')" class="mobile-menu-signup" @click="goToSignup" />
+            <div class="mobile-menu-guest-language">
+              <div class="menu-language-label">{{ t('Language') }}</div>
+              <LanguageSwitcher />
+            </div>
           </div>
         </div>
       </q-card>
@@ -408,7 +433,7 @@
   />
 
   <!-- Bottom tab bar below 1024px that replaces the header's nav row and hamburger, placed outside the sticky header so it stacks with the page. -->
-  <nav v-if="showBottomNav" class="bottom-nav" aria-label="Primary">
+  <nav v-if="showBottomNav" class="bottom-nav" :aria-label="t('Primary')">
     <div class="bottom-nav-inner">
       <q-btn
         v-for="tab in tabs"
@@ -424,7 +449,7 @@
         <span class="bottom-nav-pill">
           <q-icon :name="tab.icon" size="24px" />
         </span>
-        <span class="bottom-nav-label">{{ tab.label }}</span>
+        <span class="bottom-nav-label">{{ t(tab.label) }}</span>
       </q-btn>
 
       <!-- Opens the account drawer and is never lit, since it opens a dialog rather than a page. -->
@@ -440,13 +465,16 @@
         <span class="bottom-nav-pill">
           <q-icon name="o_menu" size="24px" />
         </span>
-        <span class="bottom-nav-label">Menu</span>
+        <span class="bottom-nav-label">{{ t('Menu') }}</span>
       </q-btn>
     </div>
   </nav>
 </template>
 
 <script setup>
+import LanguageSwitcher from '@/components/consumer/LanguageSwitcher.vue'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -461,6 +489,8 @@ import { useCategories } from '@/composables/useCategories'
 import { clearAuthStorage } from '@/utils/authStorage'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 import NotificationsMenu from '@/components/consumer/NotificationsMenu.vue'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 const route = useRoute()
@@ -496,7 +526,7 @@ const avatarSize = '24px'
 const avatarIconSize = '16px'
 
 // Always the full address, which the pill ellipses when it does not fit, with the title attribute carrying the whole string.
-const displayAddress = computed(() => address.value || 'Enter Address')
+const displayAddress = computed(() => address.value || t('Enter Address'))
 
 const toggleAddressMenu = () => {
   const next = !addressMenuOpen.value
@@ -960,6 +990,30 @@ const goToTab = (tab) => {
   flex-shrink: 0;
 }
 
+.menu-language-label {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--c-muted);
+}
+
+.account-menu-language {
+  min-width: 200px;
+}
+
+.account-menu-language :deep(.q-item__section--main) {
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.account-menu-language .menu-language-label {
+  line-height: 18px;
+}
+
+.mobile-menu-language {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
 /* Wraps each header icon button so it centres vertically in the action cluster. */
 .icon-btn-wrap {
   display: flex;
@@ -1020,12 +1074,12 @@ const goToTab = (tab) => {
 .account-menu-inner {
   width: auto;
   min-width: 160px;
-  padding: 6px 0;
+  padding: 4px 0;
 }
 
 .account-menu-inner :deep(.q-item) {
   min-height: 40px;
-  padding: 9px 14px;
+  padding: 8px 16px;
 }
 
 .cart-menu-title {
@@ -1448,6 +1502,17 @@ const goToTab = (tab) => {
 
   gap: 10px;
   padding: 16px 18px;
+}
+
+.mobile-menu-guest-language {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 4px;
+  margin-top: 6px;
+  padding-top: 16px;
+  border-top: 1px solid var(--c-border);
 }
 
 .mobile-menu-login,
@@ -2044,6 +2109,19 @@ const goToTab = (tab) => {
 /* Caps the fixed 460px panel to the screen width, leaving placement to QMenu and QDialog. */
   .address-menu-panel {
     max-width: calc(100vw - 32px);
+  }
+}
+
+/* Leave room for the selector and longer translated navigation on smaller desktops. */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .header-bar-inner {
+    gap: 14px;
+  }
+  .header-nav :deep(.q-tabs__content) {
+    gap: 14px;
+  }
+  .header-actions {
+    gap: 6px;
   }
 }
 

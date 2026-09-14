@@ -5,8 +5,8 @@
     <div class="page-content">
       <div class="page-header-row">
         <div>
-          <h1 class="page-title">Notifications</h1>
-          <p class="page-subtitle">Order updates and store activity.</p>
+          <h1 class="page-title">{{ t('Notifications') }}</h1>
+          <p class="page-subtitle">{{ t('Order updates and store activity.') }}</p>
         </div>
 
         <q-btn
@@ -33,8 +33,8 @@
 
       <div v-else-if="!notifications.length" class="notif-empty">
         <q-icon name="o_notifications_none" size="40px" class="notif-empty-icon" />
-        <p class="notif-empty-text">You have no notifications yet.</p>
-        <q-btn unelevated no-caps label="Browse Products" class="browse-btn" @click="router.push('/consumer/home')" />
+        <p class="notif-empty-text">{{ t('You have no notifications yet.') }}</p>
+        <q-btn unelevated no-caps :label="t('Browse Products')" class="browse-btn" @click="router.push('/consumer/home')" />
       </div>
 
       <div v-else class="notif-list">
@@ -55,7 +55,7 @@
           <span class="notif-row-body">
             <span class="notif-row-head">
               <span class="notif-row-title">{{ notif.title }}</span>
-              <span v-if="!notif.is_read" class="notif-dot" aria-label="Unread"></span>
+              <span v-if="!notif.is_read" class="notif-dot" :aria-label="t('Unread')"></span>
             </span>
             <span class="notif-row-text">{{ notif.message }}</span>
             <span class="notif-row-time">{{ relativeTime(notif.created_at) }}</span>
@@ -71,12 +71,16 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import { api } from '@/boot/axios'
+
+const { t, locale } = useConsumerLanguage()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -112,14 +116,14 @@ const relativeTime = (value) => {
   const then = new Date(value)
   if (Number.isNaN(then.getTime())) return ''
   const secs = Math.floor((Date.now() - then.getTime()) / 1000)
-  if (secs < 60) return 'Just now'
+  if (secs < 60) return t('Just now')
   const mins = Math.floor(secs / 60)
-  if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`
+  if (mins < 60) return t(mins === 1 ? '{count} min ago' : '{count} mins ago', { count: mins })
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
+  if (hours < 24) return t(hours === 1 ? '{count} hour ago' : '{count} hours ago', { count: hours })
   const days = Math.floor(hours / 24)
-  if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`
-  return then.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  if (days < 7) return t(days === 1 ? '{count} day ago' : '{count} days ago', { count: days })
+  return then.toLocaleDateString(locale.value, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 const fetchNotifications = async () => {
@@ -160,7 +164,7 @@ const markAllAsRead = async () => {
     await api.post('/consumer/notifications/read-all')
   } catch {
     notifications.value.forEach((n, i) => { n.is_read = previous[i] })
-    $q.notify({ type: 'negative', message: 'Could not mark notifications as read' })
+    $q.notify({ type: 'negative', message: t('Could not mark notifications as read') })
   } finally {
     markingAll.value = false
   }

@@ -4,8 +4,8 @@
 
     <!-- MAIN CONTENT -->
     <div class="page-content">
-      <h1 class="page-title">My Orders</h1>
-      <p class="page-subtitle">Track, manage, and view your order history.</p>
+      <h1 class="page-title">{{ t('My Orders') }}</h1>
+      <p class="page-subtitle">{{ t('Track, manage, and view your order history.') }}</p>
 
       <div v-if="loading" class="orders-list">
         <div v-for="n in 3" :key="n" class="order-card">
@@ -22,8 +22,8 @@
 
       <div v-else-if="!orders.length" class="orders-empty">
         <q-icon name="o_receipt_long" size="40px" class="orders-empty-icon" />
-        <p class="orders-empty-text">You haven't placed any orders yet.</p>
-        <q-btn unelevated no-caps label="Browse Products" class="browse-btn" @click="router.push('/consumer/home')" />
+        <p class="orders-empty-text">{{ t('You haven\'t placed any orders yet.') }}</p>
+        <q-btn unelevated no-caps :label="t('Browse Products')" class="browse-btn" @click="router.push('/consumer/home')" />
       </div>
 
       <div v-else>
@@ -36,13 +36,13 @@
           narrow-indicator
           :breakpoint="0"
         >
-          <q-tab v-for="tab in orderTabs" :key="tab.value" :name="tab.value" :label="tab.label" class="orders-tab" />
+          <q-tab v-for="tab in orderTabs" :key="tab.value" :name="tab.value" :label="t(tab.label)" class="orders-tab" />
         </q-tabs>
 
         <div v-if="!displayedOrders.length" class="orders-empty">
           <q-icon name="o_receipt_long" size="40px" class="orders-empty-icon" />
           <p class="orders-empty-text">
-            {{ activeTab === 'active' ? "You have no active orders right now." : "You don't have any past orders yet." }}
+            {{ activeTab === 'active' ? t('You have no active orders right now.') : t('You don\'t have any past orders yet.') }}
           </p>
         </div>
 
@@ -51,7 +51,7 @@
             <div v-for="order in displayedOrders" :key="order.order_id" class="order-card cursor-pointer" @click="viewOrder(order)">
               <div class="order-card-top">
                 <div class="order-card-left">
-                  <div class="order-store">{{ order.store?.store_name || 'Unknown Store' }}</div>
+                  <div class="order-store">{{ order.store?.store_name || t('Unknown Store') }}</div>
                   <div class="order-card-meta">
                     #{{ order.order_id }}
                     <span class="order-meta-dot">&bull;</span>
@@ -61,7 +61,7 @@
                 </div>
                 <div class="order-card-right">
                   <div class="order-total">₱{{ parseFloat(order.total_amount).toFixed(2) }}</div>
-                  <div class="order-item-count">{{ order.items?.length || 0 }} {{ order.items?.length === 1 ? 'Item' : 'Items' }}</div>
+                  <div class="order-item-count">{{ order.items?.length || 0 }} {{ order.items?.length === 1 ? t('Item') : t('Items') }}</div>
                 </div>
               </div>
 
@@ -74,8 +74,8 @@
                     <q-icon v-else name="o_inventory_2" size="20px" />
                   </div>
                   <div class="order-item-info">
-                    <div class="order-item-name">{{ item.inventory?.product_name || 'Unavailable Product' }}</div>
-                    <div class="order-item-qty">Qty: {{ item.quantity }}</div>
+                    <div class="order-item-name">{{ item.inventory?.product_name || t('Unavailable Product') }}</div>
+                    <div class="order-item-qty">{{ t('Qty:') }} {{ item.quantity }}</div>
                   </div>
                   <div class="order-item-price">₱{{ parseFloat(item.subtotal).toFixed(2) }}</div>
                 </div>
@@ -88,7 +88,7 @@
                   <span class="status-badge" :class="statusBadgeClass(order.status)">{{ formatStatus(order.status) }}</span>
                   <div class="order-card-right-mobile">
                     <div class="order-total">₱{{ parseFloat(order.total_amount).toFixed(2) }}</div>
-                    <div class="order-item-count">{{ order.items?.length || 0 }} {{ order.items?.length === 1 ? 'Item' : 'Items' }}</div>
+                    <div class="order-item-count">{{ order.items?.length || 0 }} {{ order.items?.length === 1 ? t('Item') : t('Items') }}</div>
                   </div>
                 </div>
                 <div class="order-card-actions">
@@ -97,18 +97,18 @@
                     unelevated
                     no-caps
                     icon="o_replay"
-                    label="Reorder"
+                    :label="t('Reorder')"
                     class="reorder-btn"
                     :loading="reorderingId === order.order_id"
                     @click.stop="reorderItems(order)"
                   />
-                  <q-btn unelevated no-caps label="View Order Details" class="view-details-btn" @click.stop="viewOrder(order)" />
+                  <q-btn unelevated no-caps :label="t('View Order Details')" class="view-details-btn" @click.stop="viewOrder(order)" />
                 </div>
               </div>
 
               <div v-if="order.cancellation_reason" class="cancellation-reason">
                 <q-icon name="o_error_outline" size="16px" />
-                <span>Cancelled: {{ order.cancellation_reason }}</span>
+                <span>{{ t('Cancelled:') }} {{ order.cancellation_reason }}</span>
               </div>
             </div>
           </div>
@@ -121,6 +121,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -129,6 +131,8 @@ import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import { api } from '@/boot/axios'
 import { useCart } from '@/composables/useCart'
 import { formatDistance, calculateDistanceMeters } from '@/utils/distance'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -188,14 +192,14 @@ const orderAddressText = (order) => {
   const dist = formatDistance(calculateDistanceMeters(cLat, cLng, sLat, sLng))
 
   if (address && dist) return `${address} (${dist})`
-  return address || dist || 'Address unavailable'
+  return address || dist || t('Address unavailable')
 }
 
 // Sentence case, such as "Ready for pickup", matching the vendor badges.
 const formatStatus = (status) => {
   if (!status) return ''
   const text = String(status).split('_').join(' ').toLowerCase()
-  return text.charAt(0).toUpperCase() + text.slice(1)
+  return t(text.charAt(0).toUpperCase() + text.slice(1))
 }
 
 const viewOrder = (order) => {
@@ -222,15 +226,15 @@ const reorderItems = async (order) => {
   reorderingId.value = null
 
   if (!successCount) {
-    $q.notify({ type: 'negative', message: 'None of these items are available anymore.' })
+    $q.notify({ type: 'negative', message: t('None of these items are available anymore.') })
     return
   }
 
   $q.notify({
     type: 'positive',
     message: failCount
-      ? `${successCount} item(s) added to cart. ${failCount} item(s) are no longer available.`
-      : `${successCount} item(s) added to cart.`
+      ? t('{count} item(s) added to cart. {failed} item(s) are no longer available.', { count: successCount, failed: failCount })
+      : t('{count} item(s) added to cart.', { count: successCount })
   })
   router.push('/consumer/cart')
 }

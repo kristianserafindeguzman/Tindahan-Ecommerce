@@ -10,20 +10,20 @@
         <div class="hero-content">
           <span class="hero-eyebrow">
             <q-icon name="o_location_on" size="14px" />
-            Discover local stores
+            {{ t('Discover local stores') }}
           </span>
 
-          <h1 class="hero-title hero-title-lg">Explore sari-sari stores around you</h1>
+          <h1 class="hero-title hero-title-lg">{{ t('Explore sari-sari stores around you') }}</h1>
 
           <p class="hero-sub">
-            Find nearby stores, discover products, and shop from your local community.
+            {{ t('Find nearby stores, discover products, and shop from your local community.') }}
           </p>
 
           <div class="hero-actions">
-            <q-btn unelevated no-caps label="Browse Products" class="hero-cta" @click="router.push('/consumer/products')">
+            <q-btn unelevated no-caps :label="t('Browse Products')" class="hero-cta" @click="router.push('/consumer/products')">
               <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
             </q-btn>
-            <q-btn unelevated no-caps label="Show Map" class="hero-cta hero-cta--ghost" @click="showMapDialog = true">
+            <q-btn unelevated no-caps :label="t('Show Map')" class="hero-cta hero-cta--ghost" @click="showMapDialog = true">
               <q-icon name="o_map" size="16px" class="q-ml-xs" />
             </q-btn>
           </div>
@@ -40,7 +40,7 @@
 
 
       <!-- CATEGORIES -->
-      <SectionBlock title="Categories">
+      <SectionBlock :title="t('Categories')">
         <div v-if="categoriesLoading" class="categories-skeleton-row">
           <div v-for="n in 12" :key="n" class="category-skeleton-tile">
             <q-skeleton type="circle" class="category-skeleton-icon" />
@@ -61,7 +61,7 @@
       </SectionBlock>
 
       <!-- STORES NEAR YOU -->
-      <SectionBlock title="Stores near You" view-all @view-all="router.push('/consumer/stores')">
+      <SectionBlock :title="t('Stores near You')" view-all @view-all="router.push('/consumer/stores')">
         <div v-if="storesLoading" class="stores-row">
           <CardSkeleton v-for="n in 4" :key="n" variant="store" />
         </div>
@@ -71,7 +71,7 @@
       </SectionBlock>
 
       <!-- DISCOVER PRODUCTS -->
-      <SectionBlock title="Discover Products" view-all @view-all="router.push('/consumer/products')">
+      <SectionBlock :title="t('Discover Products')" view-all @view-all="router.push('/consumer/products')">
         <div v-if="productsLoading" class="products-grid">
           <CardSkeleton v-for="n in 6" :key="n" />
         </div>
@@ -83,7 +83,7 @@
           v-if="visibleDiscoverProducts.length < discoverProducts.length"
           flat
           no-caps
-          label="See More"
+          :label="t('See More')"
           class="see-more-btn"
           @click="discoverRowsShown += DISCOVER_ROWS_PER_PAGE"
         />
@@ -92,10 +92,10 @@
       <!-- Seller call-to-action for guests only, because /vendor/register is guest-only and would bounce a signed-in consumer straight back here. -->
       <section v-if="!isLoggedIn" class="seller-band">
         <div class="seller-copy">
-          <h2 class="seller-title">Own a sari-sari store?</h2>
-          <p class="seller-text">List what you stock and reach shoppers on your street.</p>
+          <h2 class="seller-title">{{ t('Own a sari-sari store?') }}</h2>
+          <p class="seller-text">{{ t('List what you stock and reach shoppers on your street.') }}</p>
         </div>
-        <q-btn unelevated no-caps label="Start selling" class="seller-cta" @click="router.push('/vendor/register')">
+        <q-btn unelevated no-caps :label="t('Start selling')" class="seller-cta" @click="router.push('/vendor/register')">
           <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
         </q-btn>
       </section>
@@ -110,6 +110,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -128,6 +130,8 @@ import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'
 import { useGridColumns } from '@/composables/useGridColumns'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -190,14 +194,14 @@ const handleAddToCart = async (product) => {
 
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to add to cart.') })
   }
 }
 
 const resultsSectionTitle = computed(() =>
-  isLoggedIn.value ? 'Recommended for You' : 'Popular Products Near You'
+  isLoggedIn.value ? t('Recommended for You') : t('Popular Products Near You')
 )
 
 // Personalization is a logged-in-only route, so guests get routed to the guest-browsable catalog instead.

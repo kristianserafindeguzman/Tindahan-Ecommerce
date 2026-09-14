@@ -2,17 +2,17 @@
   <div class="product-filters" :class="{ 'product-filters-sheet': isSheet }">
     <div class="filters-panel-header">
       <div class="filters-panel-title-group">
-        <span class="filters-panel-title">Filters</span>
+        <span class="filters-panel-title">{{ t('Filters') }}</span>
       </div>
-      <q-btn flat dense round :ripple="false" icon="o_close" class="filters-close-btn" aria-label="Close filters" @click="$emit('close')" />
+      <q-btn flat dense round :ripple="false" icon="o_close" class="filters-close-btn" :aria-label="t('Close filters')" @click="$emit('close')" />
     </div>
 
     <div class="filters-scroll">
       <div class="filter-group">
-        <label class="filter-label">Categories</label>
+        <label class="filter-label">{{ t('Categories') }}</label>
         <q-select
           v-model="category"
-          :options="categoryOptions"
+          :options="translateOptions(categoryOptions)"
           dense
           outlined
           emit-value
@@ -23,19 +23,19 @@
       </div>
 
       <div class="filter-group">
-        <label class="filter-label">Price Range</label>
+        <label class="filter-label">{{ t('Price Range') }}</label>
         <div class="price-range-row">
-          <q-input v-model.number="priceMin" type="number" dense outlined hide-bottom-space placeholder="Min" />
+          <q-input v-model.number="priceMin" type="number" dense outlined hide-bottom-space :placeholder="t('Min')" />
           <span class="price-range-sep">–</span>
-          <q-input v-model.number="priceMax" type="number" dense outlined hide-bottom-space placeholder="Max" />
+          <q-input v-model.number="priceMax" type="number" dense outlined hide-bottom-space :placeholder="t('Max')" />
         </div>
       </div>
 
       <div v-if="!hideStore" class="filter-group">
-        <label class="filter-label">Store</label>
+        <label class="filter-label">{{ t('Store') }}</label>
         <q-select
           v-model="store"
-          :options="storeOptions"
+          :options="translateOptions(storeOptions, option => option.value === 'All')"
           dense
           outlined
           emit-value
@@ -46,15 +46,15 @@
       </div>
 
       <div class="filter-group filter-group-row">
-        <label class="filter-label filter-label-inline">In Stock Only</label>
+        <label class="filter-label filter-label-inline">{{ t('In Stock Only') }}</label>
         <q-toggle v-model="inStock" dense color="primary" />
       </div>
 
       <div class="filter-group">
-        <label class="filter-label">Sort by</label>
+        <label class="filter-label">{{ t('Sort by') }}</label>
         <q-select
           v-model="sort"
-          :options="sortOptions"
+          :options="translateOptions(sortOptions)"
           dense
           outlined
           emit-value
@@ -69,7 +69,7 @@
       <q-separator class="filters-divider" />
 
       <q-btn
-        label="Apply Filters"
+        :label="t('Apply Filters')"
         unelevated
         no-caps
         class="apply-filters-btn"
@@ -77,13 +77,17 @@
       />
 
       <div class="clear-filters-row">
-        <span class="clear-filters-link" @click="$emit('clear')">Clear all filters</span>
+        <span class="clear-filters-link" @click="$emit('clear')">{{ t('Clear all filters') }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
+const { t, translateOptions } = useConsumerLanguage()
+
 defineProps({
   categoryOptions: {
     type: Array,
