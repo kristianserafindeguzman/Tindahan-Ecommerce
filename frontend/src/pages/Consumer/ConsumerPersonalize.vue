@@ -19,8 +19,8 @@
 
       <p v-if="!products.length" class="products-empty">
         {{ !isFallback
-          ? 'No recommendations yet — check back soon.'
-          : 'No popular products to show near you right now.'
+          ? t('No recommendations yet — check back soon.')
+          : t('No popular products to show near you right now.')
         }}
       </p>
 
@@ -36,6 +36,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
@@ -46,6 +48,8 @@ import AppPagination from '@/components/consumer/AppPagination.vue'
 import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
 import { useProducts } from '@/composables/useProducts'
 import { useCart } from '@/composables/useCart'
+
+const { t } = useConsumerLanguage()
 
 const $q = useQuasar()
 const products = ref([])
@@ -79,16 +83,16 @@ const openProductModal = (product) => {
 const handleAddToCart = async (product) => {
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to add to cart.') })
   }
 }
 
-const pageTitle = computed(() => !isFallback.value ? 'Recommended for You' : 'Popular Products Near You')
+const pageTitle = computed(() => !isFallback.value ? t('Recommended for You') : t('Popular Products Near You'))
 const pageSubtitle = computed(() => !isFallback.value
-  ? "Products picked based on your activity and preferences."
-  : "Popular picks from sari-sari stores near you."
+  ? t('Products picked based on your activity and preferences.')
+  : t('Popular picks from sari-sari stores near you.')
 )
 
 // The feed is paginated client-side, 60 products per page.

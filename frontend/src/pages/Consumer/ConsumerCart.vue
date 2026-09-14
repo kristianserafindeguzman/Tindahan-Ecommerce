@@ -6,21 +6,21 @@
     <!-- MAIN CONTENT -->
     <div class="page-content">
 
-      <h1 class="page-title">My Cart</h1>
-      <p v-if="items.length" class="page-subtitle">Choose a store to checkout.</p>
+      <h1 class="page-title">{{ t('My Cart') }}</h1>
+      <p v-if="items.length" class="page-subtitle">{{ t('Choose a store to checkout.') }}</p>
 
       <div v-if="loading" class="cart-loading">
         <q-spinner size="32px" />
-        <p class="cart-loading-text">Loading your cart…</p>
+        <p class="cart-loading-text">{{ t('Loading your cart…') }}</p>
       </div>
 
       <div v-else-if="!items.length" class="cart-empty">
         <q-icon name="o_shopping_cart" size="40px" class="cart-empty-icon" />
-        <p class="cart-empty-text">Your cart is empty.</p>
+        <p class="cart-empty-text">{{ t('Your cart is empty.') }}</p>
         <q-btn
           unelevated
           no-caps
-          label="Browse Products"
+          :label="t('Browse Products')"
           class="browse-btn"
           @click="router.push('/consumer/products')"
         />
@@ -60,7 +60,7 @@
 
               <div class="cart-item-info">
                 <div class="cart-item-name">{{ item.name }}</div>
-                <div v-if="!item.inStock" class="cart-item-oos-tag">Out of Stock</div>
+                <div v-if="!item.inStock" class="cart-item-oos-tag">{{ t('Out of Stock') }}</div>
                 <div class="cart-item-price">₱{{ item.price.toFixed(2) }}</div>
               </div>
 
@@ -74,7 +74,7 @@
                     icon="o_remove"
                     class="stepper-btn"
                     :disable="item.quantity <= 1"
-                    :aria-label="`Decrease quantity of ${item.name}`"
+                    :aria-label="t('Decrease quantity of {name}', { name: item.name })"
                     @click="changeQuantity(item, item.quantity - 1)"
                   />
                   <span class="stepper-value">{{ item.quantity }}</span>
@@ -85,12 +85,12 @@
                     icon="o_add"
                     class="stepper-btn"
                     :disable="item.quantity >= item.availableQuantity"
-                    :aria-label="`Increase quantity of ${item.name}`"
+                    :aria-label="t('Increase quantity of {name}', { name: item.name })"
                     @click="changeQuantity(item, item.quantity + 1)"
                   />
                 </div>
                 <div v-if="item.quantity >= item.availableQuantity" class="stepper-limit">
-                  Max ({{ item.availableQuantity }} limit)
+                  {{ t('Max (') }}{{ item.availableQuantity }} {{ t('limit)') }}
                 </div>
               </div>
 
@@ -102,22 +102,22 @@
                 :ripple="false"
                 icon="o_delete"
                 class="remove-btn"
-                :aria-label="`Remove ${item.name} from cart`"
+                :aria-label="t('Remove {name} from cart', { name: item.name })"
                 @click="removeItem(item)"
               />
             </div>
 
             <div class="store-card-subtotal">
-              <span>Subtotal</span>
+              <span>{{ t('Subtotal') }}</span>
               <strong>₱{{ group.subtotal.toFixed(2) }}</strong>
             </div>
           </div>
         </div>
 
         <aside v-if="!$q.screen.lt.md" class="cart-summary">
-          <div class="summary-title">Order Summary</div>
+          <div class="summary-title">{{ t('Order Summary') }}</div>
 
-          <p v-if="!selectedGroup" class="summary-empty-hint">Select a store from your cart to continue to checkout.</p>
+          <p v-if="!selectedGroup" class="summary-empty-hint">{{ t('Select a store from your cart to continue to checkout.') }}</p>
 
           <template v-else>
             <div class="summary-row">
@@ -126,7 +126,7 @@
             </div>
             <q-separator class="summary-separator" />
             <div class="summary-row summary-total">
-              <span>Total</span>
+              <span>{{ t('Total') }}</span>
               <span>₱{{ selectedGroup.subtotal.toFixed(2) }}</span>
             </div>
           </template>
@@ -134,12 +134,12 @@
           <q-btn
             unelevated
             no-caps
-            label="Proceed to Checkout"
+            :label="t('Proceed to Checkout')"
             class="checkout-btn"
             :disable="!selectedGroup"
             @click="router.push({ path: '/consumer/checkout', query: { storeId: selectedGroup.storeId } })"
           />
-          <p class="summary-pickup-note">You'll pay and pick up your order at the store.</p>
+          <p class="summary-pickup-note">{{ t('You\'ll pay and pick up your order at the store.') }}</p>
         </aside>
 
       </div>
@@ -148,10 +148,10 @@
       <div v-if="showCheckoutBar" ref="checkoutBarEl" class="cart-checkout-bar">
         <div class="cart-checkout-bar-top">
           <div class="cart-checkout-bar-info">
-            <div class="cart-checkout-bar-title">{{ selectedGroup ? 'Total' : 'Select a store to checkout' }}</div>
+            <div class="cart-checkout-bar-title">{{ selectedGroup ? t('Total') : t('Select a store to checkout') }}</div>
             <div class="cart-checkout-bar-subtitle">
-              <template v-if="selectedGroup">{{ selectedItemCount }} item{{ selectedItemCount === 1 ? '' : 's' }} · {{ selectedGroup.store }}</template>
-              <template v-else>Choose a store above to view your total.</template>
+              <template v-if="selectedGroup">{{ itemCount(selectedItemCount) }} · {{ selectedGroup.store }}</template>
+              <template v-else>{{ t('Choose a store above to view your total.') }}</template>
             </div>
           </div>
           <div class="cart-checkout-bar-price">₱{{ (selectedGroup ? selectedGroup.subtotal : 0).toFixed(2) }}</div>
@@ -160,7 +160,7 @@
         <q-btn
           unelevated
           no-caps
-          label="Proceed to Checkout"
+          :label="t('Proceed to Checkout')"
           class="checkout-btn"
           :disable="!selectedGroup"
           @click="router.push({ path: '/consumer/checkout', query: { storeId: selectedGroup.storeId } })"
@@ -176,12 +176,16 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import { useCart } from '@/composables/useCart'
+
+const { t, itemCount } = useConsumerLanguage()
 
 const $q = useQuasar()
 const router = useRouter()
@@ -253,16 +257,16 @@ const changeQuantity = async (item, newQuantity) => {
   try {
     await updateQuantity(item.cartId, newQuantity)
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to update quantity.' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to update quantity.') })
   }
 }
 
 const removeItem = async (item) => {
   try {
     await removeFromCart(item.cartId)
-    $q.notify({ type: 'positive', message: `${item.name} removed from cart.` })
+    $q.notify({ type: 'positive', message: t('{name} removed from cart.', { name: item.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to remove item.' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to remove item.') })
   }
 }
 </script>

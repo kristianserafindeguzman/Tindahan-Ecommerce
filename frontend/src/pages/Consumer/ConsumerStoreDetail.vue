@@ -27,31 +27,31 @@
             <span v-if="store.address" class="store-banner-meta-sep">•</span>
             <span class="store-banner-meta-item store-banner-status" :class="{ 'store-banner-status-closed': !store.isOpen }">
               <span class="store-banner-status-dot" :class="{ 'store-banner-status-dot-closed': !store.isOpen }" />
-              {{ store.scheduleStatusText || (store.isOpen ? `Open until ${store.closesAt}` : 'Closed now') }}
+              {{ storeStatus(store) }}
             </span>
           </div>
         </div>
 
-        <q-btn unelevated no-caps icon="o_directions" label="Directions" class="store-banner-directions" :disable="!hasDirections" @click="getDirections" />
+        <q-btn unelevated no-caps icon="o_directions" :label="t('Directions')" class="store-banner-directions" :disable="!hasDirections" @click="getDirections" />
       </div>
 
       <p v-else class="store-not-found">
-        Store not found.
-        <span class="store-not-found-link" @click="router.push('/consumer/stores')">Back to Stores</span>
+        {{ t('Store not found.') }}
+        <span class="store-not-found-link" @click="router.push('/consumer/stores')">{{ t('Back to Stores') }}</span>
       </p>
 
       <div class="page-header-row">
         <div>
-          <h2 class="page-title">Products</h2>
-          <p class="page-subtitle">Browse everything this store has to offer.</p>
+          <h2 class="page-title">{{ t('Products') }}</h2>
+          <p class="page-subtitle">{{ t('Browse everything this store has to offer.') }}</p>
         </div>
 
         <div class="page-header-actions">
           <div class="sort-inline">
-            <span class="sort-label">Sort by:</span>
+            <span class="sort-label">{{ t('Sort by:') }}</span>
             <q-select
               v-model="sortBy"
-              :options="SORT_OPTIONS"
+              :options="translateOptions(SORT_OPTIONS)"
               dense
               outlined
               emit-value
@@ -71,7 +71,7 @@
             no-caps
             dense
             icon="o_tune"
-            label="Filters"
+            :label="t('Filters')"
             class="filters-toggle-btn"
             @click="filtersOpen = !filtersOpen"
           >
@@ -89,7 +89,7 @@
           :class="{ 'category-pill-active': selectedCategory === 'All' }"
           @click="selectedCategory = 'All'"
         >
-          All
+          {{ t('All') }}
         </q-chip>
         <q-chip
           v-for="category in VISIBLE_CATEGORIES"
@@ -115,7 +115,7 @@
           </div>
 
           <p v-if="!productsLoading && !filteredProducts.length" class="products-empty">
-            No products match your filters.
+            {{ t('No products match your filters.') }}
           </p>
         </div>
 
@@ -169,6 +169,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
@@ -186,6 +188,8 @@ import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'
 import { useReveal } from '@/composables/useReveal'
+
+const { t, storeStatus, translateOptions } = useConsumerLanguage()
 
 const $q = useQuasar()
 
@@ -245,9 +249,9 @@ const handleAddToCart = async (product) => {
 
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to add to cart.') })
   }
 }
 

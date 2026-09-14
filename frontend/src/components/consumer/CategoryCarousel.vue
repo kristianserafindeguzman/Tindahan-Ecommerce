@@ -9,13 +9,17 @@
       />
     </div>
 
-    <q-btn flat dense round :ripple="false" icon="o_chevron_right" class="categories-next" aria-label="More categories" @click="scrollNext" />
+    <q-btn flat dense round :ripple="false" icon="o_chevron_right" class="categories-next" :aria-label="t('More categories')" @click="scrollNext" />
   </div>
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref } from 'vue'
 import CategoryCard from '@/components/consumer/CategoryCard.vue'
+
+const { t } = useConsumerLanguage()
 
 defineProps({
   categories: {

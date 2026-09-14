@@ -16,20 +16,20 @@
         class="notif__panel"
       >
       <div class="notif__head">
-        Notifications
+        {{ t('Notifications') }}
         <q-btn
           v-if="unreadCount"
           flat
           dense
           no-caps
           size="sm"
-          label="Mark all as read"
+          :label="t('Mark all as read')"
           color="primary"
           @click="markAllAsRead"
         />
       </div>
 
-      <p v-if="!notifications.length" class="notif__empty">No notifications yet.</p>
+      <p v-if="!notifications.length" class="notif__empty">{{ t('No notifications yet.') }}</p>
 
       <q-list v-else class="notif__scroll">
         <q-item
@@ -52,7 +52,7 @@
       <q-btn
         unelevated
         no-caps
-        label="View All Notifications"
+        :label="t('View All Notifications')"
         class="notif__view-all"
         @click="goToAll"
       />
@@ -62,10 +62,14 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -88,7 +92,7 @@ const open = ref(false)
 const unreadCount = computed(() => notifications.value.filter((n) => !n.is_read).length)
 
 const ariaLabel = computed(() =>
-  unreadCount.value ? `Notifications, ${unreadCount.value} unread` : 'Notifications'
+  unreadCount.value ? t('Notifications, {count} unread', { count: unreadCount.value }) : t('Notifications')
 )
 
 const isLoggedIn = () => !!localStorage.getItem('auth_token')

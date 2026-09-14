@@ -1,5 +1,5 @@
 <template>
-  <div class="birthday-input" role="group" aria-label="Birthday">
+  <div class="birthday-input" role="group" :aria-label="translate('Birthday')">
     <!-- Three plain dropdowns, the way most sign-up forms ask for a birthday, so nobody has to page back through a calendar. -->
     <div
       ref="rowRef"
@@ -18,7 +18,7 @@
         hide-bottom-space
         behavior="menu"
         dropdown-icon="keyboard_arrow_down"
-        :display-value="month ? undefined : 'Birth Month'"
+        :display-value="month ? undefined : translate('Birth Month')"
         popup-content-class="birthday-menu"
         class="birthday-month"
         :class="{ 'birthday-empty': !month }"
@@ -33,7 +33,7 @@
         hide-bottom-space
         behavior="menu"
         dropdown-icon="keyboard_arrow_down"
-        :display-value="day ? undefined : 'Birth Day'"
+        :display-value="day ? undefined : translate('Birth Day')"
         popup-content-class="birthday-menu"
         class="birthday-day"
         :class="{ 'birthday-empty': !day }"
@@ -48,7 +48,7 @@
         hide-bottom-space
         behavior="menu"
         dropdown-icon="keyboard_arrow_down"
-        :display-value="year ? undefined : 'Birth Year'"
+        :display-value="year ? undefined : translate('Birth Year')"
         popup-content-class="birthday-menu"
         class="birthday-year"
         :class="{ 'birthday-empty': !year }"
@@ -58,7 +58,7 @@
     </div>
 
     <div v-if="errorMessage" class="birthday-error" role="alert">{{
-      errorMessage
+      translate(errorMessage)
     }}</div>
   </div>
 </template>
@@ -68,20 +68,10 @@ import { computed, ref, watch } from 'vue'
 import { useFormChild } from 'quasar'
 import { isValidBirthday } from '@/utils/birthday'
 
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December'
-].map((label, i) => ({ label, value: i + 1 }))
+const MONTHS = computed(() => Array.from({ length: 12 }, (_, i) => ({
+  label: new Date(2000, i, 1).toLocaleDateString(props.locale, { month: 'long' }),
+  value: i + 1
+})))
 
 // Newest first and never past this year, so recent birth years sit at the top of the list.
 const THIS_YEAR = new Date().getFullYear()
@@ -90,6 +80,8 @@ const YEARS = Array.from({ length: THIS_YEAR - 1899 }, (_, i) => THIS_YEAR - i)
 const props = defineProps({
   // The birthday as YYYY-MM-DD, or an empty string until all three parts are picked.
   modelValue: { type: String, default: '' },
+  translate: { type: Function, default: key => key },
+  locale: { type: String, default: 'en-PH' },
   // Rules checked against the YYYY-MM-DD value, the same way Quasar field rules work.
   rules: { type: Array, default: () => [] }
 })

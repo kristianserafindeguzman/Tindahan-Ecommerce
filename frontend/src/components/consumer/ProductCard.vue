@@ -11,7 +11,7 @@
       <q-icon v-else name="o_inventory_2" size="36px" />
 
       <span v-if="product.category" class="product-category-tag">{{ product.category }}</span>
-      <span v-if="!product.inStock" class="product-oos-tag">Out of Stock</span>
+      <span v-if="!product.inStock" class="product-oos-tag">{{ t('Out of Stock') }}</span>
 
       <q-btn
         v-if="product.inStock"
@@ -19,7 +19,7 @@
         unelevated
         dense
         icon="o_add"
-        aria-label="Add to cart"
+        :aria-label="t('Add to cart')"
         class="product-add-btn"
         @click.stop="$emit('add-to-cart', product)"
       />
@@ -41,9 +41,13 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { computed, ref } from 'vue'
 import { splitHighlightParts } from '@/utils/textHighlight'
 import { formatDistance } from '@/utils/distance'
+
+const { t } = useConsumerLanguage()
 
 const props = defineProps({
   product: {

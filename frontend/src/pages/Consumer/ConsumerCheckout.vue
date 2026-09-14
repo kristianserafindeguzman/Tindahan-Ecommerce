@@ -9,16 +9,16 @@
       <template v-if="!orderPlaced">
         <span class="back-link" @click="router.push('/consumer/cart')">
           <q-icon name="o_arrow_back" size="15px" />
-          Back to Cart
+          {{ t('Back to Cart') }}
         </span>
 
-        <h1 class="page-title">Checkout</h1>
-        <p class="page-subtitle">Review your order before confirming.</p>
+        <h1 class="page-title">{{ t('Checkout') }}</h1>
+        <p class="page-subtitle">{{ t('Review your order before confirming.') }}</p>
       </template>
 
       <div v-if="loading" class="checkout-loading">
         <q-spinner size="32px" />
-        <p class="checkout-loading-text">Loading your order…</p>
+        <p class="checkout-loading-text">{{ t('Loading your order…') }}</p>
       </div>
 
       <div v-else-if="orderPlaced" class="success-view">
@@ -27,28 +27,28 @@
             <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </div>
-        <h2 class="success-title">Order Placed!</h2>
+        <h2 class="success-title">{{ t('Order Placed!') }}</h2>
 
         <p class="success-subtitle">
-          Your order at <strong>{{ placedOrder.store?.store_name }}</strong> has been confirmed.<br class="subtitle-break" />
-          We'll notify you when it's ready for pickup.
+          {{ t('Your order at') }} <strong>{{ placedOrder.store?.store_name }}</strong> {{ t('has been confirmed.') }}<br class="subtitle-break" />
+          {{ t('We\'ll notify you when it\'s ready for pickup.') }}
         </p>
 
         <div class="success-actions">
-          <q-btn unelevated no-caps outline label="Continue Shopping" class="continue-btn" @click="router.push('/consumer/home')" />
-          <q-btn unelevated no-caps label="View Order Details" class="view-order-btn" @click="viewOrderDetails" />
+          <q-btn unelevated no-caps outline :label="t('Continue Shopping')" class="continue-btn" @click="router.push('/consumer/home')" />
+          <q-btn unelevated no-caps :label="t('View Order Details')" class="view-order-btn" @click="viewOrderDetails" />
         </div>
 
         <div class="order-ref-card">
           <div class="order-ref-header">
             <div class="order-ref-header-info">
-              <div class="order-ref-label">Order Reference</div>
+              <div class="order-ref-label">{{ t('Order Reference') }}</div>
               <div class="order-ref-id">#{{ placedOrder.order_id }}</div>
             </div>
             <div class="order-ref-pickup">
               <div class="order-ref-pickup-label">
                 <q-icon name="o_schedule" size="12px" />
-                Estimated Pickup
+                {{ t('Estimated Pickup') }}
               </div>
               <div class="order-ref-pickup-value">{{ pickupTimeText }}</div>
             </div>
@@ -62,14 +62,14 @@
                 <img v-if="item.inventory?.image_url" :src="item.inventory.image_url" :alt="item.inventory?.product_name" />
                 <q-icon v-else name="o_inventory_2" size="16px" />
               </div>
-              <span class="order-ref-item-name"><strong class="order-ref-item-qty">{{ item.quantity }}x</strong> {{ item.inventory?.product_name || 'Item' }}</span>
+              <span class="order-ref-item-name"><strong class="order-ref-item-qty">{{ item.quantity }}x</strong> {{ item.inventory?.product_name || t('Item') }}</span>
               <span class="order-ref-item-price">₱{{ Number(item.subtotal).toFixed(2) }}</span>
             </div>
 
             <q-separator class="order-ref-separator" />
 
             <div class="order-ref-total">
-              <span>Total</span>
+              <span>{{ t('Total') }}</span>
               <span class="order-ref-total-amount">₱{{ Number(placedOrder.total_amount).toFixed(2) }}</span>
             </div>
           </div>
@@ -77,14 +77,14 @@
 
         <span class="need-help-link" @click="showContactSupport = true">
           <q-icon name="o_help" size="13px" />
-          Need help with this order?
+          {{ t('Need help with this order?') }}
         </span>
       </div>
 
       <div v-else-if="!checkoutItems.length" class="checkout-empty">
         <q-icon name="o_shopping_cart" size="40px" class="checkout-empty-icon" />
-        <p class="checkout-empty-text">There's nothing to check out.</p>
-        <q-btn unelevated no-caps label="Back to Cart" class="browse-btn" @click="router.push('/consumer/cart')" />
+        <p class="checkout-empty-text">{{ t('There\'s nothing to check out.') }}</p>
+        <q-btn unelevated no-caps :label="t('Back to Cart')" class="browse-btn" @click="router.push('/consumer/cart')" />
       </div>
 
       <template v-else>
@@ -94,7 +94,7 @@
 
           <!-- STORE INFO -->
           <div class="store-info-card">
-            <div class="checkout-items-title">Pickup Location</div>
+            <div class="checkout-items-title">{{ t('Pickup Location') }}</div>
             <q-separator class="card-divider" />
 
             <div v-if="storeDetails?.latitude && storeDetails?.longitude" ref="storeMapEl" class="store-map-preview" />
@@ -107,7 +107,7 @@
 
           <!-- ORDER ITEMS -->
           <div class="checkout-items-card">
-            <div class="checkout-items-title">Order Items</div>
+            <div class="checkout-items-title">{{ t('Order Items') }}</div>
             <q-separator class="card-divider" />
 
             <div v-for="item in checkoutItems" :key="item.cartId" class="checkout-item">
@@ -127,7 +127,7 @@
 
           <!-- PICKUP TIME -->
           <div class="pickup-time-card">
-            <div class="checkout-items-title">Pickup Time</div>
+            <div class="checkout-items-title">{{ t('Pickup Time') }}</div>
             <q-separator class="card-divider" />
 
             <div class="pickup-time-options">
@@ -138,8 +138,8 @@
               >
                 <span class="time-option-radio" />
                 <div>
-                  <div class="time-option-title">ASAP (10 - 15 mins)</div>
-                  <div class="time-option-desc">We'll start preparing your order immediately.</div>
+                  <div class="time-option-title">{{ t('ASAP (10 - 15 mins)') }}</div>
+                  <div class="time-option-desc">{{ t('We\'ll start preparing your order immediately.') }}</div>
                 </div>
               </div>
 
@@ -150,17 +150,17 @@
               >
                 <span class="time-option-radio" />
                 <div>
-                  <div class="time-option-title">Schedule for later</div>
+                  <div class="time-option-title">{{ t('Schedule for later') }}</div>
                   <div class="time-option-desc">
                     <span v-if="scheduledSlotText">{{ scheduledSlotText }}</span>
-                    <span v-else>Choose a specific time today.</span>
+                    <span v-else>{{ t('Choose a specific time today.') }}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             <div v-if="pickupOption === 'schedule' && showScheduler" class="scheduler-panel">
-              <div class="scheduler-label">Select Day</div>
+              <div class="scheduler-label">{{ t('Select Day') }}</div>
               <div class="day-pills">
                 <div
                   v-for="day in dayOptions"
@@ -174,7 +174,7 @@
                 </div>
               </div>
 
-              <div class="scheduler-label">Select Time</div>
+              <div class="scheduler-label">{{ t('Select Time') }}</div>
               <q-select
                 v-model="selectedSlot"
                 :options="timeSlots"
@@ -182,14 +182,14 @@
                 dense
                 hide-bottom-space
                 behavior="menu"
-                placeholder="Choose a time slot"
+                :placeholder="t('Choose a time slot')"
                 class="time-select"
               />
 
               <q-btn
                 unelevated
                 no-caps
-                label="Confirm Time"
+                :label="t('Confirm Time')"
                 class="confirm-time-btn"
                 :disable="!selectedSlot"
                 @click="confirmSchedule"
@@ -199,7 +199,7 @@
 
           <!-- CONTACT DETAILS -->
           <div class="contact-details-card">
-            <div class="checkout-items-title">Contact Details</div>
+            <div class="checkout-items-title">{{ t('Contact Details') }}</div>
             <q-separator class="card-divider" />
 
             <div class="details-display-row">
@@ -208,7 +208,7 @@
                   <q-icon name="o_person" size="18px" />
                 </span>
                 <div>
-                  <div class="contact-field-label">Full Name</div>
+                  <div class="contact-field-label">{{ t('Full Name') }}</div>
                   <div class="contact-field-value">{{ fullName || '—' }}</div>
                 </div>
               </div>
@@ -220,7 +220,7 @@
                   <q-icon name="o_phone" size="18px" />
                 </span>
                 <div>
-                  <div class="contact-field-label">Phone Number</div>
+                  <div class="contact-field-label">{{ t('Phone Number') }}</div>
                   <div class="contact-field-value">{{ phoneNumber || '—' }}</div>
                 </div>
               </div>
@@ -233,15 +233,15 @@
               <q-icon name="o_storefront" size="16px" />
             </span>
             <div>
-              <div class="pickup-info-title">Store Pickup</div>
-              <div class="pickup-info-text">You'll pay and pick up this order at the store. No delivery.</div>
+              <div class="pickup-info-title">{{ t('Store Pickup') }}</div>
+              <div class="pickup-info-text">{{ t('You\'ll pay and pick up this order at the store. No delivery.') }}</div>
             </div>
           </div>
 
         </div>
 
         <aside v-if="!$q.screen.lt.md" class="checkout-summary">
-          <div class="summary-title">Order Summary</div>
+          <div class="summary-title">{{ t('Order Summary') }}</div>
           <div class="summary-store">{{ storeName }}</div>
 
           <div v-for="item in checkoutItems" :key="item.cartId" class="summary-item-row">
@@ -251,7 +251,7 @@
             </div>
             <div class="summary-item-info">
               <div class="summary-item-name">{{ item.name }}</div>
-              <div class="summary-item-qty">Qty: {{ item.quantity }}</div>
+              <div class="summary-item-qty">{{ t('Qty:') }} {{ item.quantity }}</div>
             </div>
             <div class="summary-item-price">₱{{ (item.price * item.quantity).toFixed(2) }}</div>
           </div>
@@ -259,23 +259,23 @@
           <q-separator class="summary-separator" />
 
           <div class="summary-row summary-total">
-            <span>Total</span>
+            <span>{{ t('Total') }}</span>
             <span>₱{{ subtotal.toFixed(2) }}</span>
           </div>
 
           <q-btn
             unelevated
             no-caps
-            label="Place Order"
+            :label="t('Place Order')"
             class="place-order-btn"
             :loading="placingOrder"
             @click="placeOrder"
           />
           <p class="summary-terms-note">
-            By placing your order, you agree to our
-            <a href="#" class="summary-terms-link" @click.prevent="showTerms = true">Terms of Service</a>
-            and
-            <a href="#" class="summary-terms-link" @click.prevent="showPrivacy = true">Privacy Policy</a>.
+            {{ t('By placing your order, you agree to our') }}
+            <a href="#" class="summary-terms-link" @click.prevent="showTerms = true">{{ t('Terms of Service') }}</a>
+            {{ t('and') }}
+            <a href="#" class="summary-terms-link" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.
           </p>
         </aside>
 
@@ -285,8 +285,8 @@
       <div v-if="showCheckoutBar" ref="checkoutBarEl" class="checkout-sticky-bar">
         <div class="checkout-sticky-bar-top">
           <div class="checkout-sticky-bar-info">
-            <div class="checkout-sticky-bar-title">Total</div>
-            <div class="checkout-sticky-bar-subtitle">{{ checkoutItemCount }} item{{ checkoutItemCount === 1 ? '' : 's' }}</div>
+            <div class="checkout-sticky-bar-title">{{ t('Total') }}</div>
+            <div class="checkout-sticky-bar-subtitle">{{ itemCount(checkoutItemCount) }}</div>
           </div>
           <div class="checkout-sticky-bar-price">₱{{ subtotal.toFixed(2) }}</div>
         </div>
@@ -294,7 +294,7 @@
         <q-btn
           unelevated
           no-caps
-          label="Place Order"
+          :label="t('Place Order')"
           class="place-order-btn"
           :loading="placingOrder"
           @click="placeOrder"
@@ -314,6 +314,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import L from 'leaflet'
@@ -328,6 +330,8 @@ import { useCart } from '@/composables/useCart'
 import { formatDistance } from '@/utils/distance'
 import { useStores } from '@/composables/useStores'
 import { api } from '@/boot/axios'
+
+const { t, itemCount, locale } = useConsumerLanguage()
 
 const route = useRoute()
 const router = useRouter()
@@ -351,7 +355,7 @@ const placeOrder = async () => {
   } catch (error) {
     $q.notify({
       type: 'negative',
-      message: error.response?.data?.message || 'Failed to place order.'
+      message: error.response?.data?.message || t('Failed to place order.')
     })
   } finally {
     placingOrder.value = false
@@ -445,15 +449,15 @@ const dayOptions = computed(() => {
     date.setDate(date.getDate() + i)
     days.push({
       value: i === 0 ? 'today' : i === 1 ? 'tomorrow' : `day${i}`,
-      label: DAY_LABELS[i] || date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(),
-      date: date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })
+      label: (DAY_LABELS[i] ? t(DAY_LABELS[i]) : null) || date.toLocaleDateString(locale.value, { weekday: 'short' }).toUpperCase(),
+      date: date.toLocaleDateString(locale.value, { day: '2-digit', month: 'short' })
     })
   }
   return days
 })
 
 const timeSlots = computed(() => {
-  const formatTime = (date) => date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  const formatTime = (date) => date.toLocaleTimeString(locale.value, { hour: 'numeric', minute: '2-digit', hour12: true })
   const start = new Date()
   start.setMinutes(Math.ceil(start.getMinutes() / 15) * 15 + 30, 0, 0)
 
@@ -473,7 +477,7 @@ const selectPickupOption = (option) => {
 
 const scheduledSlotText = computed(() => {
   if (!confirmedSlotLabel.value) return ''
-  const dayLabel = dayOptions.value.find((day) => day.value === selectedDay.value)?.label || 'Today'
+  const dayLabel = dayOptions.value.find((day) => day.value === selectedDay.value)?.label || t('Today')
   return `${dayLabel}, ${confirmedSlotLabel.value}`
 })
 
@@ -484,7 +488,7 @@ const confirmSchedule = () => {
 
 const pickupTimeText = computed(() => {
   if (pickupOption.value === 'schedule' && scheduledSlotText.value) return scheduledSlotText.value
-  return 'ASAP (10 - 15 mins)'
+  return t('ASAP (10 - 15 mins)')
 })
 
 // STORE MAP PREVIEW — a small, non-interactive Leaflet "photo" pinning the store's location.
