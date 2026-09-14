@@ -4,7 +4,7 @@ import messages from '../i18n/consumerMessages.js'
 const STORAGE_KEY = 'consumer_lang'
 const languages = Object.freeze([
   { value: 'en', label: 'English' },
-  { value: 'fil', label: 'Taglish' }
+  { value: 'fil', label: 'Filipino' }
 ])
 const isSupported = value =>
   languages.some(language => language.value === value)

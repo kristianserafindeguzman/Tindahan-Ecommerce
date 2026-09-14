@@ -12,7 +12,7 @@
       :disabled="loadingLocation"
     >
       <span class="location-icon">◎</span>
-      {{ loadingLocation ? 'Locating...' : 'Your Location' }}
+      {{ translate(loadingLocation ? 'Locating...' : 'Your Location') }}
     </button>
 
   </div>
@@ -25,6 +25,7 @@ import 'leaflet/dist/leaflet.css'
 import { getCurrentPosition, reverseGeocode } from '@/utils/geolocation'
 
 const props = defineProps({
+  translate: { type: Function, default: text => text },
   // A saved pin to open on, which also skips jumping to the device's location; left out, the map behaves as before.
   initial: { type: Object, default: null }
 })

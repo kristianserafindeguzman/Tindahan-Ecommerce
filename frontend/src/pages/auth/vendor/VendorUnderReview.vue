@@ -1,5 +1,6 @@
 <template>
   <q-page class="status-page">
+    <AuthLanguageSwitcher />
     <q-card class="status-dialog">
       <q-card-section class="status-content">
         <img
@@ -12,30 +13,26 @@
           <q-icon name="o_hourglass_top" size="32px" />
         </div>
 
-        <div class="status-title">Application Under Review</div>
+        <div class="status-title">{{ t('Application Under Review') }}</div>
 
         <p class="status-message">
-          Our administrators are currently reviewing your store details and
-          business credentials to ensure everything meets our community
-          standards.
+          {{ t('Our administrators are currently reviewing your store details and business credentials to ensure everything meets our community standards.') }}
         </p>
 
         <div class="next-steps-box">
           <div class="next-steps-title">
             <q-icon name="o_info" size="16px" />
-            Next Steps
+            {{ t('Next Steps') }}
           </div>
           <p class="next-steps-text">
-            The verification process typically takes 1–2 business days. You will
-            receive an email notification once your account has been approved
-            and your store is ready for setup.
+            {{ t('The verification process typically takes 1–2 business days. You will receive an email notification once your account has been approved and your store is ready for setup.') }}
           </p>
         </div>
       </q-card-section>
 
       <q-card-actions class="status-actions" vertical>
         <q-btn
-          label="Refresh Status"
+          :label="t('Refresh Status')"
           icon="refresh"
           no-caps
           unelevated
@@ -44,7 +41,7 @@
           @click="checkStatus"
         />
         <q-btn
-          label="Log out"
+          :label="t('Log out')"
           icon="logout"
           no-caps
           outline
@@ -54,8 +51,8 @@
       </q-card-actions>
 
       <div class="support-link">
-        Need help?
-        <a href="#" @click.prevent="showContactSupport = true">Contact Support</a>
+        {{ t('Need help?') }}
+        <a href="#" @click.prevent="showContactSupport = true">{{ t('Contact Support') }}</a>
       </div>
     </q-card>
 
@@ -64,11 +61,15 @@
 </template>
 
 <script setup>
+import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { useAuth } from '@/composables/useAuth'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 const { logout } = useAuth()
@@ -110,6 +111,7 @@ onMounted(checkStatus)
 
 /* Same red gradient as the login and sign-up pages. */
 .status-page {
+  position: relative;
   min-height: 100vh;
   width: 100%;
 
@@ -117,7 +119,7 @@ onMounted(checkStatus)
   align-items: center;
   justify-content: center;
 
-  padding: 40px 20px;
+  padding: 76px 20px 40px;
 
   background:
     linear-gradient(
@@ -353,7 +355,7 @@ onMounted(checkStatus)
   }
 
   .status-content {
-    padding: 32px 24px 8px;
+    padding: 64px 24px 8px;
   }
 
   .status-logo {

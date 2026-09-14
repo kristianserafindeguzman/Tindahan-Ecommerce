@@ -1,5 +1,6 @@
 <template>
   <q-page class="status-page">
+    <AuthLanguageSwitcher />
     <q-card class="status-dialog">
       <q-card-section class="status-content">
         <img
@@ -12,30 +13,28 @@
           <q-icon name="o_block" size="32px" />
         </div>
 
-        <div class="status-title">Application Not Approved</div>
+        <div class="status-title">{{ t('Application Not Approved') }}</div>
 
         <p class="status-message">
-          We reviewed your merchant application for Tindahan. Unfortunately, we
-          cannot approve your request at this time due to specific compliance
-          requirements.
+          {{ t('We reviewed your merchant application for Tindahan. Unfortunately, we cannot approve your request at this time due to specific compliance requirements.') }}
         </p>
 
         <div v-if="rejectionReason" class="reason-box">
           <div class="reason-label">
             <q-icon name="o_error_outline" size="16px" />
-            Reason for Rejection
+            {{ t('Reason for Rejection') }}
           </div>
           <p class="reason-text">{{ rejectionReason }}</p>
           <div v-if="rejectedBy" class="rejected-by-label">
             <q-icon name="o_person" size="14px" />
-            Reviewed by {{ rejectedBy }}
+            {{ t('Reviewed by') }} {{ rejectedBy }}
           </div>
         </div>
       </q-card-section>
 
       <q-card-actions class="status-actions">
         <q-btn
-          label="Contact Support"
+          :label="t('Contact Support')"
           icon="o_support_agent"
           no-caps
           unelevated
@@ -43,7 +42,7 @@
           @click="showContactSupport = true"
         />
         <q-btn
-          label="Log out"
+          :label="t('Log out')"
           icon="logout"
           no-caps
           outline
@@ -58,11 +57,15 @@
 </template>
 
 <script setup>
+import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { api } from '@/boot/axios'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { useAuth } from '@/composables/useAuth'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
+
+const { t } = useConsumerLanguage()
 
 const route = useRoute()
 const { logout } = useAuth()
@@ -94,6 +97,7 @@ onMounted(fetchReason)
 
 /* Same red gradient as the login and sign-up pages. */
 .status-page {
+  position: relative;
   min-height: 100vh;
   width: 100%;
 
@@ -101,7 +105,7 @@ onMounted(fetchReason)
   align-items: center;
   justify-content: center;
 
-  padding: 40px 20px;
+  padding: 76px 20px 40px;
 
   background:
     linear-gradient(
@@ -331,7 +335,7 @@ onMounted(fetchReason)
   }
 
   .status-content {
-    padding: 32px 24px 8px;
+    padding: 64px 24px 8px;
   }
 
   .status-logo {

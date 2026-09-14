@@ -7,6 +7,7 @@
     <div class="home-content">
 
       <section class="hero-banner">
+        <LanguageSwitcher header class="hero-language" />
         <div class="hero-content">
           <span class="hero-eyebrow">
             <q-icon name="o_location_on" size="14px" />
@@ -117,6 +118,7 @@ import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
+import LanguageSwitcher from '@/components/consumer/LanguageSwitcher.vue'
 import CardSkeleton from '@/components/consumer/CardSkeleton.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import SectionBlock from '@/components/consumer/SectionBlock.vue'
@@ -276,9 +278,9 @@ const visibleDiscoverProducts = computed(() =>
   align-items: center;
   justify-content: space-between;
 
-  gap: 40px;
-  padding: 44px 40px;
-  margin-bottom: 28px;
+  gap: 32px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
 
   border-radius: var(--r-2xl);
   box-shadow: 0 4px 16px rgba(101, 16, 18, 0.2);
@@ -309,11 +311,25 @@ const visibleDiscoverProducts = computed(() =>
   }
 }
 
+.hero-language {
+  position: absolute;
+  top: 16px;
+  right: 32px;
+  z-index: 2;
+}
+
+.hero-language :deep(.language-header-btn) {
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .hero-content {
   position: relative;
   z-index: 1;
 
-  max-width: 560px;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 620px;
 }
 
 /* Eyebrow states the model — reserve then collect — before the headline. */
@@ -322,7 +338,8 @@ const visibleDiscoverProducts = computed(() =>
   align-items: center;
   gap: 6px;
 
-  margin-bottom: 14px;
+  max-width: 100%;
+  margin-bottom: 12px;
   padding: 5px 12px;
 
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -333,18 +350,21 @@ const visibleDiscoverProducts = computed(() =>
 
   font-size: var(--fs-2xs);
   font-weight: 600;
+  line-height: 1.4;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  white-space: nowrap;
+  white-space: normal;
+}
+
+.hero-eyebrow :deep(.q-icon) {
+  flex-shrink: 0;
 }
 
 .hero-sub {
   max-width: 46ch;
-  margin: 0 0 22px;
-
+  margin: 0 0 20px;
   font-size: var(--fs-md);
   line-height: 1.5;
-
   color: rgba(255, 255, 255, 0.86);
 }
 
@@ -363,13 +383,15 @@ const visibleDiscoverProducts = computed(() =>
   align-items: center;
   justify-content: center;
 
-  width: 380px;
-  max-width: 46%;
+  width: 300px;
+  max-width: 34%;
+  padding-top: 44px;
 }
 
 .hero-logo {
   width: 100%;
   height: auto;
+  max-height: 190px;
 
   object-fit: contain;
 }
@@ -384,7 +406,7 @@ const visibleDiscoverProducts = computed(() =>
   color: #ffffff;
 }
 
-/* Display font Poppins, loaded in index.html, with a small bottom margin because .hero-sub sits directly under it. */
+/* Display font Poppins, loaded in index.html. */
 .hero-title-lg {
   margin: 0 0 12px;
 
@@ -396,7 +418,7 @@ const visibleDiscoverProducts = computed(() =>
 }
 
 .hero-cta {
-  height: 42px;
+  height: 44px;
   padding: 0 24px;
 
   border-radius: var(--r-sm);
@@ -620,12 +642,16 @@ const visibleDiscoverProducts = computed(() =>
   }
 }
 
-/* Below the laptop breakpoint the copy and logo no longer fit side by side, as the headline wrapped to five lines. */
+/* Keep the copy and logo balanced on smaller screens. */
 @media (max-width: 1023px) {
   /* Stays a row, because stacking the logo above the copy added its full height to the hero, 371px on a tablet. */
   .hero-banner {
     gap: 24px;
-    padding: 26px 28px;
+    padding: 24px;
+  }
+
+  .hero-language {
+    right: 24px;
   }
 
   .hero-content {
@@ -637,7 +663,7 @@ const visibleDiscoverProducts = computed(() =>
   }
 
   .hero-title-lg {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
 
   .hero-sub {
@@ -645,8 +671,8 @@ const visibleDiscoverProducts = computed(() =>
   }
 
   .hero-logo-wrap {
-    width: 250px;
-    max-width: 38%;
+    width: 220px;
+    max-width: 30%;
   }
 }
 
@@ -668,14 +694,19 @@ const visibleDiscoverProducts = computed(() =>
     padding: 16px;
   }
 
-  /* Trims the phone hero from 468px, over half an 844px screen, back to roughly a third of the viewport. */
+  /* Keep the logo prominent without crowding the mobile controls. */
   .hero-banner {
     flex-direction: column-reverse;
     align-items: center;
 
-    gap: 10px;
-    padding: 18px;
+    gap: 8px;
+    padding: 60px 20px 20px;
     text-align: center;
+  }
+
+  .hero-language {
+    top: 12px;
+    right: 12px;
   }
 
   .hero-eyebrow,
@@ -684,25 +715,36 @@ const visibleDiscoverProducts = computed(() =>
     margin-right: auto;
   }
 
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex: none;
+    width: 100%;
+  }
+
   .hero-actions {
     justify-content: center;
+    width: 100%;
+    margin-top: 6px;
   }
 
   .hero-eyebrow {
-    margin-bottom: 10px;
+    margin-bottom: 0;
     padding: 4px 10px;
   }
 
   .hero-title-lg {
-    margin-bottom: 8px;
+    margin-bottom: 0;
     font-size: var(--fs-4xl);
   }
 
   .hero-sub {
-    margin-bottom: 14px;
+    display: none;
   }
 
-  /* The two buttons sit side by side rather than stacked, saving about 54px of hero height since both labels are short. */
+  /* Keep the actions together while there is room for both labels. */
   .hero-actions {
     gap: 10px;
   }
@@ -720,8 +762,25 @@ const visibleDiscoverProducts = computed(() =>
   }
 
   .hero-logo-wrap {
-    width: 150px;
-    max-width: 46%;
+    width: 170px;
+    max-width: 100%;
+    padding-top: 0;
+  }
+
+  .hero-logo {
+    display: block;
+    max-height: 104px;
+  }
+}
+
+@media (max-width: 400px) {
+  .hero-actions {
+    flex-direction: column;
+  }
+
+  .hero-cta {
+    flex: none;
+    width: 100%;
   }
 }
 </style>

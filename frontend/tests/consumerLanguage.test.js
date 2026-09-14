@@ -29,7 +29,7 @@ test('consumer language updates shared views, persists, and leaves vendor settin
   assert.equal(first.lang.value, 'en')
   assert.equal(heading.value, 'Products')
   first.setLanguage('fil')
-  assert.equal(heading.value, 'Mga Products')
+  assert.equal(heading.value, 'Products')
   assert.equal(saved.values.consumer_lang, 'fil')
   assert.equal(saved.values.vendor_lang, 'ph')
   const restored = (await createLanguage(saved))()
@@ -53,19 +53,19 @@ test('translations interpolate names and quantities, preserve unknown content, a
   const language = (await createLanguage(storage({ consumer_lang: 'fil' })))()
   assert.equal(
     language.t('{name} added to cart.', { name: 'Milk & Bread' }),
-    'Na-add ang Milk & Bread sa cart.'
+    'Na-add sa cart ang Milk & Bread.'
   )
   assert.equal(language.itemCount(0), '0 items')
   assert.equal(language.itemCount(2), '2 items')
   assert.equal(language.t('Seller product name'), 'Seller product name')
   assert.equal(
     language.t('Review your order before confirming.'),
-    'I-check ang order mo bago i-confirm.'
+    'Tingnan muna ang order mo bago i-confirm.'
   )
   assert.equal(language.t('View Order Details'), 'Tingnan ang Order Details')
   assert.equal(
     language.languages.find(option => option.value === 'fil').label,
-    'Taglish'
+    'Filipino'
   )
   assert.equal(language.t(null), '')
   assert.equal(
@@ -78,7 +78,7 @@ test('translations interpolate names and quantities, preserve unknown content, a
   )
   assert.equal(
     language.storeStatus({ scheduleStatusText: 'Open today' }),
-    'Bukas today'
+    'Bukas ngayong araw'
   )
   assert.equal(language.locale.value, 'fil-PH')
   language.setLanguage('en')
@@ -99,7 +99,7 @@ test('blocked browser storage still allows language switching', async () => {
   )()
   assert.equal(language.lang.value, 'en')
   language.setLanguage('fil')
-  assert.equal(language.t('Products'), 'Mga Products')
+  assert.equal(language.t('Products'), 'Products')
 })
 
 test('filter option labels change while values stay stable', async () => {
@@ -109,7 +109,7 @@ test('filter option labels change while values stay stable', async () => {
     { label: 'Popular', value: 'popular' }
   ]
   assert.deepEqual(language.translateOptions(options), [
-    { label: 'Lahat ng Kategorya', value: 'All' },
+    { label: 'Lahat ng Categories', value: 'All' },
     { label: 'Popular', value: 'popular' }
   ])
   assert.equal(options[0].label, 'All Categories')
@@ -148,7 +148,7 @@ test('store filters preserve seller names that match translation keys', async ()
   ]
   const original = structuredClone(options)
   assert.deepEqual(language.translateOptions(options, option => option.value === 'All'), [
-    { label: 'Lahat ng Tindahan', value: 'All' },
+    { label: 'Lahat ng Stores', value: 'All' },
     { label: 'Store', value: 'Store' },
     { label: 'Products', value: 'Products' }
   ])
@@ -163,8 +163,8 @@ test('birthday validation errors react to consumer language changes', async () =
   const error = computed(() => language.t('Enter a valid birthday.'))
   assert.equal(error.value, 'Enter a valid birthday.')
   language.setLanguage('fil')
-  assert.equal(error.value, 'Mag-enter ng valid birthday.')
-  assert.equal(language.t('Choose a month, day and year.'), 'Pumili ng month, day at year.')
+  assert.equal(error.value, 'Maglagay ng valid na birthday.')
+  assert.equal(language.t('Choose a month, day and year.'), 'Pumili ng buwan, araw, at taon.')
   language.setLanguage('en')
   assert.equal(error.value, 'Enter a valid birthday.')
 })

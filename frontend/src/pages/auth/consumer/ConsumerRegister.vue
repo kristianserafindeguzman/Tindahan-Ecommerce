@@ -1,5 +1,6 @@
 <template>
   <q-page class="login-page">
+    <AuthLanguageSwitcher />
     <div class="login-card">
 
       <!-- LEFT BRANDING PANEL -->
@@ -20,10 +21,10 @@
       <div class="login-panel">
         <div class="login-content">
 
-          <h1>Sign up</h1>
+          <h1>{{ t('Sign up') }}</h1>
 
           <p class="subtitle">
-            Create an account to get started.
+            {{ t('Create an account to get started.') }}
           </p>
 
           <q-form
@@ -41,11 +42,12 @@
                   dense
                   no-error-icon
                   hide-bottom-space
-                  label="First name"
+                  :label="t('First name')"
                   autocomplete="given-name"
                   class="login-input"
+                  reactive-rules
                   :rules="[
-                    val => !firstNameTouched || !!val || 'First name is required.',
+                    val => !firstNameTouched || !!val || t('First name is required.'),
                     val => !firstNameTouched || nameRule(val)
                   ]"
                   @blur="firstNameTouched = true"
@@ -59,11 +61,12 @@
                   dense
                   no-error-icon
                   hide-bottom-space
-                  label="Last name"
+                  :label="t('Last name')"
                   autocomplete="family-name"
                   class="login-input"
+                  reactive-rules
                   :rules="[
-                    val => !lastNameTouched || !!val || 'Last name is required.',
+                    val => !lastNameTouched || !!val || t('Last name is required.'),
                     val => !lastNameTouched || nameRule(val)
                   ]"
                   @blur="lastNameTouched = true"
@@ -74,10 +77,12 @@
             <!-- BIRTHDAY -->
             <div class="field-group">
               <BirthdayInput
+                :translate="t"
+                :locale="locale"
                 v-model="form.birthday"
                 class="login-input"
                 :rules="[
-                  val => !birthdayTouched || !!val || 'Birthday is required.',
+                  val => !birthdayTouched || !!val || t('Birthday is required.'),
                   val => !birthdayTouched || birthdayRule(val)
                 ]"
                 @touched="birthdayTouched = true"
@@ -93,11 +98,12 @@
                 no-error-icon
                 hide-bottom-space
                 type="email"
-                label="Email"
+                :label="t('Email')"
                 autocomplete="email"
                 class="login-input"
+                reactive-rules
                 :rules="[
-                  val => !emailTouched || !!val || 'Email is required.',
+                  val => !emailTouched || !!val || t('Email is required.'),
                   val => !emailTouched || emailRule(val)
                 ]"
                 @blur="emailTouched = true"
@@ -112,12 +118,13 @@
                 dense
                 no-error-icon
                 hide-bottom-space
-                label="Mobile number"
+                :label="t('Mobile number')"
                 type="tel"
                 autocomplete="tel"
                 class="login-input"
+                reactive-rules
                 :rules="[
-                  val => !phoneTouched || !!val || 'Mobile number is required.',
+                  val => !phoneTouched || !!val || t('Mobile number is required.'),
                   val => !phoneTouched || phoneRule(val)
                 ]"
                 @blur="phoneTouched = true"
@@ -133,11 +140,12 @@
                 no-error-icon
                 hide-bottom-space
                 :type="showPassword ? 'text' : 'password'"
-                label="Create Password"
+                :label="t('Create Password')"
                 autocomplete="new-password"
                 class="login-input"
+                reactive-rules
                 :rules="[
-                  val => !passwordTouched || !!val || 'Password is required.',
+                  val => !passwordTouched || !!val || t('Password is required.'),
                   val => !passwordTouched || passwordRule(val)
                 ]"
                 @blur="passwordTouched = true"
@@ -154,7 +162,7 @@
               </q-input>
               <div v-if="passwordStrong" class="field-message field-message-success">
                 <q-icon name="o_check_circle" size="12px" />
-                Strong password.
+                {{ t('Strong password.') }}
               </div>
             </div>
 
@@ -167,7 +175,7 @@
                 no-error-icon
                 hide-bottom-space
                 :type="showConfirmPassword ? 'text' : 'password'"
-                label="Confirm Password"
+                :label="t('Confirm Password')"
                 autocomplete="new-password"
                 class="login-input"
                 :error="confirmPasswordMessage?.type === 'error'"
@@ -184,19 +192,19 @@
               </q-input>
               <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
                 <q-icon v-if="confirmPasswordMessage.type === 'success'" name="o_check_circle" size="12px" />
-                {{ confirmPasswordMessage.text }}
+                {{ t(confirmPasswordMessage.text) }}
               </div>
             </div>
 
             <!-- ERROR MESSAGE -->
             <div v-if="registerError" class="error-message">
-              {{ registerError }}
+              {{ t(registerError) }}
             </div>
 
             <!-- SUBMIT BUTTON -->
             <q-btn
               type="submit"
-              label="Create account"
+              :label="t('Create account')"
               no-caps
               unelevated
               class="login-button full-width"
@@ -208,14 +216,14 @@
 
           <!-- LOGIN LINK -->
           <div class="register-section">
-            <span>Already have an account?</span>
+            <span>{{ t('Already have an account?') }}</span>
 
             <button
               type="button"
               class="text-button create-account"
               @click="goToLogin"
             >
-              Log in
+              {{ t('Log in') }}
             </button>
           </div>
 
@@ -223,11 +231,12 @@
 
           <!-- TERMS -->
           <p class="terms">
-            By signing up, you agree to our
-            <a href="#" @click.prevent="showTerms = true">Terms and Conditions</a>
-            and
-            <br />
-            <a href="#" @click.prevent="showPrivacy = true">Privacy Policy</a>.
+            <span class="terms-intro">{{ t('By signing up, you agree to our') }}</span>
+            <span class="terms-links">
+              <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
+              {{ t('and') }}
+              <span class="terms-policy"><a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.</span>
+            </span>
           </p>
 
         </div>
@@ -242,6 +251,8 @@
 </template>
 
 <script setup>
+import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
@@ -249,6 +260,8 @@ import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import BirthdayInput from '@/components/shared/BirthdayInput.vue'
 import { isValidBirthday } from '@/utils/birthday'
+
+const { t, locale } = useConsumerLanguage()
 
 const router = useRouter()
 
@@ -273,13 +286,13 @@ const form = reactive({
 })
 
 const nameRule = val =>
-  /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || 'Only letters are allowed.'
+  /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || t('Only letters are allowed.')
 
-const emailRule = val => /.+@.+\..+/.test(val) || 'Enter a valid email address.'
-const phoneRule = val => /^09\d{9}$/.test(val) || 'Mobile number must start with 09 and contain 11 digits.'
-const passwordRule = val => val.length >= 8 || 'Minimum 8 characters'
+const emailRule = val => /.+@.+\..+/.test(val) || t('Enter a valid email address.')
+const phoneRule = val => /^09\d{9}$/.test(val) || t('Mobile number must start with 09 and contain 11 digits.')
+const passwordRule = val => val.length >= 8 || t('Minimum 8 characters')
 
-const birthdayRule = val => isValidBirthday(val) || 'Enter a valid birthday.'
+const birthdayRule = val => isValidBirthday(val) || t('Enter a valid birthday.')
 
 // Gates each field's rules until touched, so rules stay silent on page load — same fix as the Login page's lazy-rules bug.
 const firstNameTouched = ref(false)
@@ -371,6 +384,7 @@ const goToLogin = () => {
 /* PAGE */
 
 .login-page {
+  position: relative;
   min-height: 100vh;
   width: 100%;
   box-sizing: border-box;
@@ -709,9 +723,23 @@ const goToLogin = () => {
   color: var(--c-muted);
 }
 
-/* Vertical padding on an inline link widens its tap area without changing the line height. */
+.terms-intro {
+  display: block;
+  text-wrap: balance;
+}
+
+.terms-links {
+  display: block;
+  margin-top: 2px;
+}
+
+.terms-policy {
+  white-space: nowrap;
+}
+
 .terms a {
-  padding: 16px 0;
+  display: inline-block;
+  white-space: nowrap;
 
   color: var(--c-text-2);
 
@@ -777,7 +805,7 @@ const goToLogin = () => {
 
     justify-content: center;
 
-    padding: 28px 0 8px;
+    padding: 60px 0 8px;
   }
 
   .tindahan-logo-desktop {
