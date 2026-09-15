@@ -3,11 +3,11 @@
     <div class="vp-container">
       <AdminHero
         icon="o_storefront"
-        title="Manage Vendors"
-        subtitle="See every approved store, how it's doing, and manage its account."
-        :stat-label="STAT_LABEL[active]"
+        :title="t('title')"
+        :subtitle="t('subtitle')"
+        :stat-label="t('stat_' + active)"
         :stat-value="totalFor(active)"
-        :stat-unit="totalFor(active) === 1 ? 'account' : 'accounts'"
+        :stat-unit="totalFor(active) === 1 ? t('account') : t('accounts')"
         :loading="loading"
       />
 
@@ -20,7 +20,7 @@
             clearable
             clear-icon="o_close"
             hide-bottom-space
-            placeholder="Search store, owner or email"
+            :placeholder="t('searchPlaceholder')"
             class="vp-search"
           >
             <template #prepend>
@@ -28,10 +28,10 @@
             </template>
           </q-input>
 
-          <!-- Every status, plus the deleted accounts, each with its count. -->
-          <div class="vp-chips" role="tablist" aria-label="Filter vendors">
+          <!-- Status Chips -->
+          <div class="vp-chips" role="tablist" :aria-label="t('filterVendors')">
             <button
-              v-for="filter in FILTERS"
+              v-for="filter in localizedFilters"
               :key="filter.key"
               type="button"
               role="tab"
@@ -52,7 +52,7 @@
             no-caps
             color="primary"
             icon="o_download"
-            label="Export Report"
+            :label="t('exportReport')"
             class="vp-pill-btn adm-export"
             :loading="isExporting"
             @click="handleExport"
@@ -67,29 +67,29 @@
         />
 
         <div v-else-if="!filtered.length" class="vp-empty">
-          <div class="vp-empty-icon"
-            ><q-icon name="o_storefront" size="24px"
-          /></div>
+          <div class="vp-empty-icon">
+            <q-icon name="o_storefront" size="24px" />
+          </div>
           <div class="vp-empty-title">{{
-            search ? 'No matching vendors' : EMPTY[active].title
+            search ? t('noMatchTitle') : t('emptyTitle_' + active)
           }}</div>
           <div class="vp-empty-text">{{
-            search ? 'Try another name, store or email.' : EMPTY[active].text
+            search ? t('noMatchText') : t('emptyText_' + active)
           }}</div>
         </div>
 
-        <!-- A table on wide screens; a row opens the store's profile. -->
+        <!-- VENDOR TABLE -->
         <div v-else-if="!$q.screen.lt.md" class="vp-table-wrap">
           <table class="vp-table vd-table">
             <thead>
               <tr>
-                <th>Store</th>
-                <th class="col-contact">Contact</th>
-                <th class="col-num text-right">Products</th>
-                <th class="col-num text-right">Orders</th>
-                <th class="col-date">Last active</th>
-                <th class="col-status">Status</th>
-                <th class="col-actions text-right">Actions</th>
+                <th class="col-store">{{ t('colStore') }}</th>
+                <th class="col-contact">{{ t('colContact') }}</th>
+                <th class="col-stat text-center">{{ t('colProducts') }}</th>
+                <th class="col-stat text-center">{{ t('colOrders') }}</th>
+                <th class="col-date">{{ t('colLastActive') }}</th>
+                <th class="col-status text-center">{{ t('colStatus') }}</th>
+                <th class="col-actions text-right">{{ t('colActions') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -101,7 +101,8 @@
                 @click="openView(vendor)"
                 @keydown.enter="openView(vendor)"
               >
-                <td>
+                <!-- STORE & OWNER -->
+                <td class="col-store">
                   <div class="vp-person">
                     <span class="adm-thumb">
                       <img
@@ -111,75 +112,113 @@
                       />
                       <q-icon v-else name="o_storefront" size="18px" />
                     </span>
-                    <span class="adm-two-lines">
-                      <span class="vp-name">{{
-                        vendor.store_name || 'Unnamed store'
+                    <div class="adm-two-lines">
+                      <span class="vp-name ellipsis">{{
+                        vendor.store_name || t('unnamedStore')
                       }}</span>
-                      <span class="adm-sub">{{ vendor.full_name }}</span>
+                      <span class="adm-sub text-muted-themed ellipsis">{{ vendor.full_name }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- CONTACT -->
+                <td class="col-contact">
+                  <div class="adm-two-lines">
+                    <span class="adm-email ellipsis">{{ vendor.email || '—' }}</span>
+                    <span class="adm-sub text-muted-themed ellipsis">{{
+                      vendor.phone_number || t('noPhone')
+                    }}</span>
+                  </div>
+                </td>
+
+                <!-- PRODUCTS -->
+                <td class="col-stat text-center">
+                  <div class="row items-center justify-center no-wrap text-muted-themed">
+                    <q-icon name="o_inventory_2" size="20px" class="q-mr-xs" />
+                    <span class="text-weight-bold dialog-title-text" style="font-size: 13px;">
+                      {{ vendor.active_products ?? 0 }}
                     </span>
                   </div>
                 </td>
-                <td>
-                  <span class="adm-two-lines">
-                    <span class="adm-email">{{ vendor.email || '—' }}</span>
-                    <span class="adm-sub">{{
-                      vendor.phone_number || 'No phone'
-                    }}</span>
-                  </span>
+
+                <!-- ORDERS -->
+                <td class="col-stat text-center">
+                  <div class="row items-center justify-center no-wrap text-muted-themed">
+                    <q-icon name="o_receipt_long" size="20px" class="q-mr-xs" />
+                    <span class="text-weight-bold dialog-title-text" style="font-size: 13px;">
+                      {{ vendor.orders_count ?? 0 }}
+                    </span>
+                  </div>
                 </td>
-                <td class="text-right vp-muted">{{
-                  vendor.active_products ?? 0
-                }}</td>
-                <td class="text-right vp-muted">{{
-                  vendor.orders_count ?? 0
-                }}</td>
-                <td class="vp-muted">{{
-                  formatActivity(vendor.last_activity_at)
-                }}</td>
-                <td>
+
+                <!-- LAST ACTIVE -->
+                <td class="col-date">
+                  <div class="row items-center no-wrap text-muted-themed">
+                    <q-icon name="o_schedule" size="14px" class="q-mr-xs" />
+                    <span>{{ formatActivity(vendor.last_activity_at) }}</span>
+                  </div>
+                </td>
+
+                <!-- STATUS -->
+                <td class="col-status text-center">
                   <span
                     class="vp-status"
                     :class="`vp-status--${accountStatusTone(statusOf(vendor))}`"
-                    >{{ accountStatusLabel(statusOf(vendor)) }}</span
                   >
+                    {{ accountStatusLabel(statusOf(vendor)) }}
+                  </span>
                 </td>
-                <td class="text-right">
-                  <div class="adm-row-actions" style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px;" @click.stop @keydown.enter.stop>
+
+                <!-- ALL-ICON UNIFIED ACTION GROUP -->
+                <td class="col-actions text-right" @click.stop @keydown.enter.stop>
+                  <div class="vd-icon-action-group">
                     <q-btn
                       flat
-                      no-caps
-                      label="View"
-                      class="adm-btn adm-btn--view"
+                      round
+                      dense
+                      icon="o_visibility"
+                      class="vd-action-icon-btn"
                       @click="openView(vendor)"
-                    />
+                    >
+                      <q-tooltip anchor="top middle" self="bottom middle">{{ t('tooltipViewProfile') }}</q-tooltip>
+                    </q-btn>
+
                     <q-btn
                       flat
-                      no-caps
-                      label="View Store Products"
-                      class="adm-btn adm-btn--view"
-                      style="white-space: nowrap; padding: 0 12px;"
+                      round
+                      dense
+                      icon="o_inventory_2"
+                      class="vd-action-icon-btn vd-action-icon-btn--primary"
                       @click="openProducts(vendor)"
-                    />
+                    >
+                      <q-tooltip anchor="top middle" self="bottom middle">{{ t('tooltipViewProducts') }}</q-tooltip>
+                    </q-btn>
+
                     <q-btn
                       v-if="!vendor.deleted"
                       flat
+                      round
+                      dense
                       icon="o_more_vert"
-                      class="adm-btn adm-btn--more"
-                      :aria-label="`Change ${vendor.full_name}'s status`"
+                      class="vd-action-icon-btn text-muted-themed"
+                      :aria-label="`${t('changeStatusFor')} ${vendor.full_name}`"
                     >
-                      <q-menu anchor="bottom right" self="top right" auto-close>
-                        <q-list class="vp-menu-list">
+                      <q-tooltip anchor="top middle" self="bottom middle">{{ t('tooltipOptions') }}</q-tooltip>
+                      <q-menu anchor="bottom right" self="top right" auto-close class="compact-status-menu">
+                        <q-list dense class="compact-menu-list">
                           <q-item
-                            v-for="option in statusOptions(vendor)"
+                            v-for="option in localizedStatusOptions(vendor)"
                             :key="option.status"
                             clickable
-                            :class="{ 'vp-menu-item--danger': option.danger }"
+                            v-ripple
+                            class="compact-menu-item"
+                            :class="{ 'compact-menu-item--danger': option.danger }"
                             @click="changeStatus(vendor, option.status)"
                           >
-                            <q-item-section avatar
-                              ><q-icon :name="option.icon" size="18px"
-                            /></q-item-section>
-                            <q-item-section>{{ option.label }}</q-item-section>
+                            <q-item-section avatar class="compact-menu-avatar">
+                              <q-icon :name="option.icon" size="16px" />
+                            </q-item-section>
+                            <q-item-section class="compact-menu-label">{{ option.label }}</q-item-section>
                           </q-item>
                         </q-list>
                       </q-menu>
@@ -191,13 +230,15 @@
           </table>
         </div>
 
-        <!-- A tappable list on phones; the profile carries the status change. -->
+        <!-- TAPPABLE LIST ON PHONES -->
         <div v-else class="vp-list">
           <button
             v-for="vendor in pagedVendors"
             :key="vendor.user_id"
             type="button"
-            class="vp-list-item"
+            class="vp-list-item cursor-pointer"
+            role="button"
+            tabindex="0"
             @click="openView(vendor)"
           >
             <span class="adm-thumb adm-thumb--lg">
@@ -206,29 +247,58 @@
             </span>
             <div class="vp-list-body">
               <span class="vp-name">{{
-                vendor.store_name || 'Unnamed store'
+                vendor.store_name || t('unnamedStore')
               }}</span>
-              <div class="vp-list-meta"
-                >{{ vendor.full_name }} ·
-                {{ formatActivity(vendor.last_activity_at) }}</div
-              >
+              <div class="vp-list-meta text-muted-themed">
+                {{ vendor.full_name }} · {{ formatActivity(vendor.last_activity_at) }}
+              </div>
+              <div class="row items-center q-gutter-x-md q-mt-xs">
+                <div class="row items-center no-wrap text-muted-themed">
+                  <q-icon name="o_inventory_2" size="18px" class="q-mr-xs" />
+                  <span class="text-weight-bold dialog-title-text">{{ vendor.active_products ?? 0 }}</span>
+                  <span class="q-ml-xs text-caption">{{ t('items') }}</span>
+                </div>
+                <div class="row items-center no-wrap text-muted-themed">
+                  <q-icon name="o_receipt_long" size="18px" class="q-mr-xs" />
+                  <span class="text-weight-bold dialog-title-text">{{ vendor.orders_count ?? 0 }}</span>
+                  <span class="q-ml-xs text-caption">{{ t('ordersWord') }}</span>
+                </div>
+              </div>
             </div>
-            <div class="vp-list-side" style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+            <div class="vp-list-side column items-end q-gutter-y-xs">
               <span
                 class="vp-status"
                 :class="`vp-status--${accountStatusTone(statusOf(vendor))}`"
-                >{{ accountStatusLabel(statusOf(vendor)) }}</span
               >
-              <q-btn flat no-caps dense size="sm" label="View Store Products" color="primary" @click.stop="openProducts(vendor)" />
+                {{ accountStatusLabel(statusOf(vendor)) }}
+              </span>
+              <div class="row items-center gap-xs q-mt-xs" @click.stop>
+                <q-btn
+                  flat
+                  round
+                  dense
+                  size="sm"
+                  icon="o_inventory_2"
+                  color="primary"
+                  class="vd-action-icon-btn vd-action-icon-btn--sm"
+                  @click="openProducts(vendor)"
+                />
+                <q-btn
+                  flat
+                  round
+                  dense
+                  size="sm"
+                  icon="o_visibility"
+                  class="vd-action-icon-btn vd-action-icon-btn--sm"
+                  @click="openView(vendor)"
+                />
+              </div>
             </div>
           </button>
         </div>
 
         <div v-if="!loading && pageCount > 1" class="vp-pager">
-          <span
-            >Showing {{ rangeStart }}–{{ rangeEnd }} of
-            {{ filtered.length }}</span
-          >
+          <span>{{ t('showing') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('of') }} {{ filtered.length }}</span>
           <div class="vp-pager-btns">
             <q-btn
               outline
@@ -236,7 +306,7 @@
               color="primary"
               icon="o_chevron_left"
               class="vp-pill-btn"
-              aria-label="Previous page"
+              :aria-label="t('prevPage')"
               :disable="page === 1"
               @click="page--"
             />
@@ -246,7 +316,7 @@
               color="primary"
               icon="o_chevron_right"
               class="vp-pill-btn"
-              aria-label="Next page"
+              :aria-label="t('nextPage')"
               :disable="page === pageCount"
               @click="page++"
             />
@@ -255,7 +325,7 @@
       </div>
     </div>
 
-    <!-- VIEW — the store's full profile, the same one the approvals review shows. -->
+    <!-- STORE PROFILE DIALOG -->
     <StoreProfileDialog
       v-if="viewing"
       v-model="viewOpen"
@@ -277,8 +347,9 @@
         <span
           class="vp-status"
           :class="`vp-status--${accountStatusTone(statusOf(viewing))}`"
-          >{{ accountStatusLabel(statusOf(viewing)) }}</span
         >
+          {{ accountStatusLabel(statusOf(viewing)) }}
+        </span>
       </template>
       <template #actions>
         <q-btn
@@ -286,7 +357,7 @@
           outline
           no-caps
           color="primary"
-          label="Close"
+          :label="t('close')"
           class="vp-dialog-btn"
         />
         <q-btn
@@ -294,7 +365,7 @@
           unelevated
           no-caps
           color="primary"
-          label="Change Status"
+          :label="t('changeStatus')"
           icon-right="o_expand_more"
           class="vp-dialog-btn"
         >
@@ -303,19 +374,22 @@
             self="bottom right"
             :offset="[0, 6]"
             auto-close
+            class="compact-status-menu"
           >
-            <q-list class="vp-menu-list">
+            <q-list dense class="compact-menu-list">
               <q-item
-                v-for="option in statusOptions(viewing)"
+                v-for="option in localizedStatusOptions(viewing)"
                 :key="option.status"
                 clickable
-                :class="{ 'vp-menu-item--danger': option.danger }"
+                v-ripple
+                class="compact-menu-item"
+                :class="{ 'compact-menu-item--danger': option.danger }"
                 @click="changeStatus(viewing, option.status)"
               >
-                <q-item-section avatar
-                  ><q-icon :name="option.icon" size="18px"
-                /></q-item-section>
-                <q-item-section>{{ option.label }}</q-item-section>
+                <q-item-section avatar class="compact-menu-avatar">
+                  <q-icon :name="option.icon" size="18px" />
+                </q-item-section>
+                <q-item-section class="compact-menu-label">{{ option.label }}</q-item-section>
               </q-item>
             </q-list>
           </q-menu>
@@ -323,69 +397,83 @@
       </template>
     </StoreProfileDialog>
 
-    <!-- PRODUCTS VIEW DIALOG -->
-    <q-dialog v-model="productsOpen" full-width>
-      <q-card class="vp-dialog vp-card" style="position: relative; display: flex; flex-direction: column; max-width: 1000px; max-height: calc(100vh - 48px);">
-        
-        <q-btn
-          v-close-popup
-          round
-          dense
-          unelevated
-          icon="o_close"
-          class="vp-dialog-close-float"
-          aria-label="Close"
-        />
-
-        <div style="flex: 1 1 auto; overflow-y: auto; padding: 24px 24px 20px; min-height: 0;">
-          <div class="vp-dialog-title" style="margin-bottom: 24px;">
-            Viewing Live Products from {{ viewingVendor?.store_name || 'Unnamed store' }}
+    <!-- COMPACT & POLISHED PRODUCTS VIEW DIALOG -->
+    <q-dialog v-model="productsOpen" transition-show="scale" transition-hide="scale">
+      <q-card class="products-compact-dialog vp-dialog">
+        <!-- Header Strip -->
+        <div class="products-dialog-head row items-center justify-between no-wrap q-px-lg q-py-md">
+          <div class="row items-center no-wrap ellipsis">
+            <span class="dialog-title-icon q-mr-sm">
+              <q-icon name="o_inventory_2" size="18px" />
+            </span>
+            <div class="text-subtitle1 text-weight-bold dialog-title-text ellipsis">
+              {{ t('liveProducts') }} · <span class="text-primary">{{ viewingVendor?.store_name || t('unnamedStore') }}</span>
+            </div>
           </div>
-          
-          <div v-if="productsLoading" class="q-pa-xl text-center">
+          <q-btn
+            v-close-popup
+            flat
+            round
+            dense
+            icon="o_close"
+            class="text-muted-themed hover-primary"
+            :aria-label="t('close')"
+          />
+        </div>
+
+        <!-- Scrollable Products Area -->
+        <div class="products-dialog-body scroll">
+          <div v-if="productsLoading" class="q-py-xl flex flex-center">
             <q-spinner-dots size="40px" color="primary" />
           </div>
-          <div v-else-if="!vendorProducts.length" class="q-pa-xl text-center">
-            <q-icon name="o_inventory_2" size="48px" color="grey-4" />
-            <div class="text-h6 text-grey-6 q-mt-md">No products found</div>
+
+          <div v-else-if="!vendorProducts.length" class="q-py-xl flex flex-center column text-center">
+            <q-icon name="o_inventory_2" size="44px" class="q-mb-sm text-muted-themed" />
+            <div class="text-body2 text-weight-bold dialog-title-text">{{ t('noProductsListed') }}</div>
+            <div class="text-caption text-muted-themed">{{ t('noProductsDesc') }}</div>
           </div>
+
           <div v-else class="vp-table-wrap">
-            <table class="vp-table vd-table">
+            <table class="vp-table live-prod-table">
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>Category</th>
-                  <th class="text-right">Selling Price</th>
-                  <th class="text-right">In Stock</th>
-                  <th>Product Status</th>
+                  <th class="col-prod-name">{{ t('colProduct') }}</th>
+                  <th class="col-prod-cat">{{ t('colCategory') }}</th>
+                  <th class="col-prod-price text-right">{{ t('colSellingPrice') }}</th>
+                  <th class="col-prod-qty text-center">{{ t('colInStock') }}</th>
+                  <th class="col-prod-status text-center">{{ t('colProdStatus') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="prod in vendorProducts" :key="prod.inventory_id">
-                  <td>
-                    <div class="vp-person">
-                      <span class="adm-thumb">
+                  <td class="col-prod-name">
+                    <div class="vp-person no-wrap">
+                      <span class="live-prod-thumb">
                         <img v-if="prod.image_url && !prod.imageError" :src="prod.image_url" alt="" @error="prod.imageError = true" />
-                        <q-icon v-else name="o_image" size="20px" />
+                        <q-icon v-else name="o_image" size="18px" />
                       </span>
-                      <span class="vp-name">{{ prod.product_name }}</span>
+                      <span class="vp-name ellipsis">{{ prod.product_name }}</span>
                     </div>
                   </td>
-                  <td>{{ prod.category?.category_name || 'N/A' }}</td>
-                  <td class="text-right">
-                    <div class="text-weight-bold">₱{{ Number(prod.price).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}</div>
-                    <div v-if="prod.variants && prod.variants.length > 0" class="text-caption text-grey-7" style="margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">
+                  <td class="col-prod-cat text-muted-themed">{{ prod.category?.category_name || t('uncategorized') }}</td>
+                  <td class="col-prod-price text-right">
+                    <div class="text-weight-bold dialog-title-text">₱{{ Number(prod.price).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}</div>
+                    <div v-if="prod.variants && prod.variants.length > 0" class="text-caption text-muted-themed mt-xs">
                       <div v-for="v in prod.variants" :key="v.name">
                         {{ v.name }}: ₱{{ Number(v.price).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
                       </div>
                     </div>
                   </td>
-                  <td class="text-right">{{ prod.available_quantity }}</td>
-                  <td>
+                  <td class="col-prod-qty text-center">
+                    <span class="text-weight-bold dialog-title-text">{{ prod.available_quantity }}</span>
+                  </td>
+                  <td class="col-prod-status text-center">
                     <span
                       class="vp-status"
-                      :class="`vp-status--${prod.status === 'active' ? 'placed' : 'cancelled'}`"
-                    >{{ prod.status }}</span>
+                      :class="`vp-status--${productStatusTone(prod.status)}`"
+                    >
+                      {{ formatProductStatus(prod.status) }}
+                    </span>
                   </td>
                 </tr>
               </tbody>
@@ -393,14 +481,14 @@
           </div>
         </div>
 
-        <div class="vp-dialog-actions" style="flex-shrink: 0; border-top: 1px solid var(--c-hairline);">
+        <!-- Compact Footer -->
+        <div class="products-dialog-foot row items-center justify-end q-px-lg q-py-sm">
           <q-btn
             v-close-popup
-            outline
+            flat
             no-caps
-            color="primary"
-            label="Close"
-            class="vp-dialog-btn"
+            :label="t('close')"
+            class="vp-dialog-btn text-weight-bold text-muted-themed"
           />
         </div>
       </q-card>
@@ -410,7 +498,7 @@
       ref="statusDialog"
       kind="vendors"
       noun="vendor"
-      delete-text="will be signed out, and their store will be hidden from customers. Their order history is kept."
+      :delete-text="t('deleteWarning')"
       @changed="onChanged"
       @deleted="onDeleted"
     />
@@ -425,6 +513,7 @@ import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 import AdminHero from '@/components/admin/AdminHero.vue'
 import AccountStatusDialog from '@/components/admin/AccountStatusDialog.vue'
 import StoreProfileDialog from '@/components/shared/StoreProfileDialog.vue'
+import { useLanguage } from '@/composables/useLanguage'
 import {
   accountStatusTone,
   accountStatusLabel,
@@ -434,63 +523,180 @@ import '@/css/admin-pages.scss'
 
 const $q = useQuasar()
 
-const FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'active', label: 'Active' },
-  { key: 'inactive', label: 'Inactive' },
-  { key: 'suspended', label: 'Suspended' },
-  { key: 'deleted', label: 'Deleted' }
-]
-
-// The banner's count follows the chosen chip.
-const STAT_LABEL = {
-  all: 'All vendors',
-  active: 'Active',
-  inactive: 'Inactive',
-  suspended: 'Suspended',
-  deleted: 'Deleted'
-}
-
-const EMPTY = {
-  all: {
-    title: 'No vendors yet',
-    text: 'Stores show up here once their application is approved.'
+// --- DICTIONARY FOR LANGUAGE SWITCHER (NATURAL TAGLISH) ---
+const vendorsDict = {
+  en: {
+    title: 'Manage Vendors',
+    subtitle: "See every approved store, how it's doing, and manage its account.",
+    searchPlaceholder: 'Search store, owner or email',
+    filterAll: 'All',
+    filterActive: 'Active',
+    filterInactive: 'Inactive',
+    filterSuspended: 'Suspended',
+    filterDeleted: 'Deleted',
+    stat_all: 'All vendors',
+    stat_active: 'Active',
+    stat_inactive: 'Inactive',
+    stat_suspended: 'Suspended',
+    stat_deleted: 'Deleted',
+    account: 'account',
+    accounts: 'accounts',
+    exportReport: 'Export Report',
+    emptyTitle_all: 'No vendors yet',
+    emptyText_all: 'Stores show up here once their application is approved.',
+    emptyTitle_active: 'No active vendors',
+    emptyText_active: 'Vendors who can sign in and sell are listed here.',
+    emptyTitle_inactive: 'No inactive vendors',
+    emptyText_inactive: 'Vendors you set inactive are listed here.',
+    emptyTitle_suspended: 'No suspended vendors',
+    emptyText_suspended: 'Vendors you suspend are listed here.',
+    emptyTitle_deleted: 'No deleted vendors',
+    emptyText_deleted: 'Deleted vendor accounts are kept here for the record.',
+    noMatchTitle: 'No matching vendors',
+    noMatchText: 'Try another name, store or email.',
+    colStore: 'Store & Owner',
+    colContact: 'Contact',
+    colProducts: 'Products',
+    colOrders: 'Orders',
+    colLastActive: 'Last active',
+    colStatus: 'Status',
+    colActions: 'Actions',
+    unnamedStore: 'Unnamed store',
+    noPhone: 'No phone',
+    items: 'items',
+    ordersWord: 'orders',
+    tooltipViewProfile: 'View Vendor Profile',
+    tooltipViewProducts: 'View Store Products',
+    tooltipOptions: 'Account Options',
+    changeStatusFor: 'Change status for',
+    showing: 'Showing',
+    of: 'of',
+    prevPage: 'Previous page',
+    nextPage: 'Next page',
+    close: 'Close',
+    changeStatus: 'Change Status',
+    liveProducts: 'Live Products',
+    noProductsListed: 'No products listed',
+    noProductsDesc: 'This vendor has not published any live items yet.',
+    colProduct: 'Product',
+    colCategory: 'Category',
+    colSellingPrice: 'Selling Price',
+    colInStock: 'In Stock',
+    colProdStatus: 'Product Status',
+    uncategorized: 'Uncategorized',
+    deleteWarning: 'will be signed out, and their store will be hidden from customers. Their order history is kept.',
+    optSetActive: 'Set active',
+    optSetInactive: 'Set inactive',
+    optSuspend: 'Suspend...',
+    optDelete: 'Delete vendor...',
+    vendorInfoLabel: 'Vendor',
+    lastActiveLabel: 'Last active'
   },
-  active: {
-    title: 'No active vendors',
-    text: 'Vendors who can sign in and sell are listed here.'
-  },
-  inactive: {
-    title: 'No inactive vendors',
-    text: 'Vendors you set inactive are listed here.'
-  },
-  suspended: {
-    title: 'No suspended vendors',
-    text: 'Vendors you suspend are listed here.'
-  },
-  deleted: {
-    title: 'No deleted vendors',
-    text: 'Deleted vendor accounts are kept here for the record.'
+  ph: {
+    title: 'Manage Vendors',
+    subtitle: 'Tingnan ang lahat ng approved stores, ang status nila, at i-manage ang accounts nila.',
+    searchPlaceholder: 'Mag-search ng store, owner o email',
+    filterAll: 'Lahat',
+    filterActive: 'Active',
+    filterInactive: 'Inactive',
+    filterSuspended: 'Suspended',
+    filterDeleted: 'Deleted',
+    stat_all: 'Lahat ng vendors',
+    stat_active: 'Active',
+    stat_inactive: 'Inactive',
+    stat_suspended: 'Suspended',
+    stat_deleted: 'Deleted',
+    account: 'account',
+    accounts: 'accounts',
+    exportReport: 'Export Report',
+    emptyTitle_all: 'Wala pang vendors',
+    emptyText_all: 'Dito lalabas ang mga stores kapag approved na ang application nila.',
+    emptyTitle_active: 'Walang active vendors',
+    emptyText_active: 'Dito nakalista ang mga vendors na pwedeng mag-sign in at magbenta.',
+    emptyTitle_inactive: 'Walang inactive vendors',
+    emptyText_inactive: 'Dito nakalista ang mga vendors na sinet mong inactive.',
+    emptyTitle_suspended: 'Walang suspended vendors',
+    emptyText_suspended: 'Dito nakalista ang mga vendors na sinuspend mo.',
+    emptyTitle_deleted: 'Walang deleted vendors',
+    emptyText_deleted: 'Naka-store dito ang mga deleted accounts for record purposes.',
+    noMatchTitle: 'Walang nag-match',
+    noMatchText: 'Try mag-search ng ibang pangalan, store o email.',
+    colStore: 'Store & Owner',
+    colContact: 'Contact',
+    colProducts: 'Products',
+    colOrders: 'Orders',
+    colLastActive: 'Last active',
+    colStatus: 'Status',
+    colActions: 'Actions',
+    unnamedStore: 'Unnamed store',
+    noPhone: 'Walang phone number',
+    items: 'items',
+    ordersWord: 'orders',
+    tooltipViewProfile: 'View Vendor Profile',
+    tooltipViewProducts: 'View Store Products',
+    tooltipOptions: 'Account Options',
+    changeStatusFor: 'Change status ni',
+    showing: 'Showing',
+    of: 'of',
+    prevPage: 'Previous page',
+    nextPage: 'Next page',
+    close: 'Close',
+    changeStatus: 'Change Status',
+    liveProducts: 'Live Products',
+    noProductsListed: 'Walang naka-list na products',
+    noProductsDesc: 'Wala pang pinu-publish na live items ang vendor na ito.',
+    colProduct: 'Product',
+    colCategory: 'Category',
+    colSellingPrice: 'Selling Price',
+    colInStock: 'In Stock',
+    colProdStatus: 'Status',
+    uncategorized: 'Uncategorized',
+    deleteWarning: 'ay masa-sign out, at maha-hide ang store nila sa customers. Mananatili pa rin ang order history nila.',
+    optSetActive: 'Set as active',
+    optSetInactive: 'Set as inactive',
+    optSuspend: 'Suspend...',
+    optDelete: 'Delete vendor...',
+    vendorInfoLabel: 'Vendor',
+    lastActiveLabel: 'Last active'
   }
 }
 
-// Every change but the current status; a suspension is the one that needs care.
-const STATUS_OPTIONS = [
-  { status: 'active', label: 'Set active', icon: 'o_check_circle' },
-  { status: 'inactive', label: 'Set inactive', icon: 'o_pause_circle' },
-  { status: 'suspended', label: 'Suspend…', icon: 'o_block', danger: true },
-  { status: 'delete', label: 'Delete vendor…', icon: 'o_delete', danger: true }
+const { t } = useLanguage(vendorsDict)
+
+// Reactive Filters computing from dictionary
+const localizedFilters = computed(() => [
+  { key: 'all', label: t('filterAll') },
+  { key: 'active', label: t('filterActive') },
+  { key: 'inactive', label: t('filterInactive') },
+  { key: 'suspended', label: t('filterSuspended') },
+  { key: 'deleted', label: t('filterDeleted') }
+])
+
+// Keep original array structure for logic mapping
+const FILTERS = [
+  { key: 'all' },
+  { key: 'active' },
+  { key: 'inactive' },
+  { key: 'suspended' },
+  { key: 'deleted' }
 ]
 
-// The placeholder rows take the table's columns.
+const STAT_LABEL = {
+  all: 'stat_all',
+  active: 'stat_active',
+  inactive: 'stat_inactive',
+  suspended: 'stat_suspended',
+  deleted: 'stat_deleted'
+}
+
 const SKELETON_COLUMNS = [
   { type: 'thumb', lines: 2 },
   { width: '22%', type: 'text' },
-  { width: '9%', type: 'text', align: 'right' },
-  { width: '8%', type: 'text', align: 'right' },
-  { width: '12%', type: 'text' },
-  { width: '11%', type: 'pill', size: 72 },
-  { width: '130px', type: 'pill', size: 96, align: 'right' }
+  { width: '10%', type: 'text', align: 'center' },
+  { width: '10%', type: 'text', align: 'center' },
+  { width: '14%', type: 'text' },
+  { width: '11%', type: 'pill', size: 72, align: 'center' },
+  { width: '110px', type: 'pill', size: 90, align: 'right' }
 ]
 const PAGE_SIZE = 10
 
@@ -509,7 +715,6 @@ const photoOf = vendor => {
   return url && url !== 'null' && String(url).trim() ? url : null
 }
 
-// A deleted account reads as Deleted whatever its last status was.
 const statusOf = vendor => (vendor.deleted ? 'deleted' : vendor.account_status)
 
 const inFilter = (vendor, key) => {
@@ -533,12 +738,10 @@ const matchesSearch = vendor => {
   )
 }
 
-// The banner counts every vendor in the chosen chip; the chips count what the search leaves.
 const totalFor = key => vendors.value.filter(v => inFilter(v, key)).length
 const searched = computed(() => vendors.value.filter(matchesSearch))
 const countFor = key => searched.value.filter(v => inFilter(v, key)).length
 
-// The most recently active first; vendors who never signed in go last.
 const filtered = computed(() =>
   searched.value
     .filter(v => inFilter(v, active.value))
@@ -562,37 +765,65 @@ const rangeEnd = computed(() =>
 watch([search, active], () => {
   page.value = 1
 })
-// A status change can move a row to another chip, so a page that runs out steps back.
+
 watch(pageCount, count => {
   if (page.value > count) page.value = count
 })
 
-const statusOptions = vendor =>
-  STATUS_OPTIONS.filter(o => o.status !== vendor.account_status)
+const localizedStatusOptions = vendor => {
+  const options = [
+    { status: 'active', label: t('optSetActive'), icon: 'o_check_circle' },
+    { status: 'inactive', label: t('optSetInactive'), icon: 'o_pause_circle' },
+    { status: 'suspended', label: t('optSuspend'), icon: 'o_block', danger: true },
+    { status: 'delete', label: t('optDelete'), icon: 'o_delete', danger: true }
+  ]
+  return options.filter(o => o.status !== vendor.account_status)
+}
+
+const productStatusTone = status => {
+  switch (String(status || 'active').toLowerCase()) {
+    case 'active':
+      return 'success'
+    case 'deactivated':
+    case 'inactive':
+      return 'neutral'
+    case 'suspended':
+    case 'deleted':
+    case 'cancelled':
+      return 'danger'
+    default:
+      return 'neutral'
+  }
+}
+
+const formatProductStatus = status => {
+  if (!status) return 'Active'
+  const s = String(status).toLowerCase()
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
 
 const viewInfo = computed(() =>
   viewing.value
     ? [
-        { label: 'Vendor', value: viewing.value.full_name },
+        { label: t('vendorInfoLabel'), value: viewing.value.full_name },
         {
-          label: 'Last active',
+          label: t('lastActiveLabel'),
           value: formatActivity(viewing.value.last_activity_at)
         }
       ]
     : []
 )
 
-// The profile's counts: products on sale, and orders that weren't cancelled.
 const viewStats = computed(() =>
   viewing.value
     ? [
         {
-          label: 'Products',
+          label: t('colProducts'),
           value: viewing.value.active_products ?? 0,
           icon: 'o_inventory_2'
         },
         {
-          label: 'Orders',
+          label: t('colOrders'),
           value: viewing.value.orders_count ?? 0,
           icon: 'o_receipt_long'
         }
@@ -618,10 +849,6 @@ const openProducts = async (vendor) => {
     }
   } catch (err) {
     console.error('Failed to load products for vendor:', err)
-    $q.notify({
-      type: 'negative',
-      message: 'Failed to load products for this vendor.'
-    })
   } finally {
     productsLoading.value = false
   }
@@ -640,13 +867,11 @@ const changeStatus = (vendor, status) => {
   )
 }
 
-// The changed vendor moves to its new chip straight away.
 const onChanged = ({ userId, status }) => {
   const vendor = vendors.value.find(v => v.user_id === userId && !v.deleted)
   if (vendor) vendor.account_status = status
 }
 
-// A deleted vendor moves to the Deleted chip.
 const onDeleted = ({ userId }) => {
   const vendor = vendors.value.find(v => v.user_id === userId && !v.deleted)
   if (vendor) vendor.deleted = true
@@ -655,7 +880,6 @@ const onDeleted = ({ userId }) => {
 const listOf = res =>
   Array.isArray(res.data) ? res.data : res.data?.data || []
 
-// Both lists load together, so every chip can show its count from the start.
 const fetchVendors = async () => {
   loading.value = true
   try {
@@ -669,16 +893,11 @@ const fetchVendors = async () => {
     ]
   } catch (error) {
     console.error('Failed to load vendors', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Couldn’t load the vendors. Please refresh.'
-    })
   } finally {
     loading.value = false
   }
 }
 
-// The report follows the chosen chip and the search.
 const handleExport = async () => {
   if (isExporting.value) return
   isExporting.value = true
@@ -706,12 +925,6 @@ const handleExport = async () => {
     link.click()
     document.body.removeChild(link)
     setTimeout(() => window.URL.revokeObjectURL(url), 1000)
-  } catch (error) {
-    console.error('Export failed', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Couldn’t create the report. Please try again.'
-    })
   } finally {
     isExporting.value = false
   }
@@ -721,36 +934,327 @@ onMounted(fetchVendors)
 </script>
 
 <style scoped>
-.vd-table .col-contact {
-  width: 22%;
-}
-.vd-table .col-num {
-  width: 8%;
-}
-.vd-table .col-date {
-  width: 12%;
-}
-.vd-table .col-status {
-  width: 11%;
-}
-.vd-table .col-actions {
-  width: auto;
+/* TABLE GEOMETRY */
+.vd-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
+.vd-table th {
+  padding: 12px 16px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--c-muted, #64748b);
+  border-bottom: 1px solid var(--c-hairline, #e2e8f0);
+}
+
+.vd-table td {
+  padding: 14px 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--c-hairline, #f1f5f9);
+}
+
+.vd-table .col-store { width: 27%; }
+.vd-table .col-contact { width: 23%; }
+.vd-table .col-stat { width: 9%; }
+.vd-table .col-date { width: 14%; }
+.vd-table .col-status { width: 12%; }
+.vd-table .col-actions { width: 15%; }
+
+/* ALL-ICON UNIFIED ACTION GROUP */
+.vd-icon-action-group {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.vd-action-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--c-text-2, #64748b);
+  transition: all 0.15s ease;
+}
+
+.vd-action-icon-btn:hover {
+  background: var(--c-surface-2, #f1f5f9);
+  color: var(--c-text, #0f172a);
+}
+
+.vd-action-icon-btn--primary:hover {
+  background: var(--c-brand-tint, rgba(201, 35, 42, 0.08));
+  color: var(--c-brand, #c9232a);
+}
+
+.vd-action-icon-btn--sm {
+  width: 26px;
+  height: 26px;
+}
+
+/* COMPACT MENU POPUP */
+:deep(.compact-status-menu) {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid var(--c-hairline, #e2e8f0);
+  background: var(--c-surface, #ffffff) !important;
+}
+
+.compact-menu-list {
+  padding: 4px 0 !important;
+  min-width: 140px;
+}
+
+.compact-menu-item {
+  min-height: 32px !important;
+  padding: 6px 12px !important;
+  font-size: 12.5px;
+  color: var(--c-text, #1e293b);
+  transition: background-color 0.15s ease;
+}
+
+.compact-menu-item:hover {
+  background: var(--c-surface-2, #f8fafc);
+}
+
+.compact-menu-avatar {
+  min-width: 24px !important;
+  padding-right: 8px !important;
+  color: var(--c-muted, #64748b);
+}
+
+.compact-menu-label {
+  font-weight: 500;
+}
+
+.compact-menu-item--danger {
+  color: #dc2626 !important;
+}
+
+.compact-menu-item--danger .compact-menu-avatar {
+  color: #dc2626 !important;
+}
+
+/* PRODUCTS MODAL */
+.products-compact-dialog {
+  width: 820px;
+  max-width: 94vw;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.products-dialog-head {
+  border-bottom: 1px solid var(--c-hairline, #e2e8f0);
+  background: var(--c-surface, #ffffff);
+}
+
+.dialog-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--c-brand-tint, rgba(201, 35, 42, 0.08));
+  color: var(--c-brand, #c9232a);
+}
+
+.products-dialog-body {
+  max-height: 60vh;
+  padding: 0;
+}
+
+.products-dialog-foot {
+  border-top: 1px solid var(--c-hairline, #e2e8f0);
+  background: var(--c-surface-2, #fbfcfd);
+}
+
+/* LIVE PRODUCTS TABLE */
+.live-prod-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.live-prod-table th {
+  padding: 12px 16px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--c-muted, #64748b);
+  border-bottom: 1px solid var(--c-hairline, #e2e8f0);
+  background: var(--c-surface-2, #f8fafc);
+}
+
+.live-prod-table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--c-hairline, #f1f5f9);
+  font-size: 13px;
+}
+
+.live-prod-table .col-prod-name { width: 34%; }
+.live-prod-table .col-prod-cat { width: 20%; }
+.live-prod-table .col-prod-price { width: 18%; }
+.live-prod-table .col-prod-qty { width: 13%; }
+.live-prod-table .col-prod-status { width: 15%; }
+
+.live-prod-thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--c-surface-2, #f1f5f9);
+  border: 1px solid var(--c-hairline, #e2e8f0);
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.live-prod-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mt-xs {
+  margin-top: 4px;
+}
+
+.text-muted-themed {
+  color: var(--c-muted, #64748b);
+}
+
+.dialog-title-text {
+  color: var(--c-text, #1e293b);
+}
+
+/* FLOATING CLOSE BUTTON */
 .vp-dialog-close-float {
   position: absolute;
-  top: 34px;
-  right: 34px;
+  top: 24px;
+  right: 24px;
   z-index: 2;
   background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   color: var(--c-text-2);
 }
 
 @media (max-width: 600px) {
   .vp-dialog-close-float {
-    top: 24px;
-    right: 24px;
+    top: 18px;
+    right: 18px;
   }
+}
+
+/* =========================================================
+   DARK MODE OVERRIDES
+========================================================= */
+:deep(.body--dark) .vp-dialog,
+:deep(.body--dark) .products-compact-dialog,
+:global(.admin-layout--dark) .vp-dialog,
+:global(.admin-layout--dark) .products-compact-dialog {
+  background: #181b20 !important;
+  border: 1px solid #262a32 !important;
+}
+
+:deep(.body--dark) .products-dialog-head,
+:global(.admin-layout--dark) .products-dialog-head {
+  background: #181b20 !important;
+  border-color: #262a32 !important;
+}
+
+:deep(.body--dark) .products-dialog-foot,
+:global(.admin-layout--dark) .products-dialog-foot {
+  background: #1f2329 !important;
+  border-color: #262a32 !important;
+}
+
+:deep(.body--dark) .live-prod-table th,
+:global(.admin-layout--dark) .live-prod-table th {
+  background: #1f2329 !important;
+  border-color: #262a32 !important;
+  color: #94a3b8 !important;
+}
+
+:deep(.body--dark) .live-prod-table td,
+:global(.admin-layout--dark) .live-prod-table td {
+  border-color: #262a32 !important;
+  color: #f1f5f9 !important;
+}
+
+:deep(.body--dark) .text-muted-themed,
+:deep(.body--dark) .adm-sub,
+:global(.admin-layout--dark) .text-muted-themed,
+:global(.admin-layout--dark) .adm-sub {
+  color: #94a3b8 !important;
+}
+
+:deep(.body--dark) .dialog-title-text,
+:deep(.body--dark) .vp-name,
+:deep(.body--dark) .adm-email,
+:global(.admin-layout--dark) .dialog-title-text,
+:global(.admin-layout--dark) .vp-name,
+:global(.admin-layout--dark) .adm-email {
+  color: #f8fafc !important;
+}
+
+:deep(.body--dark) .live-prod-thumb,
+:global(.admin-layout--dark) .live-prod-thumb {
+  background: #20242b !important;
+  border-color: #2a2e35 !important;
+}
+
+:deep(.body--dark) .vp-dialog-close-float,
+:global(.admin-layout--dark) .vp-dialog-close-float {
+  background: rgba(30, 34, 40, 0.94) !important;
+  color: #94a3b8 !important;
+}
+
+:deep(.body--dark) .compact-status-menu,
+:global(.admin-layout--dark) .compact-status-menu {
+  background: #181b20 !important;
+  border-color: #262a32 !important;
+}
+
+:deep(.body--dark) .compact-menu-item,
+:global(.admin-layout--dark) .compact-menu-item {
+  color: #e2e8f0 !important;
+}
+
+:deep(.body--dark) .compact-menu-item:hover,
+:global(.admin-layout--dark) .compact-menu-item:hover {
+  background: #20242b !important;
+}
+
+/* Fix Status Badges in Dark Mode */
+:deep(.body--dark) .vp-status--success,
+:global(.admin-layout--dark) .vp-status--success {
+  background: rgba(21, 128, 61, 0.22) !important;
+  color: #4ade80 !important;
+  border: 1px solid rgba(74, 222, 128, 0.4) !important;
+}
+
+:deep(.body--dark) .vp-status--neutral,
+:global(.admin-layout--dark) .vp-status--neutral {
+  background: rgba(100, 116, 139, 0.22) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+:deep(.body--dark) .vp-status--danger,
+:global(.admin-layout--dark) .vp-status--danger {
+  background: rgba(220, 38, 38, 0.22) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(248, 113, 113, 0.4) !important;
 }
 </style>

@@ -2,19 +2,20 @@
   <q-page class="vp-page">
     <div class="vp-container">
       <!-- ================= GREETINGS HEADER ================= -->
-      <!-- The vendor dashboard's banner, its colour following the time of day, with the admin's greeting, alert, sync, bell and clock. -->
       <AdminHero
         icon="o_dashboard"
         eyebrow="Tindahan Admin Panel"
         :eyebrow-icon="dayPhase.icon"
         :phase="dayPhase.key"
         :title="`${greeting}, ${userName}!`"
-        subtitle="Here is the executive overview of your marketplace today."
+        :subtitle="t('heroSubtitle')"
         :status="attention"
         status-to="/admin/approvals"
         :loading="loading"
         :actions="heroActions"
         bell
+        class="animate-slide-up"
+        style="animation-delay: 0s;"
         @action="onHeroAction"
       >
         <template #side>
@@ -26,76 +27,64 @@
       </AdminHero>
 
       <!-- ================= KEY NUMBERS ================= -->
-      <!-- The vendor dashboard's KPI cards: the label and its icon, the number with the week's change, and a note; the ones that count a page open it. -->
       <div class="db-kpis">
         <component
           :is="card.to ? 'button' : 'div'"
-          v-for="card in kpis"
+          v-for="(card, index) in kpis"
           :key="card.key"
           :type="card.to ? 'button' : undefined"
-          class="vp-card db-kpi"
+          class="vp-card db-kpi animate-slide-up"
           :class="{
             'db-kpi--link': card.to,
             'db-kpi--alert': card.key === 'attention'
           }"
+          :style="{ animationDelay: `${0.1 + (index * 0.08)}s` }"
           @click="card.to && router.push(card.to)"
         >
           <div class="db-kpi-top">
             <span class="db-kpi-label">{{ card.label }}</span>
-            <span class="db-kpi-icon" :class="`vp-tone--${card.tone}`"
-              ><q-icon :name="card.icon" size="20px"
-            /></span>
+            <span class="db-kpi-icon" :class="`vp-tone--${card.tone}`">
+              <q-icon :name="card.icon" size="20px" />
+            </span>
           </div>
           <q-skeleton v-if="loading" type="text" width="45%" height="40px" />
           <div v-else class="db-kpi-figures">
             <span class="db-kpi-value">{{ card.value }}</span>
-            <span v-if="card.delta > 0" class="db-kpi-delta"
-              ><q-icon name="o_arrow_upward" size="13px" />+{{
-                card.delta
-              }}
-              this week</span
-            >
+            <span v-if="card.delta > 0" class="db-kpi-delta">
+              <q-icon name="o_arrow_upward" size="13px" />+{{ card.delta }} {{ t('thisWeek') }}
+            </span>
           </div>
-          <div class="db-kpi-foot">
-            <span class="db-kpi-note">{{ card.note }}</span>
-            <q-icon
-              v-if="card.to"
-              name="o_arrow_forward"
-              size="16px"
-              class="db-kpi-go"
-            />
+          <div v-if="card.to" class="db-kpi-foot">
+            <q-icon name="o_arrow_forward" size="16px" class="db-kpi-go q-ml-auto" />
           </div>
         </component>
       </div>
 
       <div class="db-grid">
         <!-- ================= NEEDS ATTENTION ================= -->
-        <section class="vp-card db-panel db-area-attention">
+        <section class="vp-card db-panel db-area-attention column animate-slide-up" style="animation-delay: 0.3s;">
           <div class="db-panel-head">
-            <h2 class="db-panel-title">
-              <span class="db-panel-icon vp-tone--brand"
-                ><q-icon name="o_pending_actions" size="18px"
-              /></span>
-              Needs Attention
+            <h2 class="db-panel-title dialog-title-text">
+              <span class="db-panel-icon vp-tone--brand">
+                <q-icon name="o_pending_actions" size="18px" />
+              </span>
+              {{ t('needsAttention') }}
             </h2>
-            <router-link to="/admin/approvals" class="db-link"
-              >View all<q-icon name="o_arrow_forward" size="16px"
-            /></router-link>
+            <router-link to="/admin/approvals" class="db-link">
+              {{ t('viewAll') }}<q-icon name="o_arrow_forward" size="16px" />
+            </router-link>
           </div>
 
           <div class="db-cols db-att-grid">
-            <span /><span>Application</span
-            ><span class="db-att-date">Applied</span><span />
+            <span />
+            <span>{{ t('applicationCol') }}</span>
+            <span class="db-att-date">{{ t('appliedCol') }}</span>
+            <span />
           </div>
 
-          <div v-if="loading" class="db-rows-loading">
+          <div v-if="loading" class="db-rows-loading col flex-1">
             <div v-for="n in 3" :key="n" class="db-att-grid db-skel-row">
-              <q-skeleton
-                type="rect"
-                width="36px"
-                height="36px"
-                class="db-skel-tile"
-              />
+              <q-skeleton type="rect" width="36px" height="36px" class="db-skel-tile" />
               <div class="db-two-lines">
                 <q-skeleton type="text" width="55%" />
                 <q-skeleton type="text" width="78%" height="12px" />
@@ -106,9 +95,9 @@
               </div>
             </div>
           </div>
-          <div v-else-if="!pending.length" class="db-empty">
-            <q-icon name="o_task_alt" size="22px" />
-            No applications waiting for review.
+          <div v-else-if="!pending.length" class="db-empty col flex flex-center text-center">
+            <q-icon name="o_task_alt" size="28px" class="q-mb-xs text-muted-themed" />
+            <span class="text-muted-themed">{{ t('noPendingApps') }}</span>
           </div>
           <template v-else>
             <button
@@ -118,20 +107,16 @@
               class="db-row db-att-grid db-att-row"
               @click="actions.openReview(app)"
             >
-              <span class="db-row-icon vp-tone--brand"
-                ><q-icon name="o_storefront" size="18px"
-              /></span>
+              <span class="db-row-icon vp-tone--brand">
+                <q-icon name="o_storefront" size="18px" />
+              </span>
               <span class="db-two-lines">
-                <span class="db-strong">{{
-                  app.store_name || 'Unnamed store'
-                }}</span>
-                <span class="db-soft db-ellipsis"
-                  >Vendor application · Pending review</span
-                >
+                <span class="db-strong">{{ app.store_name || t('unnamedStore') }}</span>
+                <span class="db-soft db-ellipsis text-muted-themed">{{ t('vendorAppPending') }}</span>
               </span>
               <span class="db-two-lines db-att-date">
-                <span>{{ formatShortDate(app.applied_at) }}</span>
-                <span class="db-soft">{{ formatTime(app.applied_at) }}</span>
+                <span class="dialog-title-text">{{ formatFullDayDate(app.applied_at) }}</span>
+                <span class="db-soft text-muted-themed">{{ formatTime(app.applied_at) }}</span>
               </span>
               <q-icon name="o_chevron_right" size="20px" class="db-row-arrow" />
             </button>
@@ -139,32 +124,25 @@
         </section>
 
         <!-- ================= PLATFORM OVERVIEW ================= -->
-        <!-- Vendors and consumers on each of the last seven days, counted back from today's totals using approval and sign-up dates. -->
-        <section class="vp-card db-panel db-area-overview db-overview">
+        <section class="vp-card db-panel db-area-overview db-overview animate-slide-up" style="animation-delay: 0.4s;">
           <div class="db-panel-head">
-            <h2 class="db-panel-title">
-              <span class="db-panel-icon vp-tone--brand"
-                ><q-icon name="o_insights" size="18px"
-              /></span>
-              Platform Overview
+            <h2 class="db-panel-title dialog-title-text">
+              <span class="db-panel-icon vp-tone--brand">
+                <q-icon name="o_insights" size="18px" />
+              </span>
+              {{ t('platformOverview') }}
             </h2>
             <div class="db-legend-inline">
-              <span
-                ><span
-                  class="db-dot"
-                  :style="{ background: VENDOR_COLOR }"
-                />Vendors</span
-              >
-              <span
-                ><span
-                  class="db-dot"
-                  :style="{ background: CONSUMER_COLOR }"
-                />Consumers</span
-              >
+              <span class="text-muted-themed">
+                <span class="db-dot" :style="{ background: VENDOR_COLOR }" />{{ t('vendorsLegend') }}
+              </span>
+              <span class="text-muted-themed">
+                <span class="db-dot" :style="{ background: CONSUMER_COLOR }" />{{ t('consumersLegend') }}
+              </span>
             </div>
           </div>
           <div class="db-chart">
-            <q-skeleton v-if="loading" type="rect" height="220px" />
+            <q-skeleton v-if="loading" type="rect" height="240px" />
             <VueApexCharts
               v-else
               type="area"
@@ -176,11 +154,11 @@
           </div>
         </section>
 
-        <!-- ================= SIDE ================= -->
+        <!-- ================= SIDE (ECOSYSTEM RATIO) ================= -->
         <div class="db-area-side">
-          <section class="vp-card db-panel db-ratio">
+          <section class="vp-card db-panel db-ratio animate-slide-up" style="animation-delay: 0.5s;">
             <div class="db-panel-head">
-              <h2 class="db-panel-title">Ecosystem Ratio</h2>
+              <h2 class="db-panel-title dialog-title-text">{{ t('ecosystemRatio') }}</h2>
             </div>
             <div class="db-ratio-body">
               <div class="db-ratio-chart">
@@ -188,7 +166,7 @@
                   <q-skeleton type="circle" size="150px" />
                   <span class="db-skel-hole" />
                 </div>
-                <div v-else-if="!mixTotal" class="db-soft">No accounts yet</div>
+                <div v-else-if="!mixTotal" class="db-soft text-muted-themed">{{ t('noAccountsYet') }}</div>
                 <template v-else>
                   <VueApexCharts
                     type="donut"
@@ -198,25 +176,19 @@
                     :series="donutSeries"
                   />
                   <div class="db-ratio-center">
-                    <span :style="{ color: VENDOR_COLOR }">{{
-                      mixRows[0].share
-                    }}</span>
-                    <span :style="{ color: CONSUMER_COLOR }">{{
-                      mixRows[1].share
-                    }}</span>
+                    <span :style="{ color: VENDOR_COLOR }">{{ mixRows[0].share }}</span>
+                    <span :style="{ color: CONSUMER_COLOR }">{{ mixRows[1].share }}</span>
                   </div>
                 </template>
               </div>
               <ul class="db-ratio-legend">
                 <li v-for="row in mixRows" :key="row.label">
                   <span class="db-dot" :style="{ background: row.color }" />
-                  <span class="db-ratio-label">{{ row.label }}</span>
-                  <span class="db-ratio-value"
-                    >{{ loading ? '—' : row.value }}
-                    <span class="db-soft">{{
-                      loading ? '' : `(${row.share})`
-                    }}</span></span
-                  >
+                  <span class="db-ratio-label text-muted-themed">{{ row.label }}</span>
+                  <span class="db-ratio-value dialog-title-text">
+                    {{ loading ? '—' : row.value }}
+                    <span class="db-soft text-muted-themed">{{ loading ? '' : `(${row.share})` }}</span>
+                  </span>
                 </li>
               </ul>
             </div>
@@ -224,42 +196,39 @@
         </div>
 
         <!-- ================= RECENT ACTIVITY ================= -->
-        <!-- The latest applications, decisions and sign-ups, newest first. -->
-        <section class="vp-card db-panel db-area-activity">
+        <section class="vp-card db-panel db-area-activity animate-slide-up" style="animation-delay: 0.6s;">
           <div class="db-panel-head">
-            <h2 class="db-panel-title">
-              <span class="db-panel-icon vp-tone--info"
-                ><q-icon name="o_history" size="18px"
-              /></span>
-              Recent Activity
+            <h2 class="db-panel-title dialog-title-text">
+              <span class="db-panel-icon vp-tone--info">
+                <q-icon name="o_history" size="18px" />
+              </span>
+              {{ t('recentActivity') }}
             </h2>
           </div>
 
           <div class="db-cols db-act-grid">
-            <span>Time</span><span>Activity</span><span>User</span><span />
+            <span>{{ t('dateTimeCol') }}</span>
+            <span>{{ t('activityCol') }}</span>
+            <span>{{ t('userCol') }}</span>
+            <span />
           </div>
 
           <div v-if="loading" class="db-rows-loading">
-            <div v-for="n in 3" :key="n" class="db-act-grid db-skel-row">
+            <div v-for="n in 4" :key="n" class="db-act-grid db-skel-row">
               <div class="db-act-time">
-                <q-skeleton type="text" width="84px" />
+                <q-skeleton type="text" width="120px" />
                 <q-skeleton type="text" width="52px" height="12px" />
               </div>
               <q-skeleton type="text" width="70%" class="db-act-text" />
               <div class="db-act-user">
-                <q-skeleton
-                  type="rect"
-                  width="28px"
-                  height="28px"
-                  class="db-skel-tile"
-                />
+                <q-skeleton type="rect" width="28px" height="28px" class="db-skel-tile" />
                 <q-skeleton type="text" width="60%" />
               </div>
             </div>
           </div>
-          <div v-else-if="!activity.length" class="db-empty">
-            <q-icon name="o_history" size="22px" />
-            Nothing has happened yet.
+          <div v-else-if="!activity.length" class="db-empty flex flex-center">
+            <q-icon name="o_history" size="22px" class="text-muted-themed" />
+            <span class="q-ml-sm text-muted-themed">{{ t('nothingHappened') }}</span>
           </div>
           <template v-else>
             <button
@@ -269,18 +238,18 @@
               class="db-row db-act-grid db-activity-row"
               @click="router.push(item.to)"
             >
-              <span class="db-act-time"
-                >{{ formatShortDate(item.at) }}
-                <span class="db-soft">{{ formatTime(item.at) }}</span></span
-              >
-              <span class="db-act-text">{{ item.text }}</span>
+              <span class="db-act-time">
+                <span class="dialog-title-text">{{ formatFullDayDate(item.at) }}</span>
+                <span class="db-soft text-muted-themed">{{ formatTime(item.at) }}</span>
+              </span>
+              <span class="db-act-text text-muted-themed">{{ item.text }}</span>
               <span class="db-act-user">
                 <q-icon
                   :name="item.icon"
                   size="16px"
                   :class="`db-act-icon--${item.kind}`"
                 />
-                <span class="db-act-name">{{ item.who }}</span>
+                <span class="db-act-name dialog-title-text">{{ item.who }}</span>
               </span>
               <q-icon name="o_chevron_right" size="20px" class="db-row-arrow" />
             </button>
@@ -302,14 +271,95 @@ import { api } from '@/boot/axios'
 import AdminHero from '@/components/admin/AdminHero.vue'
 import ApplicationActions from '@/components/admin/ApplicationActions.vue'
 import { useAdminNotifications } from '@/composables/useAdminNotifications'
-import { formatShortDate } from '@/utils/accountStatus'
+import { useLanguage } from '@/composables/useLanguage'
 import '@/css/admin-pages.scss'
 
 const router = useRouter()
 const $q = useQuasar()
 const { fetchNotifications } = useAdminNotifications()
 
-// Vendors in blue and consumers in green, the colours of their cards.
+// DICTIONARY: English and Natural Taglish with translated cards
+const dashboardDict = {
+  en: {
+    heroSubtitle: 'Here is the executive overview of your marketplace today.',
+    goodMorning: 'Good morning',
+    goodAfternoon: 'Good afternoon',
+    goodEvening: 'Good evening',
+    actionRequiredSingular: 'Action required: 1 task',
+    actionRequiredPlural: 'Action required: {x} tasks',
+    reviewApplications: 'Review Applications',
+    syncData: 'Sync Data',
+    syncedToast: 'Dashboard synced.',
+    failedLoad: 'Couldn’t load the dashboard. Please refresh.',
+    needsAttention: 'Needs Attention',
+    approvedVendors: 'Approved vendors',
+    activeConsumers: 'Active consumers',
+    totalUsers: 'Total platform users',
+    thisWeek: 'this week',
+    viewAll: 'View all',
+    applicationCol: 'Application',
+    appliedCol: 'Applied',
+    noPendingApps: 'No applications waiting for review.',
+    unnamedStore: 'Unnamed store',
+    vendorAppPending: 'Vendor application · Pending review',
+    platformOverview: 'Platform Overview',
+    vendorsLegend: 'Vendors',
+    consumersLegend: 'Consumers',
+    ecosystemRatio: 'Ecosystem Ratio',
+    noAccountsYet: 'No accounts yet',
+    recentActivity: 'Recent Activity',
+    dateTimeCol: 'Date & Time',
+    activityCol: 'Activity',
+    userCol: 'User',
+    nothingHappened: 'Nothing has happened yet.',
+    actAppSubmitted: 'New vendor application submitted',
+    actAppApproved: 'Vendor application approved',
+    actAppRejected: 'Vendor application rejected',
+    actConsumerRegistered: 'Consumer registered',
+    unnamedConsumer: 'Unnamed consumer'
+  },
+  ph: {
+    heroSubtitle: 'Narito ang quick overview ng marketplace mo ngayon.',
+    goodMorning: 'Magandang umaga',
+    goodAfternoon: 'Magandang hapon',
+    goodEvening: 'Magandang gabi',
+    actionRequiredSingular: 'Action required: 1 task',
+    actionRequiredPlural: 'Action required: {x} tasks',
+    reviewApplications: 'Review Applications',
+    syncData: 'Sync Data',
+    syncedToast: 'Na-sync na ang dashboard.',
+    failedLoad: 'Hindi ma-load ang dashboard. Paki-refresh.',
+    needsAttention: 'Kailangang Asikasuhin',
+    approvedVendors: 'Approved Vendors',
+    activeConsumers: 'Active Consumers',
+    totalUsers: 'Total Users',
+    thisWeek: 'ngayong linggo',
+    viewAll: 'View all',
+    applicationCol: 'Application',
+    appliedCol: 'Applied',
+    noPendingApps: 'Walang pending applications na kailangang i-review.',
+    unnamedStore: 'Unnamed store',
+    vendorAppPending: 'Vendor application · Pending review',
+    platformOverview: 'Platform Overview',
+    vendorsLegend: 'Vendors',
+    consumersLegend: 'Consumers',
+    ecosystemRatio: 'Ecosystem Ratio',
+    noAccountsYet: 'Wala pang accounts',
+    recentActivity: 'Recent Activity',
+    dateTimeCol: 'Date & Time',
+    activityCol: 'Activity',
+    userCol: 'User',
+    nothingHappened: 'Wala pang activity.',
+    actAppSubmitted: 'Nag-submit ng bagong vendor application',
+    actAppApproved: 'Na-approve ang vendor application',
+    actAppRejected: 'Na-reject ang vendor application',
+    actConsumerRegistered: 'May bagong registered na consumer',
+    unnamedConsumer: 'Unnamed consumer'
+  }
+}
+
+const { t, lang } = useLanguage(dashboardDict)
+
 const VENDOR_COLOR = '#2563eb'
 const CONSUMER_COLOR = '#16a34a'
 const DAY = 86400000
@@ -322,36 +372,31 @@ const stats = ref({
   total_consumers: 0,
   total_users: 0
 })
-// Every application (pending, approved and rejected) and the active consumers, for the lists, the week's changes and the chart.
+
 const applications = ref([])
 const consumers = ref([])
-// The day the numbers were loaded, so the chart only redraws when they are.
 const loadedAt = ref(new Date())
 const actions = ref(null)
 
-// The signed-in admin's name from the sign-in record, as the old dashboard greeted them.
 const userName = (() => {
   try {
-    return (
-      JSON.parse(localStorage.getItem('auth_user') || '{}').full_name || 'Admin'
-    )
+    return JSON.parse(localStorage.getItem('auth_user') || '{}').full_name || 'Admin'
   } catch {
     return 'Admin'
   }
 })()
 
-// CLOCK — the banner's live date and time.
+// ================= LIVE CLOCK & GREETING ICON SYNC =================
 const now = ref(new Date())
 let clockTimer = null
 
 const greeting = computed(() => {
   const hour = now.value.getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
+  if (hour < 12) return t('goodMorning')
+  if (hour < 18) return t('goodAfternoon')
+  return t('goodEvening')
 })
 
-// The banner's colour and icon for each part of the day, the same hours as the vendor dashboard; the clock ticks, so it changes on its own.
 const dayPhase = computed(() => {
   const hour = now.value.getHours()
   if (hour >= 5 && hour < 8) return { key: 'dawn', icon: 'o_wb_twilight' }
@@ -361,14 +406,17 @@ const dayPhase = computed(() => {
   return { key: 'night', icon: 'o_dark_mode' }
 })
 
+const currentLocale = computed(() => (lang.value === 'ph' ? 'fil-PH' : 'en-US'))
+
 const clockDate = computed(() =>
-  now.value.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
+  now.value.toLocaleDateString(currentLocale.value, {
+    weekday: 'long',
+    month: 'long',
     day: 'numeric',
     year: 'numeric'
   })
 )
+
 const clockTime = computed(() =>
   now.value.toLocaleTimeString('en-US', {
     hour: '2-digit',
@@ -377,6 +425,24 @@ const clockTime = computed(() =>
   })
 )
 
+const formatFullDayDate = value => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  
+  let formatted = date.toLocaleDateString(currentLocale.value, {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric'
+  })
+
+  // Fix: Force 'Set' to 'Sept' for proper formatting in Taglish mode
+  if (lang.value === 'ph') {
+    formatted = formatted.replace(/\bSet\b/i, 'Sept').replace('Set ', 'Sept ')
+  }
+  
+  return formatted
+}
+
 const formatTime = value => {
   const date = new Date(value)
   return Number.isNaN(date.getTime())
@@ -384,52 +450,49 @@ const formatTime = value => {
     : date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
-// The old banner's "Action required" alert, shown while any store is waiting.
 const attention = computed(() => {
   const count = Number(stats.value.pending_approvals) || 0
-  return count > 0
-    ? `Action required: ${count} ${count === 1 ? 'task' : 'tasks'}`
-    : ''
+  if (count <= 0) return ''
+  return count === 1
+    ? t('actionRequiredSingular')
+    : t('actionRequiredPlural').replace('{x}', count)
 })
 
 const heroActions = computed(() => [
-  { key: 'review', label: 'Review Applications', icon: 'o_arrow_forward' },
+  { key: 'review', label: t('reviewApplications'), icon: 'o_arrow_forward' },
   {
     key: 'sync',
-    label: 'Sync Data',
+    label: t('syncData'),
     icon: 'o_sync',
     ghost: true,
     loading: syncing.value
   }
 ])
 
-// THE WEEK — approvals and sign-ups in the last seven days, from their own dates.
 const toTime = value => {
   const time = new Date(value).getTime()
   return Number.isNaN(time) ? null : time
 }
+
 const approvedTimes = computed(() =>
   applications.value
     .filter(app => app.status === 'approved')
     .map(app => toTime(app.reviewed_at))
     .filter(Boolean)
 )
+
 const signupTimes = computed(() =>
   consumers.value.map(c => toTime(c.created_at)).filter(Boolean)
 )
+
 const weekStart = computed(() => loadedAt.value.getTime() - 7 * DAY)
-const newVendors = computed(
-  () => approvedTimes.value.filter(t => t > weekStart.value).length
-)
-const newConsumers = computed(
-  () => signupTimes.value.filter(t => t > weekStart.value).length
-)
+const newVendors = computed(() => approvedTimes.value.filter(t => t > weekStart.value).length)
+const newConsumers = computed(() => signupTimes.value.filter(t => t > weekStart.value).length)
 
 const kpis = computed(() => [
   {
     key: 'attention',
-    label: 'Needs attention',
-    note: 'Pending vendor applications awaiting review and authorization.',
+    label: t('needsAttention'),
     value: stats.value.pending_approvals ?? 0,
     icon: 'o_pending_actions',
     tone: 'brand',
@@ -438,8 +501,7 @@ const kpis = computed(() => [
   },
   {
     key: 'vendors',
-    label: 'Approved vendors',
-    note: 'Stores approved to sell on Tindahan.',
+    label: t('approvedVendors'),
     value: stats.value.total_vendors ?? 0,
     icon: 'o_storefront',
     tone: 'info',
@@ -448,8 +510,7 @@ const kpis = computed(() => [
   },
   {
     key: 'consumers',
-    label: 'Active consumers',
-    note: 'Registered consumers on the platform.',
+    label: t('activeConsumers'),
     value: stats.value.total_consumers ?? 0,
     icon: 'o_groups',
     tone: 'success',
@@ -458,8 +519,7 @@ const kpis = computed(() => [
   },
   {
     key: 'users',
-    label: 'Total platform users',
-    note: 'Vendors + consumers',
+    label: t('totalUsers'),
     value: stats.value.total_users ?? 0,
     icon: 'o_people_alt',
     tone: 'neutral',
@@ -468,7 +528,6 @@ const kpis = computed(() => [
   }
 ])
 
-// NEEDS ATTENTION — the newest applications still waiting.
 const pending = computed(() =>
   applications.value
     .filter(app => app.status === 'pending')
@@ -476,7 +535,6 @@ const pending = computed(() =>
     .slice(0, 4)
 )
 
-// PLATFORM OVERVIEW — each of the last seven days, counting back from today's totals: anyone approved or signed up after that day is taken off.
 const overviewDays = computed(() =>
   Array.from({ length: 7 }, (_, i) => {
     const day = new Date(loadedAt.value)
@@ -485,163 +543,188 @@ const overviewDays = computed(() =>
     return day
   })
 )
+
 const countOn = (times, total, day) =>
   Math.max(0, total - times.filter(t => t > day.getTime()).length)
+
 const overviewSeries = computed(() => [
   {
-    name: 'Vendors',
+    name: t('vendorsLegend'),
     data: overviewDays.value.map(day =>
       countOn(approvedTimes.value, Number(stats.value.total_vendors) || 0, day)
     )
   },
   {
-    name: 'Consumers',
+    name: t('consumersLegend'),
     data: overviewDays.value.map(day =>
       countOn(signupTimes.value, Number(stats.value.total_consumers) || 0, day)
     )
   }
 ])
-const overviewOptions = computed(() => ({
-  chart: {
-    type: 'area',
-    background: 'transparent',
-    toolbar: { show: false },
-    zoom: { enabled: false },
-    fontFamily: 'Roboto, Arial, sans-serif'
-  },
-  colors: [VENDOR_COLOR, CONSUMER_COLOR],
-  dataLabels: { enabled: false },
-  legend: { show: false },
-  stroke: { curve: 'straight', width: 2.5 },
-  fill: {
-    type: 'gradient',
-    gradient: {
-      shadeIntensity: 1,
-      opacityFrom: 0.22,
-      opacityTo: 0.02,
-      stops: [0, 95, 100]
-    }
-  },
-  markers: { size: 4, strokeWidth: 0, hover: { size: 6 } },
-  grid: {
-    borderColor: '#f0ebe7',
-    strokeDashArray: 0,
-    padding: { left: 6, right: 10 }
-  },
-  xaxis: {
-    categories: overviewDays.value.map(day =>
-      day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    ),
-    axisBorder: { show: false },
-    axisTicks: { show: false },
-    labels: { style: { colors: '#77716d', fontSize: '11.5px' } }
-  },
-  yaxis: {
-    min: 0,
-    forceNiceScale: true,
-    labels: {
-      formatter: value => Math.round(value),
-      style: { colors: '#77716d', fontSize: '11.5px' }
-    }
-  },
-  tooltip: { y: { formatter: value => `${value} accounts` } }
-}))
 
-// ECOSYSTEM RATIO
+const overviewOptions = computed(() => {
+  const isDark = $q.dark.isActive
+  return {
+    chart: {
+      type: 'area',
+      background: 'transparent',
+      toolbar: { show: false },
+      zoom: { enabled: false },
+      fontFamily: 'inherit'
+    },
+    colors: [VENDOR_COLOR, CONSUMER_COLOR],
+    dataLabels: { enabled: false },
+    legend: { show: false },
+    stroke: { curve: 'smooth', width: 2.5 },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: isDark ? 0.45 : 0.32,
+        opacityTo: 0.04,
+        stops: [0, 90, 100]
+      }
+    },
+    markers: { size: 3, strokeWidth: 0, hover: { size: 5 } },
+    grid: {
+      borderColor: isDark ? '#262a32' : '#f0ebe7',
+      strokeDashArray: 3,
+      padding: { left: 8, right: 8, top: 0, bottom: 0 }
+    },
+    xaxis: {
+      categories: overviewDays.value.map(day =>
+        day.toLocaleDateString(currentLocale.value, { weekday: 'long' })
+      ),
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+      labels: {
+        rotate: -20,
+        rotateAlways: false,
+        hideOverlappingLabels: true,
+        style: { colors: isDark ? '#94a3b8' : '#77716d', fontSize: '10.5px' }
+      }
+    },
+    yaxis: {
+      min: 0,
+      forceNiceScale: true,
+      labels: {
+        formatter: value => Math.round(value),
+        style: { colors: isDark ? '#94a3b8' : '#77716d', fontSize: '11px' }
+      }
+    },
+    tooltip: {
+      theme: isDark ? 'dark' : 'light',
+      y: { formatter: value => `${value}` }
+    }
+  }
+})
+
 const mixTotal = computed(
   () =>
     (Number(stats.value.total_vendors) || 0) +
     (Number(stats.value.total_consumers) || 0)
 )
+
 const share = value =>
   mixTotal.value ? `${Math.round((value / mixTotal.value) * 100)}%` : '0%'
+
 const mixRows = computed(() => {
   const vendors = Number(stats.value.total_vendors) || 0
   const shoppers = Number(stats.value.total_consumers) || 0
   return [
     {
-      label: 'Vendors',
+      label: t('vendorsLegend'),
       value: vendors,
       color: VENDOR_COLOR,
       share: share(vendors)
     },
     {
-      label: 'Consumers',
+      label: t('consumersLegend'),
       value: shoppers,
       color: CONSUMER_COLOR,
       share: share(shoppers)
     }
   ]
 })
-const donutSeries = computed(() => mixRows.value.map(row => row.value))
-const donutOptions = computed(() => ({
-  chart: {
-    type: 'donut',
-    background: 'transparent',
-    fontFamily: 'Roboto, Arial, sans-serif'
-  },
-  labels: ['Vendors', 'Consumers'],
-  colors: [VENDOR_COLOR, CONSUMER_COLOR],
-  legend: { show: false },
-  dataLabels: { enabled: false },
-  stroke: { width: 3, colors: ['#ffffff'] },
-  tooltip: { y: { formatter: value => `${value} accounts` } },
-  plotOptions: { pie: { donut: { size: '66%', labels: { show: false } } } }
-}))
 
-// RECENT ACTIVITY — applications, decisions and sign-ups, each from its own date.
+const donutSeries = computed(() => mixRows.value.map(row => row.value))
+
+const donutOptions = computed(() => {
+  const isDark = $q.dark.isActive
+  return {
+    chart: {
+      type: 'donut',
+      background: 'transparent',
+      fontFamily: 'inherit'
+    },
+    labels: [t('vendorsLegend'), t('consumersLegend')],
+    colors: [VENDOR_COLOR, CONSUMER_COLOR],
+    legend: { show: false },
+    dataLabels: { enabled: false },
+    stroke: { width: 3, colors: [isDark ? '#181b20' : '#ffffff'] },
+    tooltip: {
+      theme: isDark ? 'dark' : 'light',
+      y: { formatter: value => `${value}` }
+    },
+    plotOptions: { pie: { donut: { size: '68%', labels: { show: false } } } }
+  }
+})
+
 const activity = computed(() => {
   const items = []
   for (const app of applications.value) {
-    const who = app.store_name || 'Unnamed store'
-    if (app.applied_at)
+    const who = app.store_name || t('unnamedStore')
+    if (app.applied_at) {
       items.push({
         key: `applied-${app.approval_id}`,
         at: app.applied_at,
-        text: 'New vendor application submitted',
+        text: t('actAppSubmitted'),
         who,
         icon: 'o_storefront',
         kind: 'store',
         to: '/admin/approvals'
       })
-    if (app.reviewed_at && app.status === 'approved')
+    }
+    if (app.reviewed_at && app.status === 'approved') {
       items.push({
         key: `approved-${app.approval_id}`,
         at: app.reviewed_at,
-        text: 'Vendor application approved',
+        text: t('actAppApproved'),
         who,
         icon: 'o_storefront',
         kind: 'store',
         to: '/admin/vendors'
       })
-    if (app.reviewed_at && app.status === 'rejected')
+    }
+    if (app.reviewed_at && app.status === 'rejected') {
       items.push({
         key: `rejected-${app.approval_id}`,
         at: app.reviewed_at,
-        text: 'Vendor application rejected',
+        text: t('actAppRejected'),
         who,
         icon: 'o_storefront',
         kind: 'store',
         to: '/admin/approvals'
       })
+    }
   }
   for (const consumer of consumers.value) {
-    if (consumer.created_at)
+    if (consumer.created_at) {
       items.push({
         key: `joined-${consumer.user_id}`,
         at: consumer.created_at,
-        text: 'Consumer registered',
-        who: consumer.full_name || 'Unnamed consumer',
+        text: t('actConsumerRegistered'),
+        who: consumer.full_name || t('unnamedConsumer'),
         icon: 'o_person',
         kind: 'person',
         to: '/admin/consumers'
       })
+    }
   }
   return items.sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 5)
 })
 
-const listOf = res =>
-  Array.isArray(res.data) ? res.data : res.data?.data || []
+const listOf = res => (Array.isArray(res.data) ? res.data : res.data?.data || [])
 
 const loadDashboard = async () => {
   try {
@@ -658,19 +741,18 @@ const loadDashboard = async () => {
     console.error('Failed to load the admin dashboard', error)
     $q.notify({
       type: 'negative',
-      message: 'Couldn’t load the dashboard. Please refresh.'
+      message: t('failedLoad')
     })
   } finally {
     loading.value = false
   }
 }
 
-// Sync reloads the numbers, the lists and the bell together, as the old sync button did.
 const syncDashboard = async () => {
   syncing.value = true
   await Promise.all([loadDashboard(), fetchNotifications()])
   syncing.value = false
-  $q.notify({ type: 'positive', message: 'Dashboard synced.' })
+  $q.notify({ type: 'positive', message: t('syncedToast') })
 }
 
 const onHeroAction = key => {
@@ -678,7 +760,6 @@ const onHeroAction = key => {
   if (key === 'sync') syncDashboard()
 }
 
-// A decided application leaves Needs Attention, shows up in Recent Activity, and the counts follow.
 const onDecided = ({ storeId, status, reason }) => {
   applications.value = applications.value.map(app =>
     app.store_id === storeId
@@ -711,46 +792,67 @@ onBeforeUnmount(() => clearInterval(clockTimer))
 </script>
 
 <style scoped>
-/* CLOCK — the date and time in the banner's frosted glass. */
+/* =========================================================
+   ANIMATIONS 
+========================================================= */
+@keyframes slideFadeUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  opacity: 0;
+  animation: slideFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* TYPOGRAPHY OVERRIDES */
+.text-muted-themed { color: var(--c-muted, #64748b); }
+.dialog-title-text { color: var(--c-text, #1e293b); }
+
+/* DEEP DARK MODE OVERRIDES FOR ADMIN TEXTS */
+:deep(.body--dark) .text-muted-themed,
+:global(.admin-layout--dark) .text-muted-themed { color: #94a3b8 !important; }
+
+:deep(.body--dark) .dialog-title-text,
+:deep(.body--dark) .db-strong,
+:global(.admin-layout--dark) .dialog-title-text,
+:global(.admin-layout--dark) .db-strong { color: #f8fafc !important; }
+
+/* ------------------------------------------------------ */
+
 .db-clock {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-
   gap: 6px;
-  min-width: 170px;
+  min-width: 190px;
   padding: 16px 22px;
-
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: var(--r-surface);
-
   background: rgba(255, 255, 255, 0.12);
-
   color: #ffffff;
 }
 
 .db-clock-date {
   font-size: var(--fs-2xs);
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-
-  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .db-clock-time {
   font-family: 'Poppins', 'Roboto', Arial, sans-serif;
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
-/* KEY NUMBERS — the vendor dashboard's KPI cards: white, a soft shadow, the label beside a tone tile, and a firmer edge on hover. */
+/* KEY NUMBERS */
 .db-kpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-
   gap: var(--sp-gap);
   margin-bottom: var(--sp-gap);
 }
@@ -758,26 +860,22 @@ onBeforeUnmount(() => clearInterval(clockTimer))
 .db-kpi {
   display: flex;
   flex-direction: column;
-
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
-  padding: 20px;
-
+  padding: 20px 20px 16px;
   font-family: inherit;
   text-align: left;
 }
 
 .db-kpi--link {
   cursor: pointer;
-
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .db-kpi--link:hover {
   border-color: var(--c-border-strong);
   box-shadow: var(--sh-card-hover);
+  transform: translateY(-2px);
 }
 
 .db-kpi--link:focus-visible {
@@ -789,14 +887,12 @@ onBeforeUnmount(() => clearInterval(clockTimer))
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   gap: 8px;
 }
 
 .db-kpi-label {
   font-size: var(--fs-sm);
   font-weight: 600;
-
   color: var(--c-text-3);
 }
 
@@ -805,10 +901,8 @@ onBeforeUnmount(() => clearInterval(clockTimer))
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-
   width: 40px;
   height: 40px;
-
   border-radius: var(--r-surface);
 }
 
@@ -816,19 +910,16 @@ onBeforeUnmount(() => clearInterval(clockTimer))
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-
-  gap: 4px 10px;
+  gap: 6px 12px;
 }
 
 .db-kpi-value {
   font-size: var(--fs-4xl);
   font-weight: 700;
   line-height: 1.1;
-
   color: var(--c-text);
 }
 
-/* The pending count reads in brand red, since it is the one that asks for action. */
 .db-kpi--alert .db-kpi-value {
   color: var(--c-brand);
 }
@@ -836,83 +927,61 @@ onBeforeUnmount(() => clearInterval(clockTimer))
 .db-kpi-delta {
   display: inline-flex;
   align-items: center;
-
   gap: 2px;
   padding: 2px 8px;
-
   border-radius: var(--r-pill);
-
   background: var(--c-success-wash);
-
   font-size: var(--fs-xs);
   font-weight: 700;
-
   color: var(--c-success);
 }
 
 .db-kpi-foot {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-
-  gap: 8px;
+  align-items: center;
   margin-top: auto;
 }
 
-.db-kpi-note {
-  font-size: var(--fs-xs);
-  line-height: 1.45;
-
-  color: var(--c-subtle);
-}
-
 .db-kpi-go {
-  flex-shrink: 0;
-
   color: var(--c-border-strong);
-
-  transition:
-    color 0.15s,
-    transform 0.2s;
+  transition: color 0.15s, transform 0.2s;
 }
 
 .db-kpi--link:hover .db-kpi-go {
   color: var(--c-brand);
-
   transform: translateX(3px);
 }
 
-/* PANELS — Needs Attention and the chart side by side, the red card and the ratio down the right, Recent Activity along the bottom. */
+/* PANELS */
 .db-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.2fr) minmax(0, 0.9fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 0.95fr);
   grid-template-areas:
     'attention overview side'
-    'activity activity side';
-
+    'activity activity activity';
   gap: var(--sp-gap);
   align-items: start;
 }
 
 .db-area-attention {
   grid-area: attention;
+  min-height: 320px;
 }
 
 .db-area-overview {
   grid-area: overview;
+  min-height: 320px;
 }
 
 .db-area-side {
   grid-area: side;
-
   display: flex;
   flex-direction: column;
-
-  gap: var(--sp-gap);
 }
 
 .db-area-activity {
   grid-area: activity;
+  width: 100%;
 }
 
 .db-area-attention,
@@ -930,7 +999,6 @@ onBeforeUnmount(() => clearInterval(clockTimer))
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-
   gap: 10px;
   padding: 18px 20px 12px;
 }
@@ -938,38 +1006,29 @@ onBeforeUnmount(() => clearInterval(clockTimer))
 .db-panel-title {
   display: flex;
   align-items: center;
-
   gap: 10px;
   margin: 0;
-
   font-size: var(--fs-lg);
   font-weight: 700;
   line-height: 1.3;
-
-  color: var(--c-text);
 }
 
 .db-panel-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-
   width: 32px;
   height: 32px;
-
   border-radius: var(--r-control);
 }
 
 .db-link {
   display: inline-flex;
   align-items: center;
-
   gap: 4px;
-
   font-size: var(--fs-sm);
   font-weight: 600;
   text-decoration: none;
-
   color: var(--c-brand);
 }
 
@@ -981,56 +1040,44 @@ onBeforeUnmount(() => clearInterval(clockTimer))
   transform: translateX(3px);
 }
 
-/* ROWS — a small column heading line, then rows that open what they describe. */
+/* ROWS */
 .db-cols {
   padding: 8px 20px;
-
   border-top: 1px solid var(--c-hairline);
   border-bottom: 1px solid var(--c-hairline);
-
   background: var(--c-surface-2);
-
   font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-
   color: var(--c-muted);
 }
 
 .db-att-grid {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) auto 20px;
+  grid-template-columns: 36px minmax(0, 1fr) 140px 20px;
   align-items: center;
-
   gap: 12px;
 }
 
 .db-act-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1.3fr) 20px;
+  grid-template-columns: 200px minmax(0, 1.8fr) minmax(0, 1.4fr) 24px;
   align-items: center;
-
-  gap: 12px;
+  gap: 20px;
 }
 
 .db-row {
   width: 100%;
   padding: 12px 20px;
-
   border: none;
   border-bottom: 1px solid var(--c-hairline);
-
   background: transparent;
-
   font-family: inherit;
   font-size: var(--fs-sm);
   text-align: left;
-
   color: var(--c-text-2);
-
   cursor: pointer;
-
   transition: background-color 0.15s;
 }
 
@@ -1042,25 +1089,19 @@ onBeforeUnmount(() => clearInterval(clockTimer))
   background: var(--c-surface-2);
 }
 
-/* Focus shows as a soft bar down the left edge rather than a box, since it also lands here when a dialog closes. */
 .db-row:focus-visible {
   outline: none;
-
   background: var(--c-surface-2);
   box-shadow: inset 3px 0 0 var(--c-brand);
 }
 
 .db-row-arrow {
   color: var(--c-border-strong);
-
-  transition:
-    color 0.15s,
-    transform 0.2s;
+  transition: color 0.15s, transform 0.2s;
 }
 
 .db-row:hover .db-row-arrow {
   color: var(--c-brand);
-
   transform: translateX(2px);
 }
 
@@ -1069,49 +1110,27 @@ onBeforeUnmount(() => clearInterval(clockTimer))
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-
   width: 36px;
   height: 36px;
-
   border-radius: var(--r-control);
-}
-
-.db-att-type {
-  display: flex;
-  align-items: center;
-
-  gap: 10px;
-  min-width: 0;
-}
-
-.db-att-type-label {
-  font-weight: 600;
-
-  color: var(--c-brand);
 }
 
 .db-two-lines {
   display: flex;
   flex-direction: column;
-
   gap: 2px;
   min-width: 0;
 }
 
 .db-strong {
   overflow: hidden;
-
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
-
-  color: var(--c-text);
 }
 
 .db-soft {
   font-size: var(--fs-xs);
-
-  color: var(--c-muted);
 }
 
 .db-att-date {
@@ -1122,7 +1141,6 @@ onBeforeUnmount(() => clearInterval(clockTimer))
 
 .db-ellipsis {
   overflow: hidden;
-
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1132,10 +1150,8 @@ onBeforeUnmount(() => clearInterval(clockTimer))
   flex-direction: column;
 }
 
-/* Placeholder rows shaped like the real ones: the same columns, a tile, two lines and the date. */
 .db-skel-row {
   padding: 12px 20px;
-
   border-bottom: 1px solid var(--c-hairline);
 }
 
@@ -1151,10 +1167,8 @@ onBeforeUnmount(() => clearInterval(clockTimer))
   align-items: flex-end;
 }
 
-/* The donut's placeholder is a ring, not a disc. */
 .db-skel-ring {
   position: relative;
-
   width: 150px;
   height: 150px;
 }
@@ -1163,78 +1177,63 @@ onBeforeUnmount(() => clearInterval(clockTimer))
   position: absolute;
   inset: 26px;
   z-index: 2;
-
   border-radius: 50%;
-
-  background: #ffffff;
+  background: var(--c-surface);
 }
 
 .db-empty {
   display: flex;
+  flex-direction: column;
   align-items: center;
-
+  justify-content: center;
   gap: 8px;
-  padding: 24px 20px;
-
+  padding: 40px 20px;
   font-size: var(--fs-sm);
-
   color: var(--c-muted);
 }
 
 .db-act-time {
   display: flex;
   flex-direction: column;
-
   font-weight: 600;
   white-space: nowrap;
-
-  color: var(--c-text);
 }
 
 .db-act-text {
-  color: var(--c-text-2);
+  line-height: 1.4;
 }
 
 .db-act-user {
   display: flex;
   align-items: center;
-
   gap: 8px;
   min-width: 0;
 }
 
 .db-act-name {
   overflow: hidden;
-
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
-
-  color: var(--c-text);
 }
 
-/* Each store or person sits in a small tile in its colour: red for stores, as in Needs Attention, and green for consumers, as in the charts. */
 .db-act-user .q-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-
   width: 28px;
   height: 28px;
-
   border-radius: var(--r-control);
 }
 
 .db-act-icon--store {
   background: var(--c-brand-tint);
-
   color: var(--c-brand);
 }
 
 .db-act-icon--person {
   background: var(--c-success-tint);
-
   color: var(--c-success);
 }
 
@@ -1242,53 +1241,48 @@ onBeforeUnmount(() => clearInterval(clockTimer))
 .db-legend-inline {
   display: flex;
   flex-wrap: wrap;
-
   gap: 14px;
-
   font-size: var(--fs-xs);
   font-weight: 600;
-
   color: var(--c-text-2);
 }
 
 .db-legend-inline > span {
   display: inline-flex;
   align-items: center;
-
   gap: 6px;
 }
 
 .db-dot {
   flex-shrink: 0;
-
   width: 9px;
   height: 9px;
-
   border-radius: 50%;
 }
 
 .db-chart {
-  padding: 0 12px 4px;
+  padding: 4px 12px;
 }
 
-/* ECOSYSTEM RATIO — the donut with both shares in its middle, and the counts beside it. */
+/* ECOSYSTEM RATIO */
+.db-ratio {
+  height: 100%;
+}
+
 .db-ratio-body {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   justify-content: center;
-
   gap: 8px 16px;
   padding: 0 16px 12px;
 }
 
 .db-ratio-chart {
   position: relative;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   width: 170px;
   height: 170px;
 }
@@ -1296,66 +1290,51 @@ onBeforeUnmount(() => clearInterval(clockTimer))
 .db-ratio-center {
   position: absolute;
   inset: 0;
-
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
   font-size: var(--fs-sm);
   font-weight: 800;
   line-height: 1.35;
-
   pointer-events: none;
 }
 
 .db-ratio-legend {
   display: flex;
   flex-direction: column;
-
   gap: 10px;
   margin: 0;
   padding: 0;
-
   list-style: none;
 }
 
 .db-ratio-legend li {
   display: flex;
   align-items: center;
-
   gap: 8px;
-
   font-size: var(--fs-sm);
 }
 
 .db-ratio-label {
   min-width: 76px;
-
   font-weight: 600;
-
-  color: var(--c-text-2);
 }
 
 .db-ratio-value {
   font-weight: 700;
-
-  color: var(--c-text);
-}
-
-/* Narrower screens: two cards to a row, and the panels in two columns, then one. */
-@media (max-width: 1399px) {
-  .db-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas:
-      'attention overview'
-      'activity side';
-  }
 }
 
 @media (max-width: 1279px) {
   .db-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .db-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'attention overview'
+      'side side'
+      'activity activity';
   }
 }
 
@@ -1368,11 +1347,6 @@ onBeforeUnmount(() => clearInterval(clockTimer))
       'side'
       'activity';
   }
-
-  .db-area-side {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  }
 }
 
 @media (max-width: 600px) {
@@ -1380,7 +1354,6 @@ onBeforeUnmount(() => clearInterval(clockTimer))
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-
     min-width: 0;
     padding: 12px 16px;
   }
@@ -1401,7 +1374,6 @@ onBeforeUnmount(() => clearInterval(clockTimer))
     padding: 16px 16px 10px;
   }
 
-  /* Phones drop the column headings and fold each row into the icon, the details and the arrow. */
   .db-cols {
     display: none;
   }
@@ -1416,16 +1388,12 @@ onBeforeUnmount(() => clearInterval(clockTimer))
       'text arrow'
       'user arrow'
       'time arrow';
-
     gap: 2px 12px;
   }
 
   .db-act-text {
     grid-area: text;
-
     font-weight: 600;
-
-    color: var(--c-text);
   }
 
   .db-act-user {
@@ -1435,13 +1403,9 @@ onBeforeUnmount(() => clearInterval(clockTimer))
   .db-act-time {
     grid-area: time;
     flex-direction: row;
-
     gap: 6px;
-
     font-size: var(--fs-xs);
     font-weight: 400;
-
-    color: var(--c-muted);
   }
 
   .db-activity-row .db-row-arrow {
