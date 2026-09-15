@@ -108,7 +108,7 @@
 
               <div v-if="order.cancellation_reason" class="cancellation-reason">
                 <q-icon name="o_error_outline" size="16px" />
-                <span>{{ t('Cancelled:') }} {{ order.cancellation_reason }}</span>
+                <span>{{ t('Cancelled:') }} {{ t(order.cancellation_reason) }}</span>
               </div>
             </div>
           </div>

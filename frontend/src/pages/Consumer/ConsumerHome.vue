@@ -198,7 +198,7 @@ const handleAddToCart = async (product) => {
     await addToCart(product.id)
     $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to add to cart.') })
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
   }
 }
 
@@ -383,15 +383,15 @@ const visibleDiscoverProducts = computed(() =>
   align-items: center;
   justify-content: center;
 
-  width: 300px;
-  max-width: 34%;
+  width: 330px;
+  max-width: 36%;
   padding-top: 44px;
 }
 
 .hero-logo {
   width: 100%;
   height: auto;
-  max-height: 190px;
+  max-height: 210px;
 
   object-fit: contain;
 }
@@ -762,14 +762,14 @@ const visibleDiscoverProducts = computed(() =>
   }
 
   .hero-logo-wrap {
-    width: 170px;
+    width: 185px;
     max-width: 100%;
     padding-top: 0;
   }
 
   .hero-logo {
     display: block;
-    max-height: 104px;
+    max-height: 114px;
   }
 }
 

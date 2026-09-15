@@ -214,24 +214,42 @@
                 <div class="cart-menu-inner notifications-inner">
                   <div class="cart-menu-title notifications-title">
                     {{ t('Notifications') }}
-                    <q-btn v-if="unreadNotificationCount" flat dense no-caps :label="t('Mark all as read')" color="primary" size="sm" @click="markAllAsRead" />
+                    <q-btn
+                      v-if="unreadNotificationCount"
+                      flat
+                      dense
+                      no-caps
+                      :label="t('Mark all as read')"
+                      color="primary"
+                      size="sm"
+                      :loading="markingNotifications"
+                      @click="markAllAsRead"
+                    />
                   </div>
 
                   <div v-if="!notifications.length" class="cart-menu-empty">{{ t('No notifications yet.') }}</div>
 
                   <div v-else class="notifications-scroll">
-                    <div
+                    <button
                       v-for="notif in notifications.slice(0, 10)"
                       :key="notif.notification_id"
+                      type="button"
                       class="cart-menu-item notification-item"
                       :class="{ 'notification-item--unread': !notif.is_read }"
                       @click="handleNotificationClick(notif)"
                     >
-                      <div class="cart-menu-item-info" :style="notif.is_read ? 'opacity: 0.7;' : 'font-weight: bold;'">
-                        <div class="cart-menu-item-name">{{ notif.title }}</div>
-                        <div class="cart-menu-item-meta" style="white-space: normal; line-height: 1.3;">{{ notif.message }}</div>
+                      <span
+                        class="notification-menu-icon"
+                        :class="`notification-menu-icon--${notificationPresentation(notif).tone}`"
+                      >
+                        <q-icon :name="notificationPresentation(notif).icon" size="22px" />
+                      </span>
+                      <div class="cart-menu-item-info notification-menu-body">
+                        <div class="cart-menu-item-name notification-menu-title">{{ notif.title }}</div>
+                        <div class="cart-menu-item-meta notification-menu-message">{{ notif.message }}</div>
+                        <div class="notification-menu-time">{{ notificationTime(notif.created_at, t, locale.value) }}</div>
                       </div>
-                    </div>
+                    </button>
                   </div>
 
                   <!-- The panel shows ten notifications, so this links to the rest, like the cart menu's View All. -->
@@ -451,7 +469,7 @@
 <script setup>
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { QMenu, QDialog } from 'quasar'
@@ -465,8 +483,14 @@ import { useCategories } from '@/composables/useCategories'
 import { clearAuthStorage } from '@/utils/authStorage'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 import NotificationsMenu from '@/components/consumer/NotificationsMenu.vue'
+import { notificationPresentation, notificationTime } from '@/utils/notificationPresentation'
+import {
+  NOTIFICATION_READ_STATE_EVENT,
+  applyNotificationReadState,
+  publishNotificationReadState
+} from '@/utils/notificationSync'
 
-const { t } = useConsumerLanguage()
+const { t, locale } = useConsumerLanguage()
 
 const router = useRouter()
 const route = useRoute()
@@ -580,6 +604,7 @@ const toggleAccountMenu = () => {
 }
 
 onMounted(() => {
+  window.addEventListener(NOTIFICATION_READ_STATE_EVENT, syncNotificationReadState)
   // Search suggestions reuse already-fetched products, stores and categories, so the header only fetches them on the session's first page.
   if (!products.value.length) fetchProducts()
   if (!stores.value.length) fetchStores()
@@ -590,6 +615,10 @@ onMounted(() => {
     fetchCart()
     fetchNotifications()
   }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener(NOTIFICATION_READ_STATE_EVENT, syncNotificationReadState)
 })
 
 const userAvatar = computed(() => {
@@ -605,6 +634,11 @@ const notifications = ref([])
 const unreadNotificationCount = computed(() => notifications.value.filter(n => !n.is_read).length)
 
 const notificationsMenuOpen = ref(false)
+const markingNotifications = ref(false)
+
+const syncNotificationReadState = event => {
+  applyNotificationReadState(notifications.value, event.detail)
+}
 
 // Like handleCartIconClick, below md the bell opens the notifications page instead of the ten-row preview.
 const toggleNotificationsMenu = () => {
@@ -623,7 +657,7 @@ const fetchNotifications = async () => {
   if (!isLoggedIn.value) return
   try {
     const res = await api.get('/consumer/notifications')
-    notifications.value = res.data
+    notifications.value = Array.isArray(res.data) ? res.data : []
   } catch (err) {
     console.error('Failed to fetch notifications', err)
   }
@@ -635,7 +669,11 @@ const markAsRead = async (id) => {
     notif.is_read = true
     try {
       await api.patch(`/consumer/notifications/${id}/read`)
-    } catch (err) {}
+      publishNotificationReadState({ notificationId: id, isRead: true })
+    } catch (err) {
+      notif.is_read = false
+      console.error('Failed to mark notification as read', err)
+    }
   }
 }
 
@@ -651,10 +689,22 @@ const handleNotificationClick = async (notif) => {
 }
 
 const markAllAsRead = async () => {
+  if (markingNotifications.value) return
+  markingNotifications.value = true
+  const previous = notifications.value.map(n => n.is_read)
   notifications.value.forEach(n => n.is_read = true)
   try {
     await api.post('/consumer/notifications/read-all')
-  } catch (err) {}
+    publishNotificationReadState({ all: true, isRead: true })
+  } catch (err) {
+    notifications.value.forEach((n, index) => {
+      n.is_read = previous[index]
+    })
+    console.error('Failed to mark all notifications as read', err)
+    $q.notify({ type: 'negative', message: t('Could not mark notifications as read') })
+  } finally {
+    markingNotifications.value = false
+  }
 }
 
 const handleLogout = async () => {
@@ -1022,6 +1072,13 @@ const goToTab = (tab) => {
   font-family: 'Roboto', Arial, sans-serif;
 }
 
+.notifications-inner {
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+  padding: 16px;
+}
+
 /* The account list hugs its own width, with no horizontal padding so each row's hover highlight spans the full panel. */
 .account-menu-inner {
   width: auto;
@@ -1065,10 +1122,18 @@ const goToTab = (tab) => {
   align-items: flex-start;
 
   /* Runs edge to edge across the panel with square corners, so an unread row's tint is a clean full-width band. */
-  margin: 0 -14px;
-  padding: 10px 14px;
+  margin: 0 -16px;
+  gap: 12px;
+  width: calc(100% + 32px);
+  box-sizing: border-box;
+  padding: 12px 16px;
 
+  border: 0;
+  background: transparent;
   cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: background-color 0.15s;
 }
 
 /* A clearer divider than the panel's hairlines, so each notification reads as its own row, tinted or not. */
@@ -1078,6 +1143,116 @@ const goToTab = (tab) => {
 
 .notification-item--unread {
   background: var(--c-brand-tint);
+}
+
+.notification-item--unread:hover {
+  background: var(--c-brand-tint-2);
+}
+
+.notification-item:not(.notification-item--unread):hover {
+  background: var(--c-surface);
+}
+
+.notification-item:focus-visible {
+  z-index: 1;
+  outline: 2px solid var(--c-brand);
+  outline-offset: -2px;
+}
+
+.notification-menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-xl);
+
+  background: var(--tone-bg);
+  color: var(--tone);
+}
+
+.notification-menu-icon--placed {
+  --tone: var(--st-placed);
+  --tone-bg: var(--st-placed-bg);
+}
+
+.notification-menu-icon--preparing {
+  --tone: var(--st-preparing);
+  --tone-bg: var(--st-preparing-bg);
+}
+
+.notification-menu-icon--ready {
+  --tone: var(--st-ready);
+  --tone-bg: var(--st-ready-bg);
+}
+
+.notification-menu-icon--done {
+  --tone: var(--st-done);
+  --tone-bg: var(--st-done-bg);
+}
+
+.notification-menu-icon--cancelled {
+  --tone: var(--st-cancelled);
+  --tone-bg: var(--st-cancelled-bg);
+}
+
+.notification-menu-icon--brand {
+  --tone: var(--c-brand);
+  --tone-bg: var(--c-brand-tint);
+}
+
+.notification-menu-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.notification-menu-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+
+  color: var(--c-text);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.notification-item--unread .notification-menu-title {
+  font-weight: 700;
+}
+
+.notification-item--unread .notification-menu-title::after {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+
+  border-radius: var(--r-pill);
+  background: var(--c-brand);
+  content: '';
+}
+
+.notification-menu-message {
+  margin-top: 0;
+  white-space: normal;
+  text-wrap: pretty;
+  color: var(--c-text-3);
+  line-height: 1.35;
+}
+
+.notification-menu-time {
+  margin-top: 2px;
+  color: var(--c-muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 /* Title/"Mark all as read" row stays outside .notifications-scroll below, so it never scrolls out of view. */
@@ -1090,8 +1265,8 @@ const goToTab = (tab) => {
 /* Notifications can have up to 10 items; caps at roughly 5 rows tall before scrolling. */
 .notifications-scroll {
   max-height: 335px;
-  margin: 0 -14px;
-  padding: 0 14px;
+  margin: 0 -16px;
+  padding: 0 16px;
 
   overflow-y: auto;
 }

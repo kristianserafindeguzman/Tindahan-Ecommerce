@@ -25,7 +25,7 @@
             {{ t('Next Steps') }}
           </div>
           <p class="next-steps-text">
-            {{ t('The verification process typically takes 1–2 business days. You will receive an email notification once your account has been approved and your store is ready for setup.') }}
+            {{ t('The verification process typically takes 1–3 business days. You will receive an email notification once your account has been approved and your store is ready for setup.') }}
           </p>
         </div>
       </q-card-section>
@@ -296,6 +296,7 @@ onMounted(checkStatus)
 .next-steps-text {
   font-size: var(--fs-xs);
   line-height: 1.6;
+  text-align: justify;
 
   color: var(--c-text-3);
 

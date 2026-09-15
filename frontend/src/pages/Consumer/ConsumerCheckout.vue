@@ -355,7 +355,7 @@ const placeOrder = async () => {
   } catch (error) {
     $q.notify({
       type: 'negative',
-      message: error.response?.data?.message || t('Failed to place order.')
+      message: t(error.response?.data?.message || 'Failed to place order.')
     })
   } finally {
     placingOrder.value = false

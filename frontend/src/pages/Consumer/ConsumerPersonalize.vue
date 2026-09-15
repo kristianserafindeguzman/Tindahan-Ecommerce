@@ -85,7 +85,7 @@ const handleAddToCart = async (product) => {
     await addToCart(product.id)
     $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to add to cart.') })
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
   }
 }
 
