@@ -3,11 +3,11 @@
     <div class="vp-container">
       <AdminHero
         icon="o_groups"
-        title="Manage Consumers"
-        subtitle="See every shopper's account and manage who can use Tindahan."
-        :stat-label="STAT_LABEL[active]"
+        :title="t('title')"
+        :subtitle="t('subtitle')"
+        :stat-label="t('stat_' + active)"
         :stat-value="totalFor(active)"
-        :stat-unit="totalFor(active) === 1 ? 'account' : 'accounts'"
+        :stat-unit="totalFor(active) === 1 ? t('account') : t('accounts')"
         :loading="loading"
       />
 
@@ -20,7 +20,7 @@
             clearable
             clear-icon="o_close"
             hide-bottom-space
-            placeholder="Search name, email or phone"
+            :placeholder="t('searchPlaceholder')"
             class="vp-search"
           >
             <template #prepend>
@@ -28,10 +28,9 @@
             </template>
           </q-input>
 
-          <!-- Every status, plus the deleted accounts, each with its count; the server has no status filter, so the page sorts them itself. -->
-          <div class="vp-chips" role="tablist" aria-label="Filter consumers">
+          <div class="vp-chips" role="tablist" :aria-label="t('filterAll')">
             <button
-              v-for="filter in FILTERS"
+              v-for="filter in localizedFilters"
               :key="filter.key"
               type="button"
               role="tab"
@@ -52,7 +51,7 @@
             no-caps
             color="primary"
             icon="o_download"
-            label="Export Report"
+            :label="t('exportReport')"
             class="vp-pill-btn adm-export"
             :loading="isExporting"
             @click="handleExport"
@@ -70,26 +69,26 @@
             ><q-icon name="o_groups" size="24px"
           /></div>
           <div class="vp-empty-title">{{
-            search ? 'No matching consumers' : EMPTY[active].title
+            search ? t('noMatchTitle') : t('emptyTitle_' + active)
           }}</div>
           <div class="vp-empty-text">{{
             search
-              ? 'Try another name, email or phone number.'
-              : EMPTY[active].text
+              ? t('noMatchText')
+              : t('emptyText_' + active)
           }}</div>
         </div>
 
-        <!-- A table on wide screens; a row opens the consumer's profile. -->
+        <!-- A table on wide screens -->
         <div v-else-if="!$q.screen.lt.md" class="vp-table-wrap">
           <table class="vp-table cn-table">
             <thead>
               <tr>
-                <th>Consumer</th>
-                <th class="col-phone">Phone</th>
-                <th class="col-date">Joined</th>
-                <th class="col-date">Last active</th>
-                <th class="col-status">Status</th>
-                <th class="col-actions text-right">Actions</th>
+                <th>{{ t('colConsumer') }}</th>
+                <th class="col-phone">{{ t('colPhone') }}</th>
+                <th class="col-date">{{ t('colJoined') }}</th>
+                <th class="col-date">{{ t('colLastActive') }}</th>
+                <th class="col-status text-center">{{ t('colStatus') }}</th>
+                <th class="col-actions text-right">{{ t('colActions') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -112,58 +111,69 @@
                       <q-icon v-else name="o_person" size="20px" />
                     </span>
                     <span class="adm-two-lines">
-                      <span class="vp-name">{{
-                        consumer.full_name || 'Unnamed consumer'
+                      <span class="vp-name ellipsis">{{
+                        consumer.full_name || t('unnamedConsumer')
                       }}</span>
-                      <span class="adm-sub">{{
-                        consumer.email || 'No email'
+                      <span class="adm-sub text-muted-themed ellipsis">{{
+                        consumer.email || t('noEmail')
                       }}</span>
                     </span>
                   </div>
                 </td>
-                <td class="vp-muted">{{ consumer.phone_number || '—' }}</td>
+                <td class="vp-muted">{{ consumer.phone_number || t('noPhone') }}</td>
                 <td class="vp-muted">{{
                   formatShortDate(consumer.created_at)
                 }}</td>
                 <td class="vp-muted">{{
                   formatActivity(consumer.last_activity_at)
                 }}</td>
-                <td>
+                <td class="col-status text-center">
                   <span
                     class="vp-status"
                     :class="`vp-status--${accountStatusTone(statusOf(consumer))}`"
                     >{{ accountStatusLabel(statusOf(consumer)) }}</span
                   >
                 </td>
-                <td class="text-right">
-                  <div class="adm-row-actions" @click.stop @keydown.enter.stop>
+
+                <!-- ALL-ICON UNIFIED ACTION GROUP -->
+                <td class="col-actions text-right" @click.stop @keydown.enter.stop>
+                  <div class="vd-icon-action-group">
                     <q-btn
                       flat
-                      no-caps
-                      label="View"
-                      class="adm-btn adm-btn--view"
+                      round
+                      dense
+                      icon="o_visibility"
+                      class="vd-action-icon-btn"
                       @click="openView(consumer)"
-                    />
+                    >
+                      <q-tooltip anchor="top middle" self="bottom middle">{{ t('tooltipViewProfile') }}</q-tooltip>
+                    </q-btn>
+
                     <q-btn
                       v-if="!consumer.deleted"
                       flat
+                      round
+                      dense
                       icon="o_more_vert"
-                      class="adm-btn adm-btn--more"
+                      class="vd-action-icon-btn text-muted-themed"
                       :aria-label="`Change ${consumer.full_name}'s account`"
                     >
-                      <q-menu anchor="bottom right" self="top right" auto-close>
-                        <q-list class="vp-menu-list">
+                      <q-tooltip anchor="top middle" self="bottom middle">{{ t('tooltipOptions') }}</q-tooltip>
+                      <q-menu anchor="bottom right" self="top right" auto-close class="compact-status-menu">
+                        <q-list dense class="compact-menu-list">
                           <q-item
-                            v-for="option in statusOptions(consumer)"
+                            v-for="option in localizedStatusOptions(consumer)"
                             :key="option.status"
                             clickable
-                            :class="{ 'vp-menu-item--danger': option.danger }"
+                            v-ripple
+                            class="compact-menu-item"
+                            :class="{ 'compact-menu-item--danger': option.danger }"
                             @click="changeStatus(consumer, option.status)"
                           >
-                            <q-item-section avatar
-                              ><q-icon :name="option.icon" size="18px"
-                            /></q-item-section>
-                            <q-item-section>{{ option.label }}</q-item-section>
+                            <q-item-section avatar class="compact-menu-avatar">
+                              <q-icon :name="option.icon" size="16px" />
+                            </q-item-section>
+                            <q-item-section class="compact-menu-label">{{ option.label }}</q-item-section>
                           </q-item>
                         </q-list>
                       </q-menu>
@@ -175,13 +185,13 @@
           </table>
         </div>
 
-        <!-- A tappable list on phones; the profile carries the status change. -->
+        <!-- TAPPABLE LIST ON PHONES -->
         <div v-else class="vp-list">
           <button
             v-for="consumer in pagedConsumers"
             :key="consumer.user_id"
             type="button"
-            class="vp-list-item"
+            class="vp-list-item cursor-pointer"
             @click="openView(consumer)"
           >
             <span class="adm-thumb adm-thumb--lg adm-thumb--round">
@@ -190,25 +200,36 @@
             </span>
             <div class="vp-list-body">
               <span class="vp-name">{{
-                consumer.full_name || 'Unnamed consumer'
+                consumer.full_name || t('unnamedConsumer')
               }}</span>
-              <div class="vp-list-meta">{{
+              <div class="vp-list-meta text-muted-themed">{{
                 formatActivity(consumer.last_activity_at)
               }}</div>
             </div>
-            <div class="vp-list-side">
+            <div class="vp-list-side column items-end q-gutter-y-xs">
               <span
                 class="vp-status"
                 :class="`vp-status--${accountStatusTone(statusOf(consumer))}`"
                 >{{ accountStatusLabel(statusOf(consumer)) }}</span
               >
+              <div class="row items-center gap-xs q-mt-xs" @click.stop>
+                <q-btn
+                  flat
+                  round
+                  dense
+                  size="sm"
+                  icon="o_visibility"
+                  class="vd-action-icon-btn vd-action-icon-btn--sm"
+                  @click="openView(consumer)"
+                />
+              </div>
             </div>
           </button>
         </div>
 
         <div v-if="!loading && pageCount > 1" class="vp-pager">
           <span
-            >Showing {{ rangeStart }}–{{ rangeEnd }} of
+            >{{ t('showing') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('of') }}
             {{ filtered.length }}</span
           >
           <div class="vp-pager-btns">
@@ -218,7 +239,7 @@
               color="primary"
               icon="o_chevron_left"
               class="vp-pill-btn"
-              aria-label="Previous page"
+              :aria-label="t('prevPage')"
               :disable="page === 1"
               @click="page--"
             />
@@ -228,7 +249,7 @@
               color="primary"
               icon="o_chevron_right"
               class="vp-pill-btn"
-              aria-label="Next page"
+              :aria-label="t('nextPage')"
               :disable="page === pageCount"
               @click="page++"
             />
@@ -237,7 +258,7 @@
       </div>
     </div>
 
-    <!-- VIEW — the consumer's profile, with the account change at the foot. -->
+    <!-- VIEW — the consumer's profile -->
     <ConsumerProfileDialog
       v-model="viewOpen"
       :consumer="viewing"
@@ -249,7 +270,7 @@
           outline
           no-caps
           color="primary"
-          label="Close"
+          :label="t('close')"
           class="vp-dialog-btn"
         />
         <q-btn
@@ -257,7 +278,7 @@
           unelevated
           no-caps
           color="primary"
-          label="Change Status"
+          :label="t('changeStatus')"
           icon-right="o_expand_more"
           class="vp-dialog-btn"
         >
@@ -266,19 +287,22 @@
             self="bottom right"
             :offset="[0, 6]"
             auto-close
+            class="compact-status-menu"
           >
-            <q-list class="vp-menu-list">
+            <q-list dense class="compact-menu-list">
               <q-item
-                v-for="option in statusOptions(viewing)"
+                v-for="option in localizedStatusOptions(viewing)"
                 :key="option.status"
                 clickable
-                :class="{ 'vp-menu-item--danger': option.danger }"
+                v-ripple
+                class="compact-menu-item"
+                :class="{ 'compact-menu-item--danger': option.danger }"
                 @click="changeStatus(viewing, option.status)"
               >
-                <q-item-section avatar
-                  ><q-icon :name="option.icon" size="18px"
-                /></q-item-section>
-                <q-item-section>{{ option.label }}</q-item-section>
+                <q-item-section avatar class="compact-menu-avatar">
+                  <q-icon :name="option.icon" size="18px" />
+                </q-item-section>
+                <q-item-section class="compact-menu-label">{{ option.label }}</q-item-section>
               </q-item>
             </q-list>
           </q-menu>
@@ -290,6 +314,7 @@
       ref="statusDialog"
       kind="consumers"
       noun="consumer"
+      :delete-text="t('deleteWarning')"
       @changed="onChanged"
       @deleted="onDeleted"
     />
@@ -304,6 +329,7 @@ import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 import AdminHero from '@/components/admin/AdminHero.vue'
 import AccountStatusDialog from '@/components/admin/AccountStatusDialog.vue'
 import ConsumerProfileDialog from '@/components/admin/ConsumerProfileDialog.vue'
+import { useLanguage } from '@/composables/useLanguage'
 import {
   accountStatusTone,
   accountStatusLabel,
@@ -314,67 +340,149 @@ import '@/css/admin-pages.scss'
 
 const $q = useQuasar()
 
+// --- DICTIONARY FOR LANGUAGE SWITCHER (NATURAL TAGLISH) ---
+const consumersDict = {
+  en: {
+    title: 'Manage Consumers',
+    subtitle: "See every shopper's account and manage who can use Tindahan.",
+    searchPlaceholder: 'Search name, email or phone',
+    filterAll: 'All',
+    filterActive: 'Active',
+    filterInactive: 'Inactive',
+    filterSuspended: 'Suspended',
+    filterDeleted: 'Deleted',
+    stat_all: 'All consumers',
+    stat_active: 'Active',
+    stat_inactive: 'Inactive',
+    stat_suspended: 'Suspended',
+    stat_deleted: 'Deleted',
+    account: 'account',
+    accounts: 'accounts',
+    exportReport: 'Export Report',
+    emptyTitle_all: 'No consumers yet',
+    emptyText_all: 'Shoppers show up here once they sign up.',
+    emptyTitle_active: 'No active consumers',
+    emptyText_active: 'Shoppers who can sign in and order are listed here.',
+    emptyTitle_inactive: 'No inactive consumers',
+    emptyText_inactive: 'Accounts you set inactive are listed here.',
+    emptyTitle_suspended: 'No suspended consumers',
+    emptyText_suspended: 'Accounts you suspend are listed here.',
+    emptyTitle_deleted: 'No deleted consumers',
+    emptyText_deleted: 'Deleted accounts are kept here for the record.',
+    noMatchTitle: 'No matching consumers',
+    noMatchText: 'Try another name, email or phone number.',
+    colConsumer: 'Consumer',
+    colPhone: 'Phone',
+    colJoined: 'Joined',
+    colLastActive: 'Last active',
+    colStatus: 'Status',
+    colActions: 'Actions',
+    unnamedConsumer: 'Unnamed consumer',
+    noEmail: 'No email',
+    noPhone: '—',
+    tooltipViewProfile: 'View Consumer Profile',
+    tooltipOptions: 'Account Options',
+    showing: 'Showing',
+    of: 'of',
+    prevPage: 'Previous page',
+    nextPage: 'Next page',
+    close: 'Close',
+    changeStatus: 'Change Status',
+    deleteWarning: 'will be signed out and unable to log in. Their order history is kept.',
+    optSetActive: 'Set active',
+    optSetInactive: 'Set inactive',
+    optSuspend: 'Suspend...',
+    optDelete: 'Delete consumer...'
+  },
+  ph: {
+    title: 'Manage Consumers',
+    subtitle: 'Tingnan ang accounts ng mga shoppers at i-manage kung sino ang pwedeng gumamit ng Tindahan.',
+    searchPlaceholder: 'Mag-search ng pangalan, email o phone',
+    filterAll: 'Lahat',
+    filterActive: 'Active',
+    filterInactive: 'Inactive',
+    filterSuspended: 'Suspended',
+    filterDeleted: 'Deleted',
+    stat_all: 'Lahat ng consumers',
+    stat_active: 'Active',
+    stat_inactive: 'Inactive',
+    stat_suspended: 'Suspended',
+    stat_deleted: 'Deleted',
+    account: 'account',
+    accounts: 'accounts',
+    exportReport: 'Export Report',
+    emptyTitle_all: 'Wala pang consumers',
+    emptyText_all: 'Dito lalabas ang mga shoppers kapag nag-sign up na sila.',
+    emptyTitle_active: 'Walang active consumers',
+    emptyText_active: 'Dito nakalista ang mga shoppers na pwedeng mag-sign in at umorder.',
+    emptyTitle_inactive: 'Walang inactive consumers',
+    emptyText_inactive: 'Dito nakalista ang mga accounts na sinet mong inactive.',
+    emptyTitle_suspended: 'Walang suspended consumers',
+    emptyText_suspended: 'Dito nakalista ang mga accounts na sinuspend mo.',
+    emptyTitle_deleted: 'Walang deleted consumers',
+    emptyText_deleted: 'Naka-store dito ang mga deleted accounts for record purposes.',
+    noMatchTitle: 'Walang nag-match',
+    noMatchText: 'Try mag-search ng ibang pangalan, email o phone number.',
+    colConsumer: 'Consumer',
+    colPhone: 'Phone',
+    colJoined: 'Joined',
+    colLastActive: 'Last active',
+    colStatus: 'Status',
+    colActions: 'Actions',
+    unnamedConsumer: 'Unnamed consumer',
+    noEmail: 'No email',
+    noPhone: '—',
+    tooltipViewProfile: 'View Consumer Profile',
+    tooltipOptions: 'Account Options',
+    showing: 'Showing',
+    of: 'of',
+    prevPage: 'Previous page',
+    nextPage: 'Next page',
+    close: 'Close',
+    changeStatus: 'Change Status',
+    deleteWarning: 'ay masa-sign out at hindi na makaka-log in. Mananatili pa rin ang order history nila.',
+    optSetActive: 'Set as active',
+    optSetInactive: 'Set as inactive',
+    optSuspend: 'Suspend...',
+    optDelete: 'Delete consumer...'
+  }
+}
+
+const { t } = useLanguage(consumersDict)
+
+// Reactive Filters computing from dictionary
+const localizedFilters = computed(() => [
+  { key: 'all', label: t('filterAll') },
+  { key: 'active', label: t('filterActive') },
+  { key: 'inactive', label: t('filterInactive') },
+  { key: 'suspended', label: t('filterSuspended') },
+  { key: 'deleted', label: t('filterDeleted') }
+])
+
+// Keep original array structure for logic mapping
 const FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'active', label: 'Active' },
-  { key: 'inactive', label: 'Inactive' },
-  { key: 'suspended', label: 'Suspended' },
-  { key: 'deleted', label: 'Deleted' }
+  { key: 'all' },
+  { key: 'active' },
+  { key: 'inactive' },
+  { key: 'suspended' },
+  { key: 'deleted' }
 ]
 
-// The banner's count follows the chosen chip.
 const STAT_LABEL = {
-  all: 'All consumers',
-  active: 'Active',
-  inactive: 'Inactive',
-  suspended: 'Suspended',
-  deleted: 'Deleted'
+  all: 'stat_all',
+  active: 'stat_active',
+  inactive: 'stat_inactive',
+  suspended: 'stat_suspended',
+  deleted: 'stat_deleted'
 }
 
-const EMPTY = {
-  all: {
-    title: 'No consumers yet',
-    text: 'Shoppers show up here once they sign up.'
-  },
-  active: {
-    title: 'No active consumers',
-    text: 'Shoppers who can sign in and order are listed here.'
-  },
-  inactive: {
-    title: 'No inactive consumers',
-    text: 'Accounts you set inactive are listed here.'
-  },
-  suspended: {
-    title: 'No suspended consumers',
-    text: 'Accounts you suspend are listed here.'
-  },
-  deleted: {
-    title: 'No deleted consumers',
-    text: 'Deleted accounts are kept here for the record.'
-  }
-}
-
-// Every change but the current status; suspending and deleting are the ones that need care.
-const STATUS_OPTIONS = [
-  { status: 'active', label: 'Set active', icon: 'o_check_circle' },
-  { status: 'inactive', label: 'Set inactive', icon: 'o_pause_circle' },
-  { status: 'suspended', label: 'Suspend…', icon: 'o_block', danger: true },
-  {
-    status: 'delete',
-    label: 'Delete consumer…',
-    icon: 'o_delete',
-    danger: true
-  }
-]
-
-// The placeholder rows take the table's columns.
 const SKELETON_COLUMNS = [
   { type: 'avatar', lines: 2 },
   { width: '14%', type: 'text' },
   { width: '13%', type: 'text' },
   { width: '13%', type: 'text' },
   { width: '11%', type: 'pill', size: 72 },
-  { width: '130px', type: 'pill', size: 96, align: 'right' }
+  { width: '80px', type: 'pill', size: 60, align: 'right' }
 ]
 const PAGE_SIZE = 10
 
@@ -393,7 +501,6 @@ const photoOf = consumer => {
   return url && url !== 'null' && String(url).trim() ? url : null
 }
 
-// A deleted account reads as Deleted whatever its last status was.
 const statusOf = consumer =>
   consumer.deleted ? 'deleted' : consumer.account_status
 
@@ -414,12 +521,10 @@ const matchesSearch = consumer => {
   )
 }
 
-// The banner counts every consumer in the chosen chip; the chips count what the search leaves.
 const totalFor = key => consumers.value.filter(c => inFilter(c, key)).length
 const searched = computed(() => consumers.value.filter(matchesSearch))
 const countFor = key => searched.value.filter(c => inFilter(c, key)).length
 
-// The most recently active first; people who never signed in go last.
 const filtered = computed(() =>
   searched.value
     .filter(c => inFilter(c, active.value))
@@ -443,13 +548,24 @@ const rangeEnd = computed(() =>
 watch([search, active], () => {
   page.value = 1
 })
-// A change can move a row to another chip, so a page that runs out steps back.
 watch(pageCount, count => {
   if (page.value > count) page.value = count
 })
 
-const statusOptions = consumer =>
-  STATUS_OPTIONS.filter(o => o.status !== consumer.account_status)
+const localizedStatusOptions = consumer => {
+  const options = [
+    { status: 'active', label: t('optSetActive'), icon: 'o_check_circle' },
+    { status: 'inactive', label: t('optSetInactive'), icon: 'o_pause_circle' },
+    { status: 'suspended', label: t('optSuspend'), icon: 'o_block', danger: true },
+    {
+      status: 'delete',
+      label: t('optDelete'),
+      icon: 'o_delete',
+      danger: true
+    }
+  ]
+  return options.filter(o => o.status !== consumer.account_status)
+}
 
 const openView = consumer => {
   viewing.value = consumer
@@ -464,7 +580,6 @@ const changeStatus = (consumer, status) => {
   )
 }
 
-// The changed consumer moves to its new chip straight away.
 const onChanged = ({ userId, status }) => {
   const consumer = consumers.value.find(c => c.user_id === userId && !c.deleted)
   if (consumer) consumer.account_status = status
@@ -478,7 +593,6 @@ const onDeleted = ({ userId }) => {
 const listOf = res =>
   Array.isArray(res.data) ? res.data : res.data?.data || []
 
-// Both lists load together, so every chip can show its count from the start.
 const fetchConsumers = async () => {
   loading.value = true
   try {
@@ -492,16 +606,11 @@ const fetchConsumers = async () => {
     ]
   } catch (error) {
     console.error('Failed to load consumers', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Couldn’t load the consumers. Please refresh.'
-    })
   } finally {
     loading.value = false
   }
 }
 
-// The report follows the Deleted chip and the search.
 const handleExport = async () => {
   if (isExporting.value) return
   isExporting.value = true
@@ -526,12 +635,6 @@ const handleExport = async () => {
     link.click()
     document.body.removeChild(link)
     setTimeout(() => window.URL.revokeObjectURL(url), 1000)
-  } catch (error) {
-    console.error('Export failed', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Couldn’t create the report. Please try again.'
-    })
   } finally {
     isExporting.value = false
   }
@@ -551,6 +654,108 @@ onMounted(fetchConsumers)
   width: 11%;
 }
 .cn-table .col-actions {
-  width: 130px;
+  width: 15%;
+}
+
+/* ALL-ICON UNIFIED ACTION GROUP */
+.vd-icon-action-group {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.vd-action-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--c-text-2, #64748b);
+  transition: all 0.15s ease;
+}
+
+.vd-action-icon-btn:hover {
+  background: var(--c-surface-2, #f1f5f9);
+  color: var(--c-text, #0f172a);
+}
+
+.vd-action-icon-btn--primary:hover {
+  background: var(--c-brand-tint, rgba(201, 35, 42, 0.08));
+  color: var(--c-brand, #c9232a);
+}
+
+.vd-action-icon-btn--sm {
+  width: 26px;
+  height: 26px;
+}
+
+/* COMPACT MENU POPUP */
+:deep(.compact-status-menu) {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid var(--c-hairline, #e2e8f0);
+  background: var(--c-surface, #ffffff) !important;
+}
+
+.compact-menu-list {
+  padding: 4px 0 !important;
+  min-width: 140px;
+}
+
+.compact-menu-item {
+  min-height: 32px !important;
+  padding: 6px 12px !important;
+  font-size: 12.5px;
+  color: var(--c-text, #1e293b);
+  transition: background-color 0.15s ease;
+}
+
+.compact-menu-item:hover {
+  background: var(--c-surface-2, #f8fafc);
+}
+
+.compact-menu-avatar {
+  min-width: 24px !important;
+  padding-right: 8px !important;
+  color: var(--c-muted, #64748b);
+}
+
+.compact-menu-label {
+  font-weight: 500;
+}
+
+.compact-menu-item--danger {
+  color: #dc2626 !important;
+}
+
+.compact-menu-item--danger .compact-menu-avatar {
+  color: #dc2626 !important;
+}
+
+.text-muted-themed {
+  color: var(--c-muted, #64748b);
+}
+
+/* =========================================================
+   DARK MODE OVERRIDES
+========================================================= */
+:deep(.body--dark) .compact-status-menu,
+:global(.admin-layout--dark) .compact-status-menu {
+  background: #181b20 !important;
+  border-color: #262a32 !important;
+}
+
+:deep(.body--dark) .compact-menu-item,
+:global(.admin-layout--dark) .compact-menu-item {
+  color: #e2e8f0 !important;
+}
+
+:deep(.body--dark) .compact-menu-item:hover,
+:global(.admin-layout--dark) .compact-menu-item:hover {
+  background: #20242b !important;
+}
+
+:deep(.body--dark) .text-muted-themed,
+:global(.admin-layout--dark) .text-muted-themed {
+  color: #94a3b8 !important;
 }
 </style>
