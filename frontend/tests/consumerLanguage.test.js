@@ -55,8 +55,8 @@ test('translations interpolate names and quantities, preserve unknown content, a
     language.t('{name} added to cart.', { name: 'Milk & Bread' }),
     'Na-add sa cart ang Milk & Bread.'
   )
-  assert.equal(language.itemCount(0), '0 items')
-  assert.equal(language.itemCount(2), '2 items')
+  assert.equal(language.itemCount(0), '0 na item')
+  assert.equal(language.itemCount(2), '2 na item')
   assert.equal(language.t('Seller product name'), 'Seller product name')
   assert.equal(
     language.t('Review your order before confirming.'),
@@ -74,7 +74,7 @@ test('translations interpolate names and quantities, preserve unknown content, a
   )
   assert.equal(
     language.storeStatus({ scheduleStatusText: 'Closed till Monday 8:00 AM' }),
-    'Sarado hanggang Monday 8:00 AM'
+    'Sarado hanggang Lunes 8:00 AM'
   )
   assert.equal(
     language.storeStatus({ scheduleStatusText: 'Open today' }),

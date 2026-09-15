@@ -465,6 +465,21 @@ const clearFilters = () => {
     flex-wrap: wrap;
   }
 
+  /* The sort box may shrink on phones so the sort label, sort box and Filters stay on one line, even with the longer Filipino label. */
+  .page-header-actions {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .sort-inline {
+    min-width: 0;
+  }
+
+  .sort-select {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
   .page-subtitle {
     display: none;
   }

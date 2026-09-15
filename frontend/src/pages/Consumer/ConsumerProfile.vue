@@ -169,7 +169,15 @@
               <div class="section-title text-red-9">{{ t('Danger Zone') }}</div>
               <div class="section-subtitle q-mb-md">{{ t('Actions here are permanent and cannot be undone.') }}</div>
 
-              <div class="danger-row" @click="confirmDeleteAccount">
+              <!-- A real button for keyboards and screen readers: Tab reaches it, Enter or Space opens the delete dialog. -->
+              <div
+                class="danger-row"
+                role="button"
+                tabindex="0"
+                @click="confirmDeleteAccount"
+                @keydown.enter.prevent="confirmDeleteAccount"
+                @keydown.space.prevent="confirmDeleteAccount"
+              >
                 <div class="info-icon danger-icon"><q-icon name="o_delete" size="18px" /></div>
                 <div class="info-body">
                   <div class="danger-title">{{ t('Delete My Account') }}</div>
@@ -770,7 +778,7 @@ const startOtpTimers = () => {
     if (otpSecondsLeft.value <= 0) {
       clearInterval(otpTimerHandle)
       // The countdown UI is gone, so an expired code gets its own message instead of a generic invalid-code error.
-      if (!otpVerifiedFlash.value) otpError.value = 'Code expired. Please resend a new code.'
+      if (!otpVerifiedFlash.value) otpError.value = t('Code expired. Please resend a new code.')
     }
   }, 1000)
 }
@@ -869,7 +877,7 @@ const saveInfo = async () => {
     localStorage.setItem('auth_user', JSON.stringify(lsUser))
     return true
   } catch (err) {
-    $q.notify({ type: 'negative', message: err.response?.data?.message || t('Failed to update info.') })
+    $q.notify({ type: 'negative', message: t(err.response?.data?.message || 'Failed to update info.') })
     return false
   } finally {
     savingInfo.value = false
@@ -946,7 +954,7 @@ const requestPhoneOtp = async () => {
     showOtpModal.value = true
     startOtpTimers()
   } catch (err) {
-    $q.notify({ type: 'negative', message: err.response?.data?.message || t('Failed to request OTP.') })
+    $q.notify({ type: 'negative', message: t(err.response?.data?.message || 'Failed to request OTP.') })
   } finally {
     requestingOtp.value = false
   }
@@ -961,7 +969,7 @@ const resendOtpCode = async () => {
     startOtpTimers()
     otpRefs.value[0]?.focus()
   } catch (err) {
-    $q.notify({ type: 'negative', message: err.response?.data?.message || t('Failed to resend code.') })
+    $q.notify({ type: 'negative', message: t(err.response?.data?.message || 'Failed to resend code.') })
   }
 }
 
@@ -1036,7 +1044,7 @@ const verifyOtp = async () => {
       openSuccessModal('Information Updated!', 'Your personal information has been updated successfully.')
     }, 450)
   } catch (err) {
-    otpError.value = err.response?.data?.message || t('Invalid verification code. Please try again.')
+    otpError.value = t(err.response?.data?.message || 'Invalid verification code. Please try again.')
   } finally {
     verifyingOtp.value = false
   }
@@ -1049,7 +1057,7 @@ const saveEmail = async () => {
     await api.post('/profile/email', { email: form.email })
     user.value.email = form.email
   } catch (err) {
-    $q.notify({ type: 'negative', message: err.response?.data?.message || t('Failed to update email.') })
+    $q.notify({ type: 'negative', message: t(err.response?.data?.message || 'Failed to update email.') })
   } finally {
     savingEmail.value = false
   }
@@ -1072,7 +1080,7 @@ const savePassword = async () => {
     showPasswordModal.value = false
     openSuccessModal('Password Updated!', 'Your password has been changed successfully.')
   } catch (err) {
-    $q.notify({ type: 'negative', message: err.response?.data?.message || t('Failed to update password.') })
+    $q.notify({ type: 'negative', message: t(err.response?.data?.message || 'Failed to update password.') })
   } finally {
     savingPassword.value = false
   }
@@ -1646,6 +1654,12 @@ const goHomeAfterDelete = () => {
 
   box-shadow: 0 4px 14px rgba(220, 38, 38, 0.1);
   transform: translateY(-1px);
+}
+
+/* The same red focus ring as the page's delete button, shown only for keyboard focus. */
+.danger-row:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.3);
 }
 
 .danger-icon {

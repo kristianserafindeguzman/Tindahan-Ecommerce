@@ -55,7 +55,7 @@
               <q-icon name="o_error_outline" size="16px" />
               <div>
                 <div class="cancellation-note-title">{{ t('Cancellation Reason') }}</div>
-                <div class="cancellation-note-text">{{ order.cancellation_reason || t('No reason provided.') }}</div>
+                <div class="cancellation-note-text">{{ t(order.cancellation_reason || 'No reason provided.') }}</div>
               </div>
             </div>
           </div>
@@ -516,7 +516,7 @@ const confirmCancelOrder = async () => {
     customCancelReason.value = ''
     fetchOrderDetails()
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to cancel order') })
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to cancel order') })
   } finally {
     isCancelling.value = false
   }

@@ -251,7 +251,7 @@ const handleAddToCart = async (product) => {
     await addToCart(product.id)
     $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to add to cart.') })
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
   }
 }
 
@@ -861,6 +861,21 @@ const clearFilters = () => {
 
   .page-header-row {
     flex-wrap: wrap;
+  }
+
+  /* The sort box may shrink on phones so the sort label, sort box and Filters stay on one line, even with the longer Filipino label. */
+  .page-header-actions {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .sort-inline {
+    min-width: 0;
+  }
+
+  .sort-select {
+    flex: 0 1 auto;
+    min-width: 0;
   }
 
   .page-subtitle {

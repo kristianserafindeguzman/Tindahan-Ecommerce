@@ -257,7 +257,7 @@ const changeQuantity = async (item, newQuantity) => {
   try {
     await updateQuantity(item.cartId, newQuantity)
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to update quantity.') })
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to update quantity.') })
   }
 }
 
@@ -266,7 +266,7 @@ const removeItem = async (item) => {
     await removeFromCart(item.cartId)
     $q.notify({ type: 'positive', message: t('{name} removed from cart.', { name: item.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to remove item.') })
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to remove item.') })
   }
 }
 </script>

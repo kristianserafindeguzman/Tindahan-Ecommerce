@@ -1,11 +1,17 @@
 // Distance formatting and measurement, extracted from eight consumer files that each carried an identical copy.
+import { useConsumerLanguage } from '../composables/useConsumerLanguage.js'
 
-/** Metres to a short string such as 820 m away or 1.4 km away, or an empty string for null. */
+const { t } = useConsumerLanguage()
+
+// Non-breaking spaces keep "7 m ang layo" on one line when a long address beside it wraps.
+const keepTogether = (text) => text.replace(/ /g, ' ')
+
+/** Metres to a short string such as 820 m away or 1.4 km away (in the shopper's language), or an empty string for null. */
 export function formatDistance(meters) {
   if (meters == null) return ''
   const rounded = Math.round(meters)
-  if (rounded < 1000) return `${rounded} m away`
-  return `${(meters / 1000).toFixed(1)} km away`
+  if (rounded < 1000) return keepTogether(t('{distance} m away', { distance: rounded }))
+  return keepTogether(t('{distance} km away', { distance: (meters / 1000).toFixed(1) }))
 }
 
 /** Coordinate to a finite number or null, rejecting what PHP's is_numeric rejects, since Number(null) would give a valid 0. */

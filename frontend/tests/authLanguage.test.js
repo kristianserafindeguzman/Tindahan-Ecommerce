@@ -149,7 +149,7 @@ test('vendor registration translates steps, errors, location controls and dialog
     'Ilagay ang pangalan ng store owner.',
     'Ilagay ang phone number mo.',
     'Ilagay ang store name.',
-    'Mag-resend sa 0:12',
+    'I-resend (0:12)',
     '0912***6789',
     'Digit 1 sa 6',
     'Mag-upload ng photo ng harap ng store mo.',
@@ -172,7 +172,7 @@ test('vendor registration translates steps, errors, location controls and dialog
   assert.ok(rejected.includes('Application Under Review'))
   assert.ok(rejected.includes('Your Store'))
   const review = await renderAuth('vendor/VendorUnderReview.vue')
-  assert.ok(review.includes('1–2 business days'))
+  assert.ok(review.includes('1–3 business days'))
   assert.ok(review.includes('I-refresh ang Status'))
   language.setLanguage('en')
 })
@@ -212,7 +212,7 @@ test('auth errors, field labels, registration choices and countdowns use Filipin
   const verification = await renderAuth('consumer/ConsumerVerify.vue', { otpError: 'Invalid verification code. Please try again.' })
   assert.ok(verification.includes('Nag-send kami ng 6-digit verification code sa'))
   assert.ok(verification.includes('0912***6789'))
-  assert.ok(verification.includes('Mag-resend sa 0:12'))
+  assert.ok(verification.includes('I-resend (0:12)'))
   assert.ok(verification.includes('Digit 1 sa 6'))
   assert.ok(verification.includes('Hindi valid ang verification code. Subukan ulit.'))
   const reset = await renderAuth('LoginPage.vue', {
@@ -223,8 +223,8 @@ test('auth errors, field labels, registration choices and countdowns use Filipin
   })
   assert.ok(reset.includes('I-verify ang Phone Number'))
   assert.ok(reset.includes('0912***6789'))
-  assert.ok(reset.includes('Mag-resend sa 0:12'))
+  assert.ok(reset.includes('I-resend (0:12)'))
   const missing = await renderAuth('consumer/ConsumerVerify.vue', { hasPhone: false })
-  assert.ok(missing.includes('Walang mobile number na ma-verify'))
+  assert.ok(missing.includes('Hindi namin alam kung aling number ang ive-verify'))
   language.setLanguage('en')
 })
