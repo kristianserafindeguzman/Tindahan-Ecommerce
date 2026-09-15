@@ -93,6 +93,10 @@ export default {
   Address: 'Address',
   'Enter your address': 'Ilagay ang address mo',
   'Confirm Address': 'I-confirm ang Address',
+  'Finding places...': 'Hinahanap ang mga lugar...',
+  "Can't find it? Pin your spot on the map, then edit the address if needed.":
+    'Hindi makita? I-pin ang lugar mo sa map, tapos i-edit ang address kung kailangan.',
+  'Pin not on your exact spot? Tap the map to move it.': 'Hindi eksakto ang pin? I-tap ang map para ilipat ito.',
   Notifications: 'Notifications',
   'Mark all as read': 'I-mark as read lahat',
   'Mark all as read ({count})': 'I-mark as read lahat ({count})',
@@ -485,8 +489,8 @@ export default {
     'Hindi tugma ang pangalan. I-type ang "{name}" nang eksakto.',
   'Enter the 6-digit verification code sent to {phone}. Sent via SMS.':
     'Ilagay ang 6-digit verification code na ipinadala sa {phone} via SMS.',
-  "Didn't receive the code? Resend in {seconds}s":
-    'Hindi mo natanggap ang code? I-resend ({seconds}s)',
+  "Didn't receive the code? Resend in {time}":
+    'Hindi mo natanggap ang code? I-resend ({time})',
   'Decrease quantity of {name}': 'Bawasan ang dami ng {name}',
   'Increase quantity of {name}': 'Dagdagan ang dami ng {name}',
   'Remove {name} from cart': 'Alisin ang {name} sa cart',

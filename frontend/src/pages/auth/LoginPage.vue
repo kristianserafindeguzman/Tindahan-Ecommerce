@@ -538,8 +538,9 @@ const forgotOtp = ref(['', '', '', '', '', ''])
 const forgotOtpRefs = ref([])
 const forgotOtpComplete = computed(() => forgotOtp.value.every(digit => digit !== ''))
 
-// Same 60s resend countdown as ConsumerVerify.vue's OTP screen.
-const forgotResendTimer = ref(60)
+// Same 10-minute resend countdown as ConsumerVerify.vue's OTP screen, the time the texted code stays valid.
+const FORGOT_RESEND_WAIT_SECONDS = 600
+const forgotResendTimer = ref(FORGOT_RESEND_WAIT_SECONDS)
 let forgotResendInterval = null
 
 const formattedForgotResendTimer = computed(() => {
@@ -550,7 +551,7 @@ const formattedForgotResendTimer = computed(() => {
 
 const startForgotResendTimer = () => {
   clearInterval(forgotResendInterval)
-  forgotResendTimer.value = 60
+  forgotResendTimer.value = FORGOT_RESEND_WAIT_SECONDS
 
   forgotResendInterval = setInterval(() => {
     if (forgotResendTimer.value > 0) {
@@ -1081,7 +1082,7 @@ const goToVendorRegister = () => {
 .login-input :deep(.q-field__input) {
   font-family: 'Roboto', Arial, sans-serif;
 
-  font-size: 14px;
+  font-size: 15px;
 
   color: var(--c-text-2);
 
@@ -1450,7 +1451,7 @@ const goToVendorRegister = () => {
 .notice-box p {
   margin: 0;
 
-  font-size: 12.5px;
+  font-size: 13.5px;
   line-height: 1.6;
 
   /* The backend sends the admin attribution and the reason as two lines, so the line break is kept instead of collapsing them into one run-on sentence. */
@@ -1717,6 +1718,45 @@ const goToVendorRegister = () => {
 
   .login-button {
     height: 48px;
+  }
+}
+
+/* Slightly larger text on the auth screens: the shared size tokens go up about 1px here and in this page's own pop-ups. */
+.login-page,
+.registration-dialog,
+.status-dialog {
+  --fs-2xs: 12.5px;
+  --fs-xs: 13.5px;
+  --fs-sm: 15px;
+  --fs-md: 16px;
+}
+
+@media (max-width: 600px) {
+  .login-page,
+  .registration-dialog,
+  .status-dialog {
+    --fs-2xs: 11.5px;
+    --fs-xs: 12.5px;
+    --fs-sm: 14px;
+    --fs-md: 15px;
+  }
+}
+
+/* Thumb-sized tap areas on touch screens: the padding is cancelled by an equal negative margin, so nothing moves. */
+@media (pointer: coarse) {
+  .password-icon.cursor-pointer {
+    box-sizing: content-box;
+    padding: 13px;
+    margin: -13px;
+  }
+
+  .terms-links a {
+    padding-block: 14px;
+  }
+
+  .create-account {
+    padding-inline: 6px;
+    margin-inline: -6px;
   }
 }
 </style>

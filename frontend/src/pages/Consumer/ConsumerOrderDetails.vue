@@ -1290,6 +1290,16 @@ onMounted(() => {
 
 .cancel-dialog-card-sheet .cancel-dialog-close-btn {
   top: 20px;
+
+  /* A 44px thumb-sized target on the phone sheet. */
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.cancel-dialog-card-sheet .cancel-dialog-close-btn :deep(.q-icon) {
+  font-size: 26px;
 }
 
 .cancel-dialog-title {
@@ -1473,6 +1483,20 @@ onMounted(() => {
   right: 10px;
 
   color: var(--c-muted);
+}
+
+/* On phones the receipt's close button is a 44px thumb-sized target. */
+@media (max-width: 600px) {
+  .receipt-close-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .receipt-close-btn :deep(.q-icon) {
+    font-size: 26px;
+  }
 }
 
 .receipt-icon-circle {
