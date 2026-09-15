@@ -379,6 +379,20 @@ onBeforeUnmount(() => {
   color: var(--c-subtle);
 }
 
+/* On phones the map's close button is a 44px thumb-sized target. */
+@media (max-width: 600px) {
+  .sidebar-close-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .sidebar-close-btn :deep(.q-icon) {
+    font-size: 26px;
+  }
+}
+
 .sidebar-search {
   margin: 12px 16px;
 }

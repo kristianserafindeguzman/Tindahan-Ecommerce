@@ -141,6 +141,16 @@
           >
           <div class="address-menu-panel" :class="{ 'address-menu-panel-sheet': isAddressSheet }" @click.stop>
             <div v-if="isAddressSheet" class="address-menu-drag-handle" />
+            <q-btn
+              v-if="isAddressSheet"
+              flat
+              round
+              dense
+              icon="o_close"
+              class="address-sheet-close"
+              :aria-label="t('Close')"
+              @click="addressMenuOpen = false"
+            />
 
             <div class="address-menu-scroll">
               <div class="address-menu-title">
@@ -148,17 +158,20 @@
                 <span>{{ t('Address') }}</span>
               </div>
 
-              <q-input
+              <AddressAutocomplete
+                ref="addressInputRef"
                 v-model="draftAddress"
                 dense
                 outlined
                 hide-bottom-space
+                :translate="t"
                 :placeholder="t('Enter your address')"
                 class="address-menu-input"
-                @keyup.enter="confirmAddress"
+                @pin="onAddressPin"
+                @enter="confirmAddress"
               />
 
-              <VendorLocationMap class="address-menu-map" @location-selected="onLocationSelected" />
+              <VendorLocationMap ref="addressMapRef" class="address-menu-map" @location-selected="onLocationSelected" />
             </div>
 
             <div class="address-menu-footer">
@@ -168,6 +181,7 @@
                 :label="t('Confirm Address')"
                 class="address-menu-confirm"
                 :disable="!draftAddress.trim()"
+                @mousedown.prevent
                 @click="confirmAddress"
               />
             </div>
@@ -482,6 +496,7 @@ import { splitHighlightParts } from '@/utils/textHighlight'
 import { useCategories } from '@/composables/useCategories'
 import { clearAuthStorage } from '@/utils/authStorage'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
+import AddressAutocomplete from '@/components/shared/AddressAutocomplete.vue'
 import NotificationsMenu from '@/components/consumer/NotificationsMenu.vue'
 import { notificationPresentation, notificationTime } from '@/utils/notificationPresentation'
 import {
@@ -499,6 +514,8 @@ const $q = useQuasar()
 const { address, setAddress, autoDetectAddress } = useAddress()
 const draftAddress = ref('')
 const draftLocation = ref(null)
+const addressInputRef = ref(null)
+const addressMapRef = ref(null)
 // The header dropdowns align to the action cluster's right edge rather than their own button, via the q-menu :target bindings.
 const headerActionsRef = ref(null)
 const mobileActionsRef = ref(null)
@@ -539,14 +556,21 @@ const toggleAddressMenu = () => {
   }
 }
 
-// Same plain-div dropdown pattern as .search-suggestions, so clicking outside closes it.
+// A map tap or late device fix fills the box only when the user has not typed in it, so an address missing from the suggestions survives being pinned.
 const onLocationSelected = (location) => {
-  draftAddress.value = location.address
+  if (addressInputRef.value?.mapSelected(location) !== false) draftAddress.value = location.address
   draftLocation.value = location
 }
 
-const confirmAddress = () => {
+const onAddressPin = (location) => {
+  draftLocation.value = location
+  addressMapRef.value?.showLocation(location.latitude, location.longitude)
+}
+
+// The Confirm button's mousedown.prevent keeps the address box focused, so a search on just-typed text survives to be settled here and its pin is the one saved.
+const confirmAddress = async () => {
   if (!draftAddress.value.trim()) return
+  if (addressInputRef.value && !(await addressInputRef.value.settle())) return
   if (draftLocation.value) {
     setAddress(draftAddress.value.trim(), draftLocation.value.latitude, draftLocation.value.longitude)
   } else {
@@ -1592,6 +1616,16 @@ const goToTab = (tab) => {
 
 .mobile-menu-close {
   color: var(--c-muted);
+
+  /* The phone menu's close button is a 44px thumb-sized target. */
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.mobile-menu-close :deep(.q-icon) {
+  font-size: 26px;
 }
 
 .mobile-menu-scroll {
@@ -2255,6 +2289,8 @@ const goToTab = (tab) => {
 
 /* QDialog pins and animates the sheet, so this only reshapes the panel for the full-width variant. */
 .address-menu-panel-sheet {
+  position: relative;
+
   display: flex;
   flex-direction: column;
 
@@ -2279,6 +2315,25 @@ const goToTab = (tab) => {
   border-radius: var(--r-pill);
 
   background: var(--c-border-strong);
+}
+
+/* The sheet's close button: a 44px thumb-sized target in the top corner, like the other consumer sheets. */
+.address-sheet-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+
+  color: var(--c-muted);
+}
+
+.address-sheet-close :deep(.q-icon) {
+  font-size: 26px;
 }
 
 /* flex: 1 1 auto (not flex: 1) — sizes to content first, only scrolls when it actually overflows. */

@@ -294,7 +294,7 @@
         <q-form ref="addressFormRef" greedy>
           <q-card-section class="dialog-body">
             <div class="address-map-frame">
-              <VendorLocationMap v-if="addressMapReady" :initial="addressInitial" @location-selected="onLocationSelected" />
+              <VendorLocationMap v-if="addressMapReady" ref="addressMapRef" :initial="addressInitial" @location-selected="onLocationSelected" />
             </div>
             <div class="edit-field-hint" :class="{ 'edit-field-hint-success': editAddress.latitude !== null }">
               <q-icon v-if="editAddress.latitude !== null" name="o_check_circle" size="12px" />
@@ -303,8 +303,13 @@
 
             <div class="edit-field">
               <div class="edit-field-label">{{ t('addressFieldLabel') }}</div>
-              <q-input
+              <!-- Sits below the map, so its suggestions open upward over it. -->
+              <AddressAutocomplete
+                ref="addressInputRef"
                 v-model="editAddress.address"
+                above
+                :translate="t"
+                :pinned="addressInitial"
                 type="textarea"
                 autogrow
                 outlined
@@ -314,6 +319,7 @@
                 maxlength="255"
                 class="address-input"
                 :rules="[val => !!val?.trim() || t('addressRule')]"
+                @pin="onAddressPin"
               />
             </div>
           </q-card-section>
@@ -321,7 +327,7 @@
 
         <q-card-actions align="right">
           <q-btn outline no-caps :label="t('cancelBtn')" color="primary" :disable="savingAddress" @click="attemptCloseAddress" />
-          <q-btn unelevated no-caps color="primary" :label="t('saveAddressBtn')" :loading="savingAddress" :disable="!canSaveAddress" class="btn-gradient" @click="saveAddress" />
+          <q-btn unelevated no-caps color="primary" :label="t('saveAddressBtn')" :loading="savingAddress" :disable="!canSaveAddress" class="btn-gradient" @mousedown.prevent @click="saveAddress" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -642,6 +648,7 @@ import { api } from '@/boot/axios'
 import { clearAuthStorage } from '@/utils/authStorage'
 import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
+import AddressAutocomplete from '@/components/shared/AddressAutocomplete.vue'
 import { useLanguage } from '@/composables/useLanguage'
 
 const $q = useQuasar()
@@ -834,6 +841,11 @@ const vendorProfileDict = {
     addressFieldLabel: 'Street, building, house no.',
     addressRule: 'Kailangan ang address.',
     saveAddressBtn: 'I-save ang Address',
+    // AddressAutocomplete's own messages, keyed by their English text.
+    'Finding places...': 'Hinahanap ang mga lugar...',
+    "Can't find it? Pin your spot on the map, then edit the address if needed.":
+      'Hindi makita? I-pin ang lugar mo sa map, tapos i-edit ang address kung kailangan.',
+    'Pin not on your exact spot? Tap the map to move it.': 'Hindi eksakto ang pin? I-tap ang map para ilipat ito.',
     editHoursTitle: 'I-edit ang Oras ng Bukas',
     editHoursSubtitle: 'Ilagay kung kailan pwedeng mag-pick up ang customers.',
     hoursHint: 'I-off ang isang araw kung sarado ang tindahan.',
@@ -1395,6 +1407,8 @@ const addressFormRef = ref(null)
 const addressMapReady = ref(false)
 const addressInitial = ref(null)
 const editAddress = reactive({ address: '', latitude: null, longitude: null })
+const addressInputRef = ref(null)
+const addressMapRef = ref(null)
 
 const addressChanged = computed(() =>
   editAddress.address.trim() !== (store.value.address || '') ||
@@ -1416,17 +1430,26 @@ const startEditAddress = () => {
   showAddressModal.value = true
 }
 
-const onLocationSelected = ({ latitude, longitude, address }) => {
+// The address box takes the map's address unless the vendor typed in it, so an address missing from the suggestions survives being pinned.
+const onLocationSelected = (location) => {
+  editAddress.latitude = location.latitude
+  editAddress.longitude = location.longitude
+  if (location.address && addressInputRef.value?.mapSelected(location) !== false) editAddress.address = location.address
+}
+
+const onAddressPin = ({ latitude, longitude }) => {
   editAddress.latitude = latitude
   editAddress.longitude = longitude
-  if (address) editAddress.address = address
+  addressMapRef.value?.showLocation(latitude, longitude)
 }
 
 const attemptCloseAddress = () => {
   requestClose(addressChanged.value, () => { showAddressModal.value = false })
 }
 
+// Save's mousedown.prevent keeps the address box focused, so a search on just-typed text survives to be settled here and its pin is the one saved.
 const saveAddress = async () => {
+  if (addressInputRef.value && !(await addressInputRef.value.settle())) return
   if (!canSaveAddress.value) return
   if (!(await addressFormRef.value.validate())) return
   savingAddress.value = true

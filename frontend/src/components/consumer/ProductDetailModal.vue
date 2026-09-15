@@ -727,6 +727,16 @@ const handleAddToCart = async () => {
 
 .detail-card-sheet .close-btn {
   top: 20px;
+
+  /* A 44px thumb-sized target on the phone sheet. */
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.detail-card-sheet .close-btn :deep(.q-icon) {
+  font-size: 26px;
 }
 
 .detail-card-sheet .detail-grid {

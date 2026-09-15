@@ -158,6 +158,28 @@ const sort = defineModel('sort')
   background: var(--c-hairline);
 }
 
+/* In the phone bottom sheet the close button grows to a 44px thumb-sized target. */
+:global(.q-dialog__inner--bottom .filters-close-btn) {
+  width: 44px;
+  height: 44px;
+}
+
+:global(.q-dialog__inner--bottom .filters-close-btn .q-icon) {
+  font-size: 26px;
+}
+
+/* Touch screens get the same thumb-sized close button in the side panel too, e.g. a tablet held sideways. */
+@media (pointer: coarse) {
+  .filters-close-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .filters-close-btn :deep(.q-icon) {
+    font-size: 26px;
+  }
+}
+
 .filter-group {
   margin-bottom: 16px;
 }

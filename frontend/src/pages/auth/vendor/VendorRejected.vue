@@ -358,4 +358,21 @@ onMounted(fetchReason)
     flex: none;
   }
 }
+
+/* Slightly larger text on the auth screens: the shared size tokens go up about 1px here and in this page's own pop-ups. */
+.status-page {
+  --fs-2xs: 12.5px;
+  --fs-xs: 13.5px;
+  --fs-sm: 15px;
+  --fs-md: 16px;
+}
+
+@media (max-width: 600px) {
+  .status-page {
+    --fs-2xs: 11.5px;
+    --fs-xs: 12.5px;
+    --fs-sm: 14px;
+    --fs-md: 15px;
+  }
+}
 </style>

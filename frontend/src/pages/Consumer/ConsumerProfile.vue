@@ -476,7 +476,7 @@
                 <a href="#" class="otp-resend-link" @click.prevent="resendOtpCode">{{ t('Resend Code') }}</a>
               </template>
               <template v-else>
-                {{ t('Didn\'t receive the code? Resend in {seconds}s', { seconds: resendSecondsLeft }) }}
+                {{ t('Didn\'t receive the code? Resend in {time}', { time: formattedResendTime }) }}
               </template>
             </span>
           </div>
@@ -760,13 +760,16 @@ const maskedPhone = computed(() => {
   return `${digits.slice(0, 4)}•••${digits.slice(-4)}`
 })
 
-const OTP_EXPIRY_SECONDS = 300
-const OTP_RESEND_COOLDOWN = 30
+// Both 10 minutes: the server keeps a texted code valid for 10 minutes, and a new one can be requested once it runs out.
+const OTP_EXPIRY_SECONDS = 600
+const OTP_RESEND_COOLDOWN = 600
 const otpSecondsLeft = ref(OTP_EXPIRY_SECONDS)
 const resendSecondsLeft = ref(OTP_RESEND_COOLDOWN)
 let otpTimerHandle = null
 
 const canResendOtp = computed(() => resendSecondsLeft.value <= 0)
+// Minutes and seconds, e.g. 9:59, the same as the sign-up screens.
+const formattedResendTime = computed(() => `${Math.floor(resendSecondsLeft.value / 60)}:${String(resendSecondsLeft.value % 60).padStart(2, '0')}`)
 
 const startOtpTimers = () => {
   otpSecondsLeft.value = OTP_EXPIRY_SECONDS
@@ -1320,6 +1323,22 @@ const goHomeAfterDelete = () => {
 /* Same close-icon grey used everywhere else a dialog has an X (Terms/Privacy/Support/ProductDetailModal). */
 .dialog-close-btn {
   color: var(--c-muted);
+}
+
+/* On phones every dialog's close button is a 44px thumb-sized target. */
+@media (max-width: 600px) {
+  .dialog-close-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* The second selector outranks the desktop rule that keeps the dialog X at 19px. */
+  .dialog-close-btn :deep(.q-icon),
+  .profile-dialog-card :deep(.dialog-header .q-btn--round.dialog-close-btn .q-icon) {
+    font-size: 26px;
+  }
 }
 
 .profile-container :deep(.q-btn) {

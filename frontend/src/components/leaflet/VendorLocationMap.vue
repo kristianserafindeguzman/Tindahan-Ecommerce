@@ -8,7 +8,7 @@
     <button
       type="button"
       class="location-button"
-      @click="useCurrentLocation"
+      @click="useCurrentLocation()"
       :disabled="loadingLocation"
     >
       <span class="location-icon">◎</span>
@@ -37,6 +37,8 @@ const mapContainer = ref(null)
 let map = null
 let marker = null
 let unmounted = false
+// Bumped on every pin move, so a slow device-location or reverse-geocode result that a newer pin has overtaken is dropped instead of moving the pin back.
+let pinVersion = 0
 
 const loadingLocation = ref(false)
 
@@ -90,7 +92,8 @@ onMounted(() => {
   if (hasInitial) {
     marker = L.marker([start.latitude, start.longitude]).addTo(map)
   } else {
-    useCurrentLocation()
+    // Flagged auto so the parent can tell this opening guess from a spot the user chose.
+    useCurrentLocation(true)
   }
 
 })
@@ -98,17 +101,22 @@ onMounted(() => {
 
 // CURRENT LOCATION
 
-const useCurrentLocation = async () => {
+const useCurrentLocation = async (auto = false) => {
 
   loadingLocation.value = true
 
   try {
 
+    const version = pinVersion
+
     const { latitude, longitude } = await getCurrentPosition()
+
+    if (version !== pinVersion) return
 
     await selectLocation(
       latitude,
-      longitude
+      longitude,
+      auto
     )
 
   } catch (error) {
@@ -130,29 +138,16 @@ const useCurrentLocation = async () => {
 
 const selectLocation = async (
   latitude,
-  longitude
+  longitude,
+  auto = false
 ) => {
 
   // Bails out if the map was unmounted while a geolocation or reverse-geocode call was still in flight, since touching a removed map or emitting into a closed panel would throw or corrupt state.
   if (unmounted) return
 
-  // Move map
-  map.setView(
-    [latitude, longitude],
-    17
-  )
+  showLocation(latitude, longitude)
 
-
-  // Remove old marker
-  if (marker) {
-    map.removeLayer(marker)
-  }
-
-
-  // Create marker
-  marker = L.marker(
-    [latitude, longitude]
-  ).addTo(map)
+  const version = pinVersion
 
 
   // Reverse geocode
@@ -162,7 +157,8 @@ const selectLocation = async (
       longitude
     )
 
-  if (unmounted) return
+  // A newer pin replaced this one while the lookup ran, so its address would label the wrong spot.
+  if (unmounted || version !== pinVersion) return
 
   // Send data to VendorRegistration
   emit(
@@ -170,11 +166,42 @@ const selectLocation = async (
     {
       latitude,
       longitude,
-      address
+      address,
+      auto
     }
   )
 
 }
+
+
+// SHOW LOCATION
+
+// Moves the pin to coordinates whose address the parent already has, such as a picked search suggestion, so it skips the lookup and emits nothing.
+const showLocation = (
+  latitude,
+  longitude
+) => {
+
+  if (unmounted) return
+
+  pinVersion++
+
+  map.setView(
+    [latitude, longitude],
+    17
+  )
+
+  if (marker) {
+    map.removeLayer(marker)
+  }
+
+  marker = L.marker(
+    [latitude, longitude]
+  ).addTo(map)
+
+}
+
+defineExpose({ showLocation })
 
 
 // CLEANUP
@@ -196,6 +223,9 @@ onBeforeUnmount(() => {
 
 .location-wrapper {
   position: relative;
+
+  /* Keeps Leaflet's pane and control z-indexes (up to 1000) inside the map, so an address suggestion list can lie over it. */
+  isolation: isolate;
 
   width: 100%;
   height: 100%;

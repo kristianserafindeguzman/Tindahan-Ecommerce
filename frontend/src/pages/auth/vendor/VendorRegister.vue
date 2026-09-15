@@ -376,7 +376,7 @@
         <p class="step-hint">{{ t('Move the pin to where your store is, or type the address below.') }}</p>
 
         <div class="map-placeholder">
-          <VendorLocationMap :translate="t" @location-selected="handleLocationSelected" />
+          <VendorLocationMap ref="storeMapRef" :translate="t" @location-selected="handleLocationSelected" />
         </div>
 
         <div class="detected-address">
@@ -387,14 +387,19 @@
         </div>
 
         <div class="field-group manual-address">
-          <q-input
+          <!-- Sits below the map, so its suggestions open upward over it. -->
+          <AddressAutocomplete
+            ref="manualAddressRef"
             v-model="form.manualAddress"
+            above
+            :translate="t"
             outlined
             dense
             no-error-icon
             hide-bottom-space
             :label="t('Manual address entry')"
             class="login-input"
+            @pin="handleAddressPin"
           />
         </div>
 
@@ -402,7 +407,7 @@
 
         <div class="wizard-actions">
           <q-btn outline no-caps :label="t('Back')" class="wizard-back" @click="previousStep" />
-          <q-btn unelevated no-caps :label="t('Continue')" class="login-button" @click="nextFromLocation" />
+          <q-btn unelevated no-caps :label="t('Continue')" class="login-button" @mousedown.prevent @click="nextFromLocation" />
         </div>
       </div>
 
@@ -568,6 +573,7 @@ import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
+import AddressAutocomplete from '@/components/shared/AddressAutocomplete.vue'
 import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 
 const { t } = useConsumerLanguage()
@@ -718,9 +724,12 @@ const timeLabel = value => timeOptions.find(option => option.value === value)?.l
 const hoursSummary = computed(() => (alwaysOpen.value ? t('Always open (24/7)') : `${timeLabel(form.openingTime)} – ${timeLabel(form.closingTime)}`))
 const daysSummary = computed(() => DAY_ORDER.filter(day => form.operatingDays.includes(day)).join(', '))
 
+// A new code can be requested after 10 minutes, the time the texted code stays valid on the server.
+const RESEND_WAIT_SECONDS = 600
+
 const startResendTimer = () => {
   clearInterval(resendInterval)
-  resendTimer.value = 60
+  resendTimer.value = RESEND_WAIT_SECONDS
   resendInterval = setInterval(() => {
     if (resendTimer.value > 0) resendTimer.value--
     else clearInterval(resendInterval)
@@ -907,7 +916,9 @@ const nextFromHours = () => {
   afterStep(5)
 }
 
-const nextFromLocation = () => {
+// Continue's mousedown.prevent keeps the manual address box focused, so a search on just-typed text survives to be settled here and moves the pin first.
+const nextFromLocation = async () => {
+  if (manualAddressRef.value && !(await manualAddressRef.value.settle())) return
   if (!form.latitude || !form.longitude) {
     stepError.value = 'Pick your store location on the map.'
     return
@@ -1053,6 +1064,9 @@ const goToLogin = () => {
 }
 
 
+const storeMapRef = ref(null)
+const manualAddressRef = ref(null)
+
 function handleLocationSelected(location) {
 
   console.log('Store location:', location)
@@ -1064,6 +1078,17 @@ function handleLocationSelected(location) {
   // Save detected address
   form.detectedAddress = location.address
 
+  // Lets the manual box hold the pin and rank its searches near this spot; the manual text is never overwritten from the map.
+  manualAddressRef.value?.mapSelected(location)
+
+}
+
+// A picked suggestion or the best match for the typed address moves the pin, and the detected address shows where it landed.
+function handleAddressPin(location) {
+  form.latitude = location.latitude
+  form.longitude = location.longitude
+  form.detectedAddress = location.address
+  storeMapRef.value?.showLocation(location.latitude, location.longitude)
 }
 
 
@@ -1271,7 +1296,7 @@ function handleLocationSelected(location) {
 .login-input :deep(.q-field__input) {
   font-family: 'Roboto', Arial, sans-serif;
 
-  font-size: 14px;
+  font-size: 15px;
 
   color: var(--c-text-2);
 
@@ -1311,7 +1336,7 @@ function handleLocationSelected(location) {
 .phone-prefix {
   padding: 0 6px 0 4px;
 
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 
   color: var(--c-text-2);
@@ -2312,6 +2337,45 @@ function handleLocationSelected(location) {
     flex-direction: column;
 
     gap: 0;
+  }
+}
+
+/* Slightly larger text on the auth screens: the shared size tokens go up about 1px here and in this page's own pop-ups. */
+.vendor-page,
+.crop-dialog,
+.success-dialog {
+  --fs-2xs: 12.5px;
+  --fs-xs: 13.5px;
+  --fs-sm: 15px;
+  --fs-md: 16px;
+}
+
+@media (max-width: 600px) {
+  .vendor-page,
+  .crop-dialog,
+  .success-dialog {
+    --fs-2xs: 11.5px;
+    --fs-xs: 12.5px;
+    --fs-sm: 14px;
+    --fs-md: 15px;
+  }
+}
+
+/* Thumb-sized tap areas on touch screens: the padding is cancelled by an equal negative margin, so nothing moves. */
+@media (pointer: coarse) {
+  .password-icon.cursor-pointer {
+    box-sizing: content-box;
+    padding: 13px;
+    margin: -13px;
+  }
+
+  .terms a {
+    padding-block: 15px;
+  }
+
+  .create-account {
+    padding-inline: 6px;
+    margin-inline: -6px;
   }
 }
 </style>
