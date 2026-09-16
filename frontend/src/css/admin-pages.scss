@@ -154,6 +154,13 @@
   }
 }
 
+// These three (View/Approve/Reject) sit directly in the table row, not in a
+// teleported dialog, so the admin dark theme's own --c-* remap already
+// reaches them — only the hardcoded white background above needs a partner.
+.admin-layout--dark .adm-btn {
+  background: var(--c-surface);
+}
+
 // CONFIRM — the Log out dialog's layout: centred icon and text, a line, then two equal buttons.
 
 .adm-confirm {

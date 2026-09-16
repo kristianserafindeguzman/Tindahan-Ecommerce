@@ -1156,103 +1156,108 @@ onMounted(fetchVendors)
   }
 }
 
-/* =========================================================
-   DARK MODE OVERRIDES
-========================================================= */
-:deep(.body--dark) .vp-dialog,
-:deep(.body--dark) .products-compact-dialog,
-:global(.admin-layout--dark) .vp-dialog,
-:global(.admin-layout--dark) .products-compact-dialog {
+</style>
+
+<!--
+  DARK MODE OVERRIDES — moved to an unscoped block.
+
+  The rules this replaced paired ":deep(.body--dark) X" with
+  ":global(.admin-layout--dark) X", but neither actually reached this dialog:
+  Quasar teleports every <q-dialog>/<q-menu> (the products dialog, the ⋮
+  status menu) to a node appended directly under <body>, outside
+  .admin-layout's own DOM subtree. ":global(.admin-layout--dark) X" is a
+  plain descendant selector expecting .admin-layout--dark to be an ancestor
+  in the real DOM, which stops being true the moment the content is
+  teleported — so these rules silently never matched, and the dialog stayed
+  its light-mode white while the rest of the admin UI went dark. (":deep(.body--dark) X"
+  never worked either: :deep() is for reaching into a *child* component's
+  scoped styles from an ancestor, not for treating an ancestor body class as
+  if it were a descendant.)
+
+  These selectors read correctly off body.body--dark.admin-dark-mode instead
+  — a marker the layout toggles on <body> itself alongside $q.dark (see
+  setDarkMode in AdminLayout.vue), which every teleported node can see since
+  its real parent is <body>. The admin-dark-mode marker (rather than bare
+  body.body--dark) keeps this from ever matching while the vendor module is
+  the one in dark mode, even though some of these class names (vp-dialog,
+  vp-status) are shared with it.
+-->
+<style>
+body.body--dark.admin-dark-mode .vp-dialog,
+body.body--dark.admin-dark-mode .products-compact-dialog {
   background: #181b20 !important;
   border: 1px solid #262a32 !important;
 }
 
-:deep(.body--dark) .products-dialog-head,
-:global(.admin-layout--dark) .products-dialog-head {
+body.body--dark.admin-dark-mode .products-dialog-head {
   background: #181b20 !important;
   border-color: #262a32 !important;
 }
 
-:deep(.body--dark) .products-dialog-foot,
-:global(.admin-layout--dark) .products-dialog-foot {
+body.body--dark.admin-dark-mode .products-dialog-foot {
   background: #1f2329 !important;
   border-color: #262a32 !important;
 }
 
-:deep(.body--dark) .live-prod-table th,
-:global(.admin-layout--dark) .live-prod-table th {
+body.body--dark.admin-dark-mode .live-prod-table th {
   background: #1f2329 !important;
   border-color: #262a32 !important;
   color: #94a3b8 !important;
 }
 
-:deep(.body--dark) .live-prod-table td,
-:global(.admin-layout--dark) .live-prod-table td {
+body.body--dark.admin-dark-mode .live-prod-table td {
   border-color: #262a32 !important;
   color: #f1f5f9 !important;
 }
 
-:deep(.body--dark) .text-muted-themed,
-:deep(.body--dark) .adm-sub,
-:global(.admin-layout--dark) .text-muted-themed,
-:global(.admin-layout--dark) .adm-sub {
+body.body--dark.admin-dark-mode .text-muted-themed,
+body.body--dark.admin-dark-mode .adm-sub {
   color: #94a3b8 !important;
 }
 
-:deep(.body--dark) .dialog-title-text,
-:deep(.body--dark) .vp-name,
-:deep(.body--dark) .adm-email,
-:global(.admin-layout--dark) .dialog-title-text,
-:global(.admin-layout--dark) .vp-name,
-:global(.admin-layout--dark) .adm-email {
+body.body--dark.admin-dark-mode .dialog-title-text,
+body.body--dark.admin-dark-mode .vp-name,
+body.body--dark.admin-dark-mode .adm-email {
   color: #f8fafc !important;
 }
 
-:deep(.body--dark) .live-prod-thumb,
-:global(.admin-layout--dark) .live-prod-thumb {
+body.body--dark.admin-dark-mode .live-prod-thumb {
   background: #20242b !important;
   border-color: #2a2e35 !important;
 }
 
-:deep(.body--dark) .vp-dialog-close-float,
-:global(.admin-layout--dark) .vp-dialog-close-float {
+body.body--dark.admin-dark-mode .vp-dialog-close-float {
   background: rgba(30, 34, 40, 0.94) !important;
   color: #94a3b8 !important;
 }
 
-:deep(.body--dark) .compact-status-menu,
-:global(.admin-layout--dark) .compact-status-menu {
+body.body--dark.admin-dark-mode .compact-status-menu {
   background: #181b20 !important;
   border-color: #262a32 !important;
 }
 
-:deep(.body--dark) .compact-menu-item,
-:global(.admin-layout--dark) .compact-menu-item {
+body.body--dark.admin-dark-mode .compact-menu-item {
   color: #e2e8f0 !important;
 }
 
-:deep(.body--dark) .compact-menu-item:hover,
-:global(.admin-layout--dark) .compact-menu-item:hover {
+body.body--dark.admin-dark-mode .compact-menu-item:hover {
   background: #20242b !important;
 }
 
-/* Fix Status Badges in Dark Mode */
-:deep(.body--dark) .vp-status--success,
-:global(.admin-layout--dark) .vp-status--success {
+/* Status badges */
+body.body--dark.admin-dark-mode .vp-status--success {
   background: rgba(21, 128, 61, 0.22) !important;
   color: #4ade80 !important;
   border: 1px solid rgba(74, 222, 128, 0.4) !important;
 }
 
-:deep(.body--dark) .vp-status--neutral,
-:global(.admin-layout--dark) .vp-status--neutral {
+body.body--dark.admin-dark-mode .vp-status--neutral {
   background: rgba(100, 116, 139, 0.22) !important;
   color: #94a3b8 !important;
   border: 1px solid rgba(148, 163, 184, 0.3) !important;
 }
 
-:deep(.body--dark) .vp-status--danger,
-:global(.admin-layout--dark) .vp-status--danger {
+body.body--dark.admin-dark-mode .vp-status--danger {
   background: rgba(220, 38, 38, 0.22) !important;
   color: #f87171 !important;
   border: 1px solid rgba(248, 113, 113, 0.4) !important;

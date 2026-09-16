@@ -735,27 +735,32 @@ onMounted(fetchConsumers)
   color: var(--c-muted, #64748b);
 }
 
-/* =========================================================
-   DARK MODE OVERRIDES
-========================================================= */
-:deep(.body--dark) .compact-status-menu,
-:global(.admin-layout--dark) .compact-status-menu {
+</style>
+
+<!--
+  DARK MODE OVERRIDES — moved to an unscoped block, same reasoning as
+  AdminVendors.vue: the compact status menu is a <q-menu>, teleported by
+  Quasar to a node under <body>, so neither ":deep(.body--dark) X" nor
+  ":global(.admin-layout--dark) X" (a plain descendant selector expecting
+  .admin-layout--dark to still be an ancestor once teleported) ever matched
+  it. body.body--dark.admin-dark-mode is a marker AdminLayout.vue toggles on
+  <body> itself, which the teleported menu's real parent actually is.
+-->
+<style>
+body.body--dark.admin-dark-mode .compact-status-menu {
   background: #181b20 !important;
   border-color: #262a32 !important;
 }
 
-:deep(.body--dark) .compact-menu-item,
-:global(.admin-layout--dark) .compact-menu-item {
+body.body--dark.admin-dark-mode .compact-menu-item {
   color: #e2e8f0 !important;
 }
 
-:deep(.body--dark) .compact-menu-item:hover,
-:global(.admin-layout--dark) .compact-menu-item:hover {
+body.body--dark.admin-dark-mode .compact-menu-item:hover {
   background: #20242b !important;
 }
 
-:deep(.body--dark) .text-muted-themed,
-:global(.admin-layout--dark) .text-muted-themed {
+body.body--dark.admin-dark-mode .text-muted-themed {
   color: #94a3b8 !important;
 }
 </style>

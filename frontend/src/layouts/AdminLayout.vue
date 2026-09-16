@@ -1,4 +1,4 @@
-<template>
+<template>  
   <q-layout view="hHh LpR fFf" class="admin-layout" :class="{ 'admin-layout--dark': $q.dark.isActive }">
     <!-- PHONE HEADER -->
     <q-header v-if="$q.screen.lt.md" class="admin-header">
@@ -10,18 +10,10 @@
           @click="router.push('/admin/dashboard')"
         >
           <img
-            :src="logoBlack"
+            :src="logo"
             alt=""
             aria-hidden="true"
-            class="header-logo-img header-logo-img--light"
-            :class="{ 'logo-img--visible': !$q.dark.isActive }"
-          />
-          <img
-            :src="logoColor"
-            alt=""
-            aria-hidden="true"
-            class="header-logo-img header-logo-img--color"
-            :class="{ 'logo-img--visible': $q.dark.isActive }"
+            class="header-logo-img"
           />
         </button>
 
@@ -98,18 +90,10 @@
             @click="router.push('/admin/dashboard')"
           >
             <img
-              :src="logoBlack"
+              :src="logo"
               alt=""
               aria-hidden="true"
-              class="sidebar-logo-img sidebar-logo-img--light"
-              :class="{ 'logo-img--visible': !$q.dark.isActive }"
-            />
-            <img
-              :src="logoColor"
-              alt=""
-              aria-hidden="true"
-              class="sidebar-logo-img sidebar-logo-img--color"
-              :class="{ 'logo-img--visible': $q.dark.isActive }"
+              class="sidebar-logo-img"
             />
           </button>
         </div>
@@ -230,8 +214,10 @@ import { useQuasar } from 'quasar'
 import { useAuth } from '@/composables/useAuth'
 import { useLanguage } from '@/composables/useLanguage'
 import { useAdminNotifications } from '@/composables/useAdminNotifications'
-import logoBlack from '@/assets/tindahan-black.png'
-import logoColor from '@/assets/tindahan-logo.png'
+// Same brand mark the vendor sidebar uses, so both modules show one logo — and
+// since it already reads correctly on the vendor sidebar's dark red, it needs
+// no light/dark swap here either.
+import logo from '@/assets/tindahan-logo.png'
 import '@/css/vendor-pages.scss'
 
 const router = useRouter()
@@ -282,9 +268,22 @@ const toggleLanguage = () => {
   setLanguage(nextLang)
 }
 
+// Quasar teleports every QMenu/QDialog/QTooltip's content to a node appended
+// directly under <body>, outside .admin-layout's own DOM subtree, so no
+// :deep() selector scoped to .admin-layout--dark can reach a popup dialog or
+// dropdown menu — that's why they stayed the light-mode white and "crashed"
+// visually in dark mode. The fix mirrors the vendor layout's: an "admin-dark-
+// mode" body marker this layout toggles itself, which the unscoped dark-mode
+// style block below reads instead, so it can only ever match while the admin
+// module itself turned dark mode on.
+const setDarkMode = (isDark) => {
+  $q.dark.set(isDark)
+  document.body.classList.toggle('admin-dark-mode', isDark)
+}
+
 const toggleDarkMode = () => {
   const nextState = !$q.dark.isActive
-  $q.dark.set(nextState)
+  setDarkMode(nextState)
   try {
     localStorage.setItem('admin_module_dark_mode', nextState ? '1' : '0')
   } catch {}
@@ -343,9 +342,9 @@ let notificationTimer = null
 onMounted(() => {
   try {
     const savedDark = localStorage.getItem('admin_module_dark_mode') === '1'
-    $q.dark.set(savedDark)
+    setDarkMode(savedDark)
   } catch {
-    $q.dark.set(false)
+    setDarkMode(false)
   }
 
   fetchNotifications()
@@ -354,7 +353,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearInterval(notificationTimer)
-  $q.dark.set(false)
+  setDarkMode(false)
 })
 
 const { logout } = useAuth()
@@ -395,8 +394,6 @@ const handleLogout = () => logout()
   --adm-line: #24314e;
   --adm-text: #eef2fb;
   --adm-secondary: #9fb1d1;
-  /* True-red accents with controlled glow for clear visibility
-     against the navy surfaces. */
   --adm-active: #ff4d4d;
   --adm-active-strong: #e63232;
   --adm-active-deep: #bd2020;
@@ -412,16 +409,6 @@ const handleLogout = () => logout()
 
 /* ---------------------------------------------------------
    PAGE-CONTENT TOKEN REMAP
-   Admin pages (dashboard, approvals, vendors, consumers, and
-   the shared vp-, pl-, and db- prefixed partials) are styled
-   with the shared design tokens below rather than the --adm-
-   ones above. In dark mode those tokens are redeclared here so
-   every card, stat, table, chip, and field inside <router-view>
-   inherits dark-appropriate values automatically. CSS custom
-   properties inherit through the DOM, so this affects anything
-   rendered inside .admin-layout without needing a rule per
-   component; it does NOT touch vendor/consumer pages since
-   those never render under a .admin-layout--dark ancestor.
 --------------------------------------------------------- */
 .admin-layout--dark {
   --c-bg: var(--adm-ground);
@@ -468,9 +455,6 @@ const handleLogout = () => logout()
   --sh-brand-hover: 0 0 0 1px rgba(255, 77, 77, 0.2), 0 5px 18px var(--adm-active-glow);
 }
 
-/* Some shared partials (search fields, format pickers, summary
-   boxes, thumbnails) hardcode #ffffff directly instead of a
-   token, so the remap above can't reach them — caught here. */
 .admin-layout--dark :deep(.vp-search .q-field__control),
 .admin-layout--dark :deep(.vp-input .q-field__control),
 .admin-layout--dark :deep(.pl-format),
@@ -508,9 +492,37 @@ const handleLogout = () => logout()
   color: #ffffff !important;
 }
 
-/* Quasar field text, labels and placeholders default to a
-   translucent black which is nearly invisible on a dark
-   background — this is the real cause of "text not visible". */
+/* =========================================================
+   ACTION BUTTONS ("Export Report", "Mark all as read")
+========================================================= */
+.admin-layout--dark :deep(.adm-export.vp-pill-btn),
+.admin-layout--dark :deep(.adm-export) {
+  border: 1px solid rgba(255, 77, 77, 0.42) !important;
+  background: rgba(255, 77, 77, 0.1) !important;
+  color: #ff7575 !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: all 0.18s ease;
+}
+
+.admin-layout--dark :deep(.adm-export.vp-pill-btn:hover:not(.disabled)),
+.admin-layout--dark :deep(.adm-export:hover:not(.disabled)) {
+  background: rgba(255, 77, 77, 0.22) !important;
+  border-color: #ff4d4d !important;
+  color: #ffffff !important;
+  box-shadow: 0 3px 12px rgba(255, 77, 77, 0.35);
+}
+
+.admin-layout--dark :deep(.adm-export.disabled),
+.admin-layout--dark :deep(.adm-export[disabled]) {
+  border-color: var(--adm-line) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--adm-secondary) !important;
+  opacity: 0.45 !important;
+  box-shadow: none !important;
+}
+
+/* Quasar field text */
 .admin-layout--dark :deep(.q-field__native),
 .admin-layout--dark :deep(.q-field__input),
 .admin-layout--dark :deep(.q-field__marginal) {
@@ -531,10 +543,6 @@ const handleLogout = () => logout()
   color: var(--adm-text) !important;
 }
 
-/* Menu/list rows only get a transparent background here — text
-   color is left to each item's own label/icon so tone colors
-   (danger red, success green, etc.) aren't stripped out by a
-   parent override cascading through currentColor. */
 .admin-layout--dark :deep(.q-item) {
   background-color: transparent;
 }
@@ -547,9 +555,6 @@ const handleLogout = () => logout()
   background-color: var(--adm-chip-bg) !important;
 }
 
-/* Generic badge/chip catch-all for components that don't use
-   the vp-/pl- tone classes and would otherwise keep their
-   light-mode look (white-on-white, etc.). */
 .admin-layout--dark :deep(.q-badge) {
   color: #ffffff;
 }
@@ -559,10 +564,7 @@ const handleLogout = () => logout()
   color: var(--adm-text);
 }
 
-/* Dashboard weekly-growth badges
-   The previous generic chip/badge override left these pills with a stark
-   white fill. These selectors cover the legacy and current dashboard names
-   while staying scoped to KPI cards only. */
+/* Dashboard weekly-growth badges */
 .admin-layout--dark :deep(.db-kpi .db-kpi-delta),
 .admin-layout--dark :deep(.db-kpi .db-kpi-trend),
 .admin-layout--dark :deep(.db-kpi .db-trend),
@@ -582,7 +584,7 @@ const handleLogout = () => logout()
   color: #4ade80 !important;
 }
 
-/* Refined dark-mode treatment for red dashboard accents. */
+/* Red accents */
 .admin-layout--dark :deep(.db-kpi-icon--danger),
 .admin-layout--dark :deep(.db-icon--danger),
 .admin-layout--dark :deep(.db-tone-danger),
@@ -612,8 +614,7 @@ const handleLogout = () => logout()
   color: var(--adm-text);
 }
 
-/* Legacy dashboard partials (kept for pages still using the
-   older db- class names rather than the shared vp- ones). */
+/* Legacy dashboard partials */
 .admin-layout--dark :deep(.vp-card),
 .admin-layout--dark :deep(.db-panel),
 .admin-layout--dark :deep(.db-kpi) {
@@ -762,8 +763,6 @@ const handleLogout = () => logout()
   outline-offset: 2px;
 }
 
-/* Both logo assets always render inside the exact same box.
-   Intrinsic image dimensions cannot resize the header during a theme switch. */
 .header-logo-img {
   grid-area: 1 / 1;
   display: block;
@@ -776,30 +775,75 @@ const handleLogout = () => logout()
   max-height: 100%;
   object-fit: contain;
   object-position: center;
-  transform-origin: center;
-  opacity: 0;
-  pointer-events: none;
-  backface-visibility: hidden;
-  will-change: opacity;
-  transition: opacity 160ms ease-out;
-}
-
-/* tindahan-black.png contains substantially more transparent padding than
-   tindahan-logo.png. It needs a larger visual scale to appear equally sized. */
-.header-logo-img--light {
-  transform: scale(1.8);
-}
-
-.header-logo-img--color {
   transform: scale(1.32);
+  transform-origin: center;
+  backface-visibility: hidden;
 }
 
-/* SIDEBAR */
-:deep(.q-drawer.admin-sidebar),
-:deep(.admin-sidebar) {
-  border-right: 1px solid var(--adm-line) !important;
-  background: var(--adm-surface) !important;
-  color: var(--adm-text) !important;
+/* SIDEBAR — red like the vendor sidebar, but its own design so the two modules
+   stay distinguishable at a glance: a diagonal gradient instead of vendor's
+   vertical one, a diagonal hairline texture instead of its dot pattern, and a
+   left accent bar on the active item instead of a solid white pill.
+
+   Every rule below is qualified with .admin-layout:not(.admin-layout--dark) —
+   not just :deep(.admin-sidebar) — for two reasons: (1) a few of these class
+   names (.nav-item--active, .sidebar-top) already have their own dark-mode
+   rule elsewhere in this file at equal selector specificity, so without the
+   :not() guard, source order alone would decide the winner and this redesign
+   would wrongly leak into dark mode; (2) --adm-text/secondary/line/chip-bg
+   redefined directly on .admin-sidebar would otherwise win over dark mode's
+   own values for that same element regardless of specificity, since a custom
+   property declared directly on an element always beats one only inherited
+   from an ancestor. Dark mode's own navy sidebar (further down, under
+   .admin-layout--dark) is completely untouched by this block either way. */
+.admin-layout:not(.admin-layout--dark) :deep(.q-drawer.admin-sidebar),
+.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) {
+  --adm-text: #ffffff;
+  --adm-secondary: rgba(255, 255, 255, 0.75);
+  --adm-line: rgba(255, 255, 255, 0.18);
+  --adm-chip-bg: rgba(255, 255, 255, 0.14);
+
+  border-right: none !important;
+  background: linear-gradient(135deg, #c9232a 0%, #8a161b 55%, #430c0f 100%) !important;
+  color: #ffffff !important;
+}
+
+/* A handful of spots read --adm-active (the brand red) directly rather than a
+   text/surface token; left alone they'd paint red-on-red once the sidebar
+   itself turns red, so they get an explicit white treatment instead. */
+.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .nav-item:hover .nav-icon {
+  color: #ffffff !important;
+}
+
+.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .nav-item--active,
+.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .nav-item--active:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: inset 3px 0 0 0 #ffffff;
+  color: #ffffff !important;
+}
+
+.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .nav-item--active .nav-icon {
+  color: #ffffff !important;
+}
+
+.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .nav-badge {
+  background: #ffffff !important;
+  color: #c9232a !important;
+}
+
+.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .sidebar-account-avatar {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+}
+
+.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .sidebar-signout:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+}
+
+.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .sidebar-utility-chip:hover {
+  border-color: #ffffff !important;
+  color: #ffffff !important;
 }
 
 .sidebar-layout {
@@ -812,8 +856,16 @@ const handleLogout = () => logout()
   align-items: center;
   justify-content: center;
   padding: 26px 20px 12px;
-  background-image: radial-gradient(rgba(201, 35, 42, 0.12) 1px, transparent 1px);
-  background-size: 16px 16px;
+}
+
+.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .sidebar-top {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.07) 0,
+    rgba(255, 255, 255, 0.07) 1px,
+    transparent 1px,
+    transparent 14px
+  );
 }
 
 .sidebar-logo {
@@ -839,8 +891,6 @@ const handleLogout = () => logout()
   border-radius: var(--r-control);
 }
 
-/* The light and dark assets inherit one fixed sidebar size, preventing
-   any shrink, enlargement, or layout shift while the source changes. */
 .sidebar-logo-img {
   grid-area: 1 / 1;
   display: block;
@@ -853,34 +903,9 @@ const handleLogout = () => logout()
   max-height: 100%;
   object-fit: contain;
   object-position: center;
-  transform-origin: center;
-  opacity: 0;
-  pointer-events: none;
-  backface-visibility: hidden;
-  will-change: opacity;
-  transition: opacity 160ms ease-out;
-}
-
-.sidebar-logo-img--light {
-  transform: scale(2);
-}
-
-.sidebar-logo-img--color {
   transform: scale(1.32);
-}
-
-/* Only opacity changes during theme switching. Both preloaded logo assets
-   keep their own fixed transform, preventing the previous scale/pop effect. */
-.logo-img--visible {
-  z-index: 1;
-  opacity: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .header-logo-img,
-  .sidebar-logo-img {
-    transition: none;
-  }
+  transform-origin: center;
+  backface-visibility: hidden;
 }
 
 /* SIDEBAR CONTROLS */
@@ -1148,5 +1173,97 @@ const handleLogout = () => logout()
 
 .mobile-pb {
   padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+</style>
+
+<!--
+  Quasar teleports every QMenu/QDialog/QTooltip's content to a node it
+  appends directly under <body>, entirely outside .admin-layout's own DOM
+  subtree — so no :deep() selector scoped to .admin-layout--dark (all of it
+  above) can ever reach a dialog card or dropdown menu once it's open. That's
+  why "View Store", "View Live Products" and the row-level ⋮ options menu
+  stayed the light-mode white and looked broken against the rest of the dark
+  admin UI. This mirrors the vendor layout's fix: an "admin-dark-mode" body
+  marker this layout toggles itself (see setDarkMode in the script), read
+  here instead of bare body.body--dark so it can only ever match while the
+  admin module itself turned dark mode on, even though some of these class
+  names (vp-dialog, vp-status, vp-chip) are shared with the vendor module.
+-->
+<style>
+/* Re-declares the navy palette on <body> so a teleported node — whose real
+   DOM parent is <body>, not .admin-layout--dark — still inherits the same
+   var(--c-*) tokens every vp-* rule and dialog already reads. */
+body.body--dark.admin-dark-mode {
+  --c-surface: #111a2e;
+  --c-surface-2: #16213a;
+  --c-text: #eef2fb;
+  --c-text-2: #e2e8f9;
+  --c-text-3: #c7d0e4;
+  --c-muted: #9fb1d1;
+  --c-subtle: #9fb1d1;
+  --c-border: #24314e;
+  --c-border-strong: #3c4a6e;
+  --c-hairline: #24314e;
+
+  --c-brand: #ff4d4d;
+  --c-brand-deep: #bd2020;
+  --c-brand-active: #e63232;
+  --c-brand-hover: #ff7474;
+  --c-brand-tint: rgba(255, 77, 77, 0.14);
+  --c-brand-tint-2: rgba(255, 77, 77, 0.32);
+
+  --c-danger: #ff5c5c;
+  --c-danger-tint: rgba(255, 77, 77, 0.14);
+  --c-warning: #fbbf24;
+  --c-warning-tint: rgba(251, 191, 36, 0.16);
+  --c-success: #4ade80;
+  --c-success-tint: rgba(74, 222, 128, 0.16);
+  --c-info: #60a5fa;
+  --c-info-tint: rgba(96, 165, 250, 0.16);
+}
+
+/* Every dialog card, whatever its own custom class — vp-dialog, spd (store
+   profile), cpd (consumer profile), products-compact-dialog, adm-confirm,
+   adm-form-dialog and so on all reduce to a plain <q-card> inside a
+   <q-dialog>, so one generic selector reaches all of them, present or
+   added later, instead of enumerating each page's own name for it. */
+body.body--dark.admin-dark-mode .q-dialog .q-card {
+  background-color: #111a2e !important;
+  color: #eef2fb !important;
+}
+
+/* The store/consumer profile dialogs' own hardcoded white cards, and their
+   close button that floats over the cover photo. */
+body.body--dark.admin-dark-mode .sp-card,
+body.body--dark.admin-dark-mode .cpd-head,
+body.body--dark.admin-dark-mode .cpd-fact,
+body.body--dark.admin-dark-mode .cpd-card {
+  background-color: #16213a !important;
+  border-color: #24314e !important;
+  color: #eef2fb !important;
+}
+
+body.body--dark.admin-dark-mode .spd-close {
+  background: rgba(22, 33, 58, 0.94) !important;
+  color: #c7d0e4 !important;
+}
+
+/* The row-level ⋮ options menu (Approve/Reject/status change), teleported
+   like every other menu. */
+body.body--dark.admin-dark-mode .compact-status-menu {
+  background: #111a2e !important;
+  border-color: #24314e !important;
+}
+
+body.body--dark.admin-dark-mode .compact-menu-item {
+  color: #e2e8f9 !important;
+}
+
+body.body--dark.admin-dark-mode .compact-menu-item:hover {
+  background: #16213a !important;
+}
+
+body.body--dark.admin-dark-mode .compact-menu-avatar {
+  color: #9fb1d1 !important;
 }
 </style>

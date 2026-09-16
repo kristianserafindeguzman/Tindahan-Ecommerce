@@ -1887,6 +1887,14 @@ const deleteAccount = async () => {
   color: var(--c-brand);
 }
 
+/* Dark mode swaps the light-mode's flat pink-on-navy tint for a deeper gradient plus
+   a soft red glow, so the tile reads as a lit accent instead of a muddy patch. */
+.vendor-layout--dark .info-icon {
+  background: linear-gradient(145deg, rgba(255, 77, 77, 0.24) 0%, rgba(255, 77, 77, 0.08) 100%);
+  box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.28), 0 0 18px rgba(255, 77, 77, 0.28);
+  color: #ff6a6a;
+}
+
 .info-body {
   flex: 1;
   min-width: 0;
@@ -2079,6 +2087,13 @@ const deleteAccount = async () => {
 .danger-icon {
   background: linear-gradient(145deg, var(--c-danger-tint) 0%, var(--c-danger-tint) 100%);
   color: var(--c-danger);
+}
+
+/* Same glow treatment as .info-icon above, in the danger red rather than the brand red. */
+.vendor-layout--dark .danger-icon {
+  background: linear-gradient(145deg, rgba(255, 92, 92, 0.26) 0%, rgba(255, 92, 92, 0.1) 100%);
+  box-shadow: 0 0 0 1px rgba(255, 92, 92, 0.3), 0 0 18px rgba(255, 92, 92, 0.3);
+  color: #ff7a7a;
 }
 
 .danger-title {

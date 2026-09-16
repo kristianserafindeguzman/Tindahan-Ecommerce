@@ -8,6 +8,10 @@
       <section class="dash-hero" :class="`dash-hero--${dayPhase.key}`">
         <div class="dash-hero-content">
           <div class="hero-eyebrow-row">
+            <span class="hero-eyebrow hero-eyebrow--panel">
+              <q-icon name="o_storefront" size="14px" />
+              {{ t('panelLabel').replace('{store}', vendorStore?.store_name || t('myStoreFallback')) }}
+            </span>
             <span class="hero-eyebrow">
               <q-icon :name="dayPhase.icon" size="14px" />
               {{ currentDate }}
@@ -354,6 +358,7 @@ const dashboardDict = {
     greetingEvening: 'Good evening',
     heroSub: "Here's how {store} is doing today.",
     yourStoreFallback: 'your store',
+    panelLabel: '{store} Panel',
     viewStore: 'View Store',
     manageProducts: 'Manage Products',
     kpiPlaced: 'Placed Orders',
@@ -415,6 +420,7 @@ const dashboardDict = {
     greetingEvening: 'Magandang gabi',
     heroSub: 'Ganito ang lagay ng {store} ngayong araw.',
     yourStoreFallback: 'iyong tindahan',
+    panelLabel: 'Panel ng {store}',
     viewStore: 'Tingnan ang Tindahan',
     manageProducts: 'I-manage ang Paninda',
     kpiPlaced: 'Mga Order',
@@ -1050,6 +1056,12 @@ const refreshForecast = async () => {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+/* The store-identity badge sits a touch bolder than the date pill beside it, so "[Store] Panel" reads first. */
+.hero-eyebrow--panel {
+  background: rgba(255, 255, 255, 0.2);
+  font-weight: 700;
 }
 
 .hero-title {
