@@ -3,11 +3,11 @@
     <div class="vp-container">
       <AdminHero
         icon="o_how_to_reg"
-        title="Vendor Approvals"
-        subtitle="Review store applications and decide who can sell on Tindahan."
-        :stat-label="STAT_LABEL[active]"
+        :title="t('title')"
+        :subtitle="t('subtitle')"
+        :stat-label="t('stat_' + active)"
         :stat-value="totalFor(active)"
-        :stat-unit="totalFor(active) === 1 ? 'application' : 'applications'"
+        :stat-unit="totalFor(active) === 1 ? t('application') : t('applications')"
         :loading="loading"
       />
 
@@ -20,7 +20,7 @@
             clearable
             clear-icon="o_close"
             hide-bottom-space
-            placeholder="Search store, owner or email"
+            :placeholder="t('searchPlaceholder')"
             class="vp-search"
           >
             <template #prepend>
@@ -28,10 +28,10 @@
             </template>
           </q-input>
 
-          <!-- Pending, approved and rejected, each with its count. -->
-          <div class="vp-chips" role="tablist" aria-label="Filter applications">
+          <!-- Pending, approved and rejected chips -->
+          <div class="vp-chips" role="tablist" :aria-label="t('filterAria')">
             <button
-              v-for="filter in FILTERS"
+              v-for="filter in localizedFilters"
               :key="filter.key"
               type="button"
               role="tab"
@@ -52,7 +52,7 @@
             no-caps
             color="primary"
             icon="o_download"
-            label="Export Report"
+            :label="t('exportReport')"
             class="vp-pill-btn adm-export"
             :loading="isExporting"
             @click="handleExport"
@@ -69,10 +69,10 @@
         <div v-else-if="!filtered.length" class="vp-empty">
           <div class="vp-empty-icon"><q-icon name="o_inbox" size="24px" /></div>
           <div class="vp-empty-title">{{
-            search ? 'No matching applications' : EMPTY[active].title
+            search ? t('noMatchTitle') : t('emptyTitle_' + active)
           }}</div>
           <div class="vp-empty-text">{{
-            search ? 'Try another name, store or email.' : EMPTY[active].text
+            search ? t('noMatchText') : t('emptyText_' + active)
           }}</div>
         </div>
 
@@ -81,11 +81,11 @@
           <table class="vp-table ap-table">
             <thead>
               <tr>
-                <th>Store</th>
-                <th class="col-contact">Contact</th>
-                <th class="col-date">Applied</th>
-                <th class="col-status">Status</th>
-                <th class="text-right col-actions">Actions</th>
+                <th>{{ t('colStore') }}</th>
+                <th class="col-contact">{{ t('colContact') }}</th>
+                <th class="col-date">{{ t('colApplied') }}</th>
+                <th class="col-status">{{ t('colStatus') }}</th>
+                <th class="text-right col-actions">{{ t('colActions') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -103,36 +103,37 @@
                       <img v-if="photoOf(app)" :src="photoOf(app)" alt="" />
                       <q-icon v-else name="o_storefront" size="18px" />
                     </span>
-                    <span class="adm-two-lines">
+                    <div class="adm-two-lines">
                       <span class="vp-name">{{
-                        app.store_name || 'Unnamed store'
+                        app.store_name || t('unnamedStore')
                       }}</span>
                       <span class="adm-sub">{{
-                        app.owner_name || 'Unknown owner'
+                        app.owner_name || t('unknownOwner')
                       }}</span>
-                    </span>
+                    </div>
                   </div>
                 </td>
                 <td>
                   <span class="adm-two-lines">
                     <span class="adm-email">{{ app.email || '—' }}</span>
-                    <span class="adm-sub">{{ app.phone || 'No phone' }}</span>
+                    <span class="adm-sub">{{ app.phone || t('noPhone') }}</span>
                   </span>
                 </td>
                 <td class="vp-muted">{{ formatShortDate(app.applied_at) }}</td>
-                <td
-                  ><span
+                <td>
+                  <span
                     class="vp-status"
                     :class="`vp-status--${accountStatusTone(app.status)}`"
-                    >{{ accountStatusLabel(app.status) }}</span
-                  ></td
-                >
+                  >
+                    {{ accountStatusLabel(app.status) }}
+                  </span>
+                </td>
                 <td class="text-right">
                   <div class="adm-row-actions" @click.stop @keydown.enter.stop>
                     <q-btn
                       flat
                       no-caps
-                      label="View"
+                      :label="t('btnView')"
                       class="adm-btn adm-btn--view"
                       @click="openReview(app)"
                     />
@@ -140,14 +141,14 @@
                       <q-btn
                         flat
                         no-caps
-                        label="Approve"
+                        :label="t('btnApprove')"
                         class="adm-btn adm-btn--approve"
                         @click="actions.openApprove(app)"
                       />
                       <q-btn
                         flat
                         no-caps
-                        label="Reject"
+                        :label="t('btnReject')"
                         class="adm-btn adm-btn--reject"
                         @click="actions.openReject(app)"
                       />
@@ -174,28 +175,26 @@
             </span>
             <div class="vp-list-body">
               <span class="vp-name">{{
-                app.store_name || 'Unnamed store'
+                app.store_name || t('unnamedStore')
               }}</span>
-              <div class="vp-list-meta"
-                >{{ app.owner_name || 'Unknown owner' }} ·
-                {{ formatShortDate(app.applied_at) }}</div
-              >
+              <div class="vp-list-meta">
+                {{ app.owner_name || t('unknownOwner') }} ·
+                {{ formatShortDate(app.applied_at) }}
+              </div>
             </div>
             <div class="vp-list-side">
               <span
                 class="vp-status"
                 :class="`vp-status--${accountStatusTone(app.status)}`"
-                >{{ accountStatusLabel(app.status) }}</span
               >
+                {{ accountStatusLabel(app.status) }}
+              </span>
             </div>
           </button>
         </div>
 
         <div v-if="!loading && pageCount > 1" class="vp-pager">
-          <span
-            >Showing {{ rangeStart }}–{{ rangeEnd }} of
-            {{ filtered.length }}</span
-          >
+          <span>{{ t('showing') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('of') }} {{ filtered.length }}</span>
           <div class="vp-pager-btns">
             <q-btn
               outline
@@ -203,7 +202,7 @@
               color="primary"
               icon="o_chevron_left"
               class="vp-pill-btn"
-              aria-label="Previous page"
+              :aria-label="t('prevPage')"
               :disable="page === 1"
               @click="page--"
             />
@@ -213,7 +212,7 @@
               color="primary"
               icon="o_chevron_right"
               class="vp-pill-btn"
-              aria-label="Next page"
+              :aria-label="t('nextPage')"
               :disable="page === pageCount"
               @click="page++"
             />
@@ -233,6 +232,7 @@ import { api } from '@/boot/axios'
 import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 import AdminHero from '@/components/admin/AdminHero.vue'
 import ApplicationActions from '@/components/admin/ApplicationActions.vue'
+import { useLanguage } from '@/composables/useLanguage'
 import {
   accountStatusTone,
   accountStatusLabel,
@@ -242,35 +242,97 @@ import '@/css/admin-pages.scss'
 
 const $q = useQuasar()
 
-const FILTERS = [
-  { key: 'pending', label: 'Pending' },
-  { key: 'approved', label: 'Approved' },
-  { key: 'rejected', label: 'Rejected' }
-]
-
-// The banner's count follows the chosen chip.
-const STAT_LABEL = {
-  pending: 'Pending review',
-  approved: 'Approved',
-  rejected: 'Rejected'
-}
-
-const EMPTY = {
-  pending: {
-    title: 'No applications waiting',
-    text: 'New store applications will show up here for review.'
+const approvalsDict = {
+  en: {
+    title: 'Vendor Approvals',
+    subtitle: 'Review store applications and decide who can sell on Tindahan.',
+    stat_pending: 'Pending review',
+    stat_approved: 'Approved',
+    stat_rejected: 'Rejected',
+    application: 'application',
+    applications: 'applications',
+    searchPlaceholder: 'Search store, owner or email',
+    filterAria: 'Filter applications',
+    filterPending: 'Pending',
+    filterApproved: 'Approved',
+    filterRejected: 'Rejected',
+    exportReport: 'Export Report',
+    noMatchTitle: 'No matching applications',
+    noMatchText: 'Try another name, store or email.',
+    emptyTitle_pending: 'No applications waiting',
+    emptyText_pending: 'New store applications will show up here for review.',
+    emptyTitle_approved: 'No approved applications yet',
+    emptyText_approved: 'Stores you approve will be listed here.',
+    emptyTitle_rejected: 'No rejected applications',
+    emptyText_rejected: 'Applications you reject will be listed here with their reason.',
+    colStore: 'Store',
+    colContact: 'Contact',
+    colApplied: 'Applied',
+    colStatus: 'Status',
+    colActions: 'Actions',
+    unnamedStore: 'Unnamed store',
+    unknownOwner: 'Unknown owner',
+    noPhone: 'No phone',
+    btnView: 'View',
+    btnApprove: 'Approve',
+    btnReject: 'Reject',
+    showing: 'Showing',
+    of: 'of',
+    prevPage: 'Previous page',
+    nextPage: 'Next page',
+    loadError: 'Couldn’t load the applications. Please refresh.',
+    exportError: 'Couldn’t create the report. Please try again.'
   },
-  approved: {
-    title: 'No approved applications yet',
-    text: 'Stores you approve will be listed here.'
-  },
-  rejected: {
-    title: 'No rejected applications',
-    text: 'Applications you reject will be listed here with their reason.'
+  ph: {
+    title: 'Vendor Approvals',
+    subtitle: 'I-review ang mga store application at magdesisyon kung sino ang pwedeng magbenta sa Tindahan.',
+    stat_pending: 'Pending review',
+    stat_approved: 'Approved',
+    stat_rejected: 'Rejected',
+    application: 'application',
+    applications: 'applications',
+    searchPlaceholder: 'Mag-search ng store, owner o email',
+    filterAria: 'I-filter ang mga application',
+    filterPending: 'Pending',
+    filterApproved: 'Approved',
+    filterRejected: 'Rejected',
+    exportReport: 'Export Report',
+    noMatchTitle: 'Walang nag-match',
+    noMatchText: 'Try mag-search ng ibang pangalan, store o email.',
+    emptyTitle_pending: 'Walang naghihintay na application',
+    emptyText_pending: 'Dito lalabas ang mga bagong store application para ma-review.',
+    emptyTitle_approved: 'Wala pang approved applications',
+    emptyText_approved: 'Dito nakalista ang mga stores na na-approve mo na.',
+    emptyTitle_rejected: 'Walang rejected applications',
+    emptyText_rejected: 'Dito nakalista ang mga rejected application kasama ang dahilan.',
+    colStore: 'Store',
+    colContact: 'Contact',
+    colApplied: 'Applied',
+    colStatus: 'Status',
+    colActions: 'Actions',
+    unnamedStore: 'Unnamed store',
+    unknownOwner: 'Unknown owner',
+    noPhone: 'Walang phone number',
+    btnView: 'View',
+    btnApprove: 'Approve',
+    btnReject: 'Reject',
+    showing: 'Showing',
+    of: 'of',
+    prevPage: 'Previous page',
+    nextPage: 'Next page',
+    loadError: 'Hindi ma-load ang mga application. Paki-refresh.',
+    exportError: 'Hindi magawa ang report. Pakisubukan ulit.'
   }
 }
 
-// The placeholder rows take the table's columns: store, contact, date, status and the actions.
+const { t } = useLanguage(approvalsDict)
+
+const localizedFilters = computed(() => [
+  { key: 'pending', label: t('filterPending') },
+  { key: 'approved', label: t('filterApproved') },
+  { key: 'rejected', label: t('filterRejected') }
+])
+
 const SKELETON_COLUMNS = [
   { type: 'thumb', lines: 2 },
   { width: '24%', type: 'text' },
@@ -303,13 +365,11 @@ const matchesSearch = app => {
   )
 }
 
-// The banner counts every application with the chosen status; the chips count what the search leaves.
 const totalFor = key =>
   applications.value.filter(app => app.status === key).length
 const searched = computed(() => applications.value.filter(matchesSearch))
 const countFor = key => searched.value.filter(app => app.status === key).length
 
-// Newest applications first.
 const filtered = computed(() =>
   searched.value
     .filter(app => app.status === active.value)
@@ -330,14 +390,12 @@ const rangeEnd = computed(() =>
 watch([search, active], () => {
   page.value = 1
 })
-// A decision moves a row to another chip, so a page that runs out steps back.
 watch(pageCount, count => {
   if (page.value > count) page.value = count
 })
 
 const openReview = app => actions.value?.openReview(app)
 
-// The decided application moves to its new chip straight away.
 const onDecided = ({ storeId, status, reason }) => {
   const app = applications.value.find(a => a.store_id === storeId)
   if (!app) return
@@ -355,7 +413,7 @@ const fetchApplications = async () => {
     console.error('Failed to load applications', error)
     $q.notify({
       type: 'negative',
-      message: 'Couldn’t load the applications. Please refresh.'
+      message: t('loadError')
     })
   } finally {
     loading.value = false
@@ -387,7 +445,7 @@ const handleExport = async () => {
     console.error('Export failed', error)
     $q.notify({
       type: 'negative',
-      message: 'Couldn’t create the report. Please try again.'
+      message: t('exportError')
     })
   } finally {
     isExporting.value = false
