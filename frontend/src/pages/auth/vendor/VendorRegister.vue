@@ -338,7 +338,7 @@
         </div>
 
         <div class="operating-days-block">
-          <div class="detected-address-label">{{ t('Operating Days') }}</div>
+          <div class="block-label">{{ t('Operating Days') }}</div>
 
           <q-toggle
             v-model="alwaysOpen"
@@ -375,15 +375,56 @@
         <div class="section-title">{{ t('Store Location') }}</div>
         <p class="step-hint">{{ t('Move the pin to where your store is, or type the address below.') }}</p>
 
-        <div class="map-placeholder">
-          <VendorLocationMap ref="storeMapRef" :translate="t" @location-selected="handleLocationSelected" />
-        </div>
+        <!-- Enlarging teleports this block to the body, which keeps the same map and pin while escaping the card's own clipping and stacking. -->
+        <Teleport to="body" :disabled="!mapEnlarged">
+          <div class="map-placeholder" :class="{ 'map-placeholder-enlarged': mapEnlarged }">
+            <VendorLocationMap ref="storeMapRef" :translate="t" @pin-placed="handlePinPlaced" @location-selected="handleLocationSelected" />
 
-        <div class="detected-address">
-          <div class="detected-address-label">{{ t('Detected address') }}</div>
-          <div class="detected-address-value">
-            {{ form.detectedAddress || t('Waiting for location…') }}
+            <q-btn
+              v-if="!mapEnlarged"
+              unelevated
+              no-caps
+              dense
+              icon="o_open_in_full"
+              :label="t('Enlarge map')"
+              class="map-enlarge-btn"
+              @click="mapEnlarged = true"
+            />
+
+            <!-- The address rides along the top while enlarged, because its box below is off screen. -->
+            <div v-else class="map-enlarged-bar">
+              <q-icon name="o_location_on" size="18px" class="map-enlarged-bar-icon" />
+              <span class="map-enlarged-bar-text">{{ detectedAddressText }}</span>
+
+              <q-btn
+                unelevated
+                no-caps
+                dense
+                icon="o_close_fullscreen"
+                :label="t('Done')"
+                class="map-enlarge-btn map-enlarge-btn-inline"
+                @click="mapEnlarged = false"
+              />
+            </div>
           </div>
+        </Teleport>
+
+        <!-- What the map calls the pinned spot. Read-only, since the box below is the one that gets saved. -->
+        <div class="pin-address">
+          <div class="pin-address-body">
+            <div class="pin-address-label">{{ t('Where your pin is') }}</div>
+            <div class="pin-address-value">{{ detectedAddressText }}</div>
+          </div>
+
+          <q-btn
+            v-if="form.detectedAddress"
+            flat
+            dense
+            no-caps
+            :label="t('Use this')"
+            class="pin-address-use"
+            @click="usePinAddress"
+          />
         </div>
 
         <div class="field-group manual-address">
@@ -397,10 +438,14 @@
             dense
             no-error-icon
             hide-bottom-space
-            :label="t('Manual address entry')"
+            :label="t('Address customers will see')"
             class="login-input"
             @pin="handleAddressPin"
           />
+
+          <!-- Which of the two addresses is kept, now that the page shows both. -->
+          <div class="address-note">{{ t('This is the address we save. Leave it blank to use the pinned address above.') }}</div>
+
         </div>
 
         <div v-if="stepError && step === 5" class="error-message">{{ t(stepError) }}</div>
@@ -565,7 +610,7 @@
 
 <script setup>
 import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
-import { computed, nextTick, onUnmounted, reactive, ref } from 'vue'
+import { computed, nextTick, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
@@ -745,11 +790,8 @@ onUnmounted(() => {
 const goTo = (target) => {
   stepError.value = ''
   step.value = target
-  if (target === 5) {
-    // Leaflet only re-measures on a window resize, so one is sent when the map's panel is shown again.
-    if (locationVisited.value) nextTick(() => window.dispatchEvent(new Event('resize')))
-    locationVisited.value = true
-  }
+  // The map itself watches its box for size changes, so showing the panel again needs no nudge here.
+  if (target === 5) locationVisited.value = true
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -1070,20 +1112,63 @@ const goToLogin = () => {
 
 
 const storeMapRef = ref(null)
+
+// Pinning an exact spot is hard in a 280px box, so the map can fill the screen while the vendor places it.
+const mapEnlarged = ref(false)
+
+// Esc leaves the enlarged map, as it would any full-screen view.
+const onMapEscape = (event) => {
+  if (event.key === 'Escape') mapEnlarged.value = false
+}
+
+watch(mapEnlarged, (enlarged) => {
+  if (enlarged) window.addEventListener('keydown', onMapEscape)
+  else window.removeEventListener('keydown', onMapEscape)
+})
+
+// A teleported block sits outside the step it belongs to, so leaving the step would strand the enlarged map over the wizard.
+watch(step, (value) => {
+  if (value !== 5) mapEnlarged.value = false
+})
+
+onUnmounted(() => window.removeEventListener('keydown', onMapEscape))
 const manualAddressRef = ref(null)
 
-function handleLocationSelected(location) {
+// Set between a pin moving and its address arriving, so the page can say the lookup is running rather than just looking empty.
+const addressLookupPending = ref(false)
 
-  console.log('Store location:', location)
+// The pinned-address line doubles as the lookup's status, since a failed lookup leaves it empty and the vendor types the address instead.
+const detectedAddressText = computed(() => {
+  if (addressLookupPending.value) return t('Finding the address...')
+  if (form.detectedAddress) return form.detectedAddress
+  if (form.latitude) return t('No address found for this pin. Type it below.')
+  return t('Waiting for location…')
+})
+
+// Copies the map's wording into the box that gets saved, for vendors happy to take it as it is.
+const usePinAddress = () => {
+  form.manualAddress = form.detectedAddress
+}
+
+function handlePinPlaced(location) {
+  form.latitude = location.latitude
+  form.longitude = location.longitude
+  // The old address described the old pin, so it is dropped rather than left labelling the spot the vendor just moved away from.
+  form.detectedAddress = ''
+  addressLookupPending.value = true
+}
+
+function handleLocationSelected(location) {
 
   // Save coordinates
   form.latitude = location.latitude
   form.longitude = location.longitude
 
-  // Save detected address
+  // Empty when the lookup failed, which the line under the map then explains.
+  addressLookupPending.value = false
   form.detectedAddress = location.address
 
-  // Lets the manual box hold the pin and rank its searches near this spot; the manual text is never overwritten from the map.
+  // Lets the box hold the pin and rank its searches near this spot; what the vendor typed is never overwritten from the map.
   manualAddressRef.value?.mapSelected(location)
 
 }
@@ -1092,7 +1177,9 @@ function handleLocationSelected(location) {
 function handleAddressPin(location) {
   form.latitude = location.latitude
   form.longitude = location.longitude
+  // A picked suggestion describes the pin it just moved, so it doubles as the pinned address.
   form.detectedAddress = location.address
+  addressLookupPending.value = false
   storeMapRef.value?.showLocation(location.latitude, location.longitude)
 }
 
@@ -1536,7 +1623,17 @@ function handleAddressPin(location) {
   margin-top: 4px;
 }
 
-.operating-days-block .detected-address-label {
+/* Small uppercase heading over a block of controls. */
+.block-label {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  color: var(--c-muted);
+}
+
+.operating-days-block .block-label {
   margin-bottom: 10px;
 }
 
@@ -1598,6 +1695,8 @@ function handleAddressPin(location) {
 
 /* The map sets its own 280px minimum height, so this box matches it and clips the corners round. */
 .map-placeholder {
+  position: relative;
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1615,7 +1714,106 @@ function handleAddressPin(location) {
   color: var(--c-muted);
 }
 
-.detected-address {
+/* Full screen for pinning. Teleported to the body, so no ancestor's transform or overflow can clip it. */
+.map-placeholder-enlarged {
+  position: fixed;
+  inset: 0;
+  z-index: 7000;
+
+  height: 100%;
+
+  border-radius: 0;
+}
+
+/* The map rounds its own corners for the boxed view; at full screen those corners would cut through to the page behind. */
+.map-placeholder-enlarged :deep(.location-wrapper) {
+  border-radius: 0;
+}
+
+/* Same white pill as the map's own "Your Location" button, in the opposite corner. */
+.map-enlarge-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+
+  height: 34px;
+  padding: 0 12px;
+
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: #222222;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.map-enlarge-btn:hover {
+  background: #f7f7f7;
+}
+
+/* Rides at the top of the enlarged map, clear of Leaflet's zoom buttons on the left, since the address fields are off screen while enlarged. */
+.map-enlarged-bar {
+  position: absolute;
+  top: 12px;
+  left: 56px;
+  right: 12px;
+  z-index: 1;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 8px 8px 8px 12px;
+
+  border-radius: 7px;
+
+  background: #ffffff;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.map-enlarged-bar-icon {
+  flex-shrink: 0;
+
+  color: var(--c-brand);
+}
+
+/* Two lines at most: a full address is long, and the map below is the point. */
+.map-enlarged-bar-text {
+  flex: 1;
+  min-width: 0;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+
+  overflow: hidden;
+
+  font-size: 12px;
+  line-height: 1.35;
+
+  color: #222222;
+}
+
+/* Inside the bar the button sits in the flow instead of the map's corner. */
+.map-enlarge-btn-inline {
+  position: static;
+
+  flex-shrink: 0;
+}
+
+/* What the map calls the pin, offered rather than imposed. */
+.pin-address {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
   margin-top: 14px;
   padding: 10px 12px;
 
@@ -1624,7 +1822,12 @@ function handleAddressPin(location) {
   background: var(--c-surface);
 }
 
-.detected-address-label {
+.pin-address-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pin-address-label {
   font-size: var(--fs-2xs);
   font-weight: 600;
   text-transform: uppercase;
@@ -1633,12 +1836,32 @@ function handleAddressPin(location) {
   color: var(--c-muted);
 }
 
-.detected-address-value {
+.pin-address-value {
   margin-top: 3px;
 
   font-size: var(--fs-xs);
 
   color: var(--c-text-2);
+}
+
+.pin-address-use {
+  flex-shrink: 0;
+
+  padding: 0 10px;
+
+  color: var(--c-brand);
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+/* Which of the two addresses is the one that gets saved. */
+.address-note {
+  margin-top: 6px;
+
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
 }
 
 .manual-address {

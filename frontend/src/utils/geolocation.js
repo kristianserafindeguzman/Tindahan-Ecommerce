@@ -126,22 +126,42 @@ async function fetchPhotonResults(query, near, signal) {
     .filter((result, index, array) => result.address && array.findIndex((other) => other.address === result.address) === index)
 }
 
+// A lookup nobody is waiting on forever: the pin is already placed, and the address can be typed instead.
+const REVERSE_TIMEOUT_MS = 8000
+
+// Photon first. It is the same server as the address search and tolerates the traffic a pin-dragging session makes, while Nominatim's public service allows about one request a second and answers 429 after that.
 export async function reverseGeocode(latitude, longitude) {
+  const nearest = await fetchReverse(
+    `https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}&limit=1`,
+    (data) => (data.features?.length ? formatPhotonAddress(data.features[0].properties) : '')
+  )
+  if (nearest) return nearest
+
+  // Nominatim knows house numbers Photon does not, so it is still worth asking when Photon has nothing.
+  return fetchReverse(
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+    formatAddress
+  )
+}
+
+// Empty on any failure, never a placeholder sentence: callers put this straight into an address field that a user then saves.
+async function fetchReverse(url, format) {
+  // AbortController with a timer rather than AbortSignal.timeout, which older Safari lacks and would turn every lookup into a silent empty address.
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(new Error('Reverse geocoding timed out')), REVERSE_TIMEOUT_MS)
+
   try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-      { headers: { Accept: 'application/json' } }
-    )
+    const response = await fetch(url, { headers: { Accept: 'application/json' }, signal: controller.signal })
 
     if (!response.ok) {
-      throw new Error('Reverse geocoding failed')
+      throw new Error('Reverse geocoding failed with status ' + response.status)
     }
 
-    const data = await response.json()
-    return formatAddress(data)
+    return format(await response.json()) || ''
   } catch (error) {
-    // Empty, not a placeholder sentence: a failed lookup must leave the address box alone rather than fill it with text that would be saved as the address.
-    console.error('Address lookup failed:', error)
+    console.warn('Address lookup failed:', error.message)
     return ''
+  } finally {
+    clearTimeout(timeout)
   }
 }
