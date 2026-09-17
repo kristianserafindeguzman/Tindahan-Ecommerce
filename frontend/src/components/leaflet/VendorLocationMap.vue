@@ -31,7 +31,7 @@ const props = defineProps({
   initial: { type: Object, default: null }
 })
 
-const emit = defineEmits(['location-selected'])
+const emit = defineEmits(['location-selected', 'pin-placed'])
 
 const mapContainer = ref(null)
 
@@ -40,6 +40,8 @@ let marker = null
 let unmounted = false
 // Bumped on every pin move, so a slow device-location or reverse-geocode result that a newer pin has overtaken is dropped instead of moving the pin back.
 let pinVersion = 0
+// Leaflet lays its tiles out for the container size it saw at the time, so a container that later grows needs a re-measure.
+let resizeObserver = null
 
 const loadingLocation = ref(false)
 
@@ -73,6 +75,11 @@ onMounted(() => {
       maxZoom: 19
     }
   ).addTo(map)
+
+
+  // Keeps the map correct when its box changes size, such as the enlarged map on vendor registration.
+  resizeObserver = new ResizeObserver(() => map?.invalidateSize())
+  resizeObserver.observe(mapContainer.value)
 
 
   // Click anywhere on map
@@ -148,6 +155,9 @@ const selectLocation = async (
 
   showLocation(latitude, longitude)
 
+  // The pin is already where the user put it, so the parent hears about it before the address lookup, which takes a moment and can come back empty.
+  emit('pin-placed', { latitude, longitude, auto })
+
   const version = pinVersion
 
 
@@ -210,6 +220,8 @@ defineExpose({ showLocation })
 onBeforeUnmount(() => {
 
   unmounted = true
+
+  resizeObserver?.disconnect()
 
   if (map) {
     map.remove()
