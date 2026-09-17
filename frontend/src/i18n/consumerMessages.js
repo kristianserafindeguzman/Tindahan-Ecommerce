@@ -574,6 +574,7 @@ export default {
   'Choose your opening and closing time.': 'Piliin ang oras ng pagbukas at pagsara.',
   'Choose at least one day your store is open.': 'Pumili ng kahit isang araw na bukas ang store mo.',
   'Pick your store location on the map.': 'Piliin sa map ang lokasyon ng store mo.',
+  'Type your store address.': 'I-type ang address ng store mo.',
   '{error} We sent you a new code.': '{error} Nag-send kami ng bagong code.',
   'Need help?': 'Kailangan ng tulong?',
   'Log out': 'Mag-log out',

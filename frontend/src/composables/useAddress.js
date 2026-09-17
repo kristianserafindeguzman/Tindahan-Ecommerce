@@ -40,7 +40,8 @@ export function useAddress() {
     try {
       const { latitude, longitude } = await getCurrentPosition()
       const resolvedAddress = await reverseGeocode(latitude, longitude)
-      setAddress(resolvedAddress, latitude, longitude)
+      // A failed lookup gives an empty string, which would blank the pill and store nothing useful, so the address stays unset.
+      if (resolvedAddress) setAddress(resolvedAddress, latitude, longitude)
     } catch (error) {
       console.warn('Automatic location detection skipped:', error.message)
     }

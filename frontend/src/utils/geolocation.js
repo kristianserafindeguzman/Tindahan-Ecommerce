@@ -13,9 +13,10 @@ export function getCurrentPosition(options = { enableHighAccuracy: true, timeout
   })
 }
 
+// Empty rather than a placeholder sentence, since callers put this straight into an address field a user then saves.
 export function formatAddress(data) {
   if (!data || !data.address) {
-    return data?.display_name || 'Address unavailable'
+    return data?.display_name || ''
   }
 
   const address = data.address
@@ -139,7 +140,8 @@ export async function reverseGeocode(latitude, longitude) {
     const data = await response.json()
     return formatAddress(data)
   } catch (error) {
+    // Empty, not a placeholder sentence: a failed lookup must leave the address box alone rather than fill it with text that would be saved as the address.
     console.error('Address lookup failed:', error)
-    return 'Address unavailable'
+    return ''
   }
 }

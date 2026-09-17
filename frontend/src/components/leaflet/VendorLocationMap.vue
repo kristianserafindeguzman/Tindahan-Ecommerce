@@ -22,6 +22,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import '@/utils/leafletDefaultIcon'
 import { getCurrentPosition, reverseGeocode } from '@/utils/geolocation'
 
 const props = defineProps({
