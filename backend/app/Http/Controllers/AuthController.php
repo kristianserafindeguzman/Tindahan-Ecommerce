@@ -653,9 +653,16 @@ class AuthController extends Controller
         // Accept the value of SEMAPHORE_FAKE_CODE (e.g., 123456) while testing against localhost.
         // REMOVE/REVERT THIS BEFORE RETURNING TO THE CLOUD DATABASE AND REAL OTP SERVICE.
         // The bypass only works if APP_ENV=local, ensuring it can never reach the live server.
-        $fakeCode = app()->environment('local') ? config('services.semaphore.fake_code') : null;
 
-        $code = $fakeCode ? (string) $fakeCode : str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        // remove this if going to use OTP
+        // $fakeCode = app()->environment('local') ? config('services.semaphore.fake_code') : null;
+
+        // otp static
+        $code = '012345';
+
+        // otp sending live
+        // $code = $fakeCode ? (string) $fakeCode : str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
 
         OtpCode::create([
             'user_id'      => $userId,
@@ -665,9 +672,10 @@ class AuthController extends Controller
             'expires_at'   => now()->addMinutes(10),
         ]);
 
-        if (!$fakeCode) {
-            $this->semaphoreService->sendOtp($phoneNumber, $code);
-        }
+        // Uncomment this if going to use the OTP
+        // if (!$fakeCode) {
+        //     $this->semaphoreService->sendOtp($phoneNumber, $code);
+        // }
     }
 
 }

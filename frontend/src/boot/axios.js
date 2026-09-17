@@ -3,7 +3,7 @@ import axios from 'axios'
 import { clearAuthStorage } from '@/utils/authStorage'
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api'
+  baseURL: '/api/index.php/api'
 })
 
 // Attach the Sanctum bearer token to every request
@@ -24,8 +24,8 @@ api.interceptors.response.use(
       const status = error.response.status
       const errorCode = error.response.data?.error_code
 
-      const isAccountError = 
-        errorCode === 'ACCOUNT_SUSPENDED' || 
+      const isAccountError =
+        errorCode === 'ACCOUNT_SUSPENDED' ||
         errorCode === 'ACCOUNT_INACTIVE' ||
         errorCode === 'ACCOUNT_PENDING' ||
         errorCode === 'VENDOR_NOT_APPROVED'

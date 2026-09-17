@@ -114,7 +114,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/sales/metrics', [\App\Http\Controllers\SalesController::class, 'metrics']);
         Route::get('/sales/transactions', [\App\Http\Controllers\SalesController::class, 'transactions']);
         Route::post('/sales/manual', [\App\Http\Controllers\SalesController::class, 'storeManual']);
-        
+
         Route::get('/orders', [\App\Http\Controllers\VendorOrderController::class, 'index']);
         Route::get('/orders/export', [\App\Http\Controllers\VendorController::class, 'exportOrderListReport']);
         Route::get('/orders/{id}', [\App\Http\Controllers\VendorOrderController::class, 'show']);
@@ -122,7 +122,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/orders/{id}/status', [\App\Http\Controllers\VendorOrderController::class, 'updateStatus']);
         Route::get('/customers', [\App\Http\Controllers\VendorOrderController::class, 'customers']);
         Route::get('/customers/{id}/orders', [\App\Http\Controllers\VendorOrderController::class, 'customerOrders']);
-        
+
         // ML Integrations
         Route::get('/demand-forecast', [\App\Http\Controllers\VendorController::class, 'getDemandForecast']);
         Route::post('/demand-forecast/refresh', [\App\Http\Controllers\VendorController::class, 'refreshDemandForecast']);
