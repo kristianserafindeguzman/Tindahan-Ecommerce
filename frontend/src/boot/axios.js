@@ -2,8 +2,17 @@ import { boot } from 'quasar/wrappers'
 import axios from 'axios'
 import { clearAuthStorage } from '@/utils/authStorage'
 
+// const api = axios.create({
+//   baseURL: '/api/index.php/api'
+// })
+
+const apiBaseURL =
+  window.location.hostname === 'localhost'
+    ? 'http://localhost:8000/api'
+    : '/api/index.php/api'
+
 const api = axios.create({
-  baseURL: '/api/index.php/api'
+  baseURL: apiBaseURL
 })
 
 // Attach the Sanctum bearer token to every request
