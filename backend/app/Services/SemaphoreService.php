@@ -15,7 +15,7 @@ class SemaphoreService
         $phoneNumber = $this->normalizePhoneNumber($phoneNumber);
 
         $response = Http::asForm()->post(
-            'https://api.semaphore.co/api/v4/messages',
+            'https://api.semaphore.co/api/v4/otp',
             [
                 'apikey' => config('services.semaphore.api_key'),
                 'number' => $phoneNumber,

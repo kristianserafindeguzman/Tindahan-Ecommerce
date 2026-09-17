@@ -22,7 +22,7 @@
             v-for="tab in tabs"
             :key="tab.value"
             :name="tab.value"
-            :label="tab.label"
+            :label="t(tab.label)"
             @click="goToTab(tab)"
           />
         </q-tabs>
@@ -35,7 +35,7 @@
               dense
               borderless
               clearable
-              placeholder="Search products and stores"
+              :placeholder="t('Search products and stores')"
               class="header-search-input"
               autocomplete="off"
               @keyup.enter="submitSearch"
@@ -51,7 +51,7 @@
               unelevated
               dense
               icon="o_search"
-              aria-label="Search"
+              :aria-label="t('Search')"
               class="header-search-btn"
               @click="submitSearch"
             />
@@ -61,8 +61,8 @@
             <template v-if="!searchInput.trim()">
               <div v-if="recentSearches.length" class="suggestions-section">
                 <div class="suggestions-section-header">
-                  <span>Recent Searches</span>
-                  <span class="suggestions-clear" @click="clearRecentSearches">Clear</span>
+                  <span>{{ t('Recent Searches') }}</span>
+                  <span class="suggestions-clear" @click="clearRecentSearches">{{ t('Clear') }}</span>
                 </div>
                 <div
                   v-for="(term, i) in recentSearches"
@@ -75,12 +75,12 @@
                   <span class="suggestion-text">{{ term }}</span>
                 </div>
               </div>
-              <div v-else class="suggestions-empty">Start typing to search products and stores.</div>
+              <div v-else class="suggestions-empty">{{ t('Start typing to search products and stores.') }}</div>
             </template>
 
             <template v-else>
               <div v-if="productSuggestions.length" class="suggestions-section">
-                <div class="suggestions-section-header"><span>Products</span></div>
+                <div class="suggestions-section-header"><span>{{ t('Products') }}</span></div>
                 <div
                   v-for="(product, i) in productSuggestions"
                   :key="`p${product.id}`"
@@ -99,7 +99,7 @@
               </div>
 
               <div v-if="storeSuggestions.length" class="suggestions-section">
-                <div class="suggestions-section-header"><span>Stores</span></div>
+                <div class="suggestions-section-header"><span>{{ t('Stores') }}</span></div>
                 <div
                   v-for="(store, i) in storeSuggestions"
                   :key="`s${store.id}`"
@@ -118,26 +118,19 @@
               </div>
 
               <div v-if="!productSuggestions.length && !storeSuggestions.length" class="suggestions-empty">
-                No matches for "{{ searchInput }}"
+                {{ t('No matches for "{query}"', { query: searchInput }) }}
               </div>
             </template>
           </div>
         </div>
 
-        <div class="header-location" :title="address || 'Enter Address'" @click="toggleAddressMenu">
+        <div class="header-location" :title="address || t('Enter Address')" @click="toggleAddressMenu">
           <span class="header-location-pill" :class="{ 'header-location-expanded': addressMenuOpen }">
             <q-icon name="o_location_on" size="15px" />
-            <span>{{ address || 'Enter Address' }}</span>
+            <span>{{ displayAddress }}</span>
           </span>
 
-          <!--
-            One panel, two shells. Below 900px this is a bottom sheet with a backdrop,
-            above it a dropdown anchored to the pill — QDialog and QMenu respectively,
-            picked at runtime so the content is written once rather than duplicated.
-            Both bring their own backdrop, outside-click, Escape and focus handling,
-            which is what the hand-rolled .address-menu-backdrop and the document
-            click listener used to do.
-          -->
+          <!-- One address panel in two shells, a bottom sheet below 900px and a dropdown above it, each supplying backdrop, dismissal and focus. -->
           <component
             :is="isAddressSheet ? QDialog : QMenu"
             v-model="addressMenuOpen"
@@ -152,7 +145,7 @@
             <div class="address-menu-scroll">
               <div class="address-menu-title">
                 <q-icon name="o_location_on" size="16px" class="address-menu-title-icon" />
-                <span>Address</span>
+                <span>{{ t('Address') }}</span>
               </div>
 
               <q-input
@@ -160,7 +153,7 @@
                 dense
                 outlined
                 hide-bottom-space
-                placeholder="Enter your address"
+                :placeholder="t('Enter your address')"
                 class="address-menu-input"
                 @keyup.enter="confirmAddress"
               />
@@ -172,7 +165,7 @@
               <q-btn
                 unelevated
                 no-caps
-                label="Confirm Address"
+                :label="t('Confirm Address')"
                 class="address-menu-confirm"
                 :disable="!draftAddress.trim()"
                 @click="confirmAddress"
@@ -182,10 +175,7 @@
           </component>
         </div>
 
-        <!-- Mobile: search collapses to an icon that reveals the real field below, so
-             the field's suggestion menu and submit logic stay a single instance. -->
-        <!-- Compact bar's right-hand cluster: notifications, cart, then the menu.
-             The menu sits last so the two content actions stay closest to the thumb. -->
+        <!-- Compact bar's right-hand cluster, holding notifications and the cart. -->
         <div v-if="isCompactHeader" ref="mobileActionsRef" class="header-mobile-actions">
           <NotificationsMenu v-if="isLoggedIn" :anchor-target="mobileActionsRef" />
 
@@ -194,22 +184,12 @@
             dense
             round
             icon="o_shopping_cart"
-            :aria-label="isLoggedIn && cartItemCount ? `Cart, ${cartItemCount} items` : 'Cart'"
+            :aria-label="isLoggedIn && cartItemCount ? t('Cart, {count} items', { count: cartItemCount }) : t('Cart')"
             class="header-mobile-btn"
             @click="router.push('/consumer/cart')"
           >
             <span v-if="isLoggedIn && cartItemCount" class="icon-badge-count">{{ cartItemCount }}</span>
           </q-btn>
-
-          <q-btn
-            flat
-            dense
-            round
-            icon="menu"
-            aria-label="Open menu"
-            class="header-mobile-btn"
-            @click="mobileMenuOpen = true"
-          />
         </div>
 
         <div ref="headerActionsRef" class="header-actions">
@@ -221,9 +201,7 @@
                 <q-icon name="o_notifications" :size="actionIconSize" />
                 <span v-if="unreadNotificationCount" class="icon-badge-count">{{ unreadNotificationCount }}</span>
 
-                <!-- no-parent-event: the button's own @click already decides whether to
-                     open (and fires the fetch), so QMenu must not also toggle itself. It
-                     still handles outside-click, Escape, focus and placement. -->
+                <!-- no-parent-event, because the button's click already decides whether to open, while QMenu handles outside-click, Escape and focus. -->
                 <q-menu
                   v-model="notificationsMenuOpen"
                   no-parent-event
@@ -235,14 +213,20 @@
                 >
                 <div class="cart-menu-inner notifications-inner">
                   <div class="cart-menu-title notifications-title">
-                    Notifications
-                    <q-btn v-if="unreadNotificationCount" flat dense no-caps label="Mark all read" color="primary" size="sm" @click="markAllAsRead" />
+                    {{ t('Notifications') }}
+                    <q-btn v-if="unreadNotificationCount" flat dense no-caps :label="t('Mark all as read')" color="primary" size="sm" @click="markAllAsRead" />
                   </div>
 
-                  <div v-if="!notifications.length" class="cart-menu-empty">No notifications yet.</div>
+                  <div v-if="!notifications.length" class="cart-menu-empty">{{ t('No notifications yet.') }}</div>
 
                   <div v-else class="notifications-scroll">
-                    <div v-for="notif in notifications.slice(0, 10)" :key="notif.notification_id" class="cart-menu-item notification-item" style="cursor:pointer;" @click="handleNotificationClick(notif)">
+                    <div
+                      v-for="notif in notifications.slice(0, 10)"
+                      :key="notif.notification_id"
+                      class="cart-menu-item notification-item"
+                      :class="{ 'notification-item--unread': !notif.is_read }"
+                      @click="handleNotificationClick(notif)"
+                    >
                       <div class="cart-menu-item-info" :style="notif.is_read ? 'opacity: 0.7;' : 'font-weight: bold;'">
                         <div class="cart-menu-item-name">{{ notif.title }}</div>
                         <div class="cart-menu-item-meta" style="white-space: normal; line-height: 1.3;">{{ notif.message }}</div>
@@ -250,12 +234,11 @@
                     </div>
                   </div>
 
-                  <!-- The panel caps at 10; this is the way to the rest. Same
-                       treatment as the cart menu's View All. -->
+                  <!-- The panel shows ten notifications, so this links to the rest, like the cart menu's View All. -->
                   <q-btn
                     unelevated
                     no-caps
-                    label="View All Notifications"
+                    :label="t('View All Notifications')"
                     class="cart-menu-view-all"
                     @click="notificationsMenuOpen = false; router.push('/consumer/notifications')"
                   />
@@ -280,9 +263,9 @@
                   class="header-menu"
                 >
                 <div class="cart-menu-inner">
-                  <div class="cart-menu-title">My Cart</div>
+                  <div class="cart-menu-title">{{ t('My Cart') }}</div>
 
-                  <div v-if="!cartItems.length" class="cart-menu-empty">Your cart is empty.</div>
+                  <div v-if="!cartItems.length" class="cart-menu-empty">{{ t('Your cart is empty.') }}</div>
 
                   <template v-else>
                     <div v-for="item in cartItems.slice(0, 4)" :key="item.cartId" class="cart-menu-item">
@@ -292,18 +275,18 @@
                       </div>
                       <div class="cart-menu-item-info">
                         <div class="cart-menu-item-name">{{ item.name }}</div>
-                        <div class="cart-menu-item-meta">Qty {{ item.quantity }} · ₱{{ item.price.toFixed(2) }}</div>
+                        <div class="cart-menu-item-meta">{{ t('Qty') }} {{ item.quantity }} · ₱{{ item.price.toFixed(2) }}</div>
                       </div>
                     </div>
                     <div v-if="cartItems.length > 4" class="cart-menu-more">
-                      +{{ cartItems.length - 4 }} more item{{ cartItems.length - 4 === 1 ? '' : 's' }}
+                      +{{ t(cartItems.length - 4 === 1 ? '{count} more item' : '{count} more items', { count: cartItems.length - 4 }) }}
                     </div>
                   </template>
 
                   <q-btn
                     unelevated
                     no-caps
-                    label="View All Cart"
+                    :label="t('View All Cart')"
                     class="cart-menu-view-all"
                     @click="cartMenuOpen = false; router.push('/consumer/cart')"
                   />
@@ -332,14 +315,14 @@
                 <div class="cart-menu-inner account-menu-inner">
                   <q-list>
                     <q-item clickable @click="accountMenuOpen = false; router.push('/consumer/profile')">
-                      <q-item-section>My Profile</q-item-section>
+                      <q-item-section>{{ t('My Profile') }}</q-item-section>
                     </q-item>
                     <q-item clickable @click="accountMenuOpen = false; router.push('/consumer/orders')">
-                      <q-item-section>My Orders</q-item-section>
+                      <q-item-section>{{ t('My Orders') }}</q-item-section>
                     </q-item>
                     <q-separator />
                     <q-item clickable @click="accountMenuOpen = false; handleLogout()">
-                      <q-item-section class="text-red-9">Logout</q-item-section>
+                      <q-item-section class="text-red-9">{{ t('Logout') }}</q-item-section>
                     </q-item>
                   </q-list>
                 </div>
@@ -351,7 +334,7 @@
           <!-- GUEST -->
           <template v-else>
             <q-btn
-              label="Log in"
+              :label="t('Log in')"
               no-caps
               flat
               dense
@@ -360,7 +343,7 @@
               @click="goToLogin"
             />
             <q-btn
-              label="Sign up"
+              :label="t('Sign up')"
               no-caps
               unelevated
               dense
@@ -377,82 +360,97 @@
       <q-card class="mobile-menu">
         <div class="mobile-menu-head">
           <img src="@/assets/tindahan-mobile.png" alt="Tindahan" class="mobile-menu-logo" />
-          <q-btn v-close-popup flat round dense icon="close" aria-label="Close menu" class="mobile-menu-close" />
+          <q-btn v-close-popup flat round dense icon="close" :aria-label="t('Close menu')" class="mobile-menu-close" />
         </div>
 
         <q-separator />
 
+        <!-- Account links only, since Home, Products and Stores live in the bottom tab bar. -->
         <div class="mobile-menu-scroll">
 
-          <q-list padding>
-            <q-item
-              v-for="tab in tabs"
-              :key="tab.value"
-              v-close-popup
-              clickable
-              :active="activeTab === tab.value"
-              active-class="mobile-menu-item-active"
-              class="mobile-menu-item"
-              @click="goToTab(tab)"
-            >
-              <q-item-section avatar class="mobile-menu-avatar">
-                <q-icon :name="tab.icon" size="22px" />
-              </q-item-section>
-              <q-item-section>{{ tab.label }}</q-item-section>
-            </q-item>
-          </q-list>
-
-          <q-separator class="mobile-menu-rule" />
-
           <q-list v-if="isLoggedIn" padding>
-            <q-item v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/orders')">
-              <q-item-section avatar class="mobile-menu-avatar">
-                <q-icon name="o_receipt_long" size="22px" />
-              </q-item-section>
-              <q-item-section>My Orders</q-item-section>
-            </q-item>
-
-            <q-item v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/profile')">
+            <q-item v-if="isLoggedIn" v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/profile')">
               <q-item-section avatar class="mobile-menu-avatar">
                 <q-icon name="o_person" size="22px" />
               </q-item-section>
-              <q-item-section>My Profile</q-item-section>
+              <q-item-section>{{ t('My Profile') }}</q-item-section>
             </q-item>
 
-            <q-item v-close-popup clickable class="mobile-menu-item mobile-menu-logout" @click="handleLogout">
+            <q-item v-if="isLoggedIn" v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/orders')">
+              <q-item-section avatar class="mobile-menu-avatar">
+                <q-icon name="o_receipt_long" size="22px" />
+              </q-item-section>
+              <q-item-section>{{ t('My Orders') }}</q-item-section>
+            </q-item>
+
+            <q-separator v-if="isLoggedIn" />
+
+            <q-item v-if="isLoggedIn" v-close-popup clickable class="mobile-menu-item mobile-menu-logout" @click="handleLogout">
               <q-item-section avatar class="mobile-menu-avatar">
                 <q-icon name="o_logout" size="22px" />
               </q-item-section>
-              <q-item-section>Logout</q-item-section>
+              <q-item-section>{{ t('Logout') }}</q-item-section>
             </q-item>
           </q-list>
 
-          <div v-else class="mobile-menu-auth">
-            <q-btn v-close-popup unelevated no-caps label="Log in" class="mobile-menu-login" @click="goToLogin" />
-            <q-btn v-close-popup unelevated no-caps label="Sign up" class="mobile-menu-signup" @click="goToSignup" />
+          <div v-if="!isLoggedIn" class="mobile-menu-auth">
+            <q-btn v-close-popup unelevated no-caps :label="t('Log in')" class="mobile-menu-login" @click="goToLogin" />
+            <q-btn v-close-popup unelevated no-caps :label="t('Sign up')" class="mobile-menu-signup" @click="goToSignup" />
           </div>
         </div>
       </q-card>
     </q-dialog>
   </header>
 
-  <!--
-    Dims the page behind an open search on phones and tablets, where the suggestion
-    panel covers most of the screen and needs separating from the content under it.
-    Desktop keeps the page undimmed: the panel is a small dropdown there and the
-    surrounding catalogue stays useful context.
-
-    A sibling of <header>, not a child — inside it, the backdrop covered the header's
-    own gradient and dulled the bar.
-  -->
+  <!-- Dims the page behind an open search below 1024px, as a sibling of the header so it does not dull the header's own gradient. -->
   <div
     v-if="suggestionsOpen && $q.screen.lt.md"
     class="search-backdrop"
     @click="closeSuggestions"
   />
+
+  <!-- Bottom tab bar below 1024px that replaces the header's nav row and hamburger, placed outside the sticky header so it stacks with the page. -->
+  <nav v-if="showBottomNav" class="bottom-nav" :aria-label="t('Primary')">
+    <div class="bottom-nav-inner">
+      <q-btn
+        v-for="tab in tabs"
+        :key="tab.value"
+        flat
+        no-caps
+        :ripple="false"
+        class="bottom-nav-tab"
+        :class="{ 'bottom-nav-tab--active': isTabActive(tab) }"
+        :aria-current="isTabActive(tab) ? 'page' : undefined"
+        @click="goToTab(tab)"
+      >
+        <span class="bottom-nav-pill">
+          <q-icon :name="tab.icon" size="24px" />
+        </span>
+        <span class="bottom-nav-label">{{ t(tab.label) }}</span>
+      </q-btn>
+
+      <!-- Opens the account drawer and is never lit, since it opens a dialog rather than a page. -->
+      <q-btn
+        flat
+        no-caps
+        :ripple="false"
+        class="bottom-nav-tab"
+        aria-haspopup="dialog"
+        :aria-expanded="mobileMenuOpen ? 'true' : 'false'"
+        @click="mobileMenuOpen = true"
+      >
+        <span class="bottom-nav-pill">
+          <q-icon name="o_menu" size="24px" />
+        </span>
+        <span class="bottom-nav-label">{{ t('Menu') }}</span>
+      </q-btn>
+    </div>
+  </nav>
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -468,6 +466,8 @@ import { clearAuthStorage } from '@/utils/authStorage'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 import NotificationsMenu from '@/components/consumer/NotificationsMenu.vue'
 
+const { t } = useConsumerLanguage()
+
 const router = useRouter()
 const route = useRoute()
 const $q = useQuasar()
@@ -475,19 +475,11 @@ const $q = useQuasar()
 const { address, setAddress, autoDetectAddress } = useAddress()
 const draftAddress = ref('')
 const draftLocation = ref(null)
-// The dropdown panels align to the action cluster's right edge, not to their own
-// button — see the q-menu :target bindings above.
+// The header dropdowns align to the action cluster's right edge rather than their own button, via the q-menu :target bindings.
 const headerActionsRef = ref(null)
 const mobileActionsRef = ref(null)
 
-/**
- * Only one header dropdown may be open at a time.
- *
- * QMenu dismisses itself on a click outside its target, but the target here is the
- * whole action cluster, so clicking a sibling button counts as "inside" and leaves
- * the previous panel open. All three align to the same right edge, so they stacked
- * on top of each other. Each toggle closes the rest before opening.
- */
+/** Only one header dropdown may be open at a time, and since QMenu treats a sibling button as inside its target, each toggle closes the rest itself. */
 const closeHeaderMenus = (except) => {
   if (except !== 'notifications') notificationsMenuOpen.value = false
   if (except !== 'cart') cartMenuOpen.value = false
@@ -500,21 +492,17 @@ const addressMenuOpen = ref(false)
 // Tablet and mobile both get the bottom sheet, same breakpoint as the Products/Stores filter sheets.
 const isAddressSheet = computed(() => $q.screen.width < 900)
 
-// Below this the bar collapses to [menu · logo · cart]. From 768 to 1023 the header
-// keeps its original stacked rows instead, and from 1024 it is a single row.
-// Must stay in step with the @media (max-width: 767px) block below.
-const COMPACT_HEADER_MAX = 768
+// Below 1024px phones and tablets share the two-row compact bar, and this must match the @media (max-width: 1023px) block.
+const COMPACT_HEADER_MAX = 1024
 const isCompactHeader = computed(() => $q.screen.width < COMPACT_HEADER_MAX)
 
-// The stacked tablet header is a touch surface, so its action icons match the compact
-// bar's 24px rather than the desktop's denser 20px.
-const isTabletHeader = computed(
-  () => !isCompactHeader.value && $q.screen.width < 1024
-)
+// .header-actions is desktop-only now, so these sizes no longer need a tablet variant.
+const actionIconSize = '20px'
+const avatarSize = '24px'
+const avatarIconSize = '16px'
 
-const actionIconSize = computed(() => (isTabletHeader.value ? '24px' : '20px'))
-const avatarSize = computed(() => (isTabletHeader.value ? '28px' : '24px'))
-const avatarIconSize = computed(() => (isTabletHeader.value ? '19px' : '16px'))
+// Always the full address, which the pill ellipses when it does not fit, with the title attribute carrying the whole string.
+const displayAddress = computed(() => address.value || t('Enter Address'))
 
 const toggleAddressMenu = () => {
   const next = !addressMenuOpen.value
@@ -555,9 +543,13 @@ const { items: cartItems, itemCount: cartItemCount, fetchCart } = useCart()
 /* ------------------------------------------------------- MOBILE HEADER (< md) */
 
 const mobileMenuOpen = ref(false)
-// A width change can strand either affordance open in a layout that no longer shows it.
-watch(isCompactHeader, (compact) => {
-  if (!compact) {
+// The bottom tab bar replaces the nav row and hamburger below 1024px and hides on checkout, a focused flow with its own bottom bar.
+const BOTTOM_NAV_HIDDEN_ON = ['/consumer/checkout']
+const showBottomNav = computed(() => $q.screen.lt.md && !BOTTOM_NAV_HIDDEN_ON.includes(route.path))
+
+// The drawer only opens from the bar's Menu tab, so it closes whenever the bar goes away.
+watch(showBottomNav, (shown) => {
+  if (!shown) {
     mobileMenuOpen.value = false
   }
 })
@@ -588,12 +580,7 @@ const toggleAccountMenu = () => {
 }
 
 onMounted(() => {
-  // This header remounts on every consumer page, and these three back the search
-  // suggestions rather than anything on screen. The pages that actually display
-  // products/stores/categories refetch them on their own mount, so re-requesting
-  // here just queued a duplicate 27KB round trip per navigation. Empty means this
-  // is the first consumer page of the session; changing the address still forces a
-  // refresh through confirmAddress().
+  // Search suggestions reuse already-fetched products, stores and categories, so the header only fetches them on the session's first page.
   if (!products.value.length) fetchProducts()
   if (!stores.value.length) fetchStores()
   if (!categories.value.length) fetchCategories()
@@ -619,9 +606,7 @@ const unreadNotificationCount = computed(() => notifications.value.filter(n => !
 
 const notificationsMenuOpen = ref(false)
 
-// Mirrors handleCartIconClick: below md the preview dropdown is skipped entirely and
-// the icon goes straight to the full page, which is the better use of a phone screen
-// than a panel that only shows ten rows.
+// Like handleCartIconClick, below md the bell opens the notifications page instead of the ten-row preview.
 const toggleNotificationsMenu = () => {
   if ($q.screen.lt.md) {
     closeHeaderMenus()
@@ -865,8 +850,7 @@ const selectSuggestion = (term) => {
 
 // Enter, the search button, or a mobile keyboard's search key all land here.
 const submitSearch = async () => {
-  // If the user presses enter while a suggestion is highlighted, use that suggestion.
-  // We temporarily clear the active index so the next call to submitSearch won't loop.
+  // Enter on a highlighted suggestion uses that suggestion, clearing the active index first so the next submitSearch call does not loop.
   if (
     activeSuggestionIndex.value >= 0 &&
     suggestionTerms.value[activeSuggestionIndex.value]
@@ -917,10 +901,10 @@ const tabs = [
   { label: 'Stores', value: 'stores', to: '/consumer/stores', icon: 'o_storefront' }
 ]
 
-const activeTab = computed(() => {
-  const match = tabs.find((tab) => tab.to === route.path)
-  return match ? match.value : null
-})
+// A tab stays lit on its child routes, so /consumer/stores/12 still lights Stores.
+const isTabActive = (tab) => route.path === tab.to || route.path.startsWith(tab.to + '/')
+
+const activeTab = computed(() => tabs.find(isTabActive)?.value ?? null)
 
 const goToTab = (tab) => {
   if (tab.to) router.push(tab.to)
@@ -941,7 +925,8 @@ const goToTab = (tab) => {
       #490f0f 100%
     );
 
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  /* Was a tight neutral 0 2px 10px, which read as a hard line where the red met the page. */
+  box-shadow: var(--sh-header);
 }
 
 .header-bar-inner {
@@ -967,10 +952,7 @@ const goToTab = (tab) => {
   cursor: pointer;
 }
 
-/* position:relative so dropdown panels (plain divs, not q-menu — see .icon-btn-wrap below) anchor
-   here instead of to their own narrow icon: this button isn't the rightmost thing in the header
-   (cart/account sit to its right), so a panel anchored to its own wrapper's right:0 can still run
-   past the viewport's left edge on narrow screens. Anchoring to the full-width row fixes that. */
+/* Desktop action cluster, pushed to the right edge and used as the alignment target for the header dropdowns. */
 .header-actions {
   position: relative;
 
@@ -984,10 +966,7 @@ const goToTab = (tab) => {
   flex-shrink: 0;
 }
 
-/* Wraps each icon-btn so its dropdown panel (a plain sibling div, not a q-menu) has somewhere to
-   live — a q-btn's internal ripple wrapper can clip absolutely positioned children, so the panel
-   can't be nested inside the q-btn itself. No position:relative here on purpose — the panel's
-   position:absolute resolves against .header-actions above instead (see its comment). */
+/* Wraps each header icon button so it centres vertically in the action cluster. */
 .icon-btn-wrap {
   display: flex;
   align-items: center;
@@ -1034,8 +1013,7 @@ const goToTab = (tab) => {
   line-height: 1;
 }
 
-/* HEADER DROPDOWNS (notifications/cart/account) — panel contents only. QMenu supplies
-   the shell, placement and dismissal; see .header-menu in the unscoped block below. */
+/* Header dropdown panel contents only, since QMenu supplies the shell, placement and dismissal. */
 
 .cart-menu-inner {
   width: 280px;
@@ -1044,18 +1022,16 @@ const goToTab = (tab) => {
   font-family: 'Roboto', Arial, sans-serif;
 }
 
-/* Account's list is much shorter than Cart/Notifications' content — let it hug its own width instead of forcing the shared 280px.
-   Horizontal padding drops to 0 (unlike .cart-menu-inner's 14px) so each row's hover highlight spans the full panel width
-   edge-to-edge, like a normal menu, instead of floating inside an inset box. */
+/* The account list hugs its own width, with no horizontal padding so each row's hover highlight spans the full panel. */
 .account-menu-inner {
   width: auto;
   min-width: 160px;
-  padding: 6px 0;
+  padding: 4px 0;
 }
 
 .account-menu-inner :deep(.q-item) {
   min-height: 40px;
-  padding: 9px 14px;
+  padding: 8px 16px;
 }
 
 .cart-menu-title {
@@ -1087,14 +1063,24 @@ const goToTab = (tab) => {
 
 .notification-item {
   align-items: flex-start;
-  padding: 10px 0;
+
+  /* Runs edge to edge across the panel with square corners, so an unread row's tint is a clean full-width band. */
+  margin: 0 -14px;
+  padding: 10px 14px;
+
+  cursor: pointer;
 }
 
+/* A clearer divider than the panel's hairlines, so each notification reads as its own row, tinted or not. */
 .notification-item + .notification-item {
-  border-top: 1px solid var(--c-hairline);
+  border-top: 1px solid var(--c-border);
 }
 
-/* Title/"Mark all read" row stays outside .notifications-scroll below, so it never scrolls out of view. */
+.notification-item--unread {
+  background: var(--c-brand-tint);
+}
+
+/* Title/"Mark all as read" row stays outside .notifications-scroll below, so it never scrolls out of view. */
 .notifications-title {
   display: flex;
   align-items: center;
@@ -1205,20 +1191,16 @@ const goToTab = (tab) => {
   box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
 }
 
-/* ADDRESS PICKER — panel contents only, shared by the QMenu (desktop) and QDialog
-   bottom sheet (below 900px). Chrome lives on .address-menu-menu / .address-sheet-dialog. */
+/* Address picker panel contents only, shared by the desktop QMenu and the bottom sheet below 900px. */
 
 /* Same plain-div dropdown recipe as .search-suggestions, not a q-menu — sidesteps Quasar's menu positioning engine entirely. */
-/* QMenu places this and, via .address-menu-menu below, draws the border, radius and
-   shadow. Leaving them here too produced a 4px Quasar corner wrapped around a 10px
-   panel and two stacked shadows. */
+/* QMenu places this panel and .address-menu-menu draws its chrome, so repeating it here doubled the corner and shadow. */
 .address-menu-panel {
   width: 460px;
   padding: 16px;
   box-sizing: border-box;
 
-  /* Both shells need this. .address-menu-menu paints the dropdown, but the QDialog
-     sheet has no such wrapper — without a surface here the sheet is transparent. */
+  /* A white surface for both shells, since the bottom sheet has no wrapper to paint it and would otherwise be transparent. */
   background: #ffffff;
 
   font-family: 'Roboto', Arial, sans-serif;
@@ -1407,10 +1389,7 @@ const goToTab = (tab) => {
   width: 310px;
   max-width: 84vw;
 
-  /* No explicit height: the dialog inner is pinned to every edge and stretches this
-     panel to fill it. Setting height:100% here actually broke it — WebKit left the card
-     at its content height, and an explicit height suppresses the stretch that works in
-     both engines. Viewport units are avoided too; see the unscoped block below. */
+  /* No explicit height, since the pinned dialog inner stretches this panel and a set height broke that stretch in WebKit. */
   align-self: stretch;
   max-height: 100%;
 
@@ -1448,10 +1427,6 @@ const goToTab = (tab) => {
   padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
-.mobile-menu-rule {
-  margin: 4px 0;
-}
-
 .mobile-menu-item {
   min-height: 48px;
 
@@ -1466,16 +1441,6 @@ const goToTab = (tab) => {
   padding-right: 14px;
 
   color: var(--c-muted);
-}
-
-.mobile-menu-item-active {
-  background: var(--c-brand-tint);
-  color: var(--c-brand);
-  font-weight: 700;
-}
-
-.mobile-menu-item-active .mobile-menu-avatar {
-  color: var(--c-brand);
 }
 
 .mobile-menu-logout,
@@ -1517,9 +1482,7 @@ const goToTab = (tab) => {
 
 /* HEADER — SEARCH BAR */
 
-/* Fixed to the viewport so it covers the page as the user scrolls. 150 sits under the
-   header (200), so the bar and its suggestion panel stay lit, and over page content
-   including the fixed bottom bars (100). */
+/* Fixed full-screen at z-index 150, above the page, its bottom bars and the tab bar but below the header at 200. */
 .search-backdrop {
   position: fixed;
   inset: 0;
@@ -1877,62 +1840,181 @@ const goToTab = (tab) => {
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* RESPONSIVE — below 1024px the bar collapses to one row:
-     [menu]        [logo, centred]        [search] [cart]
-   The nav, address and account links move into the slide-in menu, and the search field
-   is revealed on demand as a second row rather than living there permanently. That takes
-   the header from four stacked rows to one. */
+/* BOTTOM NAV — below 1024px (rendering is gated in script on the same $q.screen.lt.md). */
 
-@media (max-width: 767px) {
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Above page content with the page-level bars riding on top of it, and below .search-backdrop so an open search dims it. */
+  z-index: 120;
+
+  padding-bottom: env(safe-area-inset-bottom);
+
+  border-top: 1px solid var(--c-border);
+
+  background: #ffffff;
+  box-shadow: var(--sh-dock);
+}
+
+/* Keeps a phone's tab spacing on a tablet, where tabs spread across 1000px would no longer read as one control. */
+.bottom-nav-inner {
+  display: flex;
+
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 6px;
+}
+
+/* 64px tall, and the full cell is the tap target — comfortably past the 44px minimum. */
+.bottom-nav-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 64px;
+  min-height: 0;
+  padding: 0;
+
+  border-radius: 0;
+
+  color: var(--c-subtle);
+
+  transition: color 0.15s;
+}
+
+.bottom-nav-tab :deep(.q-btn__content) {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+/* Quasar's hover wash would fill the whole 64px cell; the pill below is the hover state. */
+.bottom-nav-tab :deep(.q-focus-helper) {
+  display: none;
+}
+
+/* The current tab gets the brand tint behind its icon, with every icon from the outlined set at 24px so none looks heavier. */
+.bottom-nav-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 56px;
+  height: 30px;
+
+  border-radius: var(--r-pill);
+
+  transition: background-color 0.2s;
+}
+
+.bottom-nav-label {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.bottom-nav-tab--active {
+  color: var(--c-brand);
+}
+
+.bottom-nav-tab--active .bottom-nav-pill {
+  background: var(--c-brand-tint);
+}
+
+.bottom-nav-tab--active .bottom-nav-label {
+  font-weight: 700;
+}
+
+.bottom-nav-tab:not(.bottom-nav-tab--active):hover .bottom-nav-pill {
+  background: var(--c-surface);
+}
+
+/* Quasar's no-outline class strips outlines with !important, so keyboard focus rings the pill instead. */
+.bottom-nav-tab:focus-visible .bottom-nav-pill {
+  box-shadow: 0 0 0 2px var(--c-brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav-tab,
+  .bottom-nav-pill {
+    transition: none;
+  }
+}
+
+/* Below 1024px the header is two rows, with logo, address and actions above a full-width search, and navigation in the bottom bar. */
+
+@media (max-width: 1023px) {
+  /* Rounded bottom corners on phones and tablets, so with the soft shadow the header reads as a panel over the page. */
+  .site-header {
+    border-radius: 0 0 var(--r-2xl) var(--r-2xl);
+  }
+
+  /* A grid whose middle column fills with the address pill up to 420px before the 1fr sides grow, which centres the pill on tablets. */
   .header-bar-inner {
     position: relative;
 
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr minmax(0, 420px) 1fr;
+    grid-template-areas:
+      'logo location actions'
+      'search search search';
+    align-items: center;
 
-    gap: 4px;
+    /* 8px gaps and no pill margin, since margins would come out of the middle column and shrink the pill below 420px. */
+    column-gap: 8px;
     row-gap: 10px;
     padding: 6px 12px 12px;
   }
 
   .header-logo {
-    flex: 0 0 auto;
+    grid-area: logo;
+    justify-self: start;
 
     height: 46px;
-    /* Pushes the action cluster to the opposite edge. */
-    margin: 0 auto 0 0;
   }
 
-  /* position: relative anchors the notifications panel to this cluster rather than to
-     the bell's own narrow button, which would let it run off the right edge. */
+  /* Compact action cluster, which the notifications panel aligns to rather than the bell's narrow button. */
   .header-mobile-actions {
     position: relative;
 
-    flex: 0 0 auto;
+    grid-area: actions;
+    justify-self: end;
   }
 
-  /* Nav and the desktop action cluster live in the slide-in menu now. */
-  .header-nav,
-  .header-actions {
+  /* The desktop action cluster and nav row are hidden, with account links in the drawer and navigation in the bottom tab bar. */
+  .header-actions,
+  .header-nav {
     display: none;
   }
 
-  /* Forces the wrap after the bar's own row. Without it the address pill still fitted
-     beside the logo and rode up into row one, which also shoved the logo off centre. */
-  .header-bar-inner::after {
-    content: '';
-    order: 1;
-
-    width: 100%;
+  /* 44px tap targets, since 40px was under the touch minimum in the corner where mis-hits are most likely. */
+  .header-mobile-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
-  /* Row two: address on the left, search taking the rest — the address is capped so a
-     long one cannot squeeze the field down to nothing. */
+  /* The address sits in the middle grid column, filling the gap on phones and capped at 420px on tablets, with min-width 0 enabling the ellipsis. */
   .header-location {
-    order: 2;
+    grid-area: location;
 
-    flex: 0 1 auto;
     min-width: 0;
-    max-width: 44%;
+    margin: 0;
+  }
+
+  /* Every level from the pill down to the text span opts out of min-width auto, which would otherwise block the ellipsis. */
+  .header-location-pill {
+    min-width: 0;
+  }
+
+  .header-location-pill > span:last-child {
+    min-width: 0;
   }
 
   .header-location-pill {
@@ -1942,23 +2024,18 @@ const goToTab = (tab) => {
   }
 
   .header-search-wrap {
-    order: 3;
+    grid-area: search;
 
-    flex: 1 1 0;
     min-width: 0;
     max-width: none;
-
-    transition: flex-grow 0.25s ease;
   }
 
-  /* Rounded to match the pill beside it, so row two reads as one pair of controls. */
+  /* Rounded to match the address pill above it, so the two rows read as one set. */
   .header-search {
     border-radius: var(--r-pill);
   }
 
-  /* Hidden on mobile: the field is the only thing on its row, so the disc was pure
-     weight. Submitting still works via the keyboard return key and by tapping a
-     suggestion. */
+  /* The search button is hidden below 1024px, since Enter and tapping a suggestion both still submit. */
   .header-search-btn {
     display: none;
   }
@@ -1968,109 +2045,24 @@ const goToTab = (tab) => {
     padding-right: 16px;
   }
 
-  /* Expand-on-focus, same behaviour as the desktop bar: focusing search collapses the
-     address to its pin and hands the width over. .header-location is a later sibling of
-     .header-search-wrap, so the same general-sibling selector works here. */
-  /* Focused, the search takes the whole row and the address disappears.
+  /* No expand-on-focus here, since search already owns the whole of row two. */
 
-     It has to leave the flow, not just shrink: clamping it to max-width:0 kept it a flex
-     item, the search grew to the full line, and the 4px gap then tipped the line over so
-     the search wrapped onto a third row — the header grew 38px instead of staying put.
-     Absolute positioning takes it out of the line entirely, and opacity still animates. */
-  .header-search-wrap:focus-within ~ .header-location {
-    position: absolute;
-    left: 12px;
-
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .header-location {
-    transition: opacity 0.2s ease;
-  }
-
-/* Fixed 460px overflows a phone screen, so cap it. The left/translateX centring that
-     used to sit here existed only to re-centre an absolutely positioned panel; QMenu and
-     QDialog place it now, and the stale transform dragged the sheet half off-screen. */
+/* Caps the fixed 460px panel to the screen width, leaving placement to QMenu and QDialog. */
   .address-menu-panel {
     max-width: calc(100vw - 32px);
   }
 }
 
-/* TABLET (768–1023) — the header's original stacked arrangement:
-     row 1  logo + actions
-     row 2  address, centred
-     row 3  search
-     row 4  nav, divided off by a hairline
-   There is no hamburger here: every destination is already on screen. */
-
-@media (min-width: 768px) and (max-width: 1023px) {
+/* Leave room for the selector and longer translated navigation on smaller desktops. */
+@media (min-width: 1024px) and (max-width: 1199px) {
   .header-bar-inner {
-    flex-wrap: wrap;
-
-    row-gap: 10px;
-    padding: 12px 16px;
+    gap: 14px;
   }
-
-  .header-logo {
-    height: 48px;
-  }
-
-  .header-actions {
-    order: 1;
-  }
-
-  .header-location {
-    order: 2;
-
-    width: 100%;
-    justify-content: center;
-  }
-
-  .header-location-pill {
-    max-width: min(90%, 340px);
-  }
-
-  /* The pill is centred rather than stretched here, so hovering it should not imply it
-     is a full-width control. */
-  .header-location:hover .header-location-pill {
-    background: rgba(255, 255, 255, 0.12);
-  }
-
-  .header-search-wrap {
-    order: 3;
-
-    width: 100%;
-    max-width: none;
-  }
-
-  .header-nav {
-    order: 4;
-
-    width: 100%;
-
-    padding-top: 4px;
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
-  }
-
   .header-nav :deep(.q-tabs__content) {
-    justify-content: space-around;
-    width: 100%;
+    gap: 14px;
   }
-
-  /* Matches the compact bar's 40px touch targets; the desktop bar keeps 38px. */
-  .icon-btn,
-  .account-btn {
-    height: 42px;
-  }
-
-  .icon-btn {
-    width: 42px;
-  }
-
-/* Same cap for a tablet held in portrait; placement is QMenu's job now. */
-  .address-menu-panel {
-    max-width: calc(100vw - 32px);
+  .header-actions {
+    gap: 6px;
   }
 }
 
@@ -2086,8 +2078,7 @@ const goToTab = (tab) => {
   }
 }
 
-/* QDialog position="bottom" pins and animates the sheet (see the sheet transitions in
-   app.scss), so this only reshapes the panel for the full-width variant. */
+/* QDialog pins and animates the sheet, so this only reshapes the panel for the full-width variant. */
 .address-menu-panel-sheet {
   display: flex;
   flex-direction: column;
@@ -2137,17 +2128,9 @@ const goToTab = (tab) => {
 </style>
 
 <style>
-/* QMenu defaults to a 4px radius and its own elevation shadow, which read as a square
-   corner and a doubled shadow around this 10px panel. Matching --r-lg lines the
-   dropdown up with the cards on every consumer page.
-
-   max-height is Quasar's viewport-fit cap; it is what put a scrollbar inside the panel
-   on shorter windows. fit-content lets the menu take its natural height, and the cap
-   only re-engages when the panel genuinely cannot fit. */
+/* Gives the address dropdown the consumer cards' radius, border and shadow in place of QMenu's 4px corner and elevation shadow. */
 .q-menu.address-menu-menu {
-  /* Quasar caps a QMenu at 65vh, which is 468px on a 720px laptop viewport — 11px
-     short of this panel's 479px and enough to put a scrollbar through the middle of
-     the map. Two classes to out-specify that single-class default. */
+  /* Lifts Quasar's 65vh menu cap, which put a scrollbar through the map on a 720px screen, using two classes to out-specify it. */
   max-height: calc(100vh - 88px);
 
   border: 1px solid var(--c-border);
@@ -2157,10 +2140,7 @@ const goToTab = (tab) => {
   box-shadow: var(--sh-pop);
 }
 
-/* Quasar insets a bottom-position dialog by 24px once the viewport is wide enough,
-   which on a tablet turns the address sheet into a floating card with rounded top
-   corners and a gap either side. The panel was full-bleed at every sheet width
-   before the QDialog conversion, so this restores that. */
+/* Removes Quasar's 24px inset on wide bottom sheets so the address sheet stays full-bleed on tablets. */
 .address-sheet-dialog .q-dialog__inner {
   padding: 0;
 }
@@ -2170,9 +2150,7 @@ const goToTab = (tab) => {
   max-width: 100%;
 }
 
-/* QMenu teleports to <body>, so this cannot live in the scoped block above.
-   Carries over the look the panels used to draw themselves; placement, outside-click,
-   Escape and focus handling now come from QMenu itself. */
+/* Unscoped because QMenu teleports to the body, carrying the look the panels used to draw themselves. */
 .header-menu {
   max-width: calc(100vw - 32px);
   overflow: hidden;
@@ -2186,19 +2164,12 @@ const goToTab = (tab) => {
   font-family: 'Roboto', Arial, sans-serif;
 }
 
-/* Unscoped on purpose: QDialog teleports to <body> and its inner gets no scoped
-   attribute, so a :deep() rule from the scoped block above never matches it. Keyed on
-   .mobile-menu-dialog so this touches only this panel.
-
-   Quasar's default 24px inset is what pushed the full-height card 24px below the fold —
-   a gap at the top and the same amount clipped off the bottom. */
+/* Unscoped because QDialog teleports to the body where scoped styles cannot reach, keyed on .mobile-menu-dialog to touch only this panel. */
 .mobile-menu-dialog .q-dialog__inner {
-  /* Quasar's default 24px inset pushed the full-height card below the fold: a gap at the
-     top and the same amount clipped off the bottom. */
+  /* Removes Quasar's 24px inset, which pushed the full-height card below the fold. */
   padding: 0;
 
-  /* stretch, so the panel fills the inner's height rather than being centred inside it
-     at its own intrinsic height. */
+  /* stretch, so the panel fills the inner's height instead of centring at its own height. */
   align-items: stretch;
 }
 
@@ -2206,18 +2177,3 @@ const goToTab = (tab) => {
   border-radius: 0;
 }
 </style>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -4,16 +4,16 @@
       <img src="@/assets/tindahan-mobile.png" alt="Tindahan Logo" class="footer-logo" />
 
       <nav class="footer-links">
-        <a href="#" class="footer-link" @click.prevent="showContactSupport = true">Contact Support</a>
+        <a href="#" class="footer-link" @click.prevent="showContactSupport = true">{{ t('Contact Support') }}</a>
         <span class="footer-divider" aria-hidden="true" />
-        <a href="#" class="footer-link" @click.prevent="showPrivacy = true">Privacy Policy</a>
+        <a href="#" class="footer-link" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>
         <span class="footer-divider" aria-hidden="true" />
-        <a href="#" class="footer-link" @click.prevent="showTerms = true">Terms &amp; Conditions</a>
+        <a href="#" class="footer-link" @click.prevent="showTerms = true">{{ t('Terms & Conditions') }}</a>
       </nav>
     </div>
 
     <div class="footer-bottom">
-      <p>&copy; {{ currentYear }} Tindahan App. All rights reserved.</p>
+      <p>&copy; {{ currentYear }} {{ t('Tindahan App. All rights reserved.') }}</p>
     </div>
 
     <TermsModal v-model="showTerms" />
@@ -23,10 +23,14 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed } from 'vue'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
+
+const { t } = useConsumerLanguage()
 
 const showTerms = ref(false)
 const showPrivacy = ref(false)
@@ -97,12 +101,11 @@ const currentYear = computed(() => new Date().getFullYear())
 .footer-bottom {
   border-top: 1px solid var(--c-surface);
 
-  padding: 14px 24px;
+  padding: 10px 24px;
 }
 
 .footer-bottom p {
   max-width: 1200px;
-
   margin: 0 auto;
 
   font-size: var(--fs-xs);

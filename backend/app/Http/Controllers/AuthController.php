@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApprovalStatus;
+use App\Models\Notification;
 use App\Models\OtpCode;
 use App\Models\Store;
 use App\Models\User;
@@ -32,6 +33,8 @@ class AuthController extends Controller
             'full_name'    => 'required|string|max:100',
             'email'        => 'required|email|max:100',
             'phone_number'    => 'required|string|max:15',
+            // A real calendar date before today, and no earlier than 1900, sent as YYYY-MM-DD.
+            'birthday'        => 'required|date_format:Y-m-d|before:today|after_or_equal:1900-01-01',
             'password'        => 'required|string|min:8|confirmed',
             'profile_picture' => 'nullable|image|max:2048',
         ]);
@@ -39,29 +42,38 @@ class AuthController extends Controller
         try {
             \Illuminate\Support\Facades\DB::beginTransaction();
 
-            $existingUser = User::where('email', $validated['email'])
-                ->orWhere('phone_number', $validated['phone_number'])
-                ->first();
+            // Deleted accounts are included, so their email or phone is refused cleanly instead of failing on the unique email column.
+            $matches = User::withTrashed()
+                ->where(fn ($query) => $query->where('email', $validated['email'])->orWhere('phone_number', $validated['phone_number']))
+                ->get();
+
+            // Only a single unfinished consumer sign-up can be replaced by signing up again; a real account, or two sign-ups split across the email and phone, is refused.
+            $replaceable = $matches->count() === 1
+                && $matches->first()->account_status === 'pending'
+                && $matches->first()->role === 'Consumer';
+
+            if ($matches->isNotEmpty() && !$replaceable) {
+                throw ValidationException::withMessages([
+                    'email' => ['The email or phone number has already been taken.'],
+                ]);
+            }
+
+            $existingUser = $matches->first();
 
             if ($existingUser) {
-                if ($existingUser->account_status !== 'inactive') {
-                    throw ValidationException::withMessages([
-                        'email' => ['The email or phone number has already been taken.'],
-                    ]);
-                }
-
                 $photoPath = $existingUser->profile_picture;
                 if ($request->hasFile('profile_picture')) {
                     $photoPath = $request->file('profile_picture')->store('profiles', 'public');
                 }
 
-                // Overwrite the existing inactive user
+                // Overwrite the unfinished sign-up
                 $existingUser->update([
                     'full_name'       => $validated['full_name'],
                     'email'           => $validated['email'],
                     'phone_number'    => $validated['phone_number'],
                     'password_hash'   => Hash::make($validated['password']),
                     'profile_picture' => $photoPath,
+                    'birthday'        => $validated['birthday'],
                 ]);
                 $user = $existingUser;
             } else {
@@ -76,7 +88,8 @@ class AuthController extends Controller
                     'email'           => $validated['email'],
                     'phone_number'    => $validated['phone_number'],
                     'password_hash'   => Hash::make($validated['password']),
-                    'account_status'  => 'inactive',
+                    'birthday'        => $validated['birthday'],
+                    'account_status'  => 'pending',
                     'profile_picture' => $photoPath,
                 ]);
             }
@@ -104,6 +117,43 @@ class AuthController extends Controller
         }
     }
 
+    /** Texts a code to a would-be vendor's phone before any account exists, refusing an email or phone that is already registered. */
+    public function sendVendorOtp(Request $request)
+    {
+        $validated = $request->validate([
+            'email'        => 'required|email|max:100',
+            'phone_number' => ['required', 'string', 'regex:/^09\d{9}$/'],
+        ]);
+
+        // Deleted accounts are included, the same as consumer sign-up, so no email or phone is ever reused.
+        $taken = User::withTrashed()
+            ->where(fn ($query) => $query->where('email', $validated['email'])->orWhere('phone_number', $validated['phone_number']))
+            ->first();
+
+        if ($taken) {
+            $field = $taken->email === $validated['email'] ? 'email' : 'phone_number';
+
+            throw ValidationException::withMessages([
+                $field => [$field === 'email' ? 'This email is already registered.' : 'This phone number is already registered.'],
+            ]);
+        }
+
+        try {
+            $this->sendPhoneOtp($validated['phone_number'], 'registration');
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'We could not send a code right now. Please try again.',
+            ], 503);
+        }
+
+        return response()->json([
+            'message'  => 'A verification code has been sent.',
+            'otp_sent' => true,
+        ]);
+    }
+
     /**
      * Register a new Vendor user with store and pending approval.
      *
@@ -114,7 +164,8 @@ class AuthController extends Controller
         $validated = $request->validate([
             'full_name'     => 'required|string|max:100',
             'email'         => 'required|email|max:100|unique:users,email',
-            'phone_number'  => 'required|string|max:15',
+            'phone_number'  => ['required', 'string', 'regex:/^09\d{9}$/'],
+            'verification_token' => 'required|string',
             'password'      => 'required|string|min:8|confirmed',
             'store_name'    => 'required|string|max:150',
             'store_picture' => 'required|image|max:10240',
@@ -125,6 +176,27 @@ class AuthController extends Controller
             'longitude'     => 'required|numeric|between:-180,180',
             'address'       => 'nullable|string|max:500',
         ]);
+
+        // The phone must have been verified in the last 30 minutes by this same browser, proven by the one-time token the verification returned.
+        $verifiedCode = OtpCode::where('phone_number', $validated['phone_number'])
+            ->where('type', 'registration')
+            ->whereNotNull('verified_at')
+            ->where('verified_at', '>=', now()->subMinutes(30))
+            ->get()
+            ->first(fn ($otp) => Hash::check($validated['verification_token'], $otp->code));
+
+        if (!$verifiedCode) {
+            throw ValidationException::withMessages([
+                'phone_number' => ['Please verify your phone number again before registering.'],
+            ]);
+        }
+
+        // Same rule as the code request, so a phone already on another account can't be reused.
+        if (User::withTrashed()->where('phone_number', $validated['phone_number'])->exists()) {
+            throw ValidationException::withMessages([
+                'phone_number' => ['This phone number is already registered.'],
+            ]);
+        }
 
         // 1. Create the vendor user
         $user = User::create([
@@ -167,6 +239,23 @@ class AuthController extends Controller
             'rejection_reason' => null,
             'reviewed_at'      => null,
         ]);
+
+        // Lets every admin know there's a new store to review; the bell on the admin pages shows it.
+        // The account and store are already saved, so a failed notice is logged rather than failing the sign-up.
+        try {
+            User::where('role', 'Admin')->pluck('user_id')->each(function ($adminId) use ($store, $user) {
+                Notification::create([
+                    'user_id' => $adminId,
+                    'title'   => 'New store application',
+                    'message' => "{$store->store_name} by {$user->full_name} is waiting for your review.",
+                ]);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        // Uses up the verification so it can't register a second vendor.
+        $verifiedCode->delete();
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
@@ -227,15 +316,12 @@ class AuthController extends Controller
             'verified_at' => now(),
         ]);
 
-        // Find the user using the verified phone number.
-        $user = User::where('phone_number', $request->phone_number)->first();
+        // A registration code only ever activates an unfinished sign-up, so it can never reactivate an account an admin set inactive.
+        $user = $request->type === 'registration'
+            ? User::where('phone_number', $request->phone_number)->where('account_status', 'pending')->first()
+            : User::where('phone_number', $request->phone_number)->first();
 
-        // Activate an inactive account after successful registration verification.
-        if (
-            $user &&
-            $request->type === 'registration' &&
-            $user->account_status === 'inactive'
-        ) {
+        if ($user && $request->type === 'registration') {
             $user->update([
                 'account_status' => 'active',
             ]);
@@ -245,6 +331,13 @@ class AuthController extends Controller
             'message' => 'Verification successful.',
             'verified' => true,
         ];
+
+        // A verified registration code is swapped for a one-time token, so only the browser that verified the phone can register a vendor with it.
+        if ($request->type === 'registration') {
+            $verificationToken = Str::random(64);
+            $otp->update(['code' => Hash::make($verificationToken)]);
+            $responseData['verification_token'] = $verificationToken;
+        }
 
         // Password reset flow.
         if ($request->type === 'password_reset') {
@@ -278,12 +371,22 @@ class AuthController extends Controller
             'type'         => 'required|in:registration,password_reset',
         ]);
 
-        $user = User::where('phone_number', $request->phone_number)->first();
+        // A sign-up code is only sent to an unfinished sign-up, so it can't be used to reactivate an account an admin set inactive.
+        $user = $request->type === 'registration'
+            ? User::where('phone_number', $request->phone_number)->where('account_status', 'pending')->first()
+            : User::where('phone_number', $request->phone_number)->first();
 
         if (!$user) {
             return response()->json([
                 'message' => 'Phone number not found.',
             ], 404);
+        }
+
+        // Same rule as the forgot-password request, so a resend can't reach an account that was suspended or deleted.
+        if ($request->type === 'password_reset' && in_array($user->account_status, ['deleted', 'suspended'])) {
+            return response()->json([
+                'message' => 'This account is no longer active. Please contact support.',
+            ], 403);
         }
 
         $this->generateOtp($user, $request->type);
@@ -414,11 +517,22 @@ class AuthController extends Controller
                 ], 403);
             }
 
+            // A sign-up that never verified its number is sent back to verify it rather than to support.
+            if ($user->account_status === 'pending') {
+                return response()->json([
+                    'message' => 'Please verify your mobile number to finish signing up.',
+                    'contact_support' => true,
+                    'account_status' => 'pending',
+                ], 403);
+            }
+
             if ($user->account_status === 'inactive') {
                 return response()->json([
-                    'message' => 'Your account is inactive. Please complete registration or contact support.',
+                    'message' => 'Your account is inactive. Please contact support.',
                     'contact_support' => true,
-                    'account_status' => 'inactive'
+                    'account_status' => 'inactive',
+                    // Who set the account inactive, shown as the login page's notice.
+                    'notice' => $user->suspension_message,
                 ], 403);
             }
 
@@ -509,12 +623,7 @@ class AuthController extends Controller
                 if ($vendorStatus === 'rejected' && $approval->admin_id) {
                     $admin = User::find($approval->admin_id);
                     if ($admin) {
-                        $names = explode(' ', trim($admin->full_name));
-                        $initials = '';
-                        foreach($names as $n) {
-                            if(!empty($n)) $initials .= strtoupper($n[0]);
-                        }
-                        $rejectedBy = substr($initials, 0, 2);
+                        $rejectedBy = trim($admin->full_name);
                     }
                 }
             }
@@ -526,46 +635,47 @@ class AuthController extends Controller
         return response()->json($responseData);
     }
 
-    /**
-     * Generate a mock OTP code and store it.
-     *
-     * In production, replace the mock code with a random 6-digit
-     * number and send it via an SMS gateway (Semaphore, Twilio, etc.).
-     */
+    /** Sends a fresh code to a user's phone, where a registration code isn't tied to a user id because the account may not be active yet. */
     private function generateOtp(User $user, string $type): void
     {
-        // Invalidate any previous unverified OTP
-        // for this phone number and OTP type.
-        OtpCode::where('phone_number', $user->phone_number)
+        $this->sendPhoneOtp($user->phone_number, $type, $type === 'registration' ? null : $user->user_id);
+    }
+
+    /** Replaces any unverified code of this type for the phone with a new random one, stores only its hash, and texts it through Semaphore. */
+    private function sendPhoneOtp(string $phoneNumber, string $type, ?int $userId = null): void
+    {
+        OtpCode::where('phone_number', $phoneNumber)
             ->where('type', $type)
             ->whereNull('verified_at')
             ->delete();
 
-        // Generate a random 6-digit OTP.
-        $code = str_pad(
-            random_int(0, 999999),
-            6,
-            '0',
-            STR_PAD_LEFT
-        );
+        // TEMPORARY LOCAL DEVELOPMENT OTP BYPASS
+        // Accept the value of SEMAPHORE_FAKE_CODE (e.g., 123456) while testing against localhost.
+        // REMOVE/REVERT THIS BEFORE RETURNING TO THE CLOUD DATABASE AND REAL OTP SERVICE.
+        // The bypass only works if APP_ENV=local, ensuring it can never reach the live server.
 
-        // Save the OTP securely as a hash.
+        // remove this if going to use OTP
+        // $fakeCode = app()->environment('local') ? config('services.semaphore.fake_code') : null;
+
+        // otp static
+        $code = '012345';
+
+        // otp sending live
+        // $code = $fakeCode ? (string) $fakeCode : str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+
         OtpCode::create([
-            'user_id' => $type === 'registration'
-                ? null
-                : $user->user_id,
-
-            'phone_number' => $user->phone_number,
-            'code' => Hash::make($code),
-            'type' => $type,
-            'expires_at' => now()->addMinutes(10),
+            'user_id'      => $userId,
+            'phone_number' => $phoneNumber,
+            'code'         => Hash::make($code),
+            'type'         => $type,
+            'expires_at'   => now()->addMinutes(10),
         ]);
 
-        // Send the plaintext OTP through Semaphore.
-        $this->semaphoreService->sendOtp(
-            $user->phone_number,
-            $code
-        );
+        // Uncomment this if going to use the OTP
+        // if (!$fakeCode) {
+        //     $this->semaphoreService->sendOtp($phoneNumber, $code);
+        // }
     }
 
 }

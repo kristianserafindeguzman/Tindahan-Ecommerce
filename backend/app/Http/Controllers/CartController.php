@@ -211,6 +211,21 @@ class CartController extends Controller
             // Load relationships for the response
             $order->load('items.inventory', 'store');
 
+            // The store owner hears about every new order, and a failed notice never undoes the order itself.
+            try {
+                $ownerId = optional($order->store)->owner_id;
+                if ($ownerId) {
+                    \App\Models\Notification::create([
+                        'user_id' => $ownerId,
+                        'order_id' => $order->order_id,
+                        'title' => 'New Order',
+                        'message' => "Order #{$order->order_id} was placed for ₱" . number_format($totalAmount, 2) . '.',
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('New order notification failed: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'message' => 'Order placed successfully.',
                 'order' => $order,

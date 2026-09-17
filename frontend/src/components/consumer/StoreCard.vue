@@ -12,7 +12,7 @@
 
       <span class="store-status-tag" :class="{ 'store-status-tag-closed': !store.isOpen }">
         <span class="status-dot" :class="{ 'status-dot-closed': !store.isOpen }" />
-        {{ store.isOpen ? 'Open' : 'Closed' }}
+        {{ store.isOpen ? t('Open') : t('Closed') }}
       </span>
     </div>
     <q-card-section class="store-card-body">
@@ -23,7 +23,7 @@
         </template>
       </div>
       <div class="store-card-hours" :class="{ 'store-card-hours-closed': !store.isOpen }">
-        {{ store.scheduleStatusText || (store.isOpen ? `Open until ${store.closesAt}` : 'Closed now') }}
+        {{ storeStatus(store) }}
       </div>
       <div v-if="storeCardDistanceText" class="store-card-distance">
         <q-icon name="o_location_on" size="13px" />
@@ -34,10 +34,14 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { splitHighlightParts } from '@/utils/textHighlight'
 import { formatDistance } from '@/utils/distance'
+
+const { t, storeStatus } = useConsumerLanguage()
 
 const router = useRouter()
 

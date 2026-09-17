@@ -35,8 +35,9 @@ class AdminController extends Controller
      */
     public function pendingVendors(Request $request)
     {
+        // Approved applications are listed too, so the Approvals page can show all three outcomes.
         $query = ApprovalStatus::with(['store.owner'])
-            ->whereIn('status', ['pending', 'rejected']);
+            ->whereIn('status', ['pending', 'approved', 'rejected']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -59,6 +60,8 @@ class AdminController extends Controller
                 'phone'       => $owner?->phone_number,
                 'status'      => $approval->status,
                 'applied_at'  => $owner?->created_at,
+                'reviewed_at' => $approval->reviewed_at,
+                'rejection_reason' => $approval->rejection_reason,
                 'store'       => [
                     'store_name' => $store?->store_name,
                     'store_picture_url' => $store?->store_picture_url,
@@ -234,6 +237,7 @@ class AdminController extends Controller
                 'store_id'         => $store?->store_id,
                 'store_name'       => $store?->store_name,
                 'store_picture_url' => $store?->store_picture_url,
+                'address'          => $store?->address,
                 'operating_days'   => $store?->operating_days,
                 'opening_time'     => $store?->opening_time,
                 'closing_time'     => $store?->closing_time,
@@ -245,6 +249,27 @@ class AdminController extends Controller
         });
 
         return response()->json($vendors);
+    }
+
+    /**
+     * Get products for a specific vendor's store.
+     *
+     * GET /api/admin/vendors/{storeId}/products
+     */
+    public function getVendorProducts($storeId)
+    {
+        $store = \App\Models\Store::findOrFail($storeId);
+        
+        $products = \App\Models\Inventory::where('store_id', $storeId)
+            ->with('category')
+            ->where('status', '!=', 'archived')
+            ->get()
+            ->each->setAppends(['image_url', 'available_quantity']);
+
+        return response()->json([
+            'store' => $store,
+            'products' => $products,
+        ]);
     }
 
     /**
@@ -323,6 +348,12 @@ class AdminController extends Controller
         if ($request->account_status === 'suspended') {
             $reason = $request->suspension_message ?? 'Violation of terms';
             $suspensionMessage = "Suspended by {$admin->full_name}.\nReason: {$reason}";
+        } elseif ($request->account_status === 'inactive') {
+            // Recorded so the login page can tell the user who deactivated the account, the same as a suspension notice.
+            $suspensionMessage = "Set to inactive by {$admin->full_name}.";
+            if ($request->suspension_message) {
+                $suspensionMessage .= "\nReason: {$request->suspension_message}";
+            }
         }
 
         $vendor->update([
@@ -462,6 +493,12 @@ class AdminController extends Controller
         if ($request->account_status === 'suspended') {
             $reason = $request->suspension_message ?? 'Violation of terms';
             $suspensionMessage = "Suspended by {$admin->full_name}.\nReason: {$reason}";
+        } elseif ($request->account_status === 'inactive') {
+            // Recorded so the login page can tell the user who deactivated the account, the same as a suspension notice.
+            $suspensionMessage = "Set to inactive by {$admin->full_name}.";
+            if ($request->suspension_message) {
+                $suspensionMessage .= "\nReason: {$request->suspension_message}";
+            }
         }
 
         $consumer->update([

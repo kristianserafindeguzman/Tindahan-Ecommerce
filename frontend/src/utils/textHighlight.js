@@ -1,5 +1,4 @@
-// Splits text into { text, match } parts around the first case-insensitive occurrence of query.
-// Rendered as plain text nodes (no v-html), so there's no HTML-injection risk from either input.
+// Splits text around the first case-insensitive match of the query into plain-text parts, so there is no injection risk.
 export function splitHighlightParts(text, query) {
   const value = text || ''
   const q = (query || '').trim()

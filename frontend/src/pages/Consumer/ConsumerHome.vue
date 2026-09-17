@@ -6,14 +6,30 @@
     <!-- MAIN CONTENT -->
     <div class="home-content">
 
-      <!-- HERO BANNER -->
-      <div class="hero-banner">
+      <section class="hero-banner">
+        <LanguageSwitcher header class="hero-language" />
         <div class="hero-content">
-          <h1 class="hero-title hero-title-lg">Explore sari-sari stores around you</h1>
-          <q-btn unelevated no-caps label="Show Map" class="hero-cta" @click="showMapDialog = true">
-            <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
-          </q-btn>
+          <span class="hero-eyebrow">
+            <q-icon name="o_location_on" size="14px" />
+            {{ t('Discover local stores') }}
+          </span>
+
+          <h1 class="hero-title hero-title-lg">{{ t('Explore sari-sari stores around you') }}</h1>
+
+          <p class="hero-sub">
+            {{ t('Find nearby stores, discover products, and shop from your local community.') }}
+          </p>
+
+          <div class="hero-actions">
+            <q-btn unelevated no-caps :label="t('Browse Products')" class="hero-cta" @click="router.push('/consumer/products')">
+              <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
+            </q-btn>
+            <q-btn unelevated no-caps :label="t('Show Map')" class="hero-cta hero-cta--ghost" @click="showMapDialog = true">
+              <q-icon name="o_map" size="16px" class="q-ml-xs" />
+            </q-btn>
+          </div>
         </div>
+
         <div class="hero-logo-wrap">
           <img
             src="@/assets/tindahan-logo.png"
@@ -21,10 +37,11 @@
             class="hero-logo"
           />
         </div>
-      </div>
+      </section>
+
 
       <!-- CATEGORIES -->
-      <SectionBlock title="Categories">
+      <SectionBlock :title="t('Categories')">
         <div v-if="categoriesLoading" class="categories-skeleton-row">
           <div v-for="n in 12" :key="n" class="category-skeleton-tile">
             <q-skeleton type="circle" class="category-skeleton-icon" />
@@ -45,7 +62,7 @@
       </SectionBlock>
 
       <!-- STORES NEAR YOU -->
-      <SectionBlock title="Stores near You" view-all @view-all="router.push('/consumer/stores')">
+      <SectionBlock :title="t('Stores near You')" view-all @view-all="router.push('/consumer/stores')">
         <div v-if="storesLoading" class="stores-row">
           <CardSkeleton v-for="n in 4" :key="n" variant="store" />
         </div>
@@ -55,7 +72,7 @@
       </SectionBlock>
 
       <!-- DISCOVER PRODUCTS -->
-      <SectionBlock title="Discover Products" view-all @view-all="router.push('/consumer/products')">
+      <SectionBlock :title="t('Discover Products')" view-all @view-all="router.push('/consumer/products')">
         <div v-if="productsLoading" class="products-grid">
           <CardSkeleton v-for="n in 6" :key="n" />
         </div>
@@ -67,12 +84,22 @@
           v-if="visibleDiscoverProducts.length < discoverProducts.length"
           flat
           no-caps
-          label="See More"
+          :label="t('See More')"
           class="see-more-btn"
           @click="discoverRowsShown += DISCOVER_ROWS_PER_PAGE"
         />
       </SectionBlock>
 
+      <!-- Seller call-to-action for guests only, because /vendor/register is guest-only and would bounce a signed-in consumer straight back here. -->
+      <section v-if="!isLoggedIn" class="seller-band">
+        <div class="seller-copy">
+          <h2 class="seller-title">{{ t('Own a sari-sari store?') }}</h2>
+          <p class="seller-text">{{ t('List what you stock and reach shoppers on your street.') }}</p>
+        </div>
+        <q-btn unelevated no-caps :label="t('Start selling')" class="seller-cta" @click="router.push('/vendor/register')">
+          <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
+        </q-btn>
+      </section>
     </div>
 
     <SiteFooter />
@@ -84,11 +111,14 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
+import LanguageSwitcher from '@/components/consumer/LanguageSwitcher.vue'
 import CardSkeleton from '@/components/consumer/CardSkeleton.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import SectionBlock from '@/components/consumer/SectionBlock.vue'
@@ -102,6 +132,8 @@ import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'
 import { useGridColumns } from '@/composables/useGridColumns'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -164,26 +196,24 @@ const handleAddToCart = async (product) => {
 
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to add to cart.') })
   }
 }
 
 const resultsSectionTitle = computed(() =>
-  isLoggedIn.value ? 'Recommended for You' : 'Popular Products Near You'
+  isLoggedIn.value ? t('Recommended for You') : t('Popular Products Near You')
 )
 
 // Personalization is a logged-in-only route, so guests get routed to the guest-browsable catalog instead.
 const resultsViewAllPath = computed(() => isLoggedIn.value ? '/consumer/personalize' : '/consumer/products')
 
-// No real recommendation/nearby endpoint yet — these are simple slices of the same fetched
-// catalog until personalization/geolocation exist.
+// Nearby stores are the first four entries of the store list fetched for the current address.
 const NEARBY_STORES_COUNT = 4
 const nearbyStores = computed(() => stores.value.slice(0, NEARBY_STORES_COUNT))
 
-// Both product sections show whole rows only, so they need the live column count — the
-// grid is auto-fill, so it changes continuously with width rather than at breakpoints.
+// Both product sections show whole rows only, so they read the live column count of the auto-fill grid.
 const productsGridEl = ref(null)
 const { columns: gridColumns } = useGridColumns(productsGridEl, 3)
 
@@ -248,8 +278,8 @@ const visibleDiscoverProducts = computed(() =>
   align-items: center;
   justify-content: space-between;
 
-  gap: 24px;
-  padding: 40px;
+  gap: 32px;
+  padding: 28px 32px;
   margin-bottom: 24px;
 
   border-radius: var(--r-2xl);
@@ -268,9 +298,7 @@ const visibleDiscoverProducts = computed(() =>
   animation: home-fade-up 0.5s ease both;
 }
 
-/* Hero entrance, page load only. The sections below it are handled by scroll reveal
-   (v-intersection in SectionBlock.vue) rather than a mount animation, so this keyframe
-   now has exactly one user. */
+/* Hero entrance on page load only, since the sections below use the scroll reveal in SectionBlock.vue. */
 @keyframes home-fade-up {
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: translateY(0); }
@@ -283,11 +311,89 @@ const visibleDiscoverProducts = computed(() =>
   }
 }
 
+.hero-language {
+  position: absolute;
+  top: 16px;
+  right: 32px;
+  z-index: 2;
+}
+
+.hero-language :deep(.language-header-btn) {
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .hero-content {
   position: relative;
   z-index: 1;
 
-  max-width: 640px;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 620px;
+}
+
+/* Eyebrow states the model — reserve then collect — before the headline. */
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  max-width: 100%;
+  margin-bottom: 12px;
+  padding: 5px 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--r-pill);
+
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: normal;
+}
+
+.hero-eyebrow :deep(.q-icon) {
+  flex-shrink: 0;
+}
+
+.hero-sub {
+  max-width: 46ch;
+  margin: 0 0 20px;
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hero-logo-wrap {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 300px;
+  max-width: 34%;
+  padding-top: 44px;
+}
+
+.hero-logo {
+  width: 100%;
+  height: auto;
+  max-height: 190px;
+
+  object-fit: contain;
 }
 
 .hero-title {
@@ -300,10 +406,9 @@ const visibleDiscoverProducts = computed(() =>
   color: #ffffff;
 }
 
-/* Bigger now that the subtitle is gone — the only line of copy left in the hero.
-   Display font (Poppins, loaded in index.html) — everything else on the page stays Roboto. */
+/* Display font Poppins, loaded in index.html. */
 .hero-title-lg {
-  margin: 0 0 20px;
+  margin: 0 0 12px;
 
   font-family: 'Poppins', 'Roboto', Arial, sans-serif;
   font-size: var(--fs-hero);
@@ -313,7 +418,7 @@ const visibleDiscoverProducts = computed(() =>
 }
 
 .hero-cta {
-  height: 42px;
+  height: 44px;
   padding: 0 24px;
 
   border-radius: var(--r-sm);
@@ -358,24 +463,90 @@ const visibleDiscoverProducts = computed(() =>
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
 }
 
-.hero-logo-wrap {
-  position: relative;
-  z-index: 1;
-  flex-shrink: 0;
+/* Ghost variant, since the map is the secondary path and should not compete with the white primary button. */
+.hero-cta--ghost {
+  border: 1px solid rgba(255, 255, 255, 0.55);
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: transparent;
+  color: #ffffff;
 
-  width: 220px;
-  max-width: 40%;
+  box-shadow: none;
 }
 
-.hero-logo {
-  width: 100%;
-  height: auto;
+.hero-cta--ghost:hover {
+  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
 
-  object-fit: contain;
+.hero-cta--ghost:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* SELLER BAND */
+.seller-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+  margin: 8px 0 32px;
+  padding: 26px 30px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xl);
+
+  background: var(--c-surface);
+}
+
+.seller-title {
+  margin: 0 0 4px;
+
+  font-family: 'Poppins', 'Roboto', Arial, sans-serif;
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  line-height: 1.25;
+
+  color: var(--c-text);
+}
+
+.seller-text {
+  margin: 0;
+
+  font-size: var(--fs-sm);
+  color: var(--c-muted);
+}
+
+.seller-cta {
+  flex-shrink: 0;
+  height: 44px;
+  padding: 0 22px;
+
+  border-radius: var(--r-sm);
+
+  background: var(--c-brand);
+  color: #ffffff;
+
+  font-size: var(--fs-sm);
+  font-weight: 700;
+
+  box-shadow: var(--sh-brand);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+
+.seller-cta:hover {
+  background: var(--c-brand-hover);
+  box-shadow: var(--sh-brand-hover);
+  transform: translateY(-1px);
+}
+
+.seller-cta :deep(.q-icon) {
+  transition: transform 0.2s ease;
+}
+
+.seller-cta:hover :deep(.q-icon) {
+  transform: translateX(3px);
 }
 
 /* PRODUCTS GRID */
@@ -449,8 +620,7 @@ const visibleDiscoverProducts = computed(() =>
   background: #ffffff;
 }
 
-/* QSkeleton draws the shimmer; only the geometry of the tile it stands in for
-   belongs here. */
+/* QSkeleton draws the shimmer, so only the geometry of the tile it stands in for belongs here. */
 .category-skeleton-icon {
   width: 44px;
   height: 44px;
@@ -472,30 +642,145 @@ const visibleDiscoverProducts = computed(() =>
   }
 }
 
-@media (max-width: 600px) {
-  .home-content {
-    padding: 16px;
-  }
-
+/* Keep the copy and logo balanced on smaller screens. */
+@media (max-width: 1023px) {
+  /* Stays a row, because stacking the logo above the copy added its full height to the hero, 371px on a tablet. */
   .hero-banner {
-    flex-direction: column-reverse;
-
-    padding: 28px;
-    text-align: center;
+    gap: 24px;
+    padding: 24px;
   }
 
-  .hero-title-lg {
-    font-size: var(--fs-4xl);
+  .hero-language {
+    right: 24px;
   }
 
   .hero-content {
     max-width: none;
   }
 
+  .hero-eyebrow {
+    margin-bottom: 10px;
+  }
+
+  .hero-title-lg {
+    margin-bottom: 10px;
+  }
+
+  .hero-sub {
+    margin-bottom: 16px;
+  }
+
   .hero-logo-wrap {
-    width: 160px;
-    max-width: 60%;
+    width: 220px;
+    max-width: 30%;
+  }
+}
+
+@media (max-width: 720px) {
+  .seller-band {
+    flex-direction: column;
+    align-items: flex-start;
+
+    padding: 22px;
+  }
+
+  .seller-cta {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .home-content {
+    padding: 16px;
+  }
+
+  /* Keep the logo prominent without crowding the mobile controls. */
+  .hero-banner {
+    flex-direction: column-reverse;
+    align-items: center;
+
+    gap: 8px;
+    padding: 60px 20px 20px;
+    text-align: center;
+  }
+
+  .hero-language {
+    top: 12px;
+    right: 12px;
+  }
+
+  .hero-eyebrow,
+  .hero-sub {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex: none;
+    width: 100%;
+  }
+
+  .hero-actions {
+    justify-content: center;
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  .hero-eyebrow {
+    margin-bottom: 0;
+    padding: 4px 10px;
+  }
+
+  .hero-title-lg {
+    margin-bottom: 0;
+    font-size: var(--fs-4xl);
+  }
+
+  .hero-sub {
+    display: none;
+  }
+
+  /* Keep the actions together while there is room for both labels. */
+  .hero-actions {
+    gap: 10px;
+  }
+
+  .hero-cta {
+    flex: 1;
+    padding: 0 12px;
+    font-size: var(--fs-sm);
+  }
+
+  /* QBtn wraps its label by default; these need to stay on one line to fit. */
+  .hero-cta :deep(.q-btn__content) {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  .hero-logo-wrap {
+    width: 170px;
+    max-width: 100%;
+    padding-top: 0;
+  }
+
+  .hero-logo {
+    display: block;
+    max-height: 104px;
+  }
+}
+
+@media (max-width: 400px) {
+  .hero-actions {
+    flex-direction: column;
+  }
+
+  .hero-cta {
+    flex: none;
+    width: 100%;
   }
 }
 </style>
-

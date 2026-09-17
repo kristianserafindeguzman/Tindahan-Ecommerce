@@ -41,12 +41,19 @@ class ProfileController extends Controller
 
     public function updatePersonalInfo(Request $request)
     {
-        $request->validate([
-            'full_name' => 'required|string|max:100'
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:100',
+            // Optional here, since accounts made before sign-up asked for it have none, but the same range as sign-up when given.
+            'birthday'  => 'nullable|date_format:Y-m-d|before:today|after_or_equal:1900-01-01',
         ]);
 
         $user = $request->user();
-        User::where('user_id', $user->user_id)->update(['full_name' => $request->full_name]);
+        $changes = ['full_name' => $validated['full_name']];
+        // A request without a birthday leaves the saved one alone, so it can never be erased by accident.
+        if (!empty($validated['birthday'])) {
+            $changes['birthday'] = $validated['birthday'];
+        }
+        User::where('user_id', $user->user_id)->update($changes);
 
         return response()->json(['message' => 'Personal info updated successfully']);
     }

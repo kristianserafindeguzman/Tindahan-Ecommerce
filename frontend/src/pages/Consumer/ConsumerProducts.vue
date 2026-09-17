@@ -8,16 +8,16 @@
 
       <div class="page-header-row">
         <div>
-          <h1 class="page-title">All Products</h1>
-          <p class="page-subtitle">Browse all products from sari-sari stores near you.</p>
+          <h1 class="page-title">{{ t('All Products') }}</h1>
+          <p class="page-subtitle">{{ t('Browse all products from sari-sari stores near you.') }}</p>
         </div>
 
         <div class="page-header-actions">
           <div class="sort-inline">
-            <span class="sort-label">Sort by:</span>
+            <span class="sort-label">{{ t('Sort by:') }}</span>
             <q-select
               v-model="sortBy"
-              :options="SORT_OPTIONS"
+              :options="translateOptions(SORT_OPTIONS)"
               dense
               outlined
               emit-value
@@ -37,7 +37,7 @@
             no-caps
             dense
             icon="o_tune"
-            label="Filters"
+            :label="t('Filters')"
             class="filters-toggle-btn"
             @click="filtersOpen = !filtersOpen"
           >
@@ -55,7 +55,7 @@
           :class="{ 'category-pill-active': selectedCategory === 'All' }"
           @click="selectedCategory = 'All'"
         >
-          All
+          {{ t('All') }}
         </q-chip>
         <q-chip
           v-for="category in VISIBLE_CATEGORIES"
@@ -69,7 +69,7 @@
           {{ category.label }}
         </q-chip>
         <q-chip clickable dense class="category-pill category-pill-more" @click="filtersOpen = true">
-          More
+          {{ t('More') }}
           <q-icon name="o_expand_more" size="16px" />
         </q-chip>
       </div>
@@ -85,7 +85,7 @@
           </div>
 
           <p v-if="!productsLoading && !filteredProducts.length" class="products-empty">
-            No products match your filters.
+            {{ t('No products match your filters.') }}
           </p>
         </div>
 
@@ -141,6 +141,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
@@ -157,14 +159,14 @@ import { useProducts } from '@/composables/useProducts'
 import { useCart } from '@/composables/useCart'
 import { useReveal } from '@/composables/useReveal'
 
+const { t, translateOptions } = useConsumerLanguage()
+
 const $q = useQuasar()
 
 const gridEl = ref(null)
 const { columns: gridColumns } = useGridColumns(gridEl)
 
-// Two full rows of placeholders. Derived rather than hardcoded so the block never ends
-// in a ragged part-row — the grid is auto-fill, so its column count changes continuously
-// with width, not at breakpoints.
+// Two full rows of placeholders, derived from the live column count so the block never ends in a ragged part-row.
 const SKELETON_ROWS = 2
 const skeletonCount = computed(() => gridColumns.value * SKELETON_ROWS)
 const { onReveal } = useReveal()
@@ -192,9 +194,9 @@ const handleAddToCart = async (product) => {
 
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to add to cart.') })
   }
 }
 

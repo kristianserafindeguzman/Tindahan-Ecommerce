@@ -4,7 +4,7 @@
 
       <div v-if="isSheet" class="detail-drag-handle" />
 
-      <q-btn icon="o_close" flat round dense class="close-btn" v-close-popup />
+      <q-btn icon="o_close" flat round dense class="close-btn" :aria-label="t('Close product details')" v-close-popup />
 
       <div class="detail-scroll">
 
@@ -21,7 +21,7 @@
             <q-icon v-else name="o_inventory_2" size="48px" />
 
             <span v-if="product.category" class="detail-category-tag">{{ product.category }}</span>
-            <span v-if="!product.inStock" class="detail-oos-tag">Out of Stock</span>
+            <span v-if="!product.inStock" class="detail-oos-tag">{{ t('Out of Stock') }}</span>
           </div>
 
           <div class="detail-info">
@@ -31,7 +31,7 @@
               <div class="detail-price">₱{{ displayPrice.toFixed(2) }}</div>
 
               <div class="detail-stock" :class="{ 'detail-stock-oos': !product.inStock }">
-                {{ product.inStock ? 'In Stock' : 'Out of Stock' }}
+                {{ product.inStock ? t('In Stock') : t('Out of Stock') }}
               </div>
             </div>
 
@@ -39,7 +39,7 @@
 
             <!-- VARIANTS -->
             <div v-if="hasVariants" class="variants-section">
-              <div class="variants-label">Available Sizes</div>
+              <div class="variants-label">{{ t('Available Sizes') }}</div>
               <div class="variants-list">
                 <q-btn
                   v-for="(variant, i) in product.variants"
@@ -64,12 +64,12 @@
             <!-- Desktop: in-flow with the rest of the product info. -->
             <div v-if="!isSheet" class="cart-action-row">
               <div v-if="product.inStock" class="quantity-row">
-                <span class="quantity-label">Quantity</span>
+                <span class="quantity-label">{{ t('Quantity') }}</span>
                 <div class="stepper-wrapper">
                   <div class="quantity-stepper">
-                    <q-btn flat dense :ripple="false" icon="o_remove" class="stepper-btn" :disable="quantity <= 1" aria-label="Decrease quantity" @click="quantity--" />
+                    <q-btn flat dense :ripple="false" icon="o_remove" class="stepper-btn" :disable="quantity <= 1" :aria-label="t('Decrease quantity')" @click="quantity--" />
                     <span class="stepper-value">{{ quantity }}</span>
-                    <q-btn flat dense :ripple="false" icon="o_add" class="stepper-btn" :disable="quantity >= maxQuantity" aria-label="Increase quantity" @click="quantity++" />
+                    <q-btn flat dense :ripple="false" icon="o_add" class="stepper-btn" :disable="quantity >= maxQuantity" :aria-label="t('Increase quantity')" @click="quantity++" />
                   </div>
                 </div>
               </div>
@@ -80,7 +80,7 @@
                 icon="o_shopping_cart"
                 :disable="!product.inStock"
                 :loading="adding"
-                label="Add to Cart"
+                :label="t('Add to Cart')"
                 class="add-to-cart-btn"
                 @click="handleAddToCart"
               />
@@ -91,13 +91,13 @@
 
         <!-- STORE INFO -->
         <div v-if="store" class="store-section">
-          <div class="store-section-label">About this Store</div>
+          <div class="store-section-label">{{ t('About this Store') }}</div>
 
           <div class="store-row" v-close-popup @click="router.push(`/consumer/stores/${store.slug || store.id}`)">
             <div class="store-row-info">
               <div class="store-row-name">{{ store.name }}</div>
               <div class="store-row-status" :class="{ 'store-row-status-closed': !store.isOpen }">
-                {{ store.scheduleStatusText || (store.isOpen ? `Open until ${store.closesAt}` : 'Closed now') }}
+                {{ storeStatus(store) }}
               </div>
               <div v-if="storeAddressText" class="store-row-address">
                 <q-icon name="o_location_on" size="12px" />
@@ -105,7 +105,7 @@
               </div>
             </div>
             <div class="store-row-link">
-              View Store
+              {{ t('View Store') }}
               <q-icon name="o_chevron_right" size="16px" />
             </div>
           </div>
@@ -116,9 +116,9 @@
           <div v-if="product.inStock" class="quantity-row">
             <div class="stepper-wrapper">
               <div class="quantity-stepper">
-                <q-btn flat dense :ripple="false" icon="o_remove" class="stepper-btn" :disable="quantity <= 1" aria-label="Decrease quantity" @click="quantity--" />
+                <q-btn flat dense :ripple="false" icon="o_remove" class="stepper-btn" :disable="quantity <= 1" :aria-label="t('Decrease quantity')" @click="quantity--" />
                 <span class="stepper-value">{{ quantity }}</span>
-                <q-btn flat dense :ripple="false" icon="o_add" class="stepper-btn" :disable="quantity >= maxQuantity" aria-label="Increase quantity" @click="quantity++" />
+                <q-btn flat dense :ripple="false" icon="o_add" class="stepper-btn" :disable="quantity >= maxQuantity" :aria-label="t('Increase quantity')" @click="quantity++" />
               </div>
             </div>
           </div>
@@ -129,7 +129,7 @@
             icon="o_shopping_cart"
             :disable="!product.inStock"
             :loading="adding"
-            label="Add to Cart"
+            :label="t('Add to Cart')"
             class="add-to-cart-btn"
             @click="handleAddToCart"
           />
@@ -142,12 +142,16 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { useStores } from '@/composables/useStores'
 import { formatDistance } from '@/utils/distance'
 import { useCart } from '@/composables/useCart'
+
+const { t, storeStatus } = useConsumerLanguage()
 
 const props = defineProps({
   modelValue: Boolean,
@@ -203,8 +207,7 @@ const displayPrice = computed(() =>
   selectedVariant.value ? Number(selectedVariant.value.price) : props.product.price
 )
 
-// ?? not || : a sold-out product reports availableQuantity 0, which || would fall
-// through to the 99 meant only for products that omit the field entirely.
+// ?? rather than ||, so a sold-out product's availableQuantity of 0 is not replaced by the 99 meant for a missing field.
 const maxQuantity = computed(() =>
   selectedVariant.value ? selectedVariant.value.quantity : (props.product.availableQuantity ?? 99)
 )
@@ -232,9 +235,9 @@ const handleAddToCart = async () => {
   adding.value = true
   try {
     await addToCart(props.product.id, quantity.value)
-    $q.notify({ type: 'positive', message: `${props.product.name} added to cart.` })
+    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: props.product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to add to cart.') })
   } finally {
     adding.value = false
   }
@@ -435,9 +438,7 @@ const handleAddToCart = async () => {
   gap: 8px;
 }
 
-/* QBtn ships min-width, its own padding and a rectangle radius; these restore the
-   pill the chip row is built from. Quasar marks a disabled button with .disabled
-   (not :disabled), so the hover guards below key off that. */
+/* Restores the chip row's pill shape over QBtn's own min-width, padding and radius, with hover guards keyed off Quasar's .disabled class. */
 .variant-chip {
   padding: 5px 14px;
   min-height: auto;
@@ -768,5 +769,3 @@ const handleAddToCart = async () => {
   flex: 1;
 }
 </style>
-
-

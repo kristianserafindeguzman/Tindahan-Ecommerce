@@ -1,27 +1,27 @@
 <template>
-  <q-page class="storefront-page" :style="showActionsBar ? { paddingBottom: actionsBarHeight + 'px' } : null">
+  <q-page class="storefront-page" :style="showActionsBar ? { paddingBottom: `calc(${actionsBarHeight}px + var(--bottom-nav-h))` } : null">
     <SiteHeader />
 
     <div v-if="order" class="page-content">
 
       <span class="back-link" @click="router.push('/consumer/orders')">
         <q-icon name="o_arrow_back" size="15px" />
-        Back to Orders
+        {{ t('Back to Orders') }}
       </span>
 
-      <h1 class="page-title">Order #{{ order.order_id }}</h1>
+      <h1 class="page-title">{{ t('Order #') }}{{ order.order_id }}</h1>
 
       <div class="order-layout">
 
         <div class="order-main">
 
           <!-- STATUS -->
-          <div class="status-card">
+          <div class="status-card" :class="statusCardClass">
             <div class="status-card-top">
-              <div class="status-label">Order Status</div>
-              <div v-if="!['picked_up', 'cancelled'].includes(order.status)" class="status-expected">Expected Today</div>
+              <div class="status-label">{{ t('Order Status') }}</div>
+              <div v-if="!['picked_up', 'cancelled'].includes(order.status)" class="status-expected">{{ t('Expected Today') }}</div>
             </div>
-            <div class="status-title" :class="statusTitleClass">{{ statusTitle }}</div>
+            <div class="status-title" :class="statusTitleClass">{{ t(statusTitle) }}</div>
             <p class="status-desc">{{ statusDescription }}</p>
 
             <q-separator class="card-divider" />
@@ -29,10 +29,16 @@
             <div v-if="order.status !== 'cancelled'" class="status-steps" :class="{ 'status-steps-done': order.status === 'picked_up' }">
               <template v-for="(step, i) in statusSteps" :key="step.key">
                 <div class="status-step">
-                  <div class="status-step-circle" :class="{ 'status-step-circle-active': isStatusActive(step.key) }">
+                  <div
+                    class="status-step-circle"
+                    :class="{
+                      'status-step-circle-done': isStatusActive(step.key) && !isStatusCurrent(step.key),
+                      'status-step-circle-current': isStatusCurrent(step.key)
+                    }"
+                  >
                     <q-icon :name="step.icon" size="16px" />
                   </div>
-                  <div class="status-step-label" :class="{ 'status-step-label-active': isStatusActive(step.key) }">{{ step.label }}</div>
+                  <div class="status-step-label" :class="{ 'status-step-label-active': isStatusActive(step.key) }">{{ t(step.label) }}</div>
                 </div>
                 <div
                   v-if="i < statusSteps.length - 1"
@@ -48,8 +54,8 @@
             <div v-if="order.status === 'cancelled'" class="cancellation-note">
               <q-icon name="o_error_outline" size="16px" />
               <div>
-                <div class="cancellation-note-title">Cancellation Reason</div>
-                <div class="cancellation-note-text">{{ order.cancellation_reason || 'No reason provided.' }}</div>
+                <div class="cancellation-note-title">{{ t('Cancellation Reason') }}</div>
+                <div class="cancellation-note-text">{{ order.cancellation_reason || t('No reason provided.') }}</div>
               </div>
             </div>
           </div>
@@ -66,14 +72,14 @@
 
             <div class="order-meta-row">
               <div>
-                <div class="order-meta-label">Pickup Time</div>
+                <div class="order-meta-label">{{ t('Pickup Time') }}</div>
                 <div class="order-meta-value">
                   <q-icon name="o_schedule" size="13px" />
-                  ASAP (10 - 15 mins)
+                  {{ t('ASAP (10 - 15 mins)') }}
                 </div>
               </div>
               <div class="order-meta-placed">
-                <div class="order-meta-label">Order Placed</div>
+                <div class="order-meta-label">{{ t('Order Placed') }}</div>
                 <div class="order-meta-value">{{ formatDate(order.created_at) }}</div>
               </div>
             </div>
@@ -87,18 +93,18 @@
                 unelevated
                 no-caps
                 icon="o_cancel"
-                label="Cancel Order"
+                :label="t('Cancel Order')"
                 class="cancel-order-btn"
                 :disable="order.status !== 'placed'"
                 @click="showCancelDialog = true"
               >
-                <q-tooltip v-if="order.status !== 'placed'">Cancellation is no longer allowed at this stage.</q-tooltip>
+                <q-tooltip v-if="order.status !== 'placed'">{{ t('Cancellation is no longer allowed at this stage.') }}</q-tooltip>
               </q-btn>
               <q-btn
                 unelevated
                 no-caps
                 icon="o_directions"
-                label="Get Directions"
+                :label="t('Get Directions')"
                 class="get-directions-btn"
                 :disable="!hasDirections"
                 @click="openDirections"
@@ -110,7 +116,7 @@
 
         <div class="order-summary-col">
           <aside class="order-summary">
-            <div class="summary-title">Order Summary</div>
+            <div class="summary-title">{{ t('Order Summary') }}</div>
             <div class="summary-store">{{ order.store?.store_name }}</div>
 
             <div v-for="item in order.items" :key="item.order_item_id" class="summary-item-row">
@@ -120,7 +126,7 @@
               </div>
               <div class="summary-item-info">
                 <div class="summary-item-name">{{ item.inventory?.product_name || 'Product' }}</div>
-                <div class="summary-item-qty">Qty: {{ item.quantity }}</div>
+                <div class="summary-item-qty">{{ t('Qty:') }} {{ item.quantity }}</div>
               </div>
               <div class="summary-item-price">₱{{ formatNumber(item.subtotal) }}</div>
             </div>
@@ -128,12 +134,12 @@
             <q-separator class="summary-separator" />
 
             <div class="summary-row summary-total">
-              <span>Total</span>
+              <span>{{ t('Total') }}</span>
               <span>₱{{ formatNumber(order.total_amount) }}</span>
             </div>
           </aside>
 
-          <q-btn unelevated no-caps icon="o_receipt_long" label="View Receipt" class="view-receipt-btn" @click="showReceiptDialog = true" />
+          <q-btn unelevated no-caps icon="o_receipt_long" :label="t('View Receipt')" class="view-receipt-btn" @click="showReceiptDialog = true" />
         </div>
 
       </div>
@@ -145,18 +151,18 @@
           unelevated
           no-caps
           icon="o_cancel"
-          label="Cancel Order"
+          :label="t('Cancel Order')"
           class="cancel-order-btn"
           :disable="order.status !== 'placed'"
           @click="showCancelDialog = true"
         >
-          <q-tooltip v-if="order.status !== 'placed'">Cancellation is no longer allowed at this stage.</q-tooltip>
+          <q-tooltip v-if="order.status !== 'placed'">{{ t('Cancellation is no longer allowed at this stage.') }}</q-tooltip>
         </q-btn>
         <q-btn
           unelevated
           no-caps
           icon="o_directions"
-          label="Get Directions"
+          :label="t('Get Directions')"
           class="get-directions-btn"
           :disable="!hasDirections"
           @click="openDirections"
@@ -167,7 +173,7 @@
 
     <div v-else class="order-loading">
       <q-spinner size="32px" />
-      <p class="order-loading-text">Loading order…</p>
+      <p class="order-loading-text">{{ t('Loading order…') }}</p>
     </div>
 
     <SiteFooter />
@@ -176,11 +182,11 @@
       <q-card class="cancel-dialog-card" :class="{ 'cancel-dialog-card-sheet': $q.screen.lt.sm }">
         <div v-if="$q.screen.lt.sm" class="cancel-dialog-drag-handle" />
 
-        <q-btn flat round dense icon="close" class="cancel-dialog-close-btn" v-close-popup />
+        <q-btn flat round dense icon="close" class="cancel-dialog-close-btn" :aria-label="t('Close')" v-close-popup />
 
         <div class="cancel-dialog-scroll">
-          <div class="cancel-dialog-title">Cancel Order?</div>
-          <p class="cancel-dialog-text">Please select a reason for cancelling your order.</p>
+          <div class="cancel-dialog-title">{{ t('Cancel Order?') }}</div>
+          <p class="cancel-dialog-text">{{ t('Please select a reason for cancelling your order.') }}</p>
 
           <q-separator class="card-divider" />
 
@@ -193,7 +199,7 @@
               @click="selectedCancelReason = reason"
             >
               <span class="cancel-reason-radio" />
-              <span class="cancel-reason-label">{{ reason }}</span>
+              <span class="cancel-reason-label">{{ t(reason) }}</span>
             </div>
           </div>
 
@@ -201,7 +207,7 @@
             v-if="selectedCancelReason === 'Other'"
             v-model="customCancelReason"
             type="textarea"
-            placeholder="Tell us more…"
+            :placeholder="t('Tell us more…')"
             outlined
             autogrow
             class="cancel-dialog-input"
@@ -209,11 +215,11 @@
         </div>
 
         <div class="cancel-dialog-actions">
-          <q-btn unelevated no-caps flat label="Keep Order" class="keep-order-btn" v-close-popup />
+          <q-btn unelevated no-caps flat :label="t('Keep Order')" class="keep-order-btn" v-close-popup />
           <q-btn
             unelevated
             no-caps
-            label="Cancel Order"
+            :label="t('Cancel Order')"
             class="confirm-cancel-btn"
             :disable="!isCancelReasonValid"
             :loading="isCancelling"
@@ -226,7 +232,7 @@
     <q-dialog v-model="showReceiptDialog">
       <div class="receipt-dialog-wrap">
         <q-card class="receipt-dialog-card">
-          <q-btn flat round dense icon="close" class="receipt-close-btn" v-close-popup />
+          <q-btn flat round dense icon="close" class="receipt-close-btn" :aria-label="t('Close receipt')" v-close-popup />
 
           <div class="receipt-icon-circle">
             <q-icon name="o_storefront" size="26px" />
@@ -239,7 +245,7 @@
           </div>
 
           <div class="receipt-ref-row">
-            <span class="receipt-ref-badge">ORDER <strong class="receipt-ref-number">#{{ order?.order_id }}</strong></span>
+            <span class="receipt-ref-badge">{{ t('ORDER') }} <strong class="receipt-ref-number">#{{ order?.order_id }}</strong></span>
           </div>
 
           <div class="receipt-date-banner">
@@ -248,8 +254,8 @@
           </div>
 
           <div class="receipt-items-header">
-            <span>Items</span>
-            <span>Amount</span>
+            <span>{{ t('Items') }}</span>
+            <span>{{ t('Amount') }}</span>
           </div>
 
           <div class="receipt-items">
@@ -263,14 +269,14 @@
           <q-separator class="receipt-divider" />
 
           <div class="receipt-total-band">
-            <span>Total</span>
+            <span>{{ t('Total') }}</span>
             <span class="receipt-total-amount">₱{{ formatNumber(order?.total_amount) }}</span>
           </div>
 
-          <div class="receipt-print-footer">Thank you for shopping with Tindahan!</div>
+          <div class="receipt-print-footer">{{ t('Thank you for shopping with Tindahan!') }}</div>
         </q-card>
 
-        <q-btn v-if="order?.status === 'picked_up'" unelevated no-caps icon="o_download" label="Download PDF" class="receipt-download-btn" :loading="isExporting" @click="downloadReceipt" />
+        <q-btn v-if="order?.status === 'picked_up'" unelevated no-caps icon="o_download" :label="t('Download PDF')" class="receipt-download-btn" :loading="isExporting" @click="downloadReceipt" />
       </div>
     </q-dialog>
 
@@ -278,6 +284,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -285,6 +293,8 @@ import { api } from '@/boot/axios'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import { formatDistance, calculateDistanceMeters } from '@/utils/distance'
+
+const { t, locale } = useConsumerLanguage()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -324,6 +334,17 @@ const statusSteps = [
   { key: 'picked_up', label: 'Picked Up', icon: 'o_task_alt' }
 ]
 
+/* The two terminal states that get a tinted card, while every in-progress state stays on the default white one. */
+const STATUS_CARD_TONES = {
+  cancelled: 'danger',
+  picked_up: 'success'
+}
+
+const statusCardClass = computed(() => {
+  const tone = STATUS_CARD_TONES[order.value?.status]
+  return tone ? `status-card--${tone}` : ''
+})
+
 const statusTitleClass = computed(() => {
   if (!order.value) return ''
   if (order.value.status === 'cancelled') return 'status-title-cancelled'
@@ -343,33 +364,34 @@ const statusTitle = computed(() => STATUS_TITLES[order.value?.status] || formatS
 
 const statusDescription = computed(() => {
   switch (order.value?.status) {
-    case 'placed': return "The store has received your order and will begin preparing it soon."
-    case 'preparing': return 'The store is preparing your order.'
-    case 'ready_for_pickup': return 'Your order is ready — head to the store to pick it up.'
-    case 'picked_up': return 'This order has been picked up. Thanks for shopping with us!'
-    case 'cancelled': return 'This order was cancelled.'
+    case 'placed': return t('The store has received your order and will begin preparing it soon.')
+    case 'preparing': return t('The store is preparing your order.')
+    case 'ready_for_pickup': return t('Your order is ready — head to the store to pick it up.')
+    case 'picked_up': return t('This order has been picked up. Thanks for shopping with us!')
+    case 'cancelled': return t('This order was cancelled.')
     default: return ''
   }
 })
 
 const formatStatus = (status) => {
   if (!status) return ''
-  return status.split('_').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  const text = String(status).split('_').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  return t(text)
 }
 
-const formatNumber = (num) => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const formatNumber = (num) => Number(num || 0).toLocaleString(locale.value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const formatDate = (dateString) => {
   if (!dateString) return ''
   const d = new Date(dateString)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString(locale.value, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
 const formatReceiptDateParts = (dateString) => {
   if (!dateString) return ''
   const d = new Date(dateString)
-  const datePart = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-  const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  const datePart = d.toLocaleDateString(locale.value, { year: 'numeric', month: 'short', day: 'numeric' })
+  const timePart = d.toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' })
   return `${datePart} • ${timePart}`
 }
 
@@ -380,13 +402,15 @@ const storeAddressText = computed(() => {
   const sLat = order.value?.store?.latitude
   const sLng = order.value?.store?.longitude
 
-  // See ConsumerOrders: the guard lives in calculateDistanceMeters, and the raw
-  // values are passed because Number(null) would coerce a missing coordinate to 0.
+  // The raw coordinates are passed because calculateDistanceMeters does the guarding, and Number(null) would turn a missing one into 0.
   const dist = formatDistance(calculateDistanceMeters(cLat, cLng, sLat, sLng))
 
   if (address && dist) return `${address} (${dist})`
   return address || dist
 })
+
+// The current step is styled apart from completed ones, since isStatusActive alone would render every reached disc identically.
+const isStatusCurrent = (step) => order.value?.status === step
 
 const isStatusActive = (step) => {
   if (!order.value) return false
@@ -415,7 +439,7 @@ const downloadReceipt = async () => {
     document.body.removeChild(link)
   } catch (error) {
     console.error('Download failed:', error)
-    $q.notify({ type: 'negative', message: 'Failed to download receipt' })
+    $q.notify({ type: 'negative', message: t('Failed to download receipt') })
   } finally {
     isExporting.value = false
   }
@@ -486,13 +510,13 @@ const confirmCancelOrder = async () => {
     await api.patch(`/consumer/orders/${order.value.order_id}/cancel`, {
       cancellation_reason: finalCancelReason.value
     })
-    $q.notify({ type: 'positive', message: 'Order cancelled successfully' })
+    $q.notify({ type: 'positive', message: t('Order cancelled successfully') })
     showCancelDialog.value = false
     selectedCancelReason.value = ''
     customCancelReason.value = ''
     fetchOrderDetails()
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to cancel order' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to cancel order') })
   } finally {
     isCancelling.value = false
   }
@@ -626,7 +650,35 @@ onMounted(() => {
   border: 1px solid var(--c-border);
 
   background: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--sh-card);
+}
+
+/* Terminal states take a tinted ground with a deeper border, lighter than the tints inside so the note and discs stay visible. */
+.status-card--danger {
+  border-color: var(--c-danger-line);
+  background: var(--c-danger-tint);
+}
+
+.status-card--success {
+  border-color: var(--c-success-line);
+  background: var(--c-success-wash);
+}
+
+/* On a tinted card the eyebrow and divider take the card's own hue, since neutral greys read as grubby there. */
+.status-card--danger .status-label {
+  color: var(--c-danger-muted);
+}
+
+.status-card--danger .card-divider {
+  background: var(--c-danger-tint-2);
+}
+
+.status-card--success .status-label {
+  color: var(--c-success-muted);
+}
+
+.status-card--success .card-divider {
+  background: var(--c-success-tint);
 }
 
 .card-divider {
@@ -644,6 +696,7 @@ onMounted(() => {
 
   gap: 12px;
 }
+
 
 .status-label {
   font-size: var(--fs-2xs);
@@ -721,11 +774,22 @@ onMounted(() => {
   transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 
-.status-step-circle-active {
+/* Completed steps use the tinted-disc style shared by the app's other leading icons rather than a second solid fill. */
+.status-step-circle-done {
+  border-color: transparent;
+
+  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  color: var(--c-brand);
+}
+
+/* Solid is reserved for where the order actually is, so one disc carries the emphasis. */
+.status-step-circle-current {
   border-color: var(--c-brand);
 
   background: var(--c-brand);
   color: #ffffff;
+
+  box-shadow: 0 0 0 4px var(--c-brand-tint);
 }
 
 .status-step-label {
@@ -760,10 +824,19 @@ onMounted(() => {
   background: linear-gradient(to right, var(--c-brand) 50%, var(--c-border) 50%);
 }
 
-/* Picked up = done, so the stepper switches to the same green as .status-title-done. */
-.status-steps-done .status-step-circle-active {
+/* A picked-up order turns the whole tracker green to match .status-title-done, so a finished order never reads as in progress. */
+.status-steps-done .status-step-circle-done {
+  background: var(--c-success-tint);
+  color: var(--c-success);
+}
+
+.status-steps-done .status-step-circle-current {
   border-color: var(--c-success);
+
   background: var(--c-success);
+  color: #ffffff;
+
+  box-shadow: 0 0 0 4px var(--c-success-tint);
 }
 
 .status-steps-done .status-step-line-active {
@@ -780,7 +853,7 @@ onMounted(() => {
 
   border-radius: var(--r-md);
 
-  background: var(--c-danger-tint);
+  background: var(--c-danger-tint-2);
   color: var(--c-danger);
 }
 
@@ -795,7 +868,7 @@ onMounted(() => {
   font-size: var(--fs-xs);
   line-height: 1.4;
 
-  color: var(--c-brand);
+  color: var(--c-danger);
 }
 
 /* STORE INFO */
@@ -989,7 +1062,7 @@ onMounted(() => {
   border: 1px solid var(--c-border);
 
   background: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--sh-card);
 }
 
 .summary-title {
@@ -1108,7 +1181,7 @@ onMounted(() => {
 
   background: #ffffff;
   color: var(--c-text-2);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--sh-card);
 
   font-size: var(--fs-sm);
   font-weight: 600;
@@ -1693,7 +1766,8 @@ onMounted(() => {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  /* Sits on top of the bottom tab bar rather than under it; 0 on desktop. */
+  bottom: var(--bottom-nav-h);
   z-index: 100;
 
   display: flex;
@@ -1706,4 +1780,3 @@ onMounted(() => {
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
 }
 </style>
-

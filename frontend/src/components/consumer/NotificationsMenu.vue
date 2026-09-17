@@ -1,18 +1,11 @@
 <template>
-  <!--
-    Bell + dropdown, self-contained so the header can place one instance in the desktop
-    action cluster and another in the compact mobile cluster without duplicating the
-    panel markup. Only one is ever rendered at a time (the header gates on its own
-    breakpoint), so this never double-fetches.
-  -->
+  <!-- Notification bell for the compact header, where tapping it opens the notifications page rather than this panel. -->
   <div class="notif">
     <q-btn flat dense :ripple="false" class="notif__btn" :aria-label="ariaLabel" @click="toggle">
       <q-icon name="o_notifications" size="24px" />
       <span v-if="unreadCount" class="notif__count">{{ unreadCount }}</span>
 
-      <!-- no-parent-event: the button's @click already toggles and triggers the fetch,
-           so QMenu must not also open itself. Outside-click, Escape, focus return and
-           placement come from QMenu instead of the hand-rolled document listener. -->
+      <!-- no-parent-event, because the button's click already toggles and fetches, while QMenu handles outside-click, Escape and focus. -->
       <q-menu
         v-model="open"
         no-parent-event
@@ -23,20 +16,20 @@
         class="notif__panel"
       >
       <div class="notif__head">
-        Notifications
+        {{ t('Notifications') }}
         <q-btn
           v-if="unreadCount"
           flat
           dense
           no-caps
           size="sm"
-          label="Mark all read"
+          :label="t('Mark all as read')"
           color="primary"
           @click="markAllAsRead"
         />
       </div>
 
-      <p v-if="!notifications.length" class="notif__empty">No notifications yet.</p>
+      <p v-if="!notifications.length" class="notif__empty">{{ t('No notifications yet.') }}</p>
 
       <q-list v-else class="notif__scroll">
         <q-item
@@ -55,12 +48,11 @@
         </q-item>
       </q-list>
 
-      <!-- Always offered, even when the list is empty, so the full history is one
-           tap away rather than only reachable when notifications exist. -->
+      <!-- Always offered, even with an empty list, so the full history is one tap away. -->
       <q-btn
         unelevated
         no-caps
-        label="View All Notifications"
+        :label="t('View All Notifications')"
         class="notif__view-all"
         @click="goToAll"
       />
@@ -70,20 +62,20 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 
+const { t } = useConsumerLanguage()
+
 const router = useRouter()
 const $q = useQuasar()
 
 const props = defineProps({
-  /**
-   * Element the panel aligns to. The bell is not the rightmost control in the header,
-   * so aligning to the button itself leaves the panel short of the cluster's right
-   * edge — which is where it sat before this became a QMenu. Falls back to the button.
-   */
+  /** Element the panel aligns to, falling back to the button, since the bell is not the header's rightmost control. */
   anchorTarget: {
     type: Object,
     default: null
@@ -100,7 +92,7 @@ const open = ref(false)
 const unreadCount = computed(() => notifications.value.filter((n) => !n.is_read).length)
 
 const ariaLabel = computed(() =>
-  unreadCount.value ? `Notifications, ${unreadCount.value} unread` : 'Notifications'
+  unreadCount.value ? t('Notifications, {count} unread', { count: unreadCount.value }) : t('Notifications')
 )
 
 const isLoggedIn = () => !!localStorage.getItem('auth_token')
@@ -115,8 +107,7 @@ const fetchNotifications = async () => {
   }
 }
 
-// This instance only renders in the compact header, so below md it never opens the
-// panel — the bell is a link to the notifications page, matching the cart icon.
+// This instance only renders in the compact header, so it always opens the notifications page, like the cart icon.
 const toggle = () => {
   if ($q.screen.lt.md) {
     open.value = false
@@ -174,8 +165,9 @@ const markAllAsRead = async () => {
 .notif__btn {
   position: relative;
 
-  width: 40px;
-  height: 40px;
+  /* 44px to match the compact header's .header-mobile-btn siblings, set here because SiteHeader's scoped styles cannot reach it. */
+  width: 44px;
+  height: 44px;
 
   border-radius: var(--r-md);
 
@@ -212,9 +204,7 @@ const markAllAsRead = async () => {
   line-height: 1;
 }
 
-/* QMenu positions and teleports this itself, so the absolute placement the old div
-   needed is gone. It stays in the scoped block via :deep-free plain class because the
-   class is passed to QMenu, which renders it on the teleported root. */
+/* QMenu positions and teleports this panel itself, so it needs none of the old absolute placement. */
 .notif__panel {
   width: 300px;
   max-width: calc(100vw - 32px);
@@ -262,10 +252,7 @@ const markAllAsRead = async () => {
   overflow-y: auto;
 }
 
-/* QItem inside a QMenu is the canonical list row: it brings the ripple, focus ring
-   and keyboard activation the bare <button> only had by accident of being a button.
-   Its default 48px min-height and 16px padding are trimmed back to this panel's
-   tighter rhythm. */
+/* QItem supplies the ripple, focus ring and keyboard activation, with its default height and padding trimmed to this panel. */
 .notif__item {
   padding: 10px 14px;
   min-height: auto;
@@ -332,8 +319,3 @@ const markAllAsRead = async () => {
   font-weight: 700;
 }
 </style>
-
-
-
-
-

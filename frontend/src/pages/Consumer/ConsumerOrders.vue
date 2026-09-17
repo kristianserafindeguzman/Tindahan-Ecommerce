@@ -4,8 +4,8 @@
 
     <!-- MAIN CONTENT -->
     <div class="page-content">
-      <h1 class="page-title">My Orders</h1>
-      <p class="page-subtitle">Track, manage, and view your order history.</p>
+      <h1 class="page-title">{{ t('My Orders') }}</h1>
+      <p class="page-subtitle">{{ t('Track, manage, and view your order history.') }}</p>
 
       <div v-if="loading" class="orders-list">
         <div v-for="n in 3" :key="n" class="order-card">
@@ -22,15 +22,12 @@
 
       <div v-else-if="!orders.length" class="orders-empty">
         <q-icon name="o_receipt_long" size="40px" class="orders-empty-icon" />
-        <p class="orders-empty-text">You haven't placed any orders yet.</p>
-        <q-btn unelevated no-caps label="Browse Products" class="browse-btn" @click="router.push('/consumer/home')" />
+        <p class="orders-empty-text">{{ t('You haven\'t placed any orders yet.') }}</p>
+        <q-btn unelevated no-caps :label="t('Browse Products')" class="browse-btn" @click="router.push('/consumer/home')" />
       </div>
 
       <div v-else>
-        <!-- QTabs rather than hand-rolled buttons: it brings the tablist/tab ARIA roles,
-             arrow-key navigation and the sliding indicator, none of which the plain
-             buttons had. v-model keeps the same activeTab value the rest of the page
-             filters on. -->
+        <!-- QTabs provides the tab roles, arrow-key navigation and sliding indicator, and v-model keeps the activeTab value the page filters on. -->
         <q-tabs
           v-model="activeTab"
           class="orders-tabs"
@@ -39,13 +36,13 @@
           narrow-indicator
           :breakpoint="0"
         >
-          <q-tab v-for="tab in orderTabs" :key="tab.value" :name="tab.value" :label="tab.label" class="orders-tab" />
+          <q-tab v-for="tab in orderTabs" :key="tab.value" :name="tab.value" :label="t(tab.label)" class="orders-tab" />
         </q-tabs>
 
         <div v-if="!displayedOrders.length" class="orders-empty">
           <q-icon name="o_receipt_long" size="40px" class="orders-empty-icon" />
           <p class="orders-empty-text">
-            {{ activeTab === 'active' ? "You have no active orders right now." : "You don't have any past orders yet." }}
+            {{ activeTab === 'active' ? t('You have no active orders right now.') : t('You don\'t have any past orders yet.') }}
           </p>
         </div>
 
@@ -54,7 +51,7 @@
             <div v-for="order in displayedOrders" :key="order.order_id" class="order-card cursor-pointer" @click="viewOrder(order)">
               <div class="order-card-top">
                 <div class="order-card-left">
-                  <div class="order-store">{{ order.store?.store_name || 'Unknown Store' }}</div>
+                  <div class="order-store">{{ order.store?.store_name || t('Unknown Store') }}</div>
                   <div class="order-card-meta">
                     #{{ order.order_id }}
                     <span class="order-meta-dot">&bull;</span>
@@ -64,7 +61,7 @@
                 </div>
                 <div class="order-card-right">
                   <div class="order-total">₱{{ parseFloat(order.total_amount).toFixed(2) }}</div>
-                  <div class="order-item-count">{{ order.items?.length || 0 }} {{ order.items?.length === 1 ? 'Item' : 'Items' }}</div>
+                  <div class="order-item-count">{{ order.items?.length || 0 }} {{ order.items?.length === 1 ? t('Item') : t('Items') }}</div>
                 </div>
               </div>
 
@@ -77,8 +74,8 @@
                     <q-icon v-else name="o_inventory_2" size="20px" />
                   </div>
                   <div class="order-item-info">
-                    <div class="order-item-name">{{ item.inventory?.product_name || 'Unavailable Product' }}</div>
-                    <div class="order-item-qty">Qty: {{ item.quantity }}</div>
+                    <div class="order-item-name">{{ item.inventory?.product_name || t('Unavailable Product') }}</div>
+                    <div class="order-item-qty">{{ t('Qty:') }} {{ item.quantity }}</div>
                   </div>
                   <div class="order-item-price">₱{{ parseFloat(item.subtotal).toFixed(2) }}</div>
                 </div>
@@ -91,7 +88,7 @@
                   <span class="status-badge" :class="statusBadgeClass(order.status)">{{ formatStatus(order.status) }}</span>
                   <div class="order-card-right-mobile">
                     <div class="order-total">₱{{ parseFloat(order.total_amount).toFixed(2) }}</div>
-                    <div class="order-item-count">{{ order.items?.length || 0 }} {{ order.items?.length === 1 ? 'Item' : 'Items' }}</div>
+                    <div class="order-item-count">{{ order.items?.length || 0 }} {{ order.items?.length === 1 ? t('Item') : t('Items') }}</div>
                   </div>
                 </div>
                 <div class="order-card-actions">
@@ -100,18 +97,18 @@
                     unelevated
                     no-caps
                     icon="o_replay"
-                    label="Reorder"
+                    :label="t('Reorder')"
                     class="reorder-btn"
                     :loading="reorderingId === order.order_id"
                     @click.stop="reorderItems(order)"
                   />
-                  <q-btn unelevated no-caps label="View Order Details" class="view-details-btn" @click.stop="viewOrder(order)" />
+                  <q-btn unelevated no-caps :label="t('View Order Details')" class="view-details-btn" @click.stop="viewOrder(order)" />
                 </div>
               </div>
 
               <div v-if="order.cancellation_reason" class="cancellation-reason">
                 <q-icon name="o_error_outline" size="16px" />
-                <span>Cancelled: {{ order.cancellation_reason }}</span>
+                <span>{{ t('Cancelled:') }} {{ order.cancellation_reason }}</span>
               </div>
             </div>
           </div>
@@ -124,6 +121,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -132,6 +131,8 @@ import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import { api } from '@/boot/axios'
 import { useCart } from '@/composables/useCart'
 import { formatDistance, calculateDistanceMeters } from '@/utils/distance'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -169,9 +170,7 @@ onMounted(() => {
   fetchOrders()
 })
 
-// Same status → color assignment used on the vendor side's order list (OrderList.vue,
-// CustomerOrders.vue), just as hex instead of Quasar color names, so a status reads the
-// same regardless of which side of the app you're looking at it from.
+// Status badges use the same colour per status as the vendor order lists, so a status reads the same on both sides.
 const STATUS_BADGE_CLASSES = {
   placed: 'status-badge-placed',
   preparing: 'status-badge-preparing',
@@ -189,19 +188,18 @@ const orderAddressText = (order) => {
   const sLat = order.store?.latitude
   const sLng = order.store?.longitude
 
-  // calculateDistanceMeters guards the coordinates itself and returns null when any
-  // is missing, which formatDistance renders as ''. Note the raw values are passed:
-  // Number(null) is 0, so wrapping them here would turn a missing coordinate into a
-  // valid one and measure a distance that does not exist.
+  // Raw coordinates are passed because calculateDistanceMeters returns null for a missing one, whereas Number(null) would measure from 0.
   const dist = formatDistance(calculateDistanceMeters(cLat, cLng, sLat, sLng))
 
   if (address && dist) return `${address} (${dist})`
-  return address || dist || 'Address unavailable'
+  return address || dist || t('Address unavailable')
 }
 
+// Sentence case, such as "Ready for pickup", matching the vendor badges.
 const formatStatus = (status) => {
   if (!status) return ''
-  return status.split('_').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  const text = String(status).split('_').join(' ').toLowerCase()
+  return t(text.charAt(0).toUpperCase() + text.slice(1))
 }
 
 const viewOrder = (order) => {
@@ -228,15 +226,15 @@ const reorderItems = async (order) => {
   reorderingId.value = null
 
   if (!successCount) {
-    $q.notify({ type: 'negative', message: 'None of these items are available anymore.' })
+    $q.notify({ type: 'negative', message: t('None of these items are available anymore.') })
     return
   }
 
   $q.notify({
     type: 'positive',
     message: failCount
-      ? `${successCount} item(s) added to cart. ${failCount} item(s) are no longer available.`
-      : `${successCount} item(s) added to cart.`
+      ? t('{count} item(s) added to cart. {failed} item(s) are no longer available.', { count: successCount, failed: failCount })
+      : t('{count} item(s) added to cart.', { count: successCount })
   })
   router.push('/consumer/cart')
 }
@@ -349,8 +347,7 @@ const reorderItems = async (order) => {
   border-bottom: 1px solid var(--c-border);
 }
 
-/* QTabs ships its own padding, uppercase and min-width; these bring it back to the
-   flat underlined row this page already used. */
+/* Undoes QTabs' own padding, uppercase and min-width to keep the flat underlined row this page uses. */
 .orders-tab {
   padding: 0 0 12px;
   min-height: auto;
@@ -386,15 +383,12 @@ const reorderItems = async (order) => {
   color: var(--c-text-3);
 }
 
-/* QTab paints a q-focus-helper block behind itself on hover and focus. That suited
-   Quasar's filled tab bar, but this row is a flat underlined strip and the block
-   reads as a stray grey/pink rectangle behind the label. */
+/* Hides QTab's focus-helper block, which reads as a stray grey rectangle behind the label on this flat strip. */
 .orders-tabs :deep(.q-focus-helper) {
   display: none;
 }
 
-/* Replaces the helper with a ring on the label itself. The old rule targeted a plain
-   <button>; on a QTab it drew a dashed box around Quasar's padding instead. */
+/* Draws the focus ring on the label itself, since the old button rule drew a dashed box around Quasar's padding. */
 .orders-tabs :deep(.q-tab:focus-visible) {
   outline: 2px solid var(--c-brand);
   outline-offset: 2px;
@@ -602,29 +596,30 @@ const reorderItems = async (order) => {
   font-weight: 600;
 }
 
+/* The same status palette as the vendor badges: blue placed, amber preparing, violet ready, green picked up, red cancelled. */
 .status-badge-placed {
-  background: var(--c-info-tint);
-  color: var(--c-info);
+  background: var(--st-placed-bg);
+  color: var(--st-placed);
 }
 
 .status-badge-preparing {
-  background: var(--c-status-wait-tint);
-  color: var(--c-status-wait);
+  background: var(--st-preparing-bg);
+  color: var(--st-preparing);
 }
 
 .status-badge-ready {
-  background: var(--c-status-active-tint);
-  color: var(--c-status-active);
+  background: var(--st-ready-bg);
+  color: var(--st-ready);
 }
 
 .status-badge-picked-up {
-  background: var(--c-success-tint);
-  color: var(--c-success);
+  background: var(--st-done-bg);
+  color: var(--st-done);
 }
 
 .status-badge-cancelled {
-  background: var(--c-danger-tint);
-  color: var(--c-danger);
+  background: var(--st-cancelled-bg);
+  color: var(--st-cancelled);
 }
 
 .status-badge-default {
@@ -806,7 +801,3 @@ const reorderItems = async (order) => {
   }
 }
 </style>
-
-
-
-

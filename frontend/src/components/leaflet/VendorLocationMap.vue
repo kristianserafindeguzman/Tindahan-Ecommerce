@@ -12,7 +12,7 @@
       :disabled="loadingLocation"
     >
       <span class="location-icon">◎</span>
-      {{ loadingLocation ? 'Locating...' : 'Your Location' }}
+      {{ translate(loadingLocation ? 'Locating...' : 'Your Location') }}
     </button>
 
   </div>
@@ -23,6 +23,12 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { getCurrentPosition, reverseGeocode } from '@/utils/geolocation'
+
+const props = defineProps({
+  translate: { type: Function, default: text => text },
+  // A saved pin to open on, which also skips jumping to the device's location; left out, the map behaves as before.
+  initial: { type: Object, default: null }
+})
 
 const emit = defineEmits(['location-selected'])
 
@@ -41,17 +47,18 @@ const defaultLocation = {
 }
 
 
-// =========================
 // INITIALIZE MAP
-// =========================
 
 onMounted(() => {
+
+  const hasInitial = props.initial?.latitude != null && props.initial?.longitude != null
+  const start = hasInitial ? props.initial : defaultLocation
 
   map = L.map(mapContainer.value, {
     zoomControl: true
   }).setView(
-    [defaultLocation.latitude, defaultLocation.longitude],
-    15
+    [start.latitude, start.longitude],
+    hasInitial ? 17 : 15
   )
 
   // OpenStreetMap tiles
@@ -79,15 +86,17 @@ onMounted(() => {
   })
 
 
-  // Try browser location
-  useCurrentLocation()
+  // A saved pin is shown as it is, and otherwise the map tries the browser's location.
+  if (hasInitial) {
+    marker = L.marker([start.latitude, start.longitude]).addTo(map)
+  } else {
+    useCurrentLocation()
+  }
 
 })
 
 
-// =========================
 // CURRENT LOCATION
-// =========================
 
 const useCurrentLocation = async () => {
 
@@ -117,19 +126,14 @@ const useCurrentLocation = async () => {
 }
 
 
-// =========================
 // SELECT LOCATION
-// =========================
 
 const selectLocation = async (
   latitude,
   longitude
 ) => {
 
-  // Bail out if the map was unmounted (e.g. address menu closed) while an
-  // async geolocation/reverse-geocode call was still in flight — calling
-  // Leaflet methods on a removed map, or emitting into a stale panel, would
-  // otherwise silently corrupt state or throw.
+  // Bails out if the map was unmounted while a geolocation or reverse-geocode call was still in flight, since touching a removed map or emitting into a closed panel would throw or corrupt state.
   if (unmounted) return
 
   // Move map
@@ -173,9 +177,7 @@ const selectLocation = async (
 }
 
 
-// =========================
 // CLEANUP
-// =========================
 
 onBeforeUnmount(() => {
 
@@ -214,9 +216,7 @@ onBeforeUnmount(() => {
 }
 
 
-/* =========================
-   LOCATION BUTTON
-========================= */
+/* LOCATION BUTTON */
 
 .location-button {
   position: absolute;
@@ -270,18 +270,5 @@ onBeforeUnmount(() => {
   color: #111111;
 }
 
-
-/* =========================
-   LEAFLET
-========================= */
-
-:deep(.leaflet-control-zoom) {
-  border: none !important;
-}
-
-
-:deep(.leaflet-control-zoom a) {
-  color: #333333 !important;
-}
 
 </style>

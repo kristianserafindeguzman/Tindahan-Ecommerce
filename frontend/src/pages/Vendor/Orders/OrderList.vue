@@ -1,226 +1,159 @@
 <template>
-  <q-page padding class="vendor-page relative-position" :class="{ 'mobile-page-padding': $q.screen.lt.md }">
-    <!-- Subtle Ambient Background Glows -->
-    <div class="bg-glow bg-glow-primary desktop-only"></div>
-    <div class="bg-glow bg-glow-secondary desktop-only"></div>
+  <q-page class="vp-page">
+    <div class="vp-container">
 
-    <div class="page-container relative-position" style="z-index: 1;">
-      
-      <!-- ================= HEADER AREA (Responsive) ================= -->
-      <div class="page-header q-mb-lg q-mt-sm">
-        <div class="row items-center justify-between no-wrap">
-          
-          <!-- Title & Subtitle Group -->
-          <div class="row items-center no-wrap col q-pr-sm">
-            <div class="glass-icon-box q-mr-md shrink-none">
-              <q-icon name="receipt_long" size="26px" class="text-brand-red" />
-            </div>
-            <div class="col">
-              <!-- Desktop uses standard text-h4, mobile uses text-h5 -->
-              <h1 class="text-weight-bolder text-blue-grey-9 q-ma-none tracking-tight" :class="$q.screen.lt.md ? 'text-h5' : 'text-h4'" style="line-height: 1.1;">Order List</h1>
-              <p class="text-blue-grey-5 q-mt-xs q-mb-none" :class="$q.screen.lt.md ? 'text-caption' : 'text-body1'" style="line-height: 1.3;">
-                Manage and track all neighborhood customer orders.
-              </p>
-            </div>
-          </div>
-
-          <!-- Export Button Group -->
-          <div class="col-auto flex flex-center">
-            <!-- Desktop Export Button -->
-            <q-btn 
-              v-if="!$q.screen.lt.md"
-              outline 
-              icon="download" 
-              label="Export Report" 
-              color="red-9" 
-              no-caps 
-              class="btn-glass-outline text-weight-bold q-px-md" 
-              :loading="isExporting" 
-              @click="exportOrders" 
-            />
-            
-            <!-- Mobile Export Button with Text -->
-            <div v-else class="column items-center justify-center cursor-pointer" @click="exportOrders">
-              <q-btn 
-                outline 
-                icon="download" 
-                color="red-9" 
-                class="btn-glass-outline" 
-                style="padding: 8px;"
-                round
-                dense
-                :loading="isExporting" 
-              />
-              <span class="text-red-9 text-weight-bold q-mt-xs" style="font-size: 10px; letter-spacing: 0.5px;">EXPORT</span>
-            </div>
-          </div>
-          
+      <div class="vp-header">
+        <div>
+          <h1 class="vp-title">{{ t('title') }}</h1>
+          <p class="vp-subtitle">{{ t('subtitle') }}</p>
         </div>
+        <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" :loading="isExporting" @click="exportOrders" />
       </div>
 
-      <!-- ================= CONTROLS & TABLE ================= -->
-      <q-card class="premium-glass-card" style="border-radius: 16px;">
-        
-        <!-- Search & Filters (Side-by-side on desktop, stacked on mobile) -->
-        <q-card-section class="q-pa-md q-pa-lg-lg border-bottom row items-center justify-between q-col-gutter-y-md q-col-gutter-x-md">
-          
-          <!-- Search -->
-          <div class="col-12 col-md-5 col-lg-4">
-            <q-input v-model="search" outlined dense class="custom-glass-input exact-height" placeholder="Search Order ID or Customer...">
-              <template v-slot:prepend>
-                <q-icon name="search" />
+      <div class="vp-card">
+        <div class="vp-toolbar">
+          <div class="vp-search-row">
+            <q-input
+              v-model="search"
+              outlined
+              dense
+              clearable
+              clear-icon="o_close"
+              hide-bottom-space
+              :placeholder="$q.screen.xs ? t('searchMob') : t('searchDesk')"
+              class="vp-search"
+            >
+              <template #prepend>
+                <q-icon name="o_search" size="18px" />
               </template>
             </q-input>
+            <OrderTableFilters v-model="filters" :result-count="filteredOrders.length" />
           </div>
 
-          <!-- Filters (Connected group on desktop, swipeable on mobile) -->
-          <div class="col-12 col-md-7 col-lg-8 flex justify-md-end scroll-container">
-            <q-btn-group flat class="bg-slate-50 border-slate-light rounded-borders q-pa-xs items-stretch filter-group-wrapper">
-              <q-btn v-for="status in statuses" :key="status" :label="status" 
-                v-ripple
-                :unelevated="activeStatus === status" 
-                :flat="activeStatus !== status"
-                :class="activeStatus === status ? 'bg-gradient-red text-white shadow-3' : 'text-blue-grey-6 hover-text-dark'" 
-                no-caps 
-                class="filter-pill q-px-md text-weight-bold transition-ease text-no-wrap" 
-                style="font-size: 13px;"
-                @click="activeStatus = status"
-              />
-            </q-btn-group>
+          <!-- Each status is a chip with its count, so the busy ones stand out before they are opened. -->
+          <div class="vp-chips" role="tablist" aria-label="Filter orders by status">
+            <button
+              v-for="filter in localizedFilters"
+              :key="filter.key"
+              type="button"
+              role="tab"
+              class="vp-chip"
+              :class="{ 'vp-chip--active': activeStatus === filter.key }"
+              :aria-selected="activeStatus === filter.key"
+              @click="activeStatus = filter.key"
+            >
+              {{ filter.label }}
+              <span class="vp-chip-count">{{ countFor(filter.key) }}</span>
+            </button>
           </div>
-        </q-card-section>
+        </div>
 
-        <!-- Table (Standard on desktop, Cards on mobile) -->
-        <q-table
-          :grid="$q.screen.lt.md"
-          flat
-          class="custom-premium-table"
-          :class="{ 'bg-transparent': $q.screen.lt.md }"
-          :rows="filteredOrders"
-          :columns="columns"
-          row-key="order_id"
-          :loading="loading"
-          @row-click="onRowClick"
-          card-container-class="q-col-gutter-md q-pa-sm"
-        >
-          <!-- Loading State -->
-          <template #loading>
-            <q-inner-loading showing class="bg-white opacity-80" style="backdrop-filter: blur(4px); z-index: 10;">
-              <q-spinner-dots size="50px" color="red-9" />
-              <div class="text-red-9 text-weight-bold q-mt-sm tracking-tight">Fetching orders...</div>
-            </q-inner-loading>
-          </template>
+        <!-- The filters in use, each removable with one tap. -->
+        <div v-if="filterChips.length" class="vp-filter-summary">
+          <span class="vp-filter-summary-label">{{ t('filteredBy') }}</span>
+          <button v-for="chip in filterChips" :key="chip.key" type="button" class="vp-filter-chip" :aria-label="`Remove ${chip.label}`" @click="clearFilter(filters, chip.key)">
+            {{ chip.label }}
+            <q-icon name="o_close" size="14px" />
+          </button>
+          <button type="button" class="vp-filter-clear" @click="resetOrderFilters(filters)">{{ t('clearAll') }}</button>
+        </div>
 
-          <!-- Empty State -->
-          <template #no-data>
-            <div class="full-width row flex-center q-pa-xl empty-state-glass" v-show="!loading">
-              <div class="text-center z-top relative-position">
-                <div class="empty-icon-wrapper q-mb-lg">
-                  <q-icon name="inbox" size="56px" color="blue-grey-3" />
-                </div>
-                <div class="text-h6 text-weight-bold text-blue-grey-8">No orders found</div>
-              </div>
-            </div>
-          </template>
+        <SkeletonTable v-if="loading" :columns="SKELETON_COLUMNS" :list="$q.screen.lt.md" />
 
-          <!-- ================= DESKTOP TABLE FORMATTERS ================= -->
-          <template #body-cell-order_id="props">
-            <q-td :props="props">
-              <!-- Reverted back to strictly #ID for desktop view -->
-              <span class="order-id-badge text-weight-bold text-red-8 q-px-sm q-py-xs bg-red-1 transition-ease">#{{ props.row.order_id }}</span>
-            </q-td>
-          </template>
+        <div v-else-if="!filteredOrders.length" class="vp-empty">
+          <div class="vp-empty-icon"><q-icon name="o_receipt_long" size="24px" /></div>
+          <div class="vp-empty-title">{{ orders.length ? t('noMatchTitle') : t('emptyTitle') }}</div>
+          <div class="vp-empty-text">
+            {{ orders.length ? t('noMatchText') : t('emptyText') }}
+          </div>
+          <q-btn v-if="orders.length && filterChips.length" outline no-caps color="primary" :label="t('clearFilters')" class="vp-pill-btn ol-empty-btn" @click="resetOrderFilters(filters)" />
+        </div>
 
-          <template #body-cell-customer="props">
-            <q-td :props="props">
-              <div class="row items-center">
-                <q-avatar size="32px" class="q-mr-sm bg-blue-grey-1 shadow-soft border-white">
-                  <img v-if="props.row.consumer?.profile_picture_url" :src="props.row.consumer.profile_picture_url">
-                  <q-icon v-else name="person" color="blue-grey-6" size="22px" />
-                </q-avatar>
-                <div class="text-weight-bold">{{ props.row.consumer?.full_name || 'Unknown' }}</div>
-              </div>
-            </q-td>
-          </template>
-          
-          <template #body-cell-status="props">
-            <q-td :props="props">
-              <q-chip :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bolder status-chip q-px-md shadow-1" style="font-size: 13px;">
-                {{ formatStatus(props.row.status) }}
-              </q-chip>
-            </q-td>
-          </template>
-
-          <template #body-cell-action="props">
-            <q-td :props="props" class="text-right">
-              <q-btn flat round dense icon="chevron_right" color="blue-grey-4" class="hover-action-btn transition-ease" @click.stop="goToOrder(props.row.order_id)" />
-            </q-td>
-          </template>
-
-          <!-- ================= MOBILE GRID CARD LAYOUT ================= -->
-          <template #item="props">
-            <div class="col-12 col-sm-6">
-              <q-card class="mobile-grid-card q-pa-md transition-ease shadow-soft" bordered @click="onRowClick($event, props.row)">
-                
-                <div class="row justify-between items-center q-mb-sm">
-                  <!-- Kept 'Order #1' exclusively for the mobile view layout -->
-                  <span class="order-id-badge text-weight-bold text-red-8 q-px-sm bg-red-1" style="font-size: 13px; padding-top: 4px; padding-bottom: 4px;">Order #{{ props.row.order_id }}</span>
-                  
-                  <q-chip :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bold shadow-1 q-ma-none" style="font-size: 12px; height: 26px; padding: 0 12px;">
-                    {{ formatStatus(props.row.status) }}
-                  </q-chip>
-                </div>
-                
-                <q-separator class="q-my-sm" color="grey-2" />
-                
-                <div class="row items-center q-mb-md">
-                  <q-avatar size="44px" class="q-mr-md bg-blue-grey-1 shadow-1 border-white">
-                    <img v-if="props.row.consumer?.profile_picture_url" :src="props.row.consumer.profile_picture_url">
-                    <q-icon v-else name="person" color="blue-grey-6" size="24px" />
-                  </q-avatar>
-                  <div>
-                    <div class="text-weight-bold text-blue-grey-9" style="font-size: 15px;">{{ props.row.consumer?.full_name || 'Unknown' }}</div>
-                    <div class="text-caption text-blue-grey-5">{{ formatDate(props.row.created_at) }}</div>
+        <!-- A table on wide screens; the Order, Date and Total headings sort their columns. -->
+        <div v-else-if="!$q.screen.lt.md" class="vp-table-wrap">
+          <table class="vp-table">
+            <thead>
+              <tr>
+                <th class="col-order" :aria-sort="ariaSort('id')">
+                  <button type="button" class="vp-sort" :class="{ 'vp-sort--on': sortDirection(filters.sort, 'id') }" @click="sortBy('id')">
+                    {{ t('colOrder') }} <q-icon :name="sortIcon('id')" size="14px" />
+                  </button>
+                </th>
+                <th>{{ t('colCustomer') }}</th>
+                <th class="col-date" :aria-sort="ariaSort('date')">
+                  <button type="button" class="vp-sort" :class="{ 'vp-sort--on': sortDirection(filters.sort, 'date') }" @click="sortBy('date')">
+                    {{ t('colDate') }} <q-icon :name="sortIcon('date')" size="14px" />
+                  </button>
+                </th>
+                <th class="text-right col-total" :aria-sort="ariaSort('total')">
+                  <button type="button" class="vp-sort" :class="{ 'vp-sort--on': sortDirection(filters.sort, 'total') }" @click="sortBy('total')">
+                    {{ t('colTotal') }} <q-icon :name="sortIcon('total')" size="14px" />
+                  </button>
+                </th>
+                <th class="col-status">{{ t('colStatus') }}</th>
+                <th class="col-open"><span class="vp-sr-only">Open</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="order in pagedOrders"
+                :key="order.order_id"
+                class="vp-row"
+                tabindex="0"
+                @click="goToOrder(order.order_id)"
+                @keydown.enter="goToOrder(order.order_id)"
+              >
+                <td><span class="vp-id">#{{ order.order_id }}</span></td>
+                <td>
+                  <div class="vp-person">
+                    <q-avatar size="32px" class="vp-avatar">
+                      <img v-if="order.consumer?.profile_picture_url" :src="order.consumer.profile_picture_url" alt="" />
+                      <q-icon v-else name="o_person" size="18px" />
+                    </q-avatar>
+                    <span class="vp-name">{{ order.consumer?.full_name || t('unknownCustomer') }}</span>
                   </div>
-                </div>
-                
-                <div class="row justify-between items-end">
-                  <div>
-                    <div class="text-weight-bold text-blue-grey-4" style="text-transform: uppercase; font-size: 11px;">Total Amount</div>
-                    <div class="text-weight-bolder text-dark text-subtitle1" style="line-height: 1;">₱{{ formatNumber(props.row.total_amount) }}</div>
-                  </div>
-                  <q-btn flat round dense icon="chevron_right" color="blue-grey-3" />
-                </div>
-                
-              </q-card>
+                </td>
+                <td class="vp-muted">{{ formatDate(order.created_at) }}</td>
+                <td class="text-right vp-amount">₱{{ formatNumber(order.total_amount) }}</td>
+                <td>
+                  <span class="vp-status" :class="`vp-status--${getStatusTone(order.status)}`">
+                    {{ translateStatus(order.status) }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <q-btn flat round dense icon="o_chevron_right" class="vp-open-btn" :aria-label="`Open order #${order.order_id}`" @click.stop="goToOrder(order.order_id)" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- A tappable list on phones, with the total and status on the right; the sort lives in the Filters panel. -->
+        <div v-else class="vp-list">
+          <button v-for="order in pagedOrders" :key="order.order_id" type="button" class="vp-list-item" @click="goToOrder(order.order_id)">
+            <q-avatar size="38px" class="vp-avatar">
+              <img v-if="order.consumer?.profile_picture_url" :src="order.consumer.profile_picture_url" alt="" />
+              <q-icon v-else name="o_person" size="20px" />
+            </q-avatar>
+            <div class="vp-list-body">
+              <span class="vp-name">{{ order.consumer?.full_name || t('unknownCustomer') }}</span>
+              <div class="vp-list-meta">#{{ order.order_id }} · {{ formatDate(order.created_at) }}</div>
             </div>
-          </template>
+            <div class="vp-list-side">
+              <span class="vp-amount">₱{{ formatNumber(order.total_amount) }}</span>
+              <span class="vp-status" :class="`vp-status--${getStatusTone(order.status)}`">
+                {{ translateStatus(order.status) }}
+              </span>
+            </div>
+          </button>
+        </div>
 
-        </q-table>
-      </q-card>
-
-      <!-- ================= PREMIUM MOBILE BOTTOM NAVIGATION ================= -->
-      <div v-if="$q.screen.lt.md" class="mobile-bottom-nav row justify-around items-center">
-        <div class="nav-item-wrapper" @click="router.push('/vendor/dashboard')">
-          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-            <q-icon name="home" size="26px" />
-          </q-btn>
-        </div>
-        <div class="nav-item-wrapper" @click="router.push('/vendor/orders/list')">
-          <!-- Active state applied to Orders -->
-          <q-btn flat round class="mobile-nav-btn nav-active shadow-3">
-            <q-icon name="receipt_long" size="24px" />
-          </q-btn>
-        </div>
-        <div class="nav-item-wrapper" @click="router.push('/vendor/products/list')">
-          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-            <q-icon name="inventory_2" size="26px" />
-          </q-btn>
-        </div>
-        <div class="nav-item-wrapper" @click="router.push('/vendor/sales')">
-          <q-btn flat round class="mobile-nav-btn text-blue-grey-4">
-            <q-icon name="analytics" size="26px" />
-          </q-btn>
+        <div v-if="!loading && pageCount > 1" class="vp-pager">
+          <span>{{ t('showing') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('of') }} {{ filteredOrders.length }}</span>
+          <div class="vp-pager-btns">
+            <q-btn outline no-caps color="primary" icon="o_chevron_left" class="vp-pill-btn" aria-label="Previous page" :disable="page === 1" @click="page--" />
+            <q-btn outline no-caps color="primary" icon="o_chevron_right" class="vp-pill-btn" aria-label="Next page" :disable="page === pageCount" @click="page++" />
+          </div>
         </div>
       </div>
 
@@ -229,86 +162,201 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
+import { statusKey } from '@/utils/orderStatus'
+import { emptyOrderFilters, applyOrderFilters, describeFilters, clearFilter, resetOrderFilters, toggleSort, sortDirection } from '@/utils/orderFilters'
+import { useLanguage } from '@/composables/useLanguage'
+import OrderTableFilters from '@/components/vendor/OrderTableFilters.vue'
+import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 
 const router = useRouter()
-const search = ref('')
-const activeStatus = ref('All')
-const statuses = ['All', 'Placed', 'Preparing', 'Ready for Pickup', 'Picked up', 'Cancelled']
-const loading = ref(true)
-const isExporting = ref(false)
+const $q = useQuasar()
 
-const orders = ref([])
-
-const columns = [
-  { name: 'order_id', label: 'Order ID', field: 'order_id', align: 'left', sortable: true },
-  { name: 'date', label: 'Date', field: row => formatDate(row.created_at), align: 'left', sortable: true },
-  { name: 'customer', label: 'Customer', field: 'customer', align: 'left' },
-  { name: 'price', label: 'Price (₱)', field: row => formatNumber(row.total_amount), align: 'left', sortable: true },
-  { name: 'status', label: 'Status', field: row => formatStatus(row.status), align: 'left' },
-  { name: 'action', label: '', field: 'action', align: 'right' }
-]
-
-const filteredOrders = computed(() => {
-  return orders.value.filter(order => {
-    const matchesSearch = search.value === '' || 
-      String(order.order_id).includes(search.value) || 
-      (order.consumer?.full_name || '').toLowerCase().includes(search.value.toLowerCase());
-      
-    const matchesStatus = activeStatus.value === 'All' || 
-      formatStatus(order.status).toLowerCase() === activeStatus.value.toLowerCase();
-
-    return matchesSearch && matchesStatus;
-  })
-})
-
-const getStatusColor = (status) => {
-  switch (String(status).toLowerCase()) {
-    case 'placed': return 'blue-6'
-    case 'preparing': return 'purple-5'
-    case 'ready_for_pickup': return 'orange-6'
-    case 'picked_up': return 'green-6'
-    case 'cancelled': return 'red-6'
-    default: return 'grey-6'
+// Language Dictionary for this page
+const orderListDict = {
+  en: {
+    title: 'Order List',
+    subtitle: 'Track and manage every order from your customers.',
+    exportBtn: 'Export Report',
+    searchDesk: 'Search order ID or customer',
+    searchMob: 'Search orders',
+    filteredBy: 'Filtered by',
+    clearAll: 'Clear all',
+    noMatchTitle: 'No matching orders',
+    emptyTitle: 'No orders yet',
+    noMatchText: 'Try another search, status or filter.',
+    emptyText: 'New orders from customers will show up here.',
+    clearFilters: 'Clear filters',
+    colOrder: 'Order',
+    colCustomer: 'Customer',
+    colDate: 'Date',
+    colTotal: 'Total',
+    colStatus: 'Status',
+    showing: 'Showing',
+    of: 'of',
+    unknownCustomer: 'Unknown',
+    statusAll: 'All',
+    statusPlaced: 'Placed',
+    statusPreparing: 'Preparing',
+    statusReady: 'Ready for pickup',
+    statusPickedUp: 'Picked up',
+    statusCancelled: 'Cancelled',
+    exportFail: 'Failed to generate the order report. Please try again.'
+  },
+  ph: {
+    title: 'Listahan ng Order',
+    subtitle: 'I-track at i-manage ang mga order ng customers.',
+    exportBtn: 'I-export ang Report',
+    searchDesk: 'Hanapin ang order ID o customer',
+    searchMob: 'Hanapin ang order',
+    filteredBy: 'Naka-filter sa',
+    clearAll: 'I-clear lahat',
+    noMatchTitle: 'Walang nahanap na order',
+    emptyTitle: 'Wala pang order',
+    noMatchText: 'Subukang ibahin ang search, status o filter.',
+    emptyText: 'Dito lalabas ang mga bagong order mula sa customers.',
+    clearFilters: 'I-clear ang filters',
+    colOrder: 'Order',
+    colCustomer: 'Customer',
+    colDate: 'Petsa',
+    colTotal: 'Kabuuan',
+    colStatus: 'Status',
+    showing: 'Pinapakita ang',
+    of: 'mula sa',
+    unknownCustomer: 'Hindi Kilala',
+    statusAll: 'Lahat',
+    statusPlaced: 'Na-order',
+    statusPreparing: 'Inihahanda',
+    statusReady: 'Pwede nang kunin',
+    statusPickedUp: 'Nakuha na',
+    statusCancelled: 'Kinansela',
+    exportFail: 'Failed ma-generate ang order report. Paki-try ulit.'
   }
 }
 
-const formatStatus = (status) => {
+const { t, lang } = useLanguage(orderListDict)
+
+// Determines the correct color class for the order status badges
+const getStatusTone = (status) => {
+  const s = String(status || '').toLowerCase().trim().replace(/[\s_-]+/g, '_')
+  if (s.includes('ready')) return 'ready'
+  if (s.includes('picked') || s.includes('complete')) return 'done'
+  if (s.includes('cancel')) return 'cancelled'
+  if (s.includes('prepar')) return 'preparing'
+  return 'placed'
+}
+
+// Directly translates the status string according to specified mappings
+const translateStatus = (status) => {
   if (!status) return ''
-  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  const key = String(status).toLowerCase().trim().replace(/[\s-]+/g, '_')
+
+  const statusDict = {
+    en: {
+      placed: 'Placed',
+      preparing: 'Preparing',
+      ready_for_pickup: 'Ready for pickup',
+      picked_up: 'Picked up',
+      cancelled: 'Cancelled',
+      completed: 'Completed'
+    },
+    ph: {
+      placed: 'Na-order',
+      preparing: 'Inihahanda',
+      ready_for_pickup: 'Pwede nang kunin',
+      picked_up: 'Nakuha na',
+      cancelled: 'Kinansela',
+      completed: 'Nakuha na'
+    }
+  }
+
+  return statusDict[lang.value]?.[key] || status
 }
 
-const formatNumber = (num) => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const formatDate = (dateString) => {
+// Dynamically translated status filters
+const localizedFilters = computed(() => [
+  { key: 'all', label: t('statusAll') },
+  { key: 'placed', label: t('statusPlaced') },
+  { key: 'preparing', label: t('statusPreparing') },
+  { key: 'ready_for_pickup', label: t('statusReady') },
+  { key: 'picked_up', label: t('statusPickedUp') },
+  { key: 'cancelled', label: t('statusCancelled') }
+])
+
+// The placeholder rows take the same columns as the table.
+const SKELETON_COLUMNS = [
+  { width: '12%', type: 'pill', size: 56 },
+  { type: 'avatar' },
+  { width: '21%', type: 'text' },
+  { width: '13%', type: 'text', align: 'right' },
+  { width: '17%', type: 'pill', size: 96 },
+  { width: '6%', type: 'icon', align: 'right' }
+]
+const PAGE_SIZE = 10
+
+const orders = ref([])
+const loading = ref(true)
+const isExporting = ref(false)
+const search = ref('')
+const activeStatus = ref('all')
+const page = ref(1)
+const filters = ref(emptyOrderFilters())
+
+const matchesSearch = order => {
+  const term = (search.value || '').trim().toLowerCase().replace('#', '')
+  return !term || String(order.order_id).includes(term) || (order.consumer?.full_name || '').toLowerCase().includes(term)
+}
+
+const matchesStatus = (order, key) => key === 'all' || statusKey(order.status) === key
+
+// Search and the filter panel apply first, so each status chip counts what it would show.
+const baseOrders = computed(() => applyOrderFilters(orders.value.filter(matchesSearch), filters.value))
+
+const countFor = key => baseOrders.value.filter(order => matchesStatus(order, key)).length
+
+const filteredOrders = computed(() => baseOrders.value.filter(order => matchesStatus(order, activeStatus.value)))
+
+const filterChips = computed(() => describeFilters(filters.value))
+
+const pageCount = computed(() => Math.max(1, Math.ceil(filteredOrders.value.length / PAGE_SIZE)))
+const pagedOrders = computed(() => filteredOrders.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
+const rangeStart = computed(() => (page.value - 1) * PAGE_SIZE + 1)
+const rangeEnd = computed(() => Math.min(page.value * PAGE_SIZE, filteredOrders.value.length))
+
+// A new search, status, filter or sort starts back on the first page.
+watch([search, activeStatus, () => JSON.stringify(filters.value)], () => { page.value = 1 })
+
+const sortBy = field => { filters.value.sort = toggleSort(filters.value.sort, field) }
+const sortIcon = field => ({ asc: 'o_arrow_upward', desc: 'o_arrow_downward' }[sortDirection(filters.value.sort, field)] || 'o_unfold_more')
+const ariaSort = field => ({ asc: 'ascending', desc: 'descending' }[sortDirection(filters.value.sort, field)] || 'none')
+
+const formatNumber = num => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+const formatDate = dateString => {
   if (!dateString) return ''
-  const d = new Date(dateString)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
-const goToOrder = (id) => {
-  router.push('/vendor/orders/' + id)
-}
-
-const onRowClick = (evt, row) => {
-  goToOrder(row.order_id)
-}
+const goToOrder = id => router.push('/vendor/orders/' + id)
 
 const exportOrders = async () => {
+  isExporting.value = true
   try {
-    isExporting.value = true
     const response = await api.get('/vendor/orders/export', { responseType: 'blob' })
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
     link.href = url
-    const dateStr = new Date().toISOString().split('T')[0]
-    link.setAttribute('download', `Tindahan-Order-List-Report-${dateStr}.pdf`)
+    link.setAttribute('download', `Tindahan-Order-List-Report-${new Date().toISOString().split('T')[0]}.pdf`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    setTimeout(() => window.URL.revokeObjectURL(url), 1000)
   } catch (error) {
     console.error('Export failed:', error)
+    $q.notify({ type: 'negative', message: t('exportFail'), position: 'top-right' })
   } finally {
     isExporting.value = false
   }
@@ -316,151 +364,63 @@ const exportOrders = async () => {
 
 onMounted(async () => {
   try {
-    setTimeout(async () => {
-      const res = await api.get('/vendor/orders')
-      if (res.data) {
-        orders.value = res.data.data || res.data
-      }
-      loading.value = false
-    }, 800)
+    const res = await api.get('/vendor/orders')
+    if (res.data) orders.value = res.data.data || res.data
   } catch (error) {
     console.error('Failed to load orders', error)
+  } finally {
     loading.value = false
   }
 })
 </script>
 
 <style scoped>
-.vendor-page {
-  background: #f8fafc;
-  min-height: 100vh;
-}
-.page-container {
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-/* Brand Colors */
-.text-brand-red { color: #b91c1c !important; }
-.bg-gradient-red { background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important; }
-
-/* Background Glows */
-.bg-glow { position: absolute; width: 500px; height: 500px; border-radius: 50%; filter: blur(140px); z-index: 0; opacity: 0.15; pointer-events: none; }
-.bg-glow-primary { top: -50px; left: -50px; background: radial-gradient(circle, rgba(185, 28, 28, 0.25) 0%, transparent 70%); }
-.bg-glow-secondary { bottom: 100px; right: -50px; background: radial-gradient(circle, rgba(69, 10, 10, 0.25) 0%, transparent 70%); }
-
-.tracking-tight { letter-spacing: -0.02em; }
-.shrink-none { flex-shrink: 0; }
-
-/* Icon Box */
-.glass-icon-box {
-  width: 48px; height: 48px; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(185, 28, 28, 0.1); 
+/* Status badge styling */
+.vp-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 13px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-/* Glass Cards */
-.premium-glass-card { background: rgba(255, 255, 255, 0.98); border: 1px solid rgba(241, 245, 249, 1); box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04); }
-
-/* Inputs & Buttons */
-.exact-height :deep(.q-field__control) { height: 40px !important; min-height: 40px !important; }
-.filter-group-wrapper { height: 40px; }
-.custom-glass-input :deep(.q-field__control) { background: rgba(241, 245, 249, 0.6); border-radius: 8px; }
-.custom-glass-input :deep(.q-field__control:before) { border: 1px solid rgba(226, 232, 240, 0.8); }
-.custom-glass-input :deep(.q-field--focused .q-field__control) { background: #ffffff; box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.15); border-color: #b91c1c; }
-
-.btn-glass-outline { border-radius: 8px !important; background: rgba(255, 255, 255, 0.9) !important; border: 1px solid currentColor; transition: all 0.2s ease; }
-.btn-glass-outline:hover { background: #ffffff !important; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05); transform: translateY(-2px); }
-
-/* Utilities */
-.border-bottom { border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
-.bg-slate-50 { background-color: #f8fafc; }
-.border-slate-light { border: 1px solid #e2e8f0; }
-.transition-ease { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-.hover-text-dark:hover { color: #1e293b !important; }
-.opacity-80 { opacity: 0.85; }
-.filter-pill { border-radius: 6px; }
-
-/* Custom Premium Table Styling */
-:deep(.custom-premium-table thead tr th) { background: rgba(248, 250, 252, 0.7); font-weight: 700; color: #64748B; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; padding: 16px 20px; border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
-:deep(.custom-premium-table tbody td) { padding: 16px 20px; border-bottom: 1px solid rgba(241, 245, 249, 1); cursor: pointer; transition: all 0.2s ease; }
-:deep(.custom-premium-table tbody tr:hover) { background: #ffffff; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03); transform: scale(1.002); z-index: 5; position: relative; }
-:deep(.custom-premium-table tbody tr:hover td) { border-bottom-color: transparent; }
-:deep(.custom-premium-table tbody tr:hover .order-id-badge) { background: rgba(185, 28, 28, 0.1) !important; color: #b91c1c !important; border-color: rgba(185, 28, 28, 0.4) !important; }
-
-.order-id-badge { font-family: monospace; font-size: 13px; border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 6px; }
-.status-chip { border: 1px solid rgba(255,255,255,0.8); }
-.border-white { border: 2px solid #ffffff; }
-
-/* Mobile Grid Card Styling */
-.mobile-grid-card {
-  background: #ffffff;
-  border: 1px solid #f1f5f9;
-  border-radius: 16px;
-  cursor: pointer;
+.vp-status--placed {
+  background-color: #dbeafe !important;
+  color: #1d4ed8 !important;
 }
-.mobile-grid-card:active { transform: scale(0.98); background: #f8fafc; }
 
-/* Native Swiping for Mobile Filters */
-.scroll-container {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+.vp-status--preparing {
+  background-color: #fef3c7 !important;
+  color: #b45309 !important;
 }
-.scroll-container::-webkit-scrollbar { display: none; }
 
-/* Mobile overrides */
-@media (max-width: 767px) {
-  .vendor-page.mobile-page-padding { padding: 16px 12px calc(80px + env(safe-area-inset-bottom)) 12px !important; }
-  .desktop-only { display: none !important; }
-  .mobile-only { display: block !important; }
-  .full-width-mobile { width: 100%; }
-  .scroll-container {
-    margin-left: -16px;
-    margin-right: -16px;
-    padding-left: 16px;
-    padding-right: 16px;
-    padding-bottom: 8px; /* Room for shadow */
-  }
+.vp-status--ready {
+  background-color: #e0e7ff !important;
+  color: #4338ca !important;
+}
 
-  /* Premium Glass Floating Bottom Navigation */
-  .mobile-bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: calc(75px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-top: 1px solid rgba(255, 255, 255, 0.5);
-    z-index: 2000;
-    box-shadow: 0 -10px 25px rgba(15, 23, 42, 0.05);
-  }
-  
-  .nav-item-wrapper {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .mobile-nav-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    padding: 0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .nav-active {
-    background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
-    color: #ffffff !important;
-    box-shadow: 0 8px 16px rgba(185, 28, 28, 0.35) !important;
-    transform: translateY(-4px);
-  }
-  .nav-active .q-icon {
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-  }
+.vp-status--done {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+}
+
+.vp-status--cancelled {
+  background-color: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+
+/* Column widths as shares of the table, so the columns spread evenly at any width. */
+.vp-table .col-order { width: 12%; }
+.vp-table .col-date { width: 21%; }
+.vp-table .col-total { width: 13%; }
+.vp-table .col-status { width: 17%; }
+.vp-table .col-open { width: 6%; }
+
+.ol-empty-btn {
+  margin-top: 10px;
 }
 </style>

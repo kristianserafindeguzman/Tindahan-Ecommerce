@@ -29,10 +29,13 @@ Route::get('/stores', [StoreController::class, 'index']);
 // ----- Public Authentication Routes -----
 Route::post('/register/consumer', [AuthController::class, 'registerConsumer']);
 Route::post('/register/vendor', [AuthController::class, 'registerVendor']);
+// Sends a text to any unregistered number, so it is limited per IP to keep SMS spam and cost down.
+Route::post('/register/vendor/otp', [AuthController::class, 'sendVendorOtp'])->middleware('throttle:5,10');
 Route::post('/login', [AuthController::class, 'login']);
 
 // ----- Public OTP Routes -----
-Route::post('/otp/verify', [AuthController::class, 'verifyOtp']);
+// Limited so the 6-digit codes can't be found by trying them all.
+Route::post('/otp/verify', [AuthController::class, 'verifyOtp'])->middleware('throttle:10,1');
 Route::post('/otp/resend', [AuthController::class, 'resendOtp']);
 
 // ----- Public Forgot Password Routes -----
@@ -63,6 +66,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Vendors Management
         Route::get('/vendors', [AdminController::class, 'listVendors']);
         Route::get('/vendors/export', [AdminController::class, 'exportVendors']);
+        Route::get('/vendors/{storeId}/products', [AdminController::class, 'getVendorProducts']);
         Route::patch('/vendors/{userId}/status', [AdminController::class, 'updateVendorStatus']);
         Route::delete('/vendors/{userId}', [AdminController::class, 'deleteVendor']);
 
@@ -71,6 +75,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/consumers/export', [AdminController::class, 'exportConsumers']);
         Route::patch('/consumers/{userId}/status', [AdminController::class, 'updateConsumerStatus']);
         Route::delete('/consumers/{userId}', [AdminController::class, 'deleteConsumer']);
+
+        // Admin notifications, through the same controller the vendor and consumer bells use.
+        Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+        Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
     });
 
     // ----- Vendor Routes -----
@@ -93,11 +102,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/store/address', [\App\Http\Controllers\ProfileController::class, 'updateStoreAddress']);
         Route::post('/profile/store-image', [\App\Http\Controllers\VendorController::class, 'uploadStoreImage']);
         Route::delete('/account', [\App\Http\Controllers\ProfileController::class, 'deleteAccount']);
-        
+        // The same phone and email changes the consumer profile offers, through the same controller methods.
+        Route::post('/profile/phone-request-otp', [\App\Http\Controllers\ProfileController::class, 'requestPhoneOtp']);
+        Route::post('/profile/phone-verify-otp', [\App\Http\Controllers\ProfileController::class, 'verifyPhoneOtp']);
+        Route::post('/profile/email', [\App\Http\Controllers\ProfileController::class, 'updateEmail']);
+        // Vendor notifications, through the same controller the consumer's bell uses.
+        Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+        Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
+
         Route::get('/sales/metrics', [\App\Http\Controllers\SalesController::class, 'metrics']);
         Route::get('/sales/transactions', [\App\Http\Controllers\SalesController::class, 'transactions']);
         Route::post('/sales/manual', [\App\Http\Controllers\SalesController::class, 'storeManual']);
-        
+
         Route::get('/orders', [\App\Http\Controllers\VendorOrderController::class, 'index']);
         Route::get('/orders/export', [\App\Http\Controllers\VendorController::class, 'exportOrderListReport']);
         Route::get('/orders/{id}', [\App\Http\Controllers\VendorOrderController::class, 'show']);
@@ -105,9 +122,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/orders/{id}/status', [\App\Http\Controllers\VendorOrderController::class, 'updateStatus']);
         Route::get('/customers', [\App\Http\Controllers\VendorOrderController::class, 'customers']);
         Route::get('/customers/{id}/orders', [\App\Http\Controllers\VendorOrderController::class, 'customerOrders']);
-        
+
         // ML Integrations
         Route::get('/demand-forecast', [\App\Http\Controllers\VendorController::class, 'getDemandForecast']);
+        Route::post('/demand-forecast/refresh', [\App\Http\Controllers\VendorController::class, 'refreshDemandForecast']);
         Route::get('/ml-insights', [\App\Http\Controllers\VendorController::class, 'getMlInsights']);
     });
 

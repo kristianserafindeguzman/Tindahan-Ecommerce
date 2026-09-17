@@ -7,17 +7,17 @@
     <div class="page-content">
 
       <div class="page-header-row">
-        <h1 class="page-title">{{ query ? 'Search Results' : 'Search' }}</h1>
+        <h1 class="page-title">{{ query ? t('Search Results') : t('Search') }}</h1>
         <p class="page-subtitle">{{ subtitleText }}</p>
       </div>
 
       <!-- EMPTY QUERY STATE -->
       <div v-if="!query" class="search-prompt">
         <q-icon name="o_search" size="40px" class="search-prompt-icon" />
-        <p class="search-prompt-text">Start typing to search products and stores.</p>
+        <p class="search-prompt-text">{{ t('Start typing to search products and stores.') }}</p>
 
         <div v-if="recentSearches.length" class="search-prompt-recent">
-          <div class="search-prompt-recent-title">Recent Searches</div>
+          <div class="search-prompt-recent-title">{{ t('Recent Searches') }}</div>
           <div class="search-prompt-recent-chips">
             <q-chip
               v-for="term in recentSearches"
@@ -37,8 +37,7 @@
 
         <template v-if="isSearching || hasAnyResults">
 
-          <!-- STORES — first on the All tab. A store match is navigational: the name
-               was typed to go there, so it should not sit under 200 product cards. -->
+          <!-- Store matches come first, because a typed store name means the user wants to go there. -->
           <template v-if="showStoreStrip">
             <!-- No heading, per design: the row survives only to carry the expander. -->
             <div v-if="matchedStores.length > STORE_STRIP_MAX" class="results-section-header results-section-header--bare">
@@ -48,7 +47,7 @@
                 class="section-link"
                 @click="storesExpanded = !storesExpanded"
               >
-                {{ storesExpanded ? 'Show less' : `Show all ${matchedStores.length} stores` }}
+                {{ storesExpanded ? t('Show less') : t('Show all {count} stores', { count: matchedStores.length }) }}
               </button>
             </div>
 
@@ -56,9 +55,7 @@
               <CardSkeleton v-for="n in 4" :key="n" variant="store" />
             </div>
 
-            <!-- Rows on the mixed view, cards on the dedicated tab. A row reads as
-                 "go here" and a card as "buy this", so the form tells them apart
-                 rather than the heading having to. -->
+            <!-- Stores show as compact rows that read as places to go, switching to full cards once the list is expanded. -->
             <div v-else-if="storesExpanded" class="stores-grid">
               <StoreCard
                 v-for="store in matchedStores"
@@ -91,7 +88,7 @@
                   <span class="store-row-meta">
                     <span class="store-row-status" :class="{ 'store-row-status--closed': !store.isOpen }">
                       <span class="store-row-dot" :class="{ 'store-row-dot--closed': !store.isOpen }" />
-                      {{ store.isOpen ? 'Open' : 'Closed' }}
+                      {{ store.isOpen ? t('Open') : t('Closed') }}
                     </span>
                     <span v-if="storeMetaText(store)" class="store-row-sub">{{ storeMetaText(store) }}</span>
                   </span>
@@ -108,9 +105,7 @@
               <CardSkeleton v-for="n in 6" :key="n" />
             </div>
 
-            <!-- Infinite scroll rather than pages: a search can return 200+ products and
-                 paging through them a screen at a time is the wrong shape for browsing.
-                 QInfiniteScroll handles the sentinel and the load guard. -->
+            <!-- Infinite scroll rather than pages, since a search can return 200+ products, with QInfiniteScroll handling the sentinel. -->
             <q-infinite-scroll v-else :offset="300" :disable="allProductsShown" @load="loadMoreProducts">
               <div class="products-grid">
                 <ProductCard
@@ -131,13 +126,13 @@
             </q-infinite-scroll>
 
             <p v-if="allProductsShown && filteredProducts.length > PAGE_SIZE" class="results-end">
-              That's all {{ filteredProducts.length }} results.
+              {{ t('That\'s all {count} results.', { count: filteredProducts.length }) }}
             </p>
           </template>
 
           <!-- RELATED PRODUCTS (fills out the page when the search itself only turned up 1-2 results) -->
           <div v-if="!isSearching && showRelatedProducts" class="related-section">
-            <h2 class="results-section-title">You May Also Like</h2>
+            <h2 class="results-section-title">{{ t('You May Also Like') }}</h2>
             <div class="products-grid">
               <ProductCard v-for="product in relatedProducts" :key="`related-${product.id}`" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
             </div>
@@ -147,8 +142,8 @@
         <!-- EMPTY RESULTS STATE -->
         <div v-else class="results-empty">
           <q-icon name="o_search_off" size="32px" class="results-empty-icon" />
-          <p class="results-empty-title">No results found for "{{ query }}".</p>
-          <p class="results-empty-text">Try searching for a different keyword.</p>
+          <p class="results-empty-title">{{ t('No results found for "{query}".', { query }) }}</p>
+          <p class="results-empty-text">{{ t('Try searching for a different keyword.') }}</p>
         </div>
 
       </template>
@@ -163,6 +158,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
@@ -178,6 +175,8 @@ import { useCategories } from '@/composables/useCategories'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'
+
+const { t } = useConsumerLanguage()
 
 const $q = useQuasar()
 const route = useRoute()
@@ -199,9 +198,9 @@ const handleAddToCart = async (product) => {
 
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+    $q.notify({ type: 'negative', message: error.response?.data?.message || t('Failed to add to cart.') })
   }
 }
 
@@ -219,16 +218,14 @@ onMounted(() => {
   fetchStores()
 })
 
-// A query that exactly names a category (e.g. "Beverages") browses that whole category instead of
-// name-matching, since no product literally has the category word in its own name.
+// A query that exactly names a category, such as Beverages, browses the whole category instead of matching product names.
 const matchedCategory = computed(() => {
   const q = query.value.toLowerCase()
   if (!q) return null
   return categories.value.find((category) => category.label.toLowerCase() === q) || null
 })
 
-// This is a universal products+stores search, not the dedicated Products page, so there's no
-// Sort/Filters here — just the query itself (plus the category-name shortcut above).
+// A universal products-and-stores search, so there is no Sort or Filters here, only the query and the category shortcut.
 const filteredProducts = computed(() => {
   const q = query.value.toLowerCase()
   const categoryMatch = matchedCategory.value
@@ -251,9 +248,7 @@ const hasAnyResults = computed(() => hasProducts.value || hasStores.value)
 
 /* --------------------------------------------------------------- STORE RESULTS */
 
-// A store match is navigational — the name was typed to go there — so stores lead the
-// page rather than sitting under a product grid that can run to 200 cards. Only the
-// first few show; the rest are one click away.
+// Stores lead the page and only the first three show, with the rest one click away.
 const STORE_STRIP_MAX = 3
 
 const storesExpanded = ref(false)
@@ -279,17 +274,13 @@ const storeMetaText = (store) => {
 
 const goToStore = (store) => router.push(`/consumer/stores/${store.slug || store.id}`)
 
-// Same breakpoint as the page's own @media (max-width: 600px) rules.
-const isMobileScreen = computed(() => $q.screen.width < 600)
-
-// Mobile: only label a section when both are present (to tell them apart) — drop the count too.
-// Desktop keeps the full "Products (N)" / "Stores (N)" heading regardless.
+// The page subtitle reports the query and its total result count.
 const subtitleText = computed(() => {
-  if (!query.value) return 'Search for products and stores near you.'
-  if (isSearching.value) return `Searching for "${query.value}"…`
+  if (!query.value) return t('Search for products and stores near you.')
+  if (isSearching.value) return t('Searching for "{query}"…', { query: query.value })
 
   const total = filteredProducts.value.length + matchedStores.value.length
-  return `Showing ${total} result${total === 1 ? '' : 's'} for "${query.value}".`
+  return t(total === 1 ? 'Showing {count} result for "{query}".' : 'Showing {count} results for "{query}".', { count: total, query: query.value })
 })
 
 // Shows for any non-empty search — zero results gets its own empty state instead.
@@ -323,8 +314,7 @@ const loadMoreProducts = (index, done) => {
   done(allProductsShown.value)
 }
 
-// A new result set starts from the top again — otherwise narrowing the search would
-// keep the previous scroll depth and render more rows than the query now has.
+// A new result set starts from the top again, otherwise narrowing the search would keep the previous scroll depth.
 watch(filteredProducts, () => { visibleCount.value = PAGE_SIZE })
 
 // Brief simulated delay whenever the search term changes, so the UI has a visible "searching" state to show.
@@ -499,8 +489,7 @@ const goToRecentSearch = (term) => {
 }
 
 /* Shared by both Products and Stores headers — same gap above, same gap below, no per-section overrides. */
-/* STORE ROWS — the mixed-view form for a store. Deliberately not a card: a row reads
-   as navigation, which is what a store result is. */
+/* Store rows are deliberately not cards, since a store result is navigation. */
 .store-rows {
   display: flex;
   flex-direction: column;
@@ -631,8 +620,7 @@ const goToRecentSearch = (term) => {
   color: var(--c-border-strong);
 }
 
-/* "See all N stores" — a text action in the section header, not a button, so it does
-   not compete with the tabs directly above it. */
+/* The show-all toggle is styled as plain text so it stays quieter than the results around it. */
 .section-link {
   padding: 0;
 
@@ -671,9 +659,7 @@ const goToRecentSearch = (term) => {
   margin-left: auto;
 }
 
-/* With no heading between them, this margin is the only thing separating the store
-   block from the products, so it lives on the block itself rather than on an
-   adjacent-sibling rule that only matched some of the time. */
+/* With no heading between them, this margin alone separates the store block from the products. */
 .store-rows,
 .stores-grid {
   margin-bottom: 28px;
@@ -705,8 +691,7 @@ const goToRecentSearch = (term) => {
   gap: 16px;
 }
 
-/* 8px left the heading sitting on the rule. The rule is what separates this from the
-   results above, so the heading needs room below it, not to hug it. */
+/* Room between the rule and the heading, since the rule is what separates this section from the results above. */
 .related-section {
   margin-top: 32px;
   padding-top: 22px;
@@ -765,10 +750,7 @@ const goToRecentSearch = (term) => {
     padding: 16px;
   }
 
-  /* Shown on phones too. It was hidden here, which left the results grid with no
-     heading and no result count — the one place that tells you what was searched
-     and how much came back. The type scale already steps down below 600px, so only
-     the bottom margin needs tightening. */
+  /* The page header stays visible on phones as the only place showing the query and result count, with a tighter bottom margin. */
   .page-header-row {
     margin-bottom: 16px;
   }
@@ -779,13 +761,3 @@ const goToRecentSearch = (term) => {
   }
 }
 </style>
-
-
-
-
-
-
-
-
-
-

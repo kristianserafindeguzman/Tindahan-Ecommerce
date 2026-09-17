@@ -1,0 +1,1087 @@
+// Shared look for the vendor pages, built on the consumer tokens so they match the consumer profile and the vendor dashboard.
+
+.vp-page {
+  background: #ffffff;
+
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+// Quasar's own 4px corners on buttons and outlined fields follow the control radius inside the vendor layout; :where keeps this weaker than any page's own rule.
+:where(.vendor-layout) .q-btn:where(:not(.q-btn--round, .q-btn--rounded)),
+:where(.vendor-layout) .q-field--outlined .q-field__control {
+  border-radius: var(--r-control);
+}
+
+.vp-container {
+  width: 100%;
+  max-width: 1200px;
+  box-sizing: border-box;
+
+  margin: 0 auto;
+  padding: 24px;
+}
+
+// PAGE HEADER — a plain title and subtitle, with the page's main action on the right.
+
+.vp-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+
+  gap: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.vp-title {
+  margin: 0 0 4px;
+
+  font-size: var(--fs-3xl);
+  font-weight: 700;
+  line-height: 1.3;
+
+  color: var(--c-text);
+}
+
+.vp-subtitle {
+  margin: 0;
+
+  font-size: var(--fs-sm);
+
+  color: var(--c-subtle);
+}
+
+// CARDS
+
+.vp-card {
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-surface);
+
+  background: #ffffff;
+
+  box-shadow: var(--sh-card);
+}
+
+// The consumer profile's small outline pill, used for page actions such as Export.
+.vp-pill-btn {
+  height: 38px;
+  min-height: 38px;
+  padding: 0 14px;
+
+  border-radius: var(--r-control);
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  transition: background-color 0.15s;
+
+  &:hover {
+    background: var(--c-brand-tint);
+  }
+
+  .q-icon {
+    font-size: 18px;
+  }
+}
+
+// TOOLBAR — the search box and status chips above a list.
+
+.vp-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+
+  gap: 12px;
+  padding: 16px 20px;
+
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.vp-search {
+  flex: 1 1 260px;
+  max-width: 360px;
+
+  .q-field__control {
+    height: 42px;
+    min-height: 42px;
+
+    border-radius: var(--r-control);
+
+    background: #ffffff;
+  }
+
+  .q-field__control:before {
+    border-color: var(--c-border-strong);
+  }
+
+  .q-field__marginal {
+    height: 42px;
+
+    color: var(--c-muted);
+  }
+
+  .q-field__native {
+    font-size: var(--fs-sm);
+  }
+}
+
+// Status filters as the consumer's pill chips, each with its count, the chosen one in the brand tint.
+/* Chips wrap onto another line rather than hiding off to the side, so every status stays in view on phones. */
+.vp-chips {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px;
+  max-width: 100%;
+}
+
+.vp-chip {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-pill);
+
+  background: #ffffff;
+  color: var(--c-text-3);
+
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+
+  &:hover {
+    border-color: var(--c-border-strong);
+    color: var(--c-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-brand);
+    outline-offset: 2px;
+  }
+
+  &--active,
+  &--active:hover {
+    border-color: var(--c-brand);
+
+    background: var(--c-brand-tint);
+    color: var(--c-brand);
+  }
+}
+
+.vp-chip-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+
+  border-radius: var(--r-pill);
+
+  background: var(--c-surface);
+
+  font-size: 11px;
+  font-weight: 700;
+
+  .vp-chip--active & {
+    background: #ffffff;
+  }
+}
+
+// TABLE — the vendor dashboard's order table.
+
+.vp-table-wrap {
+  overflow-x: auto;
+}
+
+.vp-table {
+  width: 100%;
+  min-width: 680px;
+
+  table-layout: fixed;
+  border-collapse: collapse;
+
+  font-size: var(--fs-sm);
+
+  th {
+    padding: 10px 20px;
+
+    border-bottom: 1px solid var(--c-hairline);
+
+    background: var(--c-surface-2);
+
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-align: left;
+    text-transform: uppercase;
+
+    color: var(--c-muted);
+  }
+
+  td {
+    padding: 12px 20px;
+
+    border-bottom: 1px solid var(--c-hairline);
+
+    vertical-align: middle;
+
+    color: var(--c-text-2);
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+}
+
+.vp-row {
+  cursor: pointer;
+
+  transition: background-color 0.15s;
+
+  &:hover {
+    background: var(--c-surface-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-brand);
+    outline-offset: -2px;
+  }
+}
+
+.vp-id {
+  padding: 3px 8px;
+
+  border-radius: var(--r-control);
+
+  background: var(--c-brand-tint);
+
+  font-size: var(--fs-xs);
+  font-weight: 700;
+
+  color: var(--c-brand);
+}
+
+.vp-person {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+  min-width: 0;
+}
+
+.vp-avatar {
+  flex-shrink: 0;
+
+  background: var(--c-surface);
+  color: var(--c-muted);
+}
+
+.vp-name {
+  min-width: 0;
+  overflow: hidden;
+
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  color: var(--c-text);
+}
+
+.vp-muted {
+  white-space: nowrap;
+
+  color: var(--c-text-3);
+}
+
+.vp-amount {
+  font-weight: 700;
+
+  color: var(--c-text);
+}
+
+.vp-open-btn {
+  color: var(--c-muted);
+}
+
+// Order status chips, in the same colours as the consumer's orders page.
+.vp-status {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 4px;
+  padding: 3px 10px;
+
+  border-radius: var(--r-pill);
+
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+
+  &--info { background: var(--c-info-tint); color: var(--c-info); }
+  &--wait { background: var(--c-status-wait-tint); color: var(--c-status-wait); }
+  &--active { background: var(--c-status-active-tint); color: var(--c-status-active); }
+  &--success { background: var(--c-success-tint); color: var(--c-success); }
+  &--danger { background: var(--c-danger-tint); color: var(--c-danger); }
+  &--warning { background: var(--c-warning-tint); color: var(--c-warning); }
+  &--neutral { background: var(--c-surface); color: var(--c-text-3); }
+
+  // Order statuses, each with its own colour so no two look alike.
+  &--placed { background: var(--st-placed-bg); color: var(--st-placed); }
+  &--preparing { background: var(--st-preparing-bg); color: var(--st-preparing); }
+  &--ready { background: var(--st-ready-bg); color: var(--st-ready); }
+  &--done { background: var(--st-done-bg); color: var(--st-done); }
+  &--cancelled { background: var(--st-cancelled-bg); color: var(--st-cancelled); }
+}
+
+// SORTABLE HEADINGS — a heading that sorts its column, with an arrow for the direction.
+
+.vp-sort {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 4px;
+  padding: 0;
+
+  border: none;
+
+  background: none;
+
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+
+  color: inherit;
+
+  cursor: pointer;
+
+  .q-icon {
+    opacity: 0.55;
+  }
+
+  &:hover {
+    color: var(--c-text-2);
+  }
+
+  &:focus-visible {
+    border-radius: 4px;
+    outline: 2px solid var(--c-brand);
+    outline-offset: 2px;
+  }
+
+  &--on,
+  &--on:hover {
+    color: var(--c-brand);
+
+    .q-icon {
+      opacity: 1;
+    }
+  }
+}
+
+// SEARCH ROW — the search box with its Filters button beside it.
+
+.vp-search-row {
+  display: flex;
+
+  flex: 1 1 360px;
+  gap: 8px;
+  max-width: 460px;
+
+  .vp-search {
+    max-width: none;
+  }
+
+  > .q-btn {
+    flex-shrink: 0;
+
+    white-space: nowrap;
+  }
+}
+
+// FILTER SUMMARY — the filters in use, each one removable, under the toolbar.
+
+.vp-filter-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: 8px;
+  padding: 10px 20px;
+
+  border-bottom: 1px solid var(--c-hairline);
+
+  background: var(--c-surface-2);
+
+  font-size: var(--fs-xs);
+}
+
+.vp-filter-summary-label {
+  font-weight: 600;
+
+  color: var(--c-muted);
+}
+
+.vp-filter-chip {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px 0 12px;
+
+  border: 1px solid var(--c-brand);
+  border-radius: var(--r-pill);
+
+  background: var(--c-brand-tint);
+
+  font: inherit;
+  font-weight: 600;
+
+  color: var(--c-brand);
+
+  cursor: pointer;
+
+  &:hover {
+    background: var(--c-brand-tint-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-brand);
+    outline-offset: 2px;
+  }
+}
+
+.vp-filter-clear {
+  padding: 0 4px;
+
+  border: none;
+
+  background: none;
+
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+
+  color: var(--c-text-3);
+
+  cursor: pointer;
+
+  &:hover {
+    color: var(--c-brand);
+  }
+}
+
+@media (max-width: 600px) {
+  .vp-search-row {
+    max-width: none;
+  }
+
+  .vp-filter-summary {
+    padding: 10px 16px;
+  }
+}
+
+// LOADING, EMPTY AND PAGING
+
+.vp-skeletons {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+  padding: 16px 20px;
+}
+
+.vp-skeleton {
+  border-radius: var(--r-control);
+}
+
+.vp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 6px;
+  padding: 48px 16px;
+
+  text-align: center;
+}
+
+.vp-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 52px;
+  height: 52px;
+  margin-bottom: 6px;
+
+  border-radius: var(--r-surface);
+
+  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  color: var(--c-brand);
+}
+
+.vp-empty-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+
+  color: var(--c-text);
+}
+
+.vp-empty-text {
+  max-width: 300px;
+
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+
+  color: var(--c-muted);
+}
+
+.vp-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+  padding: 12px 20px;
+
+  border-top: 1px solid var(--c-hairline);
+
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
+}
+
+.vp-pager-btns {
+  display: flex;
+
+  gap: 6px;
+
+  .vp-pill-btn {
+    width: 38px;
+    padding: 0;
+  }
+}
+
+// PHONE LIST — a tappable row per item in place of the table.
+
+.vp-list {
+  display: flex;
+  flex-direction: column;
+
+  padding: 4px 8px;
+}
+
+.vp-list-item {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+  width: 100%;
+  padding: 12px 8px;
+
+  border: none;
+  border-bottom: 1px solid var(--c-hairline);
+  border-radius: var(--r-control);
+
+  background: transparent;
+
+  font-family: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: var(--c-surface-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-brand);
+    outline-offset: -2px;
+  }
+}
+
+.vp-list-body {
+  flex: 1;
+  min-width: 0;
+
+  .vp-name {
+    display: block;
+
+    font-size: var(--fs-sm);
+  }
+}
+
+.vp-list-meta {
+  margin-top: 2px;
+
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
+}
+
+.vp-list-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+
+  gap: 4px;
+}
+
+.vp-sr-only {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+// HEADER ACTIONS — the outline pill beside the solid brand button, as on the consumer profile.
+
+.vp-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px;
+}
+
+.vp-primary-btn {
+  height: 38px;
+  min-height: 38px;
+  padding: 0 16px;
+
+  border-radius: var(--r-control);
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  box-shadow: var(--sh-brand);
+
+  transition: box-shadow 0.15s;
+
+  &:hover {
+    box-shadow: var(--sh-brand-hover);
+  }
+
+  .q-icon {
+    font-size: 18px;
+  }
+}
+
+// TONES — the tinted icon tiles and notes, in the dashboard's status colours.
+
+.vp-tone--info { background: var(--c-info-tint); color: var(--c-info); }
+.vp-tone--wait { background: var(--c-status-wait-tint); color: var(--c-status-wait); }
+.vp-tone--active { background: var(--c-status-active-tint); color: var(--c-status-active); }
+.vp-tone--success { background: var(--c-success-tint); color: var(--c-success); }
+.vp-tone--danger { background: var(--c-danger-tint); color: var(--c-danger); }
+.vp-tone--warning { background: var(--c-warning-tint); color: var(--c-warning); }
+.vp-tone--brand { background: var(--c-brand-tint); color: var(--c-brand); }
+.vp-tone--neutral { background: var(--c-surface); color: var(--c-text-3); }
+.vp-tone--placed { background: var(--st-placed-bg); color: var(--st-placed); }
+.vp-tone--preparing { background: var(--st-preparing-bg); color: var(--st-preparing); }
+.vp-tone--ready { background: var(--st-ready-bg); color: var(--st-ready); }
+.vp-tone--done { background: var(--st-done-bg); color: var(--st-done); }
+.vp-tone--cancelled { background: var(--st-cancelled-bg); color: var(--st-cancelled); }
+
+// STAT CARDS — the dashboard's KPI cards, wrapping to fewer columns as space runs out.
+
+.vp-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+
+  gap: var(--sp-gap);
+  margin-bottom: var(--sp-gap);
+}
+
+.vp-stat {
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+  min-width: 0;
+  padding: 18px 20px;
+}
+
+.vp-stat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+}
+
+.vp-stat-label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  color: var(--c-text-3);
+}
+
+/* Clipped, because until the icon font loads each icon is laid out as its invisible name ("remove_shopping_cart"), which would otherwise push a phone page sideways. */
+.vp-stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+
+  width: 40px;
+  height: 40px;
+
+  border-radius: var(--r-surface);
+}
+
+.vp-stat-value {
+  overflow: hidden;
+
+  font-size: var(--fs-4xl);
+  font-weight: 700;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: var(--c-text);
+
+  &--text {
+    font-size: var(--fs-xl);
+    line-height: 1.3;
+    white-space: normal;
+  }
+}
+
+.vp-stat-notes {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 6px;
+  margin-top: auto;
+}
+
+.vp-stat-note {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 5px;
+  padding: 4px 10px;
+
+  border-radius: var(--r-pill);
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+// ROW MENUS — the three-dot actions on a table row.
+
+.vp-menu-list {
+  min-width: 170px;
+  padding: 6px;
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  color: var(--c-text-2);
+
+  .q-item {
+    min-height: 40px;
+    padding: 4px 10px;
+
+    border-radius: var(--r-control);
+  }
+
+  .q-item__section--avatar {
+    min-width: 0;
+    padding-right: 10px;
+
+    color: var(--c-muted);
+  }
+}
+
+.vp-menu-item--danger,
+.vp-menu-item--danger .q-item__section--avatar {
+  color: var(--c-danger);
+}
+
+// FIELDS
+
+.vp-field-label {
+  display: block;
+
+  margin-bottom: 6px;
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  color: var(--c-text-2);
+}
+
+.vp-field-optional {
+  font-weight: 400;
+
+  color: var(--c-muted);
+}
+
+.vp-input {
+  .q-field__control {
+    border-radius: var(--r-control);
+  }
+
+  &.q-field--outlined .q-field__control:before {
+    border-color: var(--c-border-strong);
+  }
+
+  .q-field__native,
+  .q-field__input {
+    font-size: var(--fs-sm);
+  }
+}
+
+// DIALOGS — the same shape as the profile dialogs: an icon tile, a title, the fields and two buttons.
+
+.vp-dialog {
+  width: 440px;
+  max-width: calc(100vw - 32px);
+
+  border-radius: var(--r-surface);
+
+  box-shadow: var(--sh-pop);
+
+  &--wide {
+    width: 500px;
+  }
+}
+
+// Quasar rounds every dialog card at 4px through ".q-dialog__inner > div", so the vendor dialogs restate their radius at a matching strength.
+.q-dialog__inner > .vp-dialog {
+  border-radius: var(--r-surface);
+}
+
+// The same for the menus the vendor pages open, which Quasar also rounds at 4px.
+.q-menu:has(.vp-menu-list, .od-status-list, .pl-filter-panel, .sr-calendar),
+.q-menu.notif-menu {
+  border-radius: var(--r-control);
+}
+
+.vp-dialog-head {
+  position: relative;
+
+  display: flex;
+  align-items: flex-start;
+
+  gap: 14px;
+  padding: 24px 24px 0;
+}
+
+.vp-dialog-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 44px;
+  height: 44px;
+
+  border-radius: var(--r-surface);
+
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
+
+  &--danger {
+    background: var(--c-danger-tint);
+    color: var(--c-danger);
+  }
+}
+
+.vp-dialog-title {
+  padding-right: 28px;
+
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  line-height: 1.3;
+
+  color: var(--c-text);
+}
+
+.vp-dialog-text {
+  margin-top: 4px;
+
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+
+  color: var(--c-subtle);
+
+  strong {
+    color: var(--c-text);
+  }
+}
+
+.vp-dialog-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+
+  color: var(--c-muted);
+}
+
+.vp-dialog-body {
+  display: flex;
+  flex-direction: column;
+
+  gap: 16px;
+  padding: 20px 24px 4px;
+}
+
+.vp-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+
+  gap: 10px;
+  padding: 16px 24px 24px;
+}
+
+.vp-dialog-btn {
+  min-width: 132px;
+  height: 44px;
+
+  border-radius: var(--r-control);
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .vp-dialog-head {
+    padding: 18px 18px 0;
+  }
+
+  .vp-dialog-body {
+    padding: 16px 18px 4px;
+  }
+
+  .vp-dialog-actions {
+    padding: 14px 18px 18px;
+  }
+
+  .vp-dialog-btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .vp-container {
+    padding: 16px;
+  }
+
+  // Phones pair the cards two to a row, and a wide card takes its own row; minmax(0) keeps long words from widening a column.
+  .vp-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vp-stat--wide {
+    grid-column: 1 / -1;
+  }
+
+  // Insight cards pair up the same way, with an odd last card taking the full row, as Best seller does on Sales.
+  .vp-stats--insights > .vp-stat:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  // Their sentence-long values sit a size smaller, and a note that wraps keeps soft corners, so a half-width card stays compact.
+  .vp-stats--insights .vp-stat-value--text {
+    font-size: var(--fs-lg);
+    overflow-wrap: break-word;
+  }
+
+  .vp-stats--insights .vp-stat-note {
+    border-radius: var(--r-control);
+  }
+
+  // A chip row that scrolls sideways in one line instead of wrapping; it is sized to the toolbar plus its 16px sides, so it runs to the card's edges without widening the page.
+  .vp-chips--scroll {
+    flex: 0 0 calc(100% + 32px);
+    flex-wrap: nowrap;
+
+    max-width: calc(100% + 32px);
+    min-width: 0;
+    margin-inline: -16px;
+    padding: 2px 16px;
+    overflow-x: auto;
+
+    scroll-padding-inline: 16px;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  // A soft fade on whichever side still has chips beyond it, a quiet hint that the row moves; it lifts once that end is reached.
+  .vp-chips--more-right {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+  }
+
+  .vp-chips--more-left {
+    -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent);
+  }
+
+  .vp-chips--more-left.vp-chips--more-right {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+  }
+
+  .vp-stat {
+    padding: 16px;
+  }
+
+  .vp-stat-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .vp-stat-value {
+    font-size: var(--fs-3xl);
+  }
+
+  .vp-title {
+    font-size: var(--fs-2xl);
+  }
+
+  .vp-toolbar {
+    padding: 14px 16px;
+  }
+
+  .vp-search {
+    max-width: none;
+  }
+
+  .vp-pager {
+    padding: 12px 16px;
+  }
+}

@@ -1,15 +1,11 @@
 import { ref } from 'vue'
 import { api } from '@/boot/axios'
 
-// Module-level, so every caller shares one list. SiteHeader mounts on each consumer
-// page and fetches exactly what the page itself fetches, which used to issue two
-// identical /products requests per navigation.
+// Module-level, so every caller shares one list instead of the header and page each fetching the same products.
 const products = ref([])
 const loading = ref(false)
 
-// Callers that land in the same tick (header + page onMounted) share one request.
-// Keyed by the coordinates it was made with, so changing the delivery address
-// mid-flight starts a fresh request instead of joining one made for the old spot.
+// Callers in the same tick share one request, keyed by coordinates so an address change starts a fresh one.
 let inFlight = null
 let inFlightKey = null
 
@@ -48,8 +44,7 @@ export function useProducts() {
     loading.value = true
     inFlightKey = key
 
-    // Cleared only if this is still the newest request, so a superseded one
-    // can't switch the spinner off while its replacement is running.
+    // Cleared only by the newest request, so a superseded one cannot switch the spinner off early.
     const promise = load(params).finally(() => {
       if (inFlight === promise) {
         inFlight = null
@@ -64,4 +59,3 @@ export function useProducts() {
 
   return { products, loading, fetchProducts }
 }
-

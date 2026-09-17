@@ -5,15 +5,15 @@
     <div class="page-content">
       <div class="page-header-row">
         <div>
-          <h1 class="page-title">Notifications</h1>
-          <p class="page-subtitle">Order updates and store activity from the last 50 notifications.</p>
+          <h1 class="page-title">{{ t('Notifications') }}</h1>
+          <p class="page-subtitle">{{ t('Order updates and store activity.') }}</p>
         </div>
 
         <q-btn
           v-if="unreadCount"
           unelevated
           no-caps
-          :label="`Mark all read (${unreadCount})`"
+          :label="`Mark all as read (${unreadCount})`"
           class="mark-all-btn"
           :loading="markingAll"
           @click="markAllAsRead"
@@ -23,7 +23,7 @@
       <!-- Same skeleton shape as the rows below, so nothing shifts when they arrive. -->
       <div v-if="loading" class="notif-list">
         <div v-for="n in 5" :key="n" class="notif-row">
-          <q-skeleton type="QAvatar" size="38px" class="notif-skeleton-icon" />
+          <q-skeleton type="QAvatar" size="40px" class="notif-skeleton-icon" />
           <div class="notif-row-body">
             <q-skeleton type="text" class="notif-skeleton-title" />
             <q-skeleton type="text" class="notif-skeleton-text" />
@@ -33,16 +33,12 @@
 
       <div v-else-if="!notifications.length" class="notif-empty">
         <q-icon name="o_notifications_none" size="40px" class="notif-empty-icon" />
-        <p class="notif-empty-text">You have no notifications yet.</p>
-        <q-btn unelevated no-caps label="Browse Products" class="browse-btn" @click="router.push('/consumer/home')" />
+        <p class="notif-empty-text">{{ t('You have no notifications yet.') }}</p>
+        <q-btn unelevated no-caps :label="t('Browse Products')" class="browse-btn" @click="router.push('/consumer/home')" />
       </div>
 
       <div v-else class="notif-list">
-        <!--
-          A row is only a button when it goes somewhere. Notifications without an
-          order_id are informational, so they render as a plain div rather than
-          advertising an interaction that does nothing.
-        -->
+        <!-- A row is only a button when it has an order to open, so informational notifications render as a plain div. -->
         <component
           :is="notif.order_id ? 'button' : 'div'"
           v-for="notif in notifications"
@@ -53,13 +49,13 @@
           @click="notif.order_id ? openOrder(notif) : markRead(notif)"
         >
           <span class="notif-icon" :class="`notif-icon--${toneOf(notif)}`">
-            <q-icon :name="iconOf(notif)" size="19px" />
+            <q-icon :name="iconOf(notif)" size="22px" />
           </span>
 
           <span class="notif-row-body">
             <span class="notif-row-head">
               <span class="notif-row-title">{{ notif.title }}</span>
-              <span v-if="!notif.is_read" class="notif-dot" aria-label="Unread"></span>
+              <span v-if="!notif.is_read" class="notif-dot" :aria-label="t('Unread')"></span>
             </span>
             <span class="notif-row-text">{{ notif.message }}</span>
             <span class="notif-row-time">{{ relativeTime(notif.created_at) }}</span>
@@ -75,12 +71,16 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import { api } from '@/boot/axios'
+
+const { t, locale } = useConsumerLanguage()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -91,23 +91,24 @@ const markingAll = ref(false)
 
 const unreadCount = computed(() => notifications.value.filter((n) => !n.is_read).length)
 
-// Titles are free text from the backend, so the tone is matched on keywords rather
-// than a status column. Anything unrecognised falls back to the brand tone.
-const toneOf = (notif) => {
+/* Notifications have no status field, so the stage is matched on keywords and shown with the order tracker's icon in the colours of that status's pill. */
+const NOTIF_STAGES = [
+  { test: /cancel|reject|fail/, icon: 'o_cancel', tone: 'cancelled' },
+  { test: /picked up|collected|complete/, icon: 'o_task_alt', tone: 'done' },
+  { test: /ready/, icon: 'o_storefront', tone: 'ready' },
+  { test: /prepar|process/, icon: 'o_inventory_2', tone: 'preparing' },
+  { test: /placed|order received|confirmed/, icon: 'o_shopping_cart', tone: 'placed' }
+]
+
+const DEFAULT_STAGE = { icon: 'o_notifications', tone: 'brand' }
+
+const stageOf = (notif) => {
   const t = `${notif.title} ${notif.message}`.toLowerCase()
-  if (/cancel|reject|fail/.test(t)) return 'danger'
-  if (/ready|picked up|complete|deliver/.test(t)) return 'success'
-  if (/prepar|process/.test(t)) return 'active'
-  return 'brand'
+  return NOTIF_STAGES.find((s) => s.test.test(t)) || DEFAULT_STAGE
 }
 
-const iconOf = (notif) => {
-  const tone = toneOf(notif)
-  if (tone === 'danger') return 'o_cancel'
-  if (tone === 'success') return 'o_check_circle'
-  if (tone === 'active') return 'o_local_shipping'
-  return 'o_notifications'
-}
+const toneOf = (notif) => stageOf(notif).tone
+const iconOf = (notif) => stageOf(notif).icon
 
 // Short relative form, matching the "30 mins ago" style used elsewhere in the app.
 const relativeTime = (value) => {
@@ -115,14 +116,14 @@ const relativeTime = (value) => {
   const then = new Date(value)
   if (Number.isNaN(then.getTime())) return ''
   const secs = Math.floor((Date.now() - then.getTime()) / 1000)
-  if (secs < 60) return 'Just now'
+  if (secs < 60) return t('Just now')
   const mins = Math.floor(secs / 60)
-  if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`
+  if (mins < 60) return t(mins === 1 ? '{count} min ago' : '{count} mins ago', { count: mins })
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
+  if (hours < 24) return t(hours === 1 ? '{count} hour ago' : '{count} hours ago', { count: hours })
   const days = Math.floor(hours / 24)
-  if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`
-  return then.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  if (days < 7) return t(days === 1 ? '{count} day ago' : '{count} days ago', { count: days })
+  return then.toLocaleDateString(locale.value, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 const fetchNotifications = async () => {
@@ -138,8 +139,7 @@ const fetchNotifications = async () => {
   }
 }
 
-// Marked locally first so the row responds immediately; the request is best-effort,
-// and the next fetch reconciles it. Same treatment as the header dropdown.
+// Marked read locally first so the row responds at once, with the best-effort request reconciled by the next fetch.
 const markRead = async (notif) => {
   if (notif.is_read) return
   notif.is_read = true
@@ -164,7 +164,7 @@ const markAllAsRead = async () => {
     await api.post('/consumer/notifications/read-all')
   } catch {
     notifications.value.forEach((n, i) => { n.is_read = previous[i] })
-    $q.notify({ type: 'negative', message: 'Could not mark notifications as read' })
+    $q.notify({ type: 'negative', message: t('Could not mark notifications as read') })
   } finally {
     markingAll.value = false
   }
@@ -194,8 +194,7 @@ onMounted(fetchNotifications)
   padding: 24px;
 }
 
-/* Title block and the mark-all action share a row; the action drops below the text
-   on phones rather than squeezing the heading. */
+/* Title block and mark-all action share a row, with the action dropping below the text on phones. */
 .page-header-row {
   display: flex;
   align-items: flex-start;
@@ -284,10 +283,16 @@ onMounted(fetchNotifications)
   outline-offset: 2px;
 }
 
-/* Unread carries a tinted rail rather than a different background, so the row still
-   reads as the same object in the list. */
 .notif-row--unread {
-  border-left: 3px solid var(--c-brand);
+  border-color: var(--c-brand-tint-3);
+  background: var(--c-brand-tint);
+}
+
+/* Unread ones fill their disc with the status colour and a soft ring of its pill tint, so the newest news carries the emphasis. */
+.notif-row--unread .notif-icon {
+  background: var(--tone);
+  color: #ffffff;
+  box-shadow: 0 0 0 4px var(--tone-bg);
 }
 
 .notif-icon {
@@ -296,30 +301,44 @@ onMounted(fetchNotifications)
   justify-content: center;
   flex-shrink: 0;
 
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
 
   border-radius: var(--r-xl);
+
+  background: var(--tone-bg);
+  color: var(--tone);
+}
+
+/* Each stage wears its status pill's colours: blue placed, amber preparing, purple ready, green picked up, red cancelled; anything else stays brand red. */
+.notif-icon--placed {
+  --tone: var(--st-placed);
+  --tone-bg: var(--st-placed-bg);
+}
+
+.notif-icon--preparing {
+  --tone: var(--st-preparing);
+  --tone-bg: var(--st-preparing-bg);
+}
+
+.notif-icon--ready {
+  --tone: var(--st-ready);
+  --tone-bg: var(--st-ready-bg);
+}
+
+.notif-icon--done {
+  --tone: var(--st-done);
+  --tone-bg: var(--st-done-bg);
+}
+
+.notif-icon--cancelled {
+  --tone: var(--st-cancelled);
+  --tone-bg: var(--st-cancelled-bg);
 }
 
 .notif-icon--brand {
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
-  color: var(--c-brand);
-}
-
-.notif-icon--success {
-  background: var(--c-success-tint);
-  color: var(--c-success);
-}
-
-.notif-icon--active {
-  background: var(--c-status-active-tint);
-  color: var(--c-status-active);
-}
-
-.notif-icon--danger {
-  background: var(--c-danger-tint);
-  color: var(--c-danger);
+  --tone: var(--c-brand);
+  --tone-bg: var(--c-brand-tint);
 }
 
 .notif-row-body {
@@ -457,4 +476,3 @@ onMounted(fetchNotifications)
   }
 }
 </style>
-

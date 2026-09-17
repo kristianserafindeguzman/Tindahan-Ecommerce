@@ -1,5 +1,6 @@
 <template>
   <q-page class="login-page">
+    <AuthLanguageSwitcher />
     <div class="login-card">
 
       <!-- LEFT BRANDING PANEL -->
@@ -20,10 +21,10 @@
       <div class="login-panel">
         <div class="login-content">
 
-          <h1>Sign up</h1>
+          <h1>{{ t('Sign up') }}</h1>
 
           <p class="subtitle">
-            Create an account to get started.
+            {{ t('Create an account to get started.') }}
           </p>
 
           <q-form
@@ -41,10 +42,12 @@
                   dense
                   no-error-icon
                   hide-bottom-space
-                  label="First name"
+                  :label="t('First name')"
+                  autocomplete="given-name"
                   class="login-input"
+                  reactive-rules
                   :rules="[
-                    val => !firstNameTouched || !!val || 'First name is required.',
+                    val => !firstNameTouched || !!val || t('First name is required.'),
                     val => !firstNameTouched || nameRule(val)
                   ]"
                   @blur="firstNameTouched = true"
@@ -58,15 +61,32 @@
                   dense
                   no-error-icon
                   hide-bottom-space
-                  label="Last name"
+                  :label="t('Last name')"
+                  autocomplete="family-name"
                   class="login-input"
+                  reactive-rules
                   :rules="[
-                    val => !lastNameTouched || !!val || 'Last name is required.',
+                    val => !lastNameTouched || !!val || t('Last name is required.'),
                     val => !lastNameTouched || nameRule(val)
                   ]"
                   @blur="lastNameTouched = true"
                 />
               </div>
+            </div>
+
+            <!-- BIRTHDAY -->
+            <div class="field-group">
+              <BirthdayInput
+                :translate="t"
+                :locale="locale"
+                v-model="form.birthday"
+                class="login-input"
+                :rules="[
+                  val => !birthdayTouched || !!val || t('Birthday is required.'),
+                  val => !birthdayTouched || birthdayRule(val)
+                ]"
+                @touched="birthdayTouched = true"
+              />
             </div>
 
             <!-- EMAIL -->
@@ -78,10 +98,12 @@
                 no-error-icon
                 hide-bottom-space
                 type="email"
-                label="Email"
+                :label="t('Email')"
+                autocomplete="email"
                 class="login-input"
+                reactive-rules
                 :rules="[
-                  val => !emailTouched || !!val || 'Email is required.',
+                  val => !emailTouched || !!val || t('Email is required.'),
                   val => !emailTouched || emailRule(val)
                 ]"
                 @blur="emailTouched = true"
@@ -96,10 +118,13 @@
                 dense
                 no-error-icon
                 hide-bottom-space
-                label="Mobile number"
+                :label="t('Mobile number')"
+                type="tel"
+                autocomplete="tel"
                 class="login-input"
+                reactive-rules
                 :rules="[
-                  val => !phoneTouched || !!val || 'Mobile number is required.',
+                  val => !phoneTouched || !!val || t('Mobile number is required.'),
                   val => !phoneTouched || phoneRule(val)
                 ]"
                 @blur="phoneTouched = true"
@@ -115,10 +140,12 @@
                 no-error-icon
                 hide-bottom-space
                 :type="showPassword ? 'text' : 'password'"
-                label="Create Password"
+                :label="t('Create Password')"
+                autocomplete="new-password"
                 class="login-input"
+                reactive-rules
                 :rules="[
-                  val => !passwordTouched || !!val || 'Password is required.',
+                  val => !passwordTouched || !!val || t('Password is required.'),
                   val => !passwordTouched || passwordRule(val)
                 ]"
                 @blur="passwordTouched = true"
@@ -133,6 +160,10 @@
                   />
                 </template>
               </q-input>
+              <div v-if="passwordStrong" class="field-message field-message-success">
+                <q-icon name="o_check_circle" size="12px" />
+                {{ t('Strong password.') }}
+              </div>
             </div>
 
             <!-- CONFIRM PASSWORD -->
@@ -144,7 +175,8 @@
                 no-error-icon
                 hide-bottom-space
                 :type="showConfirmPassword ? 'text' : 'password'"
-                label="Confirm Password"
+                :label="t('Confirm Password')"
+                autocomplete="new-password"
                 class="login-input"
                 :error="confirmPasswordMessage?.type === 'error'"
               >
@@ -160,19 +192,19 @@
               </q-input>
               <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
                 <q-icon v-if="confirmPasswordMessage.type === 'success'" name="o_check_circle" size="12px" />
-                {{ confirmPasswordMessage.text }}
+                {{ t(confirmPasswordMessage.text) }}
               </div>
             </div>
 
             <!-- ERROR MESSAGE -->
             <div v-if="registerError" class="error-message">
-              {{ registerError }}
+              {{ t(registerError) }}
             </div>
 
             <!-- SUBMIT BUTTON -->
             <q-btn
               type="submit"
-              label="Submit"
+              :label="t('Create account')"
               no-caps
               unelevated
               class="login-button full-width"
@@ -184,14 +216,14 @@
 
           <!-- LOGIN LINK -->
           <div class="register-section">
-            <span>Already have an account?</span>
+            <span>{{ t('Already have an account?') }}</span>
 
             <button
               type="button"
               class="text-button create-account"
               @click="goToLogin"
             >
-              Log in here.
+              {{ t('Log in') }}
             </button>
           </div>
 
@@ -199,15 +231,12 @@
 
           <!-- TERMS -->
           <p class="terms">
-            By signing up, you agree to our
-            <a href="#" @click.prevent="showTerms = true">
-              Terms and Conditions
-            </a>
-            and
-            <br />
-            <a href="#" @click.prevent="showPrivacy = true">
-              Privacy Policy
-            </a>
+            <span class="terms-intro">{{ t('By signing up, you agree to our') }}</span>
+            <span class="terms-links">
+              <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
+              {{ t('and') }}
+              <span class="terms-policy"><a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.</span>
+            </span>
           </p>
 
         </div>
@@ -222,11 +251,17 @@
 </template>
 
 <script setup>
+import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
+import BirthdayInput from '@/components/shared/BirthdayInput.vue'
+import { isValidBirthday } from '@/utils/birthday'
+
+const { t, locale } = useConsumerLanguage()
 
 const router = useRouter()
 
@@ -243,6 +278,7 @@ const showPrivacy = ref(false)
 const form = reactive({
   firstName: '',
   lastName: '',
+  birthday: '',
   email: '',
   phoneNumber: '',
   password: '',
@@ -250,18 +286,24 @@ const form = reactive({
 })
 
 const nameRule = val =>
-  /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || 'Only letters are allowed.'
+  /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || t('Only letters are allowed.')
 
-const emailRule = val => /.+@.+\..+/.test(val) || 'Enter a valid email address.'
-const phoneRule = val => /^09\d{9}$/.test(val) || 'Mobile number must start with 09 and contain 11 digits.'
-const passwordRule = val => val.length >= 8 || 'Minimum 8 characters'
+const emailRule = val => /.+@.+\..+/.test(val) || t('Enter a valid email address.')
+const phoneRule = val => /^09\d{9}$/.test(val) || t('Mobile number must start with 09 and contain 11 digits.')
+const passwordRule = val => val.length >= 8 || t('Minimum 8 characters')
+
+const birthdayRule = val => isValidBirthday(val) || t('Enter a valid birthday.')
 
 // Gates each field's rules until touched, so rules stay silent on page load — same fix as the Login page's lazy-rules bug.
 const firstNameTouched = ref(false)
 const lastNameTouched = ref(false)
+const birthdayTouched = ref(false)
 const emailTouched = ref(false)
 const phoneTouched = ref(false)
 const passwordTouched = ref(false)
+
+// Shown once the password passes its rule, the same positive state as Change Password on the profile page.
+const passwordStrong = computed(() => !!form.password && passwordRule(form.password) === true)
 
 // Confirm Password uses its own message (not Quasar's :rules) to show a positive "Passwords match" state, not just errors.
 const confirmPasswordMessage = computed(() => {
@@ -273,6 +315,7 @@ const confirmPasswordMessage = computed(() => {
 const canRegister = computed(() =>
   !!form.firstName && nameRule(form.firstName) === true &&
   !!form.lastName && nameRule(form.lastName) === true &&
+  !!form.birthday && birthdayRule(form.birthday) === true &&
   !!form.email && emailRule(form.email) === true &&
   !!form.phoneNumber && phoneRule(form.phoneNumber) === true &&
   !!form.password && passwordRule(form.password) === true &&
@@ -282,6 +325,7 @@ const canRegister = computed(() =>
 const handleRegister = async () => {
   firstNameTouched.value = true
   lastNameTouched.value = true
+  birthdayTouched.value = true
   emailTouched.value = true
   phoneTouched.value = true
   passwordTouched.value = true
@@ -299,6 +343,7 @@ const handleRegister = async () => {
   try {
     const payload = {
       full_name: `${form.firstName} ${form.lastName}`,
+      birthday: form.birthday,
       email: form.email,
       phone_number: form.phoneNumber,
       password: form.password,
@@ -339,6 +384,7 @@ const goToLogin = () => {
 /* PAGE */
 
 .login-page {
+  position: relative;
   min-height: 100vh;
   width: 100%;
   box-sizing: border-box;
@@ -427,7 +473,7 @@ const goToLogin = () => {
   padding: 45px 45px;
 
   background: #ffffff;
-  border-radius: 4px;
+  border-radius: var(--r-2xl);
 
   box-shadow:
     0 20px 50px rgba(0, 0, 0, 0.3);
@@ -447,15 +493,15 @@ const goToLogin = () => {
   line-height: 1.2;
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .subtitle {
   margin: 0 0 30px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 /* FORM */
@@ -490,10 +536,10 @@ const goToLogin = () => {
 .field-message {
   margin-top: 6px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.4;
 
-  color: #dc2626;
+  color: var(--c-danger);
 }
 
 .field-message-success {
@@ -502,7 +548,7 @@ const goToLogin = () => {
 
   gap: 3px;
 
-  color: #16a34a;
+  color: var(--c-success);
   font-weight: 600;
 }
 
@@ -511,38 +557,46 @@ const goToLogin = () => {
 }
 
 .login-input :deep(.q-field__control) {
-  height: 40px;
+  height: 48px;
 
-  border-radius: 8px;
+  border-radius: var(--r-md);
 }
 
 .login-input :deep(.q-field__native),
 .login-input :deep(.q-field__input) {
   font-family: 'Roboto', Arial, sans-serif;
 
-  font-size: 13px;
+  font-size: 14px;
 
-  color: #333333;
+  color: var(--c-text-2);
 
   padding-left: 6px;
 }
 
-.login-input :deep(.q-field__label) {
-  font-size: 13px;
+/* Touch screens keep 16px, because iOS zooms the whole page into any field whose text is smaller than that. */
+@media (pointer: coarse) {
+  .login-input :deep(.q-field__native),
+  .login-input :deep(.q-field__input) {
+    font-size: 16px;
+  }
+}
 
-  color: #8992a2;
+.login-input :deep(.q-field__label) {
+  font-size: var(--fs-sm);
+
+  color: var(--c-muted);
 }
 
 .login-input :deep(.q-field__append) {
-  height: 40px;
+  height: 48px;
 
-  color: #777777;
+  color: var(--c-subtle);
 }
 
 .password-icon {
   font-size: 18px;
 
-  color: #777777;
+  color: var(--c-subtle);
 }
 
 /* ERROR MESSAGE */
@@ -551,15 +605,15 @@ const goToLogin = () => {
   margin-bottom: 14px;
   padding: 10px 14px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--c-danger-tint);
+  border: 1px solid var(--c-danger-line);
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.4;
 
-  color: #b91c1c;
+  color: var(--c-danger);
 }
 
 /* REGISTER BUTTON */
@@ -569,31 +623,31 @@ const goToLogin = () => {
 
   margin-top: 6px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 
   font-family: 'Roboto', Arial, sans-serif;
 
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: 600;
 
-  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+  box-shadow: var(--sh-brand);
 
   transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
-.login-button:hover {
-  background: #a91e21;
+.login-button:not(.disabled):hover {
+  background: var(--c-brand-hover);
 
-  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+  box-shadow: var(--sh-brand-hover);
 
   transform: translateY(-1px);
 }
 
-.login-button:active {
-  background: #8f1a1c;
+.login-button:not(.disabled):active {
+  background: var(--c-brand-active);
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
 
@@ -605,10 +659,10 @@ const goToLogin = () => {
   box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
 }
 
+/* Stays brand red for Quasar's .disabled to fade to 60%, matching the profile page's disabled buttons. */
 .login-button:disabled,
 .login-button.disabled {
-  background: #bd2427;
-  opacity: 0.45;
+  background: var(--c-brand);
 }
 
 /* LOG IN LINK */
@@ -622,24 +676,26 @@ const goToLogin = () => {
 
   gap: 4px;
 
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 
 .register-section span {
-  color: #8e97a6;
+  color: var(--c-muted);
 }
 
+/* Padding cancelled by an equal negative margin grows the tap area to 44px without moving anything. */
 .create-account {
-  font-size: 11px;
-
-  color: #222222;
+  padding: 14px 0;
+  margin: -14px 0;
 
   border: none;
   background: transparent;
 
-  padding: 0;
-
   font-family: 'Roboto', Arial, sans-serif;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  color: var(--c-brand);
 
   cursor: pointer;
 }
@@ -661,14 +717,31 @@ const goToLogin = () => {
 
   text-align: center;
 
-  font-size: 10px;
-  line-height: 1.5;
+  font-size: var(--fs-2xs);
+  line-height: 1.6;
 
-  color: #8e97a6;
+  color: var(--c-muted);
+}
+
+.terms-intro {
+  display: block;
+  text-wrap: balance;
+}
+
+.terms-links {
+  display: block;
+  margin-top: 2px;
+}
+
+.terms-policy {
+  white-space: nowrap;
 }
 
 .terms a {
-  color: #333333;
+  display: inline-block;
+  white-space: nowrap;
+
+  color: var(--c-text-2);
 
   text-decoration: underline;
 }
@@ -694,74 +767,6 @@ const goToLogin = () => {
     width: 260px;
   }
 }
-
-/* UPLOAD AREA (from VendorRegister) */
-.upload-area {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 120px;
-  height: 120px;
-
-  margin: 0 auto;
-
-  background: #f8f8fa;
-  border: 1px dashed #cfcfd6;
-  border-radius: 8px;
-
-  cursor: pointer;
-  overflow: hidden;
-  transition: all 0.2s ease;
-}
-.upload-area:hover {
-  background: #f0f0f4;
-  border-color: #a0a0ab;
-}
-.upload-area.has-preview {
-  border-style: solid;
-  border-color: transparent;
-}
-
-.upload-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.preview-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.photo-preview {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.preview-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-
-  padding: 4px;
-  background: rgba(0, 0, 0, 0.55);
-
-  font-size: 11px;
-  font-weight: 500;
-  color: #ffffff;
-}
-
-
 
 /* MOBILE */
 
@@ -800,7 +805,7 @@ const goToLogin = () => {
 
     justify-content: center;
 
-    padding: 28px 0 8px;
+    padding: 60px 0 8px;
   }
 
   .tindahan-logo-desktop {

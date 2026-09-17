@@ -22,6 +22,7 @@ class VendorController extends Controller
                 'preparing_orders' => 0,
                 'picked_up_orders' => 0,
                 'cancelled_orders' => 0,
+                'total_orders' => 0,
                 'recent_orders' => []
             ]);
         }
@@ -32,6 +33,8 @@ class VendorController extends Controller
         $preparing = \App\Models\Order::where('store_id', $storeId)->where('status', 'preparing')->count();
         $picked_up = \App\Models\Order::where('store_id', $storeId)->where('status', 'picked_up')->count();
         $cancelled = \App\Models\Order::where('store_id', $storeId)->where('status', 'cancelled')->count();
+        // Every order that wasn't cancelled, for the store profile's order count.
+        $totalOrders = \App\Models\Order::where('store_id', $storeId)->where('status', '!=', 'cancelled')->count();
 
         $recentOrders = \App\Models\Order::with('consumer')
             ->where('store_id', $storeId)
@@ -54,6 +57,7 @@ class VendorController extends Controller
             'preparing_orders' => $preparing,
             'picked_up_orders' => $picked_up,
             'cancelled_orders' => $cancelled,
+            'total_orders' => $totalOrders,
             'recent_orders' => $recentOrders
         ]);
     }
@@ -477,7 +481,7 @@ class VendorController extends Controller
         // Get the active forecasts for this store
         $forecasts = \App\Models\DemandForecast::with('inventory')
             ->where('store_id', $store->store_id)
-            ->whereDate('forecast_date', '>=', now()->toDateString())
+            ->whereDate('forecast_date', '>=', now()->subDays(7)->toDateString())
             ->orderBy('predicted_quantity', 'desc')
             ->get();
 
@@ -544,7 +548,7 @@ class VendorController extends Controller
         // Get active forecasts
         $forecasts = \App\Models\DemandForecast::with(['inventory.category'])
             ->where('store_id', $store->store_id)
-            ->whereDate('forecast_date', '>=', now()->toDateString())
+            ->whereDate('forecast_date', '>=', now()->subDays(7)->toDateString())
             ->get();
 
         if ($forecasts->isEmpty()) {
@@ -671,5 +675,73 @@ class VendorController extends Controller
             'currentSeason' => $currentSeason,
             'currentHoliday' => $currentHoliday
         ]);
+    }
+    public function refreshDemandForecast(Request $request)
+    {
+        $store = auth()->user()->store;
+        $storeId = $store->store_id;
+
+        // Run the Python ML script for this store
+        $pythonPath = 'python';
+        $scriptPath = base_path('../ml/random_forest_demand.py');
+
+        // Train the model for this specific store
+        $trainCmd = sprintf(
+            '%s %s --mode train --output json --store_id %d 2>&1',
+            $pythonPath, escapeshellarg($scriptPath), $storeId
+        );
+        exec($trainCmd, $trainOutput, $trainReturn);
+
+        $trainResult = null;
+        foreach ($trainOutput as $line) {
+            $decoded = json_decode($line, true);
+            if ($decoded) { $trainResult = $decoded; break; }
+        }
+
+        if (!$trainResult || $trainResult['status'] === 'error') {
+            return response()->json([
+                'message' => 'No historical sales data available to generate a forecast.',
+                'has_forecast' => false,
+            ]);
+        }
+
+        // Predict using the trained model
+        $predictCmd = sprintf(
+            '%s %s --mode predict --output json --store_id %d 2>&1',
+            $pythonPath, escapeshellarg($scriptPath), $storeId
+        );
+        exec($predictCmd, $predictOutput, $predictReturn);
+
+        $predictResult = null;
+        foreach ($predictOutput as $line) {
+            $decoded = json_decode($line, true);
+            if ($decoded) { $predictResult = $decoded; break; }
+        }
+
+        if (!$predictResult || $predictResult['status'] !== 'success' || empty($predictResult['forecasts'])) {
+            return response()->json([
+                'message' => 'Forecast generation produced no results.',
+                'has_forecast' => false,
+            ]);
+        }
+
+        // Persist forecasts to the database
+        $now = now();
+        foreach ($predictResult['forecasts'] as $forecast) {
+            \App\Models\DemandForecast::updateOrCreate(
+                [
+                    'store_id' => $forecast['store_id'],
+                    'inventory_id' => $forecast['inventory_id'],
+                    'forecast_date' => $forecast['forecast_date'],
+                ],
+                [
+                    'predicted_quantity' => $forecast['predicted_quantity'],
+                    'generated_at' => $now,
+                ]
+            );
+        }
+
+        // Return the updated forecast using the existing method
+        return $this->getDemandForecast($request);
     }
 }

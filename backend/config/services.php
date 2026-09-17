@@ -38,6 +38,8 @@ return [
     'semaphore' => [
     'api_key' => env('SEMAPHORE_API_KEY'),
     'sender_name' => env('SEMAPHORE_SENDER_NAME', 'Thesis'),
+    // When set on a local machine, every code is this value and no text is sent, so sign-up can be tried without a phone.
+    'fake_code' => env('SEMAPHORE_FAKE_CODE'),
     ],
 
 ];

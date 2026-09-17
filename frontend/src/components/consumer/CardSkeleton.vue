@@ -1,14 +1,5 @@
 <template>
-  <!--
-    Placeholder that occupies the same box as the card it stands in for, so content
-    arriving does not shift the grid.
-
-    Geometry is derived from the same type and radius tokens the real cards use
-    rather than restated in pixels. The previous version hardcoded heights computed
-    from 16px/13px/12.5px type; once the type scale moved those numbers were silently
-    wrong, and the skeleton no longer matched the card. calc() off the tokens means
-    it cannot drift again.
-  -->
+  <!-- Placeholder that fills the same box as its card, with geometry derived from the card's type and radius tokens so it cannot drift. -->
   <q-card flat bordered class="cskel">
     <q-skeleton square :animation="anim" :class="['cskel__image', `cskel__image--${variant}`]" />
 
@@ -46,8 +37,7 @@ defineProps({
   }
 })
 
-// QSkeleton animates by default and has no reduced-motion handling of its own, so
-// the preference is read here and passed as the prop rather than fought in CSS.
+// QSkeleton has no reduced-motion handling of its own, so the preference is read here and passed as the animation prop.
 const prefersReduced =
   typeof window !== 'undefined' &&
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
@@ -137,8 +127,7 @@ const anim = computed(() => (prefersReduced ? 'none' : 'wave'))
   height: calc(var(--fs-xs) * 1.3);
 }
 
-/* ProductCard drops to 5:4 and tighter padding on phones; the placeholder has to
-   track it or the grid jumps when the real cards arrive. */
+/* Tracks ProductCard's 5:4 image and tighter padding on phones so the grid does not jump when the real cards arrive. */
 @media (max-width: 600px) {
   .cskel__image--product {
     aspect-ratio: 5 / 4;
@@ -162,4 +151,3 @@ const anim = computed(() => (prefersReduced ? 'none' : 'wave'))
   }
 }
 </style>
-

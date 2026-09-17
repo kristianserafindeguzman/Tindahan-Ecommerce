@@ -19,6 +19,14 @@ class CatalogController extends Controller
         $lng = $request->query('lng');
 
         $query = Inventory::with(['store', 'category'])
+
+        // Optimized -gelo
+        // $query = Inventory::with([
+        //     'store',
+        //     'category',
+        //     'variants',
+        // ])
+
             ->where('status', 'active')
             ->whereHas('store', function ($query) {
                 $query->whereHas('approvalStatus', function ($query) {
@@ -29,8 +37,11 @@ class CatalogController extends Controller
         if ($isPersonalized) {
             // Enforce available_quantity > 0 for personalized feed
             $query->whereRaw('stock_quantity - reserved_quantity > 0');
-        } else {
+        }
+        else {
             // Keep public catalog randomized
+
+            // Remove to optimize -gelo
             $query->inRandomOrder();
         }
 
@@ -83,7 +94,7 @@ class CatalogController extends Controller
         $realtimeCategories = [];
         $fallbackCategories = [];
         $isFallback = false;
-        
+
         $lat = $request->query('lat');
         $lng = $request->query('lng');
 
@@ -93,7 +104,7 @@ class CatalogController extends Controller
                 ->orderBy('predicted_future_searches', 'desc')
                 ->pluck('category_id')
                 ->toArray();
-                
+
             // REAL-TIME SEARCH OVERLAY (Last 30 days)
             $realtimeCategories = \App\Models\SearchLog::where('consumer_id', $consumerId)
                 ->where('searched_at', '>=', now()->subDays(30))
@@ -120,7 +131,7 @@ class CatalogController extends Controller
                     ->pluck('category_id')
                     ->unique()
                     ->toArray();
-                    
+
                 // 2. Top-Selling Nearby Products logic is implicitly handled by scoring later
                 // We fetch the top categories from nearby sales
                 $nearbyTopCategories = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.order_id')
@@ -135,7 +146,7 @@ class CatalogController extends Controller
                     ->limit(5)
                     ->pluck('inventory.category_id')
                     ->toArray();
-                    
+
                 // Merge localized search and nearby top sales
                 $fallbackCategories = array_values(array_unique(array_merge($fallbackCategories, $nearbyTopCategories)));
             }
@@ -168,7 +179,7 @@ class CatalogController extends Controller
 
             // Return array for multi-level sorting
             return [
-                $catScore, 
+                $catScore,
                 $product['distance_meters'] ?? 999999,
                 $product['id']
             ];

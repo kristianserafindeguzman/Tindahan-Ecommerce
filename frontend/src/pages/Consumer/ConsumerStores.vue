@@ -8,16 +8,16 @@
 
       <div class="page-header-row">
         <div>
-          <h1 class="page-title">Nearby Stores</h1>
-          <p class="page-subtitle">Browse all sari-sari stores near you.</p>
+          <h1 class="page-title">{{ t('Nearby Stores') }}</h1>
+          <p class="page-subtitle">{{ t('Browse all sari-sari stores near you.') }}</p>
         </div>
 
         <div class="page-header-actions">
           <div class="sort-inline">
-            <span class="sort-label">Sort by:</span>
+            <span class="sort-label">{{ t('Sort by:') }}</span>
             <q-select
               v-model="sortBy"
-              :options="SORT_OPTIONS"
+              :options="translateOptions(SORT_OPTIONS)"
               dense
               outlined
               emit-value
@@ -37,7 +37,7 @@
             no-caps
             dense
             icon="o_tune"
-            label="Filters"
+            :label="t('Filters')"
             class="filters-toggle-btn"
             @click="filtersOpen = !filtersOpen"
           >
@@ -57,7 +57,7 @@
           </div>
 
           <p v-if="!storesLoading && !filteredStores.length" class="stores-empty">
-            No stores match your filters.
+            {{ t('No stores match your filters.') }}
           </p>
         </div>
 
@@ -99,6 +99,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
@@ -111,14 +113,14 @@ import { useStores } from '@/composables/useStores'
 import { useGridColumns } from '@/composables/useGridColumns'
 import { useReveal } from '@/composables/useReveal'
 
+const { t, translateOptions } = useConsumerLanguage()
+
 const $q = useQuasar()
 
 const gridEl = ref(null)
 const { columns: gridColumns } = useGridColumns(gridEl)
 
-// Two full rows of placeholders. Derived rather than hardcoded so the block never ends
-// in a ragged part-row — the grid is auto-fill, so its column count changes continuously
-// with width, not at breakpoints.
+// Two full rows of placeholders, derived from the live column count so the block never ends in a ragged part-row.
 const SKELETON_ROWS = 2
 const skeletonCount = computed(() => gridColumns.value * SKELETON_ROWS)
 const { onReveal } = useReveal()

@@ -11,21 +11,21 @@
         <div ref="mapEl" class="leaflet-map" />
 
         <div class="map-address-overlay">
-          <div class="map-address-label">Your Location</div>
-          <div class="map-address-text">{{ address || 'Enter Address' }}</div>
+          <div class="map-address-label">{{ t('Your Location') }}</div>
+          <div class="map-address-text">{{ address || t('Enter Address') }}</div>
         </div>
 
         <div class="map-controls">
-          <q-btn round unelevated class="map-control-btn" icon="o_add" @click="zoomIn" />
-          <q-btn round unelevated class="map-control-btn" icon="o_remove" @click="zoomOut" />
-          <q-btn round unelevated class="map-control-btn map-locate-btn" icon="o_my_location" @click="locateMe" />
+          <q-btn round unelevated class="map-control-btn" icon="o_add" :aria-label="t('Zoom in')" @click="zoomIn" />
+          <q-btn round unelevated class="map-control-btn" icon="o_remove" :aria-label="t('Zoom out')" @click="zoomOut" />
+          <q-btn round unelevated class="map-control-btn map-locate-btn" icon="o_my_location" :aria-label="t('Centre on my location')" @click="locateMe" />
         </div>
       </div>
 
       <aside class="map-sidebar">
         <div class="sidebar-header">
-          <div class="sidebar-title">Stores near you</div>
-          <q-btn flat round dense icon="o_close" class="sidebar-close-btn" @click="closeDialog" />
+          <div class="sidebar-title">{{ t('Stores near you') }}</div>
+          <q-btn flat round dense icon="o_close" class="sidebar-close-btn" :aria-label="t('Close map')" @click="closeDialog" />
         </div>
 
         <q-input
@@ -33,7 +33,7 @@
           outlined
           dense
           hide-bottom-space
-          placeholder="Search Store"
+          :placeholder="t('Search Store')"
           class="sidebar-search"
         >
           <template #prepend>
@@ -43,9 +43,9 @@
 
         <div v-if="loading" class="sidebar-loading">
           <q-spinner size="24px" />
-          <p class="sidebar-loading-text">Loading stores…</p>
+          <p class="sidebar-loading-text">{{ t('Loading stores…') }}</p>
         </div>
-        <p v-else-if="!filteredStores.length" class="sidebar-empty">No stores found.</p>
+        <p v-else-if="!filteredStores.length" class="sidebar-empty">{{ t('No stores found.') }}</p>
 
         <div v-else class="sidebar-list">
           <div
@@ -74,13 +74,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount, nextTick } from 'vue'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
+import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useStores } from '@/composables/useStores'
 import { formatDistance } from '@/utils/distance'
 import { useAddress } from '@/composables/useAddress'
+
+const { t, lang } = useConsumerLanguage()
 
 defineProps({
   modelValue: {
@@ -147,7 +151,7 @@ const buildStorePopup = (store) => {
       <div class="store-popup-body">
         <div class="store-popup-name">${name}</div>
         ${store.distance_meters != null ? `<div class="store-popup-distance">${formatDistance(store.distance_meters)}</div>` : ''}
-        <a href="#/consumer/stores/${store.slug || store.id}" class="store-popup-link">View Store →</a>
+        <a href="#/consumer/stores/${store.slug || store.id}" class="store-popup-link">${escapeHtml(t('View Store'))} →</a>
       </div>
     </div>
   `
@@ -167,6 +171,12 @@ const renderMarkers = () => {
     markersById[store.id] = marker
   })
 }
+
+watch(lang, () => {
+  for (const store of stores.value) {
+    markersById[store.id]?.setPopupContent(buildStorePopup(store))
+  }
+})
 
 const focusStore = (store) => {
   const marker = markersById[store.id]
@@ -415,8 +425,7 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   padding: 0 10px 10px;
 
-  /* Lighter touch than the other pages — this is a q-dialog with its own Quasar-driven open transition
-     already, so only the inner list content fades in (avoids stacking a second animation on the dialog itself). */
+  /* Only the inner list fades in, because the q-dialog already runs its own open transition. */
   animation: map-fade-up 0.4s ease both;
 }
 

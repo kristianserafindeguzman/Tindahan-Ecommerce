@@ -1,0 +1,297 @@
+// Styles shared by the admin pages, on top of the vendor pages' own in vendor-pages.scss.
+
+// TOOLBAR — search and chips on the left, Export Report pushed to the right.
+
+.adm-toolbar {
+  justify-content: flex-start;
+}
+
+.adm-export {
+  margin-left: auto;
+}
+
+// ROWS — a store photo or avatar beside two lines of text.
+
+.adm-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  overflow: hidden;
+
+  width: 40px;
+  height: 40px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-control);
+
+  background: var(--c-surface);
+
+  color: var(--c-muted);
+
+  img {
+    width: 100%;
+    height: 100%;
+
+    border-radius: inherit;
+
+    object-fit: cover;
+  }
+
+  &--lg {
+    width: 44px;
+    height: 44px;
+  }
+
+  // People get a round photo; stores keep the rounded square.
+  &--round {
+    border-radius: 50%;
+  }
+}
+
+.adm-two-lines {
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+  min-width: 0;
+}
+
+.adm-sub {
+  overflow: hidden;
+
+  font-size: var(--fs-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: var(--c-muted);
+}
+
+.adm-email {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: var(--c-text-2);
+}
+
+// ROW BUTTONS — outlines in the colour of what they do: View in ink, Approve in green, Reject in red, and a quiet ⋮ for the rest.
+
+.adm-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 8px;
+}
+
+.adm-btn {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 14px;
+
+  border: 1.5px solid currentColor;
+  border-radius: var(--r-control);
+
+  background: #ffffff;
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+
+  // The colour wash below stands in for Quasar's own grey hover layer.
+  .q-focus-helper {
+    display: none;
+  }
+
+  &--view {
+    color: var(--c-text);
+
+    &:hover {
+      background: var(--c-surface-2);
+    }
+  }
+
+  &--approve {
+    color: var(--c-success);
+
+    &:hover {
+      background: var(--c-success-wash);
+    }
+  }
+
+  &--reject {
+    color: var(--c-brand);
+
+    &:hover {
+      background: var(--c-brand-tint);
+    }
+  }
+
+  &--more {
+    width: 36px;
+    min-width: 36px;
+    padding: 0;
+
+    border-color: var(--c-border-strong);
+
+    color: var(--c-text-3);
+
+    .q-icon {
+      font-size: 20px;
+    }
+
+    &:hover {
+      background: var(--c-surface-2);
+
+      color: var(--c-text);
+    }
+  }
+}
+
+// CONFIRM — the Log out dialog's layout: centred icon and text, a line, then two equal buttons.
+
+.adm-confirm {
+  width: 400px;
+}
+
+.adm-confirm-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 28px 28px 22px;
+
+  text-align: center;
+}
+
+.adm-confirm-icon {
+  margin-bottom: 14px;
+
+  &--success {
+    background: var(--c-success-tint);
+
+    color: var(--c-success);
+  }
+
+  &--danger {
+    background: var(--c-danger-tint);
+
+    color: var(--c-danger);
+  }
+}
+
+.adm-confirm-title {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+
+  color: var(--c-text);
+}
+
+.adm-confirm-text {
+  margin: 8px 0 0;
+
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+
+  color: var(--c-text-3);
+
+  strong {
+    color: var(--c-text);
+  }
+}
+
+.adm-confirm-actions {
+  display: flex;
+
+  gap: 12px;
+  padding: 18px 28px 24px;
+
+  .vp-dialog-btn {
+    flex: 1;
+
+    min-width: 0;
+    height: 48px;
+  }
+}
+
+// A thin line under a dialog's heading, as in the vendor cancel dialog.
+.adm-sep {
+  background: var(--c-hairline);
+
+  &--head {
+    margin: 18px 24px 0;
+  }
+}
+
+// REASON DIALOGS — a heading, a line, and a roomy text box; wider than Quasar's 560px cap, so it restates its own limit.
+
+.adm-form-dialog {
+  width: 580px;
+}
+
+.q-dialog__inner--minimized > .adm-form-dialog {
+  max-width: calc(100vw - 32px);
+}
+
+.adm-reason textarea {
+  min-height: 110px;
+}
+
+// NOTES — how an application was decided, in the outcome's colour.
+
+.adm-note {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 10px;
+  padding: 12px 14px;
+
+  border: 1px solid;
+  border-radius: var(--r-control);
+
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+
+  &--danger {
+    border-color: var(--c-danger-line);
+
+    background: var(--c-danger-tint);
+
+    color: var(--c-danger);
+  }
+
+  &--success {
+    border-color: var(--c-success-line);
+
+    background: var(--c-success-wash);
+
+    color: var(--c-success-muted);
+  }
+}
+
+.adm-note-title {
+  font-weight: 700;
+}
+
+// The bell's dropdown, the vendor dashboard's notifications menu.
+.q-menu.notif-menu.adm-notif-menu {
+  overflow: hidden;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-surface);
+
+  box-shadow: var(--sh-pop) !important;
+}
+
+@media (max-width: 480px) {
+  .adm-sep--head {
+    margin: 16px 18px 0;
+  }
+}

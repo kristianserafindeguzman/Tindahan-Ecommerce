@@ -1,8 +1,7 @@
 import { ref } from 'vue'
 import { api } from '@/boot/axios'
 
-// Shared for the same reason as useProducts: the header refetched this on every
-// consumer page alongside the page's own identical call. See useProducts.js.
+// Shared like useProducts, so the header and the page no longer fetch the same stores twice.
 const stores = ref([])
 const loading = ref(false)
 
@@ -57,4 +56,3 @@ export function useStores() {
 
   return { stores, loading, fetchStores }
 }
-

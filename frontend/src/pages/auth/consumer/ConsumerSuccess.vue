@@ -1,5 +1,6 @@
 <template>
   <q-page class="login-page">
+    <AuthLanguageSwitcher />
     <div class="login-card">
 
       <!-- LEFT BRANDING PANEL -->
@@ -22,18 +23,17 @@
 
           <div class="success-wrapper">
             <div class="success-icon-wrap">
-              <q-icon name="o_check" size="42px" color="white" />
+              <q-icon name="o_check" size="36px" />
             </div>
 
-            <h1>Verification Successful</h1>
+            <h1>{{ t('Verification Successful') }}</h1>
 
             <p class="subtitle">
-              Your account has been verified. You can now log in to start
-              exploring local sari-sari stores.
+              {{ t('Your account has been verified. You can now log in to start exploring local sari-sari stores.') }}
             </p>
 
             <q-btn
-              label="Back to Login"
+              :label="t('Log in')"
               no-caps
               unelevated
               class="login-button full-width"
@@ -48,12 +48,17 @@
 </template>
 
 <script setup>
+import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { useRouter } from 'vue-router'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 
+// The verified number is carried over so the login form only needs the password.
 const goToLogin = () => {
-  router.push('/login')
+  router.push({ path: '/login', state: { identifier: history.state?.phone_number || '' } })
 }
 </script>
 
@@ -61,6 +66,7 @@ const goToLogin = () => {
 /* PAGE */
 
 .login-page {
+  position: relative;
   min-height: 100vh;
   width: 100%;
   box-sizing: border-box;
@@ -150,7 +156,7 @@ const goToLogin = () => {
   padding: 45px 45px;
 
   background: #ffffff;
-  border-radius: 4px;
+  border-radius: var(--r-2xl);
 
   box-shadow:
     0 20px 50px rgba(0, 0, 0, 0.3);
@@ -167,19 +173,41 @@ const goToLogin = () => {
   text-align: center;
 }
 
+/* A tinted tile, matching the success treatment on the consumer pages. */
 .success-icon-wrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
 
-  border-radius: 50%;
+  border-radius: var(--r-2xl);
 
-  background: #4BB543;
+  background: var(--c-success-tint);
+  color: var(--c-success);
 
   margin-bottom: 22px;
+
+  animation: success-icon-pop 240ms ease-out;
+}
+
+/* The same pop as the consumer profile's success dialog, scaling the tile in as the page opens. */
+@keyframes success-icon-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.75);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .success-icon-wrap {
+    animation: none;
+  }
 }
 
 .login-content h1 {
@@ -189,16 +217,16 @@ const goToLogin = () => {
   line-height: 1.2;
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .subtitle {
   margin: 0 0 28px;
 
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.6;
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 /* BUTTON */
@@ -206,31 +234,31 @@ const goToLogin = () => {
 .login-button {
   height: 48px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 
   font-family: 'Roboto', Arial, sans-serif;
 
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: 600;
 
-  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+  box-shadow: var(--sh-brand);
 
   transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
 .login-button:hover {
-  background: #a91e21;
+  background: var(--c-brand-hover);
 
-  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+  box-shadow: var(--sh-brand-hover);
 
   transform: translateY(-1px);
 }
 
 .login-button:active {
-  background: #8f1a1c;
+  background: var(--c-brand-active);
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
 
@@ -301,7 +329,7 @@ const goToLogin = () => {
 
     justify-content: center;
 
-    padding: 28px 0 8px;
+    padding: 60px 0 8px;
   }
 
   .tindahan-logo-desktop {

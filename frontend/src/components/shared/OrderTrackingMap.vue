@@ -22,7 +22,9 @@ const props = defineProps({
   consumerLat: { type: [Number, String], default: null },
   consumerLng: { type: [Number, String], default: null },
   storeName: { type: String, default: 'Store' },
-  consumerName: { type: String, default: 'Customer' }
+  consumerName: { type: String, default: 'Customer' },
+  // Off turns the map into a still picture of the route: no dragging, zooming or zoom buttons.
+  interactive: { type: Boolean, default: true }
 })
 
 const mapEl = ref(null)
@@ -69,14 +71,23 @@ const initMap = () => {
   const cLat = parseFloat(props.consumerLat)
   const cLng = parseFloat(props.consumerLng)
 
+  const moves = props.interactive
   mapInstance = L.map(mapEl.value, {
     zoomControl: false,
-    attributionControl: false
+    attributionControl: false,
+    dragging: moves,
+    touchZoom: moves,
+    scrollWheelZoom: moves,
+    doubleClickZoom: moves,
+    boxZoom: moves,
+    keyboard: moves
   })
-  
-  L.control.zoom({ position: 'bottomright' }).addTo(mapInstance)
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  if (moves) L.control.zoom({ position: 'bottomright' }).addTo(mapInstance)
+  else mapEl.value.classList.add('leaflet-map--static')
+
+  // OpenStreetMap tiles, like the app's other maps, since the Carto tiles now come stamped with "API KEY REQUIRED".
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19
   }).addTo(mapInstance)
 
@@ -96,7 +107,7 @@ const initMap = () => {
   }).addTo(mapInstance)
 
   const bounds = L.latLngBounds([sLat, sLng], [cLat, cLng])
-  mapInstance.fitBounds(bounds, { padding: [40, 40] })
+  mapInstance.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 })
 }
 
 const destroyMap = () => {
@@ -141,6 +152,12 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   z-index: 1;
+}
+
+/* A still map shows the plain pointer instead of Leaflet's grab hand, since it can't be dragged. */
+.leaflet-map--static,
+.leaflet-map--static :deep(.leaflet-interactive) {
+  cursor: default;
 }
 
 .no-location-overlay {

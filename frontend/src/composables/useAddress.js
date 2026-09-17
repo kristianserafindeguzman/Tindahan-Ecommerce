@@ -5,12 +5,10 @@ const STORAGE_KEY = 'consumer_address'
 const LAT_KEY = 'consumer_lat'
 const LNG_KEY = 'consumer_lng'
 
-// Module-level singleton, like useCart, so every page and the header pill share one address.
-// Empty until the user actually confirms one — SiteHeader.vue shows an "Enter Address" placeholder for this state.
+// Module-level singleton so every page and the header pill share one address, empty until the user confirms one.
 const address = ref(localStorage.getItem(STORAGE_KEY) || '')
 
-// Module-level guard so the auto-detect prompt only ever fires once per app session,
-// no matter how many pages/SiteHeader instances mount while no address is saved yet.
+// Module-level guard so the auto-detect prompt fires only once per session, however many pages mount without an address.
 let autoDetectAttempted = false
 
 export function useAddress() {
@@ -34,8 +32,7 @@ export function useAddress() {
     }
   }
 
-  // Silently detects and saves the browser's location on first load, skipping the
-  // open-panel-then-confirm flow entirely for anyone who hasn't set an address yet.
+  // Silently detects and saves the browser's location on first load for anyone who has not set an address yet.
   const autoDetectAddress = async () => {
     if (autoDetectAttempted || address.value) return
     autoDetectAttempted = true
