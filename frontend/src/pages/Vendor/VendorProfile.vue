@@ -1434,7 +1434,9 @@ const startEditAddress = () => {
 const onLocationSelected = (location) => {
   editAddress.latitude = location.latitude
   editAddress.longitude = location.longitude
-  if (location.address && addressInputRef.value?.mapSelected(location) !== false) editAddress.address = location.address
+  // mapSelected runs whatever the lookup returned, since the pin still moved; a failed reverse geocode gives an empty address, which must not blank the box.
+  const takesAddress = addressInputRef.value?.mapSelected(location) !== false
+  if (takesAddress && location.address) editAddress.address = location.address
 }
 
 const onAddressPin = ({ latitude, longitude }) => {

@@ -15,6 +15,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { markerIconUrl, markerIcon2xUrl, markerShadowUrl } from '@/utils/leafletDefaultIcon'
 
 const props = defineProps({
   storeLat: { type: [Number, String], default: null },
@@ -39,16 +40,10 @@ const hasCoordinates = computed(() => {
 })
 
 // Leaflet Icons
-const iconUrls = {
-  store: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  storeRetina: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadow: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
-}
-
 const storeIcon = L.icon({
-  iconUrl: iconUrls.store,
-  iconRetinaUrl: iconUrls.storeRetina,
-  shadowUrl: iconUrls.shadow,
+  iconUrl: markerIconUrl,
+  iconRetinaUrl: markerIcon2xUrl,
+  shadowUrl: markerShadowUrl,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
