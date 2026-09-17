@@ -171,7 +171,7 @@
                 @enter="confirmAddress"
               />
 
-              <VendorLocationMap ref="addressMapRef" class="address-menu-map" @location-selected="onLocationSelected" />
+              <VendorLocationMap ref="addressMapRef" :initial="addressPin" class="address-menu-map" @location-selected="onLocationSelected" />
             </div>
 
             <div class="address-menu-footer">
@@ -514,8 +514,18 @@ const $q = useQuasar()
 const { address, setAddress, autoDetectAddress } = useAddress()
 const draftAddress = ref('')
 const draftLocation = ref(null)
+// The saved pin the panel opens on, so the map shows it instead of jumping to the device and relabelling the saved address.
+const addressPin = ref(null)
 const addressInputRef = ref(null)
 const addressMapRef = ref(null)
+
+const savedAddressPin = () => {
+  const latitude = Number(localStorage.getItem('consumer_lat'))
+  const longitude = Number(localStorage.getItem('consumer_lng'))
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null
+  if (latitude === 0 && longitude === 0) return null
+  return { latitude, longitude }
+}
 // The header dropdowns align to the action cluster's right edge rather than their own button, via the q-menu :target bindings.
 const headerActionsRef = ref(null)
 const mobileActionsRef = ref(null)
@@ -551,14 +561,18 @@ const toggleAddressMenu = () => {
   addressMenuOpen.value = next
   if (addressMenuOpen.value) {
     draftAddress.value = address.value
-    draftLocation.value = null
+    // Seeded from the saved pin, so confirming an address whose text was only edited keeps its coordinates instead of clearing them.
+    addressPin.value = savedAddressPin()
+    draftLocation.value = addressPin.value
     closeSuggestions()
   }
 }
 
 // A map tap or late device fix fills the box only when the user has not typed in it, so an address missing from the suggestions survives being pinned.
 const onLocationSelected = (location) => {
-  if (addressInputRef.value?.mapSelected(location) !== false) draftAddress.value = location.address
+  // mapSelected runs whatever the lookup returned, since the pin still moved; a failed reverse geocode gives an empty address, which must not blank the box the shopper is editing.
+  const takesAddress = addressInputRef.value?.mapSelected(location) !== false
+  if (takesAddress && location.address) draftAddress.value = location.address
   draftLocation.value = location
 }
 

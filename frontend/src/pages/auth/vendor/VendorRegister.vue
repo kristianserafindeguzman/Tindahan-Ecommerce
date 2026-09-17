@@ -923,6 +923,11 @@ const nextFromLocation = async () => {
     stepError.value = 'Pick your store location on the map.'
     return
   }
+  // The address is what customers read on the store card, and the map's own lookup can come back empty, so it is never left to the pin alone.
+  if (!finalAddress.value.trim()) {
+    stepError.value = 'Type your store address.'
+    return
+  }
   afterStep(6)
 }
 

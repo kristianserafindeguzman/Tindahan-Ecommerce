@@ -618,6 +618,9 @@ const clearFilters = () => {
 }
 
 .filters-toggle-btn {
+  /* A translated sort label ("I-sort ayon sa:") squeezes this row, and the button used to answer by wrapping its label under the icon, outside its fixed height. */
+  flex-shrink: 0;
+  white-space: nowrap;
   position: relative;
 
   height: 36px;
@@ -643,6 +646,7 @@ const clearFilters = () => {
 }
 
 .filters-toggle-btn :deep(.q-btn__content) {
+  flex-wrap: nowrap;
   gap: 6px;
 }
 
