@@ -16,6 +16,7 @@ export function useCart() {
       items.value = (data || []).map((item) => ({
         cartId: item.cartId,
         inventoryId: item.inventoryId,
+        variantName: item.variantName,
         name: item.name,
         image: item.image,
         price: Number(item.price),
@@ -33,8 +34,12 @@ export function useCart() {
     }
   }
 
-  const addToCart = async (inventoryId, quantity = 1) => {
-    await api.post('/consumer/cart', { inventory_id: inventoryId, quantity })
+  const addToCart = async (inventoryId, quantity = 1, variantName = null) => {
+    await api.post('/consumer/cart', {
+      inventory_id: inventoryId,
+      quantity,
+      variant_name: variantName
+    })
     await fetchCart()
   }
 

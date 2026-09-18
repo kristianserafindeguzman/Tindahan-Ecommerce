@@ -126,6 +126,7 @@
               </div>
               <div class="summary-item-info">
                 <div class="summary-item-name">{{ item.inventory?.product_name || 'Product' }}</div>
+                <div v-if="item.variant_name" class="summary-item-variant">{{ item.variant_name }}</div>
                 <div class="summary-item-qty">{{ t('Qty:') }} {{ item.quantity }}</div>
               </div>
               <div class="summary-item-price">₱{{ formatNumber(item.subtotal) }}</div>
@@ -261,7 +262,10 @@
           <div class="receipt-items">
             <div v-for="item in order?.items" :key="item.order_item_id" class="receipt-item-row">
               <span class="receipt-item-qty">{{ item.quantity }}x</span>
-              <span class="receipt-item-name">{{ item.inventory?.product_name || 'Product' }}</span>
+              <span class="receipt-item-name">
+                {{ item.inventory?.product_name || 'Product' }}
+                <template v-if="item.variant_name"> - {{ item.variant_name }}</template>
+              </span>
               <span class="receipt-item-price">₱{{ formatNumber(item.subtotal) }}</span>
             </div>
           </div>
@@ -1132,6 +1136,12 @@ onMounted(() => {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.summary-item-variant {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--c-muted);
 }
 
 .summary-item-qty {

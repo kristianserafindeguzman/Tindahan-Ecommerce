@@ -139,6 +139,7 @@
 
               <div class="checkout-item-info">
                 <div class="checkout-item-name">{{ item.name }}</div>
+                <div v-if="item.variantName" class="checkout-item-variant">{{ item.variantName }}</div>
                 <div class="checkout-item-price">₱{{ item.price.toFixed(2) }} × {{ item.quantity }}</div>
               </div>
 
@@ -272,6 +273,7 @@
             </div>
             <div class="summary-item-info">
               <div class="summary-item-name">{{ item.name }}</div>
+              <div v-if="item.variantName" class="summary-item-variant">{{ item.variantName }}</div>
               <div class="summary-item-qty">{{ t('Qty:') }} {{ item.quantity }}</div>
             </div>
             <div class="summary-item-price">₱{{ (item.price * item.quantity).toFixed(2) }}</div>
@@ -1247,6 +1249,13 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 
+.checkout-item-variant {
+  margin-top: 1px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--c-muted);
+}
+
 .checkout-item-price {
   margin-top: 2px;
 
@@ -1613,6 +1622,12 @@ onBeforeUnmount(() => {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.summary-item-variant {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--c-muted);
 }
 
 .summary-item-qty {

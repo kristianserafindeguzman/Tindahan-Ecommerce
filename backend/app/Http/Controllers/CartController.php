@@ -24,15 +24,31 @@ class CartController extends Controller
             ->map(function ($item) {
                 $inventory = $item->inventory;
 
+                $variantName = $item->variant_name;
+                $variantPrice = null;
+                $variantQuantity = null;
+
+                if ($variantName && is_array($inventory->variants)) {
+                    $variant = collect($inventory->variants)->firstWhere('name', $variantName);
+                    if ($variant) {
+                        $variantPrice = (float) ($variant['price'] ?? 0);
+                        $variantQuantity = (int) ($variant['quantity'] ?? 0);
+                    }
+                }
+
+                $price = $variantName && $variantPrice !== null ? $variantPrice : (float) ($inventory->price ?? 0);
+                $availableQuantity = $variantName && $variantQuantity !== null ? $variantQuantity : ($inventory->available_quantity ?? 0);
+
                 return [
                     'cartId' => $item->cart_id,
                     'inventoryId' => $item->inventory_id,
+                    'variantName' => $variantName,
                     'name' => $inventory->product_name ?? 'Unavailable product',
                     'image' => $inventory->image_url ?? null,
-                    'price' => (float) ($inventory->price ?? 0),
+                    'price' => $price,
                     'quantity' => $item->quantity,
-                    'availableQuantity' => $inventory->available_quantity ?? 0,
-                    'inStock' => $inventory && $inventory->status === 'active' && $inventory->available_quantity > 0,
+                    'availableQuantity' => $availableQuantity,
+                    'inStock' => $inventory && $inventory->status === 'active' && $availableQuantity > 0,
                     'store' => $inventory->store->store_name ?? null,
                     'storeId' => $inventory->store_id ?? null,
                 ];
@@ -52,30 +68,48 @@ class CartController extends Controller
         $request->validate([
             'inventory_id' => 'required|integer|exists:inventory,inventory_id',
             'quantity' => 'nullable|integer|min:1',
+            'variant_name' => 'nullable|string|max:100',
         ]);
 
         $consumerId = $request->user()->user_id;
         $quantity = $request->input('quantity', 1);
+        $variantName = $request->input('variant_name');
 
         $inventory = Inventory::findOrFail($request->inventory_id);
 
-        if ($inventory->available_quantity < 1) {
+        $availableStock = $inventory->available_quantity;
+        if ($variantName && is_array($inventory->variants)) {
+            $variant = collect($inventory->variants)->firstWhere('name', $variantName);
+            if (!$variant) {
+                return response()->json(['message' => 'The selected variant is no longer available.'], 422);
+            }
+            $availableStock = (int) ($variant['quantity'] ?? 0);
+        }
+
+        if ($availableStock < 1) {
             return response()->json(['message' => 'This product is out of stock.'], 422);
         }
 
-        $existing = CartItem::where('consumer_id', $consumerId)
-            ->where('inventory_id', $inventory->inventory_id)
-            ->first();
+        $query = CartItem::where('consumer_id', $consumerId)
+            ->where('inventory_id', $inventory->inventory_id);
+
+        if ($variantName) {
+            $query->where('variant_name', $variantName);
+        } else {
+            $query->whereNull('variant_name');
+        }
+        $existing = $query->first();
 
         if ($existing) {
             $existing->update([
-                'quantity' => min($existing->quantity + $quantity, $inventory->available_quantity),
+                'quantity' => min($existing->quantity + $quantity, $availableStock),
             ]);
         } else {
             CartItem::create([
                 'consumer_id' => $consumerId,
                 'inventory_id' => $inventory->inventory_id,
-                'quantity' => min($quantity, $inventory->available_quantity),
+                'variant_name' => $variantName,
+                'quantity' => min($quantity, $availableStock),
             ]);
         }
 
@@ -98,6 +132,12 @@ class CartController extends Controller
             ->firstOrFail();
 
         $available = $item->inventory->available_quantity ?? 0;
+        if ($item->variant_name && is_array($item->inventory->variants)) {
+            $variant = collect($item->inventory->variants)->firstWhere('name', $item->variant_name);
+            if ($variant) {
+                $available = (int) ($variant['quantity'] ?? 0);
+            }
+        }
 
         $item->update([
             'quantity' => min($request->quantity, max($available, 1)),
@@ -178,10 +218,26 @@ class CartController extends Controller
                 }
 
                 $availableQty = $inventory->stock_quantity - $inventory->reserved_quantity;
+                $price = $inventory->price;
+                $productName = $inventory->product_name;
+
+                if ($cartItem->variant_name && is_array($inventory->variants)) {
+                    $variant = collect($inventory->variants)->firstWhere('name', $cartItem->variant_name);
+                    if (!$variant) {
+                        throw new \Exception("Variant '{$cartItem->variant_name}' for '{$productName}' is no longer available.");
+                    }
+
+                    $variantAvailable = (int) ($variant['quantity'] ?? 0);
+                    if ($variantAvailable < $cartItem->quantity) {
+                        throw new \Exception("Insufficient stock for '{$productName} - {$cartItem->variant_name}'. Available: {$variantAvailable}, Requested: {$cartItem->quantity}.");
+                    }
+                    $price = $variant['price'];
+                    $productName = "{$productName} - {$cartItem->variant_name}";
+                }
 
                 if ($availableQty < $cartItem->quantity) {
                     throw new \Exception(
-                        "Insufficient stock for '{$inventory->product_name}'. "
+                        "Insufficient stock for '{$productName}'. "
                         . "Available: {$availableQty}, Requested: {$cartItem->quantity}."
                     );
                 }
@@ -190,15 +246,24 @@ class CartController extends Controller
                 $inventory->reserved_quantity += $cartItem->quantity;
                 $inventory->save();
 
-                $subtotal = $inventory->price * $cartItem->quantity;
+                $subtotal = $price * $cartItem->quantity;
                 $totalAmount += $subtotal;
 
-                $orderItemsData[] = [
-                    'inventory_id' => $inventory->inventory_id,
-                    'quantity' => $cartItem->quantity,
-                    'unit_price' => $inventory->price,
-                    'subtotal' => $subtotal,
-                ];
+                $groupKey = $cartItem->inventory_id . '_' . ($cartItem->variant_name ?? 'default');
+
+                // Group by inventory_id and variant_name to consolidate identical order items
+                if (isset($orderItemsData[$groupKey])) {
+                    $orderItemsData[$groupKey]['quantity'] += $cartItem->quantity;
+                    $orderItemsData[$groupKey]['subtotal'] += $subtotal;
+                } else {
+                    $orderItemsData[$groupKey] = [
+                        'inventory_id' => $cartItem->inventory_id,
+                        'variant_name' => $cartItem->variant_name,
+                        'quantity' => $cartItem->quantity,
+                        'unit_price' => $price,
+                        'subtotal' => $subtotal,
+                    ];
+                }
             }
 
             $order = Order::create([
