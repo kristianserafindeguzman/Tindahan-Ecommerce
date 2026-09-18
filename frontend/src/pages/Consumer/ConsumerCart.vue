@@ -60,6 +60,7 @@
 
               <div class="cart-item-info">
                 <div class="cart-item-name">{{ item.name }}</div>
+                <div v-if="item.variantName" class="cart-item-variant">{{ item.variantName }}</div>
                 <div v-if="!item.inStock" class="cart-item-oos-tag">{{ t('Out of Stock') }}</div>
                 <div class="cart-item-price">₱{{ item.price.toFixed(2) }}</div>
               </div>
@@ -544,6 +545,13 @@ const removeItem = async (item) => {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.cart-item-variant {
+  margin-top: 1px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--c-muted);
 }
 
 .cart-item-oos-tag {

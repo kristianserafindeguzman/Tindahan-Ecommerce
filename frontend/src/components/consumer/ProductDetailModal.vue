@@ -234,7 +234,7 @@ const handleAddToCart = async () => {
 
   adding.value = true
   try {
-    await addToCart(props.product.id, quantity.value)
+    await addToCart(props.product.id, quantity.value, selectedVariant.value?.name || null)
     $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: props.product.name }) })
   } catch (error) {
     $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })

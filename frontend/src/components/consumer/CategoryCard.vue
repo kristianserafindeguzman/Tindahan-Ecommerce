@@ -3,11 +3,16 @@
     <div class="category-tile-icon" :class="`category-tile-icon--${category.tone || 'brand'}`">
       <q-icon :name="category.icon" size="22px" />
     </div>
-    <span class="category-tile-label">{{ category.label }}</span>
+    <!-- category.label stays the English name the tile routes with; only the text is translated. -->
+    <span class="category-tile-label">{{ t(category.label) }}</span>
   </q-card>
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
+const { t } = useConsumerLanguage()
+
 defineProps({
   category: {
     type: Object,

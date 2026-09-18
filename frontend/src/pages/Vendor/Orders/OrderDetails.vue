@@ -129,6 +129,7 @@
                   </span>
                   <div class="od-item-body">
                     <div class="od-item-name">{{ item.inventory?.product_name || item.product_name || t('productFallback') }}</div>
+                    <div v-if="item.variant_name" class="od-item-variant">{{ item.variant_name }}</div>
                     <div class="od-item-meta">₱{{ formatNumber(unitPrice(item)) }} × {{ item.quantity }}</div>
                   </div>
                   <div class="od-item-price">₱{{ formatNumber(lineTotal(item)) }}</div>
@@ -1241,6 +1242,20 @@ onMounted(fetchOrderDetails)
 
   min-width: 0;
   padding-top: 3px;
+}
+
+.od-item-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--c-text);
+  line-height: 1.35;
+}
+
+.od-item-variant {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--c-muted);
+  margin-top: 1px;
 }
 
 .od-step-label {

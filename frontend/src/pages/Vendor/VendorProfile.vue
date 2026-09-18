@@ -28,6 +28,33 @@
                 />
               </div>
 
+              <!-- The owner's photo, stored on users.profile_picture like the consumer profile, and shown in the sidebar. -->
+              <div class="owner-photo-row">
+                <div class="owner-photo-wrap">
+                  <q-avatar size="72px" class="owner-avatar">
+                    <img v-if="shownAvatar" :src="shownAvatar" alt="" />
+                    <q-icon v-else name="o_person" size="34px" />
+                  </q-avatar>
+
+                  <q-btn round unelevated color="primary" class="owner-photo-btn" :aria-label="t('changeAvatarBtn')" @click="triggerAvatarUpload">
+                    <q-icon name="o_photo_camera" size="14px" />
+                  </q-btn>
+
+                  <input id="vendorAvatarUpload" type="file" accept="image/png, image/jpeg, image/gif" style="display: none;" @change="onAvatarSelected" />
+                </div>
+
+                <div class="owner-photo-text">
+                  <div class="info-label">{{ t('avatarLabel') }}</div>
+                  <div class="owner-photo-hint">{{ t('avatarHint') }}</div>
+
+                  <div v-if="avatarFile" class="owner-photo-actions">
+                    <q-btn unelevated no-caps dense color="primary" :label="t('savePhotoBtn')" :loading="savingAvatar" @click="saveAvatar" />
+                    <q-btn outline no-caps dense color="primary" :label="t('cancelBtn')" :disable="savingAvatar" @click="cancelAvatar" />
+                  </div>
+                  <q-btn v-else outline no-caps dense color="primary" class="owner-photo-change" :label="t('changeAvatarBtn')" @click="triggerAvatarUpload" />
+                </div>
+              </div>
+
               <div class="info-row">
                 <div class="info-icon"><q-icon name="o_person" size="18px" /></div>
                 <div class="info-body">
@@ -695,6 +722,12 @@ const vendorProfileDict = {
     phoneLabel: 'Phone Number',
     emailLabel: 'Email Address',
     notSet: 'Not set',
+    avatarLabel: 'Profile Photo',
+    avatarHint: 'Shown with your name across the vendor and admin pages. JPG, PNG or GIF, up to 2MB.',
+    changeAvatarBtn: 'Change Profile Photo',
+    errUpdateAvatar: 'Failed to update your profile photo.',
+    successAvatarTitle: 'Profile Photo Updated!',
+    successAvatarMsg: 'Your profile photo has been updated successfully.',
     storePhotoTitle: 'Store Photo',
     storePhotoSubtitle: 'Customers see this on your store page.',
     changePhotoBtn: 'Change Photo',
@@ -832,6 +865,12 @@ const vendorProfileDict = {
     phoneLabel: 'Phone Number',
     emailLabel: 'Email Address',
     notSet: 'Wala pa',
+    avatarLabel: 'Profile Picture',
+    avatarHint: 'Ito ang makikita kasama ng pangalan mo sa vendor at admin pages. JPG, PNG o GIF, hanggang 2MB.',
+    changeAvatarBtn: 'Palitan ang Profile Picture',
+    errUpdateAvatar: 'Failed ma-update ang profile picture mo.',
+    successAvatarTitle: 'Updated na ang Profile Picture!',
+    successAvatarMsg: 'Na-update nang matagumpay ang profile picture mo.',
     storePhotoTitle: 'Picture ng Tindahan',
     storePhotoSubtitle: 'Ito ang nakikita ng customers sa iyong tindahan.',
     changePhotoBtn: 'Palitan ang Picture',
@@ -1330,6 +1369,57 @@ const verifyOtp = async () => {
     otpError.value = errorMessage(err, t('otpInvalid'))
   } finally {
     verifyingOtp.value = false
+  }
+}
+
+// --- Owner profile photo ---
+// Reuses POST /vendor/profile/photo, which is ProfileController::updatePhoto, the same method and
+// public-disk storage behind the consumer profile photo. No new image handling.
+const avatarFile = ref(null)
+const avatarPreview = ref(null)
+const savingAvatar = ref(false)
+
+const shownAvatar = computed(() => avatarPreview.value || user.value.profile_picture_url || null)
+
+const triggerAvatarUpload = () => document.getElementById('vendorAvatarUpload').click()
+
+const onAvatarSelected = (event) => {
+  const file = event.target.files?.[0]
+  // Cleared so choosing the same file again after cancelling still fires change.
+  event.target.value = ''
+  if (!file) return
+
+  avatarFile.value = file
+  avatarPreview.value = URL.createObjectURL(file)
+}
+
+const cancelAvatar = () => {
+  avatarFile.value = null
+  avatarPreview.value = null
+}
+
+const saveAvatar = async () => {
+  if (!avatarFile.value) return
+  savingAvatar.value = true
+  try {
+    const fd = new FormData()
+    fd.append('profile_picture', avatarFile.value)
+    const { data } = await api.post('/vendor/profile/photo', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+
+    user.value.profile_picture_url = data.profile_picture_url
+
+    // Same as the consumer profile: keeps the cached user in step so the sidebar avatar follows.
+    const lsUser = JSON.parse(localStorage.getItem('auth_user') || '{}')
+    lsUser.profile_picture_url = data.profile_picture_url
+    localStorage.setItem('auth_user', JSON.stringify(lsUser))
+
+    avatarFile.value = null
+    avatarPreview.value = null
+    openSuccessModal(t('successAvatarTitle'), t('successAvatarMsg'))
+  } catch (err) {
+    $q.notify({ type: 'negative', message: errorMessage(err, t('errUpdateAvatar')) })
+  } finally {
+    savingAvatar.value = false
   }
 }
 
@@ -2888,6 +2978,67 @@ const deleteAccount = async () => {
     min-width: 0 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+  }
+}
+/* Owner profile photo, sized to sit beside the personal-info rows without reshaping the card. */
+.owner-photo-row {
+  display: flex;
+  align-items: center;
+
+  gap: 16px;
+
+  padding-bottom: 16px;
+  margin-bottom: 4px;
+
+  border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.owner-photo-wrap {
+  position: relative;
+
+  flex-shrink: 0;
+}
+
+.owner-avatar {
+  background: rgba(148, 163, 184, 0.18);
+  color: #64748b;
+}
+
+.owner-photo-btn {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+}
+
+.owner-photo-text {
+  min-width: 0;
+}
+
+.owner-photo-hint {
+  margin: 2px 0 8px;
+
+  font-size: 12px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.owner-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px;
+}
+
+@media (max-width: 599px) {
+  .owner-photo-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>

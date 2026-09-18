@@ -66,7 +66,8 @@
           :class="{ 'category-pill-active': selectedCategory === category.label }"
           @click="selectedCategory = category.label"
         >
-          {{ category.label }}
+          <!-- The English label stays the filter value; only the text shown is translated. -->
+          {{ t(category.label) }}
         </q-chip>
         <q-chip clickable dense class="category-pill category-pill-more" @click="filtersOpen = true">
           {{ t('More') }}

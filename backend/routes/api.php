@@ -45,13 +45,11 @@ Route::post('/forgot-password/reset', [AuthController::class, 'resetPassword']);
 // ----- Authenticated Routes (Sanctum token required) -----
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', function (\Illuminate\Http\Request $request) {
-        \Log::info('API USER route hit');
-        return app(\App\Http\Controllers\AuthController::class)->user($request);
-    });
+    Route::get('/user', [AuthController::class, 'user']);
     // ----- Global Category Routes -----
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::patch('/categories/{id}', [CategoryController::class, 'update']);
+    Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
 
     // ----- Admin Routes -----
     Route::middleware('role:Admin')->prefix('admin')->group(function () {
@@ -101,6 +99,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/store/info', [\App\Http\Controllers\ProfileController::class, 'updateStoreInfo']);
         Route::put('/store/address', [\App\Http\Controllers\ProfileController::class, 'updateStoreAddress']);
         Route::post('/profile/store-image', [\App\Http\Controllers\VendorController::class, 'uploadStoreImage']);
+        // The owner's own photo, through the same ProfileController method and storage the consumer profile uses.
+        Route::post('/profile/photo', [\App\Http\Controllers\ProfileController::class, 'updatePhoto']);
         Route::delete('/account', [\App\Http\Controllers\ProfileController::class, 'deleteAccount']);
         // The same phone and email changes the consumer profile offers, through the same controller methods.
         Route::post('/profile/phone-request-otp', [\App\Http\Controllers\ProfileController::class, 'requestPhoneOtp']);

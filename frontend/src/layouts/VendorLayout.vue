@@ -147,13 +147,13 @@
           <span class="bottom-nav-label">{{ t('orders') }}</span>  
           <q-menu anchor="top middle" self="bottom middle" transition-show="jump-up" transition-hide="jump-down" class="solid-paper-menu" :offset="[0, 10]">  
             <q-list style="min-width: 200px" class="q-py-xs">  
-              <q-item clickable v-ripple to="/vendor/orders/list" active-class="active-popup-item" class="popup-action-item">  
+              <q-item v-close-popup clickable v-ripple to="/vendor/orders/list" active-class="active-popup-item" class="popup-action-item">
                 <q-item-section avatar class="q-pr-sm min-w-0">  
                   <div class="popup-icon-stamp"><q-icon name="list_alt" size="18px" /></div>  
                 </q-item-section>  
                 <q-item-section class="text-weight-bold text-caption">{{ t('orderList') }}</q-item-section>  
               </q-item>  
-              <q-item clickable v-ripple to="/vendor/orders/customers" active-class="active-popup-item" class="popup-action-item">  
+              <q-item v-close-popup clickable v-ripple to="/vendor/orders/customers" active-class="active-popup-item" class="popup-action-item">
                 <q-item-section avatar class="q-pr-sm min-w-0">  
                   <div class="popup-icon-stamp"><q-icon name="people_outline" size="18px" /></div>  
                 </q-item-section>  
@@ -162,18 +162,20 @@
             </q-list>  
           </q-menu>  
         </q-btn>  
+        <!-- Each item carries v-close-popup: QMenu does not close on a route change, so without it
+             the menu stayed open over the page it had just navigated to and the tap looked ignored. -->
         <q-btn flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/products') }">  
           <span class="bottom-nav-pill"><q-icon name="o_inventory_2" size="24px" /></span>  
           <span class="bottom-nav-label">{{ t('products') }}</span>  
           <q-menu anchor="top middle" self="bottom middle" transition-show="jump-up" transition-hide="jump-down" class="solid-paper-menu" :offset="[0, 10]">  
             <q-list style="min-width: 200px" class="q-py-xs">  
-              <q-item clickable v-ripple to="/vendor/products/list" active-class="active-popup-item" class="popup-action-item">  
+              <q-item v-close-popup clickable v-ripple to="/vendor/products/list" active-class="active-popup-item" class="popup-action-item">
                 <q-item-section avatar class="q-pr-sm min-w-0">  
                   <div class="popup-icon-stamp"><q-icon name="format_list_bulleted" size="18px" /></div>  
                 </q-item-section>  
                 <q-item-section class="text-weight-bold text-caption">{{ t('productList') }}</q-item-section>  
               </q-item>  
-              <q-item clickable v-ripple to="/vendor/products/categories" active-class="active-popup-item" class="popup-action-item">  
+              <q-item v-close-popup clickable v-ripple to="/vendor/products/categories" active-class="active-popup-item" class="popup-action-item">
                 <q-item-section avatar class="q-pr-sm min-w-0">  
                   <div class="popup-icon-stamp"><q-icon name="category" size="18px" /></div>  
                 </q-item-section>  
