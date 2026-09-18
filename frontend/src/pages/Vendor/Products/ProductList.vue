@@ -225,20 +225,20 @@
     <AddProductModal v-model="showAddModal" @refresh="fetchProducts" />
     <ProductDetailsModal v-model="showDetailsModal" :product="selectedProduct" @refresh="fetchProducts" />
 
-    <!-- Deactivate or delete, in the Log out dialog's layout: everything centred, the icon above the title, and a line above two equal buttons. -->
+    <!-- Archive or delete, in the Log out dialog's layout: everything centred, the icon above the title, and a line above two equal buttons. -->
     <q-dialog v-model="confirm.open" persistent>
       <q-card class="vp-dialog pl-confirm">
         <div class="pl-confirm-body">
           <span class="vp-dialog-icon vp-dialog-icon--danger pl-confirm-icon">
-            <q-icon :name="confirm.kind === 'delete' ? 'o_delete' : 'o_block'" size="24px" />
+            <q-icon :name="confirm.kind === 'delete' ? 'o_delete' : 'o_inventory_2'" size="24px" />
           </span>
-          <div class="pl-confirm-title">{{ confirm.kind === 'delete' ? t('confirmDeleteTitle') : t('confirmDeactivateTitle') }}</div>
+          <div class="pl-confirm-title">{{ confirm.kind === 'delete' ? t('confirmDeleteTitle') : t('confirmArchiveTitle') }}</div>
           <p class="pl-confirm-text">
             <template v-if="confirm.kind === 'delete'">
               <strong>{{ confirm.product?.product_name }}</strong> {{ t('confirmDeleteDesc') }}
             </template>
             <template v-else>
-              {{ t('confirmDeactivateDesc1') }} <strong>{{ confirm.product?.product_name }}</strong> {{ t('confirmDeactivateDesc2') }}
+              {{ t('confirmArchiveDesc1') }} <strong>{{ confirm.product?.product_name }}</strong> {{ t('confirmArchiveDesc2') }}
             </template>
           </p>
         </div>
@@ -249,7 +249,7 @@
             unelevated
             no-caps
             color="primary"
-            :label="confirm.kind === 'delete' ? t('confirmDeleteBtn') : t('confirmDeactivateBtn')"
+            :label="confirm.kind === 'delete' ? t('confirmDeleteBtn') : t('confirmArchiveBtn')"
             class="vp-dialog-btn"
             :loading="confirm.busy"
             @click="runConfirm"
@@ -361,7 +361,6 @@ const productListDict = {
     optHighToLow: 'High to low',
     statusAll: 'All',
     statusActive: 'Active',
-    statusDeactivated: 'Deactivated',
     statusArchived: 'Archived',
     product: 'product',
     noMatchTitle: 'No matching products',
@@ -379,18 +378,18 @@ const productListDict = {
     fromWord: 'from',
     showingWord: 'Showing',
     actionView: 'View',
-    actionDeactivate: 'Deactivate',
+    actionArchive: 'Archive',
     actionDelete: 'Delete',
     confirmDeleteTitle: 'Delete this product?',
-    confirmDeactivateTitle: 'Deactivate this product?',
+    confirmArchiveTitle: 'Archive this product?',
     confirmDeleteDesc: 'will be removed for good. This can\'t be undone.',
-    confirmDeactivateDesc1: 'Customers won\'t be able to buy',
-    confirmDeactivateDesc2: 'until you turn it back on.',
+    confirmArchiveDesc1: 'Customers won\'t be able to buy',
+    confirmArchiveDesc2: 'until you restore it. Nothing else is removed.',
     cancelBtn: 'Cancel',
     confirmDeleteBtn: 'Delete Product',
-    confirmDeactivateBtn: 'Deactivate',
+    confirmArchiveBtn: 'Archive',
     notifyProductDeleted: 'Product deleted.',
-    notifyProductDeactivated: 'Product deactivated.',
+    notifyProductArchived: 'Product archived.',
     notifyFailedAction: 'Failed to {kind} the product.',
     exportWizardTitle: 'Export inventory',
     exportWizardDesc1: 'Choose a format for the inventory report.',
@@ -441,7 +440,6 @@ const productListDict = {
     optHighToLow: 'Mataas pababa',
     statusAll: 'Lahat',
     statusActive: 'Active',
-    statusDeactivated: 'Naka-deactivate',
     statusArchived: 'Naka-archive',
     product: 'paninda',
     noMatchTitle: 'Walang nahanap na paninda',
@@ -459,18 +457,18 @@ const productListDict = {
     fromWord: 'mula',
     showingWord: 'Pinapakita',
     actionView: 'Tingnan',
-    actionDeactivate: 'I-deactivate',
+    actionArchive: 'I-archive',
     actionDelete: 'Burahin',
     confirmDeleteTitle: 'Burahin ang panindang ito?',
-    confirmDeactivateTitle: 'I-deactivate ang panindang ito?',
+    confirmArchiveTitle: 'I-archive ang panindang ito?',
     confirmDeleteDesc: 'ay mabubura nang tuluyan. Hindi na ito maibabalik.',
-    confirmDeactivateDesc1: 'Hindi na mabibili ang',
-    confirmDeactivateDesc2: 'hangga\'t hindi mo binabalik.',
+    confirmArchiveDesc1: 'Hindi na mabibili ang',
+    confirmArchiveDesc2: 'hangga\'t hindi mo binabalik. Walang ibang mabubura.',
     cancelBtn: 'I-cancel',
     confirmDeleteBtn: 'Burahin',
-    confirmDeactivateBtn: 'I-deactivate',
+    confirmArchiveBtn: 'I-archive',
     notifyProductDeleted: 'Nabura na ang paninda.',
-    notifyProductDeactivated: 'Na-deactivate na ang paninda.',
+    notifyProductArchived: 'Na-archive na ang paninda.',
     notifyFailedAction: 'Failed ma-{kind} ang paninda.',
     exportWizardTitle: 'I-export ang inventory',
     exportWizardDesc1: 'Pumili ng format para sa report.',
@@ -495,7 +493,6 @@ const { t, lang } = useLanguage(productListDict)
 const localizedStatusFilters = computed(() => [
   { key: 'all', label: t('statusAll') },
   { key: 'active', label: t('statusActive') },
-  { key: 'deactivated', label: t('statusDeactivated') },
   { key: 'archived', label: t('statusArchived') }
 ])
 
@@ -707,7 +704,6 @@ const categorySelectOptions = computed(() => [{ label: t('optAllCategories'), va
 const formatStatus = status => {
   const s = String(status || 'active').toLowerCase()
   if (s === 'active') return t('statusActive')
-  if (s === 'deactivated') return t('statusDeactivated')
   if (s === 'archived') return t('statusArchived')
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
@@ -715,7 +711,6 @@ const formatStatus = status => {
 const productTone = status => {
   switch (String(status || 'active').toLowerCase()) {
     case 'active': return 'success'
-    case 'deactivated':
     case 'inactive': return 'danger'
     case 'out of stock': return 'warning'
     default: return 'neutral'
@@ -755,7 +750,8 @@ const askConfirm = (kind, product) => {
 
 const rowActions = product => [
   { label: t('actionView'), icon: 'o_visibility', run: () => viewProduct(product) },
-  ...(product.status !== 'deactivated' ? [{ label: t('actionDeactivate'), icon: 'o_block', run: () => askConfirm('deactivate', product) }] : []),
+  // 'archived' is the only inactive state the inventory table has, so an already archived product has nothing to archive.
+  ...(product.status !== 'archived' ? [{ label: t('actionArchive'), icon: 'o_inventory_2', run: () => askConfirm('archive', product) }] : []),
   { label: t('actionDelete'), icon: 'o_delete', danger: true, run: () => askConfirm('delete', product) }
 ]
 
@@ -769,8 +765,9 @@ const runConfirm = async () => {
       await api.delete(`/vendor/products/${product.inventory_id}`)
       $q.notify({ type: 'positive', message: t('notifyProductDeleted') })
     } else {
-      await api.patch(`/vendor/products/${product.inventory_id}/status`, { status: 'deactivated' })
-      $q.notify({ type: 'positive', message: t('notifyProductDeactivated') })
+      // The existing product update endpoint owns the status column; there is no separate /status route.
+      await api.patch(`/vendor/products/${product.inventory_id}`, { status: 'archived' })
+      $q.notify({ type: 'positive', message: t('notifyProductArchived') })
     }
     confirm.open = false
     fetchProducts()

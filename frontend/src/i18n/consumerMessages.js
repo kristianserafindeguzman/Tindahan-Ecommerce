@@ -616,5 +616,39 @@ export default {
   'Your account is inactive. Please contact support.': 'Inactive ang account mo. I-contact ang support.',
   'Please verify your mobile number to finish signing up.': 'I-verify ang mobile number mo para matapos ang sign-up.',
   '{distance} m away': '{distance} m ang layo',
-  '{distance} km away': '{distance} km ang layo'
+  '{distance} km away': '{distance} km ang layo',
+
+  // Checkout location gate.
+  'Set your location to continue': 'I-set ang location mo para makatuloy',
+  'We need your location so the store knows where you are ordering from. Detect it now, or set your address from the location button in the header.': 'Kailangan namin ang location mo para malaman ng tindahan kung saan ka nag-order. I-detect na ngayon, o i-set ang address mo sa location button sa itaas.',
+  'Detect My Location': 'I-detect ang Location Ko',
+  'Set your location to place this order.': 'I-set ang location mo para maiorder ito.',
+  'Set your location before placing this order.': 'I-set muna ang location mo bago i-order ito.',
+  'We could not detect your location. Please allow location access, or set your address from the location button in the header.': 'Hindi namin ma-detect ang location mo. Paki-allow ang location access, o i-set ang address mo sa location button sa itaas.',
+  // Returned by the checkout endpoint when the consumer has no location.
+  'Set your location before checking out, so the store knows where you are ordering from.': 'I-set muna ang location mo bago mag-checkout, para malaman ng tindahan kung saan ka nag-order.',
+
+  // Product categories, keyed by the English category_name stored in the database.
+  'Cooking Essentials': 'Mga Sangkap sa Pagluluto',
+  'Beverages': 'Mga Inumin',
+  'Snacks & Sweets': 'Tsitsirya at Matatamis',
+  'Personal Care': 'Pangangalaga sa Sarili',
+  'Laundry & Cleaning': 'Panlaba at Panlinis',
+  'Others': 'Iba Pa',
+  'Rice & Grains': 'Bigas at Butil',
+  'Canned & Packaged Foods': 'De-lata at Nakabalot na Pagkain',
+  'Instant Noodles & Pasta': 'Instant Noodles at Pasta',
+  'Condiments & Sauces': 'Panimpla at Sarsa',
+  'Chilled & Processed Foods': 'Chilled at Processed na Pagkain',
+  'Coffee, Milk & Breakfast Drinks': 'Kape, Gatas at Pang-almusal',
+  'Bread & Bakery': 'Tinapay at Panaderya',
+  'Candies & Chocolates': 'Kendi at Tsokolate',
+  'Oral Care': 'Pangangalaga sa Ngipin',
+  'Baby Care': 'Pangangailangan ng Sanggol',
+  'OTC Medicine & First Aid': 'Gamot at First Aid',
+  'School & Office Supplies': 'Gamit sa Eskwela at Opisina',
+  'Household Supplies': 'Gamit sa Bahay',
+  'Batteries, Lighting & Electrical': 'Baterya, Ilaw at Kuryente',
+  'Mobile Load & E-Services': 'Load at E-Services',
+  'Cigarettes & Tobacco': 'Sigarilyo at Tabako',
 }

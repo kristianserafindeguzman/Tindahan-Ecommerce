@@ -31,10 +31,10 @@
               </div>
 
               <div>
-                <label class="vp-field-label">Category</label>
+                <label class="vp-field-label">{{ tCategory('uiCategory') }}</label>
                 <q-select
                   v-model="form.category_id"
-                  :options="categories"
+                  :options="categoryOptions"
                   option-value="category_id"
                   option-label="category_name"
                   emit-value
@@ -43,9 +43,9 @@
                   dense
                   hide-bottom-space
                   behavior="menu"
-                  placeholder="Choose a category"
+                  :placeholder="tCategory('uiChooseCategory')"
                   class="vp-input"
-                  :rules="[val => !!val || 'Choose a category.']"
+                  :rules="[val => !!val || tCategory('uiChooseCategoryRule')]"
                 />
                 <div v-if="form.category_id" class="pm-hint">
                   <q-icon name="o_info" size="14px" />
@@ -228,6 +228,7 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import { api } from '@/boot/axios'
+import { useCategoryLabels } from '@/composables/useCategories'
 import { useQuasar } from 'quasar'
 import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 
@@ -244,6 +245,13 @@ const showCameraLens = ref(false)
 const showCropper = ref(false)
 
 const categories = ref([])
+
+// The select stores category_id, so only the label a vendor reads is translated.
+const { t: tCategory, categoryLabel, categoryDescription } = useCategoryLabels()
+const categoryOptions = computed(() => categories.value.map(category => ({
+  ...category,
+  category_name: categoryLabel(category.category_name)
+})))
 const hasVariants = ref(false)
 const saving = ref(false)
 const imagePreview = ref(null)
@@ -262,7 +270,7 @@ const form = ref({
 })
 
 const selectedAddCategoryGuide = computed(() => {
-  if (!form.value.category_id && !form.value.category) return 'Select a category to see its description.'
+  if (!form.value.category_id && !form.value.category) return tCategory('uiCategoryGuideEmpty')
 
   const matchedCategory = categories.value.find(c =>
     c.category_id === form.value.category_id ||
@@ -270,7 +278,8 @@ const selectedAddCategoryGuide = computed(() => {
     c.category_name === form.value.category?.label
   )
 
-  return matchedCategory?.description || 'No description available for this category.'
+  return categoryDescription(matchedCategory?.category_name, matchedCategory?.description) ||
+    tCategory('uiCategoryGuideNone')
 })
 
 const openCameraViewfinder = () => {

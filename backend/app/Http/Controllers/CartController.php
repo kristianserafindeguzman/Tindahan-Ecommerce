@@ -136,6 +136,20 @@ class CartController extends Controller
         $consumerId = $request->user()->user_id;
         $storeId = $request->input('store_id');
 
+        // An order with no consumer location leaves the vendor without pickup context, so this
+        // is enforced here as well as in the checkout page: the frontend can be bypassed.
+        // Checked before the transaction, so a rejected checkout creates no order and reserves
+        // no stock. The columns themselves stay nullable, because historical orders predate this.
+        $latitude = $request->input('consumer_latitude');
+        $longitude = $request->input('consumer_longitude');
+
+        if ($latitude === null || $longitude === null) {
+            return response()->json([
+                'message' => 'Set your location before checking out, so the store knows where you are ordering from.',
+                'error_code' => 'LOCATION_REQUIRED',
+            ], 422);
+        }
+
         // 1. Get all cart items for this consumer + store
         $cartItems = CartItem::with('inventory')
             ->where('consumer_id', $consumerId)
@@ -192,8 +206,8 @@ class CartController extends Controller
                 'store_id' => $storeId,
                 'total_amount' => $totalAmount,
                 'status' => 'placed',
-                'consumer_latitude' => $request->input('consumer_latitude'),
-                'consumer_longitude' => $request->input('consumer_longitude'),
+                'consumer_latitude' => $latitude,
+                'consumer_longitude' => $longitude,
             ]);
 
             // Create order items

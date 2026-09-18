@@ -175,12 +175,15 @@ import { useCategories } from '@/composables/useCategories'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'
+import { useSearchLog } from '@/composables/useSearchLog'
 
 const { t } = useConsumerLanguage()
 
 const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()
+
+const { logSearch } = useSearchLog()
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
 const query = computed(() => (route.query.q || '').toString().trim())
@@ -342,8 +345,11 @@ const recentSearches = computed(() => {
   }
 })
 
+// Logged here as well as in the header, because this chip starts a search the header's submit
+// path never sees — the route watcher only syncs the input, it does not record anything.
 const goToRecentSearch = (term) => {
   router.push({ path: '/consumer/search', query: { q: term } })
+  logSearch(term)
 }
 </script>
 

@@ -14,11 +14,19 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 warnings.filterwarnings('ignore', category=UserWarning, module='pandas')
 
 def get_db_connection():
+    # Credentials come from Laravel's .env, the same way random_forest_demand.py loads them.
+    # Hardcoding localhost/root here meant this script could only ever reach a local database,
+    # so it could never be trained on the deployed environment's own data.
+    from dotenv import load_dotenv
+    env_path = os.path.join(os.path.dirname(__file__), '..', 'backend', '.env')
+    load_dotenv(env_path)
+
     return pymysql.connect(
-        host='127.0.0.1',
-        user='root',
-        password='',
-        database='tindahan_db'
+        host=os.getenv('DB_HOST', '127.0.0.1'),
+        port=int(os.getenv('DB_PORT', 3306)),
+        user=os.getenv('DB_USERNAME', 'root'),
+        password=os.getenv('DB_PASSWORD', ''),
+        database=os.getenv('DB_DATABASE', 'tindahan_db')
     )
 
 def fetch_search_logs():
@@ -31,8 +39,11 @@ def fetch_search_logs():
         df["searched_at"] = pd.to_datetime(df["searched_at"], errors="coerce")
         df["search_lat"] = pd.to_numeric(df["search_lat"], errors="coerce")
         df["search_lng"] = pd.to_numeric(df["search_lng"], errors="coerce")
-        # Keep category_id as float (can be NaN), drop rows missing critical fields
-        df = df.dropna(subset=["consumer_id", "search_lat", "search_lng", "searched_at"])
+        # Path A (per-consumer category personalization) needs only who searched and when, so
+        # coordinates are NOT required here: a consumer with no detected location still has a
+        # search history worth learning from. Path B filters on coordinates itself, below.
+        # category_id stays float so it can hold NaN for a query that matched no category.
+        df = df.dropna(subset=["consumer_id", "searched_at"])
         return df
     except Exception as e:
         print(json.dumps({"status": "error", "message": f"Database error: {str(e)}"}))
@@ -149,8 +160,15 @@ def predict(df):
     # ---------------------------------------------------------
     # PATH A: Individual Personalization
     # ---------------------------------------------------------
+    # Path A failures leave path_a empty and let Path B run, but the reason is reported so a
+    # missing or stale model is visible to the caller instead of looking like "no data yet".
     try:
-        if os.path.exists(model_path):
+        if not os.path.exists(model_path):
+            output["path_a_warning"] = (
+                "No personalization model found at %s. Run ml:run-personalization --train first."
+                % model_path
+            )
+        else:
             with open(model_path, 'rb') as f:
                 model = pickle.load(f)
                 
@@ -159,7 +177,9 @@ def predict(df):
                 T = pd.Timestamp.now()
                 
             features = build_features(df, T)
-            if not features.empty:
+            if features.empty:
+                output["path_a_warning"] = "No search logs carry a category, so there is nothing to personalize on."
+            else:
                 X = features[["category_id", "frequency", "days_since_last", "dominant_hour", "dominant_day"]]
                 predictions = model.predict(X)
                 features["predicted_score"] = predictions
@@ -171,9 +191,16 @@ def predict(df):
                         "category_id": int(row["category_id"]),
                         "predicted_score": float(row["predicted_score"])
                     })
+
+                # An all-zero forecast means the saved model no longer reflects the current logs,
+                # which otherwise silently flattens every consumer's ranking.
+                if all(record["predicted_score"] == 0 for record in output["path_a"]):
+                    output["path_a_warning"] = (
+                        "Every predicted score is 0, which means the saved model is stale. "
+                        "Retrain with ml:run-personalization --train."
+                    )
     except Exception as e:
-        # If Path A fails (e.g. no model), we just return empty Path A. Path B still runs.
-        pass
+        output["path_a_warning"] = "Path A failed: %s" % e
 
     # ---------------------------------------------------------
     # PATH B: Localized Popular Searches
@@ -184,7 +211,11 @@ def predict(df):
             T_max = df["searched_at"].max()
             T_30 = T_max - timedelta(days=30)
             recent_logs = df[df["searched_at"] >= T_30].copy()
-            
+
+            # Localized popularity is the one path that genuinely needs a location, so rows
+            # logged without coordinates are excluded here rather than upstream.
+            recent_logs = recent_logs.dropna(subset=["search_lat", "search_lng"])
+
             if not recent_logs.empty:
                 # Round to 2 decimal places (~1.1km grid)
                 recent_logs["lat_grid"] = recent_logs["search_lat"].round(2)

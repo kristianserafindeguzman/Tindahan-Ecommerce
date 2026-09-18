@@ -459,8 +459,9 @@
                   <td class="col-prod-price text-right">
                     <div class="text-weight-bold dialog-title-text">₱{{ Number(prod.price).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}</div>
                     <div v-if="prod.variants && prod.variants.length > 0" class="text-caption text-muted-themed mt-xs">
-                      <div v-for="v in prod.variants" :key="v.name">
-                        {{ v.name }}: ₱{{ Number(v.price).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
+                      <!-- Vendor forms save the label under 'size', the seeded catalog under 'name'. -->
+                      <div v-for="(v, vi) in prod.variants" :key="vi">
+                        {{ v.size || v.name || `#${vi + 1}` }}: ₱{{ Number(v.price).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
                       </div>
                     </div>
                   </td>

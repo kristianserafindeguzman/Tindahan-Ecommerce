@@ -55,7 +55,8 @@ class CategoryController extends Controller
         $category = \App\Models\Category::findOrFail($id);
 
         $validated = $request->validate([
-            'description' => 'nullable|string',
+            // Same 255 limit as store(), which the varchar(255) column enforces either way.
+            'description' => 'nullable|string|max:255',
         ]);
 
         if (array_key_exists('description', $validated)) {
@@ -66,6 +67,35 @@ class CategoryController extends Controller
         return response()->json([
             'message' => 'Category description updated successfully.',
             'category' => $category
+        ]);
+    }
+
+    /**
+     * Delete a category that no product uses.
+     *
+     * DELETE /api/categories/{id}
+     */
+    public function destroy($id)
+    {
+        $category = \App\Models\Category::findOrFail($id);
+
+        // inventory.category_id cascades on delete, so deleting a category that is still in use
+        // would delete those products outright. The count deliberately spans every store and
+        // includes archived products, because the vendor's own list only counts its active ones.
+        $productCount = \App\Models\Inventory::where('category_id', $category->category_id)->count();
+
+        if ($productCount > 0) {
+            return response()->json([
+                'message' => 'This category still has ' . $productCount . ' ' . ($productCount === 1 ? 'product' : 'products')
+                    . ' in it. Move or delete them first, then delete the category.',
+                'products_count' => $productCount,
+            ], 409);
+        }
+
+        $category->delete();
+
+        return response()->json([
+            'message' => 'Category deleted successfully.',
         ]);
     }
 }

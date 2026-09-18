@@ -65,13 +65,18 @@ export function useCart() {
   }
 
   const checkout = async (storeId) => {
-    const lat = localStorage.getItem('consumer_lat')
-    const lng = localStorage.getItem('consumer_lng')
-    
-    const payload = { store_id: storeId }
-    if (lat && !isNaN(lat)) payload.consumer_latitude = parseFloat(lat)
-    if (lng && !isNaN(lng)) payload.consumer_longitude = parseFloat(lng)
-    
+    const lat = Number(localStorage.getItem('consumer_lat'))
+    const lng = Number(localStorage.getItem('consumer_lng'))
+    const hasLocation = Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng)
+
+    // Always sent, null included: the backend requires a location and rejects the checkout with
+    // LOCATION_REQUIRED, so the keys are never quietly dropped from the payload.
+    const payload = {
+      store_id: storeId,
+      consumer_latitude: hasLocation ? lat : null,
+      consumer_longitude: hasLocation ? lng : null
+    }
+
     const { data } = await api.post('/consumer/checkout', payload)
     await fetchCart() // Refresh cart to remove checked-out items
     return data

@@ -57,8 +57,8 @@
                     </span>
                     <!-- One aligned row per size: its name, what is left, and its price on the right. -->
                     <ul v-else class="pm-variant-list">
-                      <li v-for="v in product.variants" :key="v.size" class="pm-variant-row" :class="{ 'pm-variant-row--out': !(v.quantity > 0) }">
-                        <span class="pm-variant-size">{{ v.size }}</span>
+                      <li v-for="(v, i) in product.variants" :key="i" class="pm-variant-row" :class="{ 'pm-variant-row--out': !(v.quantity > 0) }">
+                        <span class="pm-variant-size">{{ variantLabel(v, i) }}</span>
                         <span class="pm-variant-qty">{{ v.quantity > 0 ? `${v.quantity} left` : 'Out of stock' }}</span>
                         <span class="pm-variant-price">₱{{ formatNumber(v.price) }}</span>
                       </li>
@@ -142,10 +142,10 @@
               </div>
 
               <div>
-                <label class="vp-field-label">Category</label>
+                <label class="vp-field-label">{{ tCategory('uiCategory') }}</label>
                 <q-select
                   v-model="form.category_id"
-                  :options="categories"
+                  :options="categoryOptions"
                   option-value="category_id"
                   option-label="category_name"
                   emit-value
@@ -154,9 +154,9 @@
                   dense
                   hide-bottom-space
                   behavior="menu"
-                  placeholder="Choose a category"
+                  :placeholder="tCategory('uiChooseCategory')"
                   class="vp-input"
-                  :rules="[val => !!val || 'Choose a category.']"
+                  :rules="[val => !!val || tCategory('uiChooseCategoryRule')]"
                 />
               </div>
 
@@ -336,6 +336,7 @@
 <script setup>
 import { ref, watch, onMounted, computed, nextTick } from 'vue'
 import { api } from '@/boot/axios'
+import { useCategoryLabels } from '@/composables/useCategories'
 import { useQuasar, date } from 'quasar'
 import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 // Imported here like the dashboards do, since the chart component isn't registered for the whole app.
@@ -369,6 +370,13 @@ watch(() => props.modelValue, async val => {
 watch(isOpen, val => emit('update:modelValue', val))
 
 const categories = ref([])
+
+// The select stores category_id, so only the label a vendor reads is translated.
+const { t: tCategory, categoryLabel, categoryDescription } = useCategoryLabels()
+const categoryOptions = computed(() => categories.value.map(category => ({
+  ...category,
+  category_name: categoryLabel(category.category_name)
+})))
 const hasVariants = ref(false)
 const isActive = ref(true)
 const saving = ref(false)
@@ -560,7 +568,13 @@ const populateForm = () => {
 
   if (p.variants && p.variants.length > 0) {
     hasVariants.value = true
-    form.value.variants = JSON.parse(JSON.stringify(p.variants))
+    // Normalised onto 'size', the key these inputs bind to, so a product saved with 'name'
+    // (the seeded catalog) does not load with an empty label and lose it on save.
+    form.value.variants = p.variants.map(v => ({
+      size: v.size || v.name || v.label || '',
+      price: v.price ?? null,
+      quantity: v.quantity ?? null
+    }))
   } else {
     hasVariants.value = false
     form.value.price = p.price
@@ -588,6 +602,10 @@ const showCameraLens = ref(false)
 const showCropper = ref(false)
 const videoElement = ref(null)
 let stream = null
+
+// Vendor forms save the label under 'size'; the seeded catalog uses 'name'. Both shapes exist.
+const variantLabel = (variant, index) =>
+  variant?.size || variant?.name || variant?.label || `Variant ${index + 1}`
 
 const addVariant = () => form.value.variants.push({ size: '', price: null, quantity: null })
 const removeVariant = index => { if (form.value.variants.length > 1) form.value.variants.splice(index, 1) }

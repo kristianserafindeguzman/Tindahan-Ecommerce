@@ -123,14 +123,28 @@
 
 @php
     // PART 3 & 4 - Flatten export rows to guarantee data completeness and correct variant representation
+    // The vendor forms save a variant's label under 'size'; the seeded catalog uses 'name'. Both
+    // shapes are in the database, so the label is read the same way the storefront reads it.
+    $variantLabel = function ($variant, $index) {
+        foreach (['size', 'name', 'label'] as $key) {
+            $value = trim((string) ($variant[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+        // An unlabelled variant still gets a stable, honest position rather than "N/A".
+        return 'Variant ' . ($index + 1);
+    };
+
     $flatRows = [];
     foreach($products as $product) {
         if(is_array($product->variants) && count($product->variants) > 0) {
-            foreach($product->variants as $variant) {
+            foreach(array_values($product->variants) as $variantIndex => $variant) {
                 $flatRows[] = [
                     'is_variant' => true,
                     'product' => $product,
-                    'variant' => $variant
+                    'variant' => $variant,
+                    'variant_label' => $variantLabel($variant, $variantIndex)
                 ];
             }
         } else {
@@ -391,7 +405,7 @@
                     <td>
                         <strong style="color: #0f172a; font-size: 11px;">{{ $product->product_name ?? $product->name }}</strong>
                         @if($isVariant)
-                            <div style="color: #64748b; font-size: 9px; margin-top: 2px;">Variant: <strong style="color: #475569;">{{ $variant['name'] ?? 'N/A' }}</strong></div>
+                            <div style="color: #64748b; font-size: 9px; margin-top: 2px;">Variant: <strong style="color: #475569;">{{ $row['variant_label'] }}</strong></div>
                         @endif
                     </td>
                     <td>{{ $product->category->category_name ?? $product->category->name ?? 'N/A' }}</td>
