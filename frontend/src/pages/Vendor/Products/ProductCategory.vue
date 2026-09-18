@@ -59,19 +59,19 @@
                       <q-icon :name="categoryKind(category.category_name).icon" size="18px" />
                     </span>
                     <div class="cat-text">
-                      <div class="vp-name">{{ category.category_name }}</div>
+                      <div class="vp-name">{{ categoryLabel(category.category_name) }}</div>
                       <div class="cat-desc" :class="{ 'cat-desc--empty': !category.description }">
-                        {{ category.description || t('noDesc') }}
+                        {{ categoryDescription(category) || t('noDesc') }}
                       </div>
                     </div>
                   </div>
                 </td>
                 <td><span class="cat-count"><q-icon name="o_inventory_2" size="14px" /> {{ countLabel(category) }}</span></td>
                 <td class="text-right">
-                  <q-btn flat round dense icon="o_edit" class="cat-action" :aria-label="`${t('editLabel')} ${category.category_name}`" @click="openEditModal(category)">
+                  <q-btn flat round dense icon="o_edit" class="cat-action" :aria-label="`${t('editLabel')} ${categoryLabel(category.category_name)}`" @click="openEditModal(category)">
                     <q-tooltip>{{ t('editLabel') }}</q-tooltip>
                   </q-btn>
-                  <q-btn flat round dense icon="o_delete" class="cat-action cat-action--danger" :aria-label="`${t('deleteLabel')} ${category.category_name}`" @click="openDeleteModal(category)">
+                  <q-btn flat round dense icon="o_delete" class="cat-action cat-action--danger" :aria-label="`${t('deleteLabel')} ${categoryLabel(category.category_name)}`" @click="openDeleteModal(category)">
                     <q-tooltip>{{ t('deleteLabel') }}</q-tooltip>
                   </q-btn>
                 </td>
@@ -86,13 +86,13 @@
               <q-icon :name="categoryKind(category.category_name).icon" size="20px" />
             </span>
             <div class="vp-list-body">
-              <span class="vp-name">{{ category.category_name }}</span>
+              <span class="vp-name">{{ categoryLabel(category.category_name) }}</span>
               <div class="vp-list-meta">{{ countLabel(category) }}</div>
-              <div v-if="category.description" class="cat-desc cat-desc--wrap">{{ category.description }}</div>
+              <div v-if="category.description" class="cat-desc cat-desc--wrap">{{ categoryDescription(category) }}</div>
             </div>
             <div class="cat-item-actions">
-              <q-btn flat round dense icon="o_edit" class="cat-action" :aria-label="`${t('editLabel')} ${category.category_name}`" @click="openEditModal(category)" />
-              <q-btn flat round dense icon="o_delete" class="cat-action cat-action--danger" :aria-label="`${t('deleteLabel')} ${category.category_name}`" @click="openDeleteModal(category)" />
+              <q-btn flat round dense icon="o_edit" class="cat-action" :aria-label="`${t('editLabel')} ${categoryLabel(category.category_name)}`" @click="openEditModal(category)" />
+              <q-btn flat round dense icon="o_delete" class="cat-action cat-action--danger" :aria-label="`${t('deleteLabel')} ${categoryLabel(category.category_name)}`" @click="openDeleteModal(category)" />
             </div>
           </div>
         </div>
@@ -162,7 +162,7 @@
                 <span class="cat-icon" :class="`cat-tone--${categoryKind(editCategoryForm.category_name).tone}`">
                   <q-icon :name="categoryKind(editCategoryForm.category_name).icon" size="18px" />
                 </span>
-                <span class="cat-locked-name">{{ editCategoryForm.category_name }}</span>
+                <span class="cat-locked-name">{{ categoryLabel(editCategoryForm.category_name) }}</span>
                 <q-icon name="o_lock" size="16px" class="cat-locked-icon" />
               </div>
               <div class="cat-hint">{{ t('catNameHint') }}</div>
@@ -197,7 +197,7 @@
             <div>
               <div class="vp-dialog-title">{{ t('moveProductsTitle') }}</div>
               <div class="vp-dialog-text">
-                <strong>{{ categoryToDelete.category_name }}</strong> {{ t('moveProductsText1') }} {{ countLabel(categoryToDelete) }}.
+                <strong>{{ categoryLabel(categoryToDelete.category_name) }}</strong> {{ t('moveProductsText1') }} {{ countLabel(categoryToDelete) }}.
                 {{ t('moveProductsText2') }}
               </div>
             </div>
@@ -252,7 +252,7 @@
               <span class="cat-icon" :class="`cat-tone--${categoryKind(categoryToDelete.category_name).tone}`">
                 <q-icon :name="categoryKind(categoryToDelete.category_name).icon" size="18px" />
               </span>
-              <span class="cat-locked-name">{{ categoryToDelete.category_name }}</span>
+              <span class="cat-locked-name">{{ categoryLabel(categoryToDelete.category_name) }}</span>
               <span class="cat-count">{{ t('zeroProducts') }}</span>
             </div>
           </div>
@@ -272,7 +272,7 @@ import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
 import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
-import { categoryStyle } from '@/composables/useCategories'
+import { categoryStyle, useCategoryLabels } from '@/composables/useCategories'
 import { useLanguage } from '@/composables/useLanguage'
 
 const $q = useQuasar()
@@ -335,7 +335,8 @@ const categoriesDict = {
     notifyEditFail: 'Failed to update the category.',
     notifyDeleteSuccess: 'was deleted.',
     notifyDeleteFail: "Couldn't delete",
-    notifyDeleteFailTryAgain: 'Please try again.'
+    notifyDeleteFailTryAgain: 'Please try again.',
+    notifyLoadFail: 'Failed to load the categories.'
   },
   ph: {
     title: 'Mga Kategorya',
@@ -392,7 +393,8 @@ const categoriesDict = {
     notifyEditFail: 'Failed ma-update ang kategorya.',
     notifyDeleteSuccess: 'ay nabura na.',
     notifyDeleteFail: "Hindi mabura ang",
-    notifyDeleteFailTryAgain: 'Paki-try ulit.'
+    notifyDeleteFailTryAgain: 'Paki-try ulit.',
+    notifyLoadFail: 'Failed ma-load ang mga kategorya.'
   }
 }
 
@@ -425,6 +427,12 @@ const editCategoryForm = ref({ category_id: null, category_name: '', description
 // The same icon and colour the consumer's category cards show for each category, from the shared list in useCategories.
 const categoryKind = name => categoryStyle((name || '').trim())
 
+// Category names and descriptions come from the shared dictionary in useCategories, so the
+// Categories page and the Add/Edit Product selectors all translate them the same way.
+const { categoryLabel, categoryDescription: translateCategoryDescription } = useCategoryLabels()
+
+const categoryDescription = category => translateCategoryDescription(category.category_name, category.description)
+
 const countLabel = category => {
   const count = Number(category.products_count || 0)
   return `${count} ${count === 1 ? t('product') : t('products')}`
@@ -433,16 +441,22 @@ const countLabel = category => {
 // "Others" is the catch-all, so it always sits last; everything else reads A to Z.
 const isOthers = category => /^others?$/i.test((category.category_name || '').trim())
 
+// Sorted by what is on screen, so the list still reads A to Z after switching language.
 const sortedCategories = computed(() =>
   [...categories.value].sort((a, b) =>
-    (isOthers(a) - isOthers(b)) || (a.category_name || '').localeCompare(b.category_name || '', undefined, { sensitivity: 'base' })
+    (isOthers(a) - isOthers(b)) ||
+    categoryLabel(a.category_name).localeCompare(categoryLabel(b.category_name), undefined, { sensitivity: 'base' })
   )
 )
 
 const filteredCategories = computed(() => {
   const needle = (search.value || '').trim().toLowerCase()
   if (!needle) return sortedCategories.value
-  return sortedCategories.value.filter(c => (c.category_name || '').toLowerCase().includes(needle))
+  // Matches the translated name too, so searching "inumin" finds Beverages while in Filipino.
+  return sortedCategories.value.filter(c =>
+    (c.category_name || '').toLowerCase().includes(needle) ||
+    categoryLabel(c.category_name).toLowerCase().includes(needle)
+  )
 })
 
 const fetchCategories = async () => {
@@ -452,6 +466,7 @@ const fetchCategories = async () => {
     categories.value = res.data || []
   } catch (error) {
     console.error('Failed to load categories', error)
+    $q.notify({ type: 'negative', message: t('notifyLoadFail'), position: 'top-right' })
   } finally {
     loading.value = false
   }
@@ -553,7 +568,7 @@ const viewCategoryProducts = () => {
 }
 
 const confirmDelete = async () => {
-  const name = categoryToDelete.value.category_name
+  const name = categoryLabel(categoryToDelete.value.category_name)
   submitting.value = true
   try {
     await api.delete(`/categories/${categoryToDelete.value.category_id}`)

@@ -3,7 +3,7 @@
 
 import { defineConfig } from '#q-app'
 
-export default defineConfig((/* ctx */) => {
+export default defineConfig((ctx) => {
   return {
     // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
     // preFetch: true,
@@ -41,6 +41,18 @@ export default defineConfig((/* ctx */) => {
       target: {
         // browser: 'baseline-widely-available',
         // node: 'node22'
+      },
+
+      // Where boot/axios.js points. Production keeps the Hostinger layout, where the SPA sits at
+      // the web root and Laravel is served from /api through its index.php front controller.
+      // A dev build talks to `php artisan serve` instead, the address the README documents;
+      // config/cors.php already allows any origin on api/*, and auth is bearer-token based, so
+      // no cookie or session setup is involved. Export API_BASE_URL to point somewhere else.
+      // defineEnv (not env, which only configures .env file loading) exposes this as
+      // import.meta.env, the same way the router already reads its Quasar variables.
+      defineEnv: {
+        API_BASE_URL: process.env.API_BASE_URL ||
+          (ctx.dev ? 'http://127.0.0.1:8000/api' : '/api/index.php/api')
       },
 
       // https://v2.quasar.dev/quasar-cli-vite/page-routing-with-vue-router#filename-based-routing

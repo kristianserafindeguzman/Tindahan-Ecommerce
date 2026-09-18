@@ -92,6 +92,27 @@
 
         <div class="checkout-main">
 
+          <!-- Checkout needs the consumer's location so the vendor has pickup context; the
+               backend rejects the order without it, and this is the matching front-end gate. -->
+          <div v-if="!hasConsumerLocation" class="location-required-card">
+            <q-icon name="o_wrong_location" size="22px" class="location-required-icon" />
+            <div class="location-required-body">
+              <div class="location-required-title">{{ t('Set your location to continue') }}</div>
+              <div class="location-required-text">
+                {{ t('We need your location so the store knows where you are ordering from. Detect it now, or set your address from the location button in the header.') }}
+              </div>
+              <q-btn
+                unelevated
+                no-caps
+                icon="o_my_location"
+                :label="t('Detect My Location')"
+                class="location-required-btn"
+                :loading="detectingLocation"
+                @click="detectLocation"
+              />
+            </div>
+          </div>
+
           <!-- STORE INFO -->
           <div class="store-info-card">
             <div class="checkout-items-title">{{ t('Pickup Location') }}</div>
@@ -118,6 +139,7 @@
 
               <div class="checkout-item-info">
                 <div class="checkout-item-name">{{ item.name }}</div>
+                <div v-if="item.variantName" class="checkout-item-variant">{{ item.variantName }}</div>
                 <div class="checkout-item-price">₱{{ item.price.toFixed(2) }} × {{ item.quantity }}</div>
               </div>
 
@@ -251,6 +273,7 @@
             </div>
             <div class="summary-item-info">
               <div class="summary-item-name">{{ item.name }}</div>
+              <div v-if="item.variantName" class="summary-item-variant">{{ item.variantName }}</div>
               <div class="summary-item-qty">{{ t('Qty:') }} {{ item.quantity }}</div>
             </div>
             <div class="summary-item-price">₱{{ (item.price * item.quantity).toFixed(2) }}</div>
@@ -269,8 +292,12 @@
             :label="t('Place Order')"
             class="place-order-btn"
             :loading="placingOrder"
+            :disable="!hasConsumerLocation"
             @click="placeOrder"
           />
+          <p v-if="!hasConsumerLocation" class="summary-location-note">
+            {{ t('Set your location to place this order.') }}
+          </p>
           <p class="summary-terms-note">
             {{ t('By placing your order, you agree to our') }}
             <a href="#" class="summary-terms-link" @click.prevent="showTerms = true">{{ t('Terms of Service') }}</a>
@@ -297,6 +324,7 @@
           :label="t('Place Order')"
           class="place-order-btn"
           :loading="placingOrder"
+          :disable="!hasConsumerLocation"
           @click="placeOrder"
         />
       </div>
@@ -329,6 +357,7 @@ import { useQuasar } from 'quasar'
 import { useCart } from '@/composables/useCart'
 import { formatDistance } from '@/utils/distance'
 import { useStores } from '@/composables/useStores'
+import { useAddress } from '@/composables/useAddress'
 import { api } from '@/boot/axios'
 
 const { t, itemCount, locale } = useConsumerLanguage()
@@ -339,6 +368,33 @@ const $q = useQuasar()
 
 const { items, loading, fetchCart, checkout } = useCart()
 const { stores, fetchStores } = useStores()
+const { address, detectAddress } = useAddress()
+
+const detectingLocation = ref(false)
+
+// The coordinates live in localStorage, which is not reactive, so the shared address ref is read
+// too: setting or detecting an address updates it and re-evaluates this.
+const hasConsumerLocation = computed(() => {
+  void address.value
+  const lat = Number(localStorage.getItem('consumer_lat'))
+  const lng = Number(localStorage.getItem('consumer_lng'))
+  return Number.isFinite(lat) && Number.isFinite(lng) && Boolean(lat || lng)
+})
+
+const detectLocation = async () => {
+  detectingLocation.value = true
+  try {
+    const detected = await detectAddress()
+    if (!detected) {
+      $q.notify({
+        type: 'negative',
+        message: t('We could not detect your location. Please allow location access, or set your address from the location button in the header.')
+      })
+    }
+  } finally {
+    detectingLocation.value = false
+  }
+}
 
 const user = ref({})
 const placingOrder = ref(false)
@@ -347,6 +403,15 @@ const placedOrder = ref(null)
 const showContactSupport = ref(false)
 
 const placeOrder = async () => {
+  // Mirrors the backend's LOCATION_REQUIRED guard, so nothing is sent that is certain to fail.
+  if (!hasConsumerLocation.value) {
+    $q.notify({
+      type: 'negative',
+      message: t('Set your location before placing this order.')
+    })
+    return
+  }
+
   placingOrder.value = true
   try {
     const data = await checkout(storeId.value)
@@ -1184,6 +1249,13 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 
+.checkout-item-variant {
+  margin-top: 1px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--c-muted);
+}
+
 .checkout-item-price {
   margin-top: 2px;
 
@@ -1552,6 +1624,12 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 
+.summary-item-variant {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--c-muted);
+}
+
 .summary-item-qty {
   margin-top: 1px;
 
@@ -1759,5 +1837,68 @@ onBeforeUnmount(() => {
   .subtitle-break {
     display: none;
   }
+}
+/* Location gate, styled as a warning panel rather than an error: the order is not broken, it
+   just needs one more thing from the consumer. */
+.location-required-card {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 12px;
+
+  margin-bottom: 16px;
+  padding: 16px;
+
+  border: 1px solid #f2c744;
+  border-radius: var(--r-lg);
+
+  background: #fffaeb;
+}
+
+.location-required-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #b7791f;
+}
+
+.location-required-body {
+  min-width: 0;
+}
+
+.location-required-title {
+  margin-bottom: 4px;
+
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: #7b5804;
+}
+
+.location-required-text {
+  margin-bottom: 12px;
+
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: #8a6512;
+}
+
+.location-required-btn {
+  min-height: 40px;
+  padding: 0 16px;
+
+  border-radius: var(--r-pill);
+
+  background: var(--c-brand);
+  color: var(--c-white);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.summary-location-note {
+  margin: 8px 0 0;
+
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+  text-align: center;
+  color: #b7791f;
 }
 </style>

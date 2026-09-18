@@ -2,17 +2,10 @@ import { boot } from 'quasar/wrappers'
 import axios from 'axios'
 import { clearAuthStorage } from '@/utils/authStorage'
 
-// const api = axios.create({
-//   baseURL: '/api/index.php/api'
-// })
-
-const apiBaseURL =
-  window.location.hostname === 'localhost'
-    ? 'http://localhost:8000/api'
-    : '/api/index.php/api'
-
+// Set in quasar.config.js > build.defineEnv: the production Hostinger path, or the local
+// `php artisan serve` address during development.
 const api = axios.create({
-  baseURL: apiBaseURL
+  baseURL: import.meta.env.API_BASE_URL
 })
 
 // Attach the Sanctum bearer token to every request

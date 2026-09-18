@@ -57,6 +57,12 @@ class RunPersonalization extends Command
                 return 1;
             }
             
+            // Surfaced rather than swallowed: a missing or stale model leaves Path A empty, which
+            // otherwise looks identical to "this consumer has no history yet".
+            if (!empty($predictOutput['path_a_warning'])) {
+                $this->warn($predictOutput['path_a_warning']);
+            }
+
             // Path A: Personalizations
             $pathA = $predictOutput['path_a'] ?? [];
             if (count($pathA) > 0) {

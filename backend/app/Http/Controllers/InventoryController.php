@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Inventory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class InventoryController extends Controller
 {
@@ -182,12 +183,28 @@ class InventoryController extends Controller
     {
         $store = $request->user()->store;
         $item = Inventory::where('store_id', $store->store_id)->findOrFail($id);
-        
-        $item->status = 'archived';
-        $item->save();
+
+        // order_items.inventory_id cascades on delete, so removing a product that has been sold
+        // would erase it from every past order. Those products can only be archived.
+        $orderedCount = \App\Models\OrderItem::where('inventory_id', $item->inventory_id)->count();
+
+        if ($orderedCount > 0) {
+            return response()->json([
+                'message' => 'This product appears in existing orders and cannot be deleted. Archive it instead to hide it from customers while keeping the order history.',
+            ], 409);
+        }
+
+        $picture = $item->product_picture;
+
+        $item->delete();
+
+        // Only the uploads this app stored; seeded images are shared and stay put.
+        if ($picture && !str_starts_with($picture, 'seed-images/') && Storage::disk('public')->exists($picture)) {
+            Storage::disk('public')->delete($picture);
+        }
 
         return response()->json([
-            'message' => 'Product archived successfully.',
+            'message' => 'Product deleted successfully.',
         ]);
     }
 

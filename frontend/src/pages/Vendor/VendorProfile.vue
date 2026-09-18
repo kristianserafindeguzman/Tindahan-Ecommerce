@@ -28,6 +28,33 @@
                 />
               </div>
 
+              <!-- The owner's photo, stored on users.profile_picture like the consumer profile, and shown in the sidebar. -->
+              <div class="owner-photo-row">
+                <div class="owner-photo-wrap">
+                  <q-avatar size="72px" class="owner-avatar">
+                    <img v-if="shownAvatar" :src="shownAvatar" alt="" />
+                    <q-icon v-else name="o_person" size="34px" />
+                  </q-avatar>
+
+                  <q-btn round unelevated color="primary" class="owner-photo-btn" :aria-label="t('changeAvatarBtn')" @click="triggerAvatarUpload">
+                    <q-icon name="o_photo_camera" size="14px" />
+                  </q-btn>
+
+                  <input id="vendorAvatarUpload" type="file" accept="image/png, image/jpeg, image/gif" style="display: none;" @change="onAvatarSelected" />
+                </div>
+
+                <div class="owner-photo-text">
+                  <div class="info-label">{{ t('avatarLabel') }}</div>
+                  <div class="owner-photo-hint">{{ t('avatarHint') }}</div>
+
+                  <div v-if="avatarFile" class="owner-photo-actions">
+                    <q-btn unelevated no-caps dense color="primary" :label="t('savePhotoBtn')" :loading="savingAvatar" @click="saveAvatar" />
+                    <q-btn outline no-caps dense color="primary" :label="t('cancelBtn')" :disable="savingAvatar" @click="cancelAvatar" />
+                  </div>
+                  <q-btn v-else outline no-caps dense color="primary" class="owner-photo-change" :label="t('changeAvatarBtn')" @click="triggerAvatarUpload" />
+                </div>
+              </div>
+
               <div class="info-row">
                 <div class="info-icon"><q-icon name="o_person" size="18px" /></div>
                 <div class="info-body">
@@ -280,7 +307,7 @@
       </q-card>
     </q-dialog>
 
-    <q-dialog v-model="showAddressModal" persistent transition-show="scale" transition-hide="scale" @show="addressMapReady = true" @hide="addressMapReady = false">
+    <q-dialog v-model="showAddressModal" persistent :allow-focus-outside="addressMapEnlarged" transition-show="scale" transition-hide="scale" @show="addressMapReady = true" @hide="addressMapReady = false; addressMapEnlarged = false; addressLookupPending = false">
       <q-card class="profile-dialog-card" style="width: 560px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_place" size="22px" /></div>
@@ -293,12 +320,42 @@
 
         <q-form ref="addressFormRef" greedy>
           <q-card-section class="dialog-body">
-            <div class="address-map-frame">
-              <VendorLocationMap v-if="addressMapReady" ref="addressMapRef" :initial="addressInitial" @location-selected="onLocationSelected" />
-            </div>
-            <div class="edit-field-hint" :class="{ 'edit-field-hint-success': editAddress.latitude !== null }">
-              <q-icon v-if="editAddress.latitude !== null" name="o_check_circle" size="12px" />
-              {{ editAddress.latitude !== null ? t('pinPlaced') : t('pinMissing') }}
+            <!-- Enlarging teleports this block to the body, which keeps the same map and pin while lifting it clear of the dialog. -->
+            <Teleport to="body" :disabled="!addressMapEnlarged">
+              <div class="address-map-frame" :class="{ 'address-map-frame-enlarged': addressMapEnlarged }">
+                <VendorLocationMap v-if="addressMapReady" ref="addressMapRef" :initial="addressInitial" @pin-placed="onPinPlaced" @location-selected="onLocationSelected" />
+
+                <q-btn
+                  v-if="addressMapReady && !addressMapEnlarged"
+                  unelevated
+                  no-caps
+                  dense
+                  icon="o_open_in_full"
+                  :label="t('enlargeMapBtn')"
+                  class="map-enlarge-btn"
+                  @click="addressMapEnlarged = true"
+                />
+
+                <!-- The pin's address rides along the top while enlarged, because the address field below is off screen. -->
+                <div v-else-if="addressMapReady" class="map-enlarged-bar">
+                  <q-icon name="o_location_on" size="18px" class="map-enlarged-bar-icon" />
+                  <span class="map-enlarged-bar-text">{{ editAddress.address || addressPinHint }}</span>
+
+                  <q-btn
+                    unelevated
+                    no-caps
+                    dense
+                    icon="o_close_fullscreen"
+                    :label="t('doneBtn')"
+                    class="map-enlarge-btn map-enlarge-btn-inline"
+                    @click="addressMapEnlarged = false"
+                  />
+                </div>
+              </div>
+            </Teleport>
+            <div class="edit-field-hint" :class="{ 'edit-field-hint-success': addressPinReady }">
+              <q-icon v-if="addressPinReady" name="o_check_circle" size="12px" />
+              {{ addressPinHint }}
             </div>
 
             <div class="edit-field">
@@ -641,7 +698,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
@@ -665,6 +722,12 @@ const vendorProfileDict = {
     phoneLabel: 'Phone Number',
     emailLabel: 'Email Address',
     notSet: 'Not set',
+    avatarLabel: 'Profile Photo',
+    avatarHint: 'Shown with your name across the vendor and admin pages. JPG, PNG or GIF, up to 2MB.',
+    changeAvatarBtn: 'Change Profile Photo',
+    errUpdateAvatar: 'Failed to update your profile photo.',
+    successAvatarTitle: 'Profile Photo Updated!',
+    successAvatarMsg: 'Your profile photo has been updated successfully.',
     storePhotoTitle: 'Store Photo',
     storePhotoSubtitle: 'Customers see this on your store page.',
     changePhotoBtn: 'Change Photo',
@@ -704,6 +767,8 @@ const vendorProfileDict = {
     editAddressSubtitle: 'Tap the map to move your pin, then check the address below.',
     pinPlaced: 'Pin placed.',
     pinMissing: 'Tap the map to drop a pin on your store.',
+    lookingUpAddress: 'Finding the address...',
+    addressNotFound: 'No address found for this pin. Type it below.',
     addressFieldLabel: 'Street, building, house no.',
     addressRule: 'Address is required.',
     saveAddressBtn: 'Save Address',
@@ -720,6 +785,7 @@ const vendorProfileDict = {
     keepEditingBtn: 'Keep Editing',
     discardBtn: 'Discard',
     doneBtn: 'Done',
+    enlargeMapBtn: 'Enlarge map',
     cropTitle: 'Crop Store Photo',
     cropSubtitle: 'Drag the photo to move it, and zoom until the frame shows your storefront.',
     applyCropBtn: 'Apply Crop',
@@ -799,6 +865,12 @@ const vendorProfileDict = {
     phoneLabel: 'Phone Number',
     emailLabel: 'Email Address',
     notSet: 'Wala pa',
+    avatarLabel: 'Profile Picture',
+    avatarHint: 'Ito ang makikita kasama ng pangalan mo sa vendor at admin pages. JPG, PNG o GIF, hanggang 2MB.',
+    changeAvatarBtn: 'Palitan ang Profile Picture',
+    errUpdateAvatar: 'Failed ma-update ang profile picture mo.',
+    successAvatarTitle: 'Updated na ang Profile Picture!',
+    successAvatarMsg: 'Na-update nang matagumpay ang profile picture mo.',
     storePhotoTitle: 'Picture ng Tindahan',
     storePhotoSubtitle: 'Ito ang nakikita ng customers sa iyong tindahan.',
     changePhotoBtn: 'Palitan ang Picture',
@@ -838,6 +910,8 @@ const vendorProfileDict = {
     editAddressSubtitle: 'I-tap ang map para ilipat ang pin, tapos i-check ang address sa ibaba.',
     pinPlaced: 'Nailagay na ang pin.',
     pinMissing: 'I-tap ang map para ilagay ang pin ng tindahan mo.',
+    lookingUpAddress: 'Hinahanap ang address...',
+    addressNotFound: 'Walang nahanap na address. I-type ito sa ibaba.',
     addressFieldLabel: 'Street, building, house no.',
     addressRule: 'Kailangan ang address.',
     saveAddressBtn: 'I-save ang Address',
@@ -859,6 +933,7 @@ const vendorProfileDict = {
     keepEditingBtn: 'Ipagpatuloy ang pag-edit',
     discardBtn: 'Huwag i-save',
     doneBtn: 'Tapos na',
+    enlargeMapBtn: 'Palakihin ang map',
     cropTitle: 'I-crop ang Picture',
     cropSubtitle: 'I-drag ang picture para i-move, at i-zoom hanggang sakto ang tindahan mo sa frame.',
     applyCropBtn: 'I-crop',
@@ -1297,6 +1372,57 @@ const verifyOtp = async () => {
   }
 }
 
+// --- Owner profile photo ---
+// Reuses POST /vendor/profile/photo, which is ProfileController::updatePhoto, the same method and
+// public-disk storage behind the consumer profile photo. No new image handling.
+const avatarFile = ref(null)
+const avatarPreview = ref(null)
+const savingAvatar = ref(false)
+
+const shownAvatar = computed(() => avatarPreview.value || user.value.profile_picture_url || null)
+
+const triggerAvatarUpload = () => document.getElementById('vendorAvatarUpload').click()
+
+const onAvatarSelected = (event) => {
+  const file = event.target.files?.[0]
+  // Cleared so choosing the same file again after cancelling still fires change.
+  event.target.value = ''
+  if (!file) return
+
+  avatarFile.value = file
+  avatarPreview.value = URL.createObjectURL(file)
+}
+
+const cancelAvatar = () => {
+  avatarFile.value = null
+  avatarPreview.value = null
+}
+
+const saveAvatar = async () => {
+  if (!avatarFile.value) return
+  savingAvatar.value = true
+  try {
+    const fd = new FormData()
+    fd.append('profile_picture', avatarFile.value)
+    const { data } = await api.post('/vendor/profile/photo', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+
+    user.value.profile_picture_url = data.profile_picture_url
+
+    // Same as the consumer profile: keeps the cached user in step so the sidebar avatar follows.
+    const lsUser = JSON.parse(localStorage.getItem('auth_user') || '{}')
+    lsUser.profile_picture_url = data.profile_picture_url
+    localStorage.setItem('auth_user', JSON.stringify(lsUser))
+
+    avatarFile.value = null
+    avatarPreview.value = null
+    openSuccessModal(t('successAvatarTitle'), t('successAvatarMsg'))
+  } catch (err) {
+    $q.notify({ type: 'negative', message: errorMessage(err, t('errUpdateAvatar')) })
+  } finally {
+    savingAvatar.value = false
+  }
+}
+
 // --- Store photo ---
 
 const photoFile = ref(null)
@@ -1410,6 +1536,21 @@ const editAddress = reactive({ address: '', latitude: null, longitude: null })
 const addressInputRef = ref(null)
 const addressMapRef = ref(null)
 
+// Pinning an exact spot is hard in a small box, so the map can fill the screen while the vendor places it.
+const addressMapEnlarged = ref(false)
+
+// Esc leaves the enlarged map, as it would any full-screen view. The dialog itself is persistent, so it stays open.
+const onAddressMapEscape = (event) => {
+  if (event.key === 'Escape') addressMapEnlarged.value = false
+}
+
+watch(addressMapEnlarged, (enlarged) => {
+  if (enlarged) window.addEventListener('keydown', onAddressMapEscape)
+  else window.removeEventListener('keydown', onAddressMapEscape)
+})
+
+onUnmounted(() => window.removeEventListener('keydown', onAddressMapEscape))
+
 const addressChanged = computed(() =>
   editAddress.address.trim() !== (store.value.address || '') ||
   Number(editAddress.latitude) !== Number(store.value.latitude) ||
@@ -1430,8 +1571,31 @@ const startEditAddress = () => {
   showAddressModal.value = true
 }
 
+// Set between a pin moving and its address arriving, so the dialog can say the lookup is running rather than just looking empty.
+// Closing the dialog unmounts the map, which drops a lookup still in flight without ever answering, so the dialog's @hide clears this too.
+const addressLookupPending = ref(false)
+
+const addressPinReady = computed(() =>
+  editAddress.latitude !== null && !addressLookupPending.value && !!editAddress.address.trim()
+)
+
+// The line under the map explains why the address box is empty, since a failed lookup leaves the vendor to type it.
+const addressPinHint = computed(() => {
+  if (editAddress.latitude === null) return t('pinMissing')
+  if (addressLookupPending.value) return t('lookingUpAddress')
+  if (!editAddress.address.trim()) return t('addressNotFound')
+  return t('pinPlaced')
+})
+
+const onPinPlaced = ({ latitude, longitude }) => {
+  editAddress.latitude = latitude
+  editAddress.longitude = longitude
+  addressLookupPending.value = true
+}
+
 // The address box takes the map's address unless the vendor typed in it, so an address missing from the suggestions survives being pinned.
 const onLocationSelected = (location) => {
+  addressLookupPending.value = false
   editAddress.latitude = location.latitude
   editAddress.longitude = location.longitude
   // mapSelected runs whatever the lookup returned, since the pin still moved; a failed reverse geocode gives an empty address, which must not blank the box.
@@ -1442,6 +1606,8 @@ const onLocationSelected = (location) => {
 const onAddressPin = ({ latitude, longitude }) => {
   editAddress.latitude = latitude
   editAddress.longitude = longitude
+  // showLocation retires any reverse lookup still running for the old pin, so nothing would ever clear this flag again.
+  addressLookupPending.value = false
   addressMapRef.value?.showLocation(latitude, longitude)
 }
 
@@ -2328,6 +2494,8 @@ const deleteAccount = async () => {
 /* ADDRESS DIALOG */
 
 .address-map-frame {
+  position: relative;
+
   overflow: hidden;
 
   border: 1px solid var(--c-border);
@@ -2336,6 +2504,103 @@ const deleteAccount = async () => {
 
 .address-map-frame :deep(.location-wrapper .map) {
   height: 260px;
+}
+
+/* Full screen for pinning. Teleported to the body, so the dialog cannot clip it, and above the dialog's own layer. */
+.address-map-frame-enlarged {
+  position: fixed;
+  inset: 0;
+  z-index: 7000;
+
+  border: none;
+  border-radius: 0;
+}
+
+/* The map's fixed height above would otherwise keep it 260px tall inside the full-screen frame. */
+.address-map-frame-enlarged :deep(.location-wrapper .map) {
+  height: 100%;
+}
+
+/* The map rounds its own corners for the boxed view; at full screen those corners would cut through to the dialog behind. */
+.address-map-frame-enlarged :deep(.location-wrapper) {
+  border-radius: 0;
+}
+
+/* Same white pill as the map's own "Your Location" button, in the opposite corner. */
+.map-enlarge-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+
+  height: 34px;
+  padding: 0 12px;
+
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: #222222;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.map-enlarge-btn:hover {
+  background: #f7f7f7;
+}
+
+/* Rides at the top of the enlarged map, clear of Leaflet's zoom buttons on the left, since the address fields are off screen while enlarged. */
+.map-enlarged-bar {
+  position: absolute;
+  top: 12px;
+  left: 56px;
+  right: 12px;
+  z-index: 1;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 8px 8px 8px 12px;
+
+  border-radius: 7px;
+
+  background: #ffffff;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.map-enlarged-bar-icon {
+  flex-shrink: 0;
+
+  color: var(--c-brand);
+}
+
+/* Two lines at most: a full address is long, and the map below is the point. */
+.map-enlarged-bar-text {
+  flex: 1;
+  min-width: 0;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+
+  overflow: hidden;
+
+  font-size: 12px;
+  line-height: 1.35;
+
+  color: #222222;
+}
+
+/* Inside the bar the button sits in the flow instead of the map's corner. */
+.map-enlarge-btn-inline {
+  position: static;
+
+  flex-shrink: 0;
 }
 
 /* HOURS DIALOG */
@@ -2713,6 +2978,67 @@ const deleteAccount = async () => {
     min-width: 0 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+  }
+}
+/* Owner profile photo, sized to sit beside the personal-info rows without reshaping the card. */
+.owner-photo-row {
+  display: flex;
+  align-items: center;
+
+  gap: 16px;
+
+  padding-bottom: 16px;
+  margin-bottom: 4px;
+
+  border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.owner-photo-wrap {
+  position: relative;
+
+  flex-shrink: 0;
+}
+
+.owner-avatar {
+  background: rgba(148, 163, 184, 0.18);
+  color: #64748b;
+}
+
+.owner-photo-btn {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+}
+
+.owner-photo-text {
+  min-width: 0;
+}
+
+.owner-photo-hint {
+  margin: 2px 0 8px;
+
+  font-size: 12px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.owner-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px;
+}
+
+@media (max-width: 599px) {
+  .owner-photo-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>

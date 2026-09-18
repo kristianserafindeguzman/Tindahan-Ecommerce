@@ -189,8 +189,10 @@
           </component>
         </div>
 
-        <!-- Compact bar's right-hand cluster, holding notifications and the cart. -->
+        <!-- Compact bar's right-hand cluster, holding the language switch, notifications and the cart. -->
         <div v-if="isCompactHeader" ref="mobileActionsRef" class="header-mobile-actions">
+          <LanguageSwitcher header compact class="header-language header-language--compact" />
+
           <NotificationsMenu v-if="isLoggedIn" :anchor-target="mobileActionsRef" />
 
           <q-btn
@@ -207,6 +209,9 @@
         </div>
 
         <div ref="headerActionsRef" class="header-actions">
+
+          <!-- Sits beside Notifications so the language switch is reachable from every consumer page. -->
+          <LanguageSwitcher header class="header-language" />
 
           <!-- LOGGED IN -->
           <template v-if="isLoggedIn">
@@ -494,10 +499,12 @@ import { useCart } from '@/composables/useCart'
 import { useAddress } from '@/composables/useAddress'
 import { splitHighlightParts } from '@/utils/textHighlight'
 import { useCategories } from '@/composables/useCategories'
+import { useSearchLog } from '@/composables/useSearchLog'
 import { clearAuthStorage } from '@/utils/authStorage'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 import AddressAutocomplete from '@/components/shared/AddressAutocomplete.vue'
 import NotificationsMenu from '@/components/consumer/NotificationsMenu.vue'
+import LanguageSwitcher from '@/components/consumer/LanguageSwitcher.vue'
 import { notificationPresentation, notificationTime } from '@/utils/notificationPresentation'
 import {
   NOTIFICATION_READ_STATE_EVENT,
@@ -600,6 +607,8 @@ const confirmAddress = async () => {
 const { products, fetchProducts } = useProducts()
 const { stores, fetchStores } = useStores()
 const { categories, fetchCategories } = useCategories()
+
+const { logSearch } = useSearchLog()
 const { items: cartItems, itemCount: cartItemCount, fetchCart } = useCart()
 
 /* ------------------------------------------------------- MOBILE HEADER (< md) */
@@ -849,78 +858,8 @@ function navigateToSearchPage(q) {
   }
 }
 
-const logSearch = async (query) => {
-  const token = localStorage.getItem('auth_token')
-
-  // Don't log guest searches
-  if (!token || !query) return
-
-  try {
-    const latitude = localStorage.getItem('consumer_lat')
-    const longitude = localStorage.getItem('consumer_lng')
-
-    if (!latitude || !longitude) {
-      console.warn('Search log skipped: consumer location is not available.')
-      return
-    }
-
-    const normalizedQuery = query.trim().toLowerCase()
-    
-    // 1. Match against product names (partial, case-insensitive)
-    let matchedProducts = products.value.filter(p => 
-        p.name?.toLowerCase().includes(normalizedQuery)
-    )
-    
-    // 2. If no product name match, try descriptions
-    if (matchedProducts.length === 0) {
-        matchedProducts = products.value.filter(p =>
-            p.description?.toLowerCase().includes(normalizedQuery)
-        )
-    }
-    
-    let categoryId = null;
-    
-    // 3. If products matched, use the first match's category
-    if (matchedProducts.length > 0) {
-        const firstMatch = matchedProducts[0]
-        const matchedCategory = categories.value.find(c => 
-            c.label?.toLowerCase() === firstMatch.category?.toLowerCase()
-        )
-        categoryId = matchedCategory?.id ?? matchedCategory?.category_id ?? null
-    } else {
-        // 4. Try direct category name match
-        const matchedCategory = categories.value.find(c =>
-            c.label?.toLowerCase().includes(normalizedQuery) || c.category_name?.toLowerCase().includes(normalizedQuery)
-        )
-        if (matchedCategory) {
-            categoryId = matchedCategory.id ?? matchedCategory.category_id
-        }
-    }
-
-    console.log('Search log data:', {
-      query,
-      category_id: categoryId,
-      latitude,
-      longitude
-    })
-
-    await api.post('/consumer/search-logs', {
-      search_query: query.trim(),
-      category_id: categoryId,
-      search_lat: Number(latitude),
-      search_lng: Number(longitude),
-    })
-
-    console.log('Search log saved successfully.')
-  } catch (error) {
-    console.error(
-      'Failed to save search log:',
-      error.response?.data || error
-    )
-  }
-}
-
-// The only place a search is actually saved — fires on submit (searchQuery change), never while typing.
+// Recent searches are local history only; the database log is written by submitSearch, so that
+// browser back/forward through ?q= does not record searches the consumer never made.
 watch(searchQuery, (q) => {
   if (q) {
     saveRecentSearch(q)
@@ -1052,6 +991,18 @@ const goToTab = (tab) => {
   margin-left: auto;
 
   flex-shrink: 0;
+}
+
+/* Language switch, first in the action cluster so it sits beside Notifications on every page. */
+.header-language :deep(.language-header-btn) {
+  min-height: 38px;
+  padding: 0 10px;
+
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.header-language :deep(.language-header-btn:hover) {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Wraps each header icon button so it centres vertically in the action cluster. */
@@ -2207,6 +2158,22 @@ const goToTab = (tab) => {
 
     grid-area: actions;
     justify-self: end;
+  }
+
+  /* The caret is dropped on the compact bar so the globe and EN/FIL fit beside the 44px bell and cart without crowding the address pill. */
+  .header-language--compact :deep(.language-header-btn) {
+    min-height: 44px;
+    padding: 0 6px;
+
+    background: transparent;
+  }
+
+  .header-language--compact :deep(.q-btn-dropdown__arrow) {
+    display: none;
+  }
+
+  .header-language--compact :deep(.on-left) {
+    margin-right: 4px;
   }
 
   /* The desktop action cluster and nav row are hidden, with account links in the drawer and navigation in the bottom tab bar. */

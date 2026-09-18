@@ -7,7 +7,6 @@
     <div class="home-content">
 
       <section class="hero-banner">
-        <LanguageSwitcher header class="hero-language" />
         <div class="hero-content">
           <span class="hero-eyebrow">
             <q-icon name="o_location_on" size="14px" />
@@ -118,7 +117,6 @@ import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
-import LanguageSwitcher from '@/components/consumer/LanguageSwitcher.vue'
 import CardSkeleton from '@/components/consumer/CardSkeleton.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import SectionBlock from '@/components/consumer/SectionBlock.vue'
@@ -309,18 +307,6 @@ const visibleDiscoverProducts = computed(() =>
   .hero-banner {
     animation: none;
   }
-}
-
-.hero-language {
-  position: absolute;
-  top: 16px;
-  right: 32px;
-  z-index: 2;
-}
-
-.hero-language :deep(.language-header-btn) {
-  padding: 0 14px;
-  background: rgba(255, 255, 255, 0.12);
 }
 
 .hero-content {
@@ -650,10 +636,6 @@ const visibleDiscoverProducts = computed(() =>
     padding: 24px;
   }
 
-  .hero-language {
-    right: 24px;
-  }
-
   .hero-content {
     max-width: none;
   }
@@ -702,11 +684,6 @@ const visibleDiscoverProducts = computed(() =>
     gap: 8px;
     padding: 60px 20px 20px;
     text-align: center;
-  }
-
-  .hero-language {
-    top: 12px;
-    right: 12px;
   }
 
   .hero-eyebrow,

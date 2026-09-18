@@ -85,7 +85,7 @@
                     <q-avatar :size="avatarSize" class="bg-grey-3 photo-avatar">
                       <img v-if="photoPreview" :src="photoPreview" />
                       <img v-else-if="user.profile_picture_url" :src="user.profile_picture_url" />
-                      <q-icon v-else name="person" size="64px" color="grey-6" />
+                      <q-icon v-else name="person" :size="avatarIconSize" color="grey-6" />
                     </q-avatar>
 
                     <q-btn round unelevated color="primary" class="photo-camera-btn" :aria-label="t('Change profile photo')" @click="triggerUpload">
@@ -571,7 +571,8 @@ const router = useRouter()
 const { logout } = useAuth()
 
 // QAvatar's size is an inline style, so it needs $q.screen instead of a media query.
-const avatarSize = computed(() => ($q.screen.lt.sm ? '96px' : '120px'))
+const avatarSize = computed(() => ($q.screen.lt.sm ? '112px' : '144px'))
+const avatarIconSize = computed(() => ($q.screen.lt.sm ? '58px' : '76px'))
 
 const user = ref({})
 const form = reactive({

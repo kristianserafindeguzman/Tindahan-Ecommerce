@@ -47,5 +47,22 @@ export function useAddress() {
     }
   }
 
-  return { address, setAddress, autoDetectAddress }
+  // Same lookup as autoDetectAddress, but user-initiated: it ignores the once-per-session guard
+  // and runs even when an address string is already saved without coordinates. Resolves to true
+  // when coordinates were saved. Used by checkout, which cannot proceed without them.
+  const detectAddress = async () => {
+    try {
+      const { latitude, longitude } = await getCurrentPosition()
+      const resolvedAddress = await reverseGeocode(latitude, longitude)
+      // The coordinates are what checkout needs, so they are saved even when the reverse lookup
+      // comes back empty; the pill then shows the coordinates rather than nothing.
+      setAddress(resolvedAddress || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`, latitude, longitude)
+      return true
+    } catch (error) {
+      console.warn('Location detection failed:', error.message)
+      return false
+    }
+  }
+
+  return { address, setAddress, autoDetectAddress, detectAddress }
 }
