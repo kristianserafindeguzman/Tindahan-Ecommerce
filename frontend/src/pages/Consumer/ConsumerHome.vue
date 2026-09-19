@@ -277,7 +277,7 @@ const visibleDiscoverProducts = computed(() =>
   justify-content: space-between;
 
   gap: 32px;
-  padding: 28px 32px;
+  padding: 32px;
   margin-bottom: 24px;
 
   border-radius: var(--r-2xl);
@@ -371,7 +371,6 @@ const visibleDiscoverProducts = computed(() =>
 
   width: 330px;
   max-width: 36%;
-  padding-top: 44px;
 }
 
 .hero-logo {
@@ -681,8 +680,8 @@ const visibleDiscoverProducts = computed(() =>
     flex-direction: column-reverse;
     align-items: center;
 
-    gap: 8px;
-    padding: 60px 20px 20px;
+    gap: 12px;
+    padding: 24px 20px;
     text-align: center;
   }
 

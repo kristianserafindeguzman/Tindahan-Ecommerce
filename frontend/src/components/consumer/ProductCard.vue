@@ -10,7 +10,7 @@
       />
       <q-icon v-else name="o_inventory_2" size="36px" />
 
-      <span v-if="product.category" class="product-category-tag">{{ product.category }}</span>
+      <span v-if="product.category" class="product-category-tag">{{ t(product.category) }}</span>
       <span v-if="!product.inStock" class="product-oos-tag">{{ t('Out of Stock') }}</span>
 
       <q-btn
@@ -149,6 +149,13 @@ const productMetaText = computed(() => {
 
   background: rgba(255, 255, 255, 0.92);
   color: var(--c-text-2);
+
+  /* One line, cut with an ellipsis: long category names used to wrap onto a second line. */
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
 
   font-size: var(--fs-2xs);
   font-weight: 700;
@@ -301,6 +308,7 @@ const productMetaText = computed(() => {
     top: 6px;
     left: 6px;
 
+    max-width: calc(100% - 12px);
     padding: 2px 6px;
 
     letter-spacing: 0.02em;

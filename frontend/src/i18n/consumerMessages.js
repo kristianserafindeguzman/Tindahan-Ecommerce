@@ -326,6 +326,10 @@ export default {
     'Mga popular na paninda sa mga sari-sari store malapit sa iyo.',
   'Nearby Stores': 'Stores Malapit sa Iyo',
   'Your Location': 'Lokasyon Mo',
+  'Location is blocked for this site. Tap the map to place your pin.':
+    'Naka-block ang location para sa site na ito. I-tap ang map para ilagay ang pin mo.',
+  'Could not get your location. Tap the map to place your pin.':
+    'Hindi makuha ang lokasyon mo. I-tap ang map para ilagay ang pin mo.',
   'Search Store': 'Maghanap ng Store',
   'Close map': 'Isara ang map',
   'Centre on my location': 'I-center ang map sa lokasyon ko',

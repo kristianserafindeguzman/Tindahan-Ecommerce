@@ -20,7 +20,7 @@
             />
             <q-icon v-else name="o_inventory_2" size="48px" />
 
-            <span v-if="product.category" class="detail-category-tag">{{ product.category }}</span>
+            <span v-if="product.category" class="detail-category-tag">{{ t(product.category) }}</span>
             <span v-if="!product.inStock" class="detail-oos-tag">{{ t('Out of Stock') }}</span>
           </div>
 
@@ -324,6 +324,13 @@ const handleAddToCart = async () => {
   background: rgba(255, 255, 255, 0.92);
   color: var(--c-text-2);
 
+  /* One line, cut with an ellipsis: long category names used to wrap onto a second line. */
+  max-width: calc(100% - 24px);
+  overflow: hidden;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
   font-size: var(--fs-2xs);
   font-weight: 700;
   text-transform: uppercase;
@@ -444,10 +451,11 @@ const handleAddToCart = async () => {
   min-height: auto;
 
   border-radius: var(--r-pill);
-  border: 1px solid var(--c-brand-tint-3);
+  border: 1px solid var(--c-border);
 
-  background: var(--c-brand-tint);
-  color: var(--c-brand-deep);
+  /* Neutral until picked: the old red tint made every size look already chosen. */
+  background: var(--c-surface);
+  color: var(--c-text-2);
 
   font-family: inherit;
   font-size: var(--fs-sm);
@@ -459,8 +467,8 @@ const handleAddToCart = async () => {
 }
 
 .variant-chip:hover:not(.disabled) {
-  border-color: var(--c-brand-tint-3);
-  background: var(--c-brand-tint-2);
+  border-color: var(--c-border-strong);
+  background: var(--c-hairline);
 }
 
 .variant-chip-selected,
@@ -474,7 +482,8 @@ const handleAddToCart = async () => {
 .variant-chip-oos {
   border-color: var(--c-border);
 
-  background: var(--c-surface);
+  /* A step darker than an available size, so the two never look alike. */
+  background: var(--c-hairline);
   color: var(--c-muted);
 
   text-decoration: line-through;

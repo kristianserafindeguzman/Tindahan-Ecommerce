@@ -195,7 +195,7 @@
     <SiteFooter />
 
     <!-- EDIT PERSONAL INFORMATION DIALOG -->
-    <q-dialog v-model="showEditPersonalModal" persistent transition-show="scale" transition-hide="scale">
+    <q-dialog v-model="showEditPersonalModal" persistent transition-show="scale" transition-hide="scale" @keydown.esc="dialogEsc($event, attemptCloseEditPersonal, savingPersonal)">
       <q-card class="profile-dialog-card edit-personal-card" style="width: 560px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_person" size="22px" /></div>
@@ -312,7 +312,7 @@
     </q-dialog>
 
     <!-- CROP DIALOG -->
-    <q-dialog v-model="showCropModal" persistent transition-show="scale" transition-hide="scale">
+    <q-dialog v-model="showCropModal" persistent transition-show="scale" transition-hide="scale" @keydown.esc="dialogEsc($event, () => { showCropModal = false })">
       <q-card class="profile-dialog-card" style="width: 560px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_crop" size="22px" /></div>
@@ -333,7 +333,7 @@
     </q-dialog>
 
     <!-- CHANGE PASSWORD DIALOG -->
-    <q-dialog v-model="showPasswordModal" persistent transition-show="scale" transition-hide="scale">
+    <q-dialog v-model="showPasswordModal" persistent transition-show="scale" transition-hide="scale" @keydown.esc="dialogEsc($event, attemptClosePasswordModal, savingPassword)">
       <q-card class="profile-dialog-card" style="width: 460px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_lock" size="22px" /></div>
@@ -436,7 +436,7 @@
     </q-dialog>
 
     <!-- OTP VERIFICATION DIALOG -->
-    <q-dialog v-model="showOtpModal" persistent transition-show="scale" transition-hide="scale">
+    <q-dialog v-model="showOtpModal" persistent transition-show="scale" transition-hide="scale" @keydown.esc="dialogEsc($event, cancelOtp, verifyingOtp)">
       <q-card class="profile-dialog-card" style="width: 440px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_sms" size="22px" /></div>
@@ -489,7 +489,7 @@
     </q-dialog>
 
     <!-- DELETE ACCOUNT DIALOG -->
-    <q-dialog v-model="showDeleteModal" persistent transition-show="scale" transition-hide="scale">
+    <q-dialog v-model="showDeleteModal" persistent transition-show="scale" transition-hide="scale" @keydown.esc="dialogEsc($event, cancelDeleteModal, deletingAccount)">
       <q-card class="profile-dialog-card delete-dialog-card" style="width: 480px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon dialog-icon--danger"><q-icon name="o_delete" size="22px" /></div>
@@ -647,6 +647,15 @@ const emailVerificationRequired = ref(false)
 const showDiscardConfirm = ref(false)
 const discardingChanges = ref(false)
 let pendingDiscardAction = null
+// Esc closes a dialog the way its own Cancel button does. A dropdown open inside it owns that Esc,
+// and a save in progress keeps the dialog put. Stopping the event keeps Quasar from also closing the
+// prompt this may open.
+const dialogEsc = (event, closeFn, busy = false) => {
+  if (busy || document.querySelector('.q-menu')) return
+  event.stopPropagation()
+  closeFn()
+}
+
 const requestClose = (hasChanges, closeFn) => {
   if (hasChanges) {
     pendingDiscardAction = closeFn
@@ -2256,5 +2265,14 @@ const goHomeAfterDelete = () => {
     height: 48px;
   }
 
+}
+
+/* Touch screens: 16px keeps iPhones from zooming in when a dialog field is tapped, the same rule the sign-up pages use. */
+@media (pointer: coarse) {
+  .profile-dialog-card :deep(.q-field__native),
+  .profile-dialog-card :deep(.q-field__input),
+  .profile-dialog-card :deep(input:not(.otp-box)) {
+    font-size: 16px;
+  }
 }
 </style>
