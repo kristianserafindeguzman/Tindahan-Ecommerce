@@ -368,14 +368,14 @@ const $q = useQuasar()
 
 const { items, loading, fetchCart, checkout } = useCart()
 const { stores, fetchStores } = useStores()
-const { address, detectAddress } = useAddress()
+const { locationVersion, detectAddress } = useAddress()
 
 const detectingLocation = ref(false)
 
-// The coordinates live in localStorage, which is not reactive, so the shared address ref is read
-// too: setting or detecting an address updates it and re-evaluates this.
+// The coordinates live in localStorage, which is not reactive, so the shared counter is read too:
+// every save bumps it, including one that stores a pin whose lookup came back with no address text.
 const hasConsumerLocation = computed(() => {
-  void address.value
+  void locationVersion.value
   const lat = Number(localStorage.getItem('consumer_lat'))
   const lng = Number(localStorage.getItem('consumer_lng'))
   return Number.isFinite(lat) && Number.isFinite(lng) && Boolean(lat || lng)

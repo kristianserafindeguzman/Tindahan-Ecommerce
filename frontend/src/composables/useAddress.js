@@ -8,28 +8,33 @@ const LNG_KEY = 'consumer_lng'
 // Module-level singleton so every page and the header pill share one address, empty until the user confirms one.
 const address = ref(localStorage.getItem(STORAGE_KEY) || '')
 
+// Bumped on every save, because the coordinates live in localStorage, which is not reactive, and they now change on their own: a lookup that came back with no text writes a pin while the address ref stays as it was.
+const locationVersion = ref(0)
+
 // Module-level guard so the auto-detect prompt fires only once per session, however many pages mount without an address.
 let autoDetectAttempted = false
 
 export function useAddress() {
   const setAddress = (value, lat = null, lng = null) => {
     address.value = value
-    
-    if (value && lat && lng) {
+
+    if (value) {
       localStorage.setItem(STORAGE_KEY, value)
+    } else {
+      localStorage.removeItem(STORAGE_KEY)
+    }
+
+    // Coordinates are what every distance is measured from, so they are kept even when the lookup came back with no text to show.
+    // Typing an address by hand passes none, which clears them, since the words no longer describe the pin.
+    if (lat != null && lng != null) {
       localStorage.setItem(LAT_KEY, lat)
       localStorage.setItem(LNG_KEY, lng)
-    } else if (value) {
-      // If they manually type an address without coordinates, keep the string but clear coordinates
-      localStorage.setItem(STORAGE_KEY, value)
-      localStorage.removeItem(LAT_KEY)
-      localStorage.removeItem(LNG_KEY)
     } else {
-      // Cleared entirely
-      localStorage.removeItem(STORAGE_KEY)
       localStorage.removeItem(LAT_KEY)
       localStorage.removeItem(LNG_KEY)
     }
+
+    locationVersion.value++
   }
 
   // Silently detects and saves the browser's location on first load for anyone who has not set an address yet.
@@ -40,8 +45,8 @@ export function useAddress() {
     try {
       const { latitude, longitude } = await getCurrentPosition()
       const resolvedAddress = await reverseGeocode(latitude, longitude)
-      // A failed lookup gives an empty string, which would blank the pill and store nothing useful, so the address stays unset.
-      if (resolvedAddress) setAddress(resolvedAddress, latitude, longitude)
+      // An empty lookup leaves the pill asking for an address, but the coordinates are still worth keeping: they are what sorts stores by distance.
+      setAddress(resolvedAddress, latitude, longitude)
     } catch (error) {
       console.warn('Automatic location detection skipped:', error.message)
     }
@@ -64,5 +69,5 @@ export function useAddress() {
     }
   }
 
-  return { address, setAddress, autoDetectAddress, detectAddress }
+  return { address, locationVersion, setAddress, autoDetectAddress, detectAddress }
 }

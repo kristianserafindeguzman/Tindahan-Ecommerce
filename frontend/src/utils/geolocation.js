@@ -13,6 +13,36 @@ export function getCurrentPosition(options = { enableHighAccuracy: true, timeout
   })
 }
 
+// Two parts that differ only in case or a "Brgy." prefix name the same place twice, such as a road named after the barangay it runs through, so the first one written wins.
+function joinAddressParts(parts) {
+  const seen = new Set()
+
+  return parts
+    .filter(Boolean)
+    .filter((value) => {
+      // The same spellings barangayName recognises, so a part it left alone ("Barangay Lahug") still folds against a bare one.
+      const key = value.replace(/^(?:brgy|bgy|barangay)\b\.?\s*/i, '').toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .join(', ')
+}
+
+// Metro Manila's cities belong to "districts" rather than provinces, so the region ("Metro Manila") is what an address written by hand carries instead.
+function areaName(county, state) {
+  if (county && !/district$/i.test(county)) return county
+  // A district with no region above it is still better than nothing, which would leave the address ending at the city.
+  return state || county || ''
+}
+
+// "Brgy." is how a barangay is written on a Philippine address, while the map data carries the bare name.
+function barangayName(barangay) {
+  if (!barangay) return ''
+  return /^(?:brgy|bgy|barangay)\b/i.test(barangay) ? barangay : 'Brgy. ' + barangay
+}
+
+// How a Philippine address is written on a form: house number and street, barangay, city or municipality, province or region, postcode. Only the country is dropped, and the coordinates these addresses travel with are untouched, so distances are unaffected.
 // Empty rather than a placeholder sentence, since callers put this straight into an address field a user then saves.
 export function formatAddress(data) {
   if (!data || !data.address) {
@@ -20,30 +50,38 @@ export function formatAddress(data) {
   }
 
   const address = data.address
+  const street = [address.house_number, address.road].filter(Boolean).join(' ')
 
-  const parts = [
-    address.house_number,
-    address.road,
-    address.neighbourhood,
-    address.suburb,
-    address.village,
-    address.town,
-    address.city,
-    address.city_district,
-    address.state,
-    address.country
-  ]
-
-  return parts
-    .filter(Boolean)
-    .filter((value, index, array) => array.indexOf(value) === index)
-    .join(', ')
+  return joinAddressParts([
+    street,
+    barangayName(address.neighbourhood || address.suburb || address.quarter || address.village),
+    address.city || address.town || address.municipality || address.city_district,
+    areaName(address.county || address.province, address.state || address.region),
+    address.postcode
+  ])
 }
 
+// A landmark's name leads, since "SM City Cebu" says more than the street it stands on, but not when it only repeats the street or the barangay beside it.
 function formatPhotonAddress(properties) {
   const street = [properties.housenumber, properties.street].filter(Boolean).join(' ')
+  const barangay = properties.locality || properties.district
+  const name = properties.name !== properties.street && properties.name !== barangay ? properties.name : ''
 
-  return [
+  return joinAddressParts([
+    name,
+    street,
+    barangayName(barangay),
+    properties.city,
+    areaName(properties.county, properties.state),
+    properties.postcode
+  ])
+}
+
+// Never shown. The area check reads this one, because a shopper who ends a query with a province or region would otherwise match nothing once the short form drops it.
+function fullPhotonAddress(properties) {
+  const street = [properties.housenumber, properties.street].filter(Boolean).join(' ')
+
+  return joinAddressParts([
     properties.name,
     street,
     properties.locality,
@@ -52,23 +90,22 @@ function formatPhotonAddress(properties) {
     properties.county,
     properties.state,
     properties.country
-  ]
-    .filter(Boolean)
-    .filter((value, index, array) => array.indexOf(value) === index)
-    .join(', ')
+  ])
 }
 
 // Block, lot, phase, purok, zone and unit parts are almost never in OpenStreetMap, and one unmatched word empties Photon's results, so they are dropped before searching.
 const UNMAPPED_PART = /\b(?:blk|block|lot|phase|ph|purok|prk|zone|unit|rm|room)\b\.?\s*(?:no\.?\s*)?[\w-]+/gi
 // "Brgy. Lahug" finds nothing where "Lahug" finds the barangay.
 const BARANGAY_PREFIX = /\b(?:brgy|bgy|barangay)\b\.?(?!\s*hall)\s*/gi
+// Formatted addresses now end in a postcode, which names no place Photon can search for and would leave the "last two parts" fallback reading province and postcode instead of barangay and town.
+const POSTCODE_SEGMENT = /^\d{4}$/
 
 // The cleaned address first, then without its most specific part, then only its last two parts, usually barangay and town.
 function addressSearchQueries(query) {
   const segments = query
     .split(',')
     .map((segment) => segment.replace(UNMAPPED_PART, ' ').replace(BARANGAY_PREFIX, ' ').replace(/\s+/g, ' ').trim())
-    .filter(Boolean)
+    .filter((segment) => segment && !POSTCODE_SEGMENT.test(segment))
 
   return [segments, segments.slice(1), segments.slice(-2)]
     .map((parts) => parts.join(', '))
@@ -78,7 +115,9 @@ function addressSearchQueries(query) {
 // Photon rather than Nominatim, whose usage policy forbids search-as-you-type from the browser; kept to the Philippines and ranked toward `near` when given.
 export async function searchAddresses(query, near = null, signal = undefined) {
   for (const candidate of addressSearchQueries(query)) {
-    const results = (await fetchPhotonResults(candidate, near, signal)).filter((result) => namesArea(result.address, candidate))
+    const matches = (await fetchPhotonResults(candidate, near, signal)).filter((result) => namesArea(result.fullAddress, candidate))
+    // After the area check, never before it: a result that shortens to the same line as one the check is about to throw away must not be thrown away with it.
+    const results = matches.filter((result, index, array) => array.findIndex((other) => other.address === result.address) === index)
     if (results.length) return results
   }
 
@@ -97,7 +136,7 @@ function namesArea(address, candidate) {
 
   const area = foldText(parts[parts.length - 1].replace(/\b(?:city|municipality|of)\b/gi, ' ').replace(/\s+/g, ' ').trim())
 
-  // A trailing postcode has no letters to check, and the formatted address never carries one.
+  // A segment with no letters, such as a postcode a caller passed straight in, has nothing to check against the full address, which carries none.
   return !/[a-z]/.test(area) || foldText(address).includes(area)
 }
 
@@ -121,9 +160,11 @@ async function fetchPhotonResults(query, near, signal) {
     .map((feature) => ({
       latitude: feature.geometry.coordinates[1],
       longitude: feature.geometry.coordinates[0],
-      address: formatPhotonAddress(feature.properties)
+      address: formatPhotonAddress(feature.properties),
+      fullAddress: fullPhotonAddress(feature.properties)
     }))
-    .filter((result, index, array) => result.address && array.findIndex((other) => other.address === result.address) === index)
+    // Shortening can make neighbours read alike, and a list repeating one line is worse than a shorter list, but that trimming waits until searchAddresses has checked the area.
+    .filter((result) => result.address)
 }
 
 // A lookup nobody is waiting on forever: the pin is already placed, and the address can be typed instead.

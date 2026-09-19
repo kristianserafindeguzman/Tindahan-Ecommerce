@@ -171,7 +171,7 @@
                 @enter="confirmAddress"
               />
 
-              <VendorLocationMap ref="addressMapRef" :initial="addressPin" class="address-menu-map" @location-selected="onLocationSelected" />
+              <VendorLocationMap ref="addressMapRef" :translate="t" :initial="addressPin" class="address-menu-map" @location-selected="onLocationSelected" />
             </div>
 
             <div class="address-menu-footer">
@@ -1683,7 +1683,7 @@ const goToTab = (tab) => {
 
   flex: 1 1 auto;
   min-width: 140px;
-  max-width: 400px;
+  max-width: 560px;
 
   transition: max-width 0.25s ease, min-width 0.25s ease;
 }
@@ -1977,7 +1977,8 @@ const goToTab = (tab) => {
 
   gap: 6px;
   min-width: 0;
-  max-width: 300px;
+  /* A little narrower than it was, so the search box beside it can be wider, but still wide enough to read a street and barangay. */
+  max-width: 260px;
   padding: 6px 10px;
 
   border-radius: var(--r-pill);
