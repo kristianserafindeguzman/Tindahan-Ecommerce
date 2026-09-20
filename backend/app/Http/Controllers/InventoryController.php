@@ -229,3 +229,4 @@ class InventoryController extends Controller
         return response()->json($categories);
     }
 }
+        
