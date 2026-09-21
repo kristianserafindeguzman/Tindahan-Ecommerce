@@ -13,8 +13,8 @@
       <div class="co-grid" :class="{ 'co-grid--full': selectedOrder }">
 
         <!-- CUSTOMER DIRECTORY -->
-        <aside v-if="!selectedOrder" class="vp-card co-directory">
-          <div class="co-directory-head">
+        <aside v-if="!selectedOrder" data-tour="co-directory" class="vp-card co-directory">
+          <div data-tour="co-directory-head" class="co-directory-head">
             <div class="co-card-title">
               {{ t('customersLabel') }}
               <span class="co-count">{{ customersLoading ? '…' : filteredCustomers.length }}</span>

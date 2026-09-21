@@ -254,11 +254,8 @@ export default {
   Tomorrow: 'Bukas',
   'Track, manage, and view your order history.':
     'I-track at i-manage ang mga order mo, at tingnan ang mga nakaraang order.',
-  "You haven't placed any orders yet.": 'Wala ka pang na-place na order.',
   'Active Orders': 'Mga Active na Order',
   'Past Orders': 'Mga Nakaraang Order',
-  'You have no active orders right now.': 'Wala kang active na order ngayon.',
-  "You don't have any past orders yet.": 'Wala ka pang mga nakaraang order.',
   'Unknown Store': 'Hindi Kilalang Store',
   Item: 'Item',
   Items: 'Items',
@@ -655,4 +652,18 @@ export default {
   'Batteries, Lighting & Electrical': 'Baterya, Ilaw at Kuryente',
   'Mobile Load & E-Services': 'Load at E-Services',
   'Cigarettes & Tobacco': 'Sigarilyo at Tabako',
+
+  // Contextual hints and empty states.
+  'Set your location': 'Itakda ang lokasyon mo',
+  'Tap here to add your address. We use it to sort stores and products by how near they are to you.': 'Pindutin dito para ilagay ang address mo. Ginagamit namin ito para isunod-sunod ang mga tindahan at paninda ayon sa lapit sa iyo.',
+  'Pickup only': 'Pickup lang',
+  'Tindahan orders are collected at the store. There is no delivery \u2014 you pay the store when you pick your order up.': 'Sa tindahan mismo kinukuha ang order sa Tindahan. Walang delivery \u2014 sa tindahan ka magbabayad kapag kinuha mo na ang order mo.',
+  'Your cart is empty': 'Walang laman ang cart mo',
+  'Items you add from a store will wait here until you are ready to check out. You pay and collect at the store itself.': 'Ang mga idinagdag mo mula sa isang tindahan ay maghihintay dito hanggang handa ka nang mag-checkout. Sa tindahan mismo ka magbabayad at kukuha.',
+  'No orders yet': 'Wala pang order',
+  'Once you check out, your orders appear here so you can follow each one from placed to ready for pickup.': 'Kapag nag-checkout ka, lalabas dito ang mga order mo para masubaybayan mo ang bawat isa mula sa pag-order hanggang pwede nang kunin.',
+  'Nothing in progress': 'Walang kasalukuyang order',
+  'You have no active orders right now. Anything you order next shows up here while the store prepares it.': 'Wala kang aktibong order ngayon. Lalabas dito ang susunod mong order habang inihahanda ito ng tindahan.',
+  'No past orders': 'Walang lumang order',
+  'Orders you have picked up or cancelled will be kept here.': 'Dito itatago ang mga order na nakuha mo na o kinansela.',
 }
