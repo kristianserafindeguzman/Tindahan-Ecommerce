@@ -69,6 +69,10 @@
                   <dt>Description</dt>
                   <dd class="pm-desc">{{ product?.description || 'No description yet.' }}</dd>
                 </div>
+                <div v-if="product?.expiration_date" class="pm-spec">
+                  <dt>Best Before</dt>
+                  <dd class="pm-desc">{{ new Date(product.expiration_date).toLocaleDateString() }}</dd>
+                </div>
               </dl>
 
               <!-- The sales chart fills the rest of the column, so its bottom lines up with the photo. -->
@@ -173,6 +177,19 @@
                 />
               </div>
 
+              <div>
+                <label class="vp-field-label" for="pm-edit-exp">Best Before / Expiration Date <span class="vp-field-optional">(optional)</span></label>
+                <q-input
+                  v-model="form.expiration_date"
+                  for="pm-edit-exp"
+                  type="date"
+                  outlined
+                  dense
+                  hide-bottom-space
+                  class="vp-input"
+                />
+              </div>
+
               <div class="pm-section">
                 <div class="pm-section-head">
                   <span class="pm-section-title">Pricing and stock</span>
@@ -218,7 +235,7 @@
                     <span>Size</span><span>Price (₱)</span><span>Quantity</span><span />
                   </div>
                   <div v-for="(variant, index) in form.variants" :key="index" class="pm-variant">
-                    <q-input v-model="variant.size" outlined dense hide-bottom-space placeholder="e.g. Small" class="vp-input" :aria-label="`Size ${index + 1}`" :rules="[val => !!(val && String(val).trim()) || 'Required']" />
+                    <q-input v-model="variant.name" outlined dense hide-bottom-space placeholder="e.g. Small" class="vp-input" :aria-label="`Size ${index + 1}`" :rules="[val => !!(val && String(val).trim()) || 'Required']" />
                     <q-input v-model.number="variant.price" type="number" min="0" step="0.01" outlined dense hide-bottom-space placeholder="0.00" class="vp-input" :aria-label="`Price for size ${index + 1}`" />
                     <q-input v-model.number="variant.quantity" type="number" min="0" outlined dense hide-bottom-space placeholder="0" class="vp-input" :aria-label="`Quantity for size ${index + 1}`" />
                     <q-btn flat round dense icon="o_close" class="pm-variant-remove" :disable="form.variants.length === 1" :aria-label="`Remove size ${index + 1}`" @click="removeVariant(index)" />
@@ -526,7 +543,8 @@ const form = ref({
   price: null,
   stock_quantity: null,
   product_picture: null,
-  variants: [{ size: '', price: null, quantity: null }]
+  expiration_date: null,
+  variants: [{ name: '', price: null, quantity: null }]
 })
 
 const enterEditMode = () => {
@@ -564,14 +582,13 @@ const populateForm = () => {
   form.value.product_name = p.product_name
   form.value.description = p.description || ''
   form.value.category_id = p.category_id
+  form.value.expiration_date = p.expiration_date || null
   isActive.value = p.status !== 'archived'
 
   if (p.variants && p.variants.length > 0) {
     hasVariants.value = true
-    // Normalised onto 'size', the key these inputs bind to, so a product saved with 'name'
-    // (the seeded catalog) does not load with an empty label and lose it on save.
     form.value.variants = p.variants.map(v => ({
-      size: v.size || v.name || v.label || '',
+      name: v.size || v.name || v.label || '',
       price: v.price ?? null,
       quantity: v.quantity ?? null
     }))
@@ -579,7 +596,7 @@ const populateForm = () => {
     hasVariants.value = false
     form.value.price = p.price
     form.value.stock_quantity = p.stock_quantity
-    form.value.variants = [{ size: '', price: null, quantity: null }]
+    form.value.variants = [{ name: '', price: null, quantity: null }]
   }
 
   imagePreview.value = p.image_url || null
@@ -713,6 +730,8 @@ const submitForm = async () => {
     formData.append('category_id', form.value.category_id)
     formData.append('status', isActive.value ? 'active' : 'archived')
     if (form.value.product_picture) formData.append('product_picture', form.value.product_picture)
+    if (form.value.expiration_date) formData.append('expiration_date', form.value.expiration_date)
+    
     if (hasVariants.value) {
       formData.append('variants', JSON.stringify(form.value.variants))
     } else {

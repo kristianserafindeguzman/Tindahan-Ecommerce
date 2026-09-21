@@ -66,6 +66,7 @@ class CatalogController extends Controller
                     'availableQuantity' => $item->available_quantity,
                     'variants' => $item->variants,
                     'distance_meters' => $distance,
+                    'expiration_date' => $item->expiration_date ? $item->expiration_date->format('Y-m-d') : null,
                 ];
             });
     }

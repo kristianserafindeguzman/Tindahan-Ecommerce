@@ -59,6 +59,7 @@ class InventoryController extends Controller
             'stock_quantity'  => 'nullable|integer|min:0',
             // Variants array
             'variants'        => 'nullable|string', // Will be JSON decoded
+            'expiration_date' => 'nullable|date|after_or_equal:today',
         ]);
 
         // Process variants if any
@@ -70,17 +71,26 @@ class InventoryController extends Controller
         $price = $validated['price'] ?? 0;
         $stock = $validated['stock_quantity'] ?? 0;
 
+        $normalizedVariants = [];
         if (!empty($variants) && is_array($variants)) {
             $stock = 0;
             $lowestPrice = null;
             foreach ($variants as $variant) {
+                // Normalize 'size' to 'name'
+                if (isset($variant['size']) && !isset($variant['name'])) {
+                    $variant['name'] = $variant['size'];
+                    unset($variant['size']);
+                }
+                
                 $stock += (int)($variant['quantity'] ?? 0);
                 $vPrice = (float)($variant['price'] ?? 0);
                 if ($lowestPrice === null || $vPrice < $lowestPrice) {
                     $lowestPrice = $vPrice;
                 }
+                $normalizedVariants[] = $variant;
             }
             $price = $lowestPrice ?? 0;
+            $variants = $normalizedVariants;
         }
 
         $photoPath = null;
@@ -99,6 +109,7 @@ class InventoryController extends Controller
             'variants'        => empty($variants) ? null : $variants,
             'product_picture' => $photoPath,
             'status'          => 'active',
+            'expiration_date' => $validated['expiration_date'] ?? null,
         ]);
 
         return response()->json([
@@ -126,6 +137,7 @@ class InventoryController extends Controller
             'stock_quantity'  => 'nullable|integer|min:0',
             'variants'        => 'nullable|string',
             'status'          => 'sometimes|in:active,archived',
+            'expiration_date' => 'nullable|date',
         ]);
 
         if (array_key_exists('variants', $validated)) {
@@ -137,16 +149,23 @@ class InventoryController extends Controller
             if (!empty($variants) && is_array($variants)) {
                 $stock = 0;
                 $lowestPrice = null;
+                $normalizedVariants = [];
                 foreach ($variants as $variant) {
+                    if (isset($variant['size']) && !isset($variant['name'])) {
+                        $variant['name'] = $variant['size'];
+                        unset($variant['size']);
+                    }
+                    
                     $stock += (int)($variant['quantity'] ?? 0);
                     $vPrice = (float)($variant['price'] ?? 0);
                     if ($lowestPrice === null || $vPrice < $lowestPrice) {
                         $lowestPrice = $vPrice;
                     }
+                    $normalizedVariants[] = $variant;
                 }
                 $item->stock_quantity = $stock;
                 $item->price = $lowestPrice ?? 0;
-                $item->variants = $variants;
+                $item->variants = $normalizedVariants;
             } else {
                 $item->variants = null;
                 if (isset($validated['price'])) $item->price = $validated['price'];
@@ -164,6 +183,10 @@ class InventoryController extends Controller
 
         if ($request->hasFile('product_picture')) {
             $item->product_picture = $request->file('product_picture')->store('products', 'public');
+        }
+
+        if (array_key_exists('expiration_date', $validated)) {
+            $item->expiration_date = $validated['expiration_date'];
         }
 
         $item->save();

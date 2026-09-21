@@ -23,6 +23,7 @@ class Inventory extends Model
         'variants',
         'product_picture',
         'status',
+        'expiration_date',
     ];
 
     protected $appends = ['image_url'];
@@ -50,6 +51,7 @@ class Inventory extends Model
         return [
             'price' => 'decimal:2',
             'variants' => 'array',
+            'expiration_date' => 'date',
         ];
     }
 

@@ -61,7 +61,8 @@
               <div class="cart-item-info">
                 <div class="cart-item-name">{{ item.name }}</div>
                 <div v-if="item.variantName" class="cart-item-variant">{{ item.variantName }}</div>
-                <div v-if="!item.inStock" class="cart-item-oos-tag">{{ t('Out of Stock') }}</div>
+                <div v-if="!item.inStock" class="cart-item-oos-tag">{{ item.isExpired ? t('Expired') : t('Out of Stock') }}</div>
+                <div v-else-if="item.expiresAt" class="cart-item-expiry-tag">{{ formatTimeLeft(item.expiresAt) }}</div>
                 <div class="cart-item-price">₱{{ item.price.toFixed(2) }}</div>
               </div>
 
@@ -193,7 +194,22 @@ const router = useRouter()
 
 const { items, loading, fetchCart, updateQuantity, removeFromCart } = useCart()
 
-onMounted(fetchCart)
+const now = ref(Date.now())
+let timerInterval = null
+
+onMounted(() => {
+  fetchCart()
+  timerInterval = setInterval(() => { now.value = Date.now() }, 1000)
+})
+
+const formatTimeLeft = (expiresAt) => {
+  if (!expiresAt) return null
+  const diff = new Date(expiresAt).getTime() - now.value
+  if (diff <= 0) return t('Expired')
+  const minutes = Math.floor(diff / 60000)
+  const seconds = Math.floor((diff % 60000) / 1000)
+  return t('Expires in {min}:{sec}', { min: minutes, sec: seconds.toString().padStart(2, '0') })
+}
 
 // Mobile/tablet: sticky checkout bar replaces the Order Summary sidebar.
 const showCheckoutBar = computed(() => $q.screen.lt.md && items.value.length > 0)
@@ -219,7 +235,10 @@ watch(checkoutBarEl, (el) => {
   checkoutBarObserver.observe(el)
 })
 
-onBeforeUnmount(() => checkoutBarObserver?.disconnect())
+onBeforeUnmount(() => {
+  checkoutBarObserver?.disconnect()
+  clearInterval(timerInterval)
+})
 
 // Only one store can be checked out from at a time — the checkout flow is per-store pickup, not a combined order.
 const selectedStoreId = ref(null)
@@ -562,6 +581,15 @@ const removeItem = async (item) => {
   text-transform: uppercase;
 
   color: var(--c-danger);
+}
+
+.cart-item-expiry-tag {
+  margin-top: 2px;
+
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+
+  color: var(--c-brand);
 }
 
 .cart-item-price {

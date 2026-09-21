@@ -17,7 +17,16 @@ class CartItem extends Model
         'inventory_id',
         'variant_name',
         'quantity',
+        'reserved_quantity',
+        'expires_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'expires_at' => 'datetime',
+        ];
+    }
 
     public function inventory()
     {
