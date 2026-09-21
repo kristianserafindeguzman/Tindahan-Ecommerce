@@ -187,6 +187,18 @@
             </div>
           </div>
           </component>
+
+          <!-- Desktop only: a bubble hanging off the pill, which has room to its right in
+               the 1200px bar. The compact header places the same hint as its own row below,
+               since there the pill sits mid-grid and a bubble would run off the screen. -->
+          <ContextHint
+            v-if="showLocationHint && !isCompactHeader"
+            v-bind="locationHintProps"
+            class="header-location-hint"
+            arrow="top"
+            @click.stop
+            @dismiss="dismissLocationHint"
+          />
         </div>
 
         <!-- Compact bar's right-hand cluster, holding the language switch, notifications and the cart. -->
@@ -209,9 +221,6 @@
         </div>
 
         <div ref="headerActionsRef" class="header-actions">
-
-          <!-- Sits beside Notifications so the language switch is reachable from every consumer page. -->
-          <LanguageSwitcher header class="header-language" />
 
           <!-- LOGGED IN -->
           <template v-if="isLoggedIn">
@@ -389,7 +398,21 @@
             />
           </template>
 
+          <!-- Last in the row, at the far right edge of the header, after the account and
+               auth buttons: it is a preference, not something reached on every visit. -->
+          <LanguageSwitcher header class="header-language" />
+
         </div>
+
+        <!-- Compact header only: a full-width row of the header grid, under the search box.
+             In flow rather than floating, so it can neither overflow the screen nor cover
+             the search bar; the header simply grows while the hint is up. -->
+        <ContextHint
+          v-if="showLocationHint && isCompactHeader"
+          v-bind="locationHintProps"
+          class="header-location-hint header-location-hint--row"
+          @dismiss="dismissLocationHint"
+        />
       </div>
     </div>
 
@@ -505,6 +528,8 @@ import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 import AddressAutocomplete from '@/components/shared/AddressAutocomplete.vue'
 import NotificationsMenu from '@/components/consumer/NotificationsMenu.vue'
 import LanguageSwitcher from '@/components/consumer/LanguageSwitcher.vue'
+import ContextHint from '@/components/consumer/ContextHint.vue'
+import { useConsumerHints, HINT_LOCATION_SETUP } from '@/composables/useConsumerHints'
 import { notificationPresentation, notificationTime } from '@/utils/notificationPresentation'
 import {
   NOTIFICATION_READ_STATE_EVENT,
@@ -519,6 +544,32 @@ const route = useRoute()
 const $q = useQuasar()
 
 const { address, setAddress, autoDetectAddress } = useAddress()
+
+// A pointer at the address pill for shoppers who have no address yet. autoDetectAddress may
+// still be resolving when the header mounts, so it waits before offering: a hint that
+// appears and then answers itself is worse than no hint.
+const { isDismissed, dismissHint } = useConsumerHints()
+const locationHintReady = ref(false)
+let locationHintTimer = null
+
+const showLocationHint = computed(
+  () =>
+    locationHintReady.value &&
+    !address.value &&
+    !addressMenuOpen.value &&
+    !isDismissed(HINT_LOCATION_SETUP)
+)
+
+const dismissLocationHint = () => dismissHint(HINT_LOCATION_SETUP)
+
+// Shared by the desktop bubble and the compact row, so the copy is written once.
+const locationHintProps = computed(() => ({
+  icon: 'o_location_on',
+  title: t('Set your location'),
+  text: t('Tap here to add your address. We use it to sort stores and products by how near they are to you.'),
+  dismissLabel: t('Close')
+}))
+
 const draftAddress = ref('')
 const draftLocation = ref(null)
 // The saved pin the panel opens on, so the map shows it instead of jumping to the device and relabelling the saved address.
@@ -598,7 +649,10 @@ const confirmAddress = async () => {
     setAddress(draftAddress.value.trim())
   }
   addressMenuOpen.value = false
-  
+
+  // They have found the pill and used it, so the pointer has done its job for good.
+  dismissLocationHint()
+
   // Refresh stores and products to apply new distance sorting
   fetchStores()
   fetchProducts()
@@ -657,6 +711,9 @@ onMounted(() => {
   if (!stores.value.length) fetchStores()
   if (!categories.value.length) fetchCategories()
   autoDetectAddress()
+  // Long enough for autoDetectAddress to have asked the browser and come back, so the
+  // hint only appears for shoppers who really are without an address.
+  locationHintTimer = setTimeout(() => { locationHintReady.value = true }, 2500)
   // Cart routes are auth-gated — an unconditional fetch would 401 for guests.
   if (isLoggedIn.value) {
     fetchCart()
@@ -666,6 +723,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener(NOTIFICATION_READ_STATE_EVENT, syncNotificationReadState)
+  clearTimeout(locationHintTimer)
 })
 
 const userAvatar = computed(() => {
@@ -994,6 +1052,12 @@ const goToTab = (tab) => {
 }
 
 /* Language switch, first in the action cluster so it sits beside Notifications on every page. */
+/* Overhangs .header-bar-inner's 24px right padding so the pill sits flush with the outer
+   edge of the header's content column instead of indented with the buttons beside it. */
+.header-actions .header-language {
+  margin-right: -24px;
+}
+
 .header-language :deep(.language-header-btn) {
   min-height: 38px;
   padding: 0 10px;
@@ -1971,6 +2035,22 @@ const goToTab = (tab) => {
   cursor: pointer;
 }
 
+/* Desktop bubble: hangs below the pill inside .header-location, which is already
+   position: relative. There is room to its right in the 1200px bar, so 300px never
+   reaches the edge of the screen. The compact header uses the row variant below instead. */
+.header-location-hint {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 5;
+
+  width: 300px;
+
+  cursor: default;
+
+  box-shadow: var(--sh-pop);
+}
+
 .header-location-pill {
   display: flex;
   align-items: center;
@@ -2144,6 +2224,19 @@ const goToTab = (tab) => {
     column-gap: 8px;
     row-gap: 10px;
     padding: 6px 12px 12px;
+  }
+
+  /* The location hint as a row of the header grid rather than a bubble off the pill: the
+     pill sits in the middle column here, so anything hanging from it would run off the
+     right edge and cover the search row. Spanning every column auto-places it into a third
+     row, which only exists while the hint is rendered, so the header keeps its height
+     otherwise. */
+  .header-location-hint--row {
+    position: static;
+
+    grid-column: 1 / -1;
+
+    width: auto;
   }
 
   .header-logo {

@@ -5,7 +5,7 @@
       <!-- ================= WELCOME BANNER ================= -->
       <!-- The consumer home's red banner, turned into the store owner's daily welcome. -->
       <!-- Its colour and icon follow the time of day, from a sunrise orange to a night indigo. -->
-      <section class="dash-hero" :class="`dash-hero--${dayPhase.key}`">
+      <section data-tour="dash-hero" class="dash-hero" :class="`dash-hero--${dayPhase.key}`">
         <div class="dash-hero-content">
           <div class="hero-eyebrow-row">
             <span class="hero-eyebrow hero-eyebrow--panel">
@@ -49,7 +49,7 @@
       </section>
 
       <!-- ================= ORDER COUNTS ================= -->
-      <div class="row q-col-gutter-md q-mb-md">
+      <div data-tour="dash-kpis" class="row q-col-gutter-md q-mb-md">
         <div v-for="kpi in kpis" :key="kpi.key" class="col-6 col-md-3">
           <div class="dash-card kpi-card">
             <div class="kpi-top">
@@ -68,8 +68,8 @@
 
         <!-- ================= REVENUE ================= -->
         <div class="col-12 col-md-8">
-          <div class="dash-card dash-card--fill">
-            <div class="card-header">
+          <div data-tour="dash-revenue" class="dash-card dash-card--fill">
+            <div data-tour="dash-revenue-head" class="card-header">
               <div>
                 <div class="section-title">{{ t('revenueTitle') }}</div>
                 <div class="section-subtitle">{{ t('revenueSub') }}</div>
@@ -115,8 +115,8 @@
         <!-- ================= DEMAND FORECAST ================= -->
         <div class="col-12 col-md-4">
           <!-- The forecast is the system's own prediction, so it gets a deep red card of its own. -->
-          <div class="dash-card dash-card--fill forecast-card">
-            <div class="card-header">
+          <div data-tour="dash-forecast" class="dash-card dash-card--fill forecast-card">
+            <div data-tour="dash-forecast-head" class="card-header">
               <div>
                 <div class="section-title forecast-title">
                   <span class="forecast-badge"><q-icon name="o_auto_awesome" size="16px" /></span>
@@ -177,8 +177,8 @@
       </div>
 
       <!-- ================= RECENT ORDERS ================= -->
-      <div class="dash-card">
-        <div class="card-header">
+      <div data-tour="dash-recent" class="dash-card">
+        <div data-tour="dash-recent-head" class="card-header">
           <div>
             <div class="section-title">{{ t('recentOrdersTitle') }}</div>
             <div class="section-subtitle">{{ t('recentOrdersSub') }}</div>
