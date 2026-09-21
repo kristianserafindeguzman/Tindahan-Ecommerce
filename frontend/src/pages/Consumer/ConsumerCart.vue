@@ -14,19 +14,37 @@
         <p class="cart-loading-text">{{ t('Loading your cart…') }}</p>
       </div>
 
-      <div v-else-if="!items.length" class="cart-empty">
-        <q-icon name="o_shopping_cart" size="40px" class="cart-empty-icon" />
-        <p class="cart-empty-text">{{ t('Your cart is empty.') }}</p>
-        <q-btn
-          unelevated
-          no-caps
-          :label="t('Browse Products')"
-          class="browse-btn"
-          @click="router.push('/consumer/products')"
-        />
-      </div>
+      <EmptyState
+        v-else-if="!items.length"
+        class="cart-empty"
+        icon="o_shopping_cart"
+        :title="t('Your cart is empty')"
+        :text="t('Items you add from a store will wait here until you are ready to check out. You pay and collect at the store itself.')"
+      >
+        <template #action>
+          <q-btn
+            unelevated
+            no-caps
+            :label="t('Browse Products')"
+            class="browse-btn"
+            @click="router.push('/consumer/products')"
+          />
+        </template>
+      </EmptyState>
 
       <template v-else>
+      <!-- Shown once, above the cart itself: there is no delivery in Tindahan, and the
+           pickup note in the summary below is easy to miss before checkout. -->
+      <ContextHint
+        v-if="showPickupHint"
+        class="cart-pickup-hint"
+        icon="o_storefront"
+        :title="t('Pickup only')"
+        :text="t('Tindahan orders are collected at the store. There is no delivery — you pay the store when you pick your order up.')"
+        :dismiss-label="t('Close')"
+        @dismiss="dismissPickupHint"
+      />
+
       <div class="cart-layout">
 
         <div class="cart-main">
@@ -184,7 +202,10 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
+import EmptyState from '@/components/consumer/EmptyState.vue'
+import ContextHint from '@/components/consumer/ContextHint.vue'
 import { useCart } from '@/composables/useCart'
+import { useConsumerHints, HINT_PICKUP_ONLY } from '@/composables/useConsumerHints'
 
 const { t, itemCount } = useConsumerLanguage()
 
@@ -192,6 +213,10 @@ const $q = useQuasar()
 const router = useRouter()
 
 const { items, loading, fetchCart, updateQuantity, removeFromCart } = useCart()
+
+const { isDismissed, dismissHint } = useConsumerHints()
+const showPickupHint = computed(() => !isDismissed(HINT_PICKUP_ONLY))
+const dismissPickupHint = () => dismissHint(HINT_PICKUP_ONLY)
 
 onMounted(fetchCart)
 
@@ -337,13 +362,12 @@ const removeItem = async (item) => {
 }
 
 .cart-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  animation: cart-fade-up 0.5s ease both;
+}
 
-  padding: 60px 24px;
-
-  text-align: center;
+/* Above the cart columns, spanning the page's full width. */
+.cart-pickup-hint {
+  margin-bottom: 16px;
 
   animation: cart-fade-up 0.5s ease both;
 }
@@ -363,24 +387,11 @@ const removeItem = async (item) => {
 
 @media (prefers-reduced-motion: reduce) {
   .cart-empty,
+  .cart-pickup-hint,
   .page-title,
   .cart-layout {
     animation: none;
   }
-}
-
-.cart-empty-icon {
-  margin-bottom: 10px;
-
-  color: var(--c-border);
-}
-
-.cart-empty-text {
-  margin: 0 0 20px;
-
-  font-size: var(--fs-md);
-
-  color: var(--c-muted);
 }
 
 .browse-btn {
