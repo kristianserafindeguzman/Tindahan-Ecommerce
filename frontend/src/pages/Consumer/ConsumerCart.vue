@@ -27,6 +27,18 @@
       </div>
 
       <template v-else>
+      <!-- Shown once, above the cart itself: there is no delivery in Tindahan, and the
+           pickup note in the summary below is easy to miss before checkout. -->
+      <ContextHint
+        v-if="showPickupHint"
+        class="cart-pickup-hint"
+        icon="o_storefront"
+        :title="t('Pickup only')"
+        :text="t('Tindahan orders are collected at the store. There is no delivery — you pay the store when you pick your order up.')"
+        :dismiss-label="t('Close')"
+        @dismiss="dismissPickupHint"
+      />
+
       <div class="cart-layout">
 
         <div class="cart-main">
@@ -185,7 +197,9 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
+import ContextHint from '@/components/consumer/ContextHint.vue'
 import { useCart } from '@/composables/useCart'
+import { useConsumerHints, HINT_PICKUP_ONLY } from '@/composables/useConsumerHints'
 
 const { t, itemCount } = useConsumerLanguage()
 
@@ -193,6 +207,10 @@ const $q = useQuasar()
 const router = useRouter()
 
 const { items, loading, fetchCart, updateQuantity, removeFromCart } = useCart()
+
+const { isDismissed, dismissHint } = useConsumerHints()
+const showPickupHint = computed(() => !isDismissed(HINT_PICKUP_ONLY))
+const dismissPickupHint = () => dismissHint(HINT_PICKUP_ONLY)
 
 const now = ref(Date.now())
 let timerInterval = null
@@ -367,6 +385,13 @@ const removeItem = async (item) => {
   animation: cart-fade-up 0.5s ease both;
 }
 
+/* Above the cart columns, spanning the page's full width. */
+.cart-pickup-hint {
+  margin-bottom: 16px;
+
+  animation: cart-fade-up 0.5s ease both;
+}
+
 /* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
 @keyframes cart-fade-up {
   from { opacity: 0; transform: translateY(14px); }
@@ -382,6 +407,7 @@ const removeItem = async (item) => {
 
 @media (prefers-reduced-motion: reduce) {
   .cart-empty,
+  .cart-pickup-hint,
   .page-title,
   .cart-layout {
     animation: none;
