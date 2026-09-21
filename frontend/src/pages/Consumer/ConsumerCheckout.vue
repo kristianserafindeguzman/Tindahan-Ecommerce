@@ -113,6 +113,16 @@
             </div>
           </div>
 
+          <div v-if="storeDetails && !storeDetails.isOpen" class="location-required-card">
+            <q-icon name="o_schedule" size="22px" class="location-required-icon text-negative" />
+            <div class="location-required-body">
+              <div class="location-required-title">{{ t('Store is currently closed') }}</div>
+              <div class="location-required-text">
+                {{ storeDetails.scheduleStatusText }}. {{ t('You cannot place an order right now.') }}
+              </div>
+            </div>
+          </div>
+
           <!-- STORE INFO -->
           <div class="store-info-card">
             <div class="checkout-items-title">{{ t('Pickup Location') }}</div>
@@ -292,7 +302,7 @@
             :label="t('Place Order')"
             class="place-order-btn"
             :loading="placingOrder"
-            :disable="!hasConsumerLocation"
+            :disable="!hasConsumerLocation || (storeDetails && !storeDetails.isOpen)"
             @click="placeOrder"
           />
           <p v-if="!hasConsumerLocation" class="summary-location-note">
@@ -324,7 +334,7 @@
           :label="t('Place Order')"
           class="place-order-btn"
           :loading="placingOrder"
-          :disable="!hasConsumerLocation"
+          :disable="!hasConsumerLocation || (storeDetails && !storeDetails.isOpen)"
           @click="placeOrder"
         />
       </div>

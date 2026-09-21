@@ -24,7 +24,9 @@ export function useCart() {
         availableQuantity: item.availableQuantity,
         inStock: item.inStock,
         store: item.store,
-        storeId: item.storeId
+        storeId: item.storeId,
+        expiresAt: item.expiresAt,
+        isExpired: item.isExpired
       }))
     } catch (error) {
       console.error('Failed to load cart', error)

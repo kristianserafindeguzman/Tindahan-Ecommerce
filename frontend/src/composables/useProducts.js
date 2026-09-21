@@ -26,7 +26,8 @@ const load = async (params) => {
       inStock: product.inStock,
       availableQuantity: product.availableQuantity,
       variants: product.variants,
-      distance_meters: product.distance_meters
+      distance_meters: product.distance_meters,
+      expiration_date: product.expiration_date
     }))
   } catch (error) {
     console.error('Failed to load products', error)

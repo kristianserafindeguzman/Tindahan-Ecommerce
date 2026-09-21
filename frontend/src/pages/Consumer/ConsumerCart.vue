@@ -14,23 +14,17 @@
         <p class="cart-loading-text">{{ t('Loading your cart…') }}</p>
       </div>
 
-      <EmptyState
-        v-else-if="!items.length"
-        class="cart-empty"
-        icon="o_shopping_cart"
-        :title="t('Your cart is empty')"
-        :text="t('Items you add from a store will wait here until you are ready to check out. You pay and collect at the store itself.')"
-      >
-        <template #action>
-          <q-btn
-            unelevated
-            no-caps
-            :label="t('Browse Products')"
-            class="browse-btn"
-            @click="router.push('/consumer/products')"
-          />
-        </template>
-      </EmptyState>
+      <div v-else-if="!items.length" class="cart-empty">
+        <q-icon name="o_shopping_cart" size="40px" class="cart-empty-icon" />
+        <p class="cart-empty-text">{{ t('Your cart is empty.') }}</p>
+        <q-btn
+          unelevated
+          no-caps
+          :label="t('Browse Products')"
+          class="browse-btn"
+          @click="router.push('/consumer/products')"
+        />
+      </div>
 
       <template v-else>
       <!-- Shown once, above the cart itself: there is no delivery in Tindahan, and the
@@ -79,7 +73,8 @@
               <div class="cart-item-info">
                 <div class="cart-item-name">{{ item.name }}</div>
                 <div v-if="item.variantName" class="cart-item-variant">{{ item.variantName }}</div>
-                <div v-if="!item.inStock" class="cart-item-oos-tag">{{ t('Out of Stock') }}</div>
+                <div v-if="!item.inStock" class="cart-item-oos-tag">{{ item.isExpired ? t('Expired') : t('Out of Stock') }}</div>
+                <div v-else-if="item.expiresAt" class="cart-item-expiry-tag">{{ formatTimeLeft(item.expiresAt) }}</div>
                 <div class="cart-item-price">₱{{ item.price.toFixed(2) }}</div>
               </div>
 
@@ -202,7 +197,6 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
-import EmptyState from '@/components/consumer/EmptyState.vue'
 import ContextHint from '@/components/consumer/ContextHint.vue'
 import { useCart } from '@/composables/useCart'
 import { useConsumerHints, HINT_PICKUP_ONLY } from '@/composables/useConsumerHints'
@@ -218,7 +212,22 @@ const { isDismissed, dismissHint } = useConsumerHints()
 const showPickupHint = computed(() => !isDismissed(HINT_PICKUP_ONLY))
 const dismissPickupHint = () => dismissHint(HINT_PICKUP_ONLY)
 
-onMounted(fetchCart)
+const now = ref(Date.now())
+let timerInterval = null
+
+onMounted(() => {
+  fetchCart()
+  timerInterval = setInterval(() => { now.value = Date.now() }, 1000)
+})
+
+const formatTimeLeft = (expiresAt) => {
+  if (!expiresAt) return null
+  const diff = new Date(expiresAt).getTime() - now.value
+  if (diff <= 0) return t('Expired')
+  const minutes = Math.floor(diff / 60000)
+  const seconds = Math.floor((diff % 60000) / 1000)
+  return t('Expires in {min}:{sec}', { min: minutes, sec: seconds.toString().padStart(2, '0') })
+}
 
 // Mobile/tablet: sticky checkout bar replaces the Order Summary sidebar.
 const showCheckoutBar = computed(() => $q.screen.lt.md && items.value.length > 0)
@@ -244,7 +253,10 @@ watch(checkoutBarEl, (el) => {
   checkoutBarObserver.observe(el)
 })
 
-onBeforeUnmount(() => checkoutBarObserver?.disconnect())
+onBeforeUnmount(() => {
+  checkoutBarObserver?.disconnect()
+  clearInterval(timerInterval)
+})
 
 // Only one store can be checked out from at a time — the checkout flow is per-store pickup, not a combined order.
 const selectedStoreId = ref(null)
@@ -362,6 +374,14 @@ const removeItem = async (item) => {
 }
 
 .cart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 60px 24px;
+
+  text-align: center;
+
   animation: cart-fade-up 0.5s ease both;
 }
 
@@ -392,6 +412,20 @@ const removeItem = async (item) => {
   .cart-layout {
     animation: none;
   }
+}
+
+.cart-empty-icon {
+  margin-bottom: 10px;
+
+  color: var(--c-border);
+}
+
+.cart-empty-text {
+  margin: 0 0 20px;
+
+  font-size: var(--fs-md);
+
+  color: var(--c-muted);
 }
 
 .browse-btn {
@@ -573,6 +607,15 @@ const removeItem = async (item) => {
   text-transform: uppercase;
 
   color: var(--c-danger);
+}
+
+.cart-item-expiry-tag {
+  margin-top: 2px;
+
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+
+  color: var(--c-brand);
 }
 
 .cart-item-price {

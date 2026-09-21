@@ -24,7 +24,15 @@ class Order extends Model
         'consumer_longitude',
         'created_at',
         'updated_at',
+        'ready_for_pickup_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'ready_for_pickup_at' => 'datetime',
+        ];
+    }
 
     /**
      * Get the store that owns the order.

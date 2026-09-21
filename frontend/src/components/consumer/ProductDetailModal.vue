@@ -37,6 +37,12 @@
 
             <p v-if="product.description" class="detail-description">{{ product.description }}</p>
 
+            <!-- EXPIRATION DATE / BEST BEFORE -->
+            <div v-if="product.expiration_date" class="detail-expiry" style="margin-top: 8px; color: #666; font-size: 0.9em;">
+              <q-icon name="o_event" size="14px" />
+              Best Before: {{ new Date(product.expiration_date).toLocaleDateString() }}
+            </div>
+
             <!-- VARIANTS -->
             <div v-if="hasVariants" class="variants-section">
               <div class="variants-label">{{ t('Available Sizes') }}</div>
@@ -234,7 +240,8 @@ const handleAddToCart = async () => {
 
   adding.value = true
   try {
-    await addToCart(props.product.id, quantity.value, selectedVariant.value?.name || null)
+    const variantName = selectedVariant.value?.name || selectedVariant.value?.size || selectedVariant.value?.label || null
+    await addToCart(props.product.id, quantity.value, variantName)
     $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: props.product.name }) })
   } catch (error) {
     $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
