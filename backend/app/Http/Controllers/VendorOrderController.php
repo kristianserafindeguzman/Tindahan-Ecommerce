@@ -120,6 +120,10 @@ class VendorOrderController extends Controller
             if ($newStatus === 'cancelled' && $request->has('cancellation_reason')) {
                 $order->cancellation_reason = $request->input('cancellation_reason');
             }
+
+            if ($newStatus === 'ready_for_pickup' && $oldStatus !== 'ready_for_pickup') {
+                $order->ready_for_pickup_at = now();
+            }
             
             $order->save();
 

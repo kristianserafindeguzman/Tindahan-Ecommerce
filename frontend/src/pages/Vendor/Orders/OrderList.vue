@@ -10,8 +10,8 @@
         <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" :loading="isExporting" @click="exportOrders" />
       </div>
 
-      <div class="vp-card">
-        <div class="vp-toolbar">
+      <div data-tour="ol-list" class="vp-card">
+        <div data-tour="ol-toolbar" class="vp-toolbar">
           <div class="vp-search-row">
             <q-input
               v-model="search"
@@ -31,7 +31,7 @@
           </div>
 
           <!-- Each status is a chip with its count, so the busy ones stand out before they are opened. -->
-          <div class="vp-chips" role="tablist" aria-label="Filter orders by status">
+          <div data-tour="ol-chips" class="vp-chips" role="tablist" aria-label="Filter orders by status">
             <button
               v-for="filter in localizedFilters"
               :key="filter.key"

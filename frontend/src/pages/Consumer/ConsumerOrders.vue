@@ -20,11 +20,16 @@
         </div>
       </div>
 
-      <div v-else-if="!orders.length" class="orders-empty">
-        <q-icon name="o_receipt_long" size="40px" class="orders-empty-icon" />
-        <p class="orders-empty-text">{{ t('You haven\'t placed any orders yet.') }}</p>
-        <q-btn unelevated no-caps :label="t('Browse Products')" class="browse-btn" @click="router.push('/consumer/home')" />
-      </div>
+      <EmptyState
+        v-else-if="!orders.length"
+        icon="o_receipt_long"
+        :title="t('No orders yet')"
+        :text="t('Once you check out, your orders appear here so you can follow each one from placed to ready for pickup.')"
+      >
+        <template #action>
+          <q-btn unelevated no-caps :label="t('Browse Products')" class="browse-btn" @click="router.push('/consumer/home')" />
+        </template>
+      </EmptyState>
 
       <div v-else>
         <!-- QTabs provides the tab roles, arrow-key navigation and sliding indicator, and v-model keeps the activeTab value the page filters on. -->
@@ -39,12 +44,20 @@
           <q-tab v-for="tab in orderTabs" :key="tab.value" :name="tab.value" :label="t(tab.label)" class="orders-tab" />
         </q-tabs>
 
-        <div v-if="!displayedOrders.length" class="orders-empty">
-          <q-icon name="o_receipt_long" size="40px" class="orders-empty-icon" />
-          <p class="orders-empty-text">
-            {{ activeTab === 'active' ? t('You have no active orders right now.') : t('You don\'t have any past orders yet.') }}
-          </p>
-        </div>
+        <!-- Per-tab, so "no active orders" does not read as "no orders at all" to someone
+             who has a full history sitting in the next tab. -->
+        <EmptyState
+          v-if="!displayedOrders.length"
+          :icon="activeTab === 'active' ? 'o_pending_actions' : 'o_history'"
+          :title="activeTab === 'active' ? t('Nothing in progress') : t('No past orders')"
+          :text="activeTab === 'active'
+            ? t('You have no active orders right now. Anything you order next shows up here while the store prepares it.')
+            : t('Orders you have picked up or cancelled will be kept here.')"
+        >
+          <template v-if="activeTab === 'active'" #action>
+            <q-btn unelevated no-caps :label="t('Browse Products')" class="browse-btn" @click="router.push('/consumer/home')" />
+          </template>
+        </EmptyState>
 
         <div v-else class="orders-layout">
           <div class="orders-list">
@@ -128,6 +141,7 @@ import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
+import EmptyState from '@/components/consumer/EmptyState.vue'
 import { api } from '@/boot/axios'
 import { useCart } from '@/composables/useCart'
 import { formatDistance, calculateDistanceMeters } from '@/utils/distance'
@@ -300,25 +314,6 @@ const reorderItems = async (order) => {
 
 .skeleton-line-short {
   width: 30%;
-}
-
-.orders-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 60px 24px;
-  text-align: center;
-}
-
-.orders-empty-icon {
-  margin-bottom: 10px;
-  color: var(--c-border);
-}
-
-.orders-empty-text {
-  margin: 0 0 20px;
-  font-size: var(--fs-md);
-  color: var(--c-muted);
 }
 
 .browse-btn {

@@ -17,12 +17,12 @@
             </template>
           </q-btn>
           <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" @click="openExportWizard" />
-          <q-btn unelevated no-caps color="primary" icon="add" :label="t('addBtn')" class="vp-primary-btn" @click="showAddModal = true" />
+          <q-btn data-tour="add-product" unelevated no-caps color="primary" icon="add" :label="t('addBtn')" class="vp-primary-btn" @click="showAddModal = true" />
         </div>
       </div>
 
       <!-- Forecast insights from the demand model. -->
-      <div class="vp-stats vp-stats--insights">
+      <div data-tour="pl-insights" class="vp-stats vp-stats--insights">
         <div v-for="card in insightCards" :key="card.key" class="vp-card vp-stat">
           <div class="vp-stat-top">
             <span class="vp-stat-label">{{ card.label }}</span>
@@ -38,8 +38,8 @@
         </div>
       </div>
 
-      <div class="vp-card">
-        <div class="vp-toolbar">
+      <div data-tour="pl-list" class="vp-card">
+        <div data-tour="pl-toolbar" class="vp-toolbar">
           <div class="pl-search-row">
             <q-input
               v-model="search"
@@ -316,7 +316,7 @@ import { ref, computed, onMounted, onBeforeUnmount, reactive, nextTick, watch } 
 import html2canvas from 'html2canvas'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useLanguage } from '@/composables/useLanguage'
 
 import AddProductModal from '@/components/modals/AddProductModal.vue'
@@ -928,12 +928,26 @@ const fetchMlInsights = async () => {
 
 // A link from Categories carries ?category=, so the list opens already filtered to it.
 const route = useRoute()
+const router = useRouter()
+
+// "Add Your First Product" at the end of the vendor tutorial sends ?add=1. The query is
+// dropped again once the modal is open, so a refresh or a back button does not reopen it.
+const openAddFromQuery = () => {
+  if (route.query.add !== '1') return
+  showAddModal.value = true
+  router.replace({ path: route.path, query: { ...route.query, add: undefined } })
+}
+
+// Watched as well as read on mount, since the tutorial can send ?add=1 while this page is
+// already the active route, which mounts nothing new.
+watch(() => route.query.add, openAddFromQuery)
 
 onMounted(() => {
   const linkedCategory = Number(route.query.category)
   if (Number.isFinite(linkedCategory) && linkedCategory > 0) filters.category = linkedCategory
   fetchProducts()
   fetchMlInsights()
+  openAddFromQuery()
 })
 </script>
 
@@ -967,8 +981,8 @@ onMounted(() => {
   flex-shrink: 0;
   gap: 10px;
   height: 38px;
-  margin-right: 6px;
-  padding: 0 16px 0 6px;
+  /* The row already spaces its buttons with its own gap; the extra margin double-spaced this one. */
+  padding: 0 16px 0 8px;
   border: 1px solid var(--c-brand-tint-2, rgba(101, 16, 18, 0.16));
   border-radius: var(--r-pill, 9999px);
   background: var(--c-brand-tint, rgba(101, 16, 18, 0.05));
@@ -995,8 +1009,10 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
+  /* 24px inside a 38px pill leaves 7px all round, so the chip and its shadow clear the
+     rounded left cap instead of being shaved by the button's own overflow clip. */
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: #ffffff;
   color: var(--c-brand, #651012);
@@ -1257,7 +1273,9 @@ onMounted(() => {
     flex: 1 1 100% !important;
     order: -1;
     justify-content: center;
-    margin-right: 0;
+    /* Centred on its own full-width row, so the desktop's icon-side padding would read
+       as the label sitting off-centre. */
+    padding: 0 14px;
     margin-bottom: 8px;
   }
 

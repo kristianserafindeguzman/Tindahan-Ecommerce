@@ -113,6 +113,16 @@
             </div>
           </div>
 
+          <div v-if="storeDetails && !storeDetails.isOpen" class="location-required-card">
+            <q-icon name="o_schedule" size="22px" class="location-required-icon text-negative" />
+            <div class="location-required-body">
+              <div class="location-required-title">{{ t('Store is currently closed') }}</div>
+              <div class="location-required-text">
+                {{ storeDetails.scheduleStatusText }}. {{ t('You cannot place an order right now.') }}
+              </div>
+            </div>
+          </div>
+
           <!-- STORE INFO -->
           <div class="store-info-card">
             <div class="checkout-items-title">{{ t('Pickup Location') }}</div>
@@ -292,7 +302,7 @@
             :label="t('Place Order')"
             class="place-order-btn"
             :loading="placingOrder"
-            :disable="!hasConsumerLocation"
+            :disable="!hasConsumerLocation || (storeDetails && !storeDetails.isOpen)"
             @click="placeOrder"
           />
           <p v-if="!hasConsumerLocation" class="summary-location-note">
@@ -324,7 +334,7 @@
           :label="t('Place Order')"
           class="place-order-btn"
           :loading="placingOrder"
-          :disable="!hasConsumerLocation"
+          :disable="!hasConsumerLocation || (storeDetails && !storeDetails.isOpen)"
           @click="placeOrder"
         />
       </div>
@@ -368,14 +378,14 @@ const $q = useQuasar()
 
 const { items, loading, fetchCart, checkout } = useCart()
 const { stores, fetchStores } = useStores()
-const { address, detectAddress } = useAddress()
+const { locationVersion, detectAddress } = useAddress()
 
 const detectingLocation = ref(false)
 
-// The coordinates live in localStorage, which is not reactive, so the shared address ref is read
-// too: setting or detecting an address updates it and re-evaluates this.
+// The coordinates live in localStorage, which is not reactive, so the shared counter is read too:
+// every save bumps it, including one that stores a pin whose lookup came back with no address text.
 const hasConsumerLocation = computed(() => {
-  void address.value
+  void locationVersion.value
   const lat = Number(localStorage.getItem('consumer_lat'))
   const lng = Number(localStorage.getItem('consumer_lng'))
   return Number.isFinite(lat) && Number.isFinite(lng) && Boolean(lat || lng)

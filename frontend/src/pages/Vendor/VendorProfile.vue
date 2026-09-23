@@ -9,9 +9,9 @@
       <div class="row q-col-gutter-md items-stretch">
 
         <div class="col-12 col-md-8">
-          <q-card flat bordered class="profile-card profile-card-fill">
+          <q-card data-tour="pf-personal" flat bordered class="profile-card profile-card-fill">
             <q-card-section>
-              <div class="card-header">
+              <div data-tour="pf-personal-head" class="card-header">
                 <div>
                   <div class="section-title">{{ t('personalInfoTitle') }}</div>
                   <div class="section-subtitle">{{ t('personalInfoSubtitle') }}</div>
@@ -83,9 +83,9 @@
         </div>
 
         <div class="col-12 col-md-4 col-photo">
-          <q-card flat bordered class="profile-card profile-card-fill">
+          <q-card data-tour="pf-photo" flat bordered class="profile-card profile-card-fill">
             <q-card-section class="photo-card-section">
-              <div>
+              <div data-tour="pf-photo-head">
                 <div class="section-title">{{ t('storePhotoTitle') }}</div>
                 <div class="section-subtitle">{{ t('storePhotoSubtitle') }}</div>
               </div>
@@ -123,9 +123,9 @@
 
         <div class="col-12">
 
-          <q-card flat bordered class="profile-card q-mb-md">
+          <q-card data-tour="pf-details" flat bordered class="profile-card q-mb-md">
             <q-card-section>
-              <div class="card-header">
+              <div data-tour="pf-details-head" class="card-header">
                 <div>
                   <div class="section-title">{{ t('storeDetailsTitle') }}</div>
                   <div class="section-subtitle">{{ t('storeDetailsSubtitle') }}</div>
@@ -167,7 +167,7 @@
             </q-card-section>
           </q-card>
 
-          <q-card flat bordered class="profile-card q-mb-md">
+          <q-card data-tour="pf-security" flat bordered class="profile-card q-mb-md">
             <q-card-section>
               <div class="card-header">
                 <div>
@@ -190,6 +190,34 @@
                   :label="t('changePwdBtn')"
                   class="card-action-btn"
                   @click="showPasswordModal = true"
+                />
+              </div>
+            </q-card-section>
+          </q-card>
+
+          <q-card data-tour="pf-help" flat bordered class="profile-card q-mb-md">
+            <q-card-section>
+              <div class="card-header">
+                <div>
+                  <div class="section-title">{{ t('helpTitle') }}</div>
+                  <div class="section-subtitle">{{ t('helpSubtitle') }}</div>
+                </div>
+              </div>
+
+              <div class="info-row info-row-last">
+                <div class="info-icon"><q-icon name="o_school" size="18px" /></div>
+                <div class="info-body">
+                  <div class="help-title">{{ t('replayTutorialLabel') }}</div>
+                  <div class="help-desc">{{ t('replayTutorialDesc') }}</div>
+                </div>
+                <q-btn
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="o_play_circle"
+                  :label="t('replayTutorialBtn')"
+                  class="card-action-btn"
+                  @click="requestReplay"
                 />
               </div>
             </q-card-section>
@@ -707,6 +735,7 @@ import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
 import AddressAutocomplete from '@/components/shared/AddressAutocomplete.vue'
 import { useLanguage } from '@/composables/useLanguage'
+import { useVendorTutorial } from '@/composables/useVendorTutorial'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -746,6 +775,11 @@ const vendorProfileDict = {
     securitySubtitle: 'Keep your account secure.',
     passwordLabel: 'Password',
     changePwdBtn: 'Change Password',
+    helpTitle: 'Help & Support',
+    helpSubtitle: 'Learn your way around your store.',
+    replayTutorialLabel: 'Guided Tutorial',
+    replayTutorialDesc: 'Walk through the dashboard, products, orders, sales and settings again.',
+    replayTutorialBtn: 'Replay Tutorial',
     dangerZoneTitle: 'Danger Zone',
     dangerZoneSubtitle: 'Actions here are permanent and cannot be undone.',
     deleteAccountTitle: 'Delete My Store Account',
@@ -889,6 +923,11 @@ const vendorProfileDict = {
     securitySubtitle: 'Panatilihing secure ang iyong account.',
     passwordLabel: 'Password',
     changePwdBtn: 'Palitan ang Password',
+    helpTitle: 'Tulong at Suporta',
+    helpSubtitle: 'Alamin ang bawat bahagi ng iyong tindahan.',
+    replayTutorialLabel: 'Gabay na Tutorial',
+    replayTutorialDesc: 'Balikan ang dashboard, paninda, order, benta at settings.',
+    replayTutorialBtn: 'Ulitin ang Tutorial',
     dangerZoneTitle: 'Danger Zone',
     dangerZoneSubtitle: 'Pangmatagalan ang mga aksyon dito at hindi na mababago.',
     deleteAccountTitle: 'I-delete ang Account',
@@ -1007,7 +1046,11 @@ const vendorProfileDict = {
 
 const { t } = useLanguage(vendorProfileDict)
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+// Help & Support → Replay Tutorial. The tour itself is mounted in VendorLayout, since it
+// outlives this page the moment it routes to the product list.
+const { requestReplay } = useVendorTutorial()
+
+const DAYS =['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 const user = ref({})
 const store = ref({})
@@ -2084,6 +2127,23 @@ const deleteAccount = async () => {
   color: var(--c-text);
 
   overflow-wrap: anywhere;
+}
+
+/* Title-over-description inside an .info-row, the neutral twin of .danger-title/.danger-desc. */
+.help-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+
+  color: var(--c-text);
+}
+
+.help-desc {
+  margin-top: 1px;
+
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+
+  color: var(--c-text-3);
 }
 
 /* Whether the store has a map pin, under its address. */

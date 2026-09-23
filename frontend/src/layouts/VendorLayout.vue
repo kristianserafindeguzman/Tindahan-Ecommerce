@@ -90,15 +90,16 @@
           <div v-for="group in localizedNavGroups" :key="group.label" class="sidebar-group">  
             <div class="sidebar-category-header">{{ group.label }}</div>  
             <q-list class="sidebar-group-list">  
-              <q-item  
-                v-for="item in group.items"  
-                :key="item.path"  
-                :to="item.path"  
-                clickable  
-                v-ripple  
-                active-class="solid-nav-active"  
-                class="solid-nav-item uniform-menu-item"  
-              >  
+              <q-item
+                v-for="item in group.items"
+                :key="item.path"
+                :to="item.path"
+                :data-tour="item.tour"
+                clickable
+                v-ripple
+                active-class="solid-nav-active"
+                class="solid-nav-item uniform-menu-item"
+              >
                 <q-item-section avatar class="nav-avatar-slot">  
                   <q-icon :name="item.icon" size="20px" class="nav-icon-glyph" />  
                 </q-item-section>  
@@ -138,11 +139,11 @@
     <!-- ================= MOBILE BOTTOM NAVIGATION ================= -->  
     <q-footer v-if="$q.screen.lt.md" class="vendor-bottom-nav bg-white">  
       <nav class="bottom-nav-inner" aria-label="Store menu">  
-        <q-btn flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path === '/vendor/dashboard' }" to="/vendor/dashboard">  
-          <span class="bottom-nav-pill"><q-icon name="o_home" size="24px" /></span>  
-          <span class="bottom-nav-label">{{ t('home') }}</span>  
-        </q-btn>  
-        <q-btn flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/orders') }">  
+        <q-btn data-tour="mnav-dashboard" flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path === '/vendor/dashboard' }" to="/vendor/dashboard">
+          <span class="bottom-nav-pill"><q-icon name="o_home" size="24px" /></span>
+          <span class="bottom-nav-label">{{ t('home') }}</span>
+        </q-btn>
+        <q-btn data-tour="mnav-orders" flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/orders') }">
           <span class="bottom-nav-pill"><q-icon name="o_receipt_long" size="24px" /></span>  
           <span class="bottom-nav-label">{{ t('orders') }}</span>  
           <q-menu anchor="top middle" self="bottom middle" transition-show="jump-up" transition-hide="jump-down" class="solid-paper-menu" :offset="[0, 10]">  
@@ -164,7 +165,7 @@
         </q-btn>  
         <!-- Each item carries v-close-popup: QMenu does not close on a route change, so without it
              the menu stayed open over the page it had just navigated to and the tap looked ignored. -->
-        <q-btn flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/products') }">  
+        <q-btn data-tour="mnav-inventory" flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/products') }">
           <span class="bottom-nav-pill"><q-icon name="o_inventory_2" size="24px" /></span>  
           <span class="bottom-nav-label">{{ t('products') }}</span>  
           <q-menu anchor="top middle" self="bottom middle" transition-show="jump-up" transition-hide="jump-down" class="solid-paper-menu" :offset="[0, 10]">  
@@ -184,18 +185,22 @@
             </q-list>  
           </q-menu>  
         </q-btn>  
-        <q-btn flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/sales') }" to="/vendor/sales">  
+        <q-btn data-tour="mnav-analytics" flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/sales') }" to="/vendor/sales">
           <span class="bottom-nav-pill"><q-icon name="o_analytics" size="24px" /></span>  
           <span class="bottom-nav-label">{{ t('sales') }}</span>  
         </q-btn>  
-        <q-btn flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/profile') }" to="/vendor/profile">  
-          <span class="bottom-nav-pill"><q-icon name="o_person" size="24px" /></span>  
-          <span class="bottom-nav-label">{{ t('profileNav') }}</span>  
-        </q-btn>  
+        <q-btn data-tour="mnav-settings" flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/profile') }" to="/vendor/profile">
+          <span class="bottom-nav-pill"><q-icon name="o_person" size="24px" /></span>
+          <span class="bottom-nav-label">{{ t('profileNav') }}</span>
+        </q-btn>
       </nav>  
     </q-footer>
 
-  </q-layout>  
+    <!-- Lives at the layout level so the tour survives the route change it makes at the
+         Add Product step, and so the profile page's Replay button can reach it. -->
+    <VendorTutorial />
+
+  </q-layout>
 </template>
 
 <script setup>
@@ -206,6 +211,7 @@ import { api } from '@/boot/axios'
 import { useAuth } from '@/composables/useAuth'
 import { useVendorNotifications } from '@/composables/useVendorNotifications'
 import { useLanguage } from '@/composables/useLanguage'
+import VendorTutorial from '@/components/vendor/VendorTutorial.vue'
 import '@/css/vendor-pages.scss'
 
 const router = useRouter()
@@ -319,28 +325,28 @@ const localizedNavGroups = computed(() => [
   {  
     label: t('overview'),  
     items: [  
-      { label: t('dashboard'), icon: 'o_dashboard', path: '/vendor/dashboard' },  
-      { label: t('sales'), icon: 'o_insights', path: '/vendor/sales' }  
+      { label: t('dashboard'), icon: 'o_dashboard', path: '/vendor/dashboard', tour: 'nav-dashboard' },
+      { label: t('sales'), icon: 'o_insights', path: '/vendor/sales', tour: 'nav-analytics' }
     ]  
   },  
   {  
     label: t('orders'),  
     items: [  
-      { label: t('orderList'), icon: 'o_receipt_long', path: '/vendor/orders/list' },  
-      { label: t('customerOrders'), icon: 'o_people', path: '/vendor/orders/customers' }  
+      { label: t('orderList'), icon: 'o_receipt_long', path: '/vendor/orders/list', tour: 'nav-orders' },
+      { label: t('customerOrders'), icon: 'o_people', path: '/vendor/orders/customers' }
     ]  
   },  
   {  
     label: t('products'),  
     items: [  
-      { label: t('productList'), icon: 'o_inventory_2', path: '/vendor/products/list' },  
-      { label: t('categories'), icon: 'o_category', path: '/vendor/products/categories' }  
+      { label: t('productList'), icon: 'o_inventory_2', path: '/vendor/products/list', tour: 'nav-inventory' },
+      { label: t('categories'), icon: 'o_category', path: '/vendor/products/categories' }
     ]  
   },  
   {  
     label: t('account'),  
     items: [  
-      { label: t('profile'), icon: 'o_manage_accounts', path: '/vendor/profile' }  
+      { label: t('profile'), icon: 'o_manage_accounts', path: '/vendor/profile', tour: 'nav-settings' }
     ]  
   }  
 ])

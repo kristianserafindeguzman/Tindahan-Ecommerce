@@ -679,12 +679,53 @@ onBeforeUnmount(() => {
     flex-direction: column;
   }
 
+  /* Share the card by proportion rather than giving the sidebar a fixed 240px. A fixed
+     height had to grow to fit the hint, which squeezed the map until its address card and
+     zoom controls collided, and on a short phone pushed the last store card out of the
+     rounded bottom edge. Splitting it means the hint just shortens the scrolling list. */
+  .map-container {
+    flex: 0 0 45%;
+  }
+
   .map-sidebar {
     width: 100%;
-    height: 240px;
+    height: auto;
+
+    /* min-height: 0 lets this flex child shrink past its content so .sidebar-list scrolls
+       inside it instead of overflowing the card. */
+    flex: 1 1 auto;
+    min-height: 0;
 
     border-left: none;
     border-top: 1px solid var(--c-border);
+  }
+
+  /* Both of these were pinned to the map's left edge, which is fine beside a tall desktop
+     map and not at all fine on a short stacked one: the zoom column grew up into the
+     address card. On phones the controls sit along the bottom-right instead. */
+  .map-controls {
+    left: auto;
+    right: 12px;
+    bottom: 12px;
+
+    flex-direction: row;
+  }
+
+  .map-address-overlay {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+
+    padding: 8px 12px;
+  }
+
+  /* The overlay now spans the map, so a long address ellipses rather than wrapping to
+     three lines and eating the map. */
+  .map-address-text {
+    overflow: hidden;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 }
 </style>

@@ -100,7 +100,7 @@
           :class="{ 'category-pill-active': selectedCategory === category.label }"
           @click="selectedCategory = category.label"
         >
-          {{ category.label }}
+          {{ t(category.label) }}
         </q-chip>
       </div>
 

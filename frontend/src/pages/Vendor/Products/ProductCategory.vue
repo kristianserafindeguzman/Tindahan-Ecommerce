@@ -7,7 +7,7 @@
           <h1 class="vp-title">{{ t('title') }}</h1>
           <p class="vp-subtitle">{{ t('subtitle') }}</p>
         </div>
-        <div class="vp-header-actions">
+        <div data-tour="cat-actions" class="vp-header-actions">
           <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" :loading="isExporting" @click="exportCategories" />
           <q-btn unelevated no-caps color="primary" icon="add" :label="t('addBtn')" class="vp-primary-btn" @click="openAddModal" />
         </div>

@@ -85,10 +85,9 @@
             <q-skeleton type="text" width="64%" />
           </div>
           <p v-else class="sp-address">{{
-            address || lookedUp?.line || 'Street address unavailable'
+            address || lookedUp || 'Street address unavailable'
           }}</p>
           <div class="sp-coords">{{ coordinates }}</div>
-          <div v-if="lookedUp?.area" class="sp-area">{{ lookedUp.area }}</div>
           <q-btn
             outline
             no-caps
@@ -137,6 +136,7 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { weeklyHours } from '@/utils/storeHours'
+import { reverseGeocode } from '@/utils/geolocation'
 
 const props = defineProps({
   name: { type: String, default: '' },
@@ -241,26 +241,11 @@ const tiles = computed(() => {
   return list
 })
 
-// The street address comes from OpenStreetMap's lookup, as the old admin view did; answers are kept so reopening a store doesn't ask again.
+// The street address comes from the app's shared lookup, which returns street, barangay and city; answers are kept so reopening a store doesn't ask again.
 const geocodeCache = new Map()
 const lookedUp = ref(null)
 const geocoding = ref(false)
 let lookup = 0
-
-const readAddress = data => {
-  if (!data?.display_name) return null
-  const a = data.address || {}
-  const street = [a.house_number, a.road].filter(Boolean).join(' ')
-  const locality = a.suburb || a.neighbourhood || a.quarter || a.village
-  const city = a.city || a.town || a.municipality || a.county
-  const region = [a.postcode, a.state || a.region].filter(Boolean).join(' ')
-  const line = [street, locality, city, region].filter(Boolean).join(', ')
-  const area = [city, a.country].filter(Boolean).join(', ')
-  return {
-    line: line || data.display_name,
-    area: [area, a.city_district].filter(Boolean).join(' • ')
-  }
-}
 
 watch(
   [lat, lng],
@@ -275,10 +260,8 @@ watch(
     const mine = ++lookup
     geocoding.value = true
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat.value}&lon=${lng.value}`
-      )
-      const found = response.ok ? readAddress(await response.json()) : null
+      // Empty when both services fail, which the template then covers with its own fallback line.
+      const found = await reverseGeocode(lat.value, lng.value)
       if (found) geocodeCache.set(key, found)
       if (mine === lookup) lookedUp.value = found
     } catch {
@@ -632,14 +615,6 @@ watch(
   font-variant-numeric: tabular-nums;
 
   color: var(--c-text);
-}
-
-.sp-area {
-  margin-top: 2px;
-
-  font-size: var(--fs-xs);
-
-  color: var(--c-muted);
 }
 
 .sp-directions {

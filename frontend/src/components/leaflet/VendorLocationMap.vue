@@ -15,6 +15,11 @@
       {{ translate(loadingLocation ? 'Locating...' : 'Your Location') }}
     </button>
 
+    <!-- Without this the map just sits on its default view of Metro Manila, which looks like a real answer rather than a failure. -->
+    <div v-if="locationError" class="location-error">
+      {{ translate(locationError) }}
+    </div>
+
   </div>
 </template>
 
@@ -44,6 +49,8 @@ let pinVersion = 0
 let resizeObserver = null
 
 const loadingLocation = ref(false)
+// What went wrong the last time the browser was asked for a position, shown over the map until a pin is placed.
+const locationError = ref('')
 
 // Default location: Metro Manila
 const defaultLocation = {
@@ -113,9 +120,11 @@ const useCurrentLocation = async (auto = false) => {
 
   loadingLocation.value = true
 
+  const version = pinVersion
+
   try {
 
-    const version = pinVersion
+    locationError.value = ''
 
     const { latitude, longitude } = await getCurrentPosition()
 
@@ -133,6 +142,14 @@ const useCurrentLocation = async (auto = false) => {
       'Unable to get location:',
       error.message
     )
+
+    // The map was closed, or the user gave up waiting and tapped their spot themselves, so a late failure has nothing left to report.
+    if (unmounted || version !== pinVersion) return
+
+    // A denied permission is the user's own setting and needs different advice from a lookup that simply failed.
+    locationError.value = error.code === 1
+      ? 'Location is blocked for this site. Tap the map to place your pin.'
+      : 'Could not get your location. Tap the map to place your pin.'
 
   } finally {
 
@@ -194,6 +211,10 @@ const showLocation = (
 ) => {
 
   if (unmounted) return
+
+  // A pin is on the map now, however it got there, so whatever went wrong reaching the browser's location no longer matters.
+  // Here rather than in selectLocation, because a picked address suggestion moves the pin through this function alone.
+  locationError.value = ''
 
   pinVersion++
 
@@ -302,6 +323,34 @@ onBeforeUnmount(() => {
   opacity: 0.7;
 
   cursor: wait;
+}
+
+
+/* Sits along the bottom of the map, clear of the Your Location button in the corner. */
+.location-error {
+  position: absolute;
+
+  left: 12px;
+  right: 12px;
+  bottom: 56px;
+
+  z-index: 1000;
+
+  /* It tells the user to tap the map, so it must not be the thing that catches the tap. */
+  pointer-events: none;
+
+  padding: 7px 10px;
+
+  border-radius: 7px;
+
+  background: rgba(0, 0, 0, 0.72);
+
+  color: #ffffff;
+
+  font-size: 12px;
+  line-height: 1.35;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 

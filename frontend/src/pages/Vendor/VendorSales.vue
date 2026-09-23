@@ -20,7 +20,9 @@
               </div>
             </q-popup-proxy>
           </q-btn>
-          <q-btn v-if="$q.screen.lt.lg" unelevated no-caps color="primary" icon="add" :label="t('btnRecordSale')" class="vp-primary-btn" @click="showMobileManualModal = true" />
+          <!-- Shares data-tour with the desktop aside below: only one of the two is ever
+               rendered, so the tutorial finds whichever this screen actually has. -->
+          <q-btn v-if="$q.screen.lt.lg" data-tour="sr-entry" unelevated no-caps color="primary" icon="add" :label="t('btnRecordSale')" class="vp-primary-btn" @click="showMobileManualModal = true" />
         </div>
       </div>
 
@@ -28,9 +30,9 @@
         <div class="sr-main">
 
           <!-- REVENUE — the total, what it came from, and a small bar chart of the records behind it. -->
-          <section class="sr-hero">
+          <section data-tour="sr-hero" class="sr-hero">
             <div class="sr-hero-main">
-              <div class="sr-hero-top">
+              <div data-tour="sr-hero-head" class="sr-hero-top">
                 <span class="sr-eyebrow"><q-icon name="o_payments" size="16px" /> {{ t('eyebrowRevenue') }} · {{ displayDate }}</span>
                 <span v-if="metrics.growthRate" class="sr-growth"><q-icon name="trending_up" size="16px" /> +{{ metrics.growthRate }}% {{ t('vsYesterday') }}</span>
               </div>
@@ -60,7 +62,7 @@
             <q-icon v-else name="o_insights" class="sr-hero-art" aria-hidden="true" />
           </section>
 
-          <div class="vp-stats sr-stats">
+          <div data-tour="sr-stats" class="vp-stats sr-stats">
             <div class="vp-card vp-stat">
               <div class="vp-stat-top">
                 <span class="vp-stat-label">{{ t('statAvgOrderValue') }}</span>
@@ -182,7 +184,7 @@
         </div>
 
         <!-- RECORD A SALE — beside the records on wide screens, in a sheet on smaller ones. -->
-        <aside v-if="!$q.screen.lt.lg" class="vp-card sr-entry">
+        <aside v-if="!$q.screen.lt.lg" data-tour="sr-entry" class="vp-card sr-entry">
           <div class="sr-entry-head">
             <span class="vp-stat-icon vp-tone--brand"><q-icon name="o_add_shopping_cart" size="20px" /></span>
             <div>

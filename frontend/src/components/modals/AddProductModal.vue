@@ -66,6 +66,19 @@
                 />
               </div>
 
+              <div>
+                <label class="vp-field-label" for="pm-add-exp">Best Before / Expiration Date <span class="vp-field-optional">(optional)</span></label>
+                <q-input
+                  v-model="form.expiration_date"
+                  for="pm-add-exp"
+                  type="date"
+                  outlined
+                  dense
+                  hide-bottom-space
+                  class="vp-input"
+                />
+              </div>
+
               <div class="pm-section">
                 <div class="pm-section-head">
                   <span class="pm-section-title">Pricing and stock</span>
@@ -111,7 +124,7 @@
                     <span>Size</span><span>Price (₱)</span><span>Quantity</span><span />
                   </div>
                   <div v-for="(variant, index) in form.variants" :key="index" class="pm-variant">
-                    <q-input v-model="variant.size" outlined dense hide-bottom-space placeholder="e.g. Small" class="vp-input" :aria-label="`Size ${index + 1}`" :rules="[val => !!(val && String(val).trim()) || 'Required']" />
+                    <q-input v-model="variant.name" outlined dense hide-bottom-space placeholder="e.g. Small" class="vp-input" :aria-label="`Size ${index + 1}`" :rules="[val => !!(val && String(val).trim()) || 'Required']" />
                     <q-input v-model.number="variant.price" type="number" min="0" step="0.01" outlined dense hide-bottom-space placeholder="0.00" class="vp-input" :aria-label="`Price for size ${index + 1}`" />
                     <q-input v-model.number="variant.quantity" type="number" min="0" outlined dense hide-bottom-space placeholder="0" class="vp-input" :aria-label="`Quantity for size ${index + 1}`" />
                     <q-btn flat round dense icon="o_close" class="pm-variant-remove" :disable="form.variants.length === 1" :aria-label="`Remove size ${index + 1}`" @click="removeVariant(index)" />
@@ -266,7 +279,8 @@ const form = ref({
   price: null,
   stock_quantity: null,
   product_picture: null,
-  variants: [{ size: '', price: null, quantity: null }]
+  expiration_date: null,
+  variants: [{ name: '', price: null, quantity: null }]
 })
 
 const selectedAddCategoryGuide = computed(() => {
@@ -374,11 +388,11 @@ const fetchCategories = async () => {
 
 onMounted(fetchCategories)
 
-const addVariant = () => { form.value.variants.push({ size: '', price: null, quantity: null }) }
+const addVariant = () => { form.value.variants.push({ name: '', price: null, quantity: null }) }
 const removeVariant = index => { if (form.value.variants.length > 1) form.value.variants.splice(index, 1) }
 
 const resetForm = () => {
-  form.value = { product_name: '', description: '', category_id: null, price: null, stock_quantity: null, product_picture: null, variants: [{ size: '', price: null, quantity: null }] }
+  form.value = { product_name: '', description: '', category_id: null, price: null, stock_quantity: null, product_picture: null, expiration_date: null, variants: [{ name: '', price: null, quantity: null }] }
   hasVariants.value = false
   removePhoto()
 }
@@ -391,6 +405,8 @@ const submitForm = async () => {
     if (form.value.description) formData.append('description', form.value.description)
     formData.append('category_id', form.value.category_id)
     if (form.value.product_picture) formData.append('product_picture', form.value.product_picture)
+    if (form.value.expiration_date) formData.append('expiration_date', form.value.expiration_date)
+    
     if (hasVariants.value) {
       formData.append('variants', JSON.stringify(form.value.variants))
     } else {
