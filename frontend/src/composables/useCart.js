@@ -9,8 +9,9 @@ export function useCart() {
   const itemCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0))
   const subtotal = computed(() => items.value.reduce((sum, item) => sum + item.price * item.quantity, 0))
 
-  const fetchCart = async () => {
-    loading.value = true
+  // A silent refetch leaves `loading` alone, so a background resync never swaps the cart for a spinner.
+  const fetchCart = async ({ silent = false } = {}) => {
+    if (!silent) loading.value = true
     try {
       const { data } = await api.get('/consumer/cart')
       items.value = (data || []).map((item) => ({
@@ -32,7 +33,7 @@ export function useCart() {
       console.error('Failed to load cart', error)
       items.value = []
     } finally {
-      loading.value = false
+      if (!silent) loading.value = false
     }
   }
 
@@ -52,7 +53,13 @@ export function useCart() {
     if (item) item.quantity = quantity
 
     try {
-      await api.patch(`/consumer/cart/${cartId}`, { quantity })
+      const { data } = await api.patch(`/consumer/cart/${cartId}`, { quantity })
+
+      // The server clamps to real stock, so reconcile the optimistic value above with what it stored.
+      if (item && data) {
+        if (Number.isFinite(data.quantity)) item.quantity = data.quantity
+        if (data.expiresAt) item.expiresAt = data.expiresAt
+      }
     } catch (error) {
       if (item) item.quantity = previousQuantity
       throw error
