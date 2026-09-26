@@ -9,8 +9,11 @@ Artisan::command('inspire', function () {
 
 use Illuminate\Support\Facades\Schedule;
 
-// Needs `php artisan schedule:work` (dev) or a cron entry to run at all; the buy paths release holds themselves, so this is only a sweep.
-Schedule::command('orders:auto-cancel')->everyMinute()->withoutOverlapping();
+// A safety net, not a dependency: cart expiry is handled by CartReservationService on the request path,
+// so this only catches carts nobody opens. Stale order auto-cancel does still need it.
+// The lock expires in 2 minutes, not the default 1440. A run takes about a second, so a longer lock
+// only matters when a run is killed mid-flight — and then the default would mute the job for a day.
+Schedule::command('orders:auto-cancel')->everyMinute()->withoutOverlapping(2);
 
 // Run ML Demand Forecast daily at midnight
 Schedule::command('ml:run-demand-forecast --train')->daily();

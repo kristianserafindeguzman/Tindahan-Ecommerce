@@ -37,14 +37,40 @@ class CartReservationService
     /** The scheduled sweep: one transaction per product, so a bad row cannot strand the rest. */
     public function releaseAllExpired(): int
     {
-        $inventoryIds = CartItem::whereNotNull('expires_at')
-            ->where('expires_at', '<', now())
-            ->distinct()
-            ->pluck('inventory_id');
+        return $this->releaseForInventoryIds(
+            CartItem::whereNotNull('expires_at')
+                ->where('expires_at', '<', now())
+                ->distinct()
+                ->pluck('inventory_id')
+        );
+    }
 
+    /**
+     * Releases the lapsed holds affecting one consumer's cart.
+     *
+     * Called when a cart is listed, so an expired row disappears as soon as its owner looks at the cart
+     * rather than whenever the scheduled sweep next runs — which means the feature is correct on a host
+     * with no cron at all.
+     */
+    public function releaseExpiredForConsumer(int $consumerId): int
+    {
+        return $this->releaseForInventoryIds(
+            CartItem::where('consumer_id', $consumerId)
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '<', now())
+                ->distinct()
+                ->pluck('inventory_id')
+        );
+    }
+
+    /** One product per transaction, locked inventory-first, so a bad row cannot strand the rest. */
+    private function releaseForInventoryIds($inventoryIds): int
+    {
         $released = 0;
 
-        foreach ($inventoryIds as $inventoryId) {
+        // Ascending, matching checkout: only one lock is held at a time here, so this cannot deadlock
+        // today, but it stays true if a caller ever wraps these transactions in one of its own.
+        foreach (collect($inventoryIds)->sort()->values() as $inventoryId) {
             try {
                 $released += DB::transaction(function () use ($inventoryId) {
                     $inventory = Inventory::where('inventory_id', $inventoryId)
