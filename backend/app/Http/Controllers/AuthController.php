@@ -641,41 +641,10 @@ class AuthController extends Controller
         $this->sendPhoneOtp($user->phone_number, $type, $type === 'registration' ? null : $user->user_id);
     }
 
-    /** Replaces any unverified code of this type for the phone with a new random one, stores only its hash, and texts it through Semaphore. */
+    /** Delegates to OtpService, which holds the single copy of the local-development bypass. */
     private function sendPhoneOtp(string $phoneNumber, string $type, ?int $userId = null): void
     {
-        OtpCode::where('phone_number', $phoneNumber)
-            ->where('type', $type)
-            ->whereNull('verified_at')
-            ->delete();
-
-        // TEMPORARY LOCAL DEVELOPMENT OTP BYPASS
-        // Accept the value of SEMAPHORE_FAKE_CODE (e.g., 123456) while testing against localhost.
-        // REMOVE/REVERT THIS BEFORE RETURNING TO THE CLOUD DATABASE AND REAL OTP SERVICE.
-        // The bypass only works if APP_ENV=local, ensuring it can never reach the live server.
-
-        // remove this if going to use OTP
-        // $fakeCode = app()->environment('local') ? config('services.semaphore.fake_code') : null;
-
-        // otp static
-        $code = '012345';
-
-        // otp sending live
-        // $code = $fakeCode ? (string) $fakeCode : str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-
-        OtpCode::create([
-            'user_id'      => $userId,
-            'phone_number' => $phoneNumber,
-            'code'         => Hash::make($code),
-            'type'         => $type,
-            'expires_at'   => now()->addMinutes(10),
-        ]);
-
-        // Uncomment this if going to use the OTP
-        // if (!$fakeCode) {
-        //     $this->semaphoreService->sendOtp($phoneNumber, $code);
-        // }
+        app(\App\Services\OtpService::class)->send($phoneNumber, $type, $userId);
     }
 
 }

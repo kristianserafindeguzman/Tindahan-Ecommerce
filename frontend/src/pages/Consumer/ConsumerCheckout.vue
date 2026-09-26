@@ -150,6 +150,9 @@
               <div class="checkout-item-info">
                 <div class="checkout-item-name">{{ item.name }}</div>
                 <div v-if="item.variantName" class="checkout-item-variant">{{ item.variantName }}</div>
+                <!-- Reservations lapse while this page is open, so the countdown belongs here too. -->
+                <div v-if="hasExpired(item)" class="checkout-item-expired">{{ t('Expired') }}</div>
+                <div v-else-if="item.expiresAt" class="checkout-item-expiry">{{ formatTimeLeft(item.expiresAt) }}</div>
                 <div class="checkout-item-price">₱{{ item.price.toFixed(2) }} × {{ item.quantity }}</div>
               </div>
 
@@ -302,10 +305,14 @@
             :label="t('Place Order')"
             class="place-order-btn"
             :loading="placingOrder"
-            :disable="!hasConsumerLocation || (storeDetails && !storeDetails.isOpen)"
+            :disable="orderBlocked"
             @click="placeOrder"
           />
-          <p v-if="!hasConsumerLocation" class="summary-location-note">
+          <p v-if="hasExpiredItems" class="summary-expired-note">
+            {{ t('A reservation expired while you were here. Go back to your cart to fix it.') }}
+            <a href="#" class="summary-expired-link" @click.prevent="router.push('/consumer/cart')">{{ t('Back to Cart') }}</a>
+          </p>
+          <p v-else-if="!hasConsumerLocation" class="summary-location-note">
             {{ t('Set your location to place this order.') }}
           </p>
           <p class="summary-terms-note">
@@ -323,7 +330,10 @@
         <div class="checkout-sticky-bar-top">
           <div class="checkout-sticky-bar-info">
             <div class="checkout-sticky-bar-title">{{ t('Total') }}</div>
-            <div class="checkout-sticky-bar-subtitle">{{ itemCount(checkoutItemCount) }}</div>
+            <div class="checkout-sticky-bar-subtitle" :class="{ 'checkout-sticky-bar-subtitle-expired': hasExpiredItems }">
+              <template v-if="hasExpiredItems">{{ t('A reservation expired — go back to your cart.') }}</template>
+              <template v-else>{{ itemCount(checkoutItemCount) }}</template>
+            </div>
           </div>
           <div class="checkout-sticky-bar-price">₱{{ subtotal.toFixed(2) }}</div>
         </div>
@@ -334,7 +344,7 @@
           :label="t('Place Order')"
           class="place-order-btn"
           :loading="placingOrder"
-          :disable="!hasConsumerLocation || (storeDetails && !storeDetails.isOpen)"
+          :disable="orderBlocked"
           @click="placeOrder"
         />
       </div>
@@ -365,6 +375,7 @@ import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
 import { useQuasar } from 'quasar'
 import { useCart } from '@/composables/useCart'
+import { useCartExpiry } from '@/composables/useCartExpiry'
 import { formatDistance } from '@/utils/distance'
 import { useStores } from '@/composables/useStores'
 import { useAddress } from '@/composables/useAddress'
@@ -377,6 +388,7 @@ const router = useRouter()
 const $q = useQuasar()
 
 const { items, loading, fetchCart, checkout } = useCart()
+const { hasExpired, formatTimeLeft } = useCartExpiry()
 const { stores, fetchStores } = useStores()
 const { locationVersion, detectAddress } = useAddress()
 
@@ -467,6 +479,15 @@ const storeDetails = computed(() => stores.value.find((s) => s.id === storeId.va
 
 const subtotal = computed(() => checkoutItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0))
 const checkoutItemCount = computed(() => checkoutItems.value.reduce((sum, item) => sum + item.quantity, 0))
+
+// The server rejects the whole order if one reservation lapsed, so block before the form is filled in.
+const hasExpiredItems = computed(() => checkoutItems.value.some(hasExpired))
+
+const orderBlocked = computed(() =>
+  hasExpiredItems.value ||
+  !hasConsumerLocation.value ||
+  Boolean(storeDetails.value && !storeDetails.value.isOpen)
+)
 
 // Mobile/tablet: sticky checkout bar replaces the Order Summary sidebar.
 const showCheckoutBar = computed(() => $q.screen.lt.md && !loading.value && !orderPlaced.value && checkoutItems.value.length > 0)
@@ -1266,6 +1287,26 @@ onBeforeUnmount(() => {
   color: var(--c-muted);
 }
 
+/* Same treatment as the cart's countdown, so the two pages read as one flow. */
+.checkout-item-expiry {
+  margin-top: 2px;
+
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+
+  color: var(--c-danger);
+}
+
+.checkout-item-expired {
+  margin-top: 2px;
+
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+
+  color: var(--c-danger);
+}
+
 .checkout-item-price {
   margin-top: 2px;
 
@@ -1910,5 +1951,28 @@ onBeforeUnmount(() => {
   line-height: 1.4;
   text-align: center;
   color: #b7791f;
+}
+
+/* Says why Place Order is disabled, and offers the only way out of it. */
+.summary-expired-note {
+  margin: 8px 0 0;
+
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+  text-align: center;
+
+  color: var(--c-danger);
+}
+
+.summary-expired-link {
+  margin-left: 4px;
+
+  color: var(--c-danger);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.checkout-sticky-bar-subtitle-expired {
+  color: var(--c-danger);
 }
 </style>

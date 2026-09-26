@@ -9,7 +9,8 @@ Artisan::command('inspire', function () {
 
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('orders:auto-cancel')->everyFiveMinutes();
+// Needs `php artisan schedule:work` (dev) or a cron entry to run at all; the buy paths release holds themselves, so this is only a sweep.
+Schedule::command('orders:auto-cancel')->everyMinute()->withoutOverlapping();
 
 // Run ML Demand Forecast daily at midnight
 Schedule::command('ml:run-demand-forecast --train')->daily();

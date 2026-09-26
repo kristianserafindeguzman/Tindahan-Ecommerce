@@ -95,7 +95,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [\App\Http\Controllers\VendorController::class, 'profile']);
         Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'updatePersonalInfo']);
         Route::put('/profile/hours', [\App\Http\Controllers\ProfileController::class, 'updateStoreHours']);
-        Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword']);
+        // A password change is OTP-verified in two steps; there is deliberately no direct-change route.
+        Route::post('/profile/password-request-otp', [\App\Http\Controllers\ProfileController::class, 'requestPasswordOtp'])->middleware('throttle:5,10');
+        Route::post('/profile/password-resend-otp', [\App\Http\Controllers\ProfileController::class, 'resendPasswordOtp'])->middleware('throttle:5,1');
+        Route::post('/profile/password-verify-otp', [\App\Http\Controllers\ProfileController::class, 'verifyPasswordOtp'])->middleware('throttle:10,1');
+        Route::post('/profile/password-cancel-otp', [\App\Http\Controllers\ProfileController::class, 'cancelPasswordOtp']);
         Route::put('/store/info', [\App\Http\Controllers\ProfileController::class, 'updateStoreInfo']);
         Route::put('/store/address', [\App\Http\Controllers\ProfileController::class, 'updateStoreAddress']);
         Route::post('/profile/store-image', [\App\Http\Controllers\VendorController::class, 'uploadStoreImage']);
@@ -136,7 +140,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/phone-request-otp', [ProfileController::class, 'requestPhoneOtp']);
         Route::post('/phone-verify-otp', [ProfileController::class, 'verifyPhoneOtp']);
         Route::post('/email', [ProfileController::class, 'updateEmail']);
-        Route::post('/password', [ProfileController::class, 'updatePassword']);
+        // Same two-step OTP change the vendor side uses.
+        Route::post('/password-request-otp', [ProfileController::class, 'requestPasswordOtp'])->middleware('throttle:5,10');
+        Route::post('/password-resend-otp', [ProfileController::class, 'resendPasswordOtp'])->middleware('throttle:5,1');
+        Route::post('/password-verify-otp', [ProfileController::class, 'verifyPasswordOtp'])->middleware('throttle:10,1');
+        Route::post('/password-cancel-otp', [ProfileController::class, 'cancelPasswordOtp']);
         Route::delete('/delete', [ProfileController::class, 'deleteAccount']);
     });
 
