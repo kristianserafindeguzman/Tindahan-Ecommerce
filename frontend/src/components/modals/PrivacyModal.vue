@@ -17,7 +17,7 @@
       <q-separator />
 
       <q-card-section class="legal-body scroll">
-        <p><strong>Last Updated: July 2026</strong></p>
+        <p><strong>Last Updated: September 2026</strong></p>
         <p>
           Welcome to Tindahan. We are committed to protecting your personal information and your right to privacy. 
           This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile or web application.
@@ -30,26 +30,33 @@
           <li><strong>Business Information (Vendors):</strong> Store name, location/map coordinates, and operating schedules.</li>
         </ul>
 
-        <p><strong>2. How We Use Your Information</strong></p>
+        <p><strong>2. Location Data and GPS</strong></p>
+        <p>
+          Tindahan may request permission to access your device's location. When permission is granted, our system may obtain your precise geographic location (including latitude and longitude coordinates) through your device's GPS or location services. 
+          This location data is used exclusively to support location-based features, such as identifying nearby stores and calculating proximity or distance. 
+          Location access is entirely permission-based, and you can control or revoke these permissions at any time through your device or browser settings.
+        </p>
+
+        <p><strong>3. How We Use Your Information</strong></p>
         <ul>
           <li>To create, verify (via OTP), and secure your account.</li>
           <li>To process vendor applications and display approved stores to consumers.</li>
           <li>To provide customer support and respond to your inquiries.</li>
         </ul>
 
-        <p><strong>3. Data Retention and Deletion</strong></p>
+        <p><strong>4. Data Retention and Deletion</strong></p>
         <p>
           We retain personal information only for as long as necessary to fulfill the purposes outlined in this policy. 
           When an account is deactivated or deleted by an Administrator, the account undergoes a "soft delete." 
           This means your active profile is hidden from the public platform but securely archived in our database to preserve transaction histories and ensure platform integrity.
         </p>
 
-        <p><strong>4. Your Rights (Data Privacy Act of 2012)</strong></p>
+        <p><strong>5. Your Rights (Data Privacy Act of 2012)</strong></p>
         <p>
           In accordance with the Philippine Data Privacy Act of 2012 (RA 10173), you have the right to be informed, object to processing, access, rectify, or request the erasure of your personal data, subject to platform limitations and legal obligations.
         </p>
 
-        <p><strong>5. Contact Us</strong></p>
+        <p><strong>6. Contact Us</strong></p>
         <p>
           If you have questions or comments about this Privacy Policy, please contact our support team.
         </p>

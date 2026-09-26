@@ -17,7 +17,7 @@
       <q-separator />
 
       <q-card-section class="legal-body scroll">
-        <p><strong>Last Updated: July 2026</strong></p>
+        <p><strong>Last Updated: September 2026</strong></p>
         <p>
           By accessing or using the Tindahan platform, you agree to be bound by these Terms and Conditions. 
           If you do not agree with any part of these terms, you must not use our services.
@@ -30,26 +30,35 @@
           <li>You are responsible for safeguarding your password and for all activities that occur under your account.</li>
         </ol>
 
-        <p><strong>2. Vendor Obligations</strong></p>
+        <p><strong>2. Location Services and GPS</strong></p>
+        <p>
+          Certain Tindahan features require or may request access to your device's location. 
+          When you grant permission, the application may use GPS or device location services to obtain your precise geographic coordinates. 
+          This location information is used to support location-based marketplace features, such as identifying nearby stores and determining proximity or distance. 
+          The availability and accuracy of these features may depend on your device's GPS capabilities, browser, operating system, network, and permission settings. 
+          You are responsible for allowing or denying location permissions through your device or browser settings.
+        </p>
+
+        <p><strong>3. Vendor Obligations</strong></p>
         <ul>
           <li><strong>Approvals:</strong> All vendor applications are subject to review. Administrators reserve the right to approve, reject, or request revisions on store applications.</li>
           <li><strong>Accuracy:</strong> Vendors must provide accurate store photos, locations, and operating hours.</li>
           <li><strong>Compliance:</strong> Vendors must not list illegal, prohibited, or fraudulent items on the platform.</li>
         </ul>
 
-        <p><strong>3. Platform Rights & Account Deactivation</strong></p>
+        <p><strong>4. Platform Rights & Account Deactivation</strong></p>
         <p>
           Tindahan administrators reserve the right to suspend, reject, or deactivate user and vendor accounts that violate these terms. 
           Deactivated accounts are safely archived (soft-deleted) for auditing and security purposes and lose all access to public platform features.
         </p>
 
-        <p><strong>4. Limitation of Liability</strong></p>
+        <p><strong>5. Limitation of Liability</strong></p>
         <p>
           Tindahan serves as a marketplace platform connecting consumers and local sari-sari store vendors. 
           We are not responsible for the quality, safety, or legality of the goods offered by vendors, nor the completion of transactions between users.
         </p>
 
-        <p><strong>5. Modifications to Terms</strong></p>
+        <p><strong>6. Modifications to Terms</strong></p>
         <p>
           We reserve the right to modify these terms at any time. Continued use of the application after changes implies your acceptance of the updated terms.
         </p>
