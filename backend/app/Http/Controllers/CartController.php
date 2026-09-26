@@ -46,8 +46,18 @@ class CartController extends Controller
      *
      * GET /api/consumer/cart
      */
-    public function index(Request $request)
+    public function index(Request $request, CartReservationService $reservations)
     {
+        // Lapsed rows are cleared before listing, so an expired item disappears the moment its owner
+        // looks at the cart instead of waiting for the scheduled sweep — no cron required.
+        // Showing the cart matters more than tidying it, so a failure here degrades to the old
+        // behaviour (the row stays, flagged expired) rather than breaking the page.
+        try {
+            $reservations->releaseExpiredForConsumer($request->user()->user_id);
+        } catch (\Exception $e) {
+            Log::error('Failed to release expired reservations while listing cart: ' . $e->getMessage());
+        }
+
         $items = CartItem::with(['inventory.store'])
             ->where('consumer_id', $request->user()->user_id)
             ->get()
@@ -357,9 +367,13 @@ class CartController extends Controller
         }
 
         // 1. Get all cart items for this consumer + store
+        // Ordered so every checkout takes its inventory locks in the same sequence. Without this, two
+        // shoppers buying the same two products at once can grab them in opposite order and deadlock.
         $cartItems = CartItem::with('inventory')
             ->where('consumer_id', $consumerId)
             ->whereHas('inventory', fn ($q) => $q->where('store_id', $storeId))
+            ->orderBy('inventory_id')
+            ->orderBy('cart_id')
             ->get();
 
         if ($cartItems->isEmpty()) {
