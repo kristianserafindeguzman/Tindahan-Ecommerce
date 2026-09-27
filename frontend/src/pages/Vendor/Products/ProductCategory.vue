@@ -900,14 +900,4 @@ onMounted(fetchCategories)
 
   color: var(--c-info);
 }
-
-@media (max-width: 600px) {
-  .vp-header-actions {
-    width: 100%;
-  }
-
-  .vp-header-actions .q-btn {
-    flex: 1;
-  }
-}
 </style>

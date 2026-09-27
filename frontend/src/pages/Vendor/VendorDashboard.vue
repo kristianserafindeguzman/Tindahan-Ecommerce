@@ -69,7 +69,7 @@
         <!-- ================= REVENUE ================= -->
         <div class="col-12 col-md-8">
           <div data-tour="dash-revenue" class="dash-card dash-card--fill">
-            <div data-tour="dash-revenue-head" class="card-header">
+            <div data-tour="dash-revenue-head" class="card-header card-header--stack">
               <div>
                 <div class="section-title">{{ t('revenueTitle') }}</div>
                 <div class="section-subtitle">{{ t('revenueSub') }}</div>
@@ -126,6 +126,7 @@
               </div>
               <q-btn flat round dense icon="o_refresh" size="sm" class="forecast-refresh-btn"
                 :loading="mlForecast.refreshing"
+                :aria-label="t('refreshForecast')"
                 @click="refreshForecast" />
             </div>
 
@@ -374,6 +375,7 @@ const dashboardDict = {
     totalPeriod: 'Total for this period',
     forecastTitle: 'Demand Forecast',
     forecastSub: 'Items likely to sell today.',
+    refreshForecast: 'Refresh forecast',
     forecastLoading: 'Reading your recent sales…',
     forecastErrorTitle: 'Forecast unavailable',
     forecastErrorSub: "We couldn't load predictions right now.",
@@ -436,6 +438,7 @@ const dashboardDict = {
     totalPeriod: 'Kabuuan para sa panahong ito',
     forecastTitle: 'Demand Forecast',
     forecastSub: 'Panindang malamang na mabenta ngayon.',
+    refreshForecast: 'I-refresh ang forecast',
     forecastLoading: 'Binabasa ang mga benta mo…',
     forecastErrorTitle: 'Walang forecast',
     forecastErrorSub: 'Hindi ma-load ang mga prediction ngayon.',
@@ -1521,6 +1524,29 @@ const refreshForecast = async () => {
   color: rgba(255, 255, 255, 0.72);
 }
 
+/* A soft glass circle on the red card, so the refresh reads as a button and not a stray glyph. */
+.forecast-refresh-btn {
+  flex-shrink: 0;
+
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+
+  transition: background-color 0.15s;
+}
+
+.forecast-refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.forecast-refresh-btn :deep(.q-icon) {
+  font-size: 18px;
+}
+
 .forecast-badge {
   display: inline-flex;
   align-items: center;
@@ -2297,9 +2323,21 @@ const refreshForecast = async () => {
     font-size: var(--fs-2xl);
   }
 
+  /* Other card headers keep their action (Refresh, View All) at the top right, beside a
+     title block that gives way to it instead of pushing it onto a row of its own. */
+  .card-header {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .card-header > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
   /* Revenue card — the segmented control and chart both need their own row and a
      contained width on phones, or the card overflows and the chart mismeasures. */
-  .card-header {
+  .card-header--stack {
     flex-direction: column;
     align-items: stretch;
   }

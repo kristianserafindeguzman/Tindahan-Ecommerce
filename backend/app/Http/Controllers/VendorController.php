@@ -744,4 +744,23 @@ class VendorController extends Controller
         // Return the updated forecast using the existing method
         return $this->getDemandForecast($request);
     }
+
+    /**
+     * Records that the vendor has been offered the guided tour, so it never auto-starts again.
+     * The first timestamp is kept, which makes repeat calls (a replay, a second device) harmless.
+     *
+     * POST /api/vendor/tutorial/seen
+     */
+    public function markTutorialSeen(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->tutorial_seen_at) {
+            $user->forceFill(['tutorial_seen_at' => now()])->save();
+        }
+
+        return response()->json([
+            'tutorial_seen_at' => $user->tutorial_seen_at,
+        ]);
+    }
 }

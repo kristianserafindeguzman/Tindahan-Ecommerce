@@ -8,8 +8,8 @@
         <div class="vp-dialog-head pm-head">
           <span class="vp-dialog-icon"><q-icon name="o_inventory_2" size="22px" /></span>
           <div class="pm-head-text">
-            <div class="vp-dialog-title">Product details</div>
-            <div class="vp-dialog-text">{{ product?.category?.category_name || 'Uncategorized' }}</div>
+            <div class="vp-dialog-title">Product Details</div>
+            <div class="vp-dialog-text">{{ product?.category?.category_name ? categoryLabel(product.category.category_name) : 'Uncategorized' }}</div>
           </div>
           <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
         </div>
@@ -28,7 +28,7 @@
               <div class="pm-info-head">
                 <div class="pm-name">{{ product?.product_name || 'Unnamed product' }}</div>
                 <div class="pm-price-row">
-                  <span class="pm-price"><span v-if="productHasVariants" class="pm-from">from </span>₱{{ formatNumber(displayPrice) }}</span>
+                  <span class="pm-price"><span v-if="productHasVariants" class="pm-from">from</span><span>₱{{ formatNumber(displayPrice) }}</span></span>
                   <template v-if="salesLoaded && !salesError">
                     <span class="pm-dot" aria-hidden="true" />
                     <span class="pm-sold">{{ totalSales }} sold</span>
@@ -930,7 +930,13 @@ const submitForm = async () => {
   min-height: 140px;
 }
 
+/* "from" and the amount are separate spans with a real gap, so it never reads "from₱80.00". */
 .pm-price {
+  display: inline-flex;
+  align-items: baseline;
+
+  gap: 5px;
+
   font-size: var(--fs-xl);
   font-weight: 700;
 
