@@ -131,6 +131,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/demand-forecast', [\App\Http\Controllers\VendorController::class, 'getDemandForecast']);
         Route::post('/demand-forecast/refresh', [\App\Http\Controllers\VendorController::class, 'refreshDemandForecast']);
         Route::get('/ml-insights', [\App\Http\Controllers\VendorController::class, 'getMlInsights']);
+
+        // The guided tour is offered once per vendor account, on its first login on any device.
+        Route::post('/tutorial/seen', [\App\Http\Controllers\VendorController::class, 'markTutorialSeen']);
     });
 
     // ----- Profile Routes -----

@@ -176,7 +176,7 @@
                 </div>
               </div>
 
-              <div class="info-row info-row-last">
+              <div class="info-row info-row-last info-row--action">
                 <div class="info-icon"><q-icon name="o_lock" size="18px" /></div>
                 <div class="info-body">
                   <div class="info-label">{{ t('passwordLabel') }}</div>
@@ -204,7 +204,7 @@
                 </div>
               </div>
 
-              <div class="info-row info-row-last">
+              <div class="info-row info-row-last info-row--action">
                 <div class="info-icon"><q-icon name="o_school" size="18px" /></div>
                 <div class="info-body">
                   <div class="help-title">{{ t('replayTutorialLabel') }}</div>
@@ -3140,9 +3140,95 @@ const deleteAccount = async () => {
 }
 
 @media (max-width: 599px) {
+  /* On a phone the owner photo becomes a centred profile panel: the avatar on top, its label
+     and hint under it, and full-width buttons below, instead of a small avatar stranded at
+     the left over a loose column of text. */
   .owner-photo-row {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+
+    gap: 14px;
+    margin: 4px 0 8px;
+    padding: 20px 16px 16px;
+
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-surface);
+
+    background: var(--c-surface-2);
+
+    text-align: center;
+  }
+
+  /* q-avatar sizes itself from an inline font-size, so the larger size needs !important. */
+  .owner-avatar {
+    font-size: 88px !important;
+
+    box-shadow: 0 0 0 4px var(--c-surface-2), 0 4px 14px rgba(15, 23, 42, 0.12);
+  }
+
+  /* The camera badge gets a ring in the panel's colour, so it reads as sitting on the photo's edge. */
+  .owner-photo-btn {
+    right: 0;
+    bottom: 0;
+
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+
+    box-shadow: 0 0 0 3px var(--c-surface-2);
+  }
+
+  .owner-photo-text {
+    width: 100%;
+  }
+
+  .owner-photo-hint {
+    max-width: 300px;
+    margin: 4px auto 14px;
+  }
+
+  /* One full-width button, or Cancel and Save as two equal halves with Save on the right,
+     the same order as the dialogs' Cancel / Save rows. */
+  .owner-photo-change {
+    width: 100%;
+  }
+
+  .owner-photo-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    gap: 10px;
+  }
+
+  .owner-photo-actions .q-btn:last-child {
+    order: -1;
+  }
+
+  .owner-photo-change,
+  .owner-photo-actions .q-btn {
+    height: 42px;
+    min-height: 42px;
+    padding: 0 16px;
+  }
+
+  /* Change Password and Replay Tutorial drop under their text, lined up with it, instead of
+     squeezing the description into a narrow column beside them. */
+  .info-row--action {
+    flex-wrap: wrap;
+  }
+
+  .info-row--action .info-body {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .info-row--action > .q-btn {
+    flex: 1 1 100%;
+
+    height: 40px;
+    min-height: 40px;
+    margin-left: 48px;
   }
 }
 </style>

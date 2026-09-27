@@ -2,6 +2,24 @@
   <!-- Welcome, shown once to an approved vendor on their first visit to the dashboard. -->
   <q-dialog v-model="showWelcome" persistent transition-show="scale" transition-hide="scale">
     <q-card class="tour-dialog">
+      <!-- The whole tour follows the vendor module's language, so switching here also switches every step. -->
+      <div class="tour-lang-row">
+        <div class="tour-lang" role="group" :aria-label="t('langLabel')">
+          <q-icon name="o_translate" size="15px" class="tour-lang-icon" />
+          <button
+            v-for="option in LANG_OPTIONS"
+            :key="option.value"
+            type="button"
+            class="tour-lang-option"
+            :class="{ 'tour-lang-option--active': lang === option.value }"
+            :aria-pressed="lang === option.value"
+            @click="setLanguage(option.value)"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
+
       <q-card-section class="tour-content">
         <img :src="welcomeLogo" alt="Tindahan" class="tour-logo" />
         <div class="tour-title">{{ t('welcomeTitle') }}</div>
@@ -133,12 +151,13 @@ const tutorialDict = {
     nextBtn: 'Next',
     backBtn: 'Back',
     finishBtn: 'Finish',
-    progress: '{{current}} of {{total}}'
+    progress: '{{current}} of {{total}}',
+    langLabel: 'Tutorial language'
   },
   ph: {
     welcomeTitle: 'Maligayang pagdating sa Tindahan!',
-    welcomeBody: 'Libutin natin ang buong tindahan mo — ang dashboard, mga paninda, order, benta, at settings.',
-    welcomeNote: 'Mga tatlong minuto lang. Pwede kang huminto anumang oras at ituloy mamaya.',
+    welcomeBody: 'Ililibot ka namin sa buong tindahan mo — ang dashboard, mga paninda, order, sales report, at settings.',
+    welcomeNote: 'Mga tatlong minuto lang ito. Pwede kang huminto kahit kailan at ituloy ulit mamaya.',
     startBtn: 'Simulan ang Tutorial',
     skipBtn: 'Laktawan',
 
@@ -151,76 +170,84 @@ const tutorialDict = {
     secSettings: 'Settings ng Tindahan',
 
     s1Title: 'Ang dashboard mo',
-    s1Body: 'Dito nagsisimula ang lahat. Ibabalik ka ng link na ito sa buod kahit saan ka man sa tindahan.',
+    s1Body: 'Dito nagsisimula ang lahat. Pindutin ang link na ito para bumalik sa overview mula saanmang bahagi ng tindahan mo.',
     s2Title: 'Status ng tindahan',
-    s2Body: 'Ang bati sa iyo, ang petsa ngayon, at kung bukas ba ang tindahan mo base sa oras na itinakda mo. Ipinapakita ng View Store ang nakikita ng mga customer.',
-    s3Title: 'Bilang ng order',
-    s3Body: 'Ilan ang naghihintay, inihahanda, pwede nang kunin, at tapos na. Ito ang tingnan mo tuwing umaga.',
+    s2Body: 'Makikita rito ang pagbati sa iyo, ang petsa ngayon, at kung bukas ang tindahan mo batay sa oras na itinakda mo. Ipinapakita ng View Store ang eksaktong nakikita ng mga customer.',
+    s3Title: 'Bilang ng mga order',
+    s3Body: 'Ilan ang naghihintay, inihahanda, pwede nang kunin, at tapos na. Ito ang unang tingnan mo tuwing umaga.',
     s4Title: 'Kita',
-    s4Body: 'Ang kita mo sa paglipas ng panahon. Palitan ang period para ikumpara ang araw, linggo, o buwan.',
+    s4Body: 'Ang kinikita mo sa paglipas ng panahon. Palitan ang period para ikumpara ang kita kada araw, linggo, o buwan.',
     s5Title: 'Demand forecast',
-    s5Body: 'Hinuhulaan ng sistema kung anong paninda ang mabebenta sa mga susunod na araw, para makapag-stock ka bago maubos.',
+    s5Body: 'Hinuhulaan ng system kung aling paninda ang pinakamabebenta sa mga susunod na araw, para makapag-restock ka bago maubusan.',
     s6Title: 'Mga bagong order',
-    s6Body: 'Ang lima mong pinakabagong order. Pindutin ang isa para buksan, o View All para sa buong listahan.',
+    s6Body: 'Ang limang pinakabago mong order. Pindutin ang isa para buksan, o ang View All para makita ang buong listahan.',
 
     s7Title: 'Listahan ng Paninda',
-    s7Body: 'Nandito ang imbentaryo mo — lahat ng benta mo, kasama ang presyo, stock, at kategorya.',
+    s7Body: 'Nandito ang imbentaryo mo — lahat ng paninda mo, kasama ang presyo, stock, at kategorya.',
     s8Title: 'Magdagdag ng Paninda',
-    s8Body: 'Gamitin ito para magdagdag ng bagong item: pangalan, presyo, stock, kategorya, at larawan. Gawin mo muna ito para may mabili ang customer.',
+    s8Body: 'Dito ka magdadagdag ng bagong item: pangalan, presyo, stock, kategorya, at litrato. Unahin mo ito para may mabili ang mga customer.',
     s9Title: 'Insights sa stock',
-    s9Body: 'Babala kung ano ang paubos na, ang trend kung ano ang bibilis mabenta, at ang kasalukuyang pinakamabenta mo.',
+    s9Body: 'Babala para sa mga paubos na, ang trend ng mga malapit nang dumami ang benta, at ang pinakamabenta mo ngayon.',
     s10Title: 'Paghahanap ng paninda',
-    s10Body: 'Maghanap sa pangalan, o mag-filter ayon sa kategorya, stock, at presyo. Pindutin ang paninda para i-edit, baguhin ang stock, o tanggalin.',
+    s10Body: 'Maghanap ayon sa pangalan, o mag-filter ayon sa kategorya, dami ng stock, at presyo. Pindutin ang kahit anong paninda para i-edit ito, baguhin ang stock, o alisin.',
 
     s11Title: 'Mga Kategorya',
-    s11Body: 'Pagsama-samahin ang paninda — meryenda, inumin, de lata — para madaling tingnan ng customer. Ang Add Category ay gumagawa ng bago; ang Export ay nagse-save ng report.',
+    s11Body: 'I-grupo ang mga paninda mo — tsitsirya, inumin, de-lata — para madaling ma-browse ng customer. Gumagawa ng bago ang Add Category; nagse-save naman ng report ang Export.',
 
     s12Title: 'Listahan ng Order',
-    s12Body: 'Dito dumarating ang bawat order na ginagawa ng customer.',
+    s12Body: 'Dito pumapasok ang bawat order ng mga customer.',
     s13Title: 'Status ng order',
-    s13Body: 'Mag-filter ayon sa yugto, at makikita agad kung ilan ang nasa bawat isa. Ang mga na-order na ang unahin mo.',
+    s13Body: 'Mag-filter ayon sa status at makikita agad kung ilan ang nasa bawat isa. Unahin ang mga bagong pasok na order.',
     s14Title: 'Pag-asikaso ng order',
-    s14Body: 'Maghanap, mag-sort, o mag-filter, tapos pindutin ang order para buksan at usarin: inihahanda, pwede nang kunin, nakuha na. Nagse-save ng report ang Export.',
+    s14Body: 'Maghanap, mag-sort, o mag-filter, saka pindutin ang order para buksan at i-update ang status nito: inihahanda, pwede nang kunin, at nakuha na. Nagse-save ng listahan bilang report ang Export.',
 
     s15Title: 'Mga Customer',
-    s15Body: 'Ang mga suki mo, at lahat ng inorder nila sa iyo. Pumili ng pangalan para makita ang buong kasaysayan.',
+    s15Body: 'Ang mga suki mo at lahat ng inorder nila sa iyo. Pumili ng pangalan para makita ang buong order history nila.',
 
     s16Title: 'Mga Benta',
-    s16Body: 'Ang mga numero ng tindahan mo — kung magkano ang kinita at ano ang nabenta.',
-    s17Title: 'Kita sa panahong ito',
-    s17Body: 'Ang kabuuan mo, ang mga order na pinagmulan nito, at ang bilang ng naibenta. Ang date button sa itaas ang nagpapalit sa pagitan ng isang araw at ng lahat ng panahon.',
+    s16Body: 'Ang mga numero sa likod ng tindahan mo — magkano ang kinita mo at ano ang nabenta.',
+    s17Title: 'Kita sa napiling panahon',
+    s17Body: 'Ang kabuuang kita mo, ang mga order na pinanggalingan nito, at ang dami ng nabentang item. Ang date button sa kanang itaas ang nagpapalit sa pagitan ng isang araw at lahat ng panahon.',
     s18Title: 'Performance',
-    s18Body: 'Karaniwang halaga ng order, gaano kadalas kinakansela, at ang pinakamabenta mong kategorya.',
+    s18Body: 'Ang average na halaga ng bawat order, kung gaano kadalas nakakansela ang mga order, at ang pinakamabenta mong kategorya.',
     s19Title: 'Itala ang walk-in na benta',
-    s19Body: 'May naibenta sa counter? Itala mo dito para tama pa rin ang stock at mga report mo.',
+    s19Body: 'May nabenta ka sa counter? Itala mo rito para laging tama ang stock at mga report mo.',
 
     s20Title: 'Settings ng Tindahan',
-    s20Body: 'Nandito sa page na ito ang lahat ng settings ng tindahan at account mo.',
+    s20Body: 'Nasa page na ito ang lahat ng settings ng tindahan at account mo.',
     s21Title: 'Mga detalye mo',
-    s21Body: 'Ang pangalan, numero, at email mo — ang contact na nakakabit sa account mo.',
-    s22Title: 'Larawan ng tindahan',
-    s22Body: 'Ang unang nakikita ng customer. Malaking tulong ang malinaw at maliwanag na kuha.',
+    s21Body: 'Ang pangalan, mobile number, at email mo — ang contact details na naka-link sa account mo.',
+    s22Title: 'Litrato ng tindahan',
+    s22Body: 'Ang litrato ng tindahan na unang nakikita ng customer. Malaking tulong ang malinaw at maliwanag na kuha.',
     s23Title: 'Detalye ng tindahan',
-    s23Body: 'Ang pangalan, address at map pin, at oras ng bukas. Ang oras dito ang nagtatakda kung bukas o sarado ka sa dashboard.',
+    s23Body: 'Ang pangalan ng tindahan, address kasama ang pin sa mapa, at oras ng pagbubukas. Ang oras dito ang nagsasabi kung bukas o sarado ang tindahan mo sa dashboard.',
     s24Title: 'Seguridad',
-    s24Body: 'Dito pinapalitan ang password. Gawin mo ito paminsan-minsan, at huwag ipamigay.',
+    s24Body: 'Dito mo papalitan ang password mo. Palitan ito paminsan-minsan, at huwag itong ibigay kaninuman.',
     s25Title: 'Tulong at Suporta',
-    s25Body: 'Ibinabalik ng Ulitin ang Tutorial ang buong libot na ito kahit kailan mo kailanganin.',
+    s25Body: 'Ibabalik ng Ulitin ang Tutorial ang buong gabay na ito kahit kailan mo kailanganin.',
 
     doneTitle: 'Handa ka na!',
-    doneBody: 'Iyan ang buong tindahan mo. Magdagdag ng unang paninda para makapagsimula, o bumalik sa dashboard.',
+    doneBody: 'Iyan ang buong tindahan mo. Idagdag ang una mong paninda para makapagsimulang magbenta, o bumalik sa dashboard.',
     addFirstBtn: 'Idagdag ang Unang Paninda',
     dashboardBtn: 'Pumunta sa Dashboard',
 
     nextBtn: 'Susunod',
-    backBtn: 'Balik',
-    finishBtn: 'Tapos',
-    progress: '{{current}} ng {{total}}'
+    backBtn: 'Bumalik',
+    finishBtn: 'Tapusin',
+    progress: '{{current}} ng {{total}}',
+    langLabel: 'Wika ng tutorial'
   }
 }
 
-const { t } = useLanguage(tutorialDict)
-const { replaySignal, shouldAutoStart, setTutorialState } = useVendorTutorial()
+const { t, lang, setLanguage } = useLanguage(tutorialDict)
+const { replaySignal, shouldAutoStart, hasSeenLocally, markTutorialSeen, setTutorialState } = useVendorTutorial()
+
+// Same two languages as the header's toggle; the labels stay in their own language so a
+// vendor who cannot read the current one can still find theirs.
+const LANG_OPTIONS = [
+  { value: 'en', label: 'English' },
+  { value: 'ph', label: 'Filipino' }
+]
 
 const showWelcome = ref(false)
 const showFinish = ref(false)
@@ -338,15 +365,46 @@ const finishTour = (state) => {
   if (state === TUTORIAL_COMPLETED) showFinish.value = true
 }
 
+// Everything driver renders as text, so a language switch can hand it all over again.
+const localizedConfig = () => ({
+  progressText: t('progress'),
+  nextBtnText: t('nextBtn'),
+  prevBtnText: t('backBtn'),
+  doneBtnText: t('finishBtn'),
+  steps: buildSteps()
+})
+
+// Driver's popover is plain DOM outside Vue, so its language switch is built by hand: the
+// same two options as the welcome card, set straight on the shared language state. The
+// watch on `lang` below then redraws the step in the new language.
+const buildLangSwitch = () => {
+  const group = document.createElement('div')
+  group.className = 'tour-pop-lang'
+  group.setAttribute('role', 'group')
+  group.setAttribute('aria-label', t('langLabel'))
+  for (const option of LANG_OPTIONS) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'tour-pop-lang-option'
+    if (lang.value === option.value) button.classList.add('tour-pop-lang-option--active')
+    button.setAttribute('aria-pressed', String(lang.value === option.value))
+    button.textContent = option.value === 'en' ? 'EN' : 'FIL'
+    button.title = option.label
+    button.addEventListener('click', (event) => {
+      event.stopPropagation()
+      if (lang.value !== option.value) setLanguage(option.value)
+    })
+    group.appendChild(button)
+  }
+  return group
+}
+
 const startTour = async () => {
   closeTour()
 
   tour = driver({
     showProgress: true,
-    progressText: t('progress'),
-    nextBtnText: t('nextBtn'),
-    prevBtnText: t('backBtn'),
-    doneBtnText: t('finishBtn'),
+    ...localizedConfig(),
     allowClose: true,
     // A tap on the dimmed area ends the tour by default, which on a phone is mostly stray
     // taps. Only the X and Escape should end it, so overlay clicks do nothing.
@@ -365,17 +423,21 @@ const startTour = async () => {
     stagePadding: isCompact.value ? 4 : 6,
     stageRadius: 10,
     popoverClass: 'tindahan-tour-popover',
-    steps: buildSteps(),
 
-    // Names the area the step belongs to, so 25 steps across seven pages stay legible.
+    // Names the area the step belongs to, so 25 steps across seven pages stay legible,
+    // and puts the language switch on the same line.
     onPopoverRender: (popover, opts) => {
       const index = opts?.index ?? opts?.state?.activeIndex ?? tour?.getActiveIndex() ?? 0
       const def = STEP_DEFS[index]
       if (!def || !popover?.title?.parentElement) return
+      const head = document.createElement('div')
+      head.className = 'tour-pop-head'
       const eyebrow = document.createElement('div')
       eyebrow.className = 'tour-eyebrow'
       eyebrow.textContent = t(def.section)
-      popover.title.parentElement.insertBefore(eyebrow, popover.title)
+      head.appendChild(eyebrow)
+      head.appendChild(buildLangSwitch())
+      popover.title.parentElement.insertBefore(head, popover.title)
     },
 
     // Both hooks await a route change before advancing, and driver leaves its buttons live
@@ -461,6 +523,17 @@ watch(isCompact, () => {
   tour.drive(index)
 })
 
+// A language switch — from the popover, the welcome card or the header — redraws the
+// current step with its title, body and buttons in the new language. Skipped while a Next
+// or Back is still moving between pages; the config is still refreshed so the step that
+// is about to draw comes up in the new language.
+watch(lang, () => {
+  if (!tour?.isActive()) return
+  tour.setConfig({ ...tour.getConfig(), ...localizedConfig() })
+  if (navigating) return
+  tour.drive(tour.getActiveIndex() ?? 0)
+})
+
 // The Replay button on the profile page bumps this counter.
 watch(replaySignal, (value) => {
   if (value > 0) startTour()
@@ -475,8 +548,15 @@ const maybeAutoStart = () => {
   // the tour that is about to start.
   if (showWelcome.value || tour) return
   if (route.path !== DASHBOARD) return
-  if (!shouldAutoStart()) return
+  if (!shouldAutoStart()) {
+    // A vendor who went through it on this browser before the account kept the flag gets
+    // it saved now, so another device does not offer it again either.
+    if (hasSeenLocally()) markTutorialSeen()
+    return
+  }
   showWelcome.value = true
+  // Offered once: it counts as seen from this moment, whatever the vendor does next.
+  markTutorialSeen()
 }
 
 watch(() => route.path, maybeAutoStart)
@@ -511,6 +591,69 @@ onBeforeUnmount(() => {
   text-align: center;
 
   padding: 28px 28px 0;
+}
+
+/* The language switch sits in the card's top-right corner, above the logo. */
+.tour-lang-row {
+  display: flex;
+  justify-content: flex-end;
+
+  padding: 14px 16px 0;
+}
+
+.tour-lang-row + .tour-content {
+  padding-top: 6px;
+}
+
+.tour-lang {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 2px;
+  padding: 3px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-pill);
+
+  background: var(--c-surface-2);
+}
+
+.tour-lang-icon {
+  margin: 0 4px 0 6px;
+
+  color: var(--c-muted);
+}
+
+.tour-lang-option {
+  height: 26px;
+  padding: 0 12px;
+
+  border: none;
+  border-radius: var(--r-pill);
+
+  background: transparent;
+  color: var(--c-text-3);
+
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.tour-lang-option:hover {
+  color: var(--c-text);
+}
+
+.tour-lang-option--active,
+.tour-lang-option--active:hover {
+  background: var(--c-brand);
+  color: #ffffff;
+}
+
+.tour-lang-option:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 1px;
 }
 
 /* The wordmark rather than a generic storefront glyph, so the welcome card opens with the
@@ -699,12 +842,21 @@ onBeforeUnmount(() => {
   max-width: min(320px, calc(100vw - 32px));
 }
 
-/* Which area of the store this step belongs to, injected in onPopoverRender. The eyebrow
-   shares its line with the close button, and "SETTINGS NG TINDAHAN" is long enough to run
-   underneath it, so it clears the same corner the title does. */
-.tindahan-tour-popover .tour-eyebrow {
-  margin-bottom: 4px;
+/* Which area of the store this step belongs to and the language switch, injected in
+   onPopoverRender. The row shares its line with the close button, so it clears the same
+   corner the title does. */
+.tindahan-tour-popover .tour-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+  margin-bottom: 6px;
   padding-right: 24px;
+}
+
+.tindahan-tour-popover .tour-eyebrow {
+  min-width: 0;
 
   font-size: var(--fs-2xs);
   font-weight: 700;
@@ -712,6 +864,53 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
 
   color: var(--c-brand);
+}
+
+.tindahan-tour-popover .tour-pop-lang {
+  display: inline-flex;
+  flex-shrink: 0;
+
+  padding: 2px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-pill);
+
+  background: var(--c-surface-2);
+}
+
+/* driver.css resets its own buttons only, so these are styled from scratch. */
+.tindahan-tour-popover .tour-pop-lang-option {
+  height: 20px;
+  padding: 0 8px;
+
+  border: none;
+  border-radius: var(--r-pill);
+
+  background: transparent;
+  color: var(--c-text-3);
+
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 20px;
+
+  cursor: pointer;
+}
+
+.tindahan-tour-popover .tour-pop-lang-option:hover {
+  color: var(--c-text);
+}
+
+.tindahan-tour-popover .tour-pop-lang-option--active,
+.tindahan-tour-popover .tour-pop-lang-option--active:hover {
+  background: var(--c-brand);
+  color: #ffffff;
+}
+
+.tindahan-tour-popover .tour-pop-lang-option:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 1px;
 }
 
 .tindahan-tour-popover .driver-popover-title {
@@ -824,8 +1023,16 @@ onBeforeUnmount(() => {
     padding-right: 40px;
   }
 
-  .tindahan-tour-popover .tour-eyebrow {
+  .tindahan-tour-popover .tour-pop-head {
     padding-right: 40px;
+  }
+
+  /* A thumb-sized target without making the pill taller than the eyebrow line needs. */
+  .tindahan-tour-popover .tour-pop-lang-option {
+    height: 26px;
+    padding: 0 10px;
+
+    line-height: 26px;
   }
 
   .tindahan-tour-popover .driver-popover-footer {

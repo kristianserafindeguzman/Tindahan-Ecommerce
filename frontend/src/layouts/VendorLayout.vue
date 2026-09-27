@@ -51,7 +51,7 @@
             </q-badge>
           </q-btn>
 
-          <q-btn flat round dense icon="logout" color="white" class="header-action-btn" @click="handleLogout" />
+          <q-btn flat round dense icon="logout" color="white" class="header-action-btn" :aria-label="t('signOut')" @click="handleLogout" />
         </div>
 
       </q-toolbar>
@@ -372,7 +372,8 @@ const handleLogout = () => logout()
 }
 
 .toolbar-desktop { min-height: 68px; }  
-.toolbar-mobile { min-height: 72px; }
+/* 60px leaves the content more room on a phone while still fitting the logo and icons comfortably. */
+.toolbar-mobile { min-height: 60px; }
 
 .header-action-btn {  
   transition: background-color 0.15s;  
@@ -384,13 +385,16 @@ const handleLogout = () => logout()
 .header-logo-card {  
   background: transparent;  
   border-radius: var(--r-control);  
-  padding: 0 4px;  
+  padding: 0;
 }
 
-.header-logo-img {  
-  height: 72px;  
-  width: auto;  
-  max-width: 240px;  
+/* The PNG carries transparent padding on every side, so 50px tall shows a wordmark about
+   36px high. The negative margin pulls the art itself onto the page's 16px gutter. */
+.header-logo-img {
+  height: 50px;
+  width: auto;
+  max-width: 160px;
+  margin-left: -4px;
   object-fit: contain;  
   display: block;  
 }
@@ -1241,5 +1245,55 @@ body.body--dark.vendor-dark-mode .q-btn--outline.text-negative {
 
 body.body--dark.vendor-dark-mode .q-btn--outline.text-negative:hover {
   background: rgba(255, 92, 92, 0.2) !important;
+}
+
+/* Toasts ("Product added.", "Product deleted.", and every other $q.notify) are teleported
+   to <body>, where the palette above has no success/warning/info wash or line tokens — so
+   app.scss painted them with the light-mode pastel washes while the text turned near-white,
+   and the message all but vanished. They get a solid navy card here, tinted per type,
+   with the same tokens app.scss reads so its layout rules stay untouched. */
+body.body--dark.vendor-dark-mode .q-notification.app-toast {
+  --toast-wash: rgba(255, 255, 255, 0.03);
+  --toast-line: #3c4a6e;
+  --toast-disc: #24314e;
+  --toast-ink: #c7d0e4;
+
+  background: linear-gradient(var(--toast-wash), var(--toast-wash)), #16213a !important;
+  color: #eef2fb !important;
+
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+body.body--dark.vendor-dark-mode .app-toast.app-toast--positive {
+  --toast-wash: rgba(74, 222, 128, 0.12);
+  --toast-line: rgba(74, 222, 128, 0.45);
+  --toast-disc: rgba(74, 222, 128, 0.2);
+  --toast-ink: #4ade80;
+}
+
+body.body--dark.vendor-dark-mode .app-toast.app-toast--negative {
+  --toast-wash: rgba(255, 92, 92, 0.13);
+  --toast-line: rgba(255, 92, 92, 0.5);
+  --toast-disc: rgba(255, 92, 92, 0.22);
+  --toast-ink: #ff7a7a;
+}
+
+body.body--dark.vendor-dark-mode .app-toast.app-toast--warning {
+  --toast-wash: rgba(251, 191, 36, 0.12);
+  --toast-line: rgba(251, 191, 36, 0.45);
+  --toast-disc: rgba(251, 191, 36, 0.2);
+  --toast-ink: #fbbf24;
+}
+
+body.body--dark.vendor-dark-mode .app-toast.app-toast--info {
+  --toast-wash: rgba(96, 165, 250, 0.12);
+  --toast-line: rgba(96, 165, 250, 0.45);
+  --toast-disc: rgba(96, 165, 250, 0.2);
+  --toast-ink: #60a5fa;
+}
+
+/* An action button on a toast (Quasar's actions row) keeps to the toast's own ink. */
+body.body--dark.vendor-dark-mode .app-toast .q-notification__actions .q-btn {
+  color: var(--toast-ink) !important;
 }
 </style>
