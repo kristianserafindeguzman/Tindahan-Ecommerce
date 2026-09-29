@@ -9,7 +9,21 @@
         {{ t('Back to Orders') }}
       </span>
 
-      <h1 class="page-title">{{ t('Order #') }}{{ order.order_id }}</h1>
+      <div class="page-title-row">
+        <h1 class="page-title">{{ t('Order #') }}{{ order.order_id }}</h1>
+
+        <!-- The store moves the order along on their side, so the consumer can pull the latest status without reloading the page. -->
+        <q-btn
+          unelevated
+          no-caps
+          dense
+          icon="o_refresh"
+          :label="t('Refresh')"
+          :loading="isRefreshing"
+          class="refresh-btn"
+          @click="refreshOrder"
+        />
+      </div>
 
       <div class="order-layout">
 
@@ -527,6 +541,35 @@ const confirmCancelOrder = async () => {
   }
 }
 
+const isRefreshing = ref(false)
+
+// Always says what happened, so a refresh that finds nothing new doesn't look like a button that did nothing.
+const refreshOrder = async () => {
+  if (!order.value || isRefreshing.value) return
+
+  const previousStatus = order.value.status
+  isRefreshing.value = true
+
+  try {
+    const res = await api.get(`/consumer/orders/${order.value.order_id}`)
+    order.value = res.data
+
+    if (res.data.status !== previousStatus) {
+      // A cancellation is news, not a success, so it must not arrive as a green check.
+      $q.notify({
+        type: res.data.status === 'cancelled' ? 'negative' : 'positive',
+        message: t('Order updated: {status}', { status: t(statusTitle.value) })
+      })
+    } else {
+      $q.notify({ type: 'info', message: t('Your order is up to date.'), timeout: 1500 })
+    }
+  } catch (error) {
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Could not refresh your order. Please try again.') })
+  } finally {
+    isRefreshing.value = false
+  }
+}
+
 onMounted(() => {
   fetchOrderDetails()
 })
@@ -577,14 +620,63 @@ onMounted(() => {
   color: var(--c-brand);
 }
 
+.page-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
 .page-title {
-  margin: 0 0 20px;
+  margin: 0;
+  min-width: 0;
 
   font-size: var(--fs-3xl);
   font-weight: 700;
   line-height: 1.3;
 
   color: var(--c-text);
+}
+
+/* Same white bordered secondary control as the Filters button on the Products page. */
+.refresh-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+
+  height: 36px;
+  min-height: 36px;
+  padding: 0 14px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+
+  background: #ffffff;
+  color: var(--c-text-2);
+
+  font-size: var(--fs-sm);
+  font-weight: 500;
+
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.refresh-btn :deep(.q-focus-helper) {
+  display: none;
+}
+
+.refresh-btn :deep(.q-btn__content) {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.refresh-btn:hover {
+  border-color: var(--c-brand);
+  background: var(--c-brand-tint);
+}
+
+.refresh-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.25);
 }
 
 .order-loading {
@@ -627,13 +719,13 @@ onMounted(() => {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.page-title {
+.page-title-row {
   animation: orderdetails-fade-up 0.5s ease both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .order-layout,
-  .page-title {
+  .page-title-row {
     animation: none;
   }
 }

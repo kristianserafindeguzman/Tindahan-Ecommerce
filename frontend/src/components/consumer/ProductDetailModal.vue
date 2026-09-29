@@ -105,9 +105,10 @@
               <div class="store-row-status" :class="{ 'store-row-status-closed': !store.isOpen }">
                 {{ storeStatus(store) }}
               </div>
-              <div v-if="storeAddressText" class="store-row-address">
-                <q-icon name="o_location_on" size="12px" />
-                <span class="store-row-address-text">{{ storeAddressText }}</span>
+              <!-- One line, travel first: a long address is what gets cut off, never the minutes. -->
+              <div v-if="storeMetaText" class="store-row-address">
+                <q-icon :name="store.distance_meters != null ? travelIcon(store.distance_meters) : 'o_location_on'" size="12px" />
+                <span class="store-row-address-text">{{ storeMetaText }}</span>
               </div>
             </div>
             <div class="store-row-link">
@@ -154,7 +155,7 @@ import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { useStores } from '@/composables/useStores'
-import { formatDistance } from '@/utils/distance'
+import { formatDistance, formatTravelTime, travelIcon } from '@/utils/distance'
 import { useCart } from '@/composables/useCart'
 
 const { t, locale, storeStatus } = useConsumerLanguage()
@@ -189,11 +190,15 @@ const store = computed(() =>
   props.product ? stores.value.find((s) => s.id === props.product.storeId) || null : null
 )
 
-const storeAddressText = computed(() => {
+// "45 min ride · 11.4 km away · 456 Quezon Avenue, Quezon City"
+const storeMetaText = computed(() => {
   if (!store.value) return ''
-  const dist = store.value.distance_meters != null ? formatDistance(store.value.distance_meters) : ''
-  if (store.value.address && dist) return `${store.value.address} (${dist})`
-  return store.value.address || dist
+  const parts = []
+  if (store.value.distance_meters != null) {
+    parts.push(formatTravelTime(store.value.distance_meters), formatDistance(store.value.distance_meters))
+  }
+  if (store.value.address) parts.push(store.value.address)
+  return parts.join(' · ')
 })
 
 const hasVariants = computed(() => Array.isArray(props.product?.variants) && props.product.variants.length > 0)
