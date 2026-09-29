@@ -88,7 +88,7 @@
                 <div class="order-meta-label">{{ t('Pickup Time') }}</div>
                 <div class="order-meta-value">
                   <q-icon name="o_schedule" size="13px" />
-                  {{ t('ASAP (10 - 15 mins)') }}
+                  {{ formatPickupSlot(order.scheduled_pickup_at, locale) || t('ASAP (10 - 15 mins)') }}
                 </div>
               </div>
               <div class="order-meta-placed">
@@ -310,6 +310,7 @@ import { api } from '@/boot/axios'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import { formatDistance, calculateDistanceMeters } from '@/utils/distance'
+import { formatPickupSlot } from '@/utils/pickupSlots'
 
 const { t, locale } = useConsumerLanguage()
 

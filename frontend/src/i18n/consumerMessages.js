@@ -246,7 +246,12 @@ export default {
   "We'll start preparing your order immediately.":
     'Ihahanda namin agad ang order mo.',
   'Schedule for later': 'Mag-schedule ng pickup',
-  'Choose a specific time today.': 'Pumili ng pickup time ngayong araw.',
+  'Choose a day and time within store hours.': 'Pumili ng araw at oras habang bukas ang tindahan.',
+  'There are no pickup times left in the next few days. Choose ASAP instead.': 'Wala nang available na pickup time sa mga susunod na araw. Piliin na lang ang ASAP.',
+  'Choose a pickup time first.': 'Pumili muna ng pickup time.',
+  'Loading store hours…': 'Nilo-load ang oras ng tindahan…',
+  'Please choose a pickup time that is still available.': 'Pumili ng pickup time na available pa.',
+  'The store is closed at that pickup time. Please choose another time.': 'Sarado ang tindahan sa oras na iyon. Pumili ng ibang oras.',
   'Select Day': 'Pumili ng Araw',
   'Select Time': 'Pumili ng Oras',
   'Choose a time slot': 'Pumili ng time slot',
@@ -530,7 +535,7 @@ export default {
   'Choose a month, day and year.': 'Pumili ng buwan, araw, at taon.',
   'Enter a valid birthday.': 'Maglagay ng valid na birthday.',
   'Vendor Registration': 'Mag-register bilang Vendor',
-  'Join our ecosystem of successful micro-entrepreneurs today.': 'Sumali sa community ng mga negosyante sa Tindahan.',
+  'Open your store on Tindahan and start selling today.': 'Buksan ang store mo sa Tindahan at magsimulang magbenta ngayon.',
   'Step {step} of {total}': 'Step {step} sa {total}',
   'Registration progress': 'Progress ng registration',
   'Owner Account': 'Account ng Store Owner',
@@ -678,9 +683,16 @@ export default {
   'You have no active orders right now. Anything you order next shows up here while the store prepares it.': 'Wala kang aktibong order ngayon. Lalabas dito ang susunod mong order habang inihahanda ito ng tindahan.',
   'No past orders': 'Walang lumang order',
   'Orders you have picked up or cancelled will be kept here.': 'Dito itatago ang mga order na nakuha mo na o kinansela.',
+<<<<<<< HEAD
   'Scroll categories left': 'I-scroll pakaliwa ang categories',
   'Scroll categories right': 'I-scroll pakanan ang categories',
   'Refresh': 'I-refresh',
   'Order updated.': 'Na-update ang order.',
   'Could not refresh the order. Please try again.': 'Hindi ma-refresh ang order. Subukan ulit.',
+=======
+  'Your neighborhood sari-sari store, now online.': 'Ang sari-sari store sa inyong lugar, online na.',
+  "Browse stores near you, order ahead, and pick up when it's ready, all while helping local store owners grow.": "Mag-browse ng mga store malapit sa'yo, mag-order in advance, at i-pick up kapag ready na, habang tinutulungan ang mga local store owner na lumago.",
+  'Go to home page': 'Pumunta sa home page',
+  'Too many login attempts. Try again in {time}.': 'Sobra na ang login attempts. Subukan ulit pagkalipas ng {time}.',
+>>>>>>> origin/dev
 }

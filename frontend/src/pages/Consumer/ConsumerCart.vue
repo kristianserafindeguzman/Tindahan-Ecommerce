@@ -6,7 +6,20 @@
     <!-- MAIN CONTENT -->
     <div class="page-content">
 
-      <h1 class="page-title">{{ t('My Cart') }}</h1>
+      <!-- A shortcut to past and in-progress orders, so a shopper checking on an order doesn't
+           have to go through the account menu. -->
+      <div class="cart-title-row">
+        <h1 class="page-title">{{ t('My Cart') }}</h1>
+        <q-btn
+          outline
+          no-caps
+          color="primary"
+          icon="o_receipt_long"
+          :label="t('My Orders')"
+          to="/consumer/orders"
+          class="orders-shortcut"
+        />
+      </div>
       <p v-if="items.length" class="page-subtitle">{{ t('Choose a store to checkout.') }}</p>
 
       <div v-if="loading" class="cart-loading">
@@ -14,17 +27,24 @@
         <p class="cart-loading-text">{{ t('Loading your cart…') }}</p>
       </div>
 
-      <div v-else-if="!items.length" class="cart-empty">
-        <q-icon name="o_shopping_cart" size="40px" class="cart-empty-icon" />
-        <p class="cart-empty-text">{{ t('Your cart is empty.') }}</p>
-        <q-btn
-          unelevated
-          no-caps
-          :label="t('Browse Products')"
-          class="browse-btn"
-          @click="router.push('/consumer/products')"
-        />
-      </div>
+      <!-- The same empty state the orders page uses: icon, title, a line on what to do next, button. -->
+      <EmptyState
+        v-else-if="!items.length"
+        class="cart-empty"
+        icon="o_shopping_cart"
+        :title="t('Your cart is empty')"
+        :text="t('Items you add from a store will wait here until you are ready to check out. You pay and collect at the store itself.')"
+      >
+        <template #action>
+          <q-btn
+            unelevated
+            no-caps
+            :label="t('Browse Products')"
+            class="browse-btn"
+            @click="router.push('/consumer/products')"
+          />
+        </template>
+      </EmptyState>
 
       <template v-else>
       <!-- Shown once, above the cart itself: there is no delivery in Tindahan, and the
@@ -214,6 +234,7 @@ import { useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ContextHint from '@/components/consumer/ContextHint.vue'
+import EmptyState from '@/components/consumer/EmptyState.vue'
 import { useCart } from '@/composables/useCart'
 import { useCartExpiry } from '@/composables/useCartExpiry'
 import { useConsumerHints, HINT_PICKUP_ONLY } from '@/composables/useConsumerHints'
@@ -356,8 +377,42 @@ const removeItem = async (item) => {
   padding: 24px;
 }
 
-.page-title {
+.cart-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
   margin: 0 0 4px;
+}
+
+.orders-shortcut {
+  flex-shrink: 0;
+
+  height: 38px;
+  min-height: 38px;
+  padding: 0 14px;
+
+  border-radius: var(--r-pill);
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  transition: background-color 0.15s;
+
+  animation: cart-fade-up 0.5s ease both;
+}
+
+.orders-shortcut:hover {
+  background: var(--c-brand-tint);
+}
+
+.orders-shortcut :deep(.q-icon) {
+  font-size: 18px;
+}
+
+.page-title {
+  margin: 0;
 
   font-size: var(--fs-3xl);
   font-weight: 700;
@@ -396,15 +451,8 @@ const removeItem = async (item) => {
   font-size: var(--fs-md);
 }
 
+/* EmptyState brings its own layout; the cart only adds its page-entrance animation. */
 .cart-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  padding: 60px 24px;
-
-  text-align: center;
-
   animation: cart-fade-up 0.5s ease both;
 }
 
@@ -432,23 +480,10 @@ const removeItem = async (item) => {
   .cart-empty,
   .cart-pickup-hint,
   .page-title,
+  .orders-shortcut,
   .cart-layout {
     animation: none;
   }
-}
-
-.cart-empty-icon {
-  margin-bottom: 10px;
-
-  color: var(--c-border);
-}
-
-.cart-empty-text {
-  margin: 0 0 20px;
-
-  font-size: var(--fs-md);
-
-  color: var(--c-muted);
 }
 
 .browse-btn {
@@ -1014,6 +1049,14 @@ const removeItem = async (item) => {
 @media (max-width: 600px) {
   .page-content {
     padding: 16px;
+  }
+
+  .orders-shortcut {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 12px;
+
+    font-size: var(--fs-xs);
   }
 
   .store-card {

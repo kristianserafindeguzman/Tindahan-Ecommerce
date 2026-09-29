@@ -1,257 +1,236 @@
 <template>
-  <q-page class="login-page">
-    <AuthLanguageSwitcher />
-    <div class="login-card">
+  <AuthShell class="login-page">
+    <div class="login-content">
 
-      <!-- LEFT BRANDING PANEL -->
-      <div class="branding-panel">
-        <img
-          src="@/assets/tindahan-logo.png"
-          alt="Tindahan Logo"
-          class="tindahan-logo tindahan-logo-desktop"
-        />
-        <img
-          src="@/assets/tindahan-mobile.png"
-          alt="Tindahan Logo"
-          class="tindahan-logo tindahan-logo-mobile"
-        />
-      </div>
+      <h1>{{ t('Sign up') }}</h1>
 
-      <!-- RIGHT REGISTER PANEL -->
-      <div class="login-panel">
-        <div class="login-content">
+      <p class="subtitle">
+        {{ t('Create an account to get started.') }}
+      </p>
 
-          <h1>{{ t('Sign up') }}</h1>
+      <q-form
+        ref="registerForm"
+        class="login-form"
+        @submit.prevent="handleRegister"
+      >
 
-          <p class="subtitle">
-            {{ t('Create an account to get started.') }}
-          </p>
-
-          <q-form
-            ref="registerForm"
-            class="login-form"
-            @submit.prevent="handleRegister"
-          >
-
-            <!-- FIRST / LAST NAME -->
-            <div class="name-row">
-              <div class="field-group">
-                <q-input
-                  v-model="form.firstName"
-                  outlined
-                  dense
-                  no-error-icon
-                  hide-bottom-space
-                  :label="t('First name')"
-                  autocomplete="given-name"
-                  class="login-input"
-                  reactive-rules
-                  :rules="[
-                    val => !firstNameTouched || !!val || t('First name is required.'),
-                    val => !firstNameTouched || nameRule(val)
-                  ]"
-                  @blur="firstNameTouched = true"
-                />
-              </div>
-
-              <div class="field-group">
-                <q-input
-                  v-model="form.lastName"
-                  outlined
-                  dense
-                  no-error-icon
-                  hide-bottom-space
-                  :label="t('Last name')"
-                  autocomplete="family-name"
-                  class="login-input"
-                  reactive-rules
-                  :rules="[
-                    val => !lastNameTouched || !!val || t('Last name is required.'),
-                    val => !lastNameTouched || nameRule(val)
-                  ]"
-                  @blur="lastNameTouched = true"
-                />
-              </div>
-            </div>
-
-            <!-- BIRTHDAY -->
-            <div class="field-group">
-              <BirthdayInput
-                :translate="t"
-                :locale="locale"
-                v-model="form.birthday"
-                class="login-input"
-                :rules="[
-                  val => !birthdayTouched || !!val || t('Birthday is required.'),
-                  val => !birthdayTouched || birthdayRule(val)
-                ]"
-                @touched="birthdayTouched = true"
-              />
-            </div>
-
-            <!-- EMAIL -->
-            <div class="field-group">
-              <q-input
-                v-model="form.email"
-                outlined
-                dense
-                no-error-icon
-                hide-bottom-space
-                type="email"
-                :label="t('Email')"
-                autocomplete="email"
-                class="login-input"
-                reactive-rules
-                :rules="[
-                  val => !emailTouched || !!val || t('Email is required.'),
-                  val => !emailTouched || emailRule(val)
-                ]"
-                @blur="emailTouched = true"
-              />
-            </div>
-
-            <!-- MOBILE NUMBER -->
-            <div class="field-group">
-              <q-input
-                v-model="form.phoneNumber"
-                outlined
-                dense
-                no-error-icon
-                hide-bottom-space
-                :label="t('Mobile number')"
-                type="tel"
-                autocomplete="tel"
-                class="login-input"
-                reactive-rules
-                :rules="[
-                  val => !phoneTouched || !!val || t('Mobile number is required.'),
-                  val => !phoneTouched || phoneRule(val)
-                ]"
-                @blur="phoneTouched = true"
-              />
-            </div>
-
-            <!-- PASSWORD -->
-            <div class="field-group">
-              <q-input
-                v-model="form.password"
-                outlined
-                dense
-                no-error-icon
-                hide-bottom-space
-                :type="showPassword ? 'text' : 'password'"
-                :label="t('Create Password')"
-                autocomplete="new-password"
-                class="login-input"
-                reactive-rules
-                :rules="[
-                  val => !passwordTouched || !!val || t('Password is required.'),
-                  val => !passwordTouched || passwordRule(val)
-                ]"
-                @blur="passwordTouched = true"
-              >
-                <template #append>
-                  <q-icon
-                    :name="showPassword
-                      ? 'o_visibility'
-                      : 'o_visibility_off'"
-                    class="password-icon cursor-pointer"
-                    @click="showPassword = !showPassword"
-                  />
-                </template>
-              </q-input>
-              <div v-if="passwordStrong" class="field-message field-message-success">
-                <q-icon name="o_check_circle" size="12px" />
-                {{ t('Strong password.') }}
-              </div>
-            </div>
-
-            <!-- CONFIRM PASSWORD -->
-            <div class="field-group">
-              <q-input
-                v-model="form.confirmPassword"
-                outlined
-                dense
-                no-error-icon
-                hide-bottom-space
-                :type="showConfirmPassword ? 'text' : 'password'"
-                :label="t('Confirm Password')"
-                autocomplete="new-password"
-                class="login-input"
-                :error="confirmPasswordMessage?.type === 'error'"
-              >
-                <template #append>
-                  <q-icon
-                    :name="showConfirmPassword
-                      ? 'o_visibility'
-                      : 'o_visibility_off'"
-                    class="password-icon cursor-pointer"
-                    @click="showConfirmPassword = !showConfirmPassword"
-                  />
-                </template>
-              </q-input>
-              <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
-                <q-icon v-if="confirmPasswordMessage.type === 'success'" name="o_check_circle" size="12px" />
-                {{ t(confirmPasswordMessage.text) }}
-              </div>
-            </div>
-
-            <!-- ERROR MESSAGE -->
-            <div v-if="registerError" class="error-message">
-              {{ t(registerError) }}
-            </div>
-
-            <!-- SUBMIT BUTTON -->
-            <q-btn
-              type="submit"
-              :label="t('Create account')"
-              no-caps
-              unelevated
-              class="login-button full-width"
-              :loading="loading"
-              :disable="!canRegister"
+        <!-- FIRST / LAST NAME -->
+        <div class="name-row">
+          <div class="field-group">
+            <q-input
+              v-model="form.firstName"
+              outlined
+              dense
+              no-error-icon
+              hide-bottom-space
+              :label="t('First name')"
+              autocomplete="given-name"
+              class="login-input"
+              reactive-rules
+              :rules="[
+                val => !firstNameTouched || !!val || t('First name is required.'),
+                val => !firstNameTouched || nameRule(val)
+              ]"
+              @blur="firstNameTouched = true"
             />
-
-          </q-form>
-
-          <!-- LOGIN LINK -->
-          <div class="register-section">
-            <span>{{ t('Already have an account?') }}</span>
-
-            <button
-              type="button"
-              class="text-button create-account"
-              @click="goToLogin"
-            >
-              {{ t('Log in') }}
-            </button>
           </div>
 
-          <q-separator class="separator" />
-
-          <!-- TERMS -->
-          <p class="terms">
-            <span class="terms-intro">{{ t('By signing up, you agree to our') }}</span>
-            <span class="terms-links">
-              <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
-              {{ t('and') }}
-              <span class="terms-policy"><a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.</span>
-            </span>
-          </p>
-
+          <div class="field-group">
+            <q-input
+              v-model="form.lastName"
+              outlined
+              dense
+              no-error-icon
+              hide-bottom-space
+              :label="t('Last name')"
+              autocomplete="family-name"
+              class="login-input"
+              reactive-rules
+              :rules="[
+                val => !lastNameTouched || !!val || t('Last name is required.'),
+                val => !lastNameTouched || nameRule(val)
+              ]"
+              @blur="lastNameTouched = true"
+            />
+          </div>
         </div>
+
+        <!-- BIRTHDAY -->
+        <div class="field-group">
+          <BirthdayInput
+            :translate="t"
+            :locale="locale"
+            v-model="form.birthday"
+            class="login-input"
+            :rules="[
+              val => !birthdayTouched || !!val || t('Birthday is required.'),
+              val => !birthdayTouched || birthdayRule(val)
+            ]"
+            @touched="birthdayTouched = true"
+          />
+        </div>
+
+        <!-- EMAIL -->
+        <div class="field-group">
+          <q-input
+            v-model="form.email"
+            outlined
+            dense
+            no-error-icon
+            hide-bottom-space
+            type="email"
+            :label="t('Email')"
+            autocomplete="email"
+            class="login-input"
+            reactive-rules
+            :rules="[
+              val => !emailTouched || !!val || t('Email is required.'),
+              val => !emailTouched || emailRule(val)
+            ]"
+            @blur="emailTouched = true"
+          />
+        </div>
+
+        <!-- MOBILE NUMBER -->
+        <div class="field-group">
+          <q-input
+            v-model="form.phoneNumber"
+            outlined
+            dense
+            no-error-icon
+            hide-bottom-space
+            :label="t('Mobile number')"
+            type="tel"
+            autocomplete="tel"
+            class="login-input"
+            reactive-rules
+            :rules="[
+              val => !phoneTouched || !!val || t('Mobile number is required.'),
+              val => !phoneTouched || phoneRule(val)
+            ]"
+            @blur="phoneTouched = true"
+          />
+        </div>
+
+        <!-- PASSWORD -->
+        <div class="field-group">
+          <q-input
+            v-model="form.password"
+            outlined
+            dense
+            no-error-icon
+            hide-bottom-space
+            :type="showPassword ? 'text' : 'password'"
+            :label="t('Create Password')"
+            autocomplete="new-password"
+            class="login-input"
+            reactive-rules
+            :rules="[
+              val => !passwordTouched || !!val || t('Password is required.'),
+              val => !passwordTouched || passwordRule(val)
+            ]"
+            @blur="passwordTouched = true"
+          >
+            <template #append>
+              <q-icon
+                :name="showPassword
+                  ? 'o_visibility'
+                  : 'o_visibility_off'"
+                class="password-icon cursor-pointer"
+                @click="showPassword = !showPassword"
+              />
+            </template>
+          </q-input>
+          <div v-if="passwordStrong" class="field-message field-message-success">
+            <q-icon name="o_check_circle" size="12px" />
+            {{ t('Strong password.') }}
+          </div>
+        </div>
+
+        <!-- CONFIRM PASSWORD -->
+        <div class="field-group">
+          <q-input
+            v-model="form.confirmPassword"
+            outlined
+            dense
+            no-error-icon
+            hide-bottom-space
+            :type="showConfirmPassword ? 'text' : 'password'"
+            :label="t('Confirm Password')"
+            autocomplete="new-password"
+            class="login-input"
+            :error="confirmPasswordMessage?.type === 'error'"
+          >
+            <template #append>
+              <q-icon
+                :name="showConfirmPassword
+                  ? 'o_visibility'
+                  : 'o_visibility_off'"
+                class="password-icon cursor-pointer"
+                @click="showConfirmPassword = !showConfirmPassword"
+              />
+            </template>
+          </q-input>
+          <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
+            <q-icon v-if="confirmPasswordMessage.type === 'success'" name="o_check_circle" size="12px" />
+            {{ t(confirmPasswordMessage.text) }}
+          </div>
+        </div>
+
+        <!-- ERROR MESSAGE -->
+        <div v-if="registerError" class="error-message">
+          {{ t(registerError) }}
+        </div>
+
+        <!-- SUBMIT BUTTON -->
+        <q-btn
+          type="submit"
+          :label="t('Create account')"
+          no-caps
+          unelevated
+          class="login-button full-width"
+          :loading="loading"
+          :disable="!canRegister"
+        />
+
+      </q-form>
+
+      <!-- LOGIN LINK -->
+      <div class="register-section">
+        <span>{{ t('Already have an account?') }}</span>
+
+        <button
+          type="button"
+          class="text-button create-account"
+          @click="goToLogin"
+        >
+          {{ t('Log in') }}
+        </button>
       </div>
+
+      <q-separator class="separator" />
+
+      <!-- TERMS -->
+      <p class="terms">
+        <span class="terms-intro">{{ t('By signing up, you agree to our') }}</span>
+        <span class="terms-links">
+          <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
+          {{ t('and') }}
+          <span class="terms-policy"><a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.</span>
+        </span>
+      </p>
+
     </div>
 
     <!-- LEGAL MODALS -->
     <TermsModal v-model="showTerms" />
     <PrivacyModal v-model="showPrivacy" />
 
-  </q-page>
+  </AuthShell>
 </template>
 
 <script setup>
-import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
+import AuthShell from '@/components/auth/AuthShell.vue'
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -381,104 +360,6 @@ const goToLogin = () => {
 </script>
 
 <style scoped>
-/* PAGE */
-
-.login-page {
-  position: relative;
-  min-height: 100vh;
-  width: 100%;
-  box-sizing: border-box;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 56px clamp(24px, 6vw, 80px);
-
-  background:
-    linear-gradient(
-      145deg,
-      #c02226 0%,
-      #9c171b 55%,
-      #651012 100%
-    );
-
-  font-family: 'Roboto', Arial, sans-serif;
-}
-
-/* LOGIN CARD (layout row, no visual chrome of its own) */
-
-.login-card {
-  width: 100%;
-  height: auto;
-  min-height: 0;
-  max-width: none;
-  margin: 0 auto;
-  box-sizing: border-box;
-
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(40px, 8vw, 140px);
-
-  padding: 0;
-
-  background: transparent;
-
-  overflow: visible;
-}
-
-/* LEFT BRANDING PANEL */
-
-.branding-panel {
-  flex: 0 0 auto;
-  box-sizing: border-box;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 40px;
-
-  background: transparent;
-}
-
-.tindahan-logo {
-  display: block;
-
-  width: 380px;
-  max-width: 100%;
-  height: auto;
-
-  object-fit: contain;
-}
-
-.tindahan-logo-mobile {
-  display: none;
-}
-
-/* RIGHT REGISTER PANEL */
-
-.login-panel {
-  width: 420px;
-  max-width: 90vw;
-  flex: 0 0 auto;
-  box-sizing: border-box;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 45px 45px;
-
-  background: #ffffff;
-  border-radius: var(--r-2xl);
-
-  box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.3);
-}
-
 .login-content {
   width: 100%;
   max-width: 390px;
@@ -746,89 +627,9 @@ const goToLogin = () => {
   text-decoration: underline;
 }
 
-/* TABLET */
-
-@media (max-width: 768px) {
-  .login-card {
-    padding: 0 24px;
-  }
-
-  .branding-panel {
-    padding: 20px;
-  }
-
-  .login-panel {
-    width: 380px;
-
-    padding: 40px 35px;
-  }
-
-  .tindahan-logo {
-    width: 260px;
-  }
-}
-
 /* MOBILE */
 
 @media (max-width: 600px) {
-  .login-page {
-    min-height: 100vh;
-
-    align-items: stretch;
-    justify-content: flex-start;
-
-    padding: 0;
-
-    background: #ffffff;
-  }
-
-  .login-card {
-    width: 100%;
-    min-height: 100vh;
-    height: auto;
-    max-width: 100%;
-
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    gap: 0;
-
-    padding: 0;
-
-    background: #ffffff;
-  }
-
-  .branding-panel {
-    width: 100%;
-    height: auto;
-    flex: none;
-
-    justify-content: center;
-
-    padding: 60px 0 8px;
-  }
-
-  .tindahan-logo-desktop {
-    display: none;
-  }
-
-  .tindahan-logo-mobile {
-    display: block;
-
-    width: 110px;
-  }
-
-  .login-panel {
-    width: 100%;
-    max-width: 100%;
-    flex: none;
-
-    padding: 20px 24px 32px;
-
-    background: #ffffff;
-    border-radius: 0;
-    box-shadow: none;
-  }
 
   .login-content {
     max-width: 100%;
@@ -884,5 +685,4 @@ const goToLogin = () => {
     padding-inline: 6px;
     margin-inline: -6px;
   }
-}
-</style>
+}</style>

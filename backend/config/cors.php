@@ -24,7 +24,8 @@ return [
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    // Lets the login page read how long a rate-limited (429) request has to wait.
+    'exposed_headers' => ['Retry-After'],
 
     'max_age' => 0,
 

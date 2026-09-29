@@ -1,14 +1,7 @@
 <template>
-  <q-page class="status-page">
-    <AuthLanguageSwitcher />
-    <q-card class="status-dialog">
+  <AuthShell class="status-page">
+    <q-card flat class="status-dialog">
       <q-card-section class="status-content">
-        <img
-          src="@/assets/tindahan-mobile.png"
-          alt="Tindahan Logo"
-          class="status-logo"
-        />
-
         <div class="status-icon-wrap status-icon-danger">
           <q-icon name="o_block" size="32px" />
         </div>
@@ -53,11 +46,11 @@
     </q-card>
 
     <ContactSupportModal v-model="showContactSupport" />
-  </q-page>
+  </AuthShell>
 </template>
 
 <script setup>
-import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
+import AuthShell from '@/components/auth/AuthShell.vue'
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { api } from '@/boot/axios'
@@ -93,56 +86,11 @@ onMounted(fetchReason)
 </script>
 
 <style scoped>
-/* PAGE */
-
-/* Same red gradient as the login and sign-up pages. */
-.status-page {
-  position: relative;
-  min-height: 100vh;
-  width: 100%;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 76px 20px 40px;
-
-  background:
-    linear-gradient(
-      145deg,
-      #c02226 0%,
-      #9c171b 55%,
-      #651012 100%
-    );
-
-  font-family: 'Roboto', Arial, sans-serif;
-}
-
-/* CARD */
-
-.status-dialog {
-  width: 100%;
-  max-width: 440px;
-
-  border-radius: var(--r-2xl);
-
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-}
 
 .status-content {
   text-align: center;
 
-  padding: 40px 36px 8px;
-}
-
-.status-logo {
-  display: block;
-
-  width: 130px;
-
-  margin: 0 auto 22px;
-
-  object-fit: contain;
+  padding: 8px 0;
 }
 
 /* Tinted tiles, the same icon language as the dialogs on the login page. */
@@ -191,7 +139,7 @@ onMounted(fetchReason)
 /* ACTIONS */
 
 .status-actions {
-  padding: 24px 36px 8px;
+  padding: 24px 0 8px;
 
   gap: 12px;
 }
@@ -316,30 +264,10 @@ onMounted(fetchReason)
 
 /* MOBILE */
 
-/* Full-bleed white on phones, the same as the login page. */
 @media (max-width: 600px) {
-  .status-page {
-    align-items: stretch;
-
-    padding: 0;
-
-    background: #ffffff;
-  }
-
-  .status-dialog {
-    max-width: 100%;
-
-    border-radius: 0;
-
-    box-shadow: none;
-  }
 
   .status-content {
-    padding: 64px 24px 8px;
-  }
-
-  .status-logo {
-    width: 110px;
+    padding: 0 0 8px;
   }
 
   .status-title {
@@ -358,7 +286,6 @@ onMounted(fetchReason)
     flex: none;
   }
 }
-
 /* Slightly larger text on the auth screens: the shared size tokens go up about 1px here and in this page's own pop-ups. */
 .status-page {
   --fs-2xs: 12.5px;
@@ -374,5 +301,4 @@ onMounted(fetchReason)
     --fs-sm: 14px;
     --fs-md: 15px;
   }
-}
-</style>
+}</style>
