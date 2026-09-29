@@ -9,16 +9,17 @@
         {{ t('Back to Orders') }}
       </span>
 
-      <!-- Refresh re-reads the order, so the shopper sees the store's latest status without reloading the page. -->
       <div class="page-title-row">
         <h1 class="page-title">{{ t('Order #') }}{{ order.order_id }}</h1>
+
+        <!-- The store moves the order along on their side, so the consumer can pull the latest status without reloading the page. -->
         <q-btn
-          outline
+          unelevated
           no-caps
-          color="primary"
+          dense
           icon="o_refresh"
           :label="t('Refresh')"
-          :loading="refreshing"
+          :loading="isRefreshing"
           class="refresh-btn"
           @click="refreshOrder"
         />
@@ -512,29 +513,13 @@ const fetchOrderDetails = async () => {
   try {
     const res = await api.get(`/consumer/orders/${id}`)
     order.value = res.data
-    return true
   } catch (error) {
     console.error('Failed to load order details', error)
     if (error.response?.status === 404 || error.response?.status === 403) {
       localStorage.removeItem('consumer_selected_order_id')
       router.replace('/consumer/orders')
     }
-    return false
   }
-}
-
-const refreshing = ref(false)
-
-// Re-reads the order from the server (the API sends no-cache, so this is always fresh) and says
-// so either way: when nothing changed, the page alone would give no sign the button worked.
-const refreshOrder = async () => {
-  if (refreshing.value) return
-  refreshing.value = true
-  const ok = await fetchOrderDetails()
-  refreshing.value = false
-  $q.notify(ok
-    ? { type: 'positive', message: t('Order updated.'), timeout: 1500 }
-    : { type: 'negative', message: t('Could not refresh the order. Please try again.') })
 }
 
 const confirmCancelOrder = async () => {
@@ -553,6 +538,35 @@ const confirmCancelOrder = async () => {
     $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to cancel order') })
   } finally {
     isCancelling.value = false
+  }
+}
+
+const isRefreshing = ref(false)
+
+// Always says what happened, so a refresh that finds nothing new doesn't look like a button that did nothing.
+const refreshOrder = async () => {
+  if (!order.value || isRefreshing.value) return
+
+  const previousStatus = order.value.status
+  isRefreshing.value = true
+
+  try {
+    const res = await api.get(`/consumer/orders/${order.value.order_id}`)
+    order.value = res.data
+
+    if (res.data.status !== previousStatus) {
+      // A cancellation is news, not a success, so it must not arrive as a green check.
+      $q.notify({
+        type: res.data.status === 'cancelled' ? 'negative' : 'positive',
+        message: t('Order updated: {status}', { status: t(statusTitle.value) })
+      })
+    } else {
+      $q.notify({ type: 'info', message: t('Your order is up to date.'), timeout: 1500 })
+    }
+  } catch (error) {
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Could not refresh your order. Please try again.') })
+  } finally {
+    isRefreshing.value = false
   }
 }
 
@@ -606,43 +620,63 @@ onMounted(() => {
   color: var(--c-brand);
 }
 
-/* The order number with the Refresh button at the right. */
 .page-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   gap: 12px;
-
-  margin: 0 0 20px;
-}
-
-.refresh-btn {
-  flex-shrink: 0;
-
-  height: 38px;
-  min-height: 38px;
-  padding: 0 14px;
-
-  border-radius: var(--r-sm);
-
-  font-size: var(--fs-sm);
-  font-weight: 600;
-
-  animation: orderdetails-fade-up 0.5s ease both;
-}
-
-.refresh-btn :deep(.q-icon) {
-  font-size: 18px;
+  margin-bottom: 20px;
 }
 
 .page-title {
   margin: 0;
+  min-width: 0;
 
   font-size: var(--fs-3xl);
   font-weight: 700;
   line-height: 1.3;
 
   color: var(--c-text);
+}
+
+/* Same white bordered secondary control as the Filters button on the Products page. */
+.refresh-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+
+  height: 36px;
+  min-height: 36px;
+  padding: 0 14px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+
+  background: #ffffff;
+  color: var(--c-text-2);
+
+  font-size: var(--fs-sm);
+  font-weight: 500;
+
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.refresh-btn :deep(.q-focus-helper) {
+  display: none;
+}
+
+.refresh-btn :deep(.q-btn__content) {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.refresh-btn:hover {
+  border-color: var(--c-brand);
+  background: var(--c-brand-tint);
+}
+
+.refresh-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.25);
 }
 
 .order-loading {
@@ -685,14 +719,13 @@ onMounted(() => {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.page-title {
+.page-title-row {
   animation: orderdetails-fade-up 0.5s ease both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .order-layout,
-  .page-title,
-  .refresh-btn {
+  .page-title-row {
     animation: none;
   }
 }
