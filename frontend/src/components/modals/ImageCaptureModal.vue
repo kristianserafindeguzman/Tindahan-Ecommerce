@@ -4,7 +4,7 @@
       
       <!-- HEADER -->
       <q-card-section class="row items-center q-pb-sm bg-black">
-        <div class="text-h6 text-weight-bold">Add Product Photo</div>
+        <div class="text-h6 text-weight-bold">{{ title }}</div> <!-- title prop; for reusability -->
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup @click="stopCamera" />
       </q-card-section>
@@ -50,7 +50,19 @@ import Cropper from 'cropperjs'
 import 'cropperjs/dist/cropper.css'
 
 const props = defineProps({
-  modelValue: Boolean
+  modelValue: Boolean,
+  aspectRatio: {
+    type: Number,
+    default: 1
+  },
+  initialImage: {
+    type: String,
+    default: null
+  },
+  title: {
+    type: String,
+    default: 'Add Product Photo'
+  }
 })
 const emit = defineEmits(['update:modelValue', 'captured'])
 
@@ -58,8 +70,14 @@ const isOpen = ref(props.modelValue)
 watch(() => props.modelValue, (val) => {
   isOpen.value = val
   if (val) {
-    state.value = 'CHOOSING'
-    previewSrc.value = null
+    if (props.initialImage) {
+      state.value = 'CROPPING'
+      previewSrc.value = props.initialImage
+      initCropper()
+    } else {
+      state.value = 'CHOOSING'
+      previewSrc.value = null
+    }
   }
 })
 watch(isOpen, (val) => {
@@ -142,7 +160,7 @@ const initCropper = () => {
   setTimeout(() => {
     if (imageEl.value) {
       cropperInstance = new Cropper(imageEl.value, {
-        aspectRatio: 1, // 1:1 Square by default for products
+        aspectRatio: props.aspectRatio,
         viewMode: 2,
         background: false,
       })

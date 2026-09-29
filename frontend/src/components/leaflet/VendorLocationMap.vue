@@ -8,12 +8,17 @@
     <button
       type="button"
       class="location-button"
-      @click="useCurrentLocation"
+      @click="useCurrentLocation()"
       :disabled="loadingLocation"
     >
       <span class="location-icon">◎</span>
-      {{ loadingLocation ? 'Locating...' : 'Your Location' }}
+      {{ translate(loadingLocation ? 'Locating...' : 'Your Location') }}
     </button>
+
+    <!-- Without this the map just sits on its default view of Metro Manila, which looks like a real answer rather than a failure. -->
+    <div v-if="locationError" class="location-error">
+      {{ translate(locationError) }}
+    </div>
 
   </div>
 </template>
@@ -22,15 +27,30 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import '@/utils/leafletDefaultIcon'
+import { getCurrentPosition, reverseGeocode } from '@/utils/geolocation'
 
-const emit = defineEmits(['location-selected'])
+const props = defineProps({
+  translate: { type: Function, default: text => text },
+  // A saved pin to open on, which also skips jumping to the device's location; left out, the map behaves as before.
+  initial: { type: Object, default: null }
+})
+
+const emit = defineEmits(['location-selected', 'pin-placed'])
 
 const mapContainer = ref(null)
 
 let map = null
 let marker = null
+let unmounted = false
+// Bumped on every pin move, so a slow device-location or reverse-geocode result that a newer pin has overtaken is dropped instead of moving the pin back.
+let pinVersion = 0
+// Leaflet lays its tiles out for the container size it saw at the time, so a container that later grows needs a re-measure.
+let resizeObserver = null
 
 const loadingLocation = ref(false)
+// What went wrong the last time the browser was asked for a position, shown over the map until a pin is placed.
+const locationError = ref('')
 
 // Default location: Metro Manila
 const defaultLocation = {
@@ -39,17 +59,18 @@ const defaultLocation = {
 }
 
 
-// =========================
 // INITIALIZE MAP
-// =========================
 
 onMounted(() => {
+
+  const hasInitial = props.initial?.latitude != null && props.initial?.longitude != null
+  const start = hasInitial ? props.initial : defaultLocation
 
   map = L.map(mapContainer.value, {
     zoomControl: true
   }).setView(
-    [defaultLocation.latitude, defaultLocation.longitude],
-    15
+    [start.latitude, start.longitude],
+    hasInitial ? 17 : 15
   )
 
   // OpenStreetMap tiles
@@ -61,6 +82,11 @@ onMounted(() => {
       maxZoom: 19
     }
   ).addTo(map)
+
+
+  // Keeps the map correct when its box changes size, such as the enlarged map on vendor registration.
+  resizeObserver = new ResizeObserver(() => map?.invalidateSize())
+  resizeObserver.observe(mapContainer.value)
 
 
   // Click anywhere on map
@@ -77,104 +103,90 @@ onMounted(() => {
   })
 
 
-  // Try browser location
-  useCurrentLocation()
+  // A saved pin is shown as it is, and otherwise the map tries the browser's location.
+  if (hasInitial) {
+    marker = L.marker([start.latitude, start.longitude]).addTo(map)
+  } else {
+    // Flagged auto so the parent can tell this opening guess from a spot the user chose.
+    useCurrentLocation(true)
+  }
 
 })
 
 
-// =========================
 // CURRENT LOCATION
-// =========================
 
-const useCurrentLocation = () => {
-
-  if (!navigator.geolocation) {
-
-    console.warn(
-      'Geolocation is not supported by this browser.'
-    )
-
-    return
-  }
+const useCurrentLocation = async (auto = false) => {
 
   loadingLocation.value = true
 
-  navigator.geolocation.getCurrentPosition(
+  const version = pinVersion
 
-    async (position) => {
+  try {
 
-      const latitude =
-        position.coords.latitude
+    locationError.value = ''
 
-      const longitude =
-        position.coords.longitude
+    const { latitude, longitude } = await getCurrentPosition()
 
-      await selectLocation(
-        latitude,
-        longitude
-      )
+    if (version !== pinVersion) return
 
-      loadingLocation.value = false
+    await selectLocation(
+      latitude,
+      longitude,
+      auto
+    )
 
-    },
+  } catch (error) {
 
-    (error) => {
+    console.warn(
+      'Unable to get location:',
+      error.message
+    )
 
-      console.warn(
-        'Unable to get location:',
-        error.message
-      )
+    // The map was closed, or the user gave up waiting and tapped their spot themselves, so a late failure has nothing left to report.
+    if (unmounted || version !== pinVersion) return
 
-      loadingLocation.value = false
+    // A denied permission is the user's own setting and needs different advice from a lookup that simply failed.
+    locationError.value = error.code === 1
+      ? 'Location is blocked for this site. Tap the map to place your pin.'
+      : 'Could not get your location. Tap the map to place your pin.'
 
-    },
+  } finally {
 
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
-    }
+    loadingLocation.value = false
 
-  )
+  }
 }
 
 
-// =========================
 // SELECT LOCATION
-// =========================
 
 const selectLocation = async (
   latitude,
-  longitude
+  longitude,
+  auto = false
 ) => {
 
-  // Move map
-  map.setView(
-    [latitude, longitude],
-    17
-  )
+  // Bails out if the map was unmounted while a geolocation or reverse-geocode call was still in flight, since touching a removed map or emitting into a closed panel would throw or corrupt state.
+  if (unmounted) return
 
+  showLocation(latitude, longitude)
 
-  // Remove old marker
-  if (marker) {
-    map.removeLayer(marker)
-  }
+  // The pin is already where the user put it, so the parent hears about it before the address lookup, which takes a moment and can come back empty.
+  emit('pin-placed', { latitude, longitude, auto })
 
-
-  // Create marker
-  marker = L.marker(
-    [latitude, longitude]
-  ).addTo(map)
+  const version = pinVersion
 
 
   // Reverse geocode
   const address =
-    await getAddress(
+    await reverseGeocode(
       latitude,
       longitude
     )
 
+  // A newer pin replaced this one while the lookup ran, so its address would label the wrong spot.
+  if (unmounted || version !== pinVersion) return
 
   // Send data to VendorRegistration
   emit(
@@ -182,124 +194,55 @@ const selectLocation = async (
     {
       latitude,
       longitude,
-      address
+      address,
+      auto
     }
   )
 
 }
 
 
-// =========================
-// REVERSE GEOCODING
-// =========================
+// SHOW LOCATION
 
-const getAddress = async (
+// Moves the pin to coordinates whose address the parent already has, such as a picked search suggestion, so it skips the lookup and emits nothing.
+const showLocation = (
   latitude,
   longitude
 ) => {
 
-  try {
+  if (unmounted) return
 
-    const response =
-      await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            'Accept':
-              'application/json'
-          }
-        }
-      )
+  // A pin is on the map now, however it got there, so whatever went wrong reaching the browser's location no longer matters.
+  // Here rather than in selectLocation, because a picked address suggestion moves the pin through this function alone.
+  locationError.value = ''
 
+  pinVersion++
 
-    if (!response.ok) {
-      throw new Error(
-        'Reverse geocoding failed'
-      )
-    }
+  map.setView(
+    [latitude, longitude],
+    17
+  )
 
-
-    const data =
-      await response.json()
-
-
-    return formatAddress(
-      data
-    )
-
-  } catch (error) {
-
-    console.error(
-      'Address lookup failed:',
-      error
-    )
-
-    return 'Address unavailable'
-
+  if (marker) {
+    map.removeLayer(marker)
   }
+
+  marker = L.marker(
+    [latitude, longitude]
+  ).addTo(map)
 
 }
 
-
-// =========================
-// FORMAT ADDRESS
-// =========================
-
-const formatAddress = (data) => {
-
-  if (!data || !data.address) {
-
-    return data?.display_name ||
-      'Address unavailable'
-
-  }
+defineExpose({ showLocation })
 
 
-  const address =
-    data.address
-
-
-  const parts = [
-
-    address.house_number,
-
-    address.road,
-
-    address.neighbourhood,
-
-    address.suburb,
-
-    address.village,
-
-    address.town,
-
-    address.city,
-
-    address.city_district,
-
-    address.state,
-
-    address.country
-
-  ]
-
-
-  return parts
-    .filter(Boolean)
-    .filter(
-      (value, index, array) =>
-        array.indexOf(value) === index
-    )
-    .join(', ')
-
-}
-
-
-// =========================
 // CLEANUP
-// =========================
 
 onBeforeUnmount(() => {
+
+  unmounted = true
+
+  resizeObserver?.disconnect()
 
   if (map) {
     map.remove()
@@ -314,6 +257,9 @@ onBeforeUnmount(() => {
 
 .location-wrapper {
   position: relative;
+
+  /* Keeps Leaflet's pane and control z-indexes (up to 1000) inside the map, so an address suggestion list can lie over it. */
+  isolation: isolate;
 
   width: 100%;
   height: 100%;
@@ -334,9 +280,7 @@ onBeforeUnmount(() => {
 }
 
 
-/* =========================
-   LOCATION BUTTON
-========================= */
+/* LOCATION BUTTON */
 
 .location-button {
   position: absolute;
@@ -382,6 +326,34 @@ onBeforeUnmount(() => {
 }
 
 
+/* Sits along the bottom of the map, clear of the Your Location button in the corner. */
+.location-error {
+  position: absolute;
+
+  left: 12px;
+  right: 12px;
+  bottom: 56px;
+
+  z-index: 1000;
+
+  /* It tells the user to tap the map, so it must not be the thing that catches the tap. */
+  pointer-events: none;
+
+  padding: 7px 10px;
+
+  border-radius: 7px;
+
+  background: rgba(0, 0, 0, 0.72);
+
+  color: #ffffff;
+
+  font-size: 12px;
+  line-height: 1.35;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+
 .location-icon {
   font-size: 18px;
 
@@ -390,18 +362,5 @@ onBeforeUnmount(() => {
   color: #111111;
 }
 
-
-/* =========================
-   LEAFLET
-========================= */
-
-:deep(.leaflet-control-zoom) {
-  border: none !important;
-}
-
-
-:deep(.leaflet-control-zoom a) {
-  color: #333333 !important;
-}
 
 </style>

@@ -2,9 +2,14 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\StoreController;
+use App\Http\Controllers\SearchLogController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,14 +23,20 @@ Route::get('/test', fn () => response()->json(['message' => 'Laravel API is work
 
 // ----- Public Application Data Routes -----
 Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/products', [CatalogController::class, 'products']);
+Route::get('/stores', [StoreController::class, 'index']);
 
 // ----- Public Authentication Routes -----
 Route::post('/register/consumer', [AuthController::class, 'registerConsumer']);
 Route::post('/register/vendor', [AuthController::class, 'registerVendor']);
-Route::post('/login', [AuthController::class, 'login']);
+// Sends a text to any unregistered number, so it is limited per IP to keep SMS spam and cost down.
+Route::post('/register/vendor/otp', [AuthController::class, 'sendVendorOtp'])->middleware('throttle:5,10');
+// Limited per IP so one address can't keep guessing passwords, for one account or many.
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:20,1');
 
 // ----- Public OTP Routes -----
-Route::post('/otp/verify', [AuthController::class, 'verifyOtp']);
+// Limited so the 6-digit codes can't be found by trying them all.
+Route::post('/otp/verify', [AuthController::class, 'verifyOtp'])->middleware('throttle:10,1');
 Route::post('/otp/resend', [AuthController::class, 'resendOtp']);
 
 // ----- Public Forgot Password Routes -----
@@ -39,6 +50,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ----- Global Category Routes -----
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::patch('/categories/{id}', [CategoryController::class, 'update']);
+    Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
 
     // ----- Admin Routes -----
     Route::middleware('role:Admin')->prefix('admin')->group(function () {
@@ -46,18 +58,27 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Vendor Approvals
         Route::get('/vendors/pending', [AdminController::class, 'pendingVendors']);
+        Route::get('/vendors/pending/export', [AdminController::class, 'exportPendingVendors']);
         Route::post('/vendors/{storeId}/approve', [AdminController::class, 'approveVendor']);
         Route::post('/vendors/{storeId}/reject', [AdminController::class, 'rejectVendor']);
 
-        // Manage Vendors
+        // Vendors Management
         Route::get('/vendors', [AdminController::class, 'listVendors']);
+        Route::get('/vendors/export', [AdminController::class, 'exportVendors']);
+        Route::get('/vendors/{storeId}/products', [AdminController::class, 'getVendorProducts']);
         Route::patch('/vendors/{userId}/status', [AdminController::class, 'updateVendorStatus']);
         Route::delete('/vendors/{userId}', [AdminController::class, 'deleteVendor']);
 
-        // Manage Consumers
+        // Consumers Management
         Route::get('/consumers', [AdminController::class, 'listConsumers']);
+        Route::get('/consumers/export', [AdminController::class, 'exportConsumers']);
         Route::patch('/consumers/{userId}/status', [AdminController::class, 'updateConsumerStatus']);
         Route::delete('/consumers/{userId}', [AdminController::class, 'deleteConsumer']);
+
+        // Admin notifications, through the same controller the vendor and consumer bells use.
+        Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+        Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
     });
 
     // ----- Vendor Routes -----
@@ -67,24 +88,53 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/products/{id}', [InventoryController::class, 'update']);
         Route::delete('/products/{id}', [InventoryController::class, 'destroy']);
         Route::get('/products/categories', [InventoryController::class, 'categories']);
+        Route::get('/categories/export', [\App\Http\Controllers\VendorController::class, 'exportProductCategoryReport']);
         Route::get('/stats', [\App\Http\Controllers\VendorController::class, 'stats']);
+        Route::get('/stats/chart', [\App\Http\Controllers\VendorController::class, 'chartStats']);
+        Route::get('/inventory/export', [\App\Http\Controllers\VendorController::class, 'exportInventoryReport']);
+        Route::get('/inventory/export-html', [\App\Http\Controllers\VendorController::class, 'exportInventoryReportHtml']);
         Route::get('/profile', [\App\Http\Controllers\VendorController::class, 'profile']);
         Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'updatePersonalInfo']);
         Route::put('/profile/hours', [\App\Http\Controllers\ProfileController::class, 'updateStoreHours']);
-        Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword']);
+        // A password change is OTP-verified in two steps; there is deliberately no direct-change route.
+        Route::post('/profile/password-request-otp', [\App\Http\Controllers\ProfileController::class, 'requestPasswordOtp'])->middleware('throttle:5,10');
+        Route::post('/profile/password-resend-otp', [\App\Http\Controllers\ProfileController::class, 'resendPasswordOtp'])->middleware('throttle:5,1');
+        Route::post('/profile/password-verify-otp', [\App\Http\Controllers\ProfileController::class, 'verifyPasswordOtp'])->middleware('throttle:10,1');
+        Route::post('/profile/password-cancel-otp', [\App\Http\Controllers\ProfileController::class, 'cancelPasswordOtp']);
         Route::put('/store/info', [\App\Http\Controllers\ProfileController::class, 'updateStoreInfo']);
         Route::put('/store/address', [\App\Http\Controllers\ProfileController::class, 'updateStoreAddress']);
+        Route::post('/profile/store-image', [\App\Http\Controllers\VendorController::class, 'uploadStoreImage']);
+        // The owner's own photo, through the same ProfileController method and storage the consumer profile uses.
+        Route::post('/profile/photo', [\App\Http\Controllers\ProfileController::class, 'updatePhoto']);
         Route::delete('/account', [\App\Http\Controllers\ProfileController::class, 'deleteAccount']);
-        
+        // The same phone and email changes the consumer profile offers, through the same controller methods.
+        Route::post('/profile/phone-request-otp', [\App\Http\Controllers\ProfileController::class, 'requestPhoneOtp']);
+        Route::post('/profile/phone-verify-otp', [\App\Http\Controllers\ProfileController::class, 'verifyPhoneOtp']);
+        Route::post('/profile/email', [\App\Http\Controllers\ProfileController::class, 'updateEmail']);
+        // Vendor notifications, through the same controller the consumer's bell uses.
+        Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+        Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
+
         Route::get('/sales/metrics', [\App\Http\Controllers\SalesController::class, 'metrics']);
         Route::get('/sales/transactions', [\App\Http\Controllers\SalesController::class, 'transactions']);
         Route::post('/sales/manual', [\App\Http\Controllers\SalesController::class, 'storeManual']);
-        
+
         Route::get('/orders', [\App\Http\Controllers\VendorOrderController::class, 'index']);
+        Route::get('/orders/export', [\App\Http\Controllers\VendorController::class, 'exportOrderListReport']);
         Route::get('/orders/{id}', [\App\Http\Controllers\VendorOrderController::class, 'show']);
+        Route::get('/orders/{id}/export', [\App\Http\Controllers\VendorController::class, 'exportCustomerOrderReport']);
         Route::patch('/orders/{id}/status', [\App\Http\Controllers\VendorOrderController::class, 'updateStatus']);
         Route::get('/customers', [\App\Http\Controllers\VendorOrderController::class, 'customers']);
         Route::get('/customers/{id}/orders', [\App\Http\Controllers\VendorOrderController::class, 'customerOrders']);
+
+        // ML Integrations
+        Route::get('/demand-forecast', [\App\Http\Controllers\VendorController::class, 'getDemandForecast']);
+        Route::post('/demand-forecast/refresh', [\App\Http\Controllers\VendorController::class, 'refreshDemandForecast']);
+        Route::get('/ml-insights', [\App\Http\Controllers\VendorController::class, 'getMlInsights']);
+
+        // The guided tour is offered once per vendor account, on its first login on any device.
+        Route::post('/tutorial/seen', [\App\Http\Controllers\VendorController::class, 'markTutorialSeen']);
     });
 
     // ----- Profile Routes -----
@@ -94,12 +144,38 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/phone-request-otp', [ProfileController::class, 'requestPhoneOtp']);
         Route::post('/phone-verify-otp', [ProfileController::class, 'verifyPhoneOtp']);
         Route::post('/email', [ProfileController::class, 'updateEmail']);
-        Route::post('/password', [ProfileController::class, 'updatePassword']);
+        // Same two-step OTP change the vendor side uses.
+        Route::post('/password-request-otp', [ProfileController::class, 'requestPasswordOtp'])->middleware('throttle:5,10');
+        Route::post('/password-resend-otp', [ProfileController::class, 'resendPasswordOtp'])->middleware('throttle:5,1');
+        Route::post('/password-verify-otp', [ProfileController::class, 'verifyPasswordOtp'])->middleware('throttle:10,1');
+        Route::post('/password-cancel-otp', [ProfileController::class, 'cancelPasswordOtp']);
         Route::delete('/delete', [ProfileController::class, 'deleteAccount']);
     });
 
     // ----- Consumer Routes -----
     Route::middleware('role:Consumer')->prefix('consumer')->group(function () {
+        Route::post('/search-logs', [SearchLogController::class, 'store']);
+        Route::get('/personalized-feed', [CatalogController::class, 'personalizedFeed']);
         Route::get('/home', fn () => response()->json(['message' => 'Welcome to the Consumer Home']));
+
+        // Cart
+        Route::get('/cart', [CartController::class, 'index']);
+        Route::post('/cart', [CartController::class, 'store']);
+        Route::patch('/cart/{id}', [CartController::class, 'update']);
+        Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+
+        // Checkout
+        Route::post('/checkout', [CartController::class, 'checkout']);
+
+        // Consumer Orders
+        Route::get('/orders', [OrderController::class, 'index']);
+        Route::get('/orders/{id}', [OrderController::class, 'show']);
+        Route::get('/orders/{id}/receipt', [OrderController::class, 'exportReceipt']);
+        Route::patch('/orders/{id}/cancel', [OrderController::class, 'cancel']);
+
+        // Consumer Notifications
+        Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+        Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
     });
 });

@@ -1,373 +1,552 @@
 <template>
-  <q-page class="vendor-page">
+  <AuthShell wide class="vendor-page">
     <div class="vendor-card">
 
       <!-- HEADER -->
       <div class="vendor-header">
-        <img
-          src="@/assets/tindahan-mobile.png"
-          alt="Tindahan Logo"
-          class="tindahan-logo"
-        />
-
-        <h1>Vendor Registration</h1>
+        <h1>{{ t('Vendor Registration') }}</h1>
 
         <p class="subtitle">
-          Join our ecosystem of successful micro-entrepreneurs today.
+          {{ t('Open your store on Tindahan and start selling today.') }}
         </p>
       </div>
 
-      <q-form
-        ref="vendorForm"
-        class="vendor-form"
-        @submit.prevent="handleVendorRegister"
-      >
-
-        <div class="register-body">
-
-          <!-- LEFT COLUMN: FORM FIELDS -->
-          <div class="form-column">
-
-            <!-- STORE IDENTITY -->
-            <div class="section">
-              <div class="section-title">Store Identity</div>
-
-              <div class="field-group">
-                <q-input
-                  v-model="form.storeName"
-                  outlined
-                  dense
-                  hide-bottom-space
-                  label="Store name"
-                  class="login-input"
-                  :rules="[
-                    val => !!val || 'Store name is required'
-                  ]"
-                />
-              </div>
-
-              <div class="field-group">
-                <q-input
-                  v-model="form.ownerName"
-                  outlined
-                  dense
-                  hide-bottom-space
-                  label="Store owner name"
-                  class="login-input"
-                  :rules="[
-                    val => !!val || 'Store owner name is required',
-                    nameRule
-                  ]"
-                />
-              </div>
-            </div>
-
-            <!-- STORE APPEARANCE -->
-            <div class="section">
-              <div class="section-title">Store Appearance</div>
-
-              <label class="upload-dropzone" for="storePhoto">
-                <input
-                  id="storePhoto"
-                  type="file"
-                  accept="image/png, image/jpeg, image/gif"
-                  class="upload-input"
-                  @change="handlePhotoChange"
-                />
-
-                <template v-if="!photoPreview">
-                  <q-icon name="add_a_photo" class="upload-icon" />
-                  <div class="upload-label">Upload Store Exterior Photo</div>
-                  <div class="upload-hint">PNG, JPG, GIF up to 10MB</div>
-                </template>
-
-                <div v-else class="preview-container">
-                  <img
-                    :src="photoPreview"
-                    alt="Store exterior preview"
-                    class="upload-preview"
-                  />
-                  <div class="preview-overlay" @click.prevent="openCropModal">
-                    <q-icon name="crop" size="18px" />
-                    <span>Edit / Crop</span>
-                  </div>
-                </div>
-              </label>
-
-              <div v-if="photoFile" class="photo-info">
-                <q-icon name="image" size="14px" />
-                <span>{{ photoFile.name }}</span>
-                <button type="button" class="remove-photo" @click="removePhoto">
-                  <q-icon name="close" size="14px" />
-                </button>
-              </div>
-            </div>
-
-            <!-- CONTACT & SECURITY -->
-            <div class="section">
-              <div class="section-title">Contact &amp; Security</div>
-
-              <div class="field-group">
-                <q-input
-                  v-model="form.email"
-                  outlined
-                  dense
-                  hide-bottom-space
-                  type="email"
-                  label="Email address"
-                  class="login-input"
-                  :rules="[
-                    val => !!val || 'Email is required',
-                    emailRule
-                  ]"
-                />
-              </div>
-
-              <div class="field-group">
-                <q-input
-                  v-model="form.phoneNumber"
-                  outlined
-                  dense
-                  hide-bottom-space
-                  label="Phone number"
-                  class="login-input phone-input"
-                  :rules="[
-                    val => !!val || 'Phone number is required',
-                    phoneRule
-                  ]"
-                >
-                  <template #prepend>
-                    <q-icon name="phone" class="phone-prefix" />
-                  </template>
-                </q-input>
-              </div>
-
-              <div class="field-group">
-                <q-input
-                  v-model="form.password"
-                  outlined
-                  dense
-                  hide-bottom-space
-                  :type="showPassword ? 'text' : 'password'"
-                  label="Create a password"
-                  class="login-input"
-                  :rules="[
-                    val => !!val || 'Password is required',
-                    passwordRule
-                  ]"
-                >
-                  <template #append>
-                    <q-icon
-                      :name="showPassword
-                        ? 'visibility'
-                        : 'visibility_off'"
-                      class="password-icon cursor-pointer"
-                      @click="showPassword = !showPassword"
-                    />
-                  </template>
-                </q-input>
-              </div>
-
-              <div class="field-group">
-                <q-input
-                  v-model="form.confirmPassword"
-                  outlined
-                  dense
-                  hide-bottom-space
-                  :type="showConfirmPassword ? 'text' : 'password'"
-                  label="Retype password"
-                  class="login-input"
-                  :rules="[
-                    val => !!val || 'Please confirm your password',
-                    val => val === form.password || 'Passwords do not match'
-                  ]"
-                >
-                  <template #append>
-                    <q-icon
-                      :name="showConfirmPassword
-                        ? 'visibility'
-                        : 'visibility_off'"
-                      class="password-icon cursor-pointer"
-                      @click="showConfirmPassword = !showConfirmPassword"
-                    />
-                  </template>
-                </q-input>
-              </div>
-            </div>
-
-            <!-- BUSINESS HOURS -->
-            <div class="section">
-              <div class="section-title">Business Hours</div>
-
-              <div class="hours-row">
-                <div class="field-group">
-                  <q-select
-                    v-model="form.openingTime"
-                    outlined
-                    dense
-                    hide-bottom-space
-                    emit-value
-                    map-options
-                    label="Opening time"
-                    class="login-input"
-                    :options="timeOptions"
-                    :disable="alwaysOpen"
-                  >
-                    <template #append>
-                      <q-icon name="schedule" class="password-icon" />
-                    </template>
-                  </q-select>
-                </div>
-
-                <div class="field-group">
-                  <q-select
-                    v-model="form.closingTime"
-                    outlined
-                    dense
-                    hide-bottom-space
-                    emit-value
-                    map-options
-                    label="Closing time"
-                    class="login-input"
-                    :options="timeOptions"
-                    :disable="alwaysOpen"
-                  >
-                    <template #append>
-                      <q-icon name="schedule" class="password-icon" />
-                    </template>
-                  </q-select>
-                </div>
-              </div>
-
-              <div class="operating-days-block">
-                <div class="detected-address-label">Operating Days</div>
-
-                <q-toggle
-                  v-model="alwaysOpen"
-                  label="Always Open (24/7)"
-                  color="red-9"
-                  class="always-open-toggle"
-                  @update:model-value="handleAlwaysOpenToggle"
-                />
-
-                <div class="days-toggle">
-                  <button
-                    v-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']"
-                    :key="day"
-                    type="button"
-                    class="day-btn"
-                    :class="{ 'day-btn-active': form.operatingDays.includes(day) }"
-                    @click="toggleDay(day)"
-                  >
-                    {{ day }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- RIGHT COLUMN: STORE LOCATION -->
-          <div class="map-column">
-            <div class="section-title">Store Location</div>
-
-            <div class="map-placeholder">
-
-              <!-- <q-icon name="location_on" class="map-pin-icon" />
-              <span class="map-placeholder-text">Map goes here</span> -->
-
-              <VendorLocationMap
-                @location-selected="handleLocationSelected"
-              />
-            </div>
-
-            <div class="detected-address">
-              <div class="detected-address-label">Detected address</div>
-              <div class="detected-address-value">
-                {{ form.detectedAddress || 'Waiting for location…' }}
-              </div>
-            </div>
-
-            <div class="field-group manual-address">
-              <q-input
-                v-model="form.manualAddress"
-                outlined
-                dense
-                hide-bottom-space
-                label="Manual address entry"
-                class="login-input"
-              />
-            </div>
-          </div>
-
-        </div>
-
-        <!-- ERROR MESSAGE -->
-        <div v-if="registerError" class="error-message">
-          {{ registerError }}
-        </div>
-
-        <!-- SUBMIT BUTTON -->
-        <q-btn
-          type="submit"
-          no-caps
-          unelevated
-          class="login-button full-width"
-          :loading="loading"
+      <!-- Shows how far through the six steps the vendor is. -->
+      <div class="wizard-progress">
+        <div class="wizard-step-label">{{ t('Step {step} of {total}', { step, total: STEPS.length }) }} · {{ t(STEPS[step - 1]) }}</div>
+        <div
+          class="wizard-bar"
+          role="progressbar"
+          :aria-label="t('Registration progress')"
+          aria-valuemin="1"
+          :aria-valuemax="STEPS.length"
+          :aria-valuenow="step"
         >
-          Register Store
-          <q-icon name="arrow_forward" class="q-ml-xs" />
-        </q-btn>
+          <span
+            v-for="n in STEPS.length"
+            :key="n"
+            class="wizard-bar-segment"
+            :class="{ 'wizard-bar-segment-done': n <= step }"
+          />
+        </div>
+      </div>
 
+      <!-- STEP 1: OWNER ACCOUNT -->
+      <q-form v-show="step === 1" ref="accountForm" greedy class="vendor-form" @submit.prevent="submitAccount">
+        <div class="section-title">{{ t('Owner Account') }}</div>
+        <p class="step-hint">{{ t('We\'ll text a code to your phone number to make sure it\'s yours.') }}</p>
+
+        <div class="field-group">
+          <q-input
+            v-model="form.ownerName"
+            outlined
+            dense
+            no-error-icon
+            hide-bottom-space
+            :label="t('Store owner name')"
+            autocomplete="name"
+            class="login-input"
+            reactive-rules
+            :rules="[
+              val => !ownerNameTouched || !!val || t('Store owner name is required.'),
+              val => !ownerNameTouched || nameRule(val)
+            ]"
+            @blur="ownerNameTouched = true"
+          />
+        </div>
+
+        <div class="field-group">
+          <q-input
+            v-model="form.email"
+            outlined
+            dense
+            no-error-icon
+            hide-bottom-space
+            type="email"
+            :label="t('Email address')"
+            autocomplete="email"
+            class="login-input"
+            reactive-rules
+            :rules="[
+              val => !emailTouched || !!val || t('Email is required.'),
+              val => !emailTouched || emailRule(val)
+            ]"
+            @blur="emailTouched = true"
+          />
+        </div>
+
+        <div class="field-group">
+          <q-input
+            v-model="form.phoneNumber"
+            outlined
+            dense
+            no-error-icon
+            hide-bottom-space
+            :label="t('Phone number')"
+            type="tel"
+            autocomplete="tel"
+            class="login-input phone-input"
+            reactive-rules
+            :rules="[
+              val => !phoneTouched || !!val || t('Phone number is required.'),
+              val => !phoneTouched || phoneRule(val)
+            ]"
+            @blur="phoneTouched = true"
+          >
+            <template #prepend>
+              <q-icon name="phone" class="phone-prefix" />
+            </template>
+          </q-input>
+        </div>
+
+        <div class="field-group">
+          <q-input
+            v-model="form.password"
+            outlined
+            dense
+            no-error-icon
+            hide-bottom-space
+            :type="showPassword ? 'text' : 'password'"
+            :label="t('Create a password')"
+            autocomplete="new-password"
+            class="login-input"
+            reactive-rules
+            :rules="[
+              val => !passwordTouched || !!val || t('Password is required.'),
+              val => !passwordTouched || passwordRule(val)
+            ]"
+            @blur="passwordTouched = true"
+          >
+            <template #append>
+              <q-icon
+                :name="showPassword ? 'visibility' : 'visibility_off'"
+                class="password-icon cursor-pointer"
+                @click="showPassword = !showPassword"
+              />
+            </template>
+          </q-input>
+          <div v-if="passwordStrong" class="field-message field-message-success">
+            <q-icon name="check_circle" size="12px" />
+            {{ t('Strong password.') }}
+          </div>
+        </div>
+
+        <div class="field-group">
+          <q-input
+            v-model="form.confirmPassword"
+            outlined
+            dense
+            no-error-icon
+            hide-bottom-space
+            :type="showConfirmPassword ? 'text' : 'password'"
+            :label="t('Retype password')"
+            autocomplete="new-password"
+            class="login-input"
+            :error="confirmPasswordMessage?.type === 'error'"
+          >
+            <template #append>
+              <q-icon
+                :name="showConfirmPassword ? 'visibility' : 'visibility_off'"
+                class="password-icon cursor-pointer"
+                @click="showConfirmPassword = !showConfirmPassword"
+              />
+            </template>
+          </q-input>
+          <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
+            <q-icon v-if="confirmPasswordMessage.type === 'success'" name="check_circle" size="12px" />
+            {{ t(confirmPasswordMessage.text) }}
+          </div>
+        </div>
+
+        <div v-if="stepError && step === 1" class="error-message">{{ t(stepError) }}</div>
+
+        <q-btn type="submit" :label="t('Continue')" no-caps unelevated class="login-button full-width" :loading="sendingCode" />
       </q-form>
+
+      <!-- STEP 2: VERIFY PHONE -->
+      <div v-show="step === 2" class="vendor-form">
+        <div class="section-title">{{ t('Verify Your Phone') }}</div>
+        <p class="step-hint">{{ t('Enter the 6-digit code we sent to') }} <strong>{{ maskedPhone }}</strong>.</p>
+
+        <div class="otp-row">
+          <input
+            v-for="(digit, index) in otp"
+            :key="index"
+            :ref="el => { otpRefs[index] = el }"
+            v-model="otp[index]"
+            type="text"
+            inputmode="numeric"
+            :autocomplete="index === 0 ? 'one-time-code' : 'off'"
+            :aria-label="t('Digit {number} of 6', { number: index + 1 })"
+            class="otp-box"
+            :class="{ 'otp-error': otpError, 'otp-success': otpVerified }"
+            :disabled="otpVerified"
+            @focus="$event.target.select()"
+            @input="handleOtpInput(index)"
+            @keydown="handleOtpKeydown(index, $event)"
+            @paste="handleOtpPaste"
+          />
+        </div>
+
+        <div v-if="otpError" class="error-message">{{ otpErrorText }}</div>
+
+        <div class="resend-section">
+          <span>{{ t('Didn\'t receive a code?') }}</span>
+          <button
+            type="button"
+            class="resend-btn"
+            :class="{ 'resend-disabled': resendTimer > 0 }"
+            :disabled="resendTimer > 0 || sendingCode || otpVerified"
+            @click="resendCode"
+          >
+            {{ resendTimer > 0 ? t('Resend in {time}', { time: formattedResendTimer }) : t('Resend Code') }}
+          </button>
+        </div>
+
+        <div class="wizard-actions">
+          <q-btn outline no-caps :label="t('Change number')" class="wizard-back" @click="previousStep" />
+          <q-btn unelevated no-caps :label="t('Verify')" class="login-button" :loading="verifyingCode" :disable="!otpComplete || otpVerified" @click="verifyCode" />
+        </div>
+      </div>
+
+      <!-- STEP 3: STORE -->
+      <q-form v-show="step === 3" ref="storeForm" greedy class="vendor-form" @submit.prevent="nextFromStore">
+        <div class="section-title">{{ t('Your Store') }}</div>
+        <p class="step-hint">{{ t('Both are required, and customers will see this name and photo.') }}</p>
+
+        <div class="field-group">
+          <q-input
+            v-model="form.storeName"
+            outlined
+            dense
+            no-error-icon
+            hide-bottom-space
+            :label="t('Store name')"
+            autocomplete="organization"
+            maxlength="150"
+            class="login-input"
+            reactive-rules
+            :rules="[
+              val => !storeNameTouched || !!val?.trim() || t('Store name is required.')
+            ]"
+            @blur="storeNameTouched = true"
+          />
+        </div>
+
+        <label class="upload-dropzone" :class="{ 'upload-dropzone--error': photoMissing }" for="storePhoto">
+          <input
+            id="storePhoto"
+            type="file"
+            accept="image/png, image/jpeg, image/gif"
+            class="upload-input"
+            @change="handlePhotoChange"
+          />
+
+          <template v-if="!photoPreview">
+            <q-icon name="add_a_photo" class="upload-icon" />
+            <div class="upload-label">{{ t('Upload Store Exterior Photo') }}</div>
+            <div class="upload-hint">{{ t('PNG, JPG, GIF up to 10MB') }}</div>
+          </template>
+
+          <div v-else class="preview-container">
+            <img
+              :src="photoPreview"
+              :alt="t('Store exterior preview')"
+              class="upload-preview"
+            />
+            <div class="preview-overlay" @click.prevent="openCropModal">
+              <q-icon name="crop" size="18px" />
+              <span>{{ t('Edit / Crop') }}</span>
+            </div>
+          </div>
+        </label>
+
+        <div v-if="photoFile" class="photo-info">
+          <q-icon name="image" size="14px" />
+          <span>{{ photoFile.name }}</span>
+          <button type="button" class="remove-photo" :aria-label="t('Remove photo')" @click="removePhoto">
+            <q-icon name="close" size="14px" />
+          </button>
+        </div>
+
+        <div v-if="photoMissing" class="photo-error" role="alert">{{ t('Add a photo of your storefront.') }}</div>
+
+        <div v-if="stepError && step === 3" class="error-message step-error">{{ t(stepError) }}</div>
+
+        <div class="wizard-actions">
+          <q-btn outline no-caps :label="t('Back')" class="wizard-back" @click="previousStep" />
+          <q-btn type="submit" unelevated no-caps :label="t('Continue')" class="login-button" />
+        </div>
+      </q-form>
+
+      <!-- STEP 4: HOURS -->
+      <div v-show="step === 4" class="vendor-form">
+        <div class="section-title">{{ t('Business Hours') }}</div>
+        <p class="step-hint">{{ t('Let customers know when your store is open.') }}</p>
+
+        <div class="hours-row">
+          <div class="field-group">
+            <q-select
+              v-model="form.openingTime"
+              outlined
+              dense
+              hide-bottom-space
+              emit-value
+              map-options
+              :label="t('Opening time')"
+              class="login-input"
+              :options="timeOptions"
+              :disable="alwaysOpen"
+            >
+              <template #append>
+                <q-icon name="schedule" class="password-icon" />
+              </template>
+            </q-select>
+          </div>
+
+          <div class="field-group">
+            <q-select
+              v-model="form.closingTime"
+              outlined
+              dense
+              hide-bottom-space
+              emit-value
+              map-options
+              :label="t('Closing time')"
+              class="login-input"
+              :options="timeOptions"
+              :disable="alwaysOpen"
+            >
+              <template #append>
+                <q-icon name="schedule" class="password-icon" />
+              </template>
+            </q-select>
+          </div>
+        </div>
+
+        <div class="operating-days-block">
+          <div class="block-label">{{ t('Operating Days') }}</div>
+
+          <q-toggle
+            v-model="alwaysOpen"
+            :label="t('Always Open (24/7)')"
+            color="red-9"
+            class="always-open-toggle"
+            @update:model-value="handleAlwaysOpenToggle"
+          />
+
+          <div class="days-toggle">
+            <button
+              v-for="day in DAY_ORDER"
+              :key="day"
+              type="button"
+              class="day-btn"
+              :class="{ 'day-btn-active': form.operatingDays.includes(day) }"
+              @click="toggleDay(day)"
+            >
+              {{ day }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="stepError && step === 4" class="error-message step-error">{{ t(stepError) }}</div>
+
+        <div class="wizard-actions">
+          <q-btn outline no-caps :label="t('Back')" class="wizard-back" @click="previousStep" />
+          <q-btn unelevated no-caps :label="t('Continue')" class="login-button" @click="nextFromHours" />
+        </div>
+      </div>
+
+      <!-- STEP 5: LOCATION, mounted on first visit because Leaflet can't size a map inside a hidden panel. -->
+      <div v-if="locationVisited" v-show="step === 5" class="vendor-form">
+        <div class="section-title">{{ t('Store Location') }}</div>
+        <p class="step-hint">{{ t('Move the pin to where your store is, or type the address below.') }}</p>
+
+        <!-- Enlarging teleports this block to the body, which keeps the same map and pin while escaping the card's own clipping and stacking. -->
+        <Teleport to="body" :disabled="!mapEnlarged">
+          <div class="map-placeholder" :class="{ 'map-placeholder-enlarged': mapEnlarged }">
+            <VendorLocationMap ref="storeMapRef" :translate="t" @pin-placed="handlePinPlaced" @location-selected="handleLocationSelected" />
+
+            <q-btn
+              v-if="!mapEnlarged"
+              unelevated
+              no-caps
+              dense
+              icon="o_open_in_full"
+              :label="t('Enlarge map')"
+              class="map-enlarge-btn"
+              @click="mapEnlarged = true"
+            />
+
+            <!-- The address rides along the top while enlarged, because its box below is off screen. -->
+            <div v-else class="map-enlarged-bar">
+              <q-icon name="o_location_on" size="18px" class="map-enlarged-bar-icon" />
+              <span class="map-enlarged-bar-text">{{ detectedAddressText }}</span>
+
+              <q-btn
+                unelevated
+                no-caps
+                dense
+                icon="o_close_fullscreen"
+                :label="t('Done')"
+                class="map-enlarge-btn map-enlarge-btn-inline"
+                @click="mapEnlarged = false"
+              />
+            </div>
+          </div>
+        </Teleport>
+
+        <!-- What the map calls the pinned spot. Read-only, since the box below is the one that gets saved. -->
+        <div class="pin-address">
+          <div class="pin-address-body">
+            <div class="pin-address-label">{{ t('Where your pin is') }}</div>
+            <div class="pin-address-value">{{ detectedAddressText }}</div>
+          </div>
+
+          <q-btn
+            v-if="form.detectedAddress"
+            flat
+            dense
+            no-caps
+            :label="t('Use this')"
+            class="pin-address-use"
+            @click="usePinAddress"
+          />
+        </div>
+
+        <div class="field-group manual-address">
+          <!-- Sits below the map, so its suggestions open upward over it. -->
+          <AddressAutocomplete
+            ref="manualAddressRef"
+            v-model="form.manualAddress"
+            above
+            :translate="t"
+            outlined
+            dense
+            no-error-icon
+            hide-bottom-space
+            :label="t('Address customers will see')"
+            class="login-input"
+            @pin="handleAddressPin"
+          />
+
+          <!-- Which of the two addresses is kept, now that the page shows both. -->
+          <div class="address-note">{{ t('This is the address we save. Leave it blank to use the pinned address above.') }}</div>
+
+        </div>
+
+        <div v-if="stepError && step === 5" class="error-message">{{ t(stepError) }}</div>
+
+        <div class="wizard-actions">
+          <q-btn outline no-caps :label="t('Back')" class="wizard-back" @click="previousStep" />
+          <q-btn unelevated no-caps :label="t('Continue')" class="login-button" @mousedown.prevent @click="nextFromLocation" />
+        </div>
+      </div>
+
+      <!-- STEP 6: REVIEW -->
+      <div v-show="step === 6" class="vendor-form">
+        <div class="section-title">{{ t('Review & Submit') }}</div>
+        <p class="step-hint">{{ t('Check your details before sending your application.') }}</p>
+
+        <div class="review-list">
+          <div class="review-row">
+            <div class="review-body">
+              <div class="review-label">{{ t('Owner') }}</div>
+              <div class="review-value">{{ form.ownerName }}</div>
+              <div class="review-sub">{{ form.email }}</div>
+            </div>
+            <button type="button" class="review-edit" @click="editStep(1)">{{ t('Edit') }}</button>
+          </div>
+
+          <div class="review-row">
+            <div class="review-body">
+              <div class="review-label">{{ t('Phone') }}</div>
+              <div class="review-value">
+                {{ form.phoneNumber }}
+                <span v-if="phoneVerified" class="review-verified">
+                  <q-icon name="o_verified" size="14px" />
+                  {{ t('Verified') }}
+                </span>
+              </div>
+            </div>
+            <button type="button" class="review-edit" @click="editStep(1)">{{ t('Edit') }}</button>
+          </div>
+
+          <div class="review-row">
+            <img v-if="photoPreview" :src="photoPreview" :alt="t('Store photo')" class="review-thumb" />
+            <div class="review-body">
+              <div class="review-label">{{ t('Store') }}</div>
+              <div class="review-value">{{ form.storeName }}</div>
+            </div>
+            <button type="button" class="review-edit" @click="editStep(3)">{{ t('Edit') }}</button>
+          </div>
+
+          <div class="review-row">
+            <div class="review-body">
+              <div class="review-label">{{ t('Hours') }}</div>
+              <div class="review-value">{{ hoursSummary }}</div>
+              <div class="review-sub">{{ daysSummary }}</div>
+            </div>
+            <button type="button" class="review-edit" @click="editStep(4)">{{ t('Edit') }}</button>
+          </div>
+
+          <div class="review-row">
+            <div class="review-body">
+              <div class="review-label">{{ t('Location') }}</div>
+              <div class="review-value">{{ finalAddress || t('Pinned on the map') }}</div>
+            </div>
+            <button type="button" class="review-edit" @click="editStep(5)">{{ t('Edit') }}</button>
+          </div>
+        </div>
+
+        <div v-if="registerError" class="error-message step-error">{{ t(registerError) }}</div>
+
+        <div class="wizard-actions">
+          <q-btn outline no-caps :label="t('Back')" class="wizard-back" @click="previousStep" />
+          <q-btn unelevated no-caps :label="t('Register Store')" class="login-button" :loading="loading" :disable="!canRegister" @click="handleVendorRegister" />
+        </div>
+      </div>
 
       <!-- LOGIN LINK -->
       <div class="register-section">
-        <span>Already a partner?</span>
+        <span>{{ t('Already a partner?') }}</span>
 
         <button
           type="button"
           class="text-button create-account"
           @click="goToLogin"
         >
-          Login
+          {{ t('Log in') }}
         </button>
       </div>
 
       <!-- TERMS -->
       <p class="terms">
-        By signing up, you agree to our
-        <a href="#" @click.prevent="showTerms = true">
-          Terms and Conditions
-        </a>
-        and
-        <a href="#" @click.prevent="showPrivacy = true">
-          Privacy Policy
-        </a>
+        {{ t('By signing up, you agree to our') }}
+        <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
+        {{ t('and') }}
+        <a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.
       </p>
 
     </div>
 
     <!-- CROP DIALOG -->
     <q-dialog v-model="showCropModal" persistent>
-      <q-card style="width: 500px; max-width: 90vw;">
-        <q-card-section>
-          <div class="text-h6">Crop Image</div>
+      <q-card class="crop-dialog">
+        <q-card-section class="crop-header">
+          <div class="crop-icon"><q-icon name="o_crop" size="22px" /></div>
+          <div class="crop-header-text">
+            <div class="crop-title">{{ t('Crop Store Photo') }}</div>
+            <div class="crop-subtitle">{{ t('Drag the photo to move it, and zoom until the frame shows your storefront.') }}</div>
+          </div>
+          <q-btn flat round dense icon="o_close" class="crop-close" :aria-label="t('Close photo cropper')" @click="showCropModal = false" />
         </q-card-section>
-        <q-card-section style="text-align: center;">
-          <canvas
-            ref="cropCanvas"
-            style="border: 1px dashed #ccc; cursor: crosshair; max-width: 100%;"
-            @mousedown="onCropMouseDown"
-            @mousemove="onCropMouseMove"
-            @mouseup="onCropMouseUp"
-            @mouseleave="onCropMouseUp"
-          ></canvas>
-          <div class="text-caption q-mt-sm">Drag to select a crop area.</div>
+        <q-card-section class="crop-body">
+          <PhotoCropper ref="cropperRef" :src="originalPhotoUrl || ''" :aspect="16 / 9" :output-width="1280" @ready="cropReady = true" />
         </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" @click="showCropModal = false" />
-          <q-btn flat label="Apply Crop" color="primary" @click="applyCrop" />
+        <q-card-actions class="crop-actions">
+          <q-btn outline no-caps :label="t('Cancel')" class="crop-cancel" @click="showCropModal = false" />
+          <q-btn unelevated no-caps :label="t('Apply Crop')" class="crop-apply" :disable="!cropReady" @click="applyCrop" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -378,28 +557,26 @@
 
         <q-card-section class="success-content">
           <div class="success-icon-wrap">
-            <q-icon name="check" size="36px" color="white" />
+            <q-icon name="o_check" size="32px" />
           </div>
 
-          <div class="success-title">Application Submitted!</div>
+          <div class="success-title">{{ t('Application Submitted!') }}</div>
 
           <p class="success-message">
-            Your vendor application has been submitted and is currently
-            under review. Our team will process your application within
-            1–3 business days.
+            {{ t('Your vendor application has been submitted and is currently under review. Our team will process your application within 1–3 business days.') }}
           </p>
         </q-card-section>
 
         <q-card-actions class="success-actions" vertical>
           <q-btn
-            label="Close"
+            :label="t('Close')"
             no-caps
             unelevated
             class="success-btn primary-btn"
             @click="handleSuccessClose"
           />
           <q-btn
-            label="Contact Support"
+            :label="t('Contact Support')"
             no-caps
             flat
             class="success-btn flat-btn"
@@ -415,21 +592,26 @@
     <PrivacyModal v-model="showPrivacy" />
     <ContactSupportModal v-model="showContactSupport" />
 
-  </q-page>
+  </AuthShell>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import AuthShell from '@/components/auth/AuthShell.vue'
+import { computed, nextTick, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
+import AddressAutocomplete from '@/components/shared/AddressAutocomplete.vue'
+import PhotoCropper from '@/components/shared/PhotoCropper.vue'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 
-const vendorForm = ref(null)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 const loading = ref(false)
@@ -437,6 +619,15 @@ const photoPreview = ref(null)
 const photoFile = ref(null)
 const originalPhotoUrl = ref(null)
 const registerError = ref('')
+
+// Gates each field's rules until touched, so rules stay silent on page load — same pattern as ConsumerRegister.vue.
+const storeNameTouched = ref(false)
+// Set when Continue is pressed without a photo, which turns the upload box red until one is added.
+const photoMissing = ref(false)
+const ownerNameTouched = ref(false)
+const emailTouched = ref(false)
+const phoneTouched = ref(false)
+const passwordTouched = ref(false)
 
 // Dialogs
 const showSuccess = ref(false)
@@ -447,11 +638,9 @@ const alwaysOpen = ref(false)
 
 // Crop State
 const showCropModal = ref(false)
-const cropCanvas = ref(null)
-let imageObj = null
-let isDragging = false
-const cropRect = reactive({ x: 0, y: 0, w: 0, h: 0 })
-const startPos = reactive({ x: 0, y: 0 })
+const cropperRef = ref(null)
+// Set once the cropper has loaded the photo, so Apply Crop can't run on an empty frame.
+const cropReady = ref(false)
 
 const form = reactive({
   storeName: '',
@@ -483,11 +672,288 @@ for (let minutes = 0; minutes < 24 * 60; minutes += 30) {
 }
 
 const nameRule = val =>
-  /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || 'Only letters are allowed'
+  /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || t('Only letters are allowed')
 
-const emailRule = val => /.+@.+\..+/.test(val) || 'Enter a valid email'
-const phoneRule = val => /^09\d{9}$/.test(val) || 'Phone must be exactly 11 digits starting with 09'
-const passwordRule = val => val.length >= 8 || 'Minimum 8 characters'
+const emailRule = val => /.+@.+\..+/.test(val) || t('Enter a valid email')
+const phoneRule = val => /^09\d{9}$/.test(val) || t('Phone must be exactly 11 digits starting with 09')
+const passwordRule = val => val.length >= 8 || t('Minimum 8 characters')
+
+// Shown once the password passes its rule, the same positive state as the consumer sign-up and profile password fields.
+const passwordStrong = computed(() => !!form.password && passwordRule(form.password) === true)
+
+// Confirm Password uses its own message (not Quasar's :rules) to show a positive "Passwords match" state — same pattern as ConsumerRegister.vue.
+const confirmPasswordMessage = computed(() => {
+  if (!form.confirmPassword) return null
+  if (form.confirmPassword !== form.password) return { type: 'error', text: 'Passwords do not match.' }
+  return { type: 'success', text: 'Passwords match.' }
+})
+
+// The six steps in order, named in the progress label.
+const STEPS = ['Account', 'Verify phone', 'Store', 'Hours', 'Location', 'Review']
+// The weekdays in display order, used by the day toggles and the review summary.
+const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+const step = ref(1)
+const stepError = ref('')
+const accountForm = ref(null)
+const storeForm = ref(null)
+// Set when a review Edit link opened a step, so its Continue goes straight back to the review.
+const editingFromReview = ref(false)
+// The map mounts the first time its step opens, since Leaflet can't size itself inside a hidden panel.
+const locationVisited = ref(false)
+
+// Phone verification, where verifiedPhone remembers which number the code proved and the token lets registration use it once.
+const phoneVerified = ref(false)
+const verifiedPhone = ref('')
+const verificationToken = ref('')
+const sendingCode = ref(false)
+const verifyingCode = ref(false)
+const otp = ref(['', '', '', '', '', ''])
+const otpRefs = ref([])
+const otpError = ref('')
+const otpErrorText = computed(() => {
+  const resendSuffix = ' We sent you a new code.'
+  return otpError.value.endsWith(resendSuffix)
+    ? t('{error} We sent you a new code.', {
+        error: t(otpError.value.slice(0, -resendSuffix.length))
+      })
+    : t(otpError.value)
+})
+// Turns the boxes green for a moment once the code is accepted, the same flash as the consumer profile's phone check.
+const otpVerified = ref(false)
+let verifiedTimer = null
+const otpComplete = computed(() => otp.value.every(digit => digit !== ''))
+const resendTimer = ref(0)
+let resendInterval = null
+
+const canRegister = computed(() =>
+  phoneVerified.value && verifiedPhone.value === form.phoneNumber &&
+  !!form.storeName.trim() &&
+  !!form.ownerName && nameRule(form.ownerName) === true &&
+  !!form.email && emailRule(form.email) === true &&
+  !!form.phoneNumber && phoneRule(form.phoneNumber) === true &&
+  !!form.password && passwordRule(form.password) === true &&
+  !!form.confirmPassword && form.confirmPassword === form.password &&
+  !!form.openingTime && !!form.closingTime && form.operatingDays.length > 0 &&
+  !!photoFile.value &&
+  !!form.latitude && !!form.longitude
+)
+
+const maskedPhone = computed(() => {
+  const phone = form.phoneNumber || ''
+  return phone.length >= 10 ? `${phone.slice(0, 4)}***${phone.slice(-4)}` : phone
+})
+
+const formattedResendTimer = computed(() => `${Math.floor(resendTimer.value / 60)}:${String(resendTimer.value % 60).padStart(2, '0')}`)
+
+const finalAddress = computed(() => form.manualAddress.trim() || form.detectedAddress)
+const timeLabel = value => timeOptions.find(option => option.value === value)?.label || value
+const hoursSummary = computed(() => (alwaysOpen.value ? t('Always open (24/7)') : `${timeLabel(form.openingTime)} – ${timeLabel(form.closingTime)}`))
+const daysSummary = computed(() => DAY_ORDER.filter(day => form.operatingDays.includes(day)).join(', '))
+
+// A new code can be requested after 10 minutes, the time the texted code stays valid on the server.
+const RESEND_WAIT_SECONDS = 600
+
+const startResendTimer = () => {
+  clearInterval(resendInterval)
+  resendTimer.value = RESEND_WAIT_SECONDS
+  resendInterval = setInterval(() => {
+    if (resendTimer.value > 0) resendTimer.value--
+    else clearInterval(resendInterval)
+  }, 1000)
+}
+
+onUnmounted(() => {
+  clearInterval(resendInterval)
+  clearTimeout(verifiedTimer)
+})
+
+// Opens a step, clears the last step's error and brings the top of the form into view.
+const goTo = (target) => {
+  stepError.value = ''
+  step.value = target
+  // The map itself watches its box for size changes, so showing the panel again needs no nudge here.
+  if (target === 5) locationVisited.value = true
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// Moves on after a step, returning to the review when the step was opened from one of its Edit links.
+const afterStep = (next) => {
+  const target = editingFromReview.value ? 6 : next
+  if (target === 6) editingFromReview.value = false
+  goTo(target)
+}
+
+const editStep = (target) => {
+  editingFromReview.value = true
+  goTo(target)
+}
+
+// Back skips the verify step once the number is verified, since there is nothing left to do there.
+const previousStep = () => {
+  editingFromReview.value = false
+  goTo(step.value === 3 ? 1 : step.value - 1)
+}
+
+const errorMessage = (error, fallback) => {
+  if (error.response?.status === 429) return 'Too many attempts. Please wait a few minutes and try again.'
+  const errors = error.response?.data?.errors
+  return Object.values(errors || {})[0]?.[0] || error.response?.data?.message || fallback
+}
+
+// Texts a code to the entered number, which the backend only does for an email and phone not already registered.
+const sendCode = async () => {
+  sendingCode.value = true
+  stepError.value = ''
+  otpError.value = ''
+  try {
+    await api.post('/register/vendor/otp', { email: form.email, phone_number: form.phoneNumber })
+    otp.value = ['', '', '', '', '', '']
+    otpVerified.value = false
+    startResendTimer()
+    return true
+  } catch (error) {
+    const message = errorMessage(error, 'We could not send a code right now. Please try again.')
+    if (step.value === 2) otpError.value = message
+    else stepError.value = message
+    return false
+  } finally {
+    sendingCode.value = false
+  }
+}
+
+const submitAccount = async () => {
+  ownerNameTouched.value = true
+  emailTouched.value = true
+  phoneTouched.value = true
+  passwordTouched.value = true
+
+  const isValid = await accountForm.value.validate()
+  if (!isValid) return
+
+  // Confirm Password isn't part of the form's own :rules, so it needs its own guard here.
+  if (!form.confirmPassword || form.confirmPassword !== form.password) {
+    stepError.value = 'Please retype the same password.'
+    return
+  }
+
+  // A number that was already verified skips the code, while a changed number needs a new one.
+  if (phoneVerified.value && verifiedPhone.value === form.phoneNumber) {
+    afterStep(3)
+    return
+  }
+
+  phoneVerified.value = false
+  otpVerified.value = false
+  verificationToken.value = ''
+  if (await sendCode()) {
+    goTo(2)
+    nextTick(() => otpRefs.value[0]?.focus())
+  }
+}
+
+const resendCode = async () => {
+  if (resendTimer.value > 0 || sendingCode.value || otpVerified.value) return
+  if (await sendCode()) nextTick(() => otpRefs.value[0]?.focus())
+}
+
+const verifyCode = async () => {
+  if (!otpComplete.value || verifyingCode.value || otpVerified.value) return
+  verifyingCode.value = true
+  otpError.value = ''
+  try {
+    const { data } = await api.post('/otp/verify', {
+      phone_number: form.phoneNumber,
+      code: otp.value.join(''),
+      type: 'registration'
+    })
+    phoneVerified.value = true
+    verifiedPhone.value = form.phoneNumber
+    verificationToken.value = data.verification_token || ''
+    clearInterval(resendInterval)
+    resendTimer.value = 0
+    otpVerified.value = true
+    // Holds the green boxes briefly, and only moves on if the vendor is still on this step.
+    verifiedTimer = setTimeout(() => {
+      if (step.value === 2) afterStep(3)
+    }, 450)
+  } catch (error) {
+    otpError.value = errorMessage(error, 'The code you entered is incorrect.')
+    otp.value = ['', '', '', '', '', '']
+    otpRefs.value[0]?.focus()
+  } finally {
+    verifyingCode.value = false
+  }
+}
+
+// Typing moves to the next box, and an autofilled SMS code that lands in one box as a string is spread across all six.
+const handleOtpInput = (index) => {
+  const digits = otp.value[index].replace(/\D/g, '')
+
+  if (digits.length >= 4) {
+    for (let i = 0; i < 6; i++) otp.value[i] = digits[i] || ''
+    otpRefs.value[Math.min(digits.length, 5)]?.focus()
+    otpError.value = ''
+    return
+  }
+
+  // Typing into a filled box keeps only the newest digit.
+  otp.value[index] = digits.slice(-1)
+  if (!digits) return
+
+  otpError.value = ''
+  if (index < 5) otpRefs.value[index + 1]?.focus()
+}
+
+const handleOtpKeydown = (index, event) => {
+  if (event.key === 'Backspace' && !otp.value[index] && index > 0) {
+    otpRefs.value[index - 1]?.focus()
+  }
+}
+
+const handleOtpPaste = (event) => {
+  event.preventDefault()
+  const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+  for (let i = 0; i < 6; i++) otp.value[i] = pasted[i] || ''
+  otpRefs.value[Math.min(pasted.length, 5)]?.focus()
+  otpError.value = ''
+}
+
+// Both checks run before stopping, so a missing name and a missing photo are flagged together.
+const nextFromStore = async () => {
+  storeNameTouched.value = true
+  const nameValid = await storeForm.value.validate()
+  photoMissing.value = !photoFile.value
+  if (!nameValid || photoMissing.value) return
+  afterStep(4)
+}
+
+const nextFromHours = () => {
+  if (!form.openingTime || !form.closingTime) {
+    stepError.value = 'Choose your opening and closing time.'
+    return
+  }
+  if (!form.operatingDays.length) {
+    stepError.value = 'Choose at least one day your store is open.'
+    return
+  }
+  afterStep(5)
+}
+
+// Continue's mousedown.prevent keeps the manual address box focused, so a search on just-typed text survives to be settled here and moves the pin first.
+const nextFromLocation = async () => {
+  if (manualAddressRef.value && !(await manualAddressRef.value.settle())) return
+  if (!form.latitude || !form.longitude) {
+    stepError.value = 'Pick your store location on the map.'
+    return
+  }
+  // The address is what customers read on the store card, and the map's own lookup can come back empty, so it is never left to the pin alone.
+  if (!finalAddress.value.trim()) {
+    stepError.value = 'Type your store address.'
+    return
+  }
+  afterStep(6)
+}
 
 const toggleDay = (day) => {
   const index = form.operatingDays.indexOf(day)
@@ -520,122 +986,24 @@ const handlePhotoChange = event => {
   }
 
   photoFile.value = file
+  photoMissing.value = false
   const url = URL.createObjectURL(file)
   photoPreview.value = url
   originalPhotoUrl.value = url
 }
 
 const openCropModal = () => {
+  cropReady.value = false
   showCropModal.value = true
-  setTimeout(() => {
-    const canvas = cropCanvas.value
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    imageObj = new Image()
-    imageObj.onload = () => {
-      const maxW = 400
-      let w = imageObj.width
-      let h = imageObj.height
-      if (w > maxW) {
-        h = (h * maxW) / w
-        w = maxW
-      }
-      canvas.width = w
-      canvas.height = h
-      ctx.drawImage(imageObj, 0, 0, w, h)
-      cropRect.x = 0; cropRect.y = 0; cropRect.w = w; cropRect.h = h
-      drawCropCanvas()
-    }
-    imageObj.src = originalPhotoUrl.value
-  }, 100)
 }
 
-const drawCropCanvas = () => {
-  const canvas = cropCanvas.value
-  if (!canvas || !imageObj) return
-  const ctx = canvas.getContext('2d')
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height)
-  
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
-  
-  if (cropRect.w > 0 && cropRect.h > 0) {
-    ctx.clearRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
-    ctx.drawImage(imageObj, 
-      (cropRect.x / canvas.width) * imageObj.width, 
-      (cropRect.y / canvas.height) * imageObj.height, 
-      (cropRect.w / canvas.width) * imageObj.width, 
-      (cropRect.h / canvas.height) * imageObj.height, 
-      cropRect.x, cropRect.y, cropRect.w, cropRect.h)
-    
-    ctx.strokeStyle = '#fff'
-    ctx.lineWidth = 2
-    ctx.strokeRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h)
-  }
-}
-
-const onCropMouseDown = (e) => {
-  isDragging = true
-  const rect = cropCanvas.value.getBoundingClientRect()
-  startPos.x = e.clientX - rect.left
-  startPos.y = e.clientY - rect.top
-  cropRect.x = startPos.x
-  cropRect.y = startPos.y
-  cropRect.w = 0
-  cropRect.h = 0
-}
-
-const onCropMouseMove = (e) => {
-  if (!isDragging) return
-  const rect = cropCanvas.value.getBoundingClientRect()
-  const mouseX = e.clientX - rect.left
-  const mouseY = e.clientY - rect.top
-  cropRect.w = mouseX - startPos.x
-  cropRect.h = mouseY - startPos.y
-  drawCropCanvas()
-}
-
-const onCropMouseUp = () => {
-  if (isDragging) {
-    if (cropRect.w < 0) {
-      cropRect.x += cropRect.w
-      cropRect.w = Math.abs(cropRect.w)
-    }
-    if (cropRect.h < 0) {
-      cropRect.y += cropRect.h
-      cropRect.h = Math.abs(cropRect.h)
-    }
-    isDragging = false
-  }
-}
-
-const applyCrop = () => {
-  if (cropRect.w <= 0 || cropRect.h <= 0) {
-    showCropModal.value = false
-    return
-  }
-  
-  const canvas = cropCanvas.value
-  const scaleX = imageObj.width / canvas.width
-  const scaleY = imageObj.height / canvas.height
-  
-  const tempCanvas = document.createElement('canvas')
-  tempCanvas.width = cropRect.w * scaleX
-  tempCanvas.height = cropRect.h * scaleY
-  const ctx = tempCanvas.getContext('2d')
-  ctx.drawImage(imageObj, 
-    cropRect.x * scaleX, cropRect.y * scaleY, cropRect.w * scaleX, cropRect.h * scaleY, 
-    0, 0, tempCanvas.width, tempCanvas.height)
-    
-  tempCanvas.toBlob((blob) => {
-    if (blob) {
-      const croppedFile = new File([blob], 'cropped_' + photoFile.value.name, { type: 'image/jpeg' })
-      photoFile.value = croppedFile
-      photoPreview.value = URL.createObjectURL(croppedFile)
-      showCropModal.value = false
-    }
-  }, 'image/jpeg', 0.9)
+// Saves the framed 16:9 area from the original photo, which stays available for cropping again.
+const applyCrop = async () => {
+  const blob = await cropperRef.value?.toBlob()
+  if (!blob) return
+  photoFile.value = new File([blob], 'cropped_' + (photoFile.value?.name || 'store.jpg'), { type: 'image/jpeg' })
+  photoPreview.value = URL.createObjectURL(blob)
+  showCropModal.value = false
 }
 
 const removePhoto = () => {
@@ -646,76 +1014,70 @@ const removePhoto = () => {
 }
 
 const handleVendorRegister = async () => {
-  const isValid = await vendorForm.value.validate()
-  if (!isValid || !photoFile.value) return
+  if (!canRegister.value || loading.value) return
 
   loading.value = true
   registerError.value = ''
 
   try {
+    const dayMap = { 'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday', 'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday' }
+    const schedule = {}
+
+    Object.values(dayMap).forEach(fullDay => {
+      const isDaySelected = form.operatingDays.some(shortDay => dayMap[shortDay] === fullDay)
+      schedule[fullDay] = {
+        is_open: isDaySelected,
+        opening_time: isDaySelected ? form.openingTime : null,
+        closing_time: isDaySelected ? form.closingTime : null
+      }
+    })
+
     const formData = new FormData()
-    formData.append('store_name', form.storeName)
+    formData.append('store_name', form.storeName.trim())
     formData.append('full_name', form.ownerName)
     formData.append('email', form.email)
     formData.append('phone_number', form.phoneNumber)
+    formData.append('verification_token', verificationToken.value)
     formData.append('password', form.password)
     formData.append('password_confirmation', form.confirmPassword)
     formData.append('opening_time', form.openingTime)
     formData.append('closing_time', form.closingTime)
-    formData.append('operating_days', JSON.stringify(form.operatingDays))
-
-    // Use placeholder coordinates if map is not wired
-    // formData.append('latitude', form.latitude || '14.5764')
-    // formData.append('longitude', form.longitude || '121.0351')
-
-    if (!form.latitude || !form.longitude) {
-        registerError.value =
-          'Please select your store location on the map.'
-        loading.value = false
-        return
-      }
-
-    const finalAddress =
-      form.manualAddress.trim() ||
-      form.detectedAddress
-
-
-    formData.append(
-      'address',
-      finalAddress
-    )
-      
-    formData.append(
-      'latitude',
-      form.latitude
-    )
-
-    formData.append(
-      'longitude',
-      form.longitude
-    )
-
-
-    if (photoFile.value) {
-      formData.append('store_picture', photoFile.value)
-    }
+    formData.append('operating_days', JSON.stringify(schedule))
+    formData.append('address', finalAddress.value)
+    formData.append('latitude', form.latitude)
+    formData.append('longitude', form.longitude)
+    formData.append('store_picture', photoFile.value)
 
     await api.post('/register/vendor', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
 
-    // Show success popup
     showSuccess.value = true
-
   } catch (error) {
-    if (error.response && error.response.status === 422) {
-      const errors = error.response.data.errors
-      const firstError = Object.values(errors || {})[0]
-      registerError.value = firstError?.[0] || 'Validation failed. Please check your inputs.'
+    const errors = error.response?.status === 422 ? (error.response.data?.errors || {}) : null
+
+    if (errors?.phone_number) {
+      // The verification expired or the number was taken meanwhile, so the phone is verified again before returning to the review.
+      phoneVerified.value = false
+      otpVerified.value = false
+      verificationToken.value = ''
+      editingFromReview.value = true
+      goTo(2)
+      if (await sendCode()) otpError.value = `${errors.phone_number[0]} We sent you a new code.`
+    } else if (errors?.email) {
+      editingFromReview.value = true
+      goTo(1)
+      stepError.value = errors.email[0]
+    } else if (errors?.store_name || errors?.store_picture) {
+      // The store name or photo was refused, so the store step opens again with the reason.
+      editingFromReview.value = true
+      goTo(3)
+      stepError.value = (errors.store_name || errors.store_picture)[0]
+    } else if (errors) {
+      registerError.value = Object.values(errors)[0]?.[0] || 'Validation failed. Please check your inputs.'
     } else {
       registerError.value = 'Something went wrong. Please try again later.'
     }
-
   } finally {
     loading.value = false
   }
@@ -731,119 +1093,117 @@ const goToLogin = () => {
 }
 
 
-function handleLocationSelected(location) {
+const storeMapRef = ref(null)
 
-  console.log('Store location:', location)
+// Pinning an exact spot is hard in a 280px box, so the map can fill the screen while the vendor places it.
+const mapEnlarged = ref(false)
+
+// Esc leaves the enlarged map, as it would any full-screen view.
+const onMapEscape = (event) => {
+  if (event.key === 'Escape') mapEnlarged.value = false
+}
+
+watch(mapEnlarged, (enlarged) => {
+  if (enlarged) window.addEventListener('keydown', onMapEscape)
+  else window.removeEventListener('keydown', onMapEscape)
+})
+
+// A teleported block sits outside the step it belongs to, so leaving the step would strand the enlarged map over the wizard.
+watch(step, (value) => {
+  if (value !== 5) mapEnlarged.value = false
+})
+
+onUnmounted(() => window.removeEventListener('keydown', onMapEscape))
+const manualAddressRef = ref(null)
+
+// Set between a pin moving and its address arriving, so the page can say the lookup is running rather than just looking empty.
+const addressLookupPending = ref(false)
+
+// The pinned-address line doubles as the lookup's status, since a failed lookup leaves it empty and the vendor types the address instead.
+const detectedAddressText = computed(() => {
+  if (addressLookupPending.value) return t('Finding the address...')
+  if (form.detectedAddress) return form.detectedAddress
+  if (form.latitude) return t('No address found for this pin. Type it below.')
+  return t('Waiting for location…')
+})
+
+// Copies the map's wording into the box that gets saved, for vendors happy to take it as it is.
+const usePinAddress = () => {
+  form.manualAddress = form.detectedAddress
+}
+
+function handlePinPlaced(location) {
+  form.latitude = location.latitude
+  form.longitude = location.longitude
+  // The old address described the old pin, so it is dropped rather than left labelling the spot the vendor just moved away from.
+  form.detectedAddress = ''
+  addressLookupPending.value = true
+}
+
+function handleLocationSelected(location) {
 
   // Save coordinates
   form.latitude = location.latitude
   form.longitude = location.longitude
 
-  // Save detected address
+  // Empty when the lookup failed, which the line under the map then explains.
+  addressLookupPending.value = false
   form.detectedAddress = location.address
 
+  // Lets the box hold the pin and rank its searches near this spot; what the vendor typed is never overwritten from the map.
+  manualAddressRef.value?.mapSelected(location)
+
+}
+
+// A picked suggestion or the best match for the typed address moves the pin, and the detected address shows where it landed.
+function handleAddressPin(location) {
+  form.latitude = location.latitude
+  form.longitude = location.longitude
+  // A picked suggestion describes the pin it just moved, so it doubles as the pinned address.
+  form.detectedAddress = location.address
+  addressLookupPending.value = false
+  storeMapRef.value?.showLocation(location.latitude, location.longitude)
 }
 
 
 </script>
 
 <style scoped>
-/* =========================
-   PAGE
-========================= */
 
-.vendor-page {
-  min-height: 100vh;
-
-  display: flex;
-  justify-content: center;
-
-  padding: 40px 20px;
-
-  background: #f4f4f4;
-
-  font-family: 'Roboto', Arial, sans-serif;
-}
-
-/* =========================
-   CARD
-========================= */
-
-.vendor-card {
-  width: 100%;
-  max-width: 900px;
-
-  padding: 45px 55px;
-
-  background: #ffffff;
-
-  box-shadow:
-    0 12px 35px rgba(0, 0, 0, 0.12);
-}
-
-/* =========================
-   HEADER
-========================= */
+/* HEADER */
 
 .vendor-header {
   text-align: center;
 
-  margin-bottom: 22px;
-}
-
-.tindahan-logo {
-  display: block;
-
-  width: 160px;
-
-  margin: 0 auto 10px;
-
-  object-fit: contain;
+  margin-bottom: 26px;
 }
 
 .vendor-header h1 {
-  margin: 0 0 4px;
+  margin: 0 0 6px;
 
-  font-size: 22px;
-  line-height: 1.25;
+  font-size: 27px;
+  line-height: 1.2;
   font-weight: 700;
 
-  color: #111111;
+  color: var(--c-text);
 }
 
 .subtitle {
   margin: 0;
 
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
-/* =========================
-   FORM LAYOUT
-========================= */
+/* FORM LAYOUT */
 
 .vendor-form {
   width: 100%;
 }
 
-.register-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-
-  gap: 40px;
-
-  margin-bottom: 20px;
-}
-
-/* =========================
-   SECTIONS
-========================= */
-
-.section {
-  margin-bottom: 26px;
-}
+/* SECTIONS */
 
 .section-title {
   position: relative;
@@ -851,12 +1211,12 @@ function handleLocationSelected(location) {
   margin-bottom: 14px;
   padding-left: 10px;
 
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 
-  color: #333333;
+  color: var(--c-text-2);
 }
 
 .section-title::before {
@@ -869,15 +1229,15 @@ function handleLocationSelected(location) {
   width: 3px;
   height: 13px;
 
-  background: #bd2427;
+  border-radius: 2px;
+
+  background: var(--c-brand);
 }
 
-/* =========================
-   FIELDS (shared with login/register)
-========================= */
+/* FIELDS (shared with login/register) */
 
 .field-group {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .hours-row {
@@ -892,78 +1252,111 @@ function handleLocationSelected(location) {
   min-width: 0;
 }
 
-.login-input :deep(.q-field__control) {
-  height: 40px;
+/* hide-bottom-space removes this area entirely when there's no message, so padding only applies once one shows — same as ConsumerRegister.vue. */
+.login-input :deep(.q-field__bottom) {
+  padding-top: 6px;
+  padding-bottom: 0;
+}
 
-  border-radius: 8px;
+.login-input :deep(.q-field__messages) {
+  line-height: 1.4;
+}
+
+.login-input :deep(.q-field__control) {
+  height: 48px;
+
+  border-radius: var(--r-md);
 }
 
 .login-input :deep(.q-field__native),
 .login-input :deep(.q-field__input) {
   font-family: 'Roboto', Arial, sans-serif;
 
-  font-size: 13px;
+  font-size: 15px;
 
-  color: #333333;
+  color: var(--c-text-2);
 
   padding-left: 6px;
 }
 
+/* Touch screens keep 16px, because iOS zooms the whole page into any field whose text is smaller than that. */
+@media (pointer: coarse) {
+  .login-input :deep(.q-field__native),
+  .login-input :deep(.q-field__input) {
+    font-size: 16px;
+  }
+}
 .login-input :deep(.q-field__label) {
-  font-size: 13px;
+  font-size: var(--fs-sm);
 
-  color: #8992a2;
+  color: var(--c-muted);
 }
 
 .login-input :deep(.q-field__append) {
-  height: 40px;
+  height: 48px;
 
-  color: #777777;
+  color: var(--c-subtle);
 }
 
 .login-input :deep(.q-field__prepend) {
-  height: 40px;
+  height: 48px;
 }
 
 .password-icon {
   font-size: 18px;
 
-  color: #777777;
+  color: var(--c-subtle);
 }
 
 .phone-prefix {
   padding: 0 6px 0 4px;
 
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 
-  color: #333333;
+  color: var(--c-text-2);
 
-  border-right: 1px solid #d6d6da;
+  border-right: 1px solid var(--c-border);
 }
 
-/* =========================
-   ERROR MESSAGE
-========================= */
+/* Confirm Password's live match/mismatch message — same look as ConsumerRegister.vue's. */
+.field-message {
+  margin-top: 6px;
+
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+
+  color: var(--c-danger);
+}
+
+.field-message-success {
+  display: flex;
+  align-items: center;
+
+  gap: 3px;
+
+  color: var(--c-success);
+  font-weight: 600;
+}
+
+/* ERROR MESSAGE */
 
 .error-message {
   margin-bottom: 14px;
   padding: 10px 14px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--c-danger-tint);
+  border: 1px solid var(--c-danger-line);
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.4;
 
-  color: #b91c1c;
+  color: var(--c-danger);
 }
 
-/* =========================
-   PHOTO UPLOAD
-========================= */
+/* PHOTO UPLOAD */
 
 .upload-dropzone {
   display: flex;
@@ -975,15 +1368,39 @@ function handleLocationSelected(location) {
 
   height: 130px;
 
-  border: 1.5px dashed #cfcfd4;
-  border-radius: 10px;
+  border: 1.5px dashed var(--c-border-strong);
+  border-radius: var(--r-lg);
 
-  background: #fafafa;
+  background: var(--c-surface-2);
 
   cursor: pointer;
 
   overflow: hidden;
   position: relative;
+
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.upload-dropzone:hover {
+  border-color: var(--c-brand);
+  background: var(--c-brand-tint);
+}
+
+/* Red once Continue is pressed without a photo, the same way a missing field turns red. */
+.upload-dropzone--error,
+.upload-dropzone--error:hover {
+  border-color: var(--c-danger);
+}
+
+/* Indented 12px to line up with the store name's error, which sits inside Quasar's field padding. */
+.photo-error {
+  margin-top: 6px;
+  padding-left: 12px;
+
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+
+  color: var(--c-danger);
 }
 
 .upload-input {
@@ -993,20 +1410,20 @@ function handleLocationSelected(location) {
 .upload-icon {
   font-size: 24px;
 
-  color: #555555;
+  color: var(--c-brand);
 }
 
 .upload-label {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 
-  color: #333333;
+  color: var(--c-text-2);
 }
 
 .upload-hint {
-  font-size: 10px;
+  font-size: var(--fs-2xs);
 
-  color: #9a9aa2;
+  color: var(--c-muted);
 }
 
 .preview-container {
@@ -1039,7 +1456,7 @@ function handleLocationSelected(location) {
 
   background: rgba(0, 0, 0, 0.55);
 
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 500;
 
   color: #ffffff;
@@ -1053,40 +1470,53 @@ function handleLocationSelected(location) {
 
   margin-top: 8px;
 
-  font-size: 11px;
+  font-size: var(--fs-2xs);
 
-  color: #666666;
+  color: var(--c-text-3);
 }
 
 .remove-photo {
   display: flex;
   align-items: center;
+  justify-content: center;
 
+  width: 28px;
+  height: 28px;
   padding: 0;
 
   margin-left: auto;
 
   border: none;
+  border-radius: var(--r-pill);
   background: transparent;
 
-  color: #999999;
+  color: var(--c-subtle);
 
   cursor: pointer;
 }
 
 .remove-photo:hover {
-  color: #bd2427;
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
 }
 
-/* =========================
-   BUSINESS HOURS OPTIONS
-========================= */
+/* BUSINESS HOURS OPTIONS */
 
 .operating-days-block {
   margin-top: 4px;
 }
 
-.operating-days-block .detected-address-label {
+/* Small uppercase heading over a block of controls. */
+.block-label {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  color: var(--c-muted);
+}
+
+.operating-days-block .block-label {
   margin-bottom: 10px;
 }
 
@@ -1095,32 +1525,33 @@ function handleLocationSelected(location) {
 }
 
 .always-open-toggle :deep(.q-toggle__label) {
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
 
-  color: #333333;
+  color: var(--c-text-2);
 }
 
 .days-toggle {
   display: flex;
 
-  border: 1px solid #d6d6da;
-  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
   overflow: hidden;
 }
 
 .day-btn {
   flex: 1;
 
-  padding: 10px 0;
+  min-height: 44px;
+  padding: 0;
 
   border: none;
-  border-right: 1px solid #d6d6da;
+  border-right: 1px solid var(--c-border);
 
   background: #ffffff;
-  color: #555555;
+  color: var(--c-text-3);
 
   font-family: 'Roboto', Arial, sans-serif;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 
   cursor: pointer;
@@ -1133,26 +1564,22 @@ function handleLocationSelected(location) {
 }
 
 .day-btn:hover {
-  background: #fdecec;
-  color: #bd2427;
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
 }
 
 .day-btn-active,
 .day-btn-active:hover {
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 }
 
-/* =========================
-   MAP COLUMN
-========================= */
+/* MAP COLUMN */
 
-.map-column {
-  display: flex;
-  flex-direction: column;
-}
-
+/* The map sets its own 280px minimum height, so this box matches it and clips the corners round. */
 .map-placeholder {
+  position: relative;
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1162,80 +1589,218 @@ function handleLocationSelected(location) {
 
   height: 280px;
 
-  border-radius: 10px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
 
-  background: #eceef1;
+  background: var(--c-surface);
 
-  color: #9a9aa2;
+  color: var(--c-muted);
 }
 
-.map-pin-icon {
-  font-size: 26px;
+/* Full screen for pinning. Teleported to the body, so no ancestor's transform or overflow can clip it. */
+.map-placeholder-enlarged {
+  position: fixed;
+  inset: 0;
+  z-index: 7000;
 
-  color: #bd2427;
+  height: 100%;
+
+  border-radius: 0;
 }
 
-.map-placeholder-text {
+/* The map rounds its own corners for the boxed view; at full screen those corners would cut through to the page behind. */
+.map-placeholder-enlarged :deep(.location-wrapper) {
+  border-radius: 0;
+}
+
+/* Same white pill as the map's own "Your Location" button, in the opposite corner. */
+.map-enlarge-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+
+  height: 34px;
+  padding: 0 12px;
+
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: #222222;
+
   font-size: 12px;
+  font-weight: 600;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
-.detected-address {
+.map-enlarge-btn:hover {
+  background: #f7f7f7;
+}
+
+/* Rides at the top of the enlarged map, clear of Leaflet's zoom buttons on the left, since the address fields are off screen while enlarged. */
+.map-enlarged-bar {
+  position: absolute;
+  top: 12px;
+  left: 56px;
+  right: 12px;
+  z-index: 1;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 8px 8px 8px 12px;
+
+  border-radius: 7px;
+
+  background: #ffffff;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.map-enlarged-bar-icon {
+  flex-shrink: 0;
+
+  color: var(--c-brand);
+}
+
+/* Two lines at most: a full address is long, and the map below is the point. */
+.map-enlarged-bar-text {
+  flex: 1;
+  min-width: 0;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+
+  overflow: hidden;
+
+  font-size: 12px;
+  line-height: 1.35;
+
+  color: #222222;
+}
+
+/* Inside the bar the button sits in the flow instead of the map's corner. */
+.map-enlarge-btn-inline {
+  position: static;
+
+  flex-shrink: 0;
+}
+
+/* What the map calls the pin, offered rather than imposed. */
+.pin-address {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
   margin-top: 14px;
   padding: 10px 12px;
 
-  border-radius: 8px;
+  border-radius: var(--r-md);
 
-  background: #f6f6f7;
+  background: var(--c-surface);
 }
 
-.detected-address-label {
-  font-size: 10px;
+.pin-address-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pin-address-label {
+  font-size: var(--fs-2xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 
-  color: #9a9aa2;
+  color: var(--c-muted);
 }
 
-.detected-address-value {
+.pin-address-value {
   margin-top: 3px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
 
-  color: #333333;
+  color: var(--c-text-2);
+}
+
+.pin-address-use {
+  flex-shrink: 0;
+
+  padding: 0 10px;
+
+  color: var(--c-brand);
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+/* Which of the two addresses is the one that gets saved. */
+.address-note {
+  margin-top: 6px;
+
+  font-size: var(--fs-xs);
+
+  color: var(--c-muted);
 }
 
 .manual-address {
   margin-top: 14px;
 }
 
-/* =========================
-   SUBMIT BUTTON
-========================= */
+/* SUBMIT BUTTON */
 
 .login-button {
   height: 48px;
 
   margin-top: 4px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
 
   font-family: 'Roboto', Arial, sans-serif;
 
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  box-shadow: var(--sh-brand);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
-.login-button:hover {
-  background: #a91e21;
+.login-button:not(.disabled):hover {
+  background: var(--c-brand-hover);
+
+  box-shadow: var(--sh-brand-hover);
+
+  transform: translateY(-1px);
 }
 
-/* =========================
-   LOGIN LINK
-========================= */
+.login-button:not(.disabled):active {
+  background: var(--c-brand-active);
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.login-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
+}
+
+/* Stays brand red for Quasar's .disabled to fade to 60%, matching the profile page's disabled buttons. */
+.login-button:disabled,
+.login-button.disabled {
+  background: var(--c-brand);
+}
+
+/* LOGIN LINK */
 
 .register-section {
   margin-top: 20px;
@@ -1246,24 +1811,26 @@ function handleLocationSelected(location) {
 
   gap: 4px;
 
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .register-section span {
-  color: #8e97a6;
+  color: var(--c-muted);
 }
 
+/* Padding cancelled by an equal negative margin grows the tap area to 44px without moving anything. */
 .create-account {
-  font-size: 12px;
-
-  color: #222222;
+  padding: 14px 0;
+  margin: -14px 0;
 
   border: none;
   background: transparent;
 
-  padding: 0;
-
   font-family: 'Roboto', Arial, sans-serif;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  color: var(--c-brand);
 
   cursor: pointer;
 }
@@ -1272,36 +1839,35 @@ function handleLocationSelected(location) {
   text-decoration: underline;
 }
 
-/* =========================
-   TERMS
-========================= */
+/* TERMS */
 
 .terms {
-  margin: 10px 0 0;
+  margin: 14px 0 0;
 
   text-align: center;
 
-  font-size: 10px;
-  line-height: 1.5;
+  font-size: var(--fs-2xs);
+  line-height: 1.6;
 
-  color: #8e97a6;
+  color: var(--c-muted);
 }
 
+/* Vertical padding on an inline link widens its tap area without changing the line height. */
 .terms a {
-  color: #333333;
+  padding: 16px 0;
+
+  color: var(--c-text-2);
 
   text-decoration: underline;
 }
 
-/* =========================
-   SUCCESS DIALOG
-========================= */
+/* SUCCESS DIALOG */
 
 .success-dialog {
   width: 400px;
   max-width: 90vw;
 
-  border-radius: 10px;
+  border-radius: var(--r-xl);
 
   font-family: 'Roboto', Arial, sans-serif;
 }
@@ -1312,35 +1878,56 @@ function handleLocationSelected(location) {
   padding: 30px 28px 10px;
 }
 
+/* A tinted tile, the same success treatment as the dialogs on the login page. */
 .success-icon-wrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  width: 70px;
-  height: 70px;
+  width: 64px;
+  height: 64px;
 
-  border-radius: 50%;
+  border-radius: var(--r-2xl);
 
-  background: #22c55e;
+  background: var(--c-success-tint);
+  color: var(--c-success);
 
   margin-bottom: 18px;
+
+  animation: success-icon-pop 240ms ease-out;
 }
 
+/* The same pop as the consumer profile's success dialog, scaling the tile in as the dialog opens. */
+@keyframes success-icon-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.75);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .success-icon-wrap {
+    animation: none;
+  }
+}
 .success-title {
   font-size: 19px;
   font-weight: 700;
 
-  color: #222222;
+  color: var(--c-text);
 
   margin-bottom: 10px;
 }
 
 .success-message {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.6;
 
-  color: #666666;
+  color: var(--c-text-3);
 
   margin: 0;
 }
@@ -1352,70 +1939,483 @@ function handleLocationSelected(location) {
 .success-btn {
   width: 100%;
 
-  height: 42px;
+  height: 48px;
 
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: 600;
 }
 
 .primary-btn {
-  background: #bd2427;
+  background: var(--c-brand);
   color: #ffffff;
+
+  box-shadow: var(--sh-brand);
 }
 
 .primary-btn:hover {
-  background: #a91e21;
+  background: var(--c-brand-hover);
 }
 
 .flat-btn {
-  color: #666666;
+  color: var(--c-text-3);
 }
 
-/* =========================
-   TABLET
-========================= */
+/* WIZARD */
 
-@media (max-width: 900px) {
-  .vendor-card {
-    padding: 35px 30px;
-  }
-
-  .register-body {
-    grid-template-columns: 1fr;
-
-    gap: 10px;
-  }
-
-  .map-placeholder {
-    height: 220px;
-  }
+.wizard-progress {
+  margin-bottom: 24px;
 }
 
-/* =========================
-   MOBILE
-========================= */
+.wizard-step-label {
+  margin-bottom: 8px;
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  color: var(--c-text-3);
+}
+
+.wizard-bar {
+  display: flex;
+
+  gap: 6px;
+}
+
+.wizard-bar-segment {
+  flex: 1;
+
+  height: 4px;
+
+  border-radius: var(--r-pill);
+
+  background: var(--c-hairline);
+
+  transition: background-color 0.2s;
+}
+
+.wizard-bar-segment-done {
+  background: var(--c-brand);
+}
+
+.step-hint {
+  margin: -6px 0 18px;
+
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+
+  color: var(--c-text-3);
+}
+
+.step-error {
+  margin-top: 16px;
+}
+
+/* Back and Continue share the row equally, the same pairing as the crop dialog's buttons. */
+.wizard-actions {
+  display: flex;
+
+  gap: 12px;
+
+  margin-top: 24px;
+}
+
+.wizard-actions .q-btn {
+  flex: 1 1 0;
+
+  height: 48px;
+  margin: 0;
+}
+
+.wizard-back {
+  border-radius: var(--r-sm);
+
+  color: var(--c-text-2);
+
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+/* Quasar draws the outline on ::before in the text colour, so the softer border has to be set there. */
+.wizard-back::before {
+  border-color: var(--c-border-strong);
+}
+
+.wizard-back:hover {
+  background: var(--c-surface);
+}
+
+/* VERIFY PHONE */
+
+.otp-row {
+  display: flex;
+  justify-content: center;
+
+  gap: 10px;
+
+  margin-bottom: 20px;
+}
+
+.otp-box {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+
+  background: #ffffff;
+
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+
+  text-align: center;
+
+  color: var(--c-text);
+
+  outline: none;
+
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.otp-box:focus {
+  border-color: var(--c-brand);
+
+  box-shadow: 0 0 0 1px rgba(189, 36, 39, 0.1);
+}
+
+.otp-box.otp-error {
+  border-color: var(--c-danger);
+}
+
+/* Brief green flash on the digit boxes before the store step, the same as the consumer profile's phone check. */
+.otp-box.otp-success {
+  border-color: var(--c-success);
+
+  background: var(--c-success-tint);
+  color: var(--c-success);
+
+  transition: border-color 0.15s, background-color 0.2s, color 0.2s;
+}
+
+.resend-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
+
+  font-size: var(--fs-xs);
+}
+
+.resend-section span {
+  color: var(--c-muted);
+}
+
+/* Padding cancelled by an equal negative margin grows the tap area to 44px without moving anything. */
+.resend-btn {
+  padding: 14px 0;
+  margin: -14px 0;
+
+  border: none;
+  background: transparent;
+
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  color: var(--c-brand);
+
+  cursor: pointer;
+}
+
+.resend-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.resend-disabled {
+  color: var(--c-muted);
+
+  cursor: default;
+}
+
+/* REVIEW */
+
+.review-list {
+  overflow: hidden;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+}
+
+.review-row {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 14px 16px;
+
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.review-row:last-child {
+  border-bottom: none;
+}
+
+.review-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.review-label {
+  margin-bottom: 2px;
+
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+
+  color: var(--c-muted);
+}
+
+.review-value {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  color: var(--c-text);
+
+  overflow-wrap: anywhere;
+}
+
+.review-sub {
+  margin-top: 2px;
+
+  font-size: var(--fs-xs);
+
+  color: var(--c-text-3);
+
+  overflow-wrap: anywhere;
+}
+
+.review-thumb {
+  flex-shrink: 0;
+
+  width: 72px;
+  aspect-ratio: 16 / 9;
+
+  border-radius: var(--r-sm);
+
+  object-fit: cover;
+}
+
+.review-verified {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 3px;
+
+  margin-left: 6px;
+
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+
+  color: var(--c-success);
+}
+
+/* Padding cancelled by an equal negative margin grows the tap area to 44px without moving anything. */
+.review-edit {
+  flex-shrink: 0;
+
+  padding: 14px 4px;
+  margin: -14px 0;
+
+  border: none;
+  background: transparent;
+
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  color: var(--c-brand);
+
+  cursor: pointer;
+}
+
+.review-edit:hover {
+  text-decoration: underline;
+}
 
 @media (max-width: 600px) {
-  .vendor-page {
-    padding: 0;
-
-    background: #ffffff;
+  /* Six 48px boxes overflow a phone screen, so they shrink to share the row. */
+  .otp-row {
+    gap: 8px;
   }
 
-  .vendor-card {
-    box-shadow: none;
+  .otp-box {
+    flex: 0 1 48px;
+    min-width: 0;
+  }
+}
+/* CROP DIALOG */
 
-    padding: 30px 20px 40px;
+/* Same layout as the Crop Profile Photo dialog on the consumer profile page. */
+.crop-dialog {
+  width: 560px;
+  max-width: 90vw;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xl);
+
+  box-shadow: 0 18px 48px rgba(17, 17, 17, 0.18) !important;
+
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+.crop-header {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 32px 32px 20px;
+
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.crop-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 44px;
+  height: 44px;
+
+  border-radius: var(--r-xl);
+
+  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  color: var(--c-brand);
+}
+
+.crop-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.crop-title {
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 700;
+
+  color: var(--c-text);
+}
+
+.crop-subtitle {
+  margin-top: 2px;
+
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+
+  color: var(--c-subtle);
+}
+
+.crop-close {
+  color: var(--c-muted);
+}
+
+.crop-body {
+  padding: 24px 32px;
+}
+
+.crop-actions {
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  padding: 20px 32px;
+
+  border-top: 1px solid var(--c-border);
+}
+
+/* !important beats Quasar's own dialog-actions rule, the same as the profile page's paired buttons. */
+.crop-actions .q-btn {
+  min-width: 160px !important;
+  height: 48px;
+
+  border-radius: var(--r-sm);
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+/* Quasar spaces neighbouring card buttons with its own margin, which would double up with the gap. */
+.crop-actions .q-btn + .q-btn {
+  margin-left: 0;
+}
+
+/* The red outline of the profile's Edit pill, with Quasar drawing the border in the text colour. */
+.crop-cancel {
+  color: var(--c-brand);
+}
+
+.crop-cancel:hover {
+  background: var(--c-brand-tint);
+}
+
+.crop-apply {
+  background: var(--c-brand);
+  color: #ffffff;
+
+  box-shadow: var(--sh-brand);
+}
+
+.crop-apply:hover {
+  background: var(--c-brand-hover);
+}
+
+@media (max-width: 600px) {
+  /* Quasar pads a small dialog by 24px, which is trimmed to 16px so the photo gets more room on phones. */
+  :global(.q-dialog__inner--minimized:has(.crop-dialog)) {
+    padding: 16px;
   }
 
-  .tindahan-logo {
-    width: 120px;
+  .crop-dialog {
+    max-width: 100%;
   }
+
+  .crop-header {
+    align-items: flex-start;
+
+    padding: 24px 24px 20px;
+  }
+
+  .crop-body {
+    padding: 20px 24px;
+  }
+
+  .crop-actions {
+    padding: 16px 24px;
+  }
+
+  /* The two buttons split the row equally, so the desktop minimum width is dropped. */
+  .crop-actions .q-btn {
+    flex: 1 1 0;
+    min-width: 0 !important;
+  }
+}
+
+/* MOBILE */
+
+/* Full-bleed white on phones, the same as the login page. */
+@media (max-width: 600px) {
 
   .vendor-header h1 {
-    font-size: 19px;
+    font-size: 22px;
   }
 
   .hours-row {
@@ -1424,4 +2424,40 @@ function handleLocationSelected(location) {
     gap: 0;
   }
 }
-</style>
+/* Slightly larger text on the auth screens: the shared size tokens go up about 1px here and in this page's own pop-ups. */
+.vendor-page,
+.crop-dialog,
+.success-dialog {
+  --fs-2xs: 12.5px;
+  --fs-xs: 13.5px;
+  --fs-sm: 15px;
+  --fs-md: 16px;
+}
+
+@media (max-width: 600px) {
+  .vendor-page,
+  .crop-dialog,
+  .success-dialog {
+    --fs-2xs: 11.5px;
+    --fs-xs: 12.5px;
+    --fs-sm: 14px;
+    --fs-md: 15px;
+  }
+}
+/* Thumb-sized tap areas on touch screens: the padding is cancelled by an equal negative margin, so nothing moves. */
+@media (pointer: coarse) {
+  .password-icon.cursor-pointer {
+    box-sizing: content-box;
+    padding: 13px;
+    margin: -13px;
+  }
+
+  .terms a {
+    padding-block: 15px;
+  }
+
+  .create-account {
+    padding-inline: 6px;
+    margin-inline: -6px;
+  }
+}</style>

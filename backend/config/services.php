@@ -14,6 +14,10 @@ return [
     |
     */
 
+    'ml_api' => [
+        'url' => env('ML_API_URL'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],
@@ -33,6 +37,13 @@ return [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
+    ],
+
+    'semaphore' => [
+    'api_key' => env('SEMAPHORE_API_KEY'),
+    'sender_name' => env('SEMAPHORE_SENDER_NAME', 'Thesis'),
+    // When set on a local machine, every code is this value and no text is sent, so sign-up can be tried without a phone.
+    'fake_code' => env('SEMAPHORE_FAKE_CODE'),
     ],
 
 ];

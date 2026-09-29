@@ -1,169 +1,371 @@
 <template>
-  <q-page class="vendor-page">
-    <div class="page-container">
-      
-      <!-- ================= HEADER AREA ================= -->
-      <div class="page-header q-mb-lg row items-center justify-between">
+  <q-page class="vp-page">
+    <div class="vp-container">
+
+      <div class="vp-header">
         <div>
-          <h1 class="text-h4 text-weight-bold q-ma-none">Order List</h1>
-          <p class="text-subtitle1 text-grey-7 q-mt-sm q-mb-none">Manage and track all customer orders.</p>
+          <h1 class="vp-title">{{ t('title') }}</h1>
+          <p class="vp-subtitle">{{ t('subtitle') }}</p>
         </div>
-        <div class="row q-gutter-sm">
-          <q-btn outline icon="filter_list" label="Filter" color="dark" no-caps class="btn-3d-outline" />
-          <q-btn outline icon="download" label="Export" color="dark" no-caps class="btn-3d-outline" />
-        </div>
+        <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" :loading="isExporting" @click="exportOrders" />
       </div>
 
-      <!-- ================= CONTROLS & TABLE ================= -->
-      <q-card class="premium-glass-card">
-        <q-card-section class="q-pa-md border-bottom row items-center justify-between">
-          
-          <!-- Search -->
-          <div class="col-12 col-sm-4 q-mb-sm-none q-mb-md">
-            <q-input v-model="search" outlined dense class="custom-glass-input" placeholder="Search by Order ID or Customer...">
-              <template v-slot:prepend>
-                <q-icon name="search" />
+      <div data-tour="ol-list" class="vp-card">
+        <div data-tour="ol-toolbar" class="vp-toolbar">
+          <div class="vp-search-row">
+            <q-input
+              v-model="search"
+              outlined
+              dense
+              clearable
+              clear-icon="o_close"
+              hide-bottom-space
+              :placeholder="$q.screen.xs ? t('searchMob') : t('searchDesk')"
+              class="vp-search"
+            >
+              <template #prepend>
+                <q-icon name="o_search" size="18px" />
               </template>
             </q-input>
+            <OrderTableFilters v-model="filters" :result-count="filteredOrders.length" />
           </div>
 
-          <!-- Status Filters -->
-          <div class="col-12 col-sm-8 text-right">
-            <q-btn-group flat class="bg-grey-2 border-radius-8 filter-group">
-              <q-btn v-for="status in statuses" :key="status" :label="status" 
-                :unelevated="activeStatus === status" 
-                :flat="activeStatus !== status"
-                :class="activeStatus === status ? 'bg-white text-dark shadow-1 text-weight-bold' : 'text-grey-7'" 
-                no-caps size="sm" class="border-radius-8 q-px-md"
-                @click="activeStatus = status"
-              />
-            </q-btn-group>
+          <!-- Each status is a chip with its count, so the busy ones stand out before they are opened. -->
+          <div data-tour="ol-chips" class="vp-chips" role="tablist" aria-label="Filter orders by status">
+            <button
+              v-for="filter in localizedFilters"
+              :key="filter.key"
+              type="button"
+              role="tab"
+              class="vp-chip"
+              :class="{ 'vp-chip--active': activeStatus === filter.key }"
+              :aria-selected="activeStatus === filter.key"
+              @click="activeStatus = filter.key"
+            >
+              {{ filter.label }}
+              <span class="vp-chip-count">{{ countFor(filter.key) }}</span>
+            </button>
           </div>
-        </q-card-section>
+        </div>
 
-        <!-- Table -->
-        <q-table
-          flat
-          class="custom-premium-table"
-          :rows="filteredOrders"
-          :columns="columns"
-          row-key="order_id"
-          :loading="loading"
-          @row-click="onRowClick"
-        >
-          <template #no-data>
-            <div class="full-width row flex-center text-grey-6 q-pa-xl empty-state-glass">
-              <div class="text-center">
-                <q-icon name="inbox" size="48px" class="q-mb-md opacity-50" />
-                <div class="text-subtitle1 text-weight-medium">No orders found</div>
-                <div class="text-caption">Orders matching your filters will appear here.</div>
-              </div>
+        <!-- The filters in use, each removable with one tap. -->
+        <div v-if="filterChips.length" class="vp-filter-summary">
+          <span class="vp-filter-summary-label">{{ t('filteredBy') }}</span>
+          <button v-for="chip in filterChips" :key="chip.key" type="button" class="vp-filter-chip" :aria-label="`Remove ${chip.label}`" @click="clearFilter(filters, chip.key)">
+            {{ chip.label }}
+            <q-icon name="o_close" size="14px" />
+          </button>
+          <button type="button" class="vp-filter-clear" @click="resetOrderFilters(filters)">{{ t('clearAll') }}</button>
+        </div>
+
+        <SkeletonTable v-if="loading" :columns="SKELETON_COLUMNS" :list="$q.screen.lt.md" />
+
+        <div v-else-if="!filteredOrders.length" class="vp-empty">
+          <div class="vp-empty-icon"><q-icon name="o_receipt_long" size="24px" /></div>
+          <div class="vp-empty-title">{{ orders.length ? t('noMatchTitle') : t('emptyTitle') }}</div>
+          <div class="vp-empty-text">
+            {{ orders.length ? t('noMatchText') : t('emptyText') }}
+          </div>
+          <q-btn v-if="orders.length && filterChips.length" outline no-caps color="primary" :label="t('clearFilters')" class="vp-pill-btn ol-empty-btn" @click="resetOrderFilters(filters)" />
+        </div>
+
+        <!-- A table on wide screens; the Order, Date and Total headings sort their columns. -->
+        <div v-else-if="!$q.screen.lt.md" class="vp-table-wrap">
+          <table class="vp-table">
+            <thead>
+              <tr>
+                <th class="col-order" :aria-sort="ariaSort('id')">
+                  <button type="button" class="vp-sort" :class="{ 'vp-sort--on': sortDirection(filters.sort, 'id') }" @click="sortBy('id')">
+                    {{ t('colOrder') }} <q-icon :name="sortIcon('id')" size="14px" />
+                  </button>
+                </th>
+                <th>{{ t('colCustomer') }}</th>
+                <th class="col-date" :aria-sort="ariaSort('date')">
+                  <button type="button" class="vp-sort" :class="{ 'vp-sort--on': sortDirection(filters.sort, 'date') }" @click="sortBy('date')">
+                    {{ t('colDate') }} <q-icon :name="sortIcon('date')" size="14px" />
+                  </button>
+                </th>
+                <th class="text-right col-total" :aria-sort="ariaSort('total')">
+                  <button type="button" class="vp-sort" :class="{ 'vp-sort--on': sortDirection(filters.sort, 'total') }" @click="sortBy('total')">
+                    {{ t('colTotal') }} <q-icon :name="sortIcon('total')" size="14px" />
+                  </button>
+                </th>
+                <th class="col-status">{{ t('colStatus') }}</th>
+                <th class="col-open"><span class="vp-sr-only">Open</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="order in pagedOrders"
+                :key="order.order_id"
+                class="vp-row"
+                tabindex="0"
+                @click="goToOrder(order.order_id)"
+                @keydown.enter="goToOrder(order.order_id)"
+              >
+                <td><span class="vp-id">#{{ order.order_id }}</span></td>
+                <td>
+                  <div class="vp-person">
+                    <q-avatar size="32px" class="vp-avatar">
+                      <img v-if="order.consumer?.profile_picture_url" :src="order.consumer.profile_picture_url" alt="" />
+                      <q-icon v-else name="o_person" size="18px" />
+                    </q-avatar>
+                    <span class="vp-name">{{ order.consumer?.full_name || t('unknownCustomer') }}</span>
+                  </div>
+                </td>
+                <td class="vp-muted">{{ formatDate(order.created_at) }}</td>
+                <td class="text-right vp-amount">₱{{ formatNumber(order.total_amount) }}</td>
+                <td>
+                  <span class="vp-status" :class="`vp-status--${getStatusTone(order.status)}`">
+                    {{ translateStatus(order.status) }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <q-btn flat round dense icon="o_chevron_right" class="vp-open-btn" :aria-label="`Open order #${order.order_id}`" @click.stop="goToOrder(order.order_id)" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- A tappable list on phones, with the total and status on the right; the sort lives in the Filters panel. -->
+        <div v-else class="vp-list">
+          <button v-for="order in pagedOrders" :key="order.order_id" type="button" class="vp-list-item" @click="goToOrder(order.order_id)">
+            <q-avatar size="38px" class="vp-avatar">
+              <img v-if="order.consumer?.profile_picture_url" :src="order.consumer.profile_picture_url" alt="" />
+              <q-icon v-else name="o_person" size="20px" />
+            </q-avatar>
+            <div class="vp-list-body">
+              <span class="vp-name">{{ order.consumer?.full_name || t('unknownCustomer') }}</span>
+              <div class="vp-list-meta">#{{ order.order_id }} · {{ formatDate(order.created_at) }}</div>
             </div>
-          </template>
+            <div class="vp-list-side">
+              <span class="vp-amount">₱{{ formatNumber(order.total_amount) }}</span>
+              <span class="vp-status" :class="`vp-status--${getStatusTone(order.status)}`">
+                {{ translateStatus(order.status) }}
+              </span>
+            </div>
+          </button>
+        </div>
 
-          <template #body-cell-customer="props">
-            <q-td :props="props">
-              <div class="row items-center">
-                <q-avatar size="32px" class="q-mr-sm">
-                  <img :src="props.row.consumer?.profile_picture_url || 'https://cdn.quasar.dev/img/avatar.png'">
-                </q-avatar>
-                <div class="text-weight-bold">{{ props.row.consumer?.full_name || 'Unknown' }}</div>
-              </div>
-            </q-td>
-          </template>
-          
-          <template #body-cell-status="props">
-            <q-td :props="props">
-              <q-chip size="sm" :color="getStatusColor(props.row.status)" text-color="white" class="text-weight-bold shadow-1">
-                {{ formatStatus(props.row.status) }}
-              </q-chip>
-            </q-td>
-          </template>
-
-          <template #body-cell-action="props">
-            <q-td :props="props" class="text-right">
-              <q-btn flat round dense icon="chevron_right" color="grey-7" @click.stop="goToOrder(props.row.order_id)" />
-            </q-td>
-          </template>
-        </q-table>
-      </q-card>
+        <div v-if="!loading && pageCount > 1" class="vp-pager">
+          <span>{{ t('showing') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('of') }} {{ filteredOrders.length }}</span>
+          <div class="vp-pager-btns">
+            <q-btn outline no-caps color="primary" icon="o_chevron_left" class="vp-pill-btn" aria-label="Previous page" :disable="page === 1" @click="page--" />
+            <q-btn outline no-caps color="primary" icon="o_chevron_right" class="vp-pill-btn" aria-label="Next page" :disable="page === pageCount" @click="page++" />
+          </div>
+        </div>
+      </div>
 
     </div>
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
+import { statusKey } from '@/utils/orderStatus'
+import { emptyOrderFilters, applyOrderFilters, describeFilters, clearFilter, resetOrderFilters, toggleSort, sortDirection } from '@/utils/orderFilters'
+import { useLanguage } from '@/composables/useLanguage'
+import OrderTableFilters from '@/components/vendor/OrderTableFilters.vue'
+import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 
 const router = useRouter()
-const search = ref('')
-const activeStatus = ref('All')
-const statuses = ['All', 'Placed', 'Preparing', 'Ready for Pickup', 'Picked up', 'Cancelled']
-const loading = ref(true)
+const $q = useQuasar()
 
-const orders = ref([])
-
-const columns = [
-  { name: 'order_id', label: 'Order ID', field: 'order_id', align: 'left', sortable: true },
-  { name: 'date', label: 'Date', field: row => formatDate(row.created_at), align: 'left', sortable: true },
-  { name: 'customer', label: 'Customer', field: 'customer', align: 'left' },
-  { name: 'price', label: 'Price (₱)', field: row => formatNumber(row.total_amount), align: 'left', sortable: true },
-  { name: 'status', label: 'Status', field: row => formatStatus(row.status), align: 'left' },
-  { name: 'action', label: '', field: 'action', align: 'right' }
-]
-
-const filteredOrders = computed(() => {
-  return orders.value.filter(order => {
-    const matchesSearch = search.value === '' || 
-      String(order.order_id).includes(search.value) || 
-      (order.consumer?.full_name || '').toLowerCase().includes(search.value.toLowerCase());
-      
-    const matchesStatus = activeStatus.value === 'All' || 
-      formatStatus(order.status).toLowerCase() === activeStatus.value.toLowerCase();
-
-    return matchesSearch && matchesStatus;
-  })
-})
-
-const getStatusColor = (status) => {
-  switch (String(status).toLowerCase()) {
-    case 'placed': return 'blue-6'
-    case 'preparing': return 'amber-7'
-    case 'ready_for_pickup': return 'orange-5'
-    case 'picked_up': return 'green-6'
-    case 'cancelled': return 'red-6'
-    default: return 'grey-6'
+// Language Dictionary for this page
+const orderListDict = {
+  en: {
+    title: 'Order List',
+    subtitle: 'Track and manage every order from your customers.',
+    exportBtn: 'Export Report',
+    searchDesk: 'Search order ID or customer',
+    searchMob: 'Search orders',
+    filteredBy: 'Filtered by',
+    clearAll: 'Clear all',
+    noMatchTitle: 'No matching orders',
+    emptyTitle: 'No orders yet',
+    noMatchText: 'Try another search, status or filter.',
+    emptyText: 'New orders from customers will show up here.',
+    clearFilters: 'Clear filters',
+    colOrder: 'Order',
+    colCustomer: 'Customer',
+    colDate: 'Date',
+    colTotal: 'Total',
+    colStatus: 'Status',
+    showing: 'Showing',
+    of: 'of',
+    unknownCustomer: 'Unknown',
+    statusAll: 'All',
+    statusPlaced: 'Placed',
+    statusPreparing: 'Preparing',
+    statusReady: 'Ready for pickup',
+    statusPickedUp: 'Picked up',
+    statusCancelled: 'Cancelled',
+    exportFail: 'Failed to generate the order report. Please try again.'
+  },
+  ph: {
+    title: 'Listahan ng Order',
+    subtitle: 'I-track at i-manage ang mga order ng customers.',
+    exportBtn: 'I-export ang Report',
+    searchDesk: 'Hanapin ang order ID o customer',
+    searchMob: 'Hanapin ang order',
+    filteredBy: 'Naka-filter sa',
+    clearAll: 'I-clear lahat',
+    noMatchTitle: 'Walang nahanap na order',
+    emptyTitle: 'Wala pang order',
+    noMatchText: 'Subukang ibahin ang search, status o filter.',
+    emptyText: 'Dito lalabas ang mga bagong order mula sa customers.',
+    clearFilters: 'I-clear ang filters',
+    colOrder: 'Order',
+    colCustomer: 'Customer',
+    colDate: 'Petsa',
+    colTotal: 'Kabuuan',
+    colStatus: 'Status',
+    showing: 'Pinapakita ang',
+    of: 'mula sa',
+    unknownCustomer: 'Hindi Kilala',
+    statusAll: 'Lahat',
+    statusPlaced: 'Na-order',
+    statusPreparing: 'Inihahanda',
+    statusReady: 'Pwede nang kunin',
+    statusPickedUp: 'Nakuha na',
+    statusCancelled: 'Kinansela',
+    exportFail: 'Failed ma-generate ang order report. Paki-try ulit.'
   }
 }
 
-const formatStatus = (status) => {
+const { t, lang } = useLanguage(orderListDict)
+
+// Determines the correct color class for the order status badges
+const getStatusTone = (status) => {
+  const s = String(status || '').toLowerCase().trim().replace(/[\s_-]+/g, '_')
+  if (s.includes('ready')) return 'ready'
+  if (s.includes('picked') || s.includes('complete')) return 'done'
+  if (s.includes('cancel')) return 'cancelled'
+  if (s.includes('prepar')) return 'preparing'
+  return 'placed'
+}
+
+// Directly translates the status string according to specified mappings
+const translateStatus = (status) => {
   if (!status) return ''
-  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  const key = String(status).toLowerCase().trim().replace(/[\s-]+/g, '_')
+
+  const statusDict = {
+    en: {
+      placed: 'Placed',
+      preparing: 'Preparing',
+      ready_for_pickup: 'Ready for pickup',
+      picked_up: 'Picked up',
+      cancelled: 'Cancelled',
+      completed: 'Completed'
+    },
+    ph: {
+      placed: 'Na-order',
+      preparing: 'Inihahanda',
+      ready_for_pickup: 'Pwede nang kunin',
+      picked_up: 'Nakuha na',
+      cancelled: 'Kinansela',
+      completed: 'Nakuha na'
+    }
+  }
+
+  return statusDict[lang.value]?.[key] || status
 }
 
-const formatNumber = (num) => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const formatDate = (dateString) => {
+// Dynamically translated status filters
+const localizedFilters = computed(() => [
+  { key: 'all', label: t('statusAll') },
+  { key: 'placed', label: t('statusPlaced') },
+  { key: 'preparing', label: t('statusPreparing') },
+  { key: 'ready_for_pickup', label: t('statusReady') },
+  { key: 'picked_up', label: t('statusPickedUp') },
+  { key: 'cancelled', label: t('statusCancelled') }
+])
+
+// The placeholder rows take the same columns as the table.
+const SKELETON_COLUMNS = [
+  { width: '12%', type: 'pill', size: 56 },
+  { type: 'avatar' },
+  { width: '21%', type: 'text' },
+  { width: '13%', type: 'text', align: 'right' },
+  { width: '17%', type: 'pill', size: 96 },
+  { width: '6%', type: 'icon', align: 'right' }
+]
+const PAGE_SIZE = 10
+
+const orders = ref([])
+const loading = ref(true)
+const isExporting = ref(false)
+const search = ref('')
+const activeStatus = ref('all')
+const page = ref(1)
+const filters = ref(emptyOrderFilters())
+
+const matchesSearch = order => {
+  const term = (search.value || '').trim().toLowerCase().replace('#', '')
+  return !term || String(order.order_id).includes(term) || (order.consumer?.full_name || '').toLowerCase().includes(term)
+}
+
+const matchesStatus = (order, key) => key === 'all' || statusKey(order.status) === key
+
+// Search and the filter panel apply first, so each status chip counts what it would show.
+const baseOrders = computed(() => applyOrderFilters(orders.value.filter(matchesSearch), filters.value))
+
+const countFor = key => baseOrders.value.filter(order => matchesStatus(order, key)).length
+
+const filteredOrders = computed(() => baseOrders.value.filter(order => matchesStatus(order, activeStatus.value)))
+
+const filterChips = computed(() => describeFilters(filters.value))
+
+const pageCount = computed(() => Math.max(1, Math.ceil(filteredOrders.value.length / PAGE_SIZE)))
+const pagedOrders = computed(() => filteredOrders.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
+const rangeStart = computed(() => (page.value - 1) * PAGE_SIZE + 1)
+const rangeEnd = computed(() => Math.min(page.value * PAGE_SIZE, filteredOrders.value.length))
+
+// A new search, status, filter or sort starts back on the first page.
+watch([search, activeStatus, () => JSON.stringify(filters.value)], () => { page.value = 1 })
+
+const sortBy = field => { filters.value.sort = toggleSort(filters.value.sort, field) }
+const sortIcon = field => ({ asc: 'o_arrow_upward', desc: 'o_arrow_downward' }[sortDirection(filters.value.sort, field)] || 'o_unfold_more')
+const ariaSort = field => ({ asc: 'ascending', desc: 'descending' }[sortDirection(filters.value.sort, field)] || 'none')
+
+const formatNumber = num => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+const formatDate = dateString => {
   if (!dateString) return ''
-  const d = new Date(dateString)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
-const goToOrder = (id) => {
-  router.push('/vendor/orders/' + id)
-}
+const goToOrder = id => router.push('/vendor/orders/' + id)
 
-const onRowClick = (evt, row) => {
-  goToOrder(row.order_id)
+const exportOrders = async () => {
+  isExporting.value = true
+  try {
+    const response = await api.get('/vendor/orders/export', { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `Tindahan-Order-List-Report-${new Date().toISOString().split('T')[0]}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    setTimeout(() => window.URL.revokeObjectURL(url), 1000)
+  } catch (error) {
+    console.error('Export failed:', error)
+    $q.notify({ type: 'negative', message: t('exportFail'), position: 'top-right' })
+  } finally {
+    isExporting.value = false
+  }
 }
 
 onMounted(async () => {
   try {
     const res = await api.get('/vendor/orders')
-    if (res.data) {
-      orders.value = res.data.data || res.data // handle paginated or unpaginated
-    }
+    if (res.data) orders.value = res.data.data || res.data
   } catch (error) {
     console.error('Failed to load orders', error)
   } finally {
@@ -173,61 +375,52 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.vendor-page {
-  padding: 24px;
-  background: #f8fafc;
-  min-height: 100vh;
-}
-.page-container {
-  max-width: 1400px;
-  margin: 0 auto;
-}
-.premium-glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-}
-.btn-3d-outline {
-  border-radius: 8px !important;
-  background: #ffffff !important;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  transition: all 0.2s ease;
-}
-.btn-3d-outline:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-  background: #F8FAFC !important;
-}
-.custom-glass-input :deep(.q-field__control) {
-  background: rgba(241, 245, 249, 0.6);
-  border-radius: 8px;
-}
-.border-bottom {
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-}
-.border-radius-8 {
-  border-radius: 8px;
-}
-.filter-group {
+/* Status badge styling */
+.vp-status {
   display: inline-flex;
-  padding: 4px;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 13px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
 }
-:deep(.custom-premium-table thead tr th) {
-  background: rgba(248, 250, 252, 0.7); backdrop-filter: blur(8px); font-weight: 700;
-  color: #64748B; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; padding: 16px 20px; border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+
+.vp-status--placed {
+  background-color: #dbeafe !important;
+  color: #1d4ed8 !important;
 }
-:deep(.custom-premium-table tbody td) {
-  padding: 16px 20px; border-bottom: 1px solid rgba(226, 232, 240, 0.5); cursor: pointer;
+
+.vp-status--preparing {
+  background-color: #fef3c7 !important;
+  color: #b45309 !important;
 }
-:deep(.custom-premium-table tbody tr:hover td) {
-  background: rgba(241, 245, 249, 0.4);
+
+.vp-status--ready {
+  background-color: #e0e7ff !important;
+  color: #4338ca !important;
 }
-.empty-state-glass {
-  background: rgba(248, 250, 252, 0.5);
-  border: 1px dashed #E2E8F0;
-  border-radius: 12px;
+
+.vp-status--done {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+}
+
+.vp-status--cancelled {
+  background-color: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+
+/* Column widths as shares of the table, so the columns spread evenly at any width. */
+.vp-table .col-order { width: 12%; }
+.vp-table .col-date { width: 21%; }
+.vp-table .col-total { width: 13%; }
+.vp-table .col-status { width: 17%; }
+.vp-table .col-open { width: 6%; }
+
+.ol-empty-btn {
+  margin-top: 10px;
 }
 </style>

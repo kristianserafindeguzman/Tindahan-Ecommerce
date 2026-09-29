@@ -1,24 +1,535 @@
 // app global css
 
-.glass-logout-dialog {
-  background: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: blur(10px) !important;
-  border-radius: 20px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+/* Consumer design tokens, the canonical values consumer components read as var(--token) from plain scoped CSS. */
+
+:root {
+  /* Brand */
+  --c-brand: #bd2427;
+  --c-brand-hover: #a91e21;
+  --c-brand-active: #8f1a1c;
+  --c-brand-deep: #9c171b;
+  --c-brand-tint: #fdecec;
+  --c-brand-tint-2: #fbdbdc;
+  --c-brand-tint-3: #f3c6c7;
+
+  /* Neutrals */
+  --c-text: #111111;
+  --c-text-2: #333333;
+  --c-text-3: #555555;
+  --c-muted: #8992a2;
+  --c-subtle: #767676;
+  /* Cooler and a shade darker than the old #e8e8e8, so card outlines stay visible against the off-white page. */
+  --c-border: #d8dce3;
+  --c-border-strong: #c3c9d4;
+  --c-surface: #f7f7f8;
+  --c-surface-2: #fafafa;
+  --c-hairline: #f0f0f0;
+  --c-white: #ffffff;
+
+  /* Semantic */
+  --c-success: #16a34a;
+  /* The -wash step is lighter than -tint for surfaces holding tinted elements, and -tint-2 is deeper for insets on a -tint ground. */
+  --c-success-tint: #dcfce7;
+  --c-success-wash: #f0fdf4;
+  /* Hue-matched stand-ins for --c-muted on tinted grounds, each clearing 4.5:1 where --c-muted manages only 3.0. */
+  --c-success-muted: #43705a;
+  /* Two steps deeper than -tint, since a border one step off its own fill is invisible. */
+  --c-success-line: #86efac;
+  --c-danger: #b91c1c;
+  --c-danger-tint: #fef2f2;
+  --c-danger-tint-2: #fee2e2;
+  --c-danger-muted: #8c5f5f;
+  --c-danger-line: #f6b0b0;
+  --c-warning: #c2410c;
+  --c-warning-tint: #ffedd5;
+  /* Wash and line steps for the warning and info toasts, matching the success and danger sets. */
+  --c-warning-wash: #fff7ed;
+  --c-warning-line: #fdba74;
+  --c-info: #2563eb;
+  --c-info-tint: #e3f2fd;
+  --c-info-wash: #eff6ff;
+  --c-info-line: #93c5fd;
+
+  /* Order lifecycle colours, kept as their own hues so placed, preparing and ready stay distinct from each other and the brand red. */
+  --c-status-wait: #ff6f00;
+  --c-status-wait-tint: #fff8e1;
+  --c-status-active: #ff9800;
+  --c-status-active-tint: #fff3e0;
+
+  /* One colour per order status on the vendor side, each dark enough to read on its own tint. */
+  --st-placed: #1d4ed8;
+  --st-placed-bg: #dbeafe;
+  --st-preparing: #b45309;
+  --st-preparing-bg: #fef3c7;
+  --st-ready: #6d28d9;
+  --st-ready-bg: #ede9fe;
+  --st-done: #15803d;
+  --st-done-bg: #dcfce7;
+  --st-cancelled: #b91c1c;
+  --st-cancelled-bg: #fee2e2;
+
+  /* Radius */
+  --r-xs: 4px;    /* skeleton bars, text highlight marks */
+  --r-sm: 6px;    /* buttons and small controls */
+  --r-md: 8px;    /* inputs, medium controls */
+  --r-lg: 10px;   /* cards */
+  --r-xl: 12px;   /* dialogs, icon tiles */
+  --r-2xl: 16px;  /* sheets, hero and store banners */
+  --r-pill: 999px;
+  /* Two radii the vendor side uses everywhere: one for controls, one for surfaces. */
+  --r-control: 8px;  /* buttons, inputs, menus, thumbnails, notes inside cards */
+  --r-surface: 12px; /* cards, dialogs, panels, banners, icon tiles */
+
+  /* The gap between cards and page sections. */
+  --sp-gap: 16px;
+
+  /* Space the bottom tab bar occupies, zero at desktop widths where the bar does not render. */
+  --bottom-nav-h: 0px;
+
+  /* Type scale */
+  --fs-2xs: 11.5px;
+  --fs-xs: 12.5px;
+  --fs-sm: 14px;
+  --fs-md: 15px;
+  --fs-lg: 16px;
+  --fs-xl: 18px;
+  --fs-2xl: 20px;
+  --fs-3xl: 23px;
+  --fs-4xl: 28px;
+  --fs-hero: 34px;
+
+  /* Elevation */
+  --sh-card: 0 2px 10px rgba(0, 0, 0, 0.05);
+  --sh-card-hover: 0 4px 14px rgba(0, 0, 0, 0.06);
+  --sh-pop: 0 10px 30px rgba(0, 0, 0, 0.18);
+  /* Upward, for a bar docked to the bottom edge. */
+  --sh-dock: 0 -4px 18px rgba(17, 17, 17, 0.07);
+  /* The header's long, soft shadow, tinted with its gradient's dark end so the red fades into the page. */
+  --sh-header: 0 8px 24px rgba(73, 15, 15, 0.16);
+  --sh-brand: 0 2px 8px rgba(189, 36, 39, 0.25);
+  --sh-brand-hover: 0 6px 16px rgba(189, 36, 39, 0.32);
 }
 
-.glass-logout-btn-cancel {
-  border-radius: 12px !important;
-  font-weight: 600 !important;
-  transition: all 0.2s ease !important;
+/* The type scale steps down about 8% on phones, keeping the ratios between steps so hierarchy is unchanged. */
+@media (max-width: 600px) {
+  :root {
+    --fs-2xs: 10.5px;
+    --fs-xs: 11.5px;
+    --fs-sm: 13px;
+    --fs-md: 14px;
+    --fs-lg: 15px;
+    --fs-xl: 16.5px;
+    --fs-2xl: 19px;
+    --fs-3xl: 21px;
+    --fs-4xl: 25px;
+    --fs-hero: 29px;
+  }
 }
 
-.glass-logout-btn-ok {
-  border-radius: 12px !important;
-  font-weight: 600 !important;
-  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.2) !important;
-  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%) !important;
-  color: white !important;
-  transition: all 0.2s ease !important;
+/* Smooth transitions for theme switching */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Global dark mode, applied across every module. */
+body.body--dark {
+  background-color: #090d16 !important;
+  color: #f8fafc !important;
+
+  /* Layout and Page Container */
+  .q-layout,
+  .q-page-container,
+  .admin-page,
+  .admin-dashboard,
+  .vendor-page {
+    background-color: #090d16 !important;
+    background-image: none !important;
+    color: #f8fafc !important;
+  }
+
+  /* Universal Cards & Main Table Wrappers */
+  .premium-glass-card,
+  .glass-card,
+  .table-main-card,
+  .table-glass-container,
+  .sari-base-card {
+    background: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
+    color: #f8fafc !important;
+  }
+
+  .glass-toolbar {
+    background: rgba(15, 23, 42, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Core Quasar Table Overrides (Kills the bright white table body) */
+  .q-table__container,
+  .q-table__middle,
+  .q-table,
+  .custom-glass-table,
+  .directory-solid-table,
+  .interactive-table {
+    background-color: #0f172a !important;
+    color: #cbd5e1 !important;
+  }
+
+  /* Tab strip container above tables */
+  .panel-header {
+    background: #1e293b !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Table Header (THEAD) */
+  .q-table thead tr th,
+  .custom-glass-table thead tr th,
+  .directory-solid-table thead tr th {
+    background: #162032 !important;
+    color: #fca5a5 !important;
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Table Body Rows & Cells (TBODY) */
+  .q-table tbody tr,
+  .q-table tbody tr td,
+  .custom-glass-table tbody tr td,
+  .directory-solid-table tbody tr td,
+  .interactive-table tbody tr td {
+    background-color: #0f172a !important;
+    color: #cbd5e1 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  }
+
+  /* Table Row Hover State */
+  .q-table tbody tr:hover td,
+  .custom-glass-table tbody tr:hover td,
+  .interactive-table tbody tr:hover td {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+  }
+
+  /* Table Pagination / Footer */
+  .q-table__bottom {
+    background: #0f172a !important;
+    color: #94a3b8 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  /* Inputs, Search Bars & Filters */
+  .q-field--outlined .q-field__control,
+  .search-input-glass .q-field__control,
+  .filter-select-glass .q-field__control,
+  .search-input-field .q-field__control,
+  .filter-select-field .q-field__control,
+  .custom-glass-input .q-field__control {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #f8fafc !important;
+  }
+
+  .q-field__native,
+  .q-field__input {
+    color: #f8fafc !important;
+  }
+
+  /* Dropdown Menus */
+  .q-menu {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  }
+  .q-menu .q-item {
+    color: #cbd5e1 !important;
+  }
+  .q-menu .q-item:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+  }
+
+  /* Typography */
+  .text-dark,
+  .text-heading {
+    color: #f8fafc !important;
+  }
+
+  .text-grey-6,
+  .text-grey-7,
+  .text-grey-8,
+  .text-subtext {
+    color: #94a3b8 !important;
+  }
+
+  /* Action Buttons */
+  .btn-view-3d {
+    background: #1e293b !important;
+    color: #94a3b8 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  }
+  .btn-view-3d:hover {
+    background: #334155 !important;
+    color: #ffffff !important;
+  }
+
+  .btn-delete-3d {
+    background: rgba(185, 28, 28, 0.18) !important;
+    border: 1px solid rgba(239, 68, 68, 0.35) !important;
+    color: #fca5a5 !important;
+  }
+  .btn-delete-3d:hover {
+    background: rgba(185, 28, 28, 0.32) !important;
+  }
+
+  .export-btn,
+  .btn-glass {
+    background: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #f8fafc !important;
+  }
+
+  /* Modal Dialogs */
+  .q-dialog .review-dialog-glass,
+  .q-dialog .consumer-profile-card,
+  .q-dialog .modal-solid-card {
+    background: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #f8fafc !important;
+  }
+
+  .q-dialog .dialog-actions-glass,
+  .q-dialog .modal-actions-bar,
+  .q-dialog .q-card__actions {
+    background: #1e293b !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+}
+
+/* Map zoom buttons on every Leaflet map, one rounded white card instead of Leaflet's grey-bordered squares; the .leaflet-container prefix outranks leaflet.css whichever loads last. */
+.leaflet-container .leaflet-control-zoom.leaflet-bar {
+  margin: 12px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+
+  background: #ffffff;
+
+  box-shadow: 0 2px 10px rgba(17, 17, 17, 0.12);
+}
+
+.leaflet-container .leaflet-control-zoom.leaflet-bar a {
+  width: 36px;
+  height: 36px;
+
+  border-radius: 0;
+  border-bottom: 1px solid var(--c-hairline);
+
+  background: #ffffff;
+  color: var(--c-text-2);
+
+  font: 400 20px/36px 'Roboto', Arial, sans-serif;
+  text-indent: 0;
+
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.leaflet-container .leaflet-control-zoom.leaflet-bar a:last-child {
+  border-bottom: none;
+}
+
+.leaflet-container .leaflet-control-zoom.leaflet-bar a:hover {
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
+}
+
+/* Leaflet greys out + at the closest zoom and − at the farthest. */
+.leaflet-container .leaflet-control-zoom.leaflet-bar a.leaflet-disabled {
+  background: #ffffff;
+  color: var(--c-border-strong);
+
+  cursor: default;
+}
+
+.leaflet-container .leaflet-control-zoom.leaflet-bar a:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: -2px;
+}
+
+/* Scroll reveal, where the v-intersection handler in useReveal.js toggles classes and the motion lives here. */
+
+/* A keyframe animation rather than a transition, since a component's own transition list would replace this one. */
+.reveal {
+  opacity: 0;
+}
+
+/* fill-mode backwards hides a staggered card during its delay without pinning transform, so the hover lift still works. */
+.reveal--in {
+  opacity: 1;
+
+  animation: reveal-in 560ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Under reduced motion, revealed elements show at once with no animation. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal--in {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+/* Sheets retime Quasar's own slide transitions, with an expo-out entrance and a shorter, accelerating exit. */
+
+.q-dialog__inner--bottom.q-transition--slide-up-enter-active,
+.q-dialog__inner--left.q-transition--slide-right-enter-active {
+  transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Quasar names the leave transition after its direction, so a bottom sheet leaves on slide-down and a left drawer on slide-left. */
+.q-dialog__inner--bottom.q-transition--slide-down-leave-active,
+.q-dialog__inner--left.q-transition--slide-left-leave-active {
+  transition: transform 240ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Promotes the panel to its own layer only while it slides, since Quasar removes the animating class when it ends. */
+.q-dialog__inner--animating {
+  will-change: transform;
+}
+
+/* Retimes the backdrop to match the sheet, scoped to sheets with :has() so centred dialogs keep their own 200ms timing. */
+.q-dialog:has(.q-dialog__inner--bottom) > .q-dialog__backdrop,
+.q-dialog:has(.q-dialog__inner--left) > .q-dialog__backdrop {
+  transition: background-color 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Matches the quicker exit above. */
+.q-dialog:has(.q-dialog__inner--bottom) > .q-transition--fade-leave-active.q-dialog__backdrop,
+.q-dialog:has(.q-dialog__inner--left) > .q-transition--fade-leave-active.q-dialog__backdrop {
+  transition: background-color 240ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .q-dialog__inner--bottom.q-transition--slide-up-enter-active,
+  .q-dialog__inner--bottom.q-transition--slide-down-leave-active,
+  .q-dialog__inner--left.q-transition--slide-right-enter-active,
+  .q-dialog__inner--left.q-transition--slide-left-leave-active,
+  .q-dialog:has(.q-dialog__inner--bottom) > .q-dialog__backdrop,
+  .q-dialog:has(.q-dialog__inner--left) > .q-dialog__backdrop {
+    transition-duration: 0ms;
+  }
+}
+
+
+
+
+
+
+/* Toasts are tinted per type like the terminal-state order cards, with the types registered in boot/notify.js. */
+
+/* No position: relative here, because it overrides the absolute positioning Quasar gives a leaving toast and shoves it sideways by its own offset. */
+.q-notification.app-toast {
+  --toast-wash: #ffffff;
+  --toast-line: var(--c-border);
+  --toast-disc: var(--c-surface);
+  --toast-ink: var(--c-text-2);
+
+  min-height: 0;
+  min-width: min(300px, calc(100vw - 32px));
+  padding: 14px 18px;
+
+  border: 1px solid var(--toast-line);
+  border-radius: var(--r-lg);
+
+  /* !important because Quasar paints its own bg and text utility classes on the element. */
+  background: var(--toast-wash) !important;
+  color: var(--c-text) !important;
+
+  box-shadow: var(--sh-pop);
+
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+.app-toast.app-toast--positive {
+  --toast-wash: var(--c-success-wash);
+  --toast-line: var(--c-success-line);
+  --toast-disc: var(--c-success-tint);
+  --toast-ink: var(--c-success);
+}
+
+.app-toast.app-toast--negative {
+  --toast-wash: var(--c-danger-tint);
+  --toast-line: var(--c-danger-line);
+  --toast-disc: var(--c-danger-tint-2);
+  --toast-ink: var(--c-danger);
+}
+
+.app-toast.app-toast--warning {
+  --toast-wash: var(--c-warning-wash);
+  --toast-line: var(--c-warning-line);
+  --toast-disc: var(--c-warning-tint);
+  --toast-ink: var(--c-warning);
+}
+
+.app-toast.app-toast--info {
+  --toast-wash: var(--c-info-wash);
+  --toast-line: var(--c-info-line);
+  --toast-disc: var(--c-info-tint);
+  --toast-ink: var(--c-info);
+}
+
+.app-toast .q-notification__message {
+  padding: 0;
+
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* The status disc, the same tinted shape as .notif-icon and .info-icon. */
+.app-toast .q-notification__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Quasar sizes the icon with flex: 0 0 1em, which overrode the width below and squeezed the disc into a tall pill. */
+  flex: 0 0 34px;
+
+  width: 34px;
+  height: 34px;
+  margin-right: 12px;
+
+  border-radius: var(--r-xl);
+
+  background: var(--toast-disc);
+  color: var(--toast-ink);
+
+  font-size: 20px;
+}
+
+/* Toasts rise above the tab bar, reading the root value since they are teleported to the body. */
+.q-notifications__list.q-notifications__list--bottom {
+  bottom: var(--bottom-nav-h);
+}
+
+/* Mirrors the tab bar's 1px border and 64px tabs plus the safe-area inset, at the same breakpoint as its script gate. */
+@media (max-width: 1023px) {
+  :root {
+    --bottom-nav-h: calc(65px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Every consumer page clears the tab bar, with pages that own a fixed bottom bar adding its height inline. */
+.storefront-page,
+.profile-page {
+  padding-bottom: var(--bottom-nav-h);
 }

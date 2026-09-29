@@ -25,19 +25,11 @@ class SalesController extends Controller
         $query = Order::where('store_id', $storeId)->where('status', 'picked_up');
         $cancelQuery = Order::where('store_id', $storeId);
 
-        if ($request->has('start_date') && $request->has('end_date')) {
-            $formattedStart = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d');
-            $formattedEnd = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d');
-            
-            if ($formattedStart === $formattedEnd) {
-                $query->whereDate('updated_at', $formattedStart);
-                $cancelQuery->whereDate('updated_at', $formattedStart);
-            } else {
-                $start = \Carbon\Carbon::parse($formattedStart)->startOfDay();
-                $end = \Carbon\Carbon::parse($formattedEnd)->endOfDay();
-                $query->whereBetween('updated_at', [$start, $end]);
-                $cancelQuery->whereBetween('updated_at', [$start, $end]);
-            }
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $start = \Carbon\Carbon::parse($request->start_date, 'Asia/Manila')->startOfDay()->setTimezone('UTC');
+            $end = \Carbon\Carbon::parse($request->end_date, 'Asia/Manila')->endOfDay()->setTimezone('UTC');
+            $query->whereBetween('updated_at', [$start, $end]);
+            $cancelQuery->whereBetween('updated_at', [$start, $end]);
         }
         
         \Illuminate\Support\Facades\Log::info("Sales Metrics Query: " . $query->toSql(), $query->getBindings());
@@ -47,15 +39,17 @@ class SalesController extends Controller
         $avgOrderValue = $orderCount > 0 ? $revenue / $orderCount : 0;
 
         $revenueGrowth = null;
-        if ($request->has('start_date') && $request->has('end_date')) {
-            $formattedStart = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d');
-            $formattedEnd = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d');
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $startManila = \Carbon\Carbon::parse($request->start_date, 'Asia/Manila')->startOfDay();
+            $endManila = \Carbon\Carbon::parse($request->end_date, 'Asia/Manila')->endOfDay();
             
-            if ($formattedStart === $formattedEnd) {
-                $yesterday = \Carbon\Carbon::parse($formattedStart)->subDay()->toDateString();
+            if ($startManila->isSameDay($endManila)) {
+                $yesterdayStart = $startManila->copy()->subDay()->setTimezone('UTC');
+                $yesterdayEnd = $startManila->copy()->subDay()->endOfDay()->setTimezone('UTC');
+                
                 $yesterdayRevenue = Order::where('store_id', $storeId)
                     ->where('status', 'picked_up')
-                    ->whereDate('updated_at', $yesterday)
+                    ->whereBetween('updated_at', [$yesterdayStart, $yesterdayEnd])
                     ->sum('total_amount');
                     
                 if ($yesterdayRevenue == 0 && $revenue == 0) {
@@ -80,17 +74,10 @@ class SalesController extends Controller
             ->where('orders.store_id', $storeId)
             ->where('orders.status', 'picked_up');
 
-        if ($request->has('start_date') && $request->has('end_date')) {
-            $formattedStart = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d');
-            $formattedEnd = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d');
-            
-            if ($formattedStart === $formattedEnd) {
-                $bestSellingQuery->whereDate('orders.updated_at', $formattedStart);
-            } else {
-                $start = \Carbon\Carbon::parse($formattedStart)->startOfDay();
-                $end = \Carbon\Carbon::parse($formattedEnd)->endOfDay();
-                $bestSellingQuery->whereBetween('orders.updated_at', [$start, $end]);
-            }
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $start = \Carbon\Carbon::parse($request->start_date, 'Asia/Manila')->startOfDay()->setTimezone('UTC');
+            $end = \Carbon\Carbon::parse($request->end_date, 'Asia/Manila')->endOfDay()->setTimezone('UTC');
+            $bestSellingQuery->whereBetween('orders.updated_at', [$start, $end]);
         }
 
         $bestCategoryRecord = $bestSellingQuery
@@ -125,38 +112,56 @@ class SalesController extends Controller
 
         $query = Order::with('items.inventory')->where('store_id', $storeId)->where('status', 'picked_up');
 
-        if ($request->has('start_date') && $request->has('end_date')) {
-            $formattedStart = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d');
-            $formattedEnd = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d');
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $start = \Carbon\Carbon::parse($request->start_date, 'Asia/Manila')->startOfDay()->setTimezone('UTC');
+            $end = \Carbon\Carbon::parse($request->end_date, 'Asia/Manila')->endOfDay()->setTimezone('UTC');
+            $query->whereBetween('updated_at', [$start, $end]);
+
+            $transactions = $query->orderBy('updated_at', 'desc')->limit(10)->get()->map(function ($order) {
+                $firstItem = $order->items->first();
+                $productName = $firstItem && $firstItem->inventory ? $firstItem->inventory->product_name : 'Multiple Items';
+                if ($order->items->count() > 1) {
+                    $productName .= ' (+' . ($order->items->count() - 1) . ' more)';
+                }
+                
+                return [
+                    'order_id' => $order->order_id,
+                    'product' => $productName,
+                    'quantity' => $order->items->sum('quantity'),
+                    'total' => $order->total_amount,
+                    'status' => 'Picked up'
+                ];
+            });
+
+            return response()->json($transactions);
+        } else {
+            // "All Time" Grouped Logic
+            $orders = Order::with('items')
+                ->where('store_id', $storeId)
+                ->where('status', 'picked_up')
+                ->orderBy('updated_at', 'desc')
+                ->get();
             
-            if ($formattedStart === $formattedEnd) {
-                $query->whereDate('updated_at', $formattedStart);
-            } else {
-                $start = \Carbon\Carbon::parse($formattedStart)->startOfDay();
-                $end = \Carbon\Carbon::parse($formattedEnd)->endOfDay();
-                $query->whereBetween('updated_at', [$start, $end]);
+            $grouped = $orders->groupBy(function($order) {
+                return \Carbon\Carbon::parse($order->updated_at)->setTimezone('Asia/Manila')->format('Y-m-d');
+            });
+
+            $transactions = [];
+            foreach ($grouped as $date => $dailyOrders) {
+                $dailyRevenue = $dailyOrders->sum('total_amount');
+                $totalItems = $dailyOrders->sum(function($order) {
+                    return $order->items->sum('quantity');
+                });
+                
+                $transactions[] = [
+                    'sale_date' => \Carbon\Carbon::parse($date)->format('M d, Y'),
+                    'total_items' => $totalItems,
+                    'daily_revenue' => $dailyRevenue
+                ];
             }
+            
+            return response()->json($transactions);
         }
-
-        \Illuminate\Support\Facades\Log::info("Sales Transactions Query: " . $query->toSql(), $query->getBindings());
-
-        $transactions = $query->orderBy('updated_at', 'desc')->limit(10)->get()->map(function ($order) {
-            $firstItem = $order->items->first();
-            $productName = $firstItem && $firstItem->inventory ? $firstItem->inventory->product_name : 'Multiple Items';
-            if ($order->items->count() > 1) {
-                $productName .= ' (+' . ($order->items->count() - 1) . ' more)';
-            }
-            
-            return [
-                'order_id' => $order->order_id,
-                'product' => $productName,
-                'quantity' => $order->items->sum('quantity'),
-                'total' => $order->total_amount,
-                'status' => 'Completed'
-            ];
-        });
-
-        return response()->json($transactions);
     }
 
     /**
@@ -181,49 +186,59 @@ class SalesController extends Controller
 
         $storeId = $vendor->store->store_id;
 
-        // Verify inventory belongs to vendor
-        $inventory = Inventory::where('inventory_id', $request->inventory_id)
-            ->where('store_id', $storeId)
-            ->first();
+        // Ensure manual sales save exactly the intended date by forcing UTC 
+        // since the app uses default UTC for updated_at storage but we want it
+        // to show up under that exact day in Asia/Manila.
+        $saleDateManila = \Carbon\Carbon::parse($request->sale_date, 'Asia/Manila')->startOfDay();
+        $saleDateUtc = clone $saleDateManila;
+        $saleDateUtc->setTimezone('UTC');
 
-        if (!$inventory) {
-            return response()->json(['message' => 'Invalid inventory item.'], 400);
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($vendor, $storeId, $request, $saleDateUtc) {
+                // Fetch inventory with lockForUpdate
+                $inventory = Inventory::where('inventory_id', $request->inventory_id)
+                    ->where('store_id', $storeId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$inventory) {
+                    throw new \Exception('Invalid inventory item.');
+                }
+
+                $availableQuantity = $inventory->stock_quantity - $inventory->reserved_quantity;
+
+                // Reduce stock
+                if ($availableQuantity >= $request->quantity) {
+                    $inventory->stock_quantity -= $request->quantity;
+                    $inventory->save();
+                } else {
+                    throw new \Exception('Insufficient stock for this manual sale.');
+                }
+
+                // Create the Order
+                $order = new Order();
+                $order->consumer_id = $vendor->user_id; // Map manual sale to the vendor themselves
+                $order->store_id = $storeId;
+                $order->total_amount = $request->total_amount;
+                $order->status = 'picked_up';
+                $order->timestamps = false;
+                $order->created_at = $saleDateUtc;
+                $order->updated_at = $saleDateUtc;
+                $order->save();
+
+                // Create the OrderItem
+                $orderItem = new OrderItem();
+                $orderItem->order_id = $order->order_id;
+                $orderItem->inventory_id = $inventory->inventory_id;
+                $orderItem->quantity = $request->quantity;
+                $orderItem->subtotal = $request->total_amount;
+                $orderItem->unit_price = $request->unit_price;
+                $orderItem->save();
+            });
+
+            return response()->json(['message' => 'Manual sale recorded successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
         }
-
-        // Reduce stock
-        if ($inventory->stock_quantity >= $request->quantity) {
-            $inventory->stock_quantity -= $request->quantity;
-            $inventory->save();
-        } else {
-            return response()->json(['message' => 'Insufficient stock for this manual sale.'], 400);
-        }
-
-        // Create the Order
-        $saleDate = \Carbon\Carbon::parse($request->sale_date)->setHour(12);
-
-        $order = new Order([
-            'consumer_id' => $vendor->user_id, // Map manual sale to the vendor themselves
-            'store_id' => $storeId,
-            'total_amount' => $request->total_amount,
-            'status' => 'picked_up',
-        ]);
-        $order->timestamps = false;
-        $order->created_at = $saleDate;
-        $order->updated_at = $saleDate;
-        $order->save();
-
-        // Create the OrderItem
-        $orderItem = new OrderItem([
-            'order_id' => $order->order_id,
-            'inventory_id' => $inventory->inventory_id,
-            'quantity' => $request->quantity,
-            'subtotal' => $request->total_amount,
-        ]);
-        $orderItem->timestamps = false;
-        $orderItem->created_at = $saleDate;
-        $orderItem->updated_at = $saleDate;
-        $orderItem->save();
-
-        return response()->json(['message' => 'Manual sale recorded successfully']);
     }
 }

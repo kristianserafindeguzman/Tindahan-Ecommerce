@@ -1,0 +1,174 @@
+<template>
+  <div class="tracking-map-wrapper">
+    <div v-if="!hasCoordinates" class="no-location-overlay flex flex-center bg-grey-2">
+      <div class="text-center text-grey-6 q-pa-md">
+        <q-icon name="location_off" size="48px" class="q-mb-md opacity-50" />
+        <div class="text-subtitle1 text-weight-bold">Location Unavailable</div>
+        <div class="text-caption">The consumer's location was not recorded for this order.</div>
+      </div>
+    </div>
+    <div ref="mapEl" class="leaflet-map" :class="{ 'opacity-0': !hasCoordinates }"></div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import { markerIconUrl, markerIcon2xUrl, markerShadowUrl } from '@/utils/leafletDefaultIcon'
+
+const props = defineProps({
+  storeLat: { type: [Number, String], default: null },
+  storeLng: { type: [Number, String], default: null },
+  consumerLat: { type: [Number, String], default: null },
+  consumerLng: { type: [Number, String], default: null },
+  storeName: { type: String, default: 'Store' },
+  consumerName: { type: String, default: 'Customer' },
+  // Off turns the map into a still picture of the route: no dragging, zooming or zoom buttons.
+  interactive: { type: Boolean, default: true }
+})
+
+const mapEl = ref(null)
+let mapInstance = null
+let storeMarker = null
+let consumerMarker = null
+let routeLine = null
+
+const hasCoordinates = computed(() => {
+  return props.storeLat !== null && props.storeLng !== null &&
+         props.consumerLat !== null && props.consumerLng !== null
+})
+
+// Leaflet Icons
+const storeIcon = L.icon({
+  iconUrl: markerIconUrl,
+  iconRetinaUrl: markerIcon2xUrl,
+  shadowUrl: markerShadowUrl,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+})
+
+const consumerIcon = L.divIcon({
+  className: 'custom-consumer-icon',
+  html: `<div style="background-color: #bd2427; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+  popupAnchor: [0, -7]
+})
+
+const initMap = () => {
+  if (!mapEl.value || !hasCoordinates.value) return
+
+  const sLat = parseFloat(props.storeLat)
+  const sLng = parseFloat(props.storeLng)
+  const cLat = parseFloat(props.consumerLat)
+  const cLng = parseFloat(props.consumerLng)
+
+  const moves = props.interactive
+  mapInstance = L.map(mapEl.value, {
+    zoomControl: false,
+    attributionControl: false,
+    dragging: moves,
+    touchZoom: moves,
+    scrollWheelZoom: moves,
+    doubleClickZoom: moves,
+    boxZoom: moves,
+    keyboard: moves
+  })
+
+  if (moves) L.control.zoom({ position: 'bottomright' }).addTo(mapInstance)
+  else mapEl.value.classList.add('leaflet-map--static')
+
+  // OpenStreetMap tiles, like the app's other maps, since the Carto tiles now come stamped with "API KEY REQUIRED".
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+  }).addTo(mapInstance)
+
+  storeMarker = L.marker([sLat, sLng], { icon: storeIcon })
+    .bindPopup(`<b>${props.storeName}</b><br>Store Location`)
+    .addTo(mapInstance)
+
+  consumerMarker = L.marker([cLat, cLng], { icon: consumerIcon })
+    .bindPopup(`<b>${props.consumerName}</b><br>Delivery/Pickup Location`)
+    .addTo(mapInstance)
+
+  routeLine = L.polyline([[cLat, cLng], [sLat, sLng]], {
+    color: '#bd2427',
+    weight: 3,
+    dashArray: '5, 10',
+    opacity: 0.7
+  }).addTo(mapInstance)
+
+  const bounds = L.latLngBounds([sLat, sLng], [cLat, cLng])
+  mapInstance.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 })
+}
+
+const destroyMap = () => {
+  if (mapInstance) {
+    mapInstance.off()
+    mapInstance.remove()
+    mapInstance = null
+  }
+}
+
+watch(() => props.consumerLat, () => {
+  destroyMap()
+  initMap()
+})
+
+onMounted(() => {
+  // Add a small delay so container can correctly size itself inside a Quasar flex column
+  setTimeout(() => {
+    initMap()
+  }, 100)
+})
+
+onUnmounted(() => {
+  destroyMap()
+})
+</script>
+
+<style scoped>
+.tracking-map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.leaflet-map {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+/* A still map shows the plain pointer instead of Leaflet's grab hand, since it can't be dragged. */
+.leaflet-map--static,
+.leaflet-map--static :deep(.leaflet-interactive) {
+  cursor: default;
+}
+
+.no-location-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.opacity-0 {
+  opacity: 0;
+}
+
+.opacity-50 {
+  opacity: 0.5;
+}
+</style>

@@ -5,7 +5,7 @@
       <q-card-section class="support-header">
         <div class="support-title">Contact Support</div>
         <q-btn
-          icon="close"
+          icon="o_close"
           flat
           round
           dense
@@ -20,17 +20,17 @@
         <div class="support-org">DTI Negosyo Center - Mandaluyong</div>
 
         <div class="support-row">
-          <q-icon name="location_on" class="support-icon" />
+          <q-icon name="o_location_on" class="support-icon" />
           <span>3rd Floor, City Hall of Mandaluyong, Maysilo Circle, Plainview, Mandaluyong City</span>
         </div>
 
         <div class="support-row">
-          <q-icon name="phone" class="support-icon" />
+          <q-icon name="o_phone" class="support-icon" />
           <span>(02) 8532-4846</span>
         </div>
 
         <div class="support-row">
-          <q-icon name="email" class="support-icon" />
+          <q-icon name="o_email" class="support-icon" />
           <span>mandaluyong@dti.gov.ph</span>
         </div>
       </q-card-section>
@@ -67,7 +67,7 @@ defineEmits(['update:modelValue'])
   width: 440px;
   max-width: 90vw;
 
-  border-radius: 10px;
+  border-radius: 12px;
 
   font-family: 'Roboto', Arial, sans-serif;
 }
@@ -88,7 +88,7 @@ defineEmits(['update:modelValue'])
 }
 
 .close-btn {
-  color: #888888;
+  color: #666666;
 }
 
 .support-body {
@@ -137,7 +137,7 @@ defineEmits(['update:modelValue'])
 }
 
 .close-button {
-  height: 38px;
+  height: 48px;
 
   padding: 0 24px;
 
@@ -148,9 +148,30 @@ defineEmits(['update:modelValue'])
 
   font-size: 13px;
   font-weight: 500;
+
+  box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
+
+  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
 }
 
 .close-button:hover {
   background: #a91e21;
+
+  box-shadow: 0 6px 16px rgba(189, 36, 39, 0.32);
+
+  transform: translateY(-1px);
+}
+
+.close-button:active {
+  background: #8f1a1c;
+
+  box-shadow: 0 2px 6px rgba(189, 36, 39, 0.28);
+
+  transform: translateY(0);
+}
+
+.close-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(189, 36, 39, 0.3);
 }
 </style>

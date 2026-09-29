@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Http;
+
 use Illuminate\Http\Request;
 use App\Models\Inventory;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+use App\Models\DemandForecast;
 
 class VendorController extends Controller
 {
@@ -19,18 +24,21 @@ class VendorController extends Controller
             return response()->json([
                 'placed_orders' => 0,
                 'preparing_orders' => 0,
-                'completed_orders' => 0,
+                'picked_up_orders' => 0,
                 'cancelled_orders' => 0,
+                'total_orders' => 0,
                 'recent_orders' => []
             ]);
         }
-        
+
         $storeId = $user->store->store_id;
 
         $placed = \App\Models\Order::where('store_id', $storeId)->where('status', 'placed')->count();
         $preparing = \App\Models\Order::where('store_id', $storeId)->where('status', 'preparing')->count();
-        $completed = \App\Models\Order::where('store_id', $storeId)->where('status', 'picked_up')->count();
+        $picked_up = \App\Models\Order::where('store_id', $storeId)->where('status', 'picked_up')->count();
         $cancelled = \App\Models\Order::where('store_id', $storeId)->where('status', 'cancelled')->count();
+        // Every order that wasn't cancelled, for the store profile's order count.
+        $totalOrders = \App\Models\Order::where('store_id', $storeId)->where('status', '!=', 'cancelled')->count();
 
         $recentOrders = \App\Models\Order::with('consumer')
             ->where('store_id', $storeId)
@@ -51,8 +59,9 @@ class VendorController extends Controller
         return response()->json([
             'placed_orders' => $placed,
             'preparing_orders' => $preparing,
-            'completed_orders' => $completed,
+            'picked_up_orders' => $picked_up,
             'cancelled_orders' => $cancelled,
+            'total_orders' => $totalOrders,
             'recent_orders' => $recentOrders
         ]);
     }
@@ -68,7 +77,729 @@ class VendorController extends Controller
         if ($user) {
             $user->load('store');
         }
-        
+
         return response()->json($user);
+    }
+
+    /**
+     * Get data for interactive revenue chart.
+     *
+     * GET /api/vendor/stats/chart
+     */
+    public function chartStats(Request $request)
+    {
+        $vendor = $request->user();
+        if (!$vendor || !$vendor->store) {
+            return response()->json([]);
+        }
+        $storeId = $vendor->store->store_id;
+        $filter = $request->query('filter', 'Daily');
+
+        $orders = \App\Models\Order::where('store_id', $storeId)
+            ->where('status', 'picked_up')
+            ->get();
+
+        $data = [];
+
+        if (strtolower($filter) === 'weekly') {
+            $grouped = $orders->groupBy(function($date) {
+                return \Carbon\Carbon::parse($date->updated_at)->startOfWeek()->format('M d, Y');
+            });
+            foreach ($grouped as $key => $items) {
+                $data[] = ['period' => $key, 'total' => $items->sum('total_amount')];
+            }
+        } elseif (strtolower($filter) === 'monthly') {
+            $grouped = $orders->groupBy(function($date) {
+                return \Carbon\Carbon::parse($date->updated_at)->format('M Y');
+            });
+            foreach ($grouped as $key => $items) {
+                $data[] = ['period' => $key, 'total' => $items->sum('total_amount')];
+            }
+        } else {
+            $grouped = $orders->groupBy(function($date) {
+                return \Carbon\Carbon::parse($date->updated_at)->format('M d');
+            });
+            foreach ($grouped as $key => $items) {
+                $data[] = ['period' => $key, 'total' => $items->sum('total_amount')];
+            }
+        }
+
+        // Sort chronologically using Carbon parse on period
+        usort($data, function($a, $b) {
+            return \Carbon\Carbon::parse($a['period'])->timestamp <=> \Carbon\Carbon::parse($b['period'])->timestamp;
+        });
+
+        // Limit results for visualization
+        if (strtolower($filter) === 'weekly') {
+            $data = array_slice($data, -8); // last 8 weeks
+        } elseif (strtolower($filter) === 'monthly') {
+            $data = array_slice($data, -6); // last 6 months
+        } else {
+            $data = array_slice($data, -7); // last 7 days
+        }
+
+        return response()->json(array_values($data));
+    }
+
+    /**
+     * Upload and update the store image.
+     *
+     * POST /api/vendor/profile/store-image
+     */
+    public function uploadStoreImage(Request $request)
+    {
+        $request->validate([
+            'store_picture' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
+        ]);
+
+        $user = $request->user();
+        if (!$user->store) {
+            return response()->json(['message' => 'Vendor store not found.'], 404);
+        }
+
+        $store = $user->store;
+
+        if ($request->hasFile('store_picture')) {
+            $photoPath = $request->file('store_picture')->store('stores', 'public');
+
+            // Update the store record with raw path to match registration
+            $store->store_picture = $photoPath;
+            $store->save();
+
+            $storeUrl = asset('storage/' . $photoPath);
+
+            return response()->json([
+                'message' => 'Store image uploaded successfully',
+                'store_picture_url' => $store->store_picture_url
+            ]);
+        }
+
+        return response()->json(['message' => 'No image uploaded.'], 400);
+    }
+
+    public function exportInventoryReport(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $store = $user->store;
+
+            // Fetch products with category relationship
+            $products = \App\Models\Inventory::where('store_id', $store->store_id)->with('category')->get();
+
+
+            // Calculate Summary
+            $summary = [
+                'total_products' => $products->count(),
+                'available_products' => $products->where('status', 'active')->sum(function($prod) {
+                    if (is_array($prod->variants) && count($prod->variants) > 0) {
+                        return collect($prod->variants)->sum('quantity');
+                    }
+                    return $prod->stock_quantity ?? 0;
+                }),
+                'archived_products' => $products->where('status', 'archived')->count(),
+                'inventory_value' => $products->where('status', 'active')->sum(function($prod) {
+                    if (is_array($prod->variants) && count($prod->variants) > 0) {
+                        return collect($prod->variants)->sum(function($v) {
+                            return ($v['price'] ?? 0) * ($v['quantity'] ?? 0);
+                        });
+                    }
+                    $stock = $prod->stock_quantity ?? 0;
+                    return $prod->price * $stock;
+                })
+            ];
+
+            // Generate Static Map URL using the centralized helper
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
+
+            $pdf = Pdf::loadView('pdf.inventory-report', [
+                'store' => $store,
+                'owner' => $user,
+                'products' => $products,
+                'summary' => $summary,
+                'mapUrl' => $mapUrl,
+                'date' => now()->setTimezone('Asia/Manila')->format('F d, Y h:i A'),
+                'render_mode' => 'pdf',
+                'isPdf' => true
+            ]);
+
+            // Use A4 Portrait and Enable Remote Images
+            $pdf->setPaper('a4', 'portrait')
+                ->setOption(['isRemoteEnabled' => true]);
+
+            return $pdf->stream('inventory-report.pdf');
+        } catch (\Exception $e) {
+            \Log::error('PDF Export Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function exportInventoryReportHtml(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $store = $user->store;
+
+            // Fetch products with category relationship
+            $products = \App\Models\Inventory::where('store_id', $store->store_id)->with('category')->get();
+
+
+            // Calculate Summary
+            $summary = [
+                'total_products' => $products->count(),
+                'available_products' => $products->where('status', 'active')->sum(function($prod) {
+                    if (is_array($prod->variants) && count($prod->variants) > 0) {
+                        return collect($prod->variants)->sum('quantity');
+                    }
+                    return $prod->stock_quantity ?? 0;
+                }),
+                'archived_products' => $products->where('status', 'archived')->count(),
+                'inventory_value' => $products->where('status', 'active')->sum(function($prod) {
+                    if (is_array($prod->variants) && count($prod->variants) > 0) {
+                        return collect($prod->variants)->sum(function($v) {
+                            return ($v['price'] ?? 0) * ($v['quantity'] ?? 0);
+                        });
+                    }
+                    $stock = $prod->stock_quantity ?? 0;
+                    return $prod->price * $stock;
+                })
+            ];
+
+            // Generate Static Map URL using the centralized helper
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
+
+            $date = now()->setTimezone('Asia/Manila')->format('F d, Y h:i A');
+            // In the PDF export we passed 'owner' => $user. I'll do the same to match the blade template.
+            $owner = $user;
+            $html = view('pdf.inventory-report', compact('store', 'owner', 'summary', 'products', 'mapUrl', 'date'))->with('render_mode', 'html')->render();
+
+            return response()->json(['html' => $html]);
+        } catch (\Exception $e) {
+            \Log::error('HTML Export Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate HTML: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Helper to generate a statically stitched map image centered precisely on the vendor coordinates.
+     */
+    private function generateMapImage($lat, $lon)
+    {
+        if (!is_numeric($lat) || !is_numeric($lon)) {
+            return null;
+        }
+
+        try {
+            $zoom = 16;
+            $width = 440;
+            $height = 260;
+
+            $n = pow(2, $zoom);
+            $x_p = (($lon + 180) / 360) * $n;
+            $y_p = (1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) / 2 * $n;
+
+            $pixelX = $x_p * 256;
+            $pixelY = $y_p * 256;
+
+            $minX = $pixelX - $width / 2;
+            $minY = $pixelY - $height / 2;
+            $maxX = $pixelX + $width / 2;
+            $maxY = $pixelY + $height / 2;
+
+            $startTileX = (int) floor($minX / 256);
+            $startTileY = (int) floor($minY / 256);
+            $endTileX = (int) floor($maxX / 256);
+            $endTileY = (int) floor($maxY / 256);
+
+            $canvas = imagecreatetruecolor($width, $height);
+            $bg = imagecolorallocate($canvas, 248, 250, 252);
+            imagefill($canvas, 0, 0, $bg);
+
+            $osmFailed = false;
+
+            for ($x = $startTileX; $x <= $endTileX; $x++) {
+                if ($osmFailed) break;
+                for ($y = $startTileY; $y <= $endTileY; $y++) {
+                    if ($osmFailed) break;
+                    $tileUrl = "https://tile.openstreetmap.org/{$zoom}/{$x}/{$y}.png";
+                    try {
+                        $response = \Illuminate\Support\Facades\Http::timeout(1.5)
+                            ->withHeaders(['User-Agent' => 'TindahanApp/1.0'])
+                            ->get($tileUrl);
+                        $tileData = $response->successful() ? $response->body() : false;
+                    } catch (\Exception $e) {
+                        $tileData = false;
+                        $osmFailed = true; // Abort further tiles if OSM is unreachable
+                    }
+                    if ($tileData) {
+                        $img = @imagecreatefromstring($tileData);
+                        if ($img) {
+                            $destX = (int) round(($x * 256) - $minX);
+                            $destY = (int) round(($y * 256) - $minY);
+                            imagecopy($canvas, $img, $destX, $destY, 0, 0, 256, 256);
+                            imagedestroy($img);
+                        }
+                    }
+                }
+            }
+
+            // Draw Pin at Center
+            $centerX = (int) round($width / 2);
+            $centerY = (int) round($height / 2);
+
+            $red = imagecolorallocate($canvas, 189, 36, 39); // Tindahan Red #bd2427
+            $dark = imagecolorallocate($canvas, 15, 23, 42); // #0f172a
+            $white = imagecolorallocate($canvas, 255, 255, 255);
+
+            // Shadow
+            imagefilledellipse($canvas, $centerX, $centerY + 2, 16, 6, imagecolorallocatealpha($canvas, 0, 0, 0, 80));
+
+            // Pin styling
+            $r = 12;
+            $pinY = $centerY - 16;
+
+            // Pin Triangle
+            $points = [
+                (int) round($centerX - $r * 0.8), (int) round($pinY + $r * 0.4),
+                (int) round($centerX + $r * 0.8), (int) round($pinY + $r * 0.4),
+                $centerX, $centerY
+            ];
+            imagefilledpolygon($canvas, $points, $red);
+            imagefilledellipse($canvas, $centerX, $pinY, $r * 2, $r * 2, $red);
+            imagefilledellipse($canvas, $centerX, $pinY, $r, $r, $white);
+
+            ob_start();
+            imagepng($canvas);
+            $pngData = ob_get_clean();
+            imagedestroy($canvas);
+
+            return 'data:image/png;base64,' . base64_encode($pngData);
+
+        } catch (\Exception $e) {
+            \Log::warning("Could not fetch map image for export: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function exportOrderListReport(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $store = $user->store;
+
+            $orders = \App\Models\Order::with('consumer', 'items.inventory', 'store')
+                ->where('store_id', $store->store_id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $groupedOrders = [
+                'placed' => $orders->where('status', 'placed')->values(),
+                'preparing' => $orders->where('status', 'preparing')->values(),
+                'ready_for_pickup' => $orders->where('status', 'ready_for_pickup')->values(),
+                'picked_up' => $orders->where('status', 'picked_up')->values(),
+                'cancelled' => $orders->where('status', 'cancelled')->values(),
+            ];
+
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
+
+            $pdf = Pdf::loadView('pdf.vendor-order-list-report', [
+                'store' => $store,
+                'owner' => $user,
+                'groupedOrders' => $groupedOrders,
+                'mapUrl' => $mapUrl,
+                'date' => now()->setTimezone('Asia/Manila')->format('F d, Y h:i A')
+            ]);
+
+            $pdf->setPaper('a4', 'portrait')->setOption(['isRemoteEnabled' => true]);
+
+            return $pdf->stream('Tindahan-Order-List-Report.pdf');
+        } catch (\Exception $e) {
+            \Log::error('PDF Export Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function exportCustomerOrderReport(Request $request, $id)
+    {
+        try {
+            $user = auth()->user();
+            $store = $user->store;
+
+            $order = \App\Models\Order::with(['consumer', 'items.inventory', 'store'])
+                ->where('store_id', $store->store_id)
+                ->where('order_id', $id)
+                ->firstOrFail();
+
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
+
+            $pdf = Pdf::loadView('pdf.vendor-customer-order-report', [
+                'store' => $store,
+                'owner' => $user,
+                'order' => $order,
+                'mapUrl' => $mapUrl,
+                'date' => now()->setTimezone('Asia/Manila')->format('F d, Y h:i A')
+            ]);
+
+            $pdf->setPaper('a4', 'portrait')->setOption(['isRemoteEnabled' => true]);
+
+            return $pdf->stream('Tindahan-Customer-Order-#' . $id . '.pdf');
+        } catch (\Exception $e) {
+            \Log::error('PDF Export Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function exportProductCategoryReport(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $store = $user->store;
+
+            $categories = \App\Models\Category::withCount(['products' => function ($query) use ($store) {
+                $query->where('store_id', $store->store_id)
+                      ->where('status', '!=', 'archived');
+            }])->orderBy('category_name')->get();
+
+            $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
+
+            $pdf = Pdf::loadView('pdf.vendor-product-category-report', [
+                'store' => $store,
+                'owner' => $user,
+                'categories' => $categories,
+                'mapUrl' => $mapUrl,
+                'date' => now()->setTimezone('Asia/Manila')->format('F d, Y h:i A')
+            ]);
+
+            $pdf->setPaper('a4', 'portrait')->setOption(['isRemoteEnabled' => true]);
+
+            return $pdf->stream('Tindahan-Product-Category-Report.pdf');
+        } catch (\Exception $e) {
+            \Log::error('PDF Export Error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function getDemandForecast(Request $request)
+    {
+        $store = auth()->user()->store;
+
+        // Get the active forecasts for this store
+        $forecasts = \App\Models\DemandForecast::with('inventory')
+            ->where('store_id', $store->store_id)
+            ->whereDate('forecast_date', '>=', now()->subDays(7)->toDateString())
+            ->orderBy('predicted_quantity', 'desc')
+            ->get();
+
+        if ($forecasts->isEmpty()) {
+            return response()->json([
+                'has_forecast' => false,
+                'low_data_warning' => false,
+                'summary' => null,
+                'top_products' => []
+            ]);
+        }
+
+        $metricsPath = base_path("../ml/models/demand_model_{$store->store_id}_metrics.json");
+        $warningMessage = null;
+        if (file_exists($metricsPath)) {
+            $metrics = json_decode(file_get_contents($metricsPath), true);
+            $sufficiency = $metrics['data_sufficiency'] ?? 'low_data';
+            $mape = $metrics['model_metrics']['mape'] ?? null;
+
+            if ($sufficiency === 'low_data' || $mape === null) {
+                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate.';
+            } else if ($mape >= 10) {
+                $warningMessage = 'Forecast reliability is currently low based on available historical data.';
+            }
+        } else {
+            // Fallback to database threshold check if metrics file is missing
+            $salesStats = \Illuminate\Support\Facades\DB::selectOne(
+                'SELECT COUNT(*) as cnt, COUNT(DISTINCT transaction_date) as distinct_dates
+                 FROM ml_historical_sales_view WHERE store_id = ?',
+                [$store->store_id]
+            );
+            if ($salesStats->cnt < 30 || $salesStats->distinct_dates < 3) {
+                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate. Continue recording sales for more accurate results.';
+            }
+        }
+
+        $topProduct = $forecasts->first();
+        $generatedAt = $topProduct->generated_at;
+        $forecastDate = $topProduct->forecast_date;
+
+        return response()->json([
+            'has_forecast' => true,
+            'low_data_warning' => $warningMessage,
+            'summary' => [
+                'total_products_forecasted' => $forecasts->count(),
+                'highest_demand_product' => $topProduct->inventory->product_name ?? 'Unknown',
+                'highest_demand_quantity' => $topProduct->predicted_quantity,
+                'forecast_date' => $forecastDate->format('Y-m-d')
+            ],
+            'top_products' => $forecasts->take(5)->map(function ($f) {
+                return [
+                    'product_name' => $f->inventory->product_name ?? 'Unknown',
+                    'predicted_quantity' => $f->predicted_quantity
+                ];
+            }),
+            'generated_at' => $generatedAt->toIso8601String()
+        ]);
+    }
+
+    public function getMlInsights(Request $request)
+    {
+        $store = auth()->user()->store;
+
+        // Get active forecasts
+        $forecasts = \App\Models\DemandForecast::with(['inventory.category'])
+            ->where('store_id', $store->store_id)
+            ->whereDate('forecast_date', '>=', now()->subDays(7)->toDateString())
+            ->get();
+
+        if ($forecasts->isEmpty()) {
+            return response()->json([
+                'has_insights' => false,
+                'restockProduct' => null,
+                'topCategory' => null,
+                'trendingCategory' => null,
+                'trendMultiplier' => null
+            ]);
+        }
+
+        $metricsPath = base_path("../ml/models/demand_model_{$store->store_id}_metrics.json");
+        $warningMessage = null;
+        if (file_exists($metricsPath)) {
+            $metrics = json_decode(file_get_contents($metricsPath), true);
+            $sufficiency = $metrics['data_sufficiency'] ?? 'low_data';
+            $mape = $metrics['model_metrics']['mape'] ?? null;
+
+            if ($sufficiency === 'low_data' || $mape === null) {
+                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate. Continue recording sales for more accurate results.';
+            } else if ($mape >= 10) {
+                $warningMessage = 'Forecast reliability is currently low based on available historical data.';
+            }
+        } else {
+            // Fallback
+            $salesStats = \Illuminate\Support\Facades\DB::selectOne(
+                'SELECT COUNT(*) as cnt, COUNT(DISTINCT transaction_date) as distinct_dates
+                 FROM ml_historical_sales_view WHERE store_id = ?',
+                [$store->store_id]
+            );
+            if ($salesStats->cnt < 30 || $salesStats->distinct_dates < 3) {
+                $warningMessage = 'Limited historical sales data. Forecast may be inaccurate. Continue recording sales for more accurate results.';
+            }
+        }
+
+        // Logic for restock alert: highest predicted demand / current stock
+        $restockCandidate = $forecasts->sortByDesc(function($f) {
+            return $f->inventory->stock_quantity > 0
+                ? ($f->predicted_quantity / $f->inventory->stock_quantity)
+                : 9999;
+        })->first();
+
+        $daysUntilStockout = null;
+        if ($restockCandidate && $restockCandidate->predicted_quantity > 0) {
+            $daysUntilStockout = ceil($restockCandidate->inventory->available_quantity / $restockCandidate->predicted_quantity);
+        }
+
+        // Logic for trending category: sum of predicted demand by category
+        $categoryDemand = [];
+        foreach ($forecasts as $f) {
+            $catName = $f->inventory->category->category_name ?? 'Uncategorized';
+            $categoryDemand[$catName] = ($categoryDemand[$catName] ?? 0) + $f->predicted_quantity;
+        }
+
+        $trendingCategory = null;
+        if (!empty($categoryDemand)) {
+            arsort($categoryDemand);
+            $trendingCategory = array_key_first($categoryDemand);
+        }
+
+        // Calculate real trend multiplier
+        // We'll use the restockCandidate as the basis for the trend if available
+        $trendMultiplier = null;
+        if ($restockCandidate) {
+            // Get recent historical demand for this product (last 7 days)
+            $recentDemand = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.order_id')
+                ->where('order_items.inventory_id', $restockCandidate->inventory_id)
+                ->where('orders.status', 'picked_up')
+                ->where('orders.created_at', '>=', now()->subDays(7))
+                ->sum('order_items.quantity');
+
+            $dailyRecentAverage = $recentDemand / 7;
+
+            // If we have some recent demand, calculate the ratio
+            if ($dailyRecentAverage > 0) {
+                // predicted_quantity is daily demand forecast
+                $ratio = $restockCandidate->predicted_quantity / $dailyRecentAverage;
+                $trendMultiplier = number_format($ratio, 1);
+            }
+        }
+
+        // Top historical category (actual sales based on completed orders)
+        $topCategory = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.order_id')
+            ->join('inventory', 'order_items.inventory_id', '=', 'inventory.inventory_id')
+            ->join('categories', 'inventory.category_id', '=', 'categories.category_id')
+            ->where('orders.store_id', $store->store_id)
+            ->where('orders.status', 'picked_up')
+            ->groupBy('categories.category_name')
+            ->orderByRaw('SUM(order_items.quantity) DESC')
+            ->value('categories.category_name');
+
+        // Derive current seasonal context from today's date
+        $now = now('Asia/Manila');
+        $month = $now->month;
+        $day = $now->day;
+
+        $currentSeason = match(true) {
+            in_array($month, [3, 4, 5]) => 'Summer',
+            in_array($month, [6, 7, 8, 9, 10]) => 'Rainy',
+            in_array($month, [11, 12, 1, 2]) => 'Amihan',
+            default => 'Unknown',
+        };
+
+        $currentHoliday = match(true) {
+            $month == 12 && $day >= 16 => 'Christmas',
+            ($month == 12 && $day == 31) || ($month == 1 && $day <= 2) => 'New Year',
+            $month == 2 && $day >= 13 && $day <= 15 => 'Valentines',
+            ($month == 3 && $day >= 25) || ($month == 4 && $day <= 10) => 'Holy Week',
+            $month == 5 => 'Fiesta',
+            $month == 8 || ($month == 9 && $day <= 15) => 'Back to School',
+            ($month == 10 && $day >= 30) || ($month == 11 && $day <= 2) => 'Undas',
+            default => null,
+        };
+
+        return response()->json([
+            'has_insights' => true,
+            'low_data_warning' => $warningMessage ?? false,
+            'restockProduct' => $restockCandidate->inventory->product_name ?? null,
+            'daysUntilStockout' => $daysUntilStockout,
+            'trendingCategory' => $trendingCategory,
+            'trendMultiplier' => $trendMultiplier,
+            'topCategory' => $topCategory,
+            'currentSeason' => $currentSeason,
+            'currentHoliday' => $currentHoliday
+        ]);
+    }
+    public function refreshDemandForecast(Request $request)
+    {
+        $store = auth()->user()->store;
+
+        if (!$store) {
+            return response()->json([
+                'message' => 'Vendor store not found.',
+                'has_forecast' => false,
+            ], 404);
+        }
+
+        $storeId = $store->store_id;
+
+        $mlApiUrl = rtrim(config('services.ml_api.url'), '/');
+
+        if (!$mlApiUrl) {
+            return response()->json([
+                'message' => 'ML API URL is not configured.',
+                'has_forecast' => false,
+            ], 500);
+        }
+
+        try {
+            // Train the Random Forest model on Render
+            $trainResponse = Http::timeout(120)
+                ->post($mlApiUrl . '/train/demand?store_id=' . $storeId);
+
+            if (!$trainResponse->successful()) {
+                return response()->json([
+                    'message' => 'ML training failed.',
+                    'has_forecast' => false,
+                    'ml_response' => $trainResponse->json(),
+                ], 502);
+            }
+
+            $trainResult = $trainResponse->json();
+
+            if (($trainResult['status'] ?? null) !== 'success') {
+                return response()->json([
+                    'message' => $trainResult['message'] ?? 'ML training failed.',
+                    'has_forecast' => false,
+                ], 502);
+            }
+
+            // Generate the forecast using the trained model on Render
+            $predictResponse = Http::timeout(120)
+                ->post($mlApiUrl . '/predict/demand?store_id=' . $storeId);
+
+            if (!$predictResponse->successful()) {
+                return response()->json([
+                    'message' => 'ML prediction failed.',
+                    'has_forecast' => false,
+                    'ml_response' => $predictResponse->json(),
+                ], 502);
+            }
+
+            $predictResult = $predictResponse->json();
+
+            if (
+                ($predictResult['status'] ?? null) !== 'success' ||
+                empty($predictResult['forecasts'])
+            ) {
+                return response()->json([
+                    'message' => $predictResult['message'] ?? 'Forecast generation produced no results.',
+                    'has_forecast' => false,
+                ]);
+            }
+
+            // Save Render's forecasts into Laravel's database
+            foreach ($predictResult['forecasts'] as $forecast) {
+                DemandForecast::updateOrCreate(
+                    [
+                        'store_id' => $forecast['store_id'],
+                        'inventory_id' => $forecast['inventory_id'],
+                        'forecast_date' => $forecast['forecast_date'],
+                    ],
+                    [
+                        'predicted_quantity' => $forecast['predicted_quantity'],
+                        'generated_at' => now(),
+                    ]
+                );
+            }
+
+            return response()->json([
+                'message' => 'Demand forecast generated successfully.',
+                'has_forecast' => true,
+                'data_sufficiency' => $trainResult['data_sufficiency'] ?? null,
+                'training_rows' => $trainResult['training_rows'] ?? null,
+                'distinct_dates' => $trainResult['distinct_dates'] ?? null,
+                'forecasts' => $predictResult['forecasts'],
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Render ML demand forecast failed', [
+                'store_id' => $storeId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Unable to connect to the ML service.',
+                'has_forecast' => false,
+            ], 502);
+        }
+    }
+
+    /**
+     * Records that the vendor has been offered the guided tour, so it never auto-starts again.
+     * The first timestamp is kept, which makes repeat calls (a replay, a second device) harmless.
+     *
+     * POST /api/vendor/tutorial/seen
+     */
+    public function markTutorialSeen(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->tutorial_seen_at) {
+            $user->forceFill(['tutorial_seen_at' => now()])->save();
+        }
+
+        return response()->json([
+            'tutorial_seen_at' => $user->tutorial_seen_at,
+        ]);
     }
 }

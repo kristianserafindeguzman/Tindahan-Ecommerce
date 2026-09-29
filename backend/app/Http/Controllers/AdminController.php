@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ApprovalStatus;
 use App\Models\SystemAuditLog;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
@@ -33,8 +35,9 @@ class AdminController extends Controller
      */
     public function pendingVendors(Request $request)
     {
+        // Approved applications are listed too, so the Approvals page can show all three outcomes.
         $query = ApprovalStatus::with(['store.owner'])
-            ->whereIn('status', ['pending', 'rejected']);
+            ->whereIn('status', ['pending', 'approved', 'rejected']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -57,6 +60,8 @@ class AdminController extends Controller
                 'phone'       => $owner?->phone_number,
                 'status'      => $approval->status,
                 'applied_at'  => $owner?->created_at,
+                'reviewed_at' => $approval->reviewed_at,
+                'rejection_reason' => $approval->rejection_reason,
                 'store'       => [
                     'store_name' => $store?->store_name,
                     'store_picture_url' => $store?->store_picture_url,
@@ -73,6 +78,40 @@ class AdminController extends Controller
         });
 
         return response()->json($pending);
+    }
+
+    /**
+     * Export pending and rejected vendor applications as a PDF.
+     *
+     * GET /api/admin/vendors/pending/export
+     */
+    public function exportPendingVendors(Request $request)
+    {
+        $query = ApprovalStatus::with(['store.owner'])
+            ->whereIn('status', ['pending', 'rejected']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('store.owner', function ($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $approvals = $query->get();
+
+        // Build report metadata from the currently authenticated Admin
+        // so exported reports are traceable to the user who generated them.
+        $admin = auth()->user();
+        $date = Carbon::now('Asia/Manila')->format('F j, Y \a\t g:i A');
+
+        $pdf = Pdf::loadView('pdf.admin-approvals-report', [
+            'approvals' => $approvals,
+            'admin'     => $admin,
+            'date'      => $date
+        ]);
+
+        return $pdf->download('Tindahan_Admin_Approvals_Export_' . Carbon::now('Asia/Manila')->format('Y-m-d') . '.pdf');
     }
 
     /**
@@ -158,7 +197,14 @@ class AdminController extends Controller
             if ($request->tab === 'deleted') {
                 $q->withTrashed();
             }
-            $q->withCount('inventory')->with('approvalStatus');
+            $q->withCount([
+                'inventory as active_products_count' => function ($q2) {
+                    $q2->where('status', 'active');
+                },
+                'orders as orders_count' => function ($q2) {
+                    $q2->where('status', '!=', 'cancelled');
+                },
+            ])->with('approvalStatus');
         }]);
 
         // Search by name or email
@@ -179,22 +225,6 @@ class AdminController extends Controller
             $store = $vendor->store;
             $approvalStatus = $store?->approvalStatus;
 
-            // Quick insights: count completed orders and active products
-            $completedOrders = 0;
-            $activeProducts = 0;
-
-            if ($store) {
-                $completedOrders = \DB::table('orders')
-                    ->where('store_id', $store->store_id)
-                    ->where('status', 'completed')
-                    ->count();
-
-                $activeProducts = \DB::table('inventory')
-                    ->where('store_id', $store->store_id)
-                    ->where('status', 'active')
-                    ->count();
-            }
-
             return [
                 'user_id'          => $vendor->user_id,
                 'full_name'        => $vendor->full_name,
@@ -207,17 +237,93 @@ class AdminController extends Controller
                 'store_id'         => $store?->store_id,
                 'store_name'       => $store?->store_name,
                 'store_picture_url' => $store?->store_picture_url,
+                'address'          => $store?->address,
                 'operating_days'   => $store?->operating_days,
                 'opening_time'     => $store?->opening_time,
                 'closing_time'     => $store?->closing_time,
                 'latitude'         => $store?->latitude,
                 'longitude'        => $store?->longitude,
-                'completed_orders' => $completedOrders,
-                'active_products'  => $activeProducts,
+                'active_products'  => $store?->active_products_count ?? 0,
+                'orders_count'     => $store?->orders_count ?? 0,
             ];
         });
 
         return response()->json($vendors);
+    }
+
+    /**
+     * Get products for a specific vendor's store.
+     *
+     * GET /api/admin/vendors/{storeId}/products
+     */
+    public function getVendorProducts($storeId)
+    {
+        $store = \App\Models\Store::findOrFail($storeId);
+        
+        $products = \App\Models\Inventory::where('store_id', $storeId)
+            ->with('category')
+            ->where('status', '!=', 'archived')
+            ->get()
+            ->each->setAppends(['image_url', 'available_quantity']);
+
+        return response()->json([
+            'store' => $store,
+            'products' => $products,
+        ]);
+    }
+
+    /**
+     * Export registered vendors as a PDF.
+     *
+     * GET /api/admin/vendors/export
+     */
+    public function exportVendors(Request $request)
+    {
+        if ($request->tab === 'deleted') {
+            $query = User::onlyTrashed()->where('role', 'Vendor');
+        } else {
+            $query = User::where('role', 'Vendor');
+        }
+
+        $query->whereHas('store', function ($q) use ($request) {
+            if ($request->tab === 'deleted') {
+                $q->withTrashed();
+            }
+            $q->whereHas('approvalStatus', function ($q2) {
+                $q2->where('status', 'approved');
+            });
+        })->with(['store' => function ($q) use ($request) {
+            if ($request->tab === 'deleted') {
+                $q->withTrashed();
+            }
+        }]);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('account_status', $request->status);
+        }
+
+        $vendors = $query->get();
+
+        // Build report metadata from the currently authenticated Admin
+        // so exported reports are traceable to the user who generated them.
+        $admin = auth()->user();
+        $date = Carbon::now('Asia/Manila')->format('F j, Y \a\t g:i A');
+
+        $pdf = Pdf::loadView('pdf.admin-vendors-report', [
+            'vendors' => $vendors,
+            'admin'   => $admin,
+            'date'    => $date
+        ]);
+
+        return $pdf->download('Tindahan_Admin_Vendors_Export_' . Carbon::now('Asia/Manila')->format('Y-m-d') . '.pdf');
     }
 
     /**
@@ -241,7 +347,13 @@ class AdminController extends Controller
         $suspensionMessage = null;
         if ($request->account_status === 'suspended') {
             $reason = $request->suspension_message ?? 'Violation of terms';
-            $suspensionMessage = "Suspension notice from Admin: {$admin->full_name}. Reason: {$reason}";
+            $suspensionMessage = "Suspended by {$admin->full_name}.\nReason: {$reason}";
+        } elseif ($request->account_status === 'inactive') {
+            // Recorded so the login page can tell the user who deactivated the account, the same as a suspension notice.
+            $suspensionMessage = "Set to inactive by {$admin->full_name}.";
+            if ($request->suspension_message) {
+                $suspensionMessage .= "\nReason: {$request->suspension_message}";
+            }
         }
 
         $vendor->update([
@@ -320,6 +432,46 @@ class AdminController extends Controller
     }
 
     /**
+     * Export registered consumers as a PDF.
+     *
+     * GET /api/admin/consumers/export
+     */
+    public function exportConsumers(Request $request)
+    {
+        // Handle Active/Deleted Tab
+        if ($request->tab === 'deleted') {
+            $query = User::onlyTrashed()->where('role', 'Consumer');
+        } else {
+            $query = User::where('role', 'Consumer');
+        }
+
+        // Search by name or email
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $consumers = $query->get(['user_id', 'full_name', 'email', 'phone_number',
+                                   'account_status', 'created_at', 'deleted_at']);
+
+        // Build report metadata from the currently authenticated Admin
+        // so exported reports are traceable to the user who generated them.
+        $admin = auth()->user();
+        $date = Carbon::now('Asia/Manila')->format('F j, Y \a\t g:i A');
+
+        $pdf = Pdf::loadView('pdf.admin-consumers-report', [
+            'consumers' => $consumers,
+            'admin'     => $admin,
+            'date'      => $date
+        ]);
+
+        return $pdf->download('Tindahan_Admin_Consumers_Export_' . Carbon::now('Asia/Manila')->format('Y-m-d') . '.pdf');
+    }
+
+    /**
      * Update a consumer's account status (active/inactive/suspended).
      *
      * PATCH /api/admin/consumers/{userId}/status
@@ -340,7 +492,13 @@ class AdminController extends Controller
         $suspensionMessage = null;
         if ($request->account_status === 'suspended') {
             $reason = $request->suspension_message ?? 'Violation of terms';
-            $suspensionMessage = "Suspension notice from Admin: {$admin->full_name}. Reason: {$reason}";
+            $suspensionMessage = "Suspended by {$admin->full_name}.\nReason: {$reason}";
+        } elseif ($request->account_status === 'inactive') {
+            // Recorded so the login page can tell the user who deactivated the account, the same as a suspension notice.
+            $suspensionMessage = "Set to inactive by {$admin->full_name}.";
+            if ($request->suspension_message) {
+                $suspensionMessage .= "\nReason: {$request->suspension_message}";
+            }
         }
 
         $consumer->update([

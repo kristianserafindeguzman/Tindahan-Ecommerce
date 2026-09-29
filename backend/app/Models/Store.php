@@ -32,6 +32,8 @@ class Store extends Model
         'operating_days',
         'latitude',
         'longitude',
+        'address',
+        'slug',
     ];
 
     /**
@@ -66,21 +68,29 @@ class Store extends Model
     }
 
     /**
+     * The orders placed at this store.
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'store_id', 'store_id');
+    }
+
+    /**
      * Append custom attributes.
      */
     protected $appends = ['store_picture_url'];
 
-    /**
-     * Resolve the store picture URL safely.
-     */
-    protected function storePictureUrl(): Attribute
+    public function getStorePictureUrlAttribute()
     {
-        return Attribute::make(
-            get: function (mixed $value, array $attributes) {
-                $pic = $attributes['store_picture'] ?? null;
-                if (!$pic || $pic === 'null' || trim($pic) === '') return null;
-                return str_starts_with($pic, 'http') ? $pic : asset('storage/' . $pic);
+        if ($this->store_picture) {
+            if (str_starts_with($this->store_picture, 'http')) {
+                return $this->store_picture;
             }
-        );
+            if (str_starts_with($this->store_picture, 'seed-images/')) {
+                return asset($this->store_picture);
+            }
+            return asset('storage/' . $this->store_picture);
+        }
+        return null;
     }
 }

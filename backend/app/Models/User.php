@@ -26,6 +26,7 @@ class User extends Authenticatable
     protected $fillable = [
         'role',
         'full_name',
+        'birthday',
         'profile_picture',
         'phone_number',
         'email',
@@ -68,6 +69,7 @@ class User extends Authenticatable
     {
         return [
             'password_hash'    => 'hashed',
+            'birthday'         => 'date:Y-m-d',
             'last_activity_at' => 'datetime',
         ];
     }

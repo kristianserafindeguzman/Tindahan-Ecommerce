@@ -16,13 +16,30 @@ class Inventory extends Model
         'store_id',
         'category_id',
         'product_name',
+        'description',
         'price',
         'stock_quantity',
         'reserved_quantity',
         'variants',
         'product_picture',
         'status',
+        'expiration_date',
     ];
+
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute()
+    {
+        if (empty($this->product_picture)) {
+            return null;
+        }
+
+        if (str_starts_with($this->product_picture, 'seed-images/')) {
+            return asset($this->product_picture);
+        }
+
+        return asset('storage/' . $this->product_picture);
+    }
 
     public function getAvailableQuantityAttribute()
     {
@@ -34,6 +51,7 @@ class Inventory extends Model
         return [
             'price' => 'decimal:2',
             'variants' => 'array',
+            'expiration_date' => 'date',
         ];
     }
 
