@@ -14,6 +14,10 @@ return [
     |
     */
 
+    'ml_api' => [
+        'url' => env('ML_API_URL'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],
