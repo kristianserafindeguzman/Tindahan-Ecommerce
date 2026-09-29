@@ -20,6 +20,7 @@ const load = async (params) => {
       isOpen: store.isOpen,
       closesAt: store.closesAt,
       scheduleStatusText: store.scheduleStatusText,
+      hours: store.hours || null,
       distance_meters: store.distance_meters,
       latitude: store.latitude != null ? Number(store.latitude) : null,
       longitude: store.longitude != null ? Number(store.longitude) : null
