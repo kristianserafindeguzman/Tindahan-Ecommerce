@@ -62,6 +62,16 @@
                 <q-icon name="o_storefront" size="15px" />
                 <span>{{ group.store }}</span>
               </div>
+              <!-- Back to this store's own page, to keep adding from the same store. -->
+              <q-btn
+                flat
+                dense
+                no-caps
+                icon="o_storefront"
+                :label="t('Continue Shopping')"
+                :to="`/consumer/stores/${group.storeId}`"
+                class="continue-shopping-btn"
+              />
             </div>
 
             <div v-for="item in group.items" class="cart-item" :key="item.cartId" :class="{ 'cart-item-oos': !item.inStock || hasExpired(item) }">
@@ -758,6 +768,24 @@ const removeItem = async (item) => {
   font-weight: 700;
 
   color: var(--c-text);
+}
+
+/* A quiet text link at the right of each store's header row, in brand red like the page's other links. */
+.continue-shopping-btn {
+  flex-shrink: 0;
+
+  padding: 4px 8px;
+
+  border-radius: var(--r-sm);
+
+  color: var(--c-brand);
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.continue-shopping-btn :deep(.q-icon) {
+  font-size: 16px;
 }
 
 /* SUMMARY */

@@ -9,7 +9,20 @@
         {{ t('Back to Orders') }}
       </span>
 
-      <h1 class="page-title">{{ t('Order #') }}{{ order.order_id }}</h1>
+      <!-- Refresh re-reads the order, so the shopper sees the store's latest status without reloading the page. -->
+      <div class="page-title-row">
+        <h1 class="page-title">{{ t('Order #') }}{{ order.order_id }}</h1>
+        <q-btn
+          outline
+          no-caps
+          color="primary"
+          icon="o_refresh"
+          :label="t('Refresh')"
+          :loading="refreshing"
+          class="refresh-btn"
+          @click="refreshOrder"
+        />
+      </div>
 
       <div class="order-layout">
 
@@ -498,13 +511,29 @@ const fetchOrderDetails = async () => {
   try {
     const res = await api.get(`/consumer/orders/${id}`)
     order.value = res.data
+    return true
   } catch (error) {
     console.error('Failed to load order details', error)
     if (error.response?.status === 404 || error.response?.status === 403) {
       localStorage.removeItem('consumer_selected_order_id')
       router.replace('/consumer/orders')
     }
+    return false
   }
+}
+
+const refreshing = ref(false)
+
+// Re-reads the order from the server (the API sends no-cache, so this is always fresh) and says
+// so either way: when nothing changed, the page alone would give no sign the button worked.
+const refreshOrder = async () => {
+  if (refreshing.value) return
+  refreshing.value = true
+  const ok = await fetchOrderDetails()
+  refreshing.value = false
+  $q.notify(ok
+    ? { type: 'positive', message: t('Order updated.'), timeout: 1500 }
+    : { type: 'negative', message: t('Could not refresh the order. Please try again.') })
 }
 
 const confirmCancelOrder = async () => {
@@ -576,8 +605,37 @@ onMounted(() => {
   color: var(--c-brand);
 }
 
-.page-title {
+/* The order number with the Refresh button at the right. */
+.page-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
   margin: 0 0 20px;
+}
+
+.refresh-btn {
+  flex-shrink: 0;
+
+  height: 38px;
+  min-height: 38px;
+  padding: 0 14px;
+
+  border-radius: var(--r-sm);
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  animation: orderdetails-fade-up 0.5s ease both;
+}
+
+.refresh-btn :deep(.q-icon) {
+  font-size: 18px;
+}
+
+.page-title {
+  margin: 0;
 
   font-size: var(--fs-3xl);
   font-weight: 700;
@@ -632,7 +690,8 @@ onMounted(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .order-layout,
-  .page-title {
+  .page-title,
+  .refresh-btn {
     animation: none;
   }
 }

@@ -46,8 +46,25 @@
         </div>
       </div>
 
-      <!-- CATEGORY PILLS -->
-      <div class="category-pills-row">
+      <!-- CATEGORY PILLS — a sideways-scrolling row with an arrow at each end, outside the row so
+           it never covers a pill. The arrows show only when the row overflows; one that can't go
+           further is dimmed rather than removed, so the row doesn't shift as it scrolls. -->
+      <div class="category-scroller">
+        <q-btn
+          v-if="categoryRowOverflows"
+          unelevated
+          dense
+          icon="o_chevron_left"
+          class="category-arrow"
+          :disable="!canScrollLeft"
+          :aria-label="t('Scroll categories left')"
+          @click="scrollCategories(-1)"
+        />
+        <div
+          class="category-row-wrap"
+          :class="{ 'category-row-wrap--left': canScrollLeft, 'category-row-wrap--right': canScrollRight }"
+        >
+      <div ref="categoryRowEl" class="category-pills-row" @scroll.passive="updateCategoryArrows">
         <q-chip
           clickable
           dense
@@ -73,6 +90,18 @@
           {{ t('More') }}
           <q-icon name="o_expand_more" size="16px" />
         </q-chip>
+      </div>
+        </div>
+        <q-btn
+          v-if="categoryRowOverflows"
+          unelevated
+          dense
+          icon="o_chevron_right"
+          class="category-arrow"
+          :disable="!canScrollRight"
+          :aria-label="t('Scroll categories right')"
+          @click="scrollCategories(1)"
+        />
       </div>
 
       <div class="products-layout">
@@ -144,7 +173,7 @@
 <script setup>
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
@@ -207,6 +236,50 @@ onMounted(() => {
 })
 
 const VISIBLE_CATEGORIES = computed(() => categories.value.slice(0, 7))
+
+// CATEGORY ROW ARROWS — the row scrolls sideways with its scrollbar hidden, so the arrows show
+// there is more, and appear only on a side that actually has more to scroll to.
+const categoryRowEl = ref(null)
+const canScrollLeft = ref(false)
+const canScrollRight = ref(false)
+const categoryRowOverflows = computed(() => canScrollLeft.value || canScrollRight.value)
+
+const updateCategoryArrows = () => {
+  const row = categoryRowEl.value
+  if (!row) return
+  // A pixel of slack, since zoom and high-DPI screens report fractional scroll positions.
+  canScrollLeft.value = row.scrollLeft > 1
+  canScrollRight.value = row.scrollLeft + row.clientWidth < row.scrollWidth - 1
+}
+
+const scrollCategories = (direction) => {
+  const row = categoryRowEl.value
+  if (!row) return
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  row.scrollBy({ left: direction * row.clientWidth * 0.7, behavior: reduceMotion ? 'auto' : 'smooth' })
+}
+
+// Re-checked when the row resizes (window, sidebar) or a pill changes width (categories loading,
+// a language switch), not just when it scrolls.
+let categoryRowObserver = null
+
+const observeCategoryRow = () => {
+  const row = categoryRowEl.value
+  if (!row || !categoryRowObserver) return
+  categoryRowObserver.disconnect()
+  categoryRowObserver.observe(row)
+  for (const pill of row.children) categoryRowObserver.observe(pill)
+  updateCategoryArrows()
+}
+
+onMounted(() => {
+  categoryRowObserver = new ResizeObserver(updateCategoryArrows)
+  observeCategoryRow()
+})
+
+watch(VISIBLE_CATEGORIES, () => nextTick(observeCategoryRow))
+
+onBeforeUnmount(() => categoryRowObserver?.disconnect())
 
 const CATEGORY_SELECT_OPTIONS = computed(() => [
   { label: 'All Categories', value: 'All' },
@@ -467,12 +540,100 @@ const clearFilters = () => {
 
 /* CATEGORY PILLS */
 
+/* The arrows sit either side of the row, level with the pills, never on top of them. */
+.category-scroller {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  margin-bottom: 20px;
+}
+
+/* Styled like the pills beside them: white, a light border, the same corners, 36px tall. */
+.category-arrow {
+  flex-shrink: 0;
+
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+
+  border: 1px solid var(--c-border);
+  /* The same corner as the category pills beside it. */
+  border-radius: var(--r-sm);
+
+  background: #ffffff;
+  color: var(--c-text-2);
+
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.category-arrow:not(.disabled):hover {
+  border-color: var(--c-brand-tint-3);
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
+}
+
+.category-arrow:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
+}
+
+/* At the start or end of the row: kept in place so nothing shifts, just faded and inactive. */
+.category-arrow.disabled {
+  opacity: 0.35 !important;
+}
+
+/* Clips the row and carries its edge fades. */
+.category-row-wrap {
+  position: relative;
+
+  flex: 1;
+  min-width: 0;
+}
+
+/* A soft fade at an edge with more pills beyond it, so a pill cut by the edge reads as "more this
+   way" rather than as a mistake. White, like the page behind the row. */
+.category-row-wrap::before,
+.category-row-wrap::after {
+  content: '';
+
+  position: absolute;
+  top: 0;
+  z-index: 1;
+
+  width: 32px;
+  height: 36px;
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition: opacity 0.15s;
+}
+
+.category-row-wrap::before {
+  left: 0;
+
+  background: linear-gradient(to right, #ffffff, rgba(255, 255, 255, 0));
+}
+
+.category-row-wrap::after {
+  right: 0;
+
+  background: linear-gradient(to left, #ffffff, rgba(255, 255, 255, 0));
+}
+
+.category-row-wrap--left::before,
+.category-row-wrap--right::after {
+  opacity: 1;
+}
+
 .category-pills-row {
   display: flex;
   align-items: center;
 
   gap: 8px;
-  margin-bottom: 20px;
   padding-bottom: 4px;
 
   overflow-x: auto;
@@ -572,17 +733,17 @@ const clearFilters = () => {
 }
 
 .page-header-row,
-.category-pills-row,
+.category-scroller,
 .products-grid {
   animation: products-fade-up 0.5s ease both;
 }
 
-.category-pills-row { animation-delay: 0.06s; }
+.category-scroller { animation-delay: 0.06s; }
 .products-grid { animation-delay: 0.12s; }
 
 @media (prefers-reduced-motion: reduce) {
   .page-header-row,
-  .category-pills-row,
+  .category-scroller,
   .products-grid {
     animation: none;
   }

@@ -678,4 +678,9 @@ export default {
   'You have no active orders right now. Anything you order next shows up here while the store prepares it.': 'Wala kang aktibong order ngayon. Lalabas dito ang susunod mong order habang inihahanda ito ng tindahan.',
   'No past orders': 'Walang lumang order',
   'Orders you have picked up or cancelled will be kept here.': 'Dito itatago ang mga order na nakuha mo na o kinansela.',
+  'Scroll categories left': 'I-scroll pakaliwa ang categories',
+  'Scroll categories right': 'I-scroll pakanan ang categories',
+  'Refresh': 'I-refresh',
+  'Order updated.': 'Na-update ang order.',
+  'Could not refresh the order. Please try again.': 'Hindi ma-refresh ang order. Subukan ulit.',
 }
