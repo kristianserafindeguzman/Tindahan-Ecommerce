@@ -149,6 +149,7 @@ export default {
   'Add to Cart': 'I-add sa Cart',
   'Add to cart': 'I-add sa cart',
   'Available Sizes': 'Mga Available na Size',
+  'Best Before': 'Petsa ng Expiry',
   Quantity: 'Dami',
   'Decrease quantity': 'Bawasan ang dami',
   'Increase quantity': 'Dagdagan ang dami',
@@ -210,6 +211,17 @@ export default {
     'Sa store ka magbabayad at kukuha ng order mo.',
   'Choose a store above to view your total.':
     'Pumili ng store sa itaas para makita ang total mo.',
+  Expired: 'Expired na',
+  'Expires in {min}:{sec}': 'Mag-e-expire sa {min}:{sec}',
+  'A reservation in this store expired. Remove the expired item to continue.':
+    'May reservation sa store na ito na nag-expire. Alisin ang expired na item para magpatuloy.',
+  'Remove the expired item to continue.':
+    'Alisin ang expired na item para magpatuloy.',
+  'A reservation expired while you were here. Go back to your cart to fix it.':
+    'May reservation na nag-expire habang nandito ka. Balik sa cart mo para ayusin.',
+  'A reservation expired — go back to your cart.':
+    'May reservation na nag-expire — balik sa cart mo.',
+  'Verify Password Change': 'I-verify ang Pagpalit ng Password',
   'Select a store to checkout': 'Pumili ng store para mag-checkout',
   'Select a store to checkout.': 'Pumili ng store para mag-checkout.',
   'Back to Cart': 'Bumalik sa Cart',

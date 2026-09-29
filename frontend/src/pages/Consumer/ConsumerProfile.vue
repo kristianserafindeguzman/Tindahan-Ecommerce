@@ -441,7 +441,7 @@
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_sms" size="22px" /></div>
           <div class="dialog-header-text">
-            <div class="text-h6">{{ t('Verify New Phone') }}</div>
+            <div class="text-h6">{{ otpPurpose === 'password' ? t('Verify Password Change') : t('Verify New Phone') }}</div>
             <div class="section-subtitle">{{ t('Enter the 6-digit verification code sent to {phone}. Sent via SMS.', { phone: maskedPhone }) }}</div>
           </div>
           <q-btn flat round dense icon="o_close" class="dialog-close-btn" :aria-label="t('Close verification')" :disable="verifyingOtp" @click="cancelOtp" />
@@ -763,9 +763,15 @@ const otpError = ref('')
 const otpVerifiedFlash = ref(false)
 const canVerifyOtp = computed(() => otpInput.value.every((digit) => digit !== ''))
 
+// The one OTP dialog serves both flows; this says which one opened it.
+const otpPurpose = ref('phone')
+
 // e.g. "09981234567" -> "0998•••4567"
 const maskedPhone = computed(() => {
-  const digits = form.phone_number || ''
+  // A password change codes the registered number, which the request response masks for us.
+  const digits = otpPurpose.value === 'password'
+    ? (user.value?.phone_number || '')
+    : (form.phone_number || '')
   if (digits.length < 7) return digits
   return `${digits.slice(0, 4)}•••${digits.slice(-4)}`
 })
@@ -976,7 +982,12 @@ const requestPhoneOtp = async () => {
 const resendOtpCode = async () => {
   if (!canResendOtp.value) return
   try {
-    await api.post('/profile/phone-request-otp', { phone_number: form.phone_number })
+    if (otpPurpose.value === 'password') {
+      // Its own endpoint: re-requesting would re-check the current password and spend that throttle.
+      await api.post('/profile/password-resend-otp')
+    } else {
+      await api.post('/profile/phone-request-otp', { phone_number: form.phone_number })
+    }
     otpInput.value = ['', '', '', '', '', '']
     otpError.value = ''
     startOtpTimers()
@@ -1029,32 +1040,51 @@ const onOtpPaste = (event) => {
   if (canVerifyOtp.value) verifyOtp()
 }
 
-const cancelOtp = () => {
-  form.phone_number = user.value.phone_number
-  phoneVerificationRequired.value = false
+const cancelOtp = async () => {
+  if (otpPurpose.value === 'password') {
+    await cancelPasswordOtp()
+  } else {
+    form.phone_number = user.value.phone_number
+    phoneVerificationRequired.value = false
+  }
   stopOtpTimers()
   showOtpModal.value = false
+  otpPurpose.value = 'phone'
 }
 
 const verifyOtp = async () => {
   const code = otpInput.value.join('')
   if (code.length !== 6 || verifyingOtp.value) return
 
+  const isPassword = otpPurpose.value === 'password'
+
   verifyingOtp.value = true
   otpError.value = ''
   try {
-    await api.post('/profile/phone-verify-otp', {
-      phone_number: form.phone_number,
-      code
-    })
-    user.value.phone_number = form.phone_number
-    phoneVerificationRequired.value = false
+    if (isPassword) {
+      await api.post('/profile/password-verify-otp', { code })
+      passwords.current = ''
+      passwords.new = ''
+      passwords.confirm = ''
+    } else {
+      await api.post('/profile/phone-verify-otp', {
+        phone_number: form.phone_number,
+        code
+      })
+      user.value.phone_number = form.phone_number
+      phoneVerificationRequired.value = false
+    }
     stopOtpTimers()
     otpVerifiedFlash.value = true
     // Flash green briefly, then hand off to the shared success dialog.
     setTimeout(() => {
       showOtpModal.value = false
-      openSuccessModal('Information Updated!', 'Your personal information has been updated successfully.')
+      otpPurpose.value = 'phone'
+      if (isPassword) {
+        openSuccessModal('Password Updated!', 'Your password has been changed successfully.')
+      } else {
+        openSuccessModal('Information Updated!', 'Your personal information has been updated successfully.')
+      }
     }, 450)
   } catch (err) {
     otpError.value = t(err.response?.data?.message || 'Invalid verification code. Please try again.')
@@ -1076,27 +1106,42 @@ const saveEmail = async () => {
   }
 }
 
+// The change is only queued here; the texted code in the OTP dialog is what applies it.
 const savePassword = async () => {
   const isValid = await passwordFormRef.value.validate()
   if (!isValid) return
 
   savingPassword.value = true
   try {
-    await api.post('/profile/password', {
+    await api.post('/profile/password-request-otp', {
       current_password: passwords.current,
       new_password: passwords.new,
       new_password_confirmation: passwords.confirm
     })
-    passwords.current = ''
-    passwords.new = ''
-    passwords.confirm = ''
     showPasswordModal.value = false
-    openSuccessModal('Password Updated!', 'Your password has been changed successfully.')
+    otpPurpose.value = 'password'
+    otpInput.value = ['', '', '', '', '', '']
+    otpError.value = ''
+    otpVerifiedFlash.value = false
+    showOtpModal.value = true
+    startOtpTimers()
   } catch (err) {
     $q.notify({ type: 'negative', message: t(err.response?.data?.message || 'Failed to update password.') })
   } finally {
     savingPassword.value = false
   }
+}
+
+// Clears the queued change server-side, so an abandoned dialog leaves nothing pending.
+const cancelPasswordOtp = async () => {
+  try {
+    await api.post('/profile/password-cancel-otp')
+  } catch {
+    // The queued change expires on its own in 10 minutes, so a failed cancel is not worth a notice.
+  }
+  passwords.current = ''
+  passwords.new = ''
+  passwords.confirm = ''
 }
 
 const cancelPasswordModal = () => {

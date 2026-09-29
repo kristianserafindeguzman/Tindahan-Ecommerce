@@ -8,35 +8,65 @@
           <p class="vp-subtitle">{{ t('subtitle') }}</p>
         </div>
         <div class="vp-header-actions">
-          <q-btn no-caps unelevated :loading="insightsRefreshing" class="pl-refresh-btn" @click="refreshInsights">
-            <span class="pl-refresh-icon"><q-icon name="o_refresh" size="16px" /></span>
-            <span class="pl-refresh-label">{{ t('refreshInsights') }}</span>
-            <template #loading>
-              <span class="pl-refresh-icon pl-refresh-icon--spin"><q-icon name="o_refresh" size="16px" /></span>
-              <span class="pl-refresh-label">{{ t('refreshingInsights') }}</span>
-            </template>
-          </q-btn>
           <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" @click="openExportWizard" />
           <q-btn data-tour="add-product" unelevated no-caps color="primary" icon="add" :label="t('addBtn')" class="vp-primary-btn" @click="showAddModal = true" />
         </div>
       </div>
 
-      <!-- Forecast insights from the demand model. -->
-      <div data-tour="pl-insights" class="vp-stats vp-stats--insights">
-        <div v-for="card in insightCards" :key="card.key" class="vp-card vp-stat">
-          <div class="vp-stat-top">
-            <span class="vp-stat-label">{{ card.label }}</span>
-            <span class="vp-stat-icon" :class="`vp-tone--${card.tone}`"><q-icon :name="card.icon" size="20px" /></span>
-          </div>
-          <div class="vp-stat-value vp-stat-value--text">{{ card.value }}</div>
-          <div class="vp-stat-notes">
-            <span v-for="note in card.notes" :key="note.text" class="vp-stat-note" :class="`vp-tone--${note.tone || card.tone}`">
-              <q-icon :name="note.icon" size="14px" />
-              {{ note.text }}
+      <!-- Forecast insights from the demand model, with the refresh that re-runs it right above the cards it updates. -->
+      <section data-tour="pl-insights" class="pl-insights" :aria-busy="insightsBusy">
+        <div class="pl-insights-head">
+          <div class="pl-insights-heading">
+            <span class="pl-insights-title">{{ t('insightsTitle') }}</span>
+            <span class="pl-insights-meta" aria-live="polite">
+              <q-icon :name="insightsRefreshing ? 'o_autorenew' : 'o_schedule'" size="14px" :class="{ 'pl-spin': insightsRefreshing }" />
+              {{ insightsMeta }}
             </span>
           </div>
+          <q-btn
+            outline
+            no-caps
+            color="primary"
+            class="vp-pill-btn pl-refresh-btn"
+            :class="{ 'pl-refresh-btn--busy': insightsRefreshing }"
+            :disable="insightsRefreshing"
+            @click="refreshInsights"
+          >
+            <q-icon name="o_refresh" size="18px" class="pl-refresh-icon" :class="{ 'pl-spin': insightsRefreshing }" />
+            <span class="pl-refresh-label">{{ insightsRefreshing ? t('refreshingInsights') : t('refreshInsights') }}</span>
+          </q-btn>
         </div>
-      </div>
+
+        <div class="vp-stats vp-stats--insights">
+          <!-- Keyed by the refresh count, so each finished refresh re-mounts the cards and plays their "updated" pulse. -->
+          <div
+            v-for="card in insightCards"
+            :key="`${card.key}-${insightsVersion}`"
+            class="vp-card vp-stat pl-insight"
+            :class="{ 'pl-insight--updated': insightsVersion > 0, 'pl-insight--busy': insightsBusy }"
+          >
+            <div class="vp-stat-top">
+              <span class="vp-stat-label">{{ card.label }}</span>
+              <span class="vp-stat-icon" :class="`vp-tone--${card.tone}`"><q-icon :name="card.icon" size="20px" /></span>
+            </div>
+            <template v-if="insightsBusy">
+              <q-skeleton type="text" width="78%" height="26px" class="pl-insight-skeleton" />
+              <div class="vp-stat-notes">
+                <q-skeleton type="QChip" width="62%" height="24px" class="pl-insight-skeleton" />
+              </div>
+            </template>
+            <template v-else>
+              <div class="vp-stat-value vp-stat-value--text">{{ card.value }}</div>
+              <div class="vp-stat-notes">
+                <span v-for="note in card.notes" :key="note.text" class="vp-stat-note" :class="`vp-tone--${note.tone || card.tone}`">
+                  <q-icon :name="note.icon" size="14px" />
+                  {{ note.text }}
+                </span>
+              </div>
+            </template>
+          </div>
+        </div>
+      </section>
 
       <div data-tour="pl-list" class="vp-card">
         <div data-tour="pl-toolbar" class="vp-toolbar">
@@ -141,7 +171,7 @@
                     <span class="vp-name">{{ product.product_name }}</span>
                   </div>
                 </td>
-                <td class="vp-muted pl-ellipsis">{{ product.category?.category_name || t('uncategorized') }}</td>
+                <td class="vp-muted pl-ellipsis">{{ productCategoryName(product) }}</td>
                 <td>
                   <div class="pl-stock-row">
                     <span class="pl-stock" :class="stockClass(product)">{{ product.available_quantity }}</span>
@@ -149,7 +179,10 @@
                   </div>
                 </td>
                 <td class="text-right vp-amount">
-                  <span v-if="product.variants?.length" class="pl-from">{{ t('fromWord') }} </span>₱{{ formatNumber(product.price) }}
+                  <span class="pl-price">
+                    <span v-if="product.variants?.length" class="pl-from">{{ t('fromWord') }}</span>
+                    <span>₱{{ formatNumber(product.price) }}</span>
+                  </span>
                 </td>
                 <td><span class="vp-status" :class="`vp-status--${productTone(product.status)}`">{{ formatStatus(product.status) }}</span></td>
                 <td class="text-right" @click.stop @keydown.stop>
@@ -187,14 +220,17 @@
             <div class="vp-list-body">
               <span class="vp-name">{{ product.product_name }}</span>
               <div class="vp-list-meta">
-                {{ product.category?.category_name || t('uncategorized') }} · 
+                {{ productCategoryName(product) }} · 
                 <span class="pl-stock-row pl-stock-row--inline">
                   <span :class="stockClass(product)">{{ product.available_quantity }}</span>
                   <span>{{ t('ofWord') }} {{ product.stock_quantity }} {{ t('leftWord') }}</span>
                 </span>
               </div>
               <div class="pl-list-bottom">
-                <span class="vp-amount">₱{{ formatNumber(product.price) }}</span>
+                <span class="vp-amount pl-price">
+                  <span v-if="product.variants?.length" class="pl-from">{{ t('fromWord') }}</span>
+                  <span>₱{{ formatNumber(product.price) }}</span>
+                </span>
                 <span class="vp-status" :class="`vp-status--${productTone(product.status)}`">{{ formatStatus(product.status) }}</span>
               </div>
             </div>
@@ -318,6 +354,7 @@ import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import { useLanguage } from '@/composables/useLanguage'
+import { useCategoryLabels } from '@/composables/useCategories'
 
 import AddProductModal from '@/components/modals/AddProductModal.vue'
 import ProductDetailsModal from '@/components/modals/ProductDetailsModal.vue'
@@ -334,6 +371,14 @@ const productListDict = {
     addBtn: 'Add Product',
     refreshInsights: 'Refresh Insights',
     refreshingInsights: 'Refreshing…',
+    insightsTitle: 'Stock insights',
+    insightsUpdating: 'Re-running the demand forecast…',
+    insightsLoading: 'Loading insights…',
+    insightsUpdatedAt: 'Updated {time}',
+    insightsNotLoaded: 'Couldn’t load insights',
+    notifyInsightsRefreshed: 'Insights refreshed with the latest forecast.',
+    notifyInsightsNoForecast: 'Not enough sales data for a new forecast yet. Showing your latest insights.',
+    notifyInsightsFailed: 'Couldn’t refresh insights. Please try again.',
     insightRestockAlert: 'Restock alert',
     insightUpcomingTrend: 'Upcoming trend',
     insightTopPerformer: 'Top performer',
@@ -411,8 +456,16 @@ const productListDict = {
     subtitle: 'Bantayan at i-update ang iyong mga paninda.',
     exportBtn: 'I-export',
     addBtn: 'Magdagdag',
-    refreshInsights: 'I-refresh',
+    refreshInsights: 'I-refresh ang Insights',
     refreshingInsights: 'Nire-refresh…',
+    insightsTitle: 'Insights sa stock',
+    insightsUpdating: 'Pinapatakbo ulit ang demand forecast…',
+    insightsLoading: 'Nilo-load ang insights…',
+    insightsUpdatedAt: 'Na-update {time}',
+    insightsNotLoaded: 'Hindi ma-load ang insights',
+    notifyInsightsRefreshed: 'Na-refresh ang insights gamit ang pinakabagong forecast.',
+    notifyInsightsNoForecast: 'Kulang pa ang sales data para sa bagong forecast. Ipinapakita ang pinakahuli mong insights.',
+    notifyInsightsFailed: 'Hindi ma-refresh ang insights. Subukan ulit.',
     insightRestockAlert: 'Restock alert',
     insightUpcomingTrend: 'Bagong trend',
     insightTopPerformer: 'Mataas ang benta',
@@ -488,6 +541,17 @@ const productListDict = {
 }
 
 const { t, lang } = useLanguage(productListDict)
+
+// Seeded categories are stored in English; this shows them in the current language, the
+// same as the Categories page. A category a vendor made up keeps the name they typed.
+const { categoryLabel } = useCategoryLabels()
+
+const categoryName = name => {
+  if (!name || name === 'Uncategorized') return t('uncategorized')
+  return categoryLabel(name)
+}
+
+const productCategoryName = product => categoryName(product.category?.category_name)
 
 // Reactive filters/options so they switch instantly
 const localizedStatusFilters = computed(() => [
@@ -567,8 +631,16 @@ const seasonIcon = (season, holiday) => {
   return 'o_calendar_month'
 }
 
+// 'loading' until the first answer, then 'ready' when the model has insights for this store
+// or 'empty' when it does not. Kept apart from the values so the placeholder text follows
+// the language switch instead of being frozen in whichever language it was fetched in.
+const insightsStatus = ref('loading')
+const insightsUpdatedAt = ref(null)
+const insightsError = ref(false)
+
 const insightCards = computed(() => {
   const ml = mlInsights.value
+  const empty = insightsStatus.value === 'empty'
   const days = Number(ml.daysUntilStockout)
   const trendNotes = [{ 
     icon: 'o_insights', 
@@ -588,7 +660,7 @@ const insightCards = computed(() => {
       label: t('insightRestockAlert'),
       icon: 'o_warning_amber',
       tone: 'danger',
-      value: ml.restockProduct || t('insightAnalyzing'),
+      value: empty ? t('insightAwaitingData') : (ml.restockProduct || t('insightAnalyzing')),
       notes: [{ 
         icon: 'o_schedule', 
         text: isNumber(ml.daysUntilStockout) 
@@ -601,7 +673,7 @@ const insightCards = computed(() => {
       label: t('insightUpcomingTrend'), 
       icon: 'o_trending_up', 
       tone: 'info', 
-      value: ml.trendingCategory || t('insightGathering'), 
+      value: empty ? t('insightAwaitingData') : (ml.trendingCategory ? categoryName(ml.trendingCategory) : t('insightGathering')), 
       notes: trendNotes 
     },
     { 
@@ -609,23 +681,52 @@ const insightCards = computed(() => {
       label: t('insightTopPerformer'), 
       icon: 'o_emoji_events', 
       tone: 'wait', 
-      value: ml.topCategory || t('insightCalculating'), 
+      value: empty ? t('insightAwaitingData') : (ml.topCategory ? categoryName(ml.topCategory) : t('insightCalculating')), 
       notes: [{ icon: 'o_star_outline', text: t('insightHighestRevenue') }] 
     }
   ]
 })
 
 const insightsRefreshing = ref(false)
+// Bumped after each finished refresh; the cards are keyed on it so they re-mount and pulse.
+const insightsVersion = ref(0)
+
+// Skeletons stand in for the values while the first load or a refresh is running.
+const insightsBusy = computed(() => insightsRefreshing.value || insightsStatus.value === 'loading')
+
+const formatClock = value => value.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+
+const insightsMeta = computed(() => {
+  if (insightsRefreshing.value) return t('insightsUpdating')
+  if (insightsStatus.value === 'loading') return t('insightsLoading')
+  if (insightsError.value && !insightsUpdatedAt.value) return t('insightsNotLoaded')
+  return insightsUpdatedAt.value ? t('insightsUpdatedAt').replace('{time}', formatClock(insightsUpdatedAt.value)) : ''
+})
+
+// A fast answer would only flash the skeletons, so a refresh stays visible at least this long.
+const MIN_REFRESH_MS = 700
 
 const refreshInsights = async () => {
+  if (insightsRefreshing.value) return
   insightsRefreshing.value = true
+  const minimumWait = new Promise(resolve => setTimeout(resolve, MIN_REFRESH_MS))
   try {
-    // Trigger the shared forecast refresh
-    await api.post('/vendor/demand-forecast/refresh')
-    // Then re-fetch insights
-    await fetchMlInsights()
+    // Re-runs this store's forecast, then reloads the cards from it.
+    const { data } = await api.post('/vendor/demand-forecast/refresh')
+    const loaded = await fetchMlInsights()
+    await minimumWait
+    if (!loaded) throw new Error('Insights could not be reloaded.')
+
+    insightsVersion.value += 1
+    if (data?.has_forecast === false) {
+      $q.notify({ type: 'info', message: t('notifyInsightsNoForecast') })
+    } else {
+      $q.notify({ type: 'positive', message: t('notifyInsightsRefreshed') })
+    }
   } catch (err) {
     console.error('Failed to refresh insights:', err)
+    await minimumWait
+    $q.notify({ type: 'negative', message: t('notifyInsightsFailed') })
   } finally {
     insightsRefreshing.value = false
   }
@@ -694,7 +795,7 @@ const resetFilters = () => {
 const categoryOptions = computed(() => {
   const cats = new Map()
   products.value.forEach(p => {
-    if (p.category) cats.set(p.category_id, p.category.category_name)
+    if (p.category) cats.set(p.category_id, categoryName(p.category.category_name))
   })
   return Array.from(cats, ([value, label]) => ({ value, label }))
 })
@@ -903,6 +1004,7 @@ const executeFinalExport = async () => {
   }
 }
 
+// Resolves true once the cards hold the latest answer, false when the request failed.
 const fetchMlInsights = async () => {
   try {
     const res = await api.get('/vendor/ml-insights')
@@ -910,19 +1012,29 @@ const fetchMlInsights = async () => {
       mlInsights.value.restockProduct = res.data.restockProduct
       mlInsights.value.daysUntilStockout = res.data.daysUntilStockout
       mlInsights.value.trendingCategory = res.data.trendingCategory
-      mlInsights.value.trendMultiplier = res.data.trendMultiplier ?? t('insightNA')
+      mlInsights.value.trendMultiplier = res.data.trendMultiplier ?? null
       mlInsights.value.topCategory = res.data.topCategory
       mlInsights.value.currentSeason = res.data.currentSeason ?? null
       mlInsights.value.currentHoliday = res.data.currentHoliday ?? null
+      insightsStatus.value = 'ready'
     } else {
-      mlInsights.value.restockProduct = t('insightAwaitingData')
-      mlInsights.value.daysUntilStockout = t('insightNA')
-      mlInsights.value.trendingCategory = t('insightAwaitingData')
-      mlInsights.value.trendMultiplier = t('insightNA')
-      mlInsights.value.topCategory = t('insightAwaitingData')
+      // The placeholders themselves come from insightCards, in the current language.
+      mlInsights.value.restockProduct = null
+      mlInsights.value.daysUntilStockout = null
+      mlInsights.value.trendingCategory = null
+      mlInsights.value.trendMultiplier = null
+      mlInsights.value.topCategory = null
+      insightsStatus.value = 'empty'
     }
+    insightsUpdatedAt.value = new Date()
+    insightsError.value = false
+    return true
   } catch (err) {
     console.error('Failed to load ML insights:', err)
+    insightsError.value = true
+    // A first load that fails leaves the cards on their "awaiting data" text, not on skeletons forever.
+    if (insightsStatus.value === 'loading') insightsStatus.value = 'empty'
+    return false
   }
 }
 
@@ -974,57 +1086,68 @@ onMounted(() => {
   gap: 12px;
 }
 
-/* REFRESH INSIGHTS BUTTON */
-.pl-refresh-btn {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 10px;
-  height: 38px;
-  /* The row already spaces its buttons with its own gap; the extra margin double-spaced this one. */
-  padding: 0 16px 0 8px;
-  border: 1px solid var(--c-brand-tint-2, rgba(101, 16, 18, 0.16));
-  border-radius: var(--r-pill, 9999px);
-  background: var(--c-brand-tint, rgba(101, 16, 18, 0.05));
-  color: var(--c-brand, #651012);
-  font-size: var(--fs-sm, 13px);
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+/* INSIGHTS — a small heading row (title, when it was last updated, and Refresh) over the cards. */
+.pl-insights {
+  margin-bottom: var(--sp-gap);
 }
 
-.pl-refresh-btn:hover:not(.disabled) {
-  background: var(--c-brand-tint-2, rgba(101, 16, 18, 0.1));
-  border-color: var(--c-brand, #651012);
-  box-shadow: 0 3px 10px rgba(101, 16, 18, 0.12);
-  transform: translateY(-1px);
+.pl-insights .vp-stats {
+  margin-bottom: 0;
 }
 
-.pl-refresh-btn:active:not(.disabled) {
-  transform: translateY(0);
-}
-
-.pl-refresh-icon {
+.pl-insights-head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  /* 24px inside a 38px pill leaves 7px all round, so the chip and its shadow clear the
-     rounded left cap instead of being shaved by the button's own overflow clip. */
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #ffffff;
-  color: var(--c-brand, #651012);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 12px;
 }
 
-.pl-refresh-icon--spin :deep(.q-icon) {
-  animation: pl-spin 0.9s linear infinite;
+.pl-insights-heading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+.pl-insights-title {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.pl-insights-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-xs);
+  color: var(--c-muted);
+}
+
+.pl-refresh-btn {
+  flex-shrink: 0;
+}
+
+/* The icon and label sit on one line with even spacing, whichever label is showing. */
+.pl-refresh-btn :deep(.q-btn__content) {
+  flex-wrap: nowrap;
+  gap: 8px;
 }
 
 .pl-refresh-label {
   white-space: nowrap;
+}
+
+/* Disabled while it runs, but still clearly the button that is working rather than a greyed-out one. */
+.pl-refresh-btn--busy.disabled {
+  opacity: 1 !important;
+  background: var(--c-brand-tint) !important;
+}
+
+.pl-spin {
+  animation: pl-spin 0.9s linear infinite;
 }
 
 @keyframes pl-spin {
@@ -1032,8 +1155,40 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
+/* Cards dim slightly under their skeletons, then pulse once when the new figures land. */
+.pl-insight {
+  transition: opacity 0.2s ease;
+}
+
+.pl-insight--busy {
+  opacity: 0.85;
+}
+
+.pl-insight-skeleton {
+  border-radius: var(--r-control);
+}
+
+.pl-insight--updated {
+  animation: pl-insight-pulse 1.1s ease-out;
+}
+
+@keyframes pl-insight-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--c-brand-tint-2, rgba(189, 36, 39, 0.3));
+    transform: translateY(2px);
+  }
+  30% {
+    box-shadow: 0 0 0 4px var(--c-brand-tint-2, rgba(189, 36, 39, 0.3));
+    transform: translateY(0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .pl-refresh-icon--spin :deep(.q-icon) {
+  .pl-spin,
+  .pl-insight--updated {
     animation: none;
   }
 }
@@ -1067,6 +1222,15 @@ onMounted(() => {
 .pl-stock-total {
   font-size: var(--fs-xs);
   color: var(--c-muted);
+}
+
+/* "from" and the amount are two spans with a real gap between them, so a variant product
+   reads "from ₱80.00" and never "from₱80.00". */
+.pl-price {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 .pl-from {
@@ -1261,22 +1425,22 @@ onMounted(() => {
 }
 
 @media (max-width: 600px) {
-  .vp-header-actions {
-    width: 100%;
+  /* The title and its "Updated" line stack on the left, with a compact Refresh on the right. */
+  .pl-insights-head {
+    flex-wrap: nowrap;
   }
 
-  .vp-header-actions .q-btn {
-    flex: 1;
+  .pl-insights-heading {
+    flex-direction: column;
+    align-items: flex-start;
+
+    gap: 2px;
   }
 
-  .pl-refresh-btn {
-    flex: 1 1 100% !important;
-    order: -1;
-    justify-content: center;
-    /* Centred on its own full-width row, so the desktop's icon-side padding would read
-       as the label sitting off-centre. */
-    padding: 0 14px;
-    margin-bottom: 8px;
+  .pl-insights-head .pl-refresh-btn {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 12px;
   }
 
   .pl-search-row {

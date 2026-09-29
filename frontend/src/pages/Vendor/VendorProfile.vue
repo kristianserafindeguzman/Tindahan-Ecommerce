@@ -176,7 +176,7 @@
                 </div>
               </div>
 
-              <div class="info-row info-row-last">
+              <div class="info-row info-row-last info-row--action">
                 <div class="info-icon"><q-icon name="o_lock" size="18px" /></div>
                 <div class="info-body">
                   <div class="info-label">{{ t('passwordLabel') }}</div>
@@ -204,7 +204,7 @@
                 </div>
               </div>
 
-              <div class="info-row info-row-last">
+              <div class="info-row info-row-last info-row--action">
                 <div class="info-icon"><q-icon name="o_school" size="18px" /></div>
                 <div class="info-body">
                   <div class="help-title">{{ t('replayTutorialLabel') }}</div>
@@ -629,7 +629,7 @@
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_sms" size="22px" /></div>
           <div class="dialog-header-text">
-            <div class="text-h6">{{ t('otpTitle') }}</div>
+            <div class="text-h6">{{ otpPurpose === 'password' ? t('otpPwdTitle') : t('otpTitle') }}</div>
             <div class="section-subtitle">{{ t('otpSubtitle').replace('{phone}', maskedPhone) }}</div>
           </div>
           <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close verification" :disable="verifyingOtp" @click="cancelOtp" />
@@ -835,6 +835,7 @@ const vendorProfileDict = {
     confirmPwdSuccess: 'Passwords match.',
     updatePwdBtn: 'Update Password',
     otpTitle: 'Verify New Phone',
+    otpPwdTitle: 'Verify Password Change',
     otpSubtitle: 'Enter the 6-digit verification code sent to {phone}. Sent via SMS.',
     otpExpired: 'Code expired. Please resend a new code.',
     otpDidntReceive: "Didn't receive the code?",
@@ -988,6 +989,7 @@ const vendorProfileDict = {
     confirmPwdSuccess: 'Pareho ang password.',
     updatePwdBtn: 'I-update ang Password',
     otpTitle: 'I-verify ang Bagong Phone',
+    otpPwdTitle: 'I-verify ang Pagpalit ng Password',
     otpSubtitle: 'Ilagay ang 6-digit verification code na nai-send sa {phone} via SMS.',
     otpExpired: 'Expired na ang code. Mag-request ulit ng bago.',
     otpDidntReceive: "Hindi nakuha ang code?",
@@ -1283,6 +1285,8 @@ const savePersonal = async () => {
 // --- Phone verification ---
 
 const showOtpModal = ref(false)
+// The one OTP dialog serves both flows; this says which one opened it.
+const otpPurpose = ref('phone')
 const pendingPhone = ref('')
 const otpInput = ref(['', '', '', '', '', ''])
 const otpRefs = ref([])
@@ -1293,11 +1297,14 @@ const canVerifyOtp = computed(() => otpInput.value.every(digit => digit !== ''))
 
 // e.g. "09981234567" -> "0998•••4567"
 const maskedPhone = computed(() => {
-  const digits = pendingPhone.value || ''
+  // A password change codes the registered number, not the one being changed to.
+  const digits = (otpPurpose.value === 'password' ? user.value?.phone_number : pendingPhone.value) || ''
   return digits.length < 7 ? digits : `${digits.slice(0, 4)}•••${digits.slice(-4)}`
 })
 
-const OTP_EXPIRY_SECONDS = 300
+// Matches OtpService, which keeps a texted code valid for 10 minutes; a shorter figure here would call
+// a working code expired.
+const OTP_EXPIRY_SECONDS = 600
 const OTP_RESEND_COOLDOWN = 30
 const otpSecondsLeft = ref(OTP_EXPIRY_SECONDS)
 const resendSecondsLeft = ref(OTP_RESEND_COOLDOWN)
@@ -1344,7 +1351,12 @@ const requestPhoneOtp = async (phone) => {
 const resendOtpCode = async () => {
   if (!canResendOtp.value || otpVerifiedFlash.value) return
   try {
-    await api.post('/vendor/profile/phone-request-otp', { phone_number: pendingPhone.value })
+    if (otpPurpose.value === 'password') {
+      // Its own endpoint: re-requesting would re-check the current password and spend that throttle.
+      await api.post('/vendor/profile/password-resend-otp')
+    } else {
+      await api.post('/vendor/profile/phone-request-otp', { phone_number: pendingPhone.value })
+    }
     otpInput.value = ['', '', '', '', '', '']
     otpError.value = ''
     startOtpTimers()
@@ -1387,26 +1399,42 @@ const onOtpPaste = (event) => {
   if (canVerifyOtp.value) verifyOtp()
 }
 
-const cancelOtp = () => {
+const cancelOtp = async () => {
+  if (otpPurpose.value === 'password') await cancelPasswordOtp()
   stopOtpTimers()
   showOtpModal.value = false
+  otpPurpose.value = 'phone'
 }
 
 const verifyOtp = async () => {
   const code = otpInput.value.join('')
   if (code.length !== 6 || verifyingOtp.value || otpVerifiedFlash.value) return
 
+  const isPassword = otpPurpose.value === 'password'
+
   verifyingOtp.value = true
   otpError.value = ''
   try {
-    await api.post('/vendor/profile/phone-verify-otp', { phone_number: pendingPhone.value, code })
-    user.value.phone_number = pendingPhone.value
+    if (isPassword) {
+      await api.post('/vendor/profile/password-verify-otp', { code })
+      passwords.current = ''
+      passwords.new = ''
+      passwords.confirm = ''
+    } else {
+      await api.post('/vendor/profile/phone-verify-otp', { phone_number: pendingPhone.value, code })
+      user.value.phone_number = pendingPhone.value
+    }
     stopOtpTimers()
     otpVerifiedFlash.value = true
     // Flashes green briefly, then hands over to the shared success dialog.
     setTimeout(() => {
       showOtpModal.value = false
-      openSuccessModal(t('successInfoTitle'), t('successInfoMsg'))
+      otpPurpose.value = 'phone'
+      if (isPassword) {
+        openSuccessModal(t('successPwdTitle'), t('successPwdMsg'))
+      } else {
+        openSuccessModal(t('successInfoTitle'), t('successInfoMsg'))
+      }
     }, 450)
   } catch (err) {
     otpError.value = errorMessage(err, t('otpInvalid'))
@@ -1759,22 +1787,38 @@ const attemptClosePasswordModal = () => {
   requestClose(hasPasswordChanges.value, cancelPasswordModal)
 }
 
+// The change is only queued here; the texted code in the OTP dialog is what applies it.
 const savePassword = async () => {
   if (!(await passwordFormRef.value.validate())) return
   savingPassword.value = true
   try {
-    await api.put('/vendor/profile/password', {
+    await api.post('/vendor/profile/password-request-otp', {
       current_password: passwords.current,
       new_password: passwords.new,
       new_password_confirmation: passwords.confirm
     })
-    cancelPasswordModal()
-    openSuccessModal(t('successPwdTitle'), t('successPwdMsg'))
+    showPasswordModal.value = false
+    otpPurpose.value = 'password'
+    otpInput.value = ['', '', '', '', '', '']
+    otpError.value = ''
+    otpVerifiedFlash.value = false
+    showOtpModal.value = true
+    startOtpTimers()
   } catch (err) {
     $q.notify({ type: 'negative', message: errorMessage(err, t('errUpdatePwd')) })
   } finally {
     savingPassword.value = false
   }
+}
+
+// Clears the queued change server-side, so an abandoned dialog leaves nothing pending.
+const cancelPasswordOtp = async () => {
+  try {
+    await api.post('/vendor/profile/password-cancel-otp')
+  } catch {
+    // The queued change expires on its own in 10 minutes, so a failed cancel is not worth a notice.
+  }
+  cancelPasswordModal()
 }
 
 // --- Delete account ---
@@ -3096,9 +3140,95 @@ const deleteAccount = async () => {
 }
 
 @media (max-width: 599px) {
+  /* On a phone the owner photo becomes a centred profile panel: the avatar on top, its label
+     and hint under it, and full-width buttons below, instead of a small avatar stranded at
+     the left over a loose column of text. */
   .owner-photo-row {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+
+    gap: 14px;
+    margin: 4px 0 8px;
+    padding: 20px 16px 16px;
+
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-surface);
+
+    background: var(--c-surface-2);
+
+    text-align: center;
+  }
+
+  /* q-avatar sizes itself from an inline font-size, so the larger size needs !important. */
+  .owner-avatar {
+    font-size: 88px !important;
+
+    box-shadow: 0 0 0 4px var(--c-surface-2), 0 4px 14px rgba(15, 23, 42, 0.12);
+  }
+
+  /* The camera badge gets a ring in the panel's colour, so it reads as sitting on the photo's edge. */
+  .owner-photo-btn {
+    right: 0;
+    bottom: 0;
+
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+
+    box-shadow: 0 0 0 3px var(--c-surface-2);
+  }
+
+  .owner-photo-text {
+    width: 100%;
+  }
+
+  .owner-photo-hint {
+    max-width: 300px;
+    margin: 4px auto 14px;
+  }
+
+  /* One full-width button, or Cancel and Save as two equal halves with Save on the right,
+     the same order as the dialogs' Cancel / Save rows. */
+  .owner-photo-change {
+    width: 100%;
+  }
+
+  .owner-photo-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    gap: 10px;
+  }
+
+  .owner-photo-actions .q-btn:last-child {
+    order: -1;
+  }
+
+  .owner-photo-change,
+  .owner-photo-actions .q-btn {
+    height: 42px;
+    min-height: 42px;
+    padding: 0 16px;
+  }
+
+  /* Change Password and Replay Tutorial drop under their text, lined up with it, instead of
+     squeezing the description into a narrow column beside them. */
+  .info-row--action {
+    flex-wrap: wrap;
+  }
+
+  .info-row--action .info-body {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .info-row--action > .q-btn {
+    flex: 1 1 100%;
+
+    height: 40px;
+    min-height: 40px;
+    margin-left: 48px;
   }
 }
 </style>

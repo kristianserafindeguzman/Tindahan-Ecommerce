@@ -5,8 +5,8 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Order;
 use App\Models\Inventory;
-use App\Models\CartItem;
 use App\Models\Notification;
+use App\Services\CartReservationService;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -39,42 +39,13 @@ class AutoCancelOrders extends Command
 
     private function cleanupExpiredCarts()
     {
-        $expiredCarts = CartItem::where('expires_at', '<', Carbon::now())->get();
-        $count = 0;
+        // Shared with the cart and checkout controllers, so a reservation is released the same way
+        // whether this job gets there first or a shopper touches the product.
+        $released = app(CartReservationService::class)->releaseAllExpired();
 
-        foreach ($expiredCarts as $cartItem) {
-            try {
-                DB::transaction(function () use ($cartItem) {
-                    // Lock the cart item to prevent race conditions
-                    $lockedCartItem = CartItem::where('cart_id', $cartItem->cart_id)->lockForUpdate()->first();
-                    if (!$lockedCartItem) return; // already deleted
-
-                    $inventory = Inventory::where('inventory_id', $lockedCartItem->inventory_id)->lockForUpdate()->first();
-                    
-                    if ($inventory) {
-                        $inventory->reserved_quantity = max(0, $inventory->reserved_quantity - $lockedCartItem->reserved_quantity);
-                        $inventory->save();
-                    }
-
-                    $lockedCartItem->delete();
-                    
-                    // Notify consumer
-                    try {
-                        Notification::create([
-                            'user_id' => $lockedCartItem->consumer_id,
-                            'title' => 'Cart Item Expired',
-                            'message' => "Your reservation for '{$inventory->product_name}' has expired and it was removed from your cart.",
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::error("Failed to notify consumer about cart expiration: " . $e->getMessage());
-                    }
-                });
-                $count++;
-            } catch (\Exception $e) {
-                $this->error("Failed to clean up cart ID {$cartItem->cart_id}: " . $e->getMessage());
-            }
+        if ($released > 0) {
+            $this->info("Released {$released} reserved unit(s) from expired cart items.");
         }
-        if ($count > 0) $this->info("Successfully cleaned up {$count} expired cart items.");
     }
 
     private function cancelUnpreparedOrders()

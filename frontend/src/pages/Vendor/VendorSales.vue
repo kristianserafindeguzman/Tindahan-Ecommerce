@@ -82,7 +82,7 @@
                 <span class="vp-stat-label">{{ t('statBestSeller') }}</span>
                 <span class="vp-stat-icon vp-tone--wait"><q-icon name="o_emoji_events" size="20px" /></span>
               </div>
-              <div class="vp-stat-value vp-stat-value--text">{{ metrics.bestSellingCategory || t('noDataYet') }}</div>
+              <div class="vp-stat-value vp-stat-value--text">{{ metrics.bestSellingCategory ? categoryLabel(metrics.bestSellingCategory) : t('noDataYet') }}</div>
             </div>
           </div>
 
@@ -338,6 +338,7 @@ import { api } from '@/boot/axios'
 import OrderStatusBadge from '@/components/vendor/OrderStatusBadge.vue'
 import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 import { useLanguage } from '@/composables/useLanguage'
+import { useCategoryLabels } from '@/composables/useCategories'
 
 const $q = useQuasar()
 
@@ -474,6 +475,8 @@ const vendorSalesDict = {
 }
 
 const { t } = useLanguage(vendorSalesDict)
+// Seeded category names are stored in English and shown in the current language.
+const { categoryLabel } = useCategoryLabels()
 
 const PAGE_SIZES = [10, 25, 50]
 
@@ -1198,14 +1201,6 @@ onMounted(fetchSalesData)
 
   .sr-card-head {
     padding: 14px 16px;
-  }
-
-  .vp-header-actions {
-    width: 100%;
-  }
-
-  .vp-header-actions .q-btn {
-    flex: 1;
   }
 }
 </style>

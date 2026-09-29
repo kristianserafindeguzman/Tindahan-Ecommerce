@@ -38,9 +38,9 @@
             <p v-if="product.description" class="detail-description">{{ product.description }}</p>
 
             <!-- EXPIRATION DATE / BEST BEFORE -->
-            <div v-if="product.expiration_date" class="detail-expiry" style="margin-top: 8px; color: #666; font-size: 0.9em;">
+            <div v-if="expiryDate" class="detail-expiry">
               <q-icon name="o_event" size="14px" />
-              Best Before: {{ new Date(product.expiration_date).toLocaleDateString() }}
+              <span>{{ t('Best Before') }}: {{ expiryDate }}</span>
             </div>
 
             <!-- VARIANTS -->
@@ -157,7 +157,7 @@ import { useStores } from '@/composables/useStores'
 import { formatDistance } from '@/utils/distance'
 import { useCart } from '@/composables/useCart'
 
-const { t, storeStatus } = useConsumerLanguage()
+const { t, locale, storeStatus } = useConsumerLanguage()
 
 const props = defineProps({
   modelValue: Boolean,
@@ -197,6 +197,17 @@ const storeAddressText = computed(() => {
 })
 
 const hasVariants = computed(() => Array.isArray(props.product?.variants) && props.product.variants.length > 0)
+
+// Formatted through the shopper's own locale, like the notification timestamps. Returns ''
+// for a missing or unparseable date so the row hides itself rather than printing the
+// literal "Invalid Date" next to Best Before.
+const expiryDate = computed(() => {
+  const raw = props.product?.expiration_date
+  if (!raw) return ''
+  const parsed = new Date(raw)
+  if (Number.isNaN(parsed.getTime())) return ''
+  return parsed.toLocaleDateString(locale.value)
+})
 
 const imageFailed = ref(false)
 const quantity = ref(1)
@@ -424,6 +435,22 @@ const handleAddToCart = async () => {
 
   font-size: var(--fs-md);
   line-height: 1.5;
+
+  color: var(--c-subtle);
+}
+
+/* BEST BEFORE — the one block in this column that had no rule of its own. It was styled
+   inline with a top margin and no bottom one, so it sat hard against the Available Sizes
+   label below it; it now carries the same 18px rhythm as its neighbours. */
+.detail-expiry {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+  margin: 0 0 18px;
+
+  font-size: var(--fs-sm);
+  line-height: 1.4;
 
   color: var(--c-subtle);
 }
