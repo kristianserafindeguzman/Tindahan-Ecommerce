@@ -22,9 +22,17 @@
           <div class="store-banner-meta">
             <span v-if="store.address" class="store-banner-meta-item">
               <q-icon name="o_location_on" size="14px" />
-              {{ store.address }} <span v-if="store.distance_meters != null" class="q-ml-xs">({{ formatDistance(store.distance_meters) }})</span>
+              {{ store.address }}
             </span>
             <span v-if="store.address" class="store-banner-meta-sep">•</span>
+            <!-- Its own item, so on a phone it wraps as a whole instead of splitting away from the address mid-phrase. -->
+            <template v-if="store.distance_meters != null">
+              <span class="store-banner-meta-item">
+                <q-icon :name="travelIcon(store.distance_meters)" size="14px" />
+                {{ formatTravelTime(store.distance_meters) }} · {{ formatDistance(store.distance_meters) }}
+              </span>
+              <span class="store-banner-meta-sep">•</span>
+            </template>
             <span class="store-banner-meta-item store-banner-status" :class="{ 'store-banner-status-closed': !store.isOpen }">
               <span class="store-banner-status-dot" :class="{ 'store-banner-status-dot-closed': !store.isOpen }" />
               {{ storeStatus(store) }}
@@ -81,7 +89,8 @@
       </div>
 
       <!-- CATEGORY PILLS -->
-      <div v-if="VISIBLE_CATEGORIES.length" class="category-pills-row">
+      <PillScroller v-if="VISIBLE_CATEGORIES.length">
+      <div class="category-pills-row">
         <q-chip
           clickable
           dense
@@ -103,6 +112,7 @@
           {{ t(category.label) }}
         </q-chip>
       </div>
+      </PillScroller>
 
       <div class="products-layout">
 
@@ -181,9 +191,10 @@ import ProductCard from '@/components/consumer/ProductCard.vue'
 import ProductFilters from '@/components/consumer/ProductFilters.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
 import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
+import PillScroller from '@/components/consumer/PillScroller.vue'
 import { useCategories } from '@/composables/useCategories'
 import { useGridColumns } from '@/composables/useGridColumns'
-import { formatDistance } from '@/utils/distance'
+import { formatDistance, formatTravelTime, travelIcon } from '@/utils/distance'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'

@@ -8,7 +8,24 @@
     </div>
 
     <div class="filters-scroll">
-      <div class="filter-group">
+      <!-- Opt-in: only pages that pass distanceOptions show it, so the Products page is unchanged. -->
+      <div v-if="distanceOptions.length" class="filter-group">
+        <label class="filter-label">{{ t('Distance') }}</label>
+        <q-select
+          v-model="maxDistance"
+          :options="translateOptions(distanceOptions)"
+          :disable="distanceDisabled"
+          dense
+          outlined
+          emit-value
+          map-options
+          hide-bottom-space
+          behavior="menu"
+        />
+        <p v-if="distanceDisabled" class="filter-hint">{{ t('Set your location to filter by distance.') }}</p>
+      </div>
+
+      <div v-if="!hideCategory" class="filter-group">
         <label class="filter-label">{{ t('Categories') }}</label>
         <q-select
           v-model="category"
@@ -45,7 +62,7 @@
         />
       </div>
 
-      <div class="filter-group filter-group-row">
+      <div v-if="!hideInStock" class="filter-group filter-group-row">
         <label class="filter-label filter-label-inline">{{ t('In Stock Only') }}</label>
         <q-toggle v-model="inStock" dense color="primary" />
       </div>
@@ -91,7 +108,25 @@ const { t, translateOptions } = useConsumerLanguage()
 defineProps({
   categoryOptions: {
     type: Array,
-    required: true
+    default: () => []
+  },
+  // Options in metres; empty hides the Distance filter entirely.
+  distanceOptions: {
+    type: Array,
+    default: () => []
+  },
+  // No location set means no distances to compare against.
+  distanceDisabled: {
+    type: Boolean,
+    default: false
+  },
+  hideCategory: {
+    type: Boolean,
+    default: false
+  },
+  hideInStock: {
+    type: Boolean,
+    default: false
   },
   storeOptions: {
     type: Array,
@@ -113,6 +148,7 @@ defineProps({
 
 defineEmits(['close', 'clear'])
 
+const maxDistance = defineModel('maxDistance')
 const category = defineModel('category')
 const store = defineModel('store')
 const priceMin = defineModel('priceMin')
@@ -259,6 +295,15 @@ const sort = defineModel('sort')
 
   font-size: var(--fs-sm);
   color: var(--c-text-2);
+}
+
+.filter-hint {
+  margin: 6px 0 0;
+
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+
+  color: var(--c-muted);
 }
 
 .price-range-row {

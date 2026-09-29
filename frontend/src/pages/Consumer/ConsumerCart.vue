@@ -80,8 +80,14 @@
                   @update:model-value="toggleStoreSelection(group.storeId)"
                 />
                 <q-icon name="o_storefront" size="15px" />
-                <span>{{ group.store }}</span>
+                <span class="store-card-name">{{ group.store }}</span>
               </div>
+
+              <!-- Back to this group's own store, since a cart is checked out one store at a time. -->
+              <router-link v-if="group.storeId" :to="`/consumer/stores/${group.storeId}`" class="continue-shopping-link continue-shopping-link--header">
+                {{ t('Continue Shopping') }}
+                <q-icon name="o_chevron_right" size="16px" />
+              </router-link>
             </div>
 
             <div v-for="item in group.items" class="cart-item" :key="item.cartId" :class="{ 'cart-item-oos': !item.inStock || hasExpired(item) }">
@@ -145,6 +151,14 @@
             <div class="store-card-subtotal">
               <span>{{ t('Subtotal') }}</span>
               <strong>₱{{ group.subtotal.toFixed(2) }}</strong>
+            </div>
+
+            <!-- Phone copy of the header link: there the store name needs the whole header row. -->
+            <div v-if="group.storeId" class="store-card-footer">
+              <router-link :to="`/consumer/stores/${group.storeId}`" class="continue-shopping-link">
+                {{ t('Continue Shopping') }}
+                <q-icon name="o_chevron_right" size="16px" />
+              </router-link>
             </div>
           </div>
         </div>
@@ -525,6 +539,11 @@ const removeItem = async (item) => {
   align-items: start;
 }
 
+/* A grid track never shrinks below its content by default, so one long no-wrap row could push every card past the screen edge. */
+.cart-main {
+  min-width: 0;
+}
+
 /* STORE CARDS — each store is its own card, matching the app's canonical card recipe. */
 
 .store-card {
@@ -581,6 +600,51 @@ const removeItem = async (item) => {
 
 .store-card-header-info .q-icon {
   color: var(--c-brand);
+}
+
+/* Lets a long store name give way to the link instead of pushing it out of the card. */
+.store-card-header-info {
+  min-width: 0;
+}
+
+.store-card-name {
+  min-width: 0;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Quiet brand-coloured text, like the search page's "Show all" link, so it stays below the store name. */
+.continue-shopping-link {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 2px;
+
+  margin-left: 12px;
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+
+  color: var(--c-brand);
+}
+
+.continue-shopping-link:hover {
+  text-decoration: underline;
+}
+
+/* Desktop and tablet keep the link in the header, so the footer row only exists on phones. */
+.store-card-footer {
+  display: none;
+}
+
+.continue-shopping-link:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
 }
 
 .cart-item {
@@ -1033,6 +1097,25 @@ const removeItem = async (item) => {
 
   .store-card {
     padding: 12px 14px;
+  }
+
+  /* The store name gets the full header row on phones; the link moves to its own row at the bottom of the card. */
+  .continue-shopping-link--header {
+    display: none;
+  }
+
+  .store-card-footer {
+    display: flex;
+    justify-content: flex-end;
+
+    margin-top: 10px;
+    padding-top: 10px;
+
+    border-top: 1px solid var(--c-hairline);
+  }
+
+  .store-card-footer .continue-shopping-link {
+    margin-left: 0;
   }
 }
 </style>

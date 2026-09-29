@@ -32,9 +32,16 @@
         </template>
       </div>
       <div class="product-price">₱{{ product.price.toFixed(2) }}</div>
-      <div v-if="productMetaText" class="product-meta">
-        <q-icon name="o_storefront" size="13px" class="product-meta-icon" />
-        <span class="product-meta-text">{{ productMetaText }}</span>
+      <!-- Store and travel on separate lines: one shared line couldn't fit both on a narrow card, and the store name was the part that got cut. -->
+      <div v-if="product.store || hasDistance" class="product-meta">
+        <div v-if="product.store" class="product-meta-row">
+          <q-icon name="o_storefront" size="13px" class="product-meta-icon" />
+          <span class="product-meta-text">{{ product.store }}</span>
+        </div>
+        <div v-if="hasDistance" class="product-meta-row">
+          <q-icon :name="travelIcon(product.distance_meters)" size="13px" class="product-meta-icon" />
+          <span class="product-meta-text">{{ travelText }}</span>
+        </div>
       </div>
     </q-card-section>
   </q-card>
@@ -45,7 +52,7 @@ import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 
 import { computed, ref } from 'vue'
 import { splitHighlightParts } from '@/utils/textHighlight'
-import { formatDistance } from '@/utils/distance'
+import { formatDistanceShort, formatTravelTime, travelIcon } from '@/utils/distance'
 
 const { t } = useConsumerLanguage()
 
@@ -65,12 +72,12 @@ defineEmits(['add-to-cart', 'view-product'])
 const nameParts = computed(() => splitHighlightParts(props.product.name, props.highlightQuery))
 const imageFailed = ref(false)
 
-const productMetaText = computed(() => {
-  const parts = []
-  if (props.product.distance_meters != null) parts.push(formatDistance(props.product.distance_meters))
-  if (props.product.store) parts.push(props.product.store)
-  return parts.join(' • ')
-})
+const hasDistance = computed(() => props.product.distance_meters != null)
+
+// Time first, since it's the part a shopper acts on: "7 min walk · 498 m".
+const travelText = computed(() =>
+  `${formatTravelTime(props.product.distance_meters)} · ${formatDistanceShort(props.product.distance_meters)}`
+)
 
 </script>
 
@@ -255,9 +262,9 @@ const productMetaText = computed(() => {
 
 .product-meta {
   display: flex;
-  align-items: center;
+  flex-direction: column;
 
-  gap: 5px;
+  gap: 3px;
   min-width: 0;
   padding-top: 10px;
 
@@ -267,6 +274,14 @@ const productMetaText = computed(() => {
   line-height: 1.3;
 
   color: var(--c-muted);
+}
+
+.product-meta-row {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+  min-width: 0;
 }
 
 .product-meta-icon {

@@ -47,6 +47,7 @@
       </div>
 
       <!-- CATEGORY PILLS -->
+      <PillScroller>
       <div class="category-pills-row">
         <q-chip
           clickable
@@ -74,6 +75,7 @@
           <q-icon name="o_expand_more" size="16px" />
         </q-chip>
       </div>
+      </PillScroller>
 
       <div class="products-layout">
 
@@ -152,6 +154,7 @@ import CardSkeleton from '@/components/consumer/CardSkeleton.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import ProductFilters from '@/components/consumer/ProductFilters.vue'
+import PillScroller from '@/components/consumer/PillScroller.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
 import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
 import { useCategories } from '@/composables/useCategories'
