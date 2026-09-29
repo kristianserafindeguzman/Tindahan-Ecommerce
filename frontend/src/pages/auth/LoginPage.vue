@@ -1,146 +1,128 @@
 <template>
-  <q-page class="login-page">
-    <AuthLanguageSwitcher />
-    <div class="login-card">
+  <AuthShell class="login-page">
+    <div class="login-content">
 
-      <!-- LEFT BRANDING PANEL -->
-      <div class="branding-panel">
-        <img
-          src="@/assets/tindahan-logo.png"
-          alt="Tindahan Logo"
-          class="tindahan-logo tindahan-logo-desktop"
-        />
-        <img
-          src="@/assets/tindahan-mobile.png"
-          alt="Tindahan Logo"
-          class="tindahan-logo tindahan-logo-mobile"
-        />
-      </div>
+      <h1>{{ t('Welcome back!') }}</h1>
 
-      <!-- RIGHT LOGIN PANEL -->
-      <div class="login-panel">
-        <div class="login-content">
+      <p class="subtitle">
+        {{ t('Log in to your Tindahan account.') }}
+      </p>
 
-          <h1>{{ t('Welcome back!') }}</h1>
+      <q-form
+        ref="loginForm"
+        class="login-form"
+        @submit.prevent="handleLogin"
+      >
 
-          <p class="subtitle">
-            {{ t('Log in to your Tindahan account.') }}
-          </p>
+        <!-- EMAIL OR MOBILE -->
+        <div class="field-group">
+          <q-input
+            v-model="form.identifier"
+            outlined
+            dense
+            no-error-icon
+            hide-bottom-space
+            :label="t('Email or Mobile Number')"
+            autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+            class="login-input"
+            reactive-rules
+            :rules="[
+              val => !identifierTouched || !!val || t('Email or mobile number is required.'),
+              val => !identifierTouched || identifierRule(val)
+            ]"
+            @blur="identifierTouched = true"
+          />
+        </div>
 
-          <q-form
-            ref="loginForm"
-            class="login-form"
-            @submit.prevent="handleLogin"
+        <!-- PASSWORD -->
+        <div class="field-group">
+          <q-input
+            v-model="form.password"
+            outlined
+            dense
+            no-error-icon
+            hide-bottom-space
+            ref="passwordInput"
+            :type="showPassword ? 'text' : 'password'"
+            :label="t('Password')"
+            autocomplete="current-password"
+            class="login-input"
+            reactive-rules
+            :rules="[
+              val => !passwordTouched || !!val || t('Password is required.')
+            ]"
+            @blur="passwordTouched = true"
           >
-
-            <!-- EMAIL OR MOBILE -->
-            <div class="field-group">
-              <q-input
-                v-model="form.identifier"
-                outlined
-                dense
-                no-error-icon
-                hide-bottom-space
-                :label="t('Email or Mobile Number')"
-                autocomplete="username"
-                autocapitalize="none"
-                spellcheck="false"
-                class="login-input"
-                reactive-rules
-                :rules="[
-                  val => !identifierTouched || !!val || t('Email or mobile number is required.'),
-                  val => !identifierTouched || identifierRule(val)
-                ]"
-                @blur="identifierTouched = true"
+            <template #append>
+              <q-icon
+                :name="showPassword
+                  ? 'o_visibility'
+                  : 'o_visibility_off'"
+                class="password-icon cursor-pointer"
+                @click="showPassword = !showPassword"
               />
-            </div>
+            </template>
+          </q-input>
 
-            <!-- PASSWORD -->
-            <div class="field-group">
-              <q-input
-                v-model="form.password"
-                outlined
-                dense
-                no-error-icon
-                hide-bottom-space
-                ref="passwordInput"
-                :type="showPassword ? 'text' : 'password'"
-                :label="t('Password')"
-                autocomplete="current-password"
-                class="login-input"
-                reactive-rules
-                :rules="[
-                  val => !passwordTouched || !!val || t('Password is required.')
-                ]"
-                @blur="passwordTouched = true"
-              >
-                <template #append>
-                  <q-icon
-                    :name="showPassword
-                      ? 'o_visibility'
-                      : 'o_visibility_off'"
-                    class="password-icon cursor-pointer"
-                    @click="showPassword = !showPassword"
-                  />
-                </template>
-              </q-input>
-
-              <div class="forgot-container">
-                <button
-                  type="button"
-                  class="text-button forgot-password"
-                  @click="handleForgotPassword"
-                >
-                  {{ t('Forgot Password?') }}
-                </button>
-              </div>
-            </div>
-
-            <!-- ERROR MESSAGE -->
-            <div v-if="loginError" class="error-message">
-              {{ t(loginError) }}
-            </div>
-
-            <!-- LOGIN BUTTON -->
-            <q-btn
-              type="submit"
-              :label="t('Log in')"
-              no-caps
-              unelevated
-              class="login-button full-width"
-              :loading="loading"
-              :disable="!canLogin"
-            />
-
-          </q-form>
-
-          <!-- CREATE ACCOUNT -->
-          <div class="register-section">
-            <span>{{ t('New to Tindahan?') }}</span>
-
+          <div class="forgot-container">
             <button
               type="button"
-              class="text-button create-account"
-              @click="showRegistrationOptions = true"
+              class="text-button forgot-password"
+              @click="handleForgotPassword"
             >
-              {{ t('Create an account') }}
+              {{ t('Forgot Password?') }}
             </button>
           </div>
-
-          <q-separator class="separator" />
-
-          <!-- TERMS -->
-          <p class="terms">
-            <span class="terms-intro">{{ t('By continuing, you agree to our') }}</span>
-            <span class="terms-links">
-              <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
-              {{ t('and') }}
-              <span class="terms-policy"><a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.</span>
-            </span>
-          </p>
-
         </div>
+
+        <!-- ERROR MESSAGE -->
+        <div v-if="lockoutSeconds > 0" class="error-message" role="alert">
+          {{ t('Too many login attempts. Try again in {time}.', { time: formattedLockout }) }}
+        </div>
+        <div v-else-if="loginError" class="error-message">
+          {{ t(loginError) }}
+        </div>
+
+        <!-- LOGIN BUTTON -->
+        <q-btn
+          type="submit"
+          :label="t('Log in')"
+          no-caps
+          unelevated
+          class="login-button full-width"
+          :loading="loading"
+          :disable="!canLogin || lockoutSeconds > 0"
+        />
+
+      </q-form>
+
+      <!-- CREATE ACCOUNT -->
+      <div class="register-section">
+        <span>{{ t('New to Tindahan?') }}</span>
+
+        <button
+          type="button"
+          class="text-button create-account"
+          @click="showRegistrationOptions = true"
+        >
+          {{ t('Create an account') }}
+        </button>
       </div>
+
+      <q-separator class="separator" />
+
+      <!-- TERMS -->
+      <p class="terms">
+        <span class="terms-intro">{{ t('By continuing, you agree to our') }}</span>
+        <span class="terms-links">
+          <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
+          {{ t('and') }}
+          <span class="terms-policy"><a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.</span>
+        </span>
+      </p>
+
     </div>
 
     <!-- REGISTRATION TYPE DIALOG -->
@@ -468,11 +450,11 @@
     <PrivacyModal v-model="showPrivacy" />
     <ContactSupportModal v-model="showContactSupport" />
 
-  </q-page>
+  </AuthShell>
 </template>
 
 <script setup>
-import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
+import AuthShell from '@/components/auth/AuthShell.vue'
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -562,8 +544,33 @@ const startForgotResendTimer = () => {
   }, 1000)
 }
 
+// Set when the server rate-limits login (429), counting down until another attempt is allowed.
+const lockoutSeconds = ref(0)
+let lockoutInterval = null
+
+const formattedLockout = computed(() => {
+  const mins = Math.floor(lockoutSeconds.value / 60)
+  const secs = lockoutSeconds.value % 60
+  return `${mins}:${String(secs).padStart(2, '0')}`
+})
+
+const startLockout = seconds => {
+  clearInterval(lockoutInterval)
+  lockoutSeconds.value = Math.max(1, Math.ceil(seconds))
+
+  lockoutInterval = setInterval(() => {
+    if (lockoutSeconds.value > 1) {
+      lockoutSeconds.value--
+    } else {
+      lockoutSeconds.value = 0
+      clearInterval(lockoutInterval)
+    }
+  }, 1000)
+}
+
 onUnmounted(() => {
   clearInterval(forgotResendInterval)
+  clearInterval(lockoutInterval)
 })
 
 const forgotResetForm = ref(null)
@@ -674,7 +681,11 @@ const handleLogin = async () => {
     localStorage.removeItem('auth_user')
     localStorage.removeItem('auth_role')
 
-    if (error.response && error.response.status === 422) {
+    if (error.response && error.response.status === 429) {
+      // The route's per-IP throttle says how long to wait in its Retry-After header.
+      const retryAfter = Number(error.response.headers?.['retry-after'])
+      startLockout(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60)
+    } else if (error.response && error.response.status === 422) {
       const errors = error.response.data.errors
       loginError.value = errors?.email?.[0] || 'Invalid credentials. Please try again.'
     } else if (error.response && error.response.status === 401) {
@@ -928,104 +939,6 @@ const goToVendorRegister = () => {
 </script>
 
 <style scoped>
-/* PAGE */
-
-.login-page {
-  position: relative;
-  min-height: 100vh;
-  width: 100%;
-  box-sizing: border-box;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 0;
-
-  background:
-    linear-gradient(
-      145deg,
-      #c02226 0%,
-      #9c171b 55%,
-      #651012 100%
-    );
-
-  font-family: 'Roboto', Arial, sans-serif;
-}
-
-/* LOGIN CARD (layout row, no visual chrome of its own) */
-
-.login-card {
-  width: 100%;
-  height: 100vh;
-  min-height: 100vh;
-  max-width: none;
-  margin: 0;
-  box-sizing: border-box;
-
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(40px, 8vw, 140px);
-
-  padding: 0 clamp(24px, 6vw, 80px);
-
-  background: transparent;
-
-  overflow: hidden;
-}
-
-/* LEFT BRANDING PANEL */
-
-.branding-panel {
-  flex: 0 0 auto;
-  box-sizing: border-box;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 40px;
-
-  background: transparent;
-}
-
-.tindahan-logo {
-  display: block;
-
-  width: 380px;
-  max-width: 100%;
-  height: auto;
-
-  object-fit: contain;
-}
-
-.tindahan-logo-mobile {
-  display: none;
-}
-
-/* RIGHT LOGIN PANEL */
-
-.login-panel {
-  width: 420px;
-  max-width: 90vw;
-  flex: 0 0 auto;
-  box-sizing: border-box;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 45px 45px;
-
-  background: #ffffff;
-  border-radius: var(--r-2xl);
-
-  box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.3);
-}
-
 .login-content {
   width: 100%;
   max-width: 390px;
@@ -1620,89 +1533,9 @@ const goToVendorRegister = () => {
   margin-top: 6px;
 }
 
-/* TABLET */
-
-@media (max-width: 768px) {
-  .login-card {
-    padding: 0 24px;
-  }
-
-  .branding-panel {
-    padding: 20px;
-  }
-
-  .login-panel {
-    width: 360px;
-
-    padding: 45px 35px;
-  }
-
-  .tindahan-logo {
-    width: 220px;
-  }
-}
-
 /* MOBILE */
 
 @media (max-width: 600px) {
-  .login-page {
-    min-height: 100vh;
-
-    align-items: stretch;
-    justify-content: flex-start;
-
-    padding: 0;
-
-    background: #ffffff;
-  }
-
-  .login-card {
-    width: 100%;
-    min-height: 100vh;
-    height: auto;
-    max-width: 100%;
-
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    gap: 0;
-
-    padding: 0;
-
-    background: #ffffff;
-  }
-
-  .branding-panel {
-    width: 100%;
-    height: auto;
-    flex: none;
-
-    justify-content: center;
-
-    padding: 60px 0 8px;
-  }
-
-  .tindahan-logo-desktop {
-    display: none;
-  }
-
-  .tindahan-logo-mobile {
-    display: block;
-
-    width: 110px;
-  }
-
-  .login-panel {
-    width: 100%;
-    max-width: 100%;
-    flex: none;
-
-    padding: 20px 24px 32px;
-
-    background: #ffffff;
-    border-radius: 0;
-    box-shadow: none;
-  }
 
   .login-content {
     max-width: 100%;
@@ -1758,5 +1591,4 @@ const goToVendorRegister = () => {
     padding-inline: 6px;
     margin-inline: -6px;
   }
-}
-</style>
+}</style>

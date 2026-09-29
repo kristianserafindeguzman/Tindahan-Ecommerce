@@ -1,139 +1,118 @@
 <template>
-  <q-page class="login-page">
-    <AuthLanguageSwitcher />
-    <div class="login-card">
+  <AuthShell class="login-page">
+    <div class="login-content">
 
-      <!-- LEFT BRANDING PANEL -->
-      <div class="branding-panel">
-        <img
-          src="@/assets/tindahan-logo.png"
-          alt="Tindahan Logo"
-          class="tindahan-logo tindahan-logo-desktop"
-        />
-        <img
-          src="@/assets/tindahan-mobile.png"
-          alt="Tindahan Logo"
-          class="tindahan-logo tindahan-logo-mobile"
-        />
-      </div>
+      <template v-if="hasPhone">
+        <h1>{{ t('Verify your account') }}</h1>
 
-      <!-- RIGHT VERIFY PANEL -->
-      <div class="login-panel">
-        <div class="login-content">
+        <p class="subtitle">
+          {{ t('We sent a 6-digit verification code to') }} <strong>{{ displayPhone }}</strong>.
+        </p>
 
-          <template v-if="hasPhone">
-            <h1>{{ t('Verify your account') }}</h1>
-
-            <p class="subtitle">
-              {{ t('We sent a 6-digit verification code to') }} <strong>{{ displayPhone }}</strong>.
-            </p>
-
-            <!-- OTP INPUT BOXES -->
-            <div class="otp-row">
-              <input
-                v-for="(digit, index) in otp"
-                :key="index"
-                :ref="el => { otpRefs[index] = el }"
-                v-model="otp[index]"
-                type="text"
-                inputmode="numeric"
-                :autocomplete="index === 0 ? 'one-time-code' : 'off'"
-                :aria-label="t('Digit {number} of 6', { number: index + 1 })"
-                @focus="$event.target.select()"
-                class="otp-box"
-                :class="{ 'otp-error': otpError, 'otp-success': otpVerified }"
-                :disabled="otpVerified"
-                @input="handleOtpInput(index)"
-                @keydown="handleOtpKeydown(index, $event)"
-                @paste="handleOtpPaste"
-              />
-            </div>
-
-            <!-- OTP ERROR -->
-            <div v-if="otpError" class="error-message">
-              {{ t(otpError) }}
-            </div>
-
-            <!-- RESEND -->
-            <div class="resend-section">
-              <span>{{ t('Didn\'t receive a code?') }}</span>
-
-              <button
-                type="button"
-                class="text-button resend-btn"
-                :class="{ 'resend-disabled': timer > 0 }"
-                :disabled="timer > 0 || otpVerified"
-                @click="resendCode"
-              >
-                {{ timer > 0
-                  ? t('Resend in {time}', { time: formattedTimer })
-                  : t('Resend Code')
-                }}
-              </button>
-            </div>
-
-            <!-- VERIFY BUTTON -->
-            <q-btn
-              :label="t('Verify')"
-              no-caps
-              unelevated
-              class="login-button full-width"
-              :loading="loading"
-              :disable="!otpComplete || otpVerified"
-              @click="verifyOtp"
-            />
-          </template>
-
-          <!-- Opened without the number from sign-up, as happens in a new tab or from a bookmark. -->
-          <div v-else class="missing-state">
-            <div class="missing-icon">
-              <q-icon name="o_sms_failed" size="32px" />
-            </div>
-
-            <h1>{{ t('We don\'t know which number to verify') }}</h1>
-
-            <p class="subtitle">
-              {{ t('Open this page right after signing up, or sign up again with the same details and we\'ll text you a new code.') }}
-            </p>
-
-            <q-btn
-              :label="t('Log in')"
-              no-caps
-              unelevated
-              class="login-button full-width"
-              @click="router.push('/login')"
-            />
-
-            <button type="button" class="text-button secondary-link" @click="router.push('/consumer/register')">
-              {{ t('Create an account') }}
-            </button>
-          </div>
-
-          <q-separator class="separator" />
-
-          <!-- TERMS -->
-          <p class="terms">
-            <span class="terms-intro">{{ t('By continuing, you agree to our') }}</span>
-            <span class="terms-links">
-              <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
-              {{ t('and') }}
-              <span class="terms-policy"><a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.</span>
-            </span>
-          </p>
-
+        <!-- OTP INPUT BOXES -->
+        <div class="otp-row">
+          <input
+            v-for="(digit, index) in otp"
+            :key="index"
+            :ref="el => { otpRefs[index] = el }"
+            v-model="otp[index]"
+            type="text"
+            inputmode="numeric"
+            :autocomplete="index === 0 ? 'one-time-code' : 'off'"
+            :aria-label="t('Digit {number} of 6', { number: index + 1 })"
+            @focus="$event.target.select()"
+            class="otp-box"
+            :class="{ 'otp-error': otpError, 'otp-success': otpVerified }"
+            :disabled="otpVerified"
+            @input="handleOtpInput(index)"
+            @keydown="handleOtpKeydown(index, $event)"
+            @paste="handleOtpPaste"
+          />
         </div>
+
+        <!-- OTP ERROR -->
+        <div v-if="otpError" class="error-message">
+          {{ t(otpError) }}
+        </div>
+
+        <!-- RESEND -->
+        <div class="resend-section">
+          <span>{{ t('Didn\'t receive a code?') }}</span>
+
+          <button
+            type="button"
+            class="text-button resend-btn"
+            :class="{ 'resend-disabled': timer > 0 }"
+            :disabled="timer > 0 || otpVerified"
+            @click="resendCode"
+          >
+            {{ timer > 0
+              ? t('Resend in {time}', { time: formattedTimer })
+              : t('Resend Code')
+            }}
+          </button>
+        </div>
+
+        <!-- VERIFY BUTTON -->
+        <q-btn
+          :label="t('Verify')"
+          no-caps
+          unelevated
+          class="login-button full-width"
+          :loading="loading"
+          :disable="!otpComplete || otpVerified"
+          @click="verifyOtp"
+        />
+      </template>
+
+      <!-- Opened without the number from sign-up, as happens in a new tab or from a bookmark. -->
+      <div v-else class="missing-state">
+        <div class="missing-icon">
+          <q-icon name="o_sms_failed" size="32px" />
+        </div>
+
+        <h1>{{ t('We don\'t know which number to verify') }}</h1>
+
+        <p class="subtitle">
+          {{ t('Open this page right after signing up, or sign up again with the same details and we\'ll text you a new code.') }}
+        </p>
+
+        <q-btn
+          :label="t('Log in')"
+          no-caps
+          unelevated
+          class="login-button full-width"
+          @click="router.push('/login')"
+        />
+
+        <button type="button" class="text-button secondary-link" @click="router.push('/consumer/register')">
+          {{ t('Create an account') }}
+        </button>
       </div>
+
+      <q-separator class="separator" />
+
+      <!-- TERMS -->
+      <p class="terms">
+        <span class="terms-intro">{{ t('By continuing, you agree to our') }}</span>
+        <span class="terms-links">
+          <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
+          {{ t('and') }}
+          <span class="terms-policy"><a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.</span>
+        </span>
+      </p>
+
     </div>
 
     <!-- LEGAL MODALS -->
     <TermsModal v-model="showTerms" />
     <PrivacyModal v-model="showPrivacy" />
 
-  </q-page>
+  </AuthShell>
 </template>
 
 <script setup>
-import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
+import AuthShell from '@/components/auth/AuthShell.vue'
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -326,106 +305,6 @@ const resendCode = async () => {
 </script>
 
 <style scoped>
-/* PAGE */
-
-.login-page {
-  position: relative;
-  min-height: 100vh;
-  width: 100%;
-  box-sizing: border-box;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 56px clamp(24px, 6vw, 80px);
-
-  background:
-    linear-gradient(
-      145deg,
-      #c02226 0%,
-      #9c171b 55%,
-      #651012 100%
-    );
-
-  font-family: 'Roboto', Arial, sans-serif;
-}
-
-/* LOGIN CARD (layout row, no visual chrome of its own) */
-
-.login-card {
-  width: 100%;
-  height: auto;
-  min-height: 0;
-  max-width: none;
-  margin: 0 auto;
-  box-sizing: border-box;
-
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(40px, 8vw, 140px);
-
-  padding: 0;
-
-  background: transparent;
-
-  overflow: visible;
-}
-
-/* LEFT BRANDING PANEL */
-
-.branding-panel {
-  flex: 0 0 auto;
-  box-sizing: border-box;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 40px;
-
-  background: transparent;
-}
-
-.tindahan-logo {
-  display: block;
-
-  width: 380px;
-  max-width: 100%;
-  height: auto;
-
-  object-fit: contain;
-}
-
-.tindahan-logo-mobile {
-  display: none;
-}
-
-/* RIGHT VERIFY PANEL */
-
-.login-panel {
-  width: 420px;
-  min-height: 520px;
-  max-width: 90vw;
-  flex: 0 0 auto;
-  box-sizing: border-box;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  /* Left/right padding matches ConsumerRegister.vue's login-panel for consistency across auth pages. */
-  padding: 24px 45px;
-
-  background: #ffffff;
-  border-radius: var(--r-2xl);
-
-  box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.3);
-}
-
 .login-content {
   width: 100%;
   max-width: 390px;
@@ -708,90 +587,9 @@ const resendCode = async () => {
   color: var(--c-brand);
 }
 
-/* TABLET */
-
-@media (max-width: 768px) {
-  .login-card {
-    padding: 0 24px;
-  }
-
-  .branding-panel {
-    padding: 20px;
-  }
-
-  .login-panel {
-    width: 380px;
-
-    padding: 32px 35px;
-  }
-
-  .tindahan-logo {
-    width: 260px;
-  }
-}
-
 /* MOBILE */
 
 @media (max-width: 600px) {
-  .login-page {
-    min-height: 100vh;
-
-    align-items: stretch;
-    justify-content: flex-start;
-
-    padding: 0;
-
-    background: #ffffff;
-  }
-
-  .login-card {
-    width: 100%;
-    min-height: 100vh;
-    height: auto;
-    max-width: 100%;
-
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    gap: 0;
-
-    padding: 0;
-
-    background: #ffffff;
-  }
-
-  .branding-panel {
-    width: 100%;
-    height: auto;
-    flex: none;
-
-    justify-content: center;
-
-    padding: 60px 0 8px;
-  }
-
-  .tindahan-logo-desktop {
-    display: none;
-  }
-
-  .tindahan-logo-mobile {
-    display: block;
-
-    width: 110px;
-  }
-
-  .login-panel {
-    width: 100%;
-    min-height: 0;
-    max-width: 100%;
-    flex: none;
-
-    padding: 20px 24px 24px;
-
-    background: #ffffff;
-    border-radius: 0;
-    box-shadow: none;
-  }
 
   .login-content {
     max-width: 100%;
@@ -840,5 +638,4 @@ const resendCode = async () => {
   .terms-links a {
     padding-block: 14px;
   }
-}
-</style>
+}</style>

@@ -205,6 +205,11 @@ children: [
   },
 
   {
+    path: 'store-map',
+    component: () => import('@/pages/Admin/AdminStoreMap.vue')
+  },
+
+  {
     path: 'notifications',
     component: () => import('@/pages/Admin/AdminNotifications.vue')
   }

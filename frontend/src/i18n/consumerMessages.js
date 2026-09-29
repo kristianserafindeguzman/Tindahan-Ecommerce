@@ -530,7 +530,7 @@ export default {
   'Choose a month, day and year.': 'Pumili ng buwan, araw, at taon.',
   'Enter a valid birthday.': 'Maglagay ng valid na birthday.',
   'Vendor Registration': 'Mag-register bilang Vendor',
-  'Join our ecosystem of successful micro-entrepreneurs today.': 'Sumali sa community ng mga negosyante sa Tindahan.',
+  'Open your store on Tindahan and start selling today.': 'Buksan ang store mo sa Tindahan at magsimulang magbenta ngayon.',
   'Step {step} of {total}': 'Step {step} sa {total}',
   'Registration progress': 'Progress ng registration',
   'Owner Account': 'Account ng Store Owner',
@@ -678,4 +678,8 @@ export default {
   'You have no active orders right now. Anything you order next shows up here while the store prepares it.': 'Wala kang aktibong order ngayon. Lalabas dito ang susunod mong order habang inihahanda ito ng tindahan.',
   'No past orders': 'Walang lumang order',
   'Orders you have picked up or cancelled will be kept here.': 'Dito itatago ang mga order na nakuha mo na o kinansela.',
+  'Your neighborhood sari-sari store, now online.': 'Ang sari-sari store sa inyong lugar, online na.',
+  "Browse stores near you, order ahead, and pick up when it's ready, all while helping local store owners grow.": "Mag-browse ng mga store malapit sa'yo, mag-order in advance, at i-pick up kapag ready na, habang tinutulungan ang mga local store owner na lumago.",
+  'Go to home page': 'Pumunta sa home page',
+  'Too many login attempts. Try again in {time}.': 'Sobra na ang login attempts. Subukan ulit pagkalipas ng {time}.',
 }

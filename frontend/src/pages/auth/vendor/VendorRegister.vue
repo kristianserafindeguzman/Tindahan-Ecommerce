@@ -1,26 +1,13 @@
 <template>
-  <q-page class="vendor-page">
-    <AuthLanguageSwitcher />
+  <AuthShell wide class="vendor-page">
     <div class="vendor-card">
-
-      <!-- Leaves the form without submitting, going back when there is history and otherwise to the storefront, since this page can also be opened straight from a link. -->
-      <button type="button" class="vendor-back" @click="goBack">
-        <q-icon name="o_arrow_back" size="18px" />
-        <span>{{ t('Back') }}</span>
-      </button>
 
       <!-- HEADER -->
       <div class="vendor-header">
-        <img
-          src="@/assets/tindahan-mobile.png"
-          alt="Tindahan Logo"
-          class="tindahan-logo"
-        />
-
         <h1>{{ t('Vendor Registration') }}</h1>
 
         <p class="subtitle">
-          {{ t('Join our ecosystem of successful micro-entrepreneurs today.') }}
+          {{ t('Open your store on Tindahan and start selling today.') }}
         </p>
       </div>
 
@@ -605,11 +592,11 @@
     <PrivacyModal v-model="showPrivacy" />
     <ContactSupportModal v-model="showContactSupport" />
 
-  </q-page>
+  </AuthShell>
 </template>
 
 <script setup>
-import AuthLanguageSwitcher from '@/components/consumer/AuthLanguageSwitcher.vue'
+import AuthShell from '@/components/auth/AuthShell.vue'
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
@@ -624,11 +611,6 @@ import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 const { t } = useConsumerLanguage()
 
 const router = useRouter()
-
-const goBack = () => {
-  if (window.history.length > 1) router.back()
-  else router.push('/consumer/home')
-}
 
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
@@ -1187,111 +1169,13 @@ function handleAddressPin(location) {
 </script>
 
 <style scoped>
-/* PAGE */
-
-/* Same red gradient as the login and sign-up pages. */
-.vendor-page {
-  position: relative;
-  min-height: 100vh;
-
-  display: flex;
-  justify-content: center;
-
-  padding: 76px 24px 48px;
-
-  background:
-    linear-gradient(
-      145deg,
-      #c02226 0%,
-      #9c171b 55%,
-      #651012 100%
-    );
-
-  font-family: 'Roboto', Arial, sans-serif;
-}
-
-/* CARD */
-
-.vendor-card {
-  width: 100%;
-  max-width: 600px;
-  align-self: flex-start;
-
-  padding: 45px 55px;
-
-  background: #ffffff;
-  border-radius: var(--r-2xl);
-
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-}
 
 /* HEADER */
-
-/* Sits above the centred header so it doesn't pull the logo off-centre, with an outline so it reads as a control rather than a stray label. */
-.vendor-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-
-  height: 44px;
-  margin-bottom: 10px;
-  padding: 0 18px 0 14px;
-
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-pill);
-
-  background: #ffffff;
-  color: var(--c-text-2);
-
-  font-family: inherit;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
-}
-
-/* The red arrow ties the control to the section markers and submit button, while the label stays neutral so it doesn't compete with them. */
-.vendor-back .q-icon {
-  color: var(--c-brand);
-
-  transition: transform 0.2s ease;
-}
-
-.vendor-back:hover {
-  border-color: var(--c-brand-tint-3);
-  background: var(--c-brand-tint);
-  color: var(--c-brand);
-}
-
-.vendor-back:hover .q-icon {
-  transform: translateX(-2px);
-}
-
-.vendor-back:active {
-  background: var(--c-brand-tint-2);
-}
-
-.vendor-back:focus-visible {
-  outline: 2px solid var(--c-brand);
-  outline-offset: 2px;
-}
 
 .vendor-header {
   text-align: center;
 
   margin-bottom: 26px;
-}
-
-.tindahan-logo {
-  display: block;
-
-  width: 150px;
-
-  margin: 0 auto 12px;
-
-  object-fit: contain;
 }
 
 .vendor-header h1 {
@@ -1402,7 +1286,6 @@ function handleAddressPin(location) {
     font-size: 16px;
   }
 }
-
 .login-input :deep(.q-field__label) {
   font-size: var(--fs-sm);
 
@@ -2031,7 +1914,6 @@ function handleAddressPin(location) {
     animation: none;
   }
 }
-
 .success-title {
   font-size: 19px;
   font-weight: 700;
@@ -2379,7 +2261,6 @@ function handleAddressPin(location) {
     min-width: 0;
   }
 }
-
 /* CROP DIALOG */
 
 /* Same layout as the Crop Profile Photo dialog on the consumer profile page. */
@@ -2528,34 +2409,10 @@ function handleAddressPin(location) {
   }
 }
 
-/* TABLET */
-
-@media (max-width: 900px) {
-  .vendor-card {
-    padding: 35px 30px;
-  }
-}
-
 /* MOBILE */
 
 /* Full-bleed white on phones, the same as the login page. */
 @media (max-width: 600px) {
-  .vendor-page {
-    padding: 0;
-
-    background: #ffffff;
-  }
-
-  .vendor-card {
-    border-radius: 0;
-    box-shadow: none;
-
-    padding: 24px 20px 40px;
-  }
-
-  .tindahan-logo {
-    width: 110px;
-  }
 
   .vendor-header h1 {
     font-size: 22px;
@@ -2567,7 +2424,6 @@ function handleAddressPin(location) {
     gap: 0;
   }
 }
-
 /* Slightly larger text on the auth screens: the shared size tokens go up about 1px here and in this page's own pop-ups. */
 .vendor-page,
 .crop-dialog,
@@ -2588,7 +2444,6 @@ function handleAddressPin(location) {
     --fs-md: 15px;
   }
 }
-
 /* Thumb-sized tap areas on touch screens: the padding is cancelled by an equal negative margin, so nothing moves. */
 @media (pointer: coarse) {
   .password-icon.cursor-pointer {
@@ -2605,5 +2460,4 @@ function handleAddressPin(location) {
     padding-inline: 6px;
     margin-inline: -6px;
   }
-}
-</style>
+}</style>

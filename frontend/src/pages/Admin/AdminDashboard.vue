@@ -51,7 +51,7 @@
           <div v-else class="db-kpi-figures">
             <span class="db-kpi-value">{{ card.value }}</span>
             <span v-if="card.delta > 0" class="db-kpi-delta">
-              <q-icon name="o_arrow_upward" size="13px" />+{{ card.delta }} {{ t('thisWeek') }}
+              <q-icon name="o_arrow_upward" size="13px" />{{ card.delta }} {{ t('thisWeek') }}
             </span>
           </div>
           <div v-if="card.to" class="db-kpi-foot">
