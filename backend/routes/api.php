@@ -31,7 +31,8 @@ Route::post('/register/consumer', [AuthController::class, 'registerConsumer']);
 Route::post('/register/vendor', [AuthController::class, 'registerVendor']);
 // Sends a text to any unregistered number, so it is limited per IP to keep SMS spam and cost down.
 Route::post('/register/vendor/otp', [AuthController::class, 'sendVendorOtp'])->middleware('throttle:5,10');
-Route::post('/login', [AuthController::class, 'login']);
+// Limited per IP so one address can't keep guessing passwords, for one account or many.
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:20,1');
 
 // ----- Public OTP Routes -----
 // Limited so the 6-digit codes can't be found by trying them all.

@@ -57,6 +57,15 @@ async function renderAuth(file, overrides = {}) {
   app.component('AuthLanguageSwitcher', {
     render: await componentRender('../src/components/consumer/AuthLanguageSwitcher.vue')
   })
+  app.component('RouterLink', {
+    props: ['to'],
+    setup: (props, { slots }) => () => Vue.h('a', { href: props.to }, slots.default?.())
+  })
+  app.component('AuthShell', {
+    props: { wide: Boolean },
+    setup: () => ({ ...useConsumerLanguage(), year: 2026 }),
+    render: await componentRender('../src/components/auth/AuthShell.vue')
+  })
   app.component('LanguageSwitcher', {
     props: { header: Boolean, compact: Boolean, settings: Boolean },
     setup: () => useConsumerLanguage(),

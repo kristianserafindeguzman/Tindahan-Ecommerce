@@ -233,6 +233,8 @@ const adminLayoutDict = {
     approvals: 'Approvals',
     vendors: 'Vendors',
     consumers: 'Consumers',
+    storeMap: 'Store Map',
+    map: 'Map',
     home: 'Home',
     administrator: 'Administrator',
     signOut: 'Sign out',
@@ -250,6 +252,8 @@ const adminLayoutDict = {
     approvals: 'Mga Pag-apruba',
     vendors: 'Mga Tindera',
     consumers: 'Mga Mamimili',
+    storeMap: 'Mapa ng Stores',
+    map: 'Mapa',
     home: 'Tahanan',
     administrator: 'Tagapangasiwa',
     signOut: 'Mag-sign Out',
@@ -321,7 +325,8 @@ const localizedNavGroups = computed(() => {
           path: '/admin/approvals'
         },
         { label: t('vendors'), icon: 'o_storefront', path: '/admin/vendors' },
-        { label: t('consumers'), icon: 'o_groups', path: '/admin/consumers' }
+        { label: t('consumers'), icon: 'o_groups', path: '/admin/consumers' },
+        { label: t('storeMap'), icon: 'o_map', path: '/admin/store-map' }
       ]
     }
   ]
@@ -332,7 +337,8 @@ const localizedBottomTabs = computed(() => {
     { label: t('home'), icon: 'o_home', path: '/admin/dashboard' },
     { label: t('approvals'), icon: 'o_pending_actions', path: '/admin/approvals' },
     { label: t('vendors'), icon: 'o_storefront', path: '/admin/vendors' },
-    { label: t('consumers'), icon: 'o_groups', path: '/admin/consumers' }
+    { label: t('consumers'), icon: 'o_groups', path: '/admin/consumers' },
+    { label: t('map'), icon: 'o_map', path: '/admin/store-map' }
   ]
 })
 
