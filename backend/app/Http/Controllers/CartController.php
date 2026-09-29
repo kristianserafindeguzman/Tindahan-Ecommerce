@@ -11,9 +11,15 @@ use App\Services\StoreHoursService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class CartController extends Controller
 {
+    // A scheduled pickup can be up to this many days after today (today plus two, as the checkout
+    // page offers), and no sooner than this many minutes from now.
+    private const SCHEDULE_DAYS_AHEAD = 2;
+    private const SCHEDULE_MIN_LEAD_MINUTES = 10;
+
     private function findVariant($variants, $variantName)
     {
         if (!is_array($variants) || empty($variantName)) return null;
@@ -339,6 +345,8 @@ class CartController extends Controller
             'store_id' => 'required|integer|exists:stores,store_id',
             'consumer_latitude' => 'nullable|numeric|between:-90,90',
             'consumer_longitude' => 'nullable|numeric|between:-180,180',
+            // Null or missing means ASAP.
+            'scheduled_pickup_at' => 'nullable|date',
         ]);
 
         $consumerId = $request->user()->user_id;
@@ -350,6 +358,31 @@ class CartController extends Controller
                 'message' => 'This store is currently closed. Please try again during operating hours.',
                 'error_code' => 'STORE_CLOSED',
             ], 422);
+        }
+
+        // A scheduled pickup must be in the next few days and inside the store's hours: the same
+        // limits the checkout page's picker uses, enforced here because the page can be bypassed.
+        // The small grace period covers the time a shopper spends between picking a slot and placing.
+        $scheduledPickupAt = null;
+        if ($request->filled('scheduled_pickup_at')) {
+            $scheduledPickupAt = Carbon::parse($request->input('scheduled_pickup_at'))
+                ->setTimezone(StoreHoursService::TIMEZONE);
+            $latest = now(StoreHoursService::TIMEZONE)->addDays(self::SCHEDULE_DAYS_AHEAD)->endOfDay();
+
+            if ($scheduledPickupAt->lt(now()->addMinutes(self::SCHEDULE_MIN_LEAD_MINUTES))
+                || $scheduledPickupAt->gt($latest)) {
+                return response()->json([
+                    'message' => 'Please choose a pickup time that is still available.',
+                    'error_code' => 'PICKUP_TIME_INVALID',
+                ], 422);
+            }
+
+            if (!$storeHoursService->isOpenAt($store, $scheduledPickupAt)) {
+                return response()->json([
+                    'message' => 'The store is closed at that pickup time. Please choose another time.',
+                    'error_code' => 'PICKUP_TIME_CLOSED',
+                ], 422);
+            }
         }
 
         // An order with no consumer location leaves the vendor without pickup context, so this
@@ -472,6 +505,9 @@ class CartController extends Controller
                 'status' => 'placed',
                 'consumer_latitude' => $latitude,
                 'consumer_longitude' => $longitude,
+                // Stored in the app's time zone like every other timestamp: Laravel saves a date's
+                // clock time as-is, so a Manila-time value would otherwise land 8 hours off.
+                'scheduled_pickup_at' => $scheduledPickupAt?->copy()->setTimezone(config('app.timezone')),
             ]);
 
             // Create order items
@@ -497,7 +533,9 @@ class CartController extends Controller
                         'user_id' => $ownerId,
                         'order_id' => $order->order_id,
                         'title' => 'New Order',
-                        'message' => "Order #{$order->order_id} was placed for ₱" . number_format($totalAmount, 2) . '.',
+                        // A scheduled order says when it is for, so the store doesn't start on it as if it were ASAP.
+                        'message' => "Order #{$order->order_id} was placed for ₱" . number_format($totalAmount, 2) . '.'
+                            . ($scheduledPickupAt ? ' Pickup: ' . $scheduledPickupAt->format('D, M j, g:i A') . '.' : ''),
                     ]);
                 }
             } catch (\Exception $e) {

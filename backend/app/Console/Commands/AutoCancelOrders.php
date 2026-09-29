@@ -51,9 +51,16 @@ class AutoCancelOrders extends Command
     private function cancelUnpreparedOrders()
     {
         $prepMinutes = config('tindahan.order_preparation_minutes', 180);
+        $cutoff = Carbon::now()->subMinutes($prepMinutes);
+
+        // An ASAP order's window starts when it was placed; a scheduled one's starts at its
+        // pickup time, so an order for tomorrow is not cancelled before the store could start it.
         $expiredOrders = Order::with('items.inventory', 'store')
             ->where('status', 'placed')
-            ->where('created_at', '<', Carbon::now()->subMinutes($prepMinutes))
+            ->where(function ($query) use ($cutoff) {
+                $query->where(fn ($q) => $q->whereNull('scheduled_pickup_at')->where('created_at', '<', $cutoff))
+                    ->orWhere(fn ($q) => $q->whereNotNull('scheduled_pickup_at')->where('scheduled_pickup_at', '<', $cutoff));
+            })
             ->get();
 
         $this->cancelOrders($expiredOrders, 'Vendor did not prepare the order in time.');

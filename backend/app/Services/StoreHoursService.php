@@ -7,10 +7,85 @@ use Carbon\Carbon;
 
 class StoreHoursService
 {
+    public const TIMEZONE = 'Asia/Manila';
+
+    private const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
     public function isOpen(Store $store): bool
     {
         $info = $this->getScheduleInfo($store);
         return $info['isOpen'];
+    }
+
+    /**
+     * The store's week as ['Monday' => ['opens' => 'H:i', 'closes' => 'H:i'] | null, ...], in Manila
+     * time, from either the per-day format or the older flat one. A day marked open without times
+     * counts as open all day. Checkout's pickup-time picker is built from this, and
+     * isOpenAt() below reads the same thing, so the picker never offers a time checkout refuses.
+     */
+    public function weeklyHours(Store $store): array
+    {
+        $days = $store->operating_days;
+        $week = array_fill_keys(self::DAY_NAMES, null);
+
+        // Per-day format
+        if (is_array($days) && count(array_filter(array_keys($days), 'is_string')) > 0) {
+            foreach (self::DAY_NAMES as $name) {
+                $day = $days[$name] ?? null;
+                if (!$day || empty($day['is_open'])) {
+                    continue;
+                }
+
+                $open = $day['opening_time'] ?? null;
+                $close = $day['closing_time'] ?? null;
+                $week[$name] = ($open && $close)
+                    ? ['opens' => $this->toHm($open), 'closes' => $this->toHm($close)]
+                    : ['opens' => '00:00', 'closes' => '23:59'];
+            }
+
+            return $week;
+        }
+
+        // Legacy flat format: a list of day names sharing the store's one opening and closing time.
+        if (!$store->opening_time || !$store->closing_time || !is_array($days) || !is_string(reset($days))) {
+            return $week;
+        }
+
+        $hours = ['opens' => $this->toHm($store->opening_time), 'closes' => $this->toHm($store->closing_time)];
+        foreach (self::DAY_NAMES as $name) {
+            $short = strtolower(substr($name, 0, 3));
+            if (collect($days)->contains(fn ($day) => strtolower(substr($day, 0, 3)) === $short)) {
+                $week[$name] = $hours;
+            }
+        }
+
+        return $week;
+    }
+
+    /**
+     * Whether the store is open at the given moment. Uses that day's hours the way
+     * getScheduleInfo() does for "now", including hours that run past midnight
+     * (open from the opening time to midnight, and from midnight to the closing time).
+     */
+    public function isOpenAt(Store $store, Carbon $moment): bool
+    {
+        $local = $moment->copy()->setTimezone(self::TIMEZONE);
+        $hours = $this->weeklyHours($store)[$local->format('l')] ?? null;
+        if (!$hours) {
+            return false;
+        }
+
+        $time = $local->format('H:i');
+        ['opens' => $opens, 'closes' => $closes] = $hours;
+
+        return $opens <= $closes
+            ? ($time >= $opens && $time <= $closes)
+            : ($time >= $opens || $time <= $closes);
+    }
+
+    private function toHm(string $time): string
+    {
+        return Carbon::parse($time, self::TIMEZONE)->format('H:i');
     }
 
     public function getScheduleInfo(Store $store): array

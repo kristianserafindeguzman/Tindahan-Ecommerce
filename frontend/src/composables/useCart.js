@@ -78,7 +78,8 @@ export function useCart() {
     }
   }
 
-  const checkout = async (storeId) => {
+  // scheduledPickupAt is the chosen pickup slot's start as an ISO time, or null for ASAP.
+  const checkout = async (storeId, { scheduledPickupAt = null } = {}) => {
     const lat = Number(localStorage.getItem('consumer_lat'))
     const lng = Number(localStorage.getItem('consumer_lng'))
     const hasLocation = Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng)
@@ -88,7 +89,8 @@ export function useCart() {
     const payload = {
       store_id: storeId,
       consumer_latitude: hasLocation ? lat : null,
-      consumer_longitude: hasLocation ? lng : null
+      consumer_longitude: hasLocation ? lng : null,
+      scheduled_pickup_at: scheduledPickupAt
     }
 
     const { data } = await api.post('/consumer/checkout', payload)
