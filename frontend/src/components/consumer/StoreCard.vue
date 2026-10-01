@@ -218,6 +218,7 @@ const travelText = computed(() =>
   align-items: center;
 
   gap: 5px;
+  min-width: 0;
   padding-top: 10px;
 
   border-top: 1px solid var(--c-hairline);
@@ -239,24 +240,12 @@ const travelText = computed(() =>
 }
 
 .store-card-distance-text {
+  flex: 1;
   min-width: 0;
 
   overflow: hidden;
 
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-/* The travel line may wrap at its " · " on a narrow card, so "away" is never the part cut off. */
-.store-card-distance--travel {
-  align-items: flex-start;
-}
-
-.store-card-distance--travel .q-icon {
-  margin-top: 2px;
-}
-
-.store-card-distance--travel .store-card-distance-text {
-  white-space: normal;
 }
 </style>

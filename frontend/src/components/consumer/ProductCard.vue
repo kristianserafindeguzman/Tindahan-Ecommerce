@@ -289,25 +289,13 @@ const travelText = computed(() =>
 }
 
 .product-meta-text {
+  flex: 1;
   min-width: 0;
 
   overflow: hidden;
 
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-/* The travel line may wrap at its " · " on a narrow card, so "away" is never the part cut off. */
-.product-meta-row--travel {
-  align-items: flex-start;
-}
-
-.product-meta-row--travel .product-meta-icon {
-  margin-top: 2px;
-}
-
-.product-meta-row--travel .product-meta-text {
-  white-space: normal;
 }
 
 /* Phones fit two cards to a 390px row, so this trims the card's chrome rather than its content. */
