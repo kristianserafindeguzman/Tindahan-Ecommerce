@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 use App\Models\Inventory;
 use Barryvdh\DomPDF\Facade\Pdf;
+// use Illuminate\Support\Facades\Http;
 
 use App\Models\DemandForecast;
 
@@ -693,25 +694,25 @@ class VendorController extends Controller
 
         $storeId = $store->store_id;
 
-        $mlApiUrl = rtrim(config('services.ml_api.url'), '/');
+        $mlApiUrl = rtrim(env('ML_API_URL'), '/');
 
         if (!$mlApiUrl) {
             return response()->json([
-                'message' => 'ML API URL is not configured.',
+                'message' => 'ML API is not configured.',
                 'has_forecast' => false,
             ], 500);
         }
 
         try {
-            // Train the Random Forest model on Render
-            $trainResponse = Http::timeout(120)
-                ->post($mlApiUrl . '/train/demand?store_id=' . $storeId);
+            // Train the store-specific Random Forest model on Render.
+            $trainResponse = Http::timeout(300)
+                ->post("{$mlApiUrl}/train/demand?store_id={$storeId}");
 
             if (!$trainResponse->successful()) {
                 return response()->json([
-                    'message' => 'ML training failed.',
+                    'message' => 'ML model training failed.',
+                    'details' => $trainResponse->body(),
                     'has_forecast' => false,
-                    'ml_response' => $trainResponse->json(),
                 ], 502);
             }
 
@@ -719,20 +720,20 @@ class VendorController extends Controller
 
             if (($trainResult['status'] ?? null) !== 'success') {
                 return response()->json([
-                    'message' => $trainResult['message'] ?? 'ML training failed.',
+                    'message' => $trainResult['message'] ?? 'ML model training failed.',
                     'has_forecast' => false,
-                ], 502);
+                ], 422);
             }
 
-            // Generate the forecast using the trained model on Render
+            // Generate the forecast using the newly trained model.
             $predictResponse = Http::timeout(120)
-                ->post($mlApiUrl . '/predict/demand?store_id=' . $storeId);
+                ->post("{$mlApiUrl}/predict/demand?store_id={$storeId}");
 
             if (!$predictResponse->successful()) {
                 return response()->json([
-                    'message' => 'ML prediction failed.',
+                    'message' => 'ML forecast generation failed.',
+                    'details' => $predictResponse->body(),
                     'has_forecast' => false,
-                    'ml_response' => $predictResponse->json(),
                 ], 502);
             }
 
@@ -743,12 +744,12 @@ class VendorController extends Controller
                 empty($predictResult['forecasts'])
             ) {
                 return response()->json([
-                    'message' => $predictResult['message'] ?? 'Forecast generation produced no results.',
+                    'message' => 'Forecast generation produced no results.',
                     'has_forecast' => false,
-                ]);
+                ], 422);
             }
 
-            // Save Render's forecasts into Laravel's database
+            // Save the forecasts into Laravel's production database.
             foreach ($predictResult['forecasts'] as $forecast) {
                 DemandForecast::updateOrCreate(
                     [
@@ -764,15 +765,16 @@ class VendorController extends Controller
             }
 
             return response()->json([
-                'message' => 'Demand forecast generated successfully.',
+                'message' => 'Demand forecast refreshed successfully.',
                 'has_forecast' => true,
                 'data_sufficiency' => $trainResult['data_sufficiency'] ?? null,
                 'training_rows' => $trainResult['training_rows'] ?? null,
                 'distinct_dates' => $trainResult['distinct_dates'] ?? null,
                 'forecasts' => $predictResult['forecasts'],
             ]);
+
         } catch (\Throwable $e) {
-            \Log::error('Render ML demand forecast failed', [
+            \Log::error('Render ML API request failed', [
                 'store_id' => $storeId,
                 'error' => $e->getMessage(),
             ]);

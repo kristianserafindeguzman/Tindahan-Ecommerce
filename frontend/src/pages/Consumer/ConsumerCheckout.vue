@@ -188,47 +188,65 @@
                   <div class="time-option-title">{{ t('Schedule for later') }}</div>
                   <div class="time-option-desc">
                     <span v-if="scheduledSlotText">{{ scheduledSlotText }}</span>
-                    <span v-else>{{ t('Choose a specific time today.') }}</span>
+                    <span v-else>{{ t('Choose a day and time within store hours.') }}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             <div v-if="pickupOption === 'schedule' && showScheduler" class="scheduler-panel">
-              <div class="scheduler-label">{{ t('Select Day') }}</div>
-              <div class="day-pills">
-                <div
-                  v-for="day in dayOptions"
-                  :key="day.value"
-                  class="day-pill"
-                  :class="{ 'day-pill-selected': selectedDay === day.value }"
-                  @click="selectedDay = day.value"
-                >
-                  <div class="day-pill-label">{{ day.label }}</div>
-                  <div class="day-pill-date">{{ day.date }}</div>
-                </div>
+              <!-- The store's hours arrive with the store list, a moment after the page. -->
+              <div v-if="!storeHoursLoaded" class="scheduler-empty">
+                <q-spinner size="16px" />
+                {{ t('Loading store hours…') }}
               </div>
 
-              <div class="scheduler-label">{{ t('Select Time') }}</div>
-              <q-select
-                v-model="selectedSlot"
-                :options="timeSlots"
-                outlined
-                dense
-                hide-bottom-space
-                behavior="menu"
-                :placeholder="t('Choose a time slot')"
-                class="time-select"
-              />
+              <!-- Nothing to offer in the next few days, e.g. a store closed all weekend. -->
+              <div v-else-if="!hasAnyPickupSlot" class="scheduler-empty">
+                <q-icon name="o_event_busy" size="18px" />
+                {{ t('There are no pickup times left in the next few days. Choose ASAP instead.') }}
+              </div>
 
-              <q-btn
-                unelevated
-                no-caps
-                :label="t('Confirm Time')"
-                class="confirm-time-btn"
-                :disable="!selectedSlot"
-                @click="confirmSchedule"
-              />
+              <template v-else>
+                <div class="scheduler-label">{{ t('Select Day') }}</div>
+                <div class="day-pills">
+                  <!-- A day the store is closed, or has no times left today, stays visible but can't be picked. -->
+                  <div
+                    v-for="day in dayOptions"
+                    :key="day.value"
+                    class="day-pill"
+                    :class="{ 'day-pill-selected': selectedDay === day.value, 'day-pill-disabled': day.disabled }"
+                    :aria-disabled="day.disabled"
+                    @click="selectDay(day)"
+                  >
+                    <div class="day-pill-label">{{ day.label }}</div>
+                    <div class="day-pill-date">{{ day.disabled ? t('Closed') : day.date }}</div>
+                  </div>
+                </div>
+
+                <div class="scheduler-label">{{ t('Select Time') }}</div>
+                <q-select
+                  v-model="selectedSlot"
+                  :options="timeSlots"
+                  emit-value
+                  map-options
+                  outlined
+                  dense
+                  hide-bottom-space
+                  behavior="menu"
+                  :placeholder="t('Choose a time slot')"
+                  class="time-select"
+                />
+
+                <q-btn
+                  unelevated
+                  no-caps
+                  :label="t('Confirm Time')"
+                  class="confirm-time-btn"
+                  :disable="!selectedSlot"
+                  @click="confirmSchedule"
+                />
+              </template>
             </div>
           </div>
 
@@ -377,6 +395,7 @@ import { useQuasar } from 'quasar'
 import { useCart } from '@/composables/useCart'
 import { useCartExpiry } from '@/composables/useCartExpiry'
 import { formatDistance } from '@/utils/distance'
+import { buildPickupDays, SLOT_MINUTES, STORE_TIME_ZONE } from '@/utils/pickupSlots'
 import { useStores } from '@/composables/useStores'
 import { useAddress } from '@/composables/useAddress'
 import { api } from '@/boot/axios'
@@ -434,9 +453,20 @@ const placeOrder = async () => {
     return
   }
 
+  // "Schedule for later" without a confirmed time used to go through as ASAP without a word;
+  // the shopper is asked for a time instead, so the store never gets the wrong one.
+  if (pickupOption.value === 'schedule' && !confirmedSlot.value) {
+    showScheduler.value = true
+    selectFirstOpenDay()
+    $q.notify({ type: 'negative', message: t('Choose a pickup time first.') })
+    return
+  }
+
   placingOrder.value = true
   try {
-    const data = await checkout(storeId.value)
+    const data = await checkout(storeId.value, {
+      scheduledPickupAt: pickupOption.value === 'schedule' ? confirmedSlot.value.iso : null
+    })
     placedOrder.value = data.order
     orderPlaced.value = true
   } catch (error) {
@@ -529,56 +559,105 @@ watch(user, (value) => {
   phoneNumber.value = value.phone_number || ''
 })
 
-// PICKUP TIME
+// PICKUP TIME — "Schedule for later" offers only slots inside the store's opening hours (see
+// utils/pickupSlots.js), and the chosen slot is sent with the order so the store sees it.
 const pickupOption = ref('asap')
 const showScheduler = ref(false)
-const selectedDay = ref('today')
-const selectedSlot = ref('')
-const confirmedSlotLabel = ref('')
+const selectedDay = ref(0)
+const selectedSlot = ref(null)
+const confirmedSlot = ref(null) // { iso, label, dayLabel }
+
+// Re-read every minute, so a page left open drops slots that have already passed.
+const clockNow = ref(new Date())
+const clockTimer = setInterval(() => { clockNow.value = new Date() }, 60000)
+onBeforeUnmount(() => clearInterval(clockTimer))
 
 const DAY_LABELS = ['Today', 'Tomorrow']
 
-const dayOptions = computed(() => {
-  const days = []
-  for (let i = 0; i < 3; i++) {
-    const date = new Date()
-    date.setDate(date.getDate() + i)
-    days.push({
-      value: i === 0 ? 'today' : i === 1 ? 'tomorrow' : `day${i}`,
-      label: (DAY_LABELS[i] ? t(DAY_LABELS[i]) : null) || date.toLocaleDateString(locale.value, { weekday: 'short' }).toUpperCase(),
-      date: date.toLocaleDateString(locale.value, { day: '2-digit', month: 'short' })
-    })
-  }
-  return days
+const formatSlotTime = (iso) =>
+  new Date(iso).toLocaleTimeString(locale.value, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: STORE_TIME_ZONE })
+
+const pickupDays = computed(() => buildPickupDays(storeDetails.value?.hours, clockNow.value))
+
+const dayOptions = computed(() =>
+  pickupDays.value.map((day) => {
+    const noon = new Date(`${day.ymd}T12:00:00+08:00`)
+    return {
+      value: day.offset,
+      label: (DAY_LABELS[day.offset] ? t(DAY_LABELS[day.offset]) : null) ||
+        noon.toLocaleDateString(locale.value, { weekday: 'short', timeZone: STORE_TIME_ZONE }).toUpperCase(),
+      date: noon.toLocaleDateString(locale.value, { day: '2-digit', month: 'short', timeZone: STORE_TIME_ZONE }),
+      // A day the store is closed, or has no slots left today, can't be picked.
+      disabled: !day.slots.length
+    }
+  })
+)
+
+const timeSlots = computed(() =>
+  (pickupDays.value[selectedDay.value]?.slots || []).map((slot) => ({
+    value: slot.iso,
+    label: `${formatSlotTime(slot.iso)} - ${formatSlotTime(new Date(new Date(slot.iso).getTime() + SLOT_MINUTES * 60000).toISOString())}`
+  }))
+)
+
+const hasAnyPickupSlot = computed(() => dayOptions.value.some((day) => !day.disabled))
+
+// The store list (and with it the hours) loads a moment after the page, so the picker waits for
+// it instead of briefly claiming there are no pickup times.
+const storeHoursLoaded = computed(() => Boolean(storeDetails.value?.hours))
+
+// Opens on the first day that still has slots, and never leaves a closed day selected.
+const selectFirstOpenDay = () => {
+  const current = dayOptions.value[selectedDay.value]
+  if (current && !current.disabled) return
+  const firstOpen = dayOptions.value.find((day) => !day.disabled)
+  selectedDay.value = firstOpen ? firstOpen.value : 0
+}
+
+// Re-checked whenever the days change — when the hours arrive, or today's last slot passes — so
+// an open picker moves off a day that has become unavailable.
+watch(dayOptions, () => {
+  if (pickupOption.value === 'schedule') selectFirstOpenDay()
 })
 
-const timeSlots = computed(() => {
-  const formatTime = (date) => date.toLocaleTimeString(locale.value, { hour: 'numeric', minute: '2-digit', hour12: true })
-  const start = new Date()
-  start.setMinutes(Math.ceil(start.getMinutes() / 15) * 15 + 30, 0, 0)
+const selectDay = (day) => {
+  if (day.disabled) return
+  selectedDay.value = day.value
+  selectedSlot.value = null
+}
 
-  const slots = []
-  for (let i = 0; i < 24; i++) {
-    const from = new Date(start.getTime() + i * 15 * 60000)
-    const to = new Date(from.getTime() + 15 * 60000)
-    slots.push(`${formatTime(from)} - ${formatTime(to)}`)
+// Hours can load after the page, and the clock can move a slot into the past: drop a choice
+// that is no longer on offer instead of keeping one checkout would refuse.
+watch(timeSlots, (slots) => {
+  if (selectedSlot.value && !slots.some((slot) => slot.value === selectedSlot.value)) {
+    selectedSlot.value = null
   }
-  return slots
+})
+
+watch(pickupDays, (days) => {
+  if (confirmedSlot.value && !days.some((day) => day.slots.some((slot) => slot.iso === confirmedSlot.value.iso))) {
+    confirmedSlot.value = null
+  }
 })
 
 const selectPickupOption = (option) => {
   pickupOption.value = option
   showScheduler.value = option === 'schedule'
+  if (option === 'schedule') selectFirstOpenDay()
 }
 
-const scheduledSlotText = computed(() => {
-  if (!confirmedSlotLabel.value) return ''
-  const dayLabel = dayOptions.value.find((day) => day.value === selectedDay.value)?.label || t('Today')
-  return `${dayLabel}, ${confirmedSlotLabel.value}`
-})
+const scheduledSlotText = computed(() =>
+  confirmedSlot.value ? `${confirmedSlot.value.dayLabel}, ${confirmedSlot.value.label}` : ''
+)
 
 const confirmSchedule = () => {
-  confirmedSlotLabel.value = selectedSlot.value
+  const slot = timeSlots.value.find((option) => option.value === selectedSlot.value)
+  if (!slot) return
+  confirmedSlot.value = {
+    iso: slot.value,
+    label: slot.label,
+    dayLabel: dayOptions.value[selectedDay.value]?.label || t('Today')
+  }
   showScheduler.value = false
 }
 
@@ -1471,6 +1550,36 @@ onBeforeUnmount(() => {
 
 .day-pill-selected .day-pill-date {
   color: var(--c-brand);
+}
+
+/* A closed day: shown so the shopper sees why it's missing, but greyed out and unclickable. */
+.day-pill-disabled,
+.day-pill-disabled:hover {
+  border-color: var(--c-hairline);
+  background: var(--c-surface-2);
+
+  cursor: not-allowed;
+}
+
+.day-pill-disabled .day-pill-label,
+.day-pill-disabled .day-pill-date {
+  color: var(--c-subtle);
+}
+
+.scheduler-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 12px 14px;
+
+  border-radius: var(--r-md);
+
+  background: var(--c-surface-2);
+
+  font-size: var(--fs-sm);
+
+  color: var(--c-muted);
 }
 
 .time-select {

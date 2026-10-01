@@ -11,9 +11,18 @@ use App\Services\StoreHoursService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+
+use App\Models\User;
+use App\Notifications\SystemNotification;
 
 class CartController extends Controller
 {
+    // A scheduled pickup can be up to this many days after today (today plus two, as the checkout
+    // page offers), and no sooner than this many minutes from now.
+    private const SCHEDULE_DAYS_AHEAD = 2;
+    private const SCHEDULE_MIN_LEAD_MINUTES = 10;
+
     private function findVariant($variants, $variantName)
     {
         if (!is_array($variants) || empty($variantName)) return null;
@@ -77,7 +86,7 @@ class CartController extends Controller
                 }
 
                 $price = $variantName && $variantPrice !== null ? $variantPrice : (float) ($inventory->price ?? 0);
-                
+
                 // Real-time available check for variants using the helper, else standard
                 if ($variantName && $variantQuantity !== null) {
                     $availableQuantity = $this->getVariantAvailableQuantity($inventory->inventory_id, $variantName, $variantQuantity);
@@ -87,8 +96,8 @@ class CartController extends Controller
 
                 // Treat as expired if expires_at is past
                 $isExpired = $item->expires_at && $item->expires_at < now();
-                
-                // If the item itself has expired, we show availableQuantity as 0 
+
+                // If the item itself has expired, we show availableQuantity as 0
                 // so the frontend blocks it until the cleanup command wipes it,
                 // or we just return the real available and let frontend block based on expiry.
                 // We'll return true availability but let frontend use `expiresAt`.
@@ -180,7 +189,7 @@ class CartController extends Controller
                 ]);
             } else {
                 $qtyToAdd = min($quantity, $availableStock);
-                
+
                 $inventory->reserved_quantity += $qtyToAdd;
                 $inventory->save();
 
@@ -339,6 +348,8 @@ class CartController extends Controller
             'store_id' => 'required|integer|exists:stores,store_id',
             'consumer_latitude' => 'nullable|numeric|between:-90,90',
             'consumer_longitude' => 'nullable|numeric|between:-180,180',
+            // Null or missing means ASAP.
+            'scheduled_pickup_at' => 'nullable|date',
         ]);
 
         $consumerId = $request->user()->user_id;
@@ -350,6 +361,31 @@ class CartController extends Controller
                 'message' => 'This store is currently closed. Please try again during operating hours.',
                 'error_code' => 'STORE_CLOSED',
             ], 422);
+        }
+
+        // A scheduled pickup must be in the next few days and inside the store's hours: the same
+        // limits the checkout page's picker uses, enforced here because the page can be bypassed.
+        // The small grace period covers the time a shopper spends between picking a slot and placing.
+        $scheduledPickupAt = null;
+        if ($request->filled('scheduled_pickup_at')) {
+            $scheduledPickupAt = Carbon::parse($request->input('scheduled_pickup_at'))
+                ->setTimezone(StoreHoursService::TIMEZONE);
+            $latest = now(StoreHoursService::TIMEZONE)->addDays(self::SCHEDULE_DAYS_AHEAD)->endOfDay();
+
+            if ($scheduledPickupAt->lt(now()->addMinutes(self::SCHEDULE_MIN_LEAD_MINUTES))
+                || $scheduledPickupAt->gt($latest)) {
+                return response()->json([
+                    'message' => 'Please choose a pickup time that is still available.',
+                    'error_code' => 'PICKUP_TIME_INVALID',
+                ], 422);
+            }
+
+            if (!$storeHoursService->isOpenAt($store, $scheduledPickupAt)) {
+                return response()->json([
+                    'message' => 'The store is closed at that pickup time. Please choose another time.',
+                    'error_code' => 'PICKUP_TIME_CLOSED',
+                ], 422);
+            }
         }
 
         // An order with no consumer location leaves the vendor without pickup context, so this
@@ -442,7 +478,7 @@ class CartController extends Controller
                     throw new \Exception("Only {$stockOnHand} left of '{$productName}'. Please update your cart.");
                 }
 
-                // Note: We DO NOT increment $inventory->reserved_quantity here because it was already incremented when the item was added to the cart. 
+                // Note: We DO NOT increment $inventory->reserved_quantity here because it was already incremented when the item was added to the cart.
                 // The reservation transfers implicitly from cart to order.
 
                 $subtotal = $price * $cartItem->quantity;
@@ -472,6 +508,9 @@ class CartController extends Controller
                 'status' => 'placed',
                 'consumer_latitude' => $latitude,
                 'consumer_longitude' => $longitude,
+                // Stored in the app's time zone like every other timestamp: Laravel saves a date's
+                // clock time as-is, so a Manila-time value would otherwise land 8 hours off.
+                'scheduled_pickup_at' => $scheduledPickupAt?->copy()->setTimezone(config('app.timezone')),
             ]);
 
             // Create order items
@@ -491,29 +530,60 @@ class CartController extends Controller
 
             // The store owner hears about every new order, and a failed notice never undoes the order itself.
             try {
+
                 $ownerId = optional($order->store)->owner_id;
+
                 if ($ownerId) {
+
+                    $message = "Order #{$order->order_id} was placed for ₱"
+                        . number_format($totalAmount, 2) . '.'
+                        . ($scheduledPickupAt
+                            ? ' Pickup: ' . $scheduledPickupAt->format('D, M j, g:i A') . '.'
+                            : '');
+
+                    // Existing in-app notification
                     \App\Models\Notification::create([
                         'user_id' => $ownerId,
                         'order_id' => $order->order_id,
                         'title' => 'New Order',
-                        'message' => "Order #{$order->order_id} was placed for ₱" . number_format($totalAmount, 2) . '.',
+                        'message' => $message,
                     ]);
+
+                    // External email notification
+                    $owner = \App\Models\User::find($ownerId);
+
+                    if ($owner && $owner->email) {
+
+                        $orderUrl = rtrim(config('services.frontend.url'), '/')
+                            . '/#/vendor/orders/'
+                            . $order->order_id;
+
+                        $owner->notify(new \App\Notifications\SystemNotification(
+                            'New Order',
+                            $message,
+                            $order->order_id,
+                            $orderUrl,
+                            'View Order'
+                        ));
+                    }
                 }
+
             } catch (\Exception $e) {
+
                 Log::error('New order notification failed: ' . $e->getMessage());
+
             }
 
-            return response()->json([
-                'message' => 'Order placed successfully.',
-                'order' => $order,
-            ], 201);
+                    return response()->json([
+                        'message' => 'Order placed successfully.',
+                        'order' => $order,
+                    ], 201);
 
-        } catch (\Exception $e) {
-            // Rollback everything if any item fails or exception occurs
-            DB::rollBack();
-            Log::error('Checkout failed: ' . $e->getMessage());
-            return response()->json(['message' => $e->getMessage()], 422);
+                } catch (\Exception $e) {
+                    // Rollback everything if any item fails or exception occurs
+                    DB::rollBack();
+                    Log::error('Checkout failed: ' . $e->getMessage());
+                    return response()->json(['message' => $e->getMessage()], 422);
+                }
+            }
         }
-    }
-}

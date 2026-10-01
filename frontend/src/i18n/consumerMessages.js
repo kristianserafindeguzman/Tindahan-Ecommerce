@@ -246,7 +246,12 @@ export default {
   "We'll start preparing your order immediately.":
     'Ihahanda namin agad ang order mo.',
   'Schedule for later': 'Mag-schedule ng pickup',
-  'Choose a specific time today.': 'Pumili ng pickup time ngayong araw.',
+  'Choose a day and time within store hours.': 'Pumili ng araw at oras habang bukas ang tindahan.',
+  'There are no pickup times left in the next few days. Choose ASAP instead.': 'Wala nang available na pickup time sa mga susunod na araw. Piliin na lang ang ASAP.',
+  'Choose a pickup time first.': 'Pumili muna ng pickup time.',
+  'Loading store hours…': 'Nilo-load ang oras ng tindahan…',
+  'Please choose a pickup time that is still available.': 'Pumili ng pickup time na available pa.',
+  'The store is closed at that pickup time. Please choose another time.': 'Sarado ang tindahan sa oras na iyon. Pumili ng ibang oras.',
   'Select Day': 'Pumili ng Araw',
   'Select Time': 'Pumili ng Oras',
   'Choose a time slot': 'Pumili ng time slot',
