@@ -36,23 +36,45 @@
         <div class="section-title">{{ t('Owner Account') }}</div>
         <p class="step-hint">{{ t('We\'ll text a code to your phone number to make sure it\'s yours.') }}</p>
 
-        <div class="field-group">
-          <q-input
-            v-model="form.ownerName"
-            outlined
-            dense
-            no-error-icon
-            hide-bottom-space
-            :label="t('Store owner name')"
-            autocomplete="name"
-            class="login-input"
-            reactive-rules
-            :rules="[
-              val => !ownerNameTouched || !!val || t('Store owner name is required.'),
-              val => !ownerNameTouched || nameRule(val)
-            ]"
-            @blur="ownerNameTouched = true"
-          />
+        <!-- FIRST / LAST NAME, laid out like ConsumerRegister.vue -->
+        <div class="name-row">
+          <div class="field-group">
+            <q-input
+              v-model="form.firstName"
+              outlined
+              dense
+              no-error-icon
+              hide-bottom-space
+              :label="t('First name')"
+              autocomplete="given-name"
+              class="login-input"
+              reactive-rules
+              :rules="[
+                val => !firstNameTouched || !!val?.trim() || t('First name is required.'),
+                val => !firstNameTouched || nameRule(val)
+              ]"
+              @blur="firstNameTouched = true"
+            />
+          </div>
+
+          <div class="field-group">
+            <q-input
+              v-model="form.lastName"
+              outlined
+              dense
+              no-error-icon
+              hide-bottom-space
+              :label="t('Last name')"
+              autocomplete="family-name"
+              class="login-input"
+              reactive-rules
+              :rules="[
+                val => !lastNameTouched || !!val?.trim() || t('Last name is required.'),
+                val => !lastNameTouched || nameRule(val)
+              ]"
+              @blur="lastNameTouched = true"
+            />
+          </div>
         </div>
 
         <div class="field-group">
@@ -452,7 +474,7 @@
           <div class="review-row">
             <div class="review-body">
               <div class="review-label">{{ t('Owner') }}</div>
-              <div class="review-value">{{ form.ownerName }}</div>
+              <div class="review-value">{{ ownerName }}</div>
               <div class="review-sub">{{ form.email }}</div>
             </div>
             <button type="button" class="review-edit" @click="editStep(1)">{{ t('Edit') }}</button>
@@ -624,7 +646,8 @@ const registerError = ref('')
 const storeNameTouched = ref(false)
 // Set when Continue is pressed without a photo, which turns the upload box red until one is added.
 const photoMissing = ref(false)
-const ownerNameTouched = ref(false)
+const firstNameTouched = ref(false)
+const lastNameTouched = ref(false)
 const emailTouched = ref(false)
 const phoneTouched = ref(false)
 const passwordTouched = ref(false)
@@ -644,7 +667,8 @@ const cropReady = ref(false)
 
 const form = reactive({
   storeName: '',
-  ownerName: '',
+  firstName: '',
+  lastName: '',
   email: '',
   phoneNumber: '',
   password: '',
@@ -726,10 +750,14 @@ const otpComplete = computed(() => otp.value.every(digit => digit !== ''))
 const resendTimer = ref(0)
 let resendInterval = null
 
+// The backend still stores one full_name, so the two fields are joined for the review step and the request.
+const ownerName = computed(() => `${form.firstName.trim()} ${form.lastName.trim()}`.trim())
+
 const canRegister = computed(() =>
   phoneVerified.value && verifiedPhone.value === form.phoneNumber &&
   !!form.storeName.trim() &&
-  !!form.ownerName && nameRule(form.ownerName) === true &&
+  !!form.firstName.trim() && nameRule(form.firstName) === true &&
+  !!form.lastName.trim() && nameRule(form.lastName) === true &&
   !!form.email && emailRule(form.email) === true &&
   !!form.phoneNumber && phoneRule(form.phoneNumber) === true &&
   !!form.password && passwordRule(form.password) === true &&
@@ -823,7 +851,8 @@ const sendCode = async () => {
 }
 
 const submitAccount = async () => {
-  ownerNameTouched.value = true
+  firstNameTouched.value = true
+  lastNameTouched.value = true
   emailTouched.value = true
   phoneTouched.value = true
   passwordTouched.value = true
@@ -1034,7 +1063,7 @@ const handleVendorRegister = async () => {
 
     const formData = new FormData()
     formData.append('store_name', form.storeName.trim())
-    formData.append('full_name', form.ownerName)
+    formData.append('full_name', ownerName.value)
     formData.append('email', form.email)
     formData.append('phone_number', form.phoneNumber)
     formData.append('verification_token', verificationToken.value)
@@ -1238,6 +1267,16 @@ function handleAddressPin(location) {
 
 .field-group {
   margin-bottom: 16px;
+}
+
+.name-row {
+  display: flex;
+  gap: 12px;
+}
+
+.name-row .field-group {
+  flex: 1;
+  min-width: 0;
 }
 
 .hours-row {

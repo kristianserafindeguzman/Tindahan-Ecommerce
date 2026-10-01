@@ -278,7 +278,8 @@
           <div class="preview-banner">
             <img v-if="vendorStore?.store_picture_url" :src="vendorStore.store_picture_url" alt="Storefront" />
             <div v-else class="preview-banner-empty"><q-icon name="o_storefront" size="48px" /></div>
-            <span class="store-status preview-status" :class="isStoreOpen ? 'store-status--open' : 'store-status--closed'">
+            <!-- Same guard as the banner pill, so a dialog opened mid-load never shows "Closed now" for an open store. -->
+            <span v-if="!loading" class="store-status preview-status" :class="isStoreOpen ? 'store-status--open' : 'store-status--closed'">
               <span class="store-status-dot" />
               {{ isStoreOpen ? t('openNow') : t('closedNow') }}
             </span>
@@ -1166,8 +1167,9 @@ const refreshForecast = async () => {
   color: var(--c-success);
 }
 
+/* A fixed red, since the pill stays white in dark mode too, where the grey text token turns light and vanishes. */
 .hero-status--closed {
-  color: var(--c-text-3);
+  color: #b91c1c;
 }
 
 /* The bell is a square outline button beside Manage Products, part of the banner's own row of actions. */
@@ -2127,6 +2129,7 @@ const refreshForecast = async () => {
 
 .preview-status.store-status--closed {
   background: #ffffff;
+  color: #b91c1c;
 }
 
 .info-row {

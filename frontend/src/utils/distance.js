@@ -14,13 +14,6 @@ export function formatDistance(meters) {
   return keepTogether(t('{distance} km away', { distance: (meters / 1000).toFixed(1) }))
 }
 
-/** Metres to a bare "820 m" or "1.4 km", for places where a travel time beside it already says "away". */
-export function formatDistanceShort(meters) {
-  if (meters == null) return ''
-  const rounded = Math.round(meters)
-  return keepTogether(rounded < 1000 ? `${rounded} m` : `${(meters / 1000).toFixed(1)} km`)
-}
-
 // Travel-time estimate. There is no routing service, only straight-line distance, so these are deliberately plain assumptions.
 const ROAD_FACTOR = 1.3 // streets wind; the straight line is shorter than the walk
 const WALK_LIMIT_M = 1000 // beyond about a kilometre, people take a tricycle or jeep instead

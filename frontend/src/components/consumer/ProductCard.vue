@@ -38,7 +38,7 @@
           <q-icon name="o_storefront" size="13px" class="product-meta-icon" />
           <span class="product-meta-text">{{ product.store }}</span>
         </div>
-        <div v-if="hasDistance" class="product-meta-row">
+        <div v-if="hasDistance" class="product-meta-row product-meta-row--travel">
           <q-icon :name="travelIcon(product.distance_meters)" size="13px" class="product-meta-icon" />
           <span class="product-meta-text">{{ travelText }}</span>
         </div>
@@ -52,7 +52,7 @@ import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 
 import { computed, ref } from 'vue'
 import { splitHighlightParts } from '@/utils/textHighlight'
-import { formatDistanceShort, formatTravelTime, travelIcon } from '@/utils/distance'
+import { formatDistance, formatTravelTime, travelIcon } from '@/utils/distance'
 
 const { t } = useConsumerLanguage()
 
@@ -74,9 +74,9 @@ const imageFailed = ref(false)
 
 const hasDistance = computed(() => props.product.distance_meters != null)
 
-// Time first, since it's the part a shopper acts on: "7 min walk · 498 m".
+// Time first, since it's the part a shopper acts on: "7 min walk · 498 m away".
 const travelText = computed(() =>
-  `${formatTravelTime(props.product.distance_meters)} · ${formatDistanceShort(props.product.distance_meters)}`
+  `${formatTravelTime(props.product.distance_meters)} · ${formatDistance(props.product.distance_meters)}`
 )
 
 </script>
@@ -295,6 +295,19 @@ const travelText = computed(() =>
 
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* The travel line may wrap at its " · " on a narrow card, so "away" is never the part cut off. */
+.product-meta-row--travel {
+  align-items: flex-start;
+}
+
+.product-meta-row--travel .product-meta-icon {
+  margin-top: 2px;
+}
+
+.product-meta-row--travel .product-meta-text {
+  white-space: normal;
 }
 
 /* Phones fit two cards to a 390px row, so this trims the card's chrome rather than its content. */

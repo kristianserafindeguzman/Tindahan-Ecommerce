@@ -35,8 +35,9 @@ class RoleMiddleware
             ], 403);
         }
 
-        // For Vendor routes, also verify store approval
-        if (in_array('Vendor', $roles)) {
+        // A vendor also needs an approved store. Checked on the user's own role, so a route open to
+        // 'Admin,Vendor' doesn't demand a store from an admin, who never has one.
+        if ($user->role === 'Vendor') {
             $store = $user->store?->load('approvalStatus');
             $vendorStatus = $store?->approvalStatus?->status ?? 'pending';
             if ($vendorStatus !== 'approved') {

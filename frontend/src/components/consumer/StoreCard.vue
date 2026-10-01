@@ -26,7 +26,7 @@
         {{ storeStatus(store) }}
       </div>
       <!-- Same split as ProductCard: travel on its own line, so the address isn't what gets squeezed out. -->
-      <div v-if="hasDistance" class="store-card-distance">
+      <div v-if="hasDistance" class="store-card-distance store-card-distance--travel">
         <q-icon :name="travelIcon(store.distance_meters)" size="13px" />
         <span class="store-card-distance-text">{{ travelText }}</span>
       </div>
@@ -44,7 +44,7 @@ import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { splitHighlightParts } from '@/utils/textHighlight'
-import { formatDistanceShort, formatTravelTime, travelIcon } from '@/utils/distance'
+import { formatDistance, formatTravelTime, travelIcon } from '@/utils/distance'
 
 const { t, storeStatus } = useConsumerLanguage()
 
@@ -67,7 +67,7 @@ const imageFailed = ref(false)
 const hasDistance = computed(() => props.store.distance_meters != null)
 
 const travelText = computed(() =>
-  `${formatTravelTime(props.store.distance_meters)} · ${formatDistanceShort(props.store.distance_meters)}`
+  `${formatTravelTime(props.store.distance_meters)} · ${formatDistance(props.store.distance_meters)}`
 )
 </script>
 
@@ -245,5 +245,18 @@ const travelText = computed(() =>
 
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* The travel line may wrap at its " · " on a narrow card, so "away" is never the part cut off. */
+.store-card-distance--travel {
+  align-items: flex-start;
+}
+
+.store-card-distance--travel .q-icon {
+  margin-top: 2px;
+}
+
+.store-card-distance--travel .store-card-distance-text {
+  white-space: normal;
 }
 </style>

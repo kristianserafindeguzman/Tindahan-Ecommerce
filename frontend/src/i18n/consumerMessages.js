@@ -488,6 +488,7 @@ export default {
   'Failed to delete account.': 'Hindi ma-delete ang account.',
   More: 'Iba Pa',
   'More categories': 'Iba pang categories',
+  'Previous categories': 'Naunang categories',
   '{count} item': '{count} na item',
   '{count} items': '{count} na item',
   '{count} more item': '{count} pang item',

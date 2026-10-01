@@ -50,34 +50,45 @@
         </div>
 
         <template v-else>
-          <!-- Grouped by day, so today's news sits apart from older ones. -->
-          <section v-for="group in groups" :key="group.label" class="nt-group">
-            <div class="nt-group-label">{{ group.label }}</div>
-            <button
-              v-for="notif in group.items"
-              :key="notif.notification_id"
-              type="button"
-              class="nt-item"
-              :class="{ 'nt-item--unread': !notif.is_read }"
-              @click="openNotification(notif)"
-            >
-              <span class="nt-icon" :class="`vp-tone--${notificationKind(notif).tone}`">
-                <q-icon :name="notificationKind(notif).icon" size="20px" />
-              </span>
-              <span class="nt-body">
-                <span class="nt-title">
-                  {{ notif.title }}
-                  <span v-if="!notif.is_read" class="nt-new">{{ t('newBadge') }}</span>
-                </span>
-                <span class="nt-message">{{ notif.message }}</span>
-              </span>
-              <span class="nt-side">
-                <span class="nt-time">{{ formatClock(notif.created_at) }}</span>
-                <span class="nt-ago">{{ timeAgo(notif.created_at) }}</span>
-              </span>
-              <q-icon v-if="notif.order_id" name="o_chevron_right" size="18px" class="nt-arrow" />
-            </button>
-          </section>
+          <!-- Grouped by day, so today's news sits apart from older ones; each notification is its own card. -->
+          <div class="nt-groups">
+            <section v-for="group in groups" :key="group.label" class="nt-group">
+              <h2 class="nt-group-label">{{ group.label }}</h2>
+              <div class="nt-list">
+                <button
+                  v-for="item in group.items"
+                  :key="item.notif.notification_id"
+                  type="button"
+                  class="nt-item"
+                  :class="{ 'nt-item--unread': !item.notif.is_read }"
+                  @click="openNotification(item.notif)"
+                >
+                  <span class="nt-icon" :class="`vp-tone--${item.kind.tone}`">
+                    <q-icon :name="item.kind.icon" size="20px" />
+                  </span>
+                  <span class="nt-body">
+                    <span class="nt-head">
+                      <span class="nt-title">{{ item.text.title }}</span>
+                      <span v-if="!item.notif.is_read" class="nt-new">{{ t('newBadge') }}</span>
+                      <span class="nt-time">{{ formatClock(item.notif.created_at) }} · {{ timeAgo(item.notif.created_at) }}</span>
+                    </span>
+                    <span class="nt-message">{{ item.text.message }}</span>
+                    <span v-if="item.text.pickup || item.text.reason" class="nt-meta">
+                      <span v-if="item.text.pickup" class="nt-chip">
+                        <q-icon name="o_schedule" size="14px" />
+                        {{ item.text.pickupLabel }}: {{ item.text.pickup }}
+                      </span>
+                      <span v-if="item.text.reason" class="nt-chip nt-chip--reason">
+                        <q-icon name="o_info" size="14px" />
+                        {{ item.text.reasonLabel }}: {{ item.text.reason }}
+                      </span>
+                    </span>
+                  </span>
+                  <q-icon v-if="item.notif.order_id" name="o_chevron_right" size="20px" class="nt-arrow" />
+                </button>
+              </div>
+            </section>
+          </div>
 
           <div v-if="pageCount > 1" class="vp-pager">
             <span>{{ t('showingWord') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('ofWord') }} {{ filtered.length }}</span>
@@ -96,7 +107,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useVendorNotifications, notificationKind } from '@/composables/useVendorNotifications'
+import { useVendorNotifications, notificationKind, notificationText } from '@/composables/useVendorNotifications'
 import { useLanguage } from '@/composables/useLanguage'
 
 const router = useRouter()
@@ -201,11 +212,13 @@ const dayLabel = dateString => {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+// Each row carries its kind and its text in the current language, worked out once per render.
 const groups = computed(() => paged.value.reduce((list, notif) => {
   const label = dayLabel(notif.created_at)
+  const item = { notif, kind: notificationKind(notif), text: notificationText(notif) }
   const last = list[list.length - 1]
-  if (last && last.label === label) last.items.push(notif)
-  else list.push({ label, items: [notif] })
+  if (last && last.label === label) last.items.push(item)
+  else list.push({ label, items: [item] })
   return list
 }, []))
 
@@ -254,31 +267,45 @@ onMounted(fetchNotifications)
   flex: 1;
 }
 
+/* Each day is a quiet heading over its own stack of cards, with room between days and between cards. */
+.nt-groups {
+  display: flex;
+  flex-direction: column;
+
+  gap: 24px;
+  padding: 20px;
+}
+
 .nt-group-label {
-  padding: 10px 20px;
-
-  border-bottom: 1px solid var(--c-hairline);
-
-  background: var(--c-surface-2);
+  margin: 0 0 10px;
+  padding: 0 2px;
 
   font-size: var(--fs-2xs);
   font-weight: 700;
+  line-height: 1.4;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 
   color: var(--c-muted);
 }
 
+.nt-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+}
+
 .nt-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
 
-  gap: 14px;
+  gap: 16px;
   width: 100%;
-  padding: 14px 20px;
+  padding: 16px 18px;
 
-  border: none;
-  border-bottom: 1px solid var(--c-hairline);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-control);
 
   background: #ffffff;
 
@@ -287,31 +314,33 @@ onMounted(fetchNotifications)
 
   cursor: pointer;
 
-  transition: background-color 0.15s;
-}
-
-.nt-group:last-of-type .nt-item:last-child {
-  border-bottom: none;
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
 .nt-item:hover {
-  background: var(--c-surface-2);
+  border-color: var(--c-border-strong);
+
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
 }
 
 .nt-item:focus-visible {
   outline: 2px solid var(--c-brand);
-  outline-offset: -2px;
+  outline-offset: 2px;
 }
 
-/* Unread ones carry a brand bar on the left and a "New" tag. */
+/* Unread ones carry a brand bar on the left, a soft tint and a "New" tag. */
 .nt-item--unread {
-  box-shadow: inset 3px 0 0 var(--c-brand);
+  border-color: var(--c-brand-tint-2);
 
   background: var(--c-brand-tint);
+
+  box-shadow: inset 4px 0 0 var(--c-brand);
 }
 
 .nt-item--unread:hover {
-  background: var(--c-brand-tint-2);
+  border-color: var(--c-brand-tint-2);
+
+  box-shadow: inset 4px 0 0 var(--c-brand), 0 4px 14px rgba(15, 23, 42, 0.06);
 }
 
 .nt-icon {
@@ -320,8 +349,8 @@ onMounted(fetchNotifications)
   justify-content: center;
   flex-shrink: 0;
 
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
 
   border-radius: var(--r-control);
 }
@@ -332,23 +361,29 @@ onMounted(fetchNotifications)
 
   flex: 1;
   min-width: 0;
-  gap: 2px;
+  gap: 6px;
+}
+
+.nt-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: 6px 10px;
 }
 
 .nt-title {
-  display: flex;
-  align-items: center;
+  min-width: 0;
 
-  gap: 8px;
-
-  font-size: var(--fs-sm);
+  font-size: var(--fs-md);
   font-weight: 700;
+  line-height: 1.3;
 
   color: var(--c-text);
 }
 
 .nt-new {
-  padding: 1px 8px;
+  padding: 2px 9px;
 
   border-radius: var(--r-pill);
 
@@ -356,55 +391,99 @@ onMounted(fetchNotifications)
 
   font-size: var(--fs-2xs);
   font-weight: 700;
+  line-height: 1.4;
 
   color: #ffffff;
 }
 
-.nt-message {
-  font-size: var(--fs-sm);
-  line-height: 1.45;
-
-  color: var(--c-text-3);
-}
-
-.nt-side {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  flex-shrink: 0;
-
-  gap: 2px;
-}
-
 .nt-time {
+  margin-left: auto;
+
   font-size: var(--fs-xs);
   font-weight: 600;
-
-  color: var(--c-text-2);
-}
-
-.nt-ago {
-  font-size: var(--fs-2xs);
+  white-space: nowrap;
 
   color: var(--c-muted);
 }
 
+.nt-message {
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+
+  color: var(--c-text-3);
+}
+
+.nt-meta {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.nt-chip {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 6px;
+  max-width: 100%;
+  padding: 5px 10px;
+
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-pill);
+
+  background: var(--c-surface);
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.35;
+
+  color: var(--c-text-2);
+}
+
+.nt-chip--reason {
+  border-color: transparent;
+
+  background: var(--c-danger-tint);
+
+  color: var(--c-danger);
+}
+
 .nt-arrow {
   flex-shrink: 0;
+  align-self: center;
 
   color: var(--c-border-strong);
 }
 
 @media (max-width: 600px) {
-  .nt-item {
-    align-items: flex-start;
-
-    gap: 12px;
-    padding: 12px 16px;
+  .nt-groups {
+    gap: 20px;
+    padding: 16px 12px;
   }
 
-  .nt-group-label {
-    padding-inline: 16px;
+  .nt-item {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .nt-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .nt-title {
+    font-size: var(--fs-sm);
+  }
+
+  /* The time drops under the title, so the title keeps the full width. */
+  .nt-time {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+
+  .nt-chip {
+    border-radius: var(--r-control);
   }
 
   .nt-arrow {

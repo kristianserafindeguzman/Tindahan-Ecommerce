@@ -1,15 +1,15 @@
 <template>
   <div class="notif-panel">
     <div class="notif-head">
-      <div class="notif-title">Notifications</div>
-      <q-btn flat dense no-caps label="Mark all as read" color="primary" class="notif-mark-all" :disable="unreadCount === 0" @click="markAllAsRead" />
+      <div class="notif-title">{{ t('title') }}</div>
+      <q-btn flat dense no-caps :label="t('markAllAsRead')" color="primary" class="notif-mark-all" :disable="unreadCount === 0" @click="markAllAsRead" />
     </div>
 
     <div class="notif-list">
       <div v-if="!notifications.length" class="notif-empty">
         <div class="notif-empty-icon"><q-icon name="o_notifications_none" size="24px" /></div>
-        <div class="notif-empty-title">You're all caught up</div>
-        <div class="notif-empty-text">{{ emptyText }}</div>
+        <div class="notif-empty-title">{{ t('emptyTitle') }}</div>
+        <div class="notif-empty-text">{{ emptyText || t('emptyText') }}</div>
       </div>
 
       <!-- Only the latest five; tapping one marks it read and, when it belongs to an order, opens that order. -->
@@ -26,11 +26,13 @@
           <q-icon :name="kindOf(notif).icon" size="18px" />
         </span>
         <span class="notif-body">
-          <span class="notif-item-title">{{ notif.title }}</span>
-          <span class="notif-item-message">{{ notif.message }}</span>
+          <span class="notif-item-title">{{ textOf(notif).title }}</span>
+          <span class="notif-item-message">{{ textOf(notif).message }}</span>
+          <span v-if="textOf(notif).pickup" class="notif-item-detail">{{ textOf(notif).pickupLabel }}: {{ textOf(notif).pickup }}</span>
+          <span v-if="textOf(notif).reason" class="notif-item-detail">{{ textOf(notif).reasonLabel }}: {{ textOf(notif).reason }}</span>
           <span class="notif-item-time">{{ timeAgo(notif.created_at) }}</span>
         </span>
-        <span v-if="!notif.is_read" class="notif-dot" aria-label="Unread" />
+        <span v-if="!notif.is_read" class="notif-dot" :aria-label="t('unread')" />
       </button>
     </div>
 
@@ -42,7 +44,7 @@
         no-caps
         color="primary"
         icon-right="o_chevron_right"
-        :label="notifications.length > LIMIT ? `View all ${notifications.length} notifications` : 'View all notifications'"
+        :label="notifications.length > LIMIT ? t('viewAllCount').replace('{count}', notifications.length) : t('viewAll')"
         class="notif-view-all"
         @click="router.push(viewAllPath)"
       />
@@ -53,7 +55,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useVendorNotifications, notificationKind } from '@/composables/useVendorNotifications'
+import { useVendorNotifications, notificationKind, notificationText } from '@/composables/useVendorNotifications'
+import { useLanguage } from '@/composables/useLanguage'
 
 const LIMIT = 5
 
@@ -63,8 +66,32 @@ const props = defineProps({
   kindOf: { type: Function, default: notificationKind },
   linkFor: { type: Function, default: notif => (notif.order_id ? `/vendor/orders/${notif.order_id}` : null) },
   viewAllPath: { type: String, default: '/vendor/notifications' },
-  emptyText: { type: String, default: 'New orders and cancellations will show up here.' }
+  emptyText: { type: String, default: '' }
 })
+
+const { t } = useLanguage({
+  en: {
+    title: 'Notifications',
+    markAllAsRead: 'Mark all as read',
+    emptyTitle: "You're all caught up",
+    emptyText: 'New orders and cancellations will show up here.',
+    unread: 'Unread',
+    viewAll: 'View all notifications',
+    viewAllCount: 'View all {count} notifications'
+  },
+  ph: {
+    title: 'Mga Notification',
+    markAllAsRead: 'I-mark lahat as read',
+    emptyTitle: 'Wala nang bagong notification',
+    emptyText: 'Dito lalabas ang mga bagong order at cancellations.',
+    unread: 'Hindi pa nababasa',
+    viewAll: 'Tingnan lahat ng notifications',
+    viewAllCount: 'Tingnan lahat ng {count} notifications'
+  }
+})
+
+// Vendor notifications arrive in English and are shown in the chosen language; the admin bell passes its own feed and keeps its text as sent.
+const textOf = notif => (props.feed ? { title: notif.title, message: notif.message } : notificationText(notif))
 
 const router = useRouter()
 const { notifications, unreadCount, markAsRead, markAllAsRead, timeAgo } = props.feed || useVendorNotifications()
@@ -228,6 +255,14 @@ const openNotification = (notif) => {
   line-height: 1.4;
 
   color: var(--c-text-3);
+}
+
+.notif-item-detail {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.4;
+
+  color: var(--c-text-2);
 }
 
 .notif-item-time {

@@ -997,6 +997,17 @@ const handleLogout = () => logout()
   color: var(--vnd-text) !important;
 }
 
+/* Notification cards sit inside a vp-card of the same navy, so they step up one shade to read as
+   separate cards, and unread ones keep their red tint instead of flattening to plain navy. */
+.vendor-layout--dark :deep(.nt-item) {
+  background-color: var(--vnd-surface-2) !important;
+}
+
+.vendor-layout--dark :deep(.nt-item--unread) {
+  background-color: rgba(255, 77, 77, 0.12) !important;
+  border-color: rgba(255, 77, 77, 0.32) !important;
+}
+
 .vendor-layout--dark :deep(.vp-card),
 .vendor-layout--dark :deep(.vp-search .q-field__control),
 .vendor-layout--dark :deep(.vp-chip) {
@@ -1158,20 +1169,27 @@ body.body--dark.vendor-dark-mode .pm-dropzone-icon {
 
 /* Elements that hardcode their own white surface on top of a (now dark) dialog
    card: the export-format tiles, the OTP boxes, the cancel-order reasons, the
-   sales calendar dropdown, the live-store preview's status pill, the product
+   sales calendar dropdown, the product
    dialogs' input fields and "no data" chart pill, and the photo-source rows
    (Camera/Gallery) in the View/Add Product dialogs. */
 body.body--dark.vendor-dark-mode .otp-box,
 body.body--dark.vendor-dark-mode .od-reason,
 body.body--dark.vendor-dark-mode .sr-calendar,
 body.body--dark.vendor-dark-mode .pl-format,
-body.body--dark.vendor-dark-mode .preview-status.store-status--closed,
 body.body--dark.vendor-dark-mode .pm-section .q-field__control,
 body.body--dark.vendor-dark-mode .pm-chart-empty,
 body.body--dark.vendor-dark-mode .pm-source {
   background-color: #16213a !important;
   border-color: #24314e !important;
   color: #eef2fb !important;
+}
+
+/* The live-store preview's "Closed now" pill: a red-tinted pill with a red edge, so it stands out on the
+   navy banner and on a store photo alike instead of blending in as grey-on-navy. */
+body.body--dark.vendor-dark-mode .preview-status.store-status--closed {
+  background-color: #3a1823 !important;
+  border: 1px solid rgba(255, 92, 92, 0.6) !important;
+  color: #ff8a8a !important;
 }
 
 body.body--dark.vendor-dark-mode .pl-format--active .pl-format-icon {
