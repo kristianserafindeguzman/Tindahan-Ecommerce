@@ -57,7 +57,7 @@ class OrderController extends Controller
 
             // Re-fetch lockForUpdate to ensure transaction integrity if needed,
             // though locking the inventory directly is the main priority.
-            
+
             foreach ($order->items as $item) {
                 $inventory = \App\Models\Inventory::where('inventory_id', $item->inventory_id)->lockForUpdate()->first();
                 if ($inventory) {
@@ -67,41 +67,94 @@ class OrderController extends Controller
             }
 
             $order->status = 'cancelled';
-            
+
             if ($request->has('cancellation_reason')) {
                 $order->cancellation_reason = $request->input('cancellation_reason');
             }
-            
+
             $order->save();
 
-            \Illuminate\Support\Facades\DB::commit();
+                \Illuminate\Support\Facades\DB::commit();
 
-            \App\Models\Notification::create([
-                'user_id' => $order->consumer_id,
-                'order_id' => $order->order_id,
-                'title' => 'Order Cancelled',
-                'message' => "You successfully cancelled your order #{$order->order_id}.",
-            ]);
+                \App\Models\Notification::create([
+                    'user_id' => $order->consumer_id,
+                    'order_id' => $order->order_id,
+                    'title' => 'Order Cancelled',
+                    'message' => "You successfully cancelled your order #{$order->order_id}.",
+                ]);
 
-            // The store owner hears about the cancellation too, and a failed notice never undoes the cancellation itself.
-            try {
-                $ownerId = optional($order->store)->owner_id;
-                if ($ownerId) {
-                    \App\Models\Notification::create([
-                        'user_id' => $ownerId,
-                        'order_id' => $order->order_id,
-                        'title' => 'Order Cancelled',
-                        'message' => "A customer cancelled order #{$order->order_id}.",
-                    ]);
+                // Send cancellation email to the consumer
+                try {
+                    $consumer = \App\Models\User::find($order->consumer_id);
+
+                    if ($consumer && $consumer->email) {
+
+                        $orderUrl = rtrim(config('services.frontend.url'), '/')
+                            . '/#/consumer/orders/'
+                            . $order->order_id;
+
+                        $consumer->notify(
+                            new \App\Notifications\SystemNotification(
+                                'Order Cancelled',
+                                "You successfully cancelled your order #{$order->order_id}.",
+                                $order->order_id,
+                                $orderUrl,
+                                'View Order'
+                            )
+                        );
+                    }
+
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error(
+                        'Consumer cancellation email failed: ' . $e->getMessage()
+                    );
                 }
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Vendor cancellation notification failed: ' . $e->getMessage());
-            }
 
-            return response()->json([
-                'message' => 'Order cancelled successfully',
-                'order' => $order
-            ]);
+
+                // The store owner hears about the cancellation too.
+                try {
+                    $ownerId = optional($order->store)->owner_id;
+
+                    if ($ownerId) {
+
+                        \App\Models\Notification::create([
+                            'user_id' => $ownerId,
+                            'order_id' => $order->order_id,
+                            'title' => 'Order Cancelled',
+                            'message' => "A customer cancelled order #{$order->order_id}.",
+                        ]);
+
+                        // Send cancellation email to the vendor
+                        $vendor = \App\Models\User::find($ownerId);
+
+                        if ($vendor && $vendor->email) {
+
+                            $orderUrl = rtrim(config('services.frontend.url'), '/')
+                                . '/#/vendor/orders/'
+                                . $order->order_id;
+
+                            $vendor->notify(
+                                new \App\Notifications\SystemNotification(
+                                    'Order Cancelled',
+                                    "A customer cancelled order #{$order->order_id}.",
+                                    $order->order_id,
+                                    $orderUrl,
+                                    'View Order'
+                                )
+                            );
+                        }
+                    }
+
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error(
+                        'Vendor cancellation notification failed: ' . $e->getMessage()
+                    );
+                }
+
+                return response()->json([
+                    'message' => 'Order cancelled successfully',
+                    'order' => $order
+                ]);
 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
@@ -129,7 +182,7 @@ class OrderController extends Controller
         $store = $order->store;
         // Get the vendor/owner of the store to display their contact info
         $owner = $store->owner;
-        
+
         $date = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.consumer-order-receipt', [

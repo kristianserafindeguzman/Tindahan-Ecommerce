@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
+use App\Models\User;
+use App\Notifications\SystemNotification;
+
 class CartController extends Controller
 {
     // A scheduled pickup can be up to this many days after today (today plus two, as the checkout
@@ -83,7 +86,7 @@ class CartController extends Controller
                 }
 
                 $price = $variantName && $variantPrice !== null ? $variantPrice : (float) ($inventory->price ?? 0);
-                
+
                 // Real-time available check for variants using the helper, else standard
                 if ($variantName && $variantQuantity !== null) {
                     $availableQuantity = $this->getVariantAvailableQuantity($inventory->inventory_id, $variantName, $variantQuantity);
@@ -93,8 +96,8 @@ class CartController extends Controller
 
                 // Treat as expired if expires_at is past
                 $isExpired = $item->expires_at && $item->expires_at < now();
-                
-                // If the item itself has expired, we show availableQuantity as 0 
+
+                // If the item itself has expired, we show availableQuantity as 0
                 // so the frontend blocks it until the cleanup command wipes it,
                 // or we just return the real available and let frontend block based on expiry.
                 // We'll return true availability but let frontend use `expiresAt`.
@@ -186,7 +189,7 @@ class CartController extends Controller
                 ]);
             } else {
                 $qtyToAdd = min($quantity, $availableStock);
-                
+
                 $inventory->reserved_quantity += $qtyToAdd;
                 $inventory->save();
 
@@ -475,7 +478,7 @@ class CartController extends Controller
                     throw new \Exception("Only {$stockOnHand} left of '{$productName}'. Please update your cart.");
                 }
 
-                // Note: We DO NOT increment $inventory->reserved_quantity here because it was already incremented when the item was added to the cart. 
+                // Note: We DO NOT increment $inventory->reserved_quantity here because it was already incremented when the item was added to the cart.
                 // The reservation transfers implicitly from cart to order.
 
                 $subtotal = $price * $cartItem->quantity;
@@ -527,31 +530,60 @@ class CartController extends Controller
 
             // The store owner hears about every new order, and a failed notice never undoes the order itself.
             try {
+
                 $ownerId = optional($order->store)->owner_id;
+
                 if ($ownerId) {
+
+                    $message = "Order #{$order->order_id} was placed for ₱"
+                        . number_format($totalAmount, 2) . '.'
+                        . ($scheduledPickupAt
+                            ? ' Pickup: ' . $scheduledPickupAt->format('D, M j, g:i A') . '.'
+                            : '');
+
+                    // Existing in-app notification
                     \App\Models\Notification::create([
                         'user_id' => $ownerId,
                         'order_id' => $order->order_id,
                         'title' => 'New Order',
-                        // A scheduled order says when it is for, so the store doesn't start on it as if it were ASAP.
-                        'message' => "Order #{$order->order_id} was placed for ₱" . number_format($totalAmount, 2) . '.'
-                            . ($scheduledPickupAt ? ' Pickup: ' . $scheduledPickupAt->format('D, M j, g:i A') . '.' : ''),
+                        'message' => $message,
                     ]);
+
+                    // External email notification
+                    $owner = \App\Models\User::find($ownerId);
+
+                    if ($owner && $owner->email) {
+
+                        $orderUrl = rtrim(config('services.frontend.url'), '/')
+                            . '/#/vendor/orders/'
+                            . $order->order_id;
+
+                        $owner->notify(new \App\Notifications\SystemNotification(
+                            'New Order',
+                            $message,
+                            $order->order_id,
+                            $orderUrl,
+                            'View Order'
+                        ));
+                    }
                 }
+
             } catch (\Exception $e) {
+
                 Log::error('New order notification failed: ' . $e->getMessage());
+
             }
 
-            return response()->json([
-                'message' => 'Order placed successfully.',
-                'order' => $order,
-            ], 201);
+                    return response()->json([
+                        'message' => 'Order placed successfully.',
+                        'order' => $order,
+                    ], 201);
 
-        } catch (\Exception $e) {
-            // Rollback everything if any item fails or exception occurs
-            DB::rollBack();
-            Log::error('Checkout failed: ' . $e->getMessage());
-            return response()->json(['message' => $e->getMessage()], 422);
+                } catch (\Exception $e) {
+                    // Rollback everything if any item fails or exception occurs
+                    DB::rollBack();
+                    Log::error('Checkout failed: ' . $e->getMessage());
+                    return response()->json(['message' => $e->getMessage()], 422);
+                }
+            }
         }
-    }
-}

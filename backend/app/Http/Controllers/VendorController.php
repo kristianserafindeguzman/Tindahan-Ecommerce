@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Http;
+
 use Illuminate\Http\Request;
 use App\Models\Inventory;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Http;
+// use Illuminate\Support\Facades\Http;
+
+use App\Models\DemandForecast;
 
 class VendorController extends Controller
 {
@@ -680,6 +684,14 @@ class VendorController extends Controller
     public function refreshDemandForecast(Request $request)
     {
         $store = auth()->user()->store;
+
+        if (!$store) {
+            return response()->json([
+                'message' => 'Vendor store not found.',
+                'has_forecast' => false,
+            ], 404);
+        }
+
         $storeId = $store->store_id;
 
         $mlApiUrl = rtrim(env('ML_API_URL'), '/');

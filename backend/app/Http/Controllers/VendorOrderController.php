@@ -116,7 +116,7 @@ class VendorOrderController extends Controller
             }
 
             $order->status = $newStatus;
-            
+
             if ($newStatus === 'cancelled' && $request->has('cancellation_reason')) {
                 $order->cancellation_reason = $request->input('cancellation_reason');
             }
@@ -124,7 +124,7 @@ class VendorOrderController extends Controller
             if ($newStatus === 'ready_for_pickup' && $oldStatus !== 'ready_for_pickup') {
                 $order->ready_for_pickup_at = now();
             }
-            
+
             $order->save();
 
             DB::commit();
@@ -136,7 +136,7 @@ class VendorOrderController extends Controller
                 'picked_up' => 'Order Picked Up',
                 'cancelled' => 'Order Cancelled'
             ];
-            
+
             $statusMessages = [
                 'preparing' => "Store '{$store->store_name}' is now preparing your order #{$order->order_id}.",
                 'ready_for_pickup' => "Your order #{$order->order_id} is ready for pickup at '{$store->store_name}'.",
@@ -145,12 +145,43 @@ class VendorOrderController extends Controller
             ];
 
             if (isset($statusTitles[$newStatus])) {
+
+                // Existing in-app notification
                 \App\Models\Notification::create([
                     'user_id' => $order->consumer_id,
                     'order_id' => $order->order_id,
                     'title' => $statusTitles[$newStatus],
                     'message' => $statusMessages[$newStatus],
                 ]);
+
+                // External email notification
+                try {
+                    $consumer = \App\Models\User::find($order->consumer_id);
+
+                    if ($consumer && $consumer->email) {
+
+                        $orderUrl = rtrim(config('services.frontend.url'), '/')
+                            . '/#/consumer/orders/'
+                            . $order->order_id;
+
+                        $consumer->notify(
+                            new \App\Notifications\SystemNotification(
+                                $statusTitles[$newStatus],
+                                $statusMessages[$newStatus],
+                                $order->order_id,
+                                $orderUrl,
+                                'View Order'
+                            )
+                        );
+                    }
+
+                } catch (\Throwable $e) {
+
+                    // Email failure should NOT prevent the order status from being updated.
+                    \Illuminate\Support\Facades\Log::error(
+                        'Consumer order email notification failed: ' . $e->getMessage()
+                    );
+                }
             }
 
             return response()->json([
