@@ -132,4 +132,51 @@ watch(() => props.categories.length, () => nextTick(updateEnds))
   border-color: var(--c-border);
   background: #ffffff;
 }
+
+@media (min-width: 601px) and (max-width: 1024px) {
+  .categories-row {
+    gap: 8px;
+  }
+
+  .categories-track {
+    gap: 10px;
+  }
+
+  .categories-nav {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+  }
+}
+
+@media (max-width: 600px) {
+  .categories-row {
+    gap: 6px;
+  }
+
+  .categories-track {
+    gap: 8px;
+    margin: -6px -3px;
+    padding: 6px 3px 10px;
+
+    /* A deliberate partial card hints that the row can also be swiped. */
+    scroll-snap-type: x proximity;
+  }
+
+  .categories-track :deep(.category-tile) {
+    scroll-snap-align: start;
+  }
+
+  .categories-nav {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+
+    border-radius: var(--r-md);
+  }
+
+  .categories-nav :deep(.q-icon) {
+    font-size: 18px;
+  }
+}
 </style>

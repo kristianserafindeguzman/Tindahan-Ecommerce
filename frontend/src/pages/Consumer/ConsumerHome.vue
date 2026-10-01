@@ -627,6 +627,29 @@ const visibleDiscoverProducts = computed(() =>
   }
 }
 
+@media (min-width: 601px) and (max-width: 1024px) {
+  .categories-skeleton-row {
+    gap: 10px;
+  }
+
+  .category-skeleton-tile {
+    gap: 8px;
+
+    width: 110px;
+    min-height: 120px;
+    padding: 16px 10px;
+  }
+
+  .category-skeleton-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .category-skeleton-label {
+    height: calc(var(--fs-md) * 1.25 * 2);
+  }
+}
+
 /* Keep the copy and logo balanced on smaller screens. */
 @media (max-width: 1023px) {
   /* Stays a row, because stacking the logo above the copy added its full height to the hero, 371px on a tablet. */
@@ -673,6 +696,29 @@ const visibleDiscoverProducts = computed(() =>
 @media (max-width: 600px) {
   .home-content {
     padding: 16px;
+  }
+
+  .categories-skeleton-row {
+    gap: 8px;
+  }
+
+  .category-skeleton-tile {
+    gap: 7px;
+
+    width: 92px;
+    min-height: 108px;
+    padding: 12px 8px;
+
+    border-radius: var(--r-md);
+  }
+
+  .category-skeleton-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .category-skeleton-label {
+    height: calc(var(--fs-sm) * 1.25 * 2);
   }
 
   /* Keep the logo prominent without crowding the mobile controls. */
