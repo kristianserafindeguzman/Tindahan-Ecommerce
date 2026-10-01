@@ -28,7 +28,7 @@
               class="login-input"
               reactive-rules
               :rules="[
-                val => !firstNameTouched || !!val || t('First name is required.'),
+                val => !firstNameTouched || !!val?.trim() || t('First name is required.'),
                 val => !firstNameTouched || nameRule(val)
               ]"
               @blur="firstNameTouched = true"
@@ -47,7 +47,7 @@
               class="login-input"
               reactive-rules
               :rules="[
-                val => !lastNameTouched || !!val || t('Last name is required.'),
+                val => !lastNameTouched || !!val?.trim() || t('Last name is required.'),
                 val => !lastNameTouched || nameRule(val)
               ]"
               @blur="lastNameTouched = true"
@@ -292,8 +292,8 @@ const confirmPasswordMessage = computed(() => {
 })
 
 const canRegister = computed(() =>
-  !!form.firstName && nameRule(form.firstName) === true &&
-  !!form.lastName && nameRule(form.lastName) === true &&
+  !!form.firstName.trim() && nameRule(form.firstName) === true &&
+  !!form.lastName.trim() && nameRule(form.lastName) === true &&
   !!form.birthday && birthdayRule(form.birthday) === true &&
   !!form.email && emailRule(form.email) === true &&
   !!form.phoneNumber && phoneRule(form.phoneNumber) === true &&
@@ -321,7 +321,7 @@ const handleRegister = async () => {
 
   try {
     const payload = {
-      full_name: `${form.firstName} ${form.lastName}`,
+      full_name: `${form.firstName.trim()} ${form.lastName.trim()}`,
       birthday: form.birthday,
       email: form.email,
       phone_number: form.phoneNumber,

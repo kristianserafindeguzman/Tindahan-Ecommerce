@@ -71,9 +71,6 @@
                   <q-btn flat round dense icon="o_edit" class="cat-action" :aria-label="`${t('editLabel')} ${categoryLabel(category.category_name)}`" @click="openEditModal(category)">
                     <q-tooltip>{{ t('editLabel') }}</q-tooltip>
                   </q-btn>
-                  <q-btn flat round dense icon="o_delete" class="cat-action cat-action--danger" :aria-label="`${t('deleteLabel')} ${categoryLabel(category.category_name)}`" @click="openDeleteModal(category)">
-                    <q-tooltip>{{ t('deleteLabel') }}</q-tooltip>
-                  </q-btn>
                 </td>
               </tr>
             </tbody>
@@ -92,7 +89,6 @@
             </div>
             <div class="cat-item-actions">
               <q-btn flat round dense icon="o_edit" class="cat-action" :aria-label="`${t('editLabel')} ${categoryLabel(category.category_name)}`" @click="openEditModal(category)" />
-              <q-btn flat round dense icon="o_delete" class="cat-action cat-action--danger" :aria-label="`${t('deleteLabel')} ${categoryLabel(category.category_name)}`" @click="openDeleteModal(category)" />
             </div>
           </div>
         </div>
@@ -188,87 +184,11 @@
       </q-card>
     </q-dialog>
 
-    <q-dialog v-model="showDeleteModal" persistent>
-      <q-card v-if="categoryToDelete" class="vp-dialog vp-dialog--wide">
-        <!-- A category that still has products can't be deleted, so the dialog shows what's in it and where to go to move them. -->
-        <template v-if="categoryToDelete.products_count > 0">
-          <div class="vp-dialog-head">
-            <span class="vp-dialog-icon cat-icon--warn"><q-icon name="o_inventory_2" size="22px" /></span>
-            <div>
-              <div class="vp-dialog-title">{{ t('moveProductsTitle') }}</div>
-              <div class="vp-dialog-text">
-                <strong>{{ categoryLabel(categoryToDelete.category_name) }}</strong> {{ t('moveProductsText1') }} {{ countLabel(categoryToDelete) }}.
-                {{ t('moveProductsText2') }}
-              </div>
-            </div>
-            <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
-          </div>
-
-          <div class="vp-dialog-body">
-            <div class="cat-preview">
-              <div class="cat-preview-label">{{ t('inThisCategory') }}</div>
-              <div v-if="blockedLoading" class="cat-preview-list">
-                <div v-for="n in Math.min(3, categoryToDelete.products_count)" :key="n" class="cat-preview-item">
-                  <q-skeleton type="rect" width="32px" height="32px" class="cat-preview-skeleton" />
-                  <q-skeleton type="text" width="55%" />
-                </div>
-              </div>
-              <ul v-else class="cat-preview-list">
-                <li v-for="product in blockedProducts" :key="product.inventory_id" class="cat-preview-item">
-                  <span class="cat-preview-img">
-                    <img v-if="product.image_url" :src="product.image_url" alt="" />
-                    <q-icon v-else name="o_image" size="16px" />
-                  </span>
-                  <span class="cat-preview-name">{{ product.product_name }}</span>
-                </li>
-                <li v-if="categoryToDelete.products_count > blockedProducts.length" class="cat-preview-more">
-                  {{ t('and') }} {{ categoryToDelete.products_count - blockedProducts.length }} {{ t('more') }}
-                </li>
-              </ul>
-            </div>
-            <div class="cat-tip">
-              <q-icon name="o_lightbulb" size="16px" />
-              <span>{{ t('deleteTip') }}</span>
-            </div>
-          </div>
-
-          <div class="vp-dialog-actions">
-            <q-btn v-close-popup outline no-caps color="primary" :label="t('closeBtn')" class="vp-dialog-btn" />
-            <q-btn unelevated no-caps color="primary" icon-right="o_arrow_forward" :label="t('viewProductsBtn')" class="vp-dialog-btn" @click="viewCategoryProducts" />
-          </div>
-        </template>
-
-        <!-- An empty category can go, after one clear confirmation that shows exactly which one. -->
-        <template v-else>
-          <div class="vp-dialog-head">
-            <span class="vp-dialog-icon vp-dialog-icon--danger"><q-icon name="o_delete" size="22px" /></span>
-            <div>
-              <div class="vp-dialog-title">{{ t('deleteModalTitle') }}</div>
-              <div class="vp-dialog-text">{{ t('deleteModalDesc') }}</div>
-            </div>
-          </div>
-          <div class="vp-dialog-body">
-            <div class="cat-locked">
-              <span class="cat-icon" :class="`cat-tone--${categoryKind(categoryToDelete.category_name).tone}`">
-                <q-icon :name="categoryKind(categoryToDelete.category_name).icon" size="18px" />
-              </span>
-              <span class="cat-locked-name">{{ categoryLabel(categoryToDelete.category_name) }}</span>
-              <span class="cat-count">{{ t('zeroProducts') }}</span>
-            </div>
-          </div>
-          <div class="vp-dialog-actions">
-            <q-btn v-close-popup outline no-caps color="primary" :label="t('cancelBtn')" class="vp-dialog-btn" :disable="submitting" />
-            <q-btn unelevated no-caps color="primary" icon="o_delete" :label="t('deleteCatBtn')" class="vp-dialog-btn" :loading="submitting" @click="confirmDelete" />
-          </div>
-        </template>
-      </q-card>
-    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
 import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
@@ -276,7 +196,6 @@ import { categoryStyle, useCategoryLabels } from '@/composables/useCategories'
 import { useLanguage } from '@/composables/useLanguage'
 
 const $q = useQuasar()
-const router = useRouter()
 
 // Language Dictionary for this page
 const categoriesDict = {
@@ -299,7 +218,6 @@ const categoriesDict = {
     product: 'product',
     products: 'products',
     editLabel: 'Edit',
-    deleteLabel: 'Delete',
     addModalTitle: 'Add category',
     addModalDesc: 'Group related products under one name.',
     catNameLabel: 'Category name',
@@ -315,27 +233,11 @@ const categoriesDict = {
     catNameHint: "Names can't be changed, to keep the catalog consistent.",
     descPlaceholderEdit: 'Add notes or examples for this category',
     saveChangesBtn: 'Save Changes',
-    moveProductsTitle: 'Move its products first',
-    moveProductsText1: 'still has',
-    moveProductsText2: "A category can only be deleted once it's empty.",
-    inThisCategory: 'In this category',
-    and: 'and',
-    more: 'more',
-    deleteTip: 'Open each product and pick another category, or delete the ones you no longer sell. Then come back to delete this category.',
-    closeBtn: 'Close',
-    viewProductsBtn: 'View Products',
-    deleteModalTitle: 'Delete this category?',
-    deleteModalDesc: "It has no products, so nothing else changes. This can't be undone.",
-    zeroProducts: '0 products',
-    deleteCatBtn: 'Delete Category',
     notifyAddSuccess: 'Category added.',
     notifyAddFail: 'Failed to add the category.',
     notifyExportFail: 'Failed to generate the category report.',
     notifyEditSuccess: 'Category updated.',
     notifyEditFail: 'Failed to update the category.',
-    notifyDeleteSuccess: 'was deleted.',
-    notifyDeleteFail: "Couldn't delete",
-    notifyDeleteFailTryAgain: 'Please try again.',
     notifyLoadFail: 'Failed to load the categories.'
   },
   ph: {
@@ -357,7 +259,6 @@ const categoriesDict = {
     product: 'paninda',
     products: 'mga paninda',
     editLabel: 'I-edit',
-    deleteLabel: 'Burahin',
     addModalTitle: 'Magdagdag ng kategorya',
     addModalDesc: 'I-grupo ang mga magkakaparehong paninda.',
     catNameLabel: 'Pangalan ng kategorya',
@@ -373,53 +274,31 @@ const categoriesDict = {
     catNameHint: 'Hindi pwedeng baguhin ang pangalan para pantay-pantay ang catalog.',
     descPlaceholderEdit: 'Magdagdag ng notes o halimbawa',
     saveChangesBtn: 'I-save ang Pagbabago',
-    moveProductsTitle: 'I-move muna ang mga paninda',
-    moveProductsText1: 'ay may',
-    moveProductsText2: 'Pwede lang burahin ang kategorya kapag wala na itong laman.',
-    inThisCategory: 'Nasa kategoryang ito',
-    and: 'at',
-    more: 'pa',
-    deleteTip: 'Buksan ang bawat paninda at ilipat sa ibang kategorya, o burahin ang mga hindi na tinitinda. Saka balikan ito para burahin ang kategorya.',
-    closeBtn: 'I-close',
-    viewProductsBtn: 'Tingnan ang Paninda',
-    deleteModalTitle: 'Burahin ang kategoryang ito?',
-    deleteModalDesc: 'Wala na itong laman kaya walang ibang magbabago. Hindi na ito maibabalik.',
-    zeroProducts: '0 paninda',
-    deleteCatBtn: 'Burahin',
     notifyAddSuccess: 'Naidagdag na ang kategorya.',
     notifyAddFail: 'Failed ma-add ang kategorya.',
     notifyExportFail: 'Failed ma-generate ang category report.',
     notifyEditSuccess: 'Na-update na ang kategorya.',
     notifyEditFail: 'Failed ma-update ang kategorya.',
-    notifyDeleteSuccess: 'ay nabura na.',
-    notifyDeleteFail: "Hindi mabura ang",
-    notifyDeleteFailTryAgain: 'Paki-try ulit.',
     notifyLoadFail: 'Failed ma-load ang mga kategorya.'
   }
 }
 
 const { t } = useLanguage(categoriesDict)
 
-// The placeholder rows take the same columns as the table: icon and name, product count, and the two actions.
+// The placeholder rows take the same columns as the table: icon and name, product count, and the edit action.
 const SKELETON_COLUMNS = [
   { type: 'thumb', lines: 2 },
   { width: '18%', type: 'pill', size: 92 },
-  { width: '14%', type: 'actions', align: 'right' }
+  { width: '14%', type: 'actions', align: 'right', count: 1 }
 ]
-const PREVIEW_LIMIT = 5
 
-const blockedProducts = ref([])
-const blockedLoading = ref(false)
 const search = ref('')
 const loading = ref(true)
 const categories = ref([])
 const showAddModal = ref(false)
 const showEditModal = ref(false)
-const showDeleteModal = ref(false)
 const submitting = ref(false)
 const isExporting = ref(false)
-
-const categoryToDelete = ref(null)
 
 const categoryForm = ref({ category_name: '', description: '' })
 const editCategoryForm = ref({ category_id: null, category_name: '', description: '' })
@@ -535,49 +414,6 @@ const submitEditCategory = async () => {
     await fetchCategories()
   } catch (error) {
     $q.notify({ type: 'negative', message: error.response?.data?.message || t('notifyEditFail'), position: 'top-right' })
-  } finally {
-    submitting.value = false
-  }
-}
-
-// A category with products opens with a preview of them, loaded as the dialog appears.
-const openDeleteModal = async category => {
-  categoryToDelete.value = category
-  blockedProducts.value = []
-  showDeleteModal.value = true
-  if (Number(category.products_count) > 0) {
-    blockedLoading.value = true
-    // A slow answer after another category's dialog has opened is dropped, so the preview never lists the wrong products.
-    const stillOpen = () => categoryToDelete.value?.category_id === category.category_id
-    try {
-      const res = await api.get('/vendor/products')
-      if (stillOpen()) blockedProducts.value = (res.data || []).filter(p => Number(p.category_id) === Number(category.category_id)).slice(0, PREVIEW_LIMIT)
-    } catch (error) {
-      console.error('Failed to load the category\'s products', error)
-    } finally {
-      if (stillOpen()) blockedLoading.value = false
-    }
-  }
-}
-
-// Opens the product list already filtered to this category, where its products can be moved.
-const viewCategoryProducts = () => {
-  const id = categoryToDelete.value?.category_id
-  showDeleteModal.value = false
-  router.push({ path: '/vendor/products/list', query: { category: id } })
-}
-
-const confirmDelete = async () => {
-  const name = categoryLabel(categoryToDelete.value.category_name)
-  submitting.value = true
-  try {
-    await api.delete(`/categories/${categoryToDelete.value.category_id}`)
-    $q.notify({ type: 'positive', icon: 'o_check_circle', message: `“${name}” ${t('notifyDeleteSuccess')}`, position: 'top-right' })
-    showDeleteModal.value = false
-    categoryToDelete.value = null
-    await fetchCategories()
-  } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || `${t('notifyDeleteFail')} “${name}”. ${t('notifyDeleteFailTryAgain')}`, position: 'top-right' })
   } finally {
     submitting.value = false
   }
@@ -703,10 +539,6 @@ onMounted(fetchCategories)
   color: var(--c-text);
 }
 
-.cat-action--danger:hover {
-  color: var(--c-danger);
-}
-
 .cat-table .col-count { width: 18%; }
 .cat-table .col-act { width: 14%; }
 
@@ -777,127 +609,5 @@ onMounted(fetchCategories)
 
 .cat-textarea :deep(textarea) {
   min-height: 72px;
-}
-
-/* DELETE — the warning tile, the preview of what's inside, and a short tip. */
-
-.cat-icon--warn {
-  background: var(--c-warning-tint);
-  color: var(--c-warning);
-}
-
-.cat-preview {
-  overflow: hidden;
-
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-control);
-}
-
-.cat-preview-label {
-  padding: 8px 12px;
-
-  border-bottom: 1px solid var(--c-hairline);
-
-  background: var(--c-surface-2);
-
-  font-size: var(--fs-2xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-
-  color: var(--c-muted);
-}
-
-.cat-preview-list {
-  margin: 0;
-  padding: 4px 12px;
-
-  list-style: none;
-}
-
-.cat-preview-item {
-  display: flex;
-  align-items: center;
-
-  gap: 10px;
-  padding: 8px 0;
-
-  border-bottom: 1px solid var(--c-hairline);
-}
-
-.cat-preview-item:last-child {
-  border-bottom: none;
-}
-
-.cat-preview-img {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  width: 32px;
-  height: 32px;
-  overflow: hidden;
-
-  border-radius: var(--r-control);
-
-  background: var(--c-surface);
-  color: var(--c-muted);
-}
-
-.cat-preview-img img {
-  width: 100%;
-  height: 100%;
-
-  object-fit: cover;
-}
-
-.cat-preview-skeleton {
-  border-radius: var(--r-control);
-}
-
-.cat-preview-name {
-  min-width: 0;
-  overflow: hidden;
-
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-
-  color: var(--c-text);
-}
-
-.cat-preview-more {
-  padding: 8px 0 6px;
-
-  font-size: var(--fs-xs);
-  font-weight: 600;
-
-  color: var(--c-muted);
-}
-
-.cat-tip {
-  display: flex;
-  align-items: flex-start;
-
-  gap: 8px;
-  padding: 10px 12px;
-
-  border-radius: var(--r-control);
-
-  background: var(--c-info-wash);
-
-  font-size: var(--fs-xs);
-  line-height: 1.5;
-
-  color: var(--c-text-3);
-}
-
-.cat-tip .q-icon {
-  flex-shrink: 0;
-  margin-top: 1px;
-
-  color: var(--c-info);
 }
 </style>
