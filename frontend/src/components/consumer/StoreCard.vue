@@ -25,9 +25,14 @@
       <div class="store-card-hours" :class="{ 'store-card-hours-closed': !store.isOpen }">
         {{ storeStatus(store) }}
       </div>
-      <div v-if="storeCardDistanceText" class="store-card-distance">
+      <!-- Same split as ProductCard: travel on its own line, so the address isn't what gets squeezed out. -->
+      <div v-if="hasDistance" class="store-card-distance store-card-distance--travel">
+        <q-icon :name="travelIcon(store.distance_meters)" size="13px" />
+        <span class="store-card-distance-text">{{ travelText }}</span>
+      </div>
+      <div v-if="store.address" class="store-card-distance">
         <q-icon name="o_location_on" size="13px" />
-        <span class="store-card-distance-text">{{ storeCardDistanceText }}</span>
+        <span class="store-card-distance-text">{{ store.address }}</span>
       </div>
     </q-card-section>
   </q-card>
@@ -39,7 +44,7 @@ import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { splitHighlightParts } from '@/utils/textHighlight'
-import { formatDistance } from '@/utils/distance'
+import { formatDistance, formatTravelTime, travelIcon } from '@/utils/distance'
 
 const { t, storeStatus } = useConsumerLanguage()
 
@@ -59,12 +64,11 @@ const props = defineProps({
 const nameParts = computed(() => splitHighlightParts(props.store.name, props.highlightQuery))
 const imageFailed = ref(false)
 
-const storeCardDistanceText = computed(() => {
-  const parts = []
-  if (props.store.distance_meters != null) parts.push(formatDistance(props.store.distance_meters))
-  if (props.store.address) parts.push(props.store.address)
-  return parts.join(' • ')
-})
+const hasDistance = computed(() => props.store.distance_meters != null)
+
+const travelText = computed(() =>
+  `${formatTravelTime(props.store.distance_meters)} · ${formatDistance(props.store.distance_meters)}`
+)
 </script>
 
 <style scoped>
@@ -224,6 +228,12 @@ const storeCardDistanceText = computed(() => {
   color: var(--c-muted);
 }
 
+/* Travel and address sit under one divider, not one each. */
+.store-card-distance + .store-card-distance {
+  padding-top: 3px;
+  border-top: none;
+}
+
 .store-card-distance .q-icon {
   flex-shrink: 0;
 }
@@ -235,5 +245,18 @@ const storeCardDistanceText = computed(() => {
 
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* The travel line may wrap at its " · " on a narrow card, so "away" is never the part cut off. */
+.store-card-distance--travel {
+  align-items: flex-start;
+}
+
+.store-card-distance--travel .q-icon {
+  margin-top: 2px;
+}
+
+.store-card-distance--travel .store-card-distance-text {
+  white-space: normal;
 }
 </style>

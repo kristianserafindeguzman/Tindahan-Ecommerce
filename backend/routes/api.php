@@ -48,9 +48,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     // ----- Global Category Routes -----
-    Route::post('/categories', [CategoryController::class, 'store']);
-    Route::patch('/categories/{id}', [CategoryController::class, 'update']);
-    Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
+    // Categories are shared by every store: vendors and admins can add and describe them, consumers can't,
+    // and only an admin may delete one.
+    Route::post('/categories', [CategoryController::class, 'store'])->middleware('role:Admin,Vendor');
+    Route::patch('/categories/{id}', [CategoryController::class, 'update'])->middleware('role:Admin,Vendor');
+    Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->middleware('role:Admin');
 
     // ----- Admin Routes -----
     Route::middleware('role:Admin')->prefix('admin')->group(function () {

@@ -71,7 +71,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Delete a category that no product uses.
+     * Delete a category that no product uses. Admin only (see routes/api.php).
      *
      * DELETE /api/categories/{id}
      */

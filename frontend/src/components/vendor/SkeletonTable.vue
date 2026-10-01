@@ -24,8 +24,7 @@
               <q-skeleton v-else-if="col.type === 'pill'" type="rect" height="22px" :width="`${col.size || 72}px`" class="sk-pill" />
               <q-skeleton v-else-if="col.type === 'icon'" type="circle" size="26px" />
               <template v-else-if="col.type === 'actions'">
-                <q-skeleton type="circle" size="28px" />
-                <q-skeleton type="circle" size="28px" />
+                <q-skeleton v-for="n in (col.count || 2)" :key="n" type="circle" size="28px" />
               </template>
               <q-skeleton v-else type="text" :width="varied(row, i, 45, 80)" />
             </div>

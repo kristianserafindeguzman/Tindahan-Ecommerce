@@ -21,17 +21,17 @@
 
         <div class="support-row">
           <q-icon name="o_location_on" class="support-icon" />
-          <span>3rd Floor, City Hall of Mandaluyong, Maysilo Circle, Plainview, Mandaluyong City</span>
+          <span>MMPC Coop Bldg., Mandaluyong City Hall Complex, Maysilo Circle, Boni Ave., Plainview, Mandaluyong City, Metro Manila</span>
         </div>
 
         <div class="support-row">
           <q-icon name="o_phone" class="support-icon" />
-          <span>(02) 8532-4846</span>
+          <span>(02) 8532-6388</span>
         </div>
 
         <div class="support-row">
           <q-icon name="o_email" class="support-icon" />
-          <span>mandaluyong@dti.gov.ph</span>
+          <span>mandaluyongmpc93@gmail.com</span>
         </div>
       </q-card-section>
 
