@@ -29,7 +29,7 @@
             <template v-if="store.distance_meters != null">
               <span class="store-banner-meta-item">
                 <q-icon :name="travelIcon(store.distance_meters)" size="14px" />
-                {{ formatTravelTime(store.distance_meters) }} · {{ formatDistance(store.distance_meters) }}
+                {{ formatDistance(store.distance_meters) }} · {{ formatTravelTime(store.distance_meters) }}
               </span>
               <span class="store-banner-meta-sep">•</span>
             </template>

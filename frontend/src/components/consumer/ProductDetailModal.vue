@@ -190,12 +190,12 @@ const store = computed(() =>
   props.product ? stores.value.find((s) => s.id === props.product.storeId) || null : null
 )
 
-// "45 min ride · 11.4 km away · 456 Quezon Avenue, Quezon City"
+// "430 m away · 7 min walk · 456 Quezon Avenue, Quezon City"
 const storeMetaText = computed(() => {
   if (!store.value) return ''
   const parts = []
   if (store.value.distance_meters != null) {
-    parts.push(formatTravelTime(store.value.distance_meters), formatDistance(store.value.distance_meters))
+    parts.push(formatDistance(store.value.distance_meters), formatTravelTime(store.value.distance_meters))
   }
   if (store.value.address) parts.push(store.value.address)
   return parts.join(' · ')
