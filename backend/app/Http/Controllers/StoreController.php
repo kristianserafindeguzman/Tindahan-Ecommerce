@@ -36,6 +36,8 @@ class StoreController extends Controller
                     'isOpen' => $scheduleInfo['isOpen'],
                     'closesAt' => $scheduleInfo['closesAt'],
                     'scheduleStatusText' => $scheduleInfo['statusText'],
+                    // The week's hours, so checkout can offer only pickup times the store is open for.
+                    'hours' => app(\App\Services\StoreHoursService::class)->weeklyHours($store),
                     'distance_meters' => $distance,
                     'latitude' => $store->latitude,
                     'longitude' => $store->longitude,

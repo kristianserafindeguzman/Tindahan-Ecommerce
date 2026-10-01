@@ -20,10 +20,10 @@ class NotificationController extends Controller
         $notification = \App\Models\Notification::where('user_id', $request->user()->user_id)
             ->where('notification_id', $id)
             ->firstOrFail();
-        
+
         $notification->is_read = true;
         $notification->save();
-        
+
         return response()->json(['message' => 'Marked as read']);
     }
 
@@ -32,7 +32,7 @@ class NotificationController extends Controller
         \App\Models\Notification::where('user_id', $request->user()->user_id)
             ->where('is_read', false)
             ->update(['is_read' => true]);
-            
+
         return response()->json(['message' => 'All marked as read']);
     }
 }

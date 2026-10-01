@@ -46,4 +46,12 @@ return [
     'fake_code' => env('SEMAPHORE_FAKE_CODE'),
     ],
 
+    'tindahan' => [
+        'logo_url' => env('TINDahan_LOGO_URL'),
+    ],
+
+    'frontend' => [
+        'url' => env('FRONTEND_URL'),
+    ],
+
 ];
