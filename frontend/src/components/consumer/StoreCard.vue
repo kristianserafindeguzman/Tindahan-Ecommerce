@@ -67,7 +67,7 @@ const imageFailed = ref(false)
 const hasDistance = computed(() => props.store.distance_meters != null)
 
 const travelText = computed(() =>
-  `${formatTravelTime(props.store.distance_meters)} · ${formatDistance(props.store.distance_meters)}`
+  `${formatDistance(props.store.distance_meters)} · ${formatTravelTime(props.store.distance_meters)}`
 )
 </script>
 
