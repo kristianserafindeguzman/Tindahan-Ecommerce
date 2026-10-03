@@ -1,17 +1,13 @@
 // Distance formatting and measurement, extracted from eight consumer files that each carried an identical copy.
-import { useConsumerLanguage } from '../composables/useConsumerLanguage.js'
-
-const { t } = useConsumerLanguage()
-
-// Non-breaking spaces keep "7 m ang layo" on one line when a long address beside it wraps.
+// Non-breaking spaces keep "7 m" on one line when a long address beside it wraps.
 const keepTogether = (text) => text.replace(/ /g, ' ')
 
-/** Metres to a short string such as 820 m away or 1.4 km away (in the shopper's language), or an empty string for null. */
+/** Metres to a short string such as 820 m or 1.4 km, or an empty string for null. */
 export function formatDistance(meters) {
   if (meters == null) return ''
   const rounded = Math.round(meters)
-  if (rounded < 1000) return keepTogether(t('{distance} m away', { distance: rounded }))
-  return keepTogether(t('{distance} km away', { distance: (meters / 1000).toFixed(1) }))
+  if (rounded < 1000) return keepTogether(`${rounded} m`)
+  return keepTogether(`${(meters / 1000).toFixed(1)} km`)
 }
 
 // Travel-time estimate. There is no routing service, only straight-line distance, so these are deliberately plain assumptions.

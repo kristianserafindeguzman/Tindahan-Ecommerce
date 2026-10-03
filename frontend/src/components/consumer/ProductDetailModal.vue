@@ -190,7 +190,7 @@ const store = computed(() =>
   props.product ? stores.value.find((s) => s.id === props.product.storeId) || null : null
 )
 
-// "430 m away · 7 min walk · 456 Quezon Avenue, Quezon City"
+// "430 m · 7 min walk · 456 Quezon Avenue, Quezon City"
 const storeMetaText = computed(() => {
   if (!store.value) return ''
   const parts = []

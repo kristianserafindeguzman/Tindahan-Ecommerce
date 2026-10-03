@@ -74,7 +74,7 @@ const imageFailed = ref(false)
 
 const hasDistance = computed(() => props.product.distance_meters != null)
 
-// Distance first: "498 m away · 7 min walk".
+// Distance first: "498 m · 7 min walk".
 const travelText = computed(() =>
   `${formatDistance(props.product.distance_meters)} · ${formatTravelTime(props.product.distance_meters)}`
 )
