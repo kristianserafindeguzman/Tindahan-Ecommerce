@@ -458,7 +458,11 @@ class VendorController extends Controller
             $categories = \App\Models\Category::withCount(['products' => function ($query) use ($store) {
                 $query->where('store_id', $store->store_id)
                       ->where('status', '!=', 'archived');
-            }])->orderBy('category_name')->get();
+            }])
+            ->where(function ($query) use ($store) {
+                $query->whereNull('store_id')->orWhere('store_id', $store->store_id);
+            })
+            ->orderBy('category_name')->get();
 
             $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
 

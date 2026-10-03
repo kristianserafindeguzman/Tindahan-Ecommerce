@@ -379,7 +379,7 @@ const applyCrop = async () => {
 
 const fetchCategories = async () => {
   try {
-    const res = await api.get('/categories')
+    const res = await api.get('/vendor/products/categories')
     categories.value = res.data
   } catch (err) {
     console.error(err)

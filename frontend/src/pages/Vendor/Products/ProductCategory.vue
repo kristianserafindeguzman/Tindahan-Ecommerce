@@ -68,8 +68,8 @@
                 </td>
                 <td><span class="cat-count"><q-icon name="o_inventory_2" size="14px" /> {{ countLabel(category) }}</span></td>
                 <td class="text-right">
-                  <q-btn flat round dense icon="o_edit" class="cat-action" :aria-label="`${t('editLabel')} ${categoryLabel(category.category_name)}`" @click="openEditModal(category)">
-                    <q-tooltip>{{ t('editLabel') }}</q-tooltip>
+                  <q-btn flat round dense icon="o_visibility" class="cat-action" :aria-label="`${t('viewLabel')} ${categoryLabel(category.category_name)}`" @click="openViewModal(category)">
+                    <q-tooltip>{{ t('viewLabel') }}</q-tooltip>
                   </q-btn>
                 </td>
               </tr>
@@ -88,13 +88,48 @@
               <div v-if="category.description" class="cat-desc cat-desc--wrap">{{ categoryDescription(category) }}</div>
             </div>
             <div class="cat-item-actions">
-              <q-btn flat round dense icon="o_edit" class="cat-action" :aria-label="`${t('editLabel')} ${categoryLabel(category.category_name)}`" @click="openEditModal(category)" />
+              <q-btn flat round dense icon="o_visibility" class="cat-action" :aria-label="`${t('viewLabel')} ${categoryLabel(category.category_name)}`" @click="openViewModal(category)" />
             </div>
           </div>
         </div>
       </div>
 
     </div>
+
+    <q-dialog v-model="showViewModal">
+      <q-card class="vp-dialog" style="width: 100%; max-width: 540px;">
+        <div class="vp-dialog-head" style="align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--c-border);">
+          <span class="vp-dialog-icon" :class="`cat-tone--${categoryKind(viewCategory.category_name).tone}`">
+            <q-icon :name="categoryKind(viewCategory.category_name).icon" size="24px" />
+          </span>
+          <div>
+            <div class="vp-dialog-title" style="font-size: var(--fs-lg);">{{ t('viewModalTitle') }}</div>
+          </div>
+        </div>
+        
+        <div class="vp-dialog-body" style="padding: 24px 24px 8px; gap: 20px;">
+          <div class="view-modal-section">
+            <div class="view-modal-label">{{ t('catNameLabel') }}</div>
+            <div class="view-modal-value view-modal-value--lg">{{ categoryLabel(viewCategory.category_name) }}</div>
+          </div>
+
+          <div class="view-modal-section">
+            <div class="view-modal-label">{{ t('descLabel') }}</div>
+            <div class="view-modal-value" :class="{ 'cat-desc--empty': !viewCategory.description }">
+              {{ categoryDescription(viewCategory) || t('noDesc') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="vp-dialog-actions" style="display: flex; flex-wrap: wrap; gap: 12px;">
+          <q-btn v-close-popup outline no-caps color="primary" :label="t('closeBtn')" class="vp-dialog-btn col-grow col-sm-auto" style="margin-right: auto;" />
+          <template v-if="viewCategory.store_id">
+            <q-btn unelevated no-caps color="primary" icon="o_edit" :label="t('editLabel')" class="vp-dialog-btn col-grow col-sm-auto" @click="openEditModalFromView(viewCategory)" />
+            <q-btn outline no-caps color="negative" icon="o_delete" :label="t('deleteLabel')" class="vp-dialog-btn view-modal-delete-btn col-grow col-sm-auto" @click="confirmDeleteFromView(viewCategory)" />
+          </template>
+        </div>
+      </q-card>
+    </q-dialog>
 
     <q-dialog v-model="showAddModal" persistent>
       <q-card class="vp-dialog vp-dialog--wide">
@@ -238,7 +273,14 @@ const categoriesDict = {
     notifyExportFail: 'Failed to generate the category report.',
     notifyEditSuccess: 'Category updated.',
     notifyEditFail: 'Failed to update the category.',
-    notifyLoadFail: 'Failed to load the categories.'
+    notifyLoadFail: 'Failed to load the categories.',
+    deleteLabel: 'Delete',
+    deleteConfirmTitle: 'Delete Category',
+    deleteConfirmDesc: 'Are you sure you want to delete this category?',
+    notifyDeleteSuccess: 'Category deleted.',
+    viewLabel: 'View',
+    viewModalTitle: 'Category Details',
+    closeBtn: 'Close'
   },
   ph: {
     title: 'Mga Kategorya',
@@ -279,7 +321,14 @@ const categoriesDict = {
     notifyExportFail: 'Failed ma-generate ang category report.',
     notifyEditSuccess: 'Na-update na ang kategorya.',
     notifyEditFail: 'Failed ma-update ang kategorya.',
-    notifyLoadFail: 'Failed ma-load ang mga kategorya.'
+    notifyLoadFail: 'Failed ma-load ang mga kategorya.',
+    deleteLabel: 'I-delete',
+    deleteConfirmTitle: 'I-delete ang Kategorya',
+    deleteConfirmDesc: 'Sigurado ka bang gusto mong i-delete ang kategoryang ito?',
+    notifyDeleteSuccess: 'Na-delete na ang kategorya.',
+    viewLabel: 'Tingnan',
+    viewModalTitle: 'Detalye ng Kategorya',
+    closeBtn: 'I-close'
   }
 }
 
@@ -297,9 +346,11 @@ const loading = ref(true)
 const categories = ref([])
 const showAddModal = ref(false)
 const showEditModal = ref(false)
+const showViewModal = ref(false)
 const submitting = ref(false)
 const isExporting = ref(false)
 
+const viewCategory = ref({})
 const categoryForm = ref({ category_name: '', description: '' })
 const editCategoryForm = ref({ category_id: null, category_name: '', description: '' })
 
@@ -416,6 +467,55 @@ const submitEditCategory = async () => {
     $q.notify({ type: 'negative', message: error.response?.data?.message || t('notifyEditFail'), position: 'top-right' })
   } finally {
     submitting.value = false
+  }
+}
+
+const confirmDelete = category => {
+  $q.dialog({
+    title: t('deleteConfirmTitle'),
+    message: t('deleteConfirmDesc'),
+    persistent: true,
+    ok: {
+      color: 'negative',
+      label: t('deleteLabel'),
+      unelevated: true,
+      noCaps: true
+    },
+    cancel: {
+      color: 'primary',
+      label: t('cancelBtn'),
+      outline: true,
+      noCaps: true
+    }
+  }).onOk(() => {
+    deleteCategory(category)
+  })
+}
+
+const openViewModal = category => {
+  viewCategory.value = category
+  showViewModal.value = true
+}
+
+const openEditModalFromView = category => {
+  showViewModal.value = false
+  openEditModal(category)
+}
+
+const confirmDeleteFromView = category => {
+  showViewModal.value = false
+  confirmDelete(category)
+}
+
+const deleteCategory = async category => {
+  try {
+    loading.value = true
+    await api.delete(`/categories/${category.category_id}`)
+    $q.notify({ type: 'positive', message: t('notifyDeleteSuccess'), position: 'top-right' })
+    await fetchCategories()
+  } catch (error) {
+    loading.value = false
+    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to delete.', position: 'top-right' })
   }
 }
 
@@ -609,5 +709,36 @@ onMounted(fetchCategories)
 
 .cat-textarea :deep(textarea) {
   min-height: 72px;
+}
+
+.view-modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.view-modal-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--c-muted);
+}
+
+.view-modal-value {
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--c-text-2);
+  margin: 0;
+}
+
+.view-modal-value--lg {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.view-modal-delete-btn {
+  border-color: rgba(220, 53, 69, 0.4) !important;
 }
 </style>

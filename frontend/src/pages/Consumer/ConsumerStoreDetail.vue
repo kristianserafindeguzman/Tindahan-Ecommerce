@@ -275,8 +275,13 @@ onMounted(() => {
 
 // Only categories this store actually carries, not the full catalog list.
 const VISIBLE_CATEGORIES = computed(() => {
-  const storeCategoryLabels = new Set(storeProducts.value.map((product) => product.category))
-  return categories.value.filter((category) => storeCategoryLabels.has(category.label))
+  const map = new Map()
+  for (const product of storeProducts.value) {
+    if (product.category && !map.has(product.category)) {
+      map.set(product.category, { id: product.category, label: product.category, value: product.category })
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label))
 })
 
 const CATEGORY_SELECT_OPTIONS = computed(() => [
