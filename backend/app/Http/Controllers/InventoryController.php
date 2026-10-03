@@ -52,7 +52,13 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'product_name'    => 'required|string|max:100',
             'description'     => 'nullable|string',
-            'category_id'     => 'required|integer|exists:categories,category_id',
+            'category_id'     => [
+                'required',
+                'integer',
+                \Illuminate\Validation\Rule::exists('categories', 'category_id')->where(function ($query) use ($store) {
+                    $query->whereNull('store_id')->orWhere('store_id', $store->store_id);
+                }),
+            ],
             'product_picture' => 'nullable|image|max:10240',
             // Base price/qty for single item
             'price'           => 'nullable|numeric|min:0',
@@ -131,7 +137,13 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'product_name'    => 'sometimes|string|max:100',
             'description'     => 'nullable|string',
-            'category_id'     => 'sometimes|integer|exists:categories,category_id',
+            'category_id'     => [
+                'sometimes',
+                'integer',
+                \Illuminate\Validation\Rule::exists('categories', 'category_id')->where(function ($query) use ($store) {
+                    $query->whereNull('store_id')->orWhere('store_id', $store->store_id);
+                }),
+            ],
             'product_picture' => 'nullable|image|max:10240',
             'price'           => 'nullable|numeric|min:0',
             'stock_quantity'  => 'nullable|integer|min:0',
@@ -247,7 +259,11 @@ class InventoryController extends Controller
         $categories = \App\Models\Category::withCount(['products' => function ($query) use ($store) {
             $query->where('store_id', $store->store_id)
                   ->where('status', '!=', 'archived');
-        }])->orderBy('category_name')->get();
+        }])
+        ->where(function ($query) use ($store) {
+            $query->whereNull('store_id')->orWhere('store_id', $store->store_id);
+        })
+        ->orderBy('category_name')->get();
 
         return response()->json($categories);
     }

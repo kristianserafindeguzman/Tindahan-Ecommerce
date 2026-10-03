@@ -52,7 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // and only an admin may delete one.
     Route::post('/categories', [CategoryController::class, 'store'])->middleware('role:Admin,Vendor');
     Route::patch('/categories/{id}', [CategoryController::class, 'update'])->middleware('role:Admin,Vendor');
-    Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->middleware('role:Admin');
+    Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->middleware('role:Admin,Vendor');
 
     // ----- Admin Routes -----
     Route::middleware('role:Admin')->prefix('admin')->group(function () {

@@ -16,6 +16,7 @@ class CategoryController extends Controller
     {
         $categories = DB::table('categories')
             ->select('category_id', 'category_name', 'description')
+            ->whereNull('store_id')
             ->orderBy('category_name')
             ->get();
 
@@ -29,12 +30,23 @@ class CategoryController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
+        $storeId = $user->role === 'Vendor' ? $user->store->store_id : null;
+
         $request->validate([
-            'category_name' => 'required|string|max:50|unique:categories,category_name',
+            'category_name' => [
+                'required',
+                'string',
+                'max:50',
+                \Illuminate\Validation\Rule::unique('categories', 'category_name')->where(function ($query) use ($storeId) {
+                    $query->whereNull('store_id')->orWhere('store_id', $storeId);
+                })
+            ],
             'description' => 'nullable|string|max:255',
         ]);
 
         $category = \App\Models\Category::create([
+            'store_id' => $storeId,
             'category_name' => $request->category_name,
             'description' => $request->description,
         ]);
@@ -53,6 +65,17 @@ class CategoryController extends Controller
     public function update(Request $request, $id)
     {
         $category = \App\Models\Category::findOrFail($id);
+        $user = $request->user();
+
+        if ($user->role === 'Vendor') {
+            if ($category->store_id !== $user->store->store_id) {
+                return response()->json(['message' => 'Unauthorized to edit this category.'], 403);
+            }
+        } elseif ($user->role === 'Admin') {
+            if ($category->store_id !== null) {
+                return response()->json(['message' => 'Admins can only edit global categories.'], 403);
+            }
+        }
 
         $validated = $request->validate([
             // Same 255 limit as store(), which the varchar(255) column enforces either way.
@@ -75,9 +98,20 @@ class CategoryController extends Controller
      *
      * DELETE /api/categories/{id}
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $category = \App\Models\Category::findOrFail($id);
+        $user = $request->user();
+
+        if ($user->role === 'Vendor') {
+            if ($category->store_id !== $user->store->store_id) {
+                return response()->json(['message' => 'Unauthorized to delete this category.'], 403);
+            }
+        } elseif ($user->role === 'Admin') {
+            if ($category->store_id !== null) {
+                return response()->json(['message' => 'Admins can only delete global categories.'], 403);
+            }
+        }
 
         // inventory.category_id cascades on delete, so deleting a category that is still in use
         // would delete those products outright. The count deliberately spans every store and
