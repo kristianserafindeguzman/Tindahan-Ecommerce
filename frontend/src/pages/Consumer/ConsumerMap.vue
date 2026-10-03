@@ -7,7 +7,7 @@
   >
     <q-card class="map-dialog-card">
 
-      <div class="map-container">
+      <div class="map-container" :class="{ 'has-store-popup': storePopupOpen }">
         <div ref="mapEl" class="leaflet-map" />
 
         <div class="map-address-overlay">
@@ -62,7 +62,7 @@
               <div class="sidebar-store-name">{{ store.name }}</div>
               <div v-if="store.distance_meters != null" class="sidebar-store-distance">
                 <q-icon name="o_directions_walk" size="12px" />
-                {{ formatDistance(store.distance_meters) }}
+                <span>{{ formatTravelTime(store.distance_meters) }} · {{ formatDistance(store.distance_meters) }}</span>
               </div>
             </div>
           </div>
@@ -81,12 +81,12 @@ import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useStores } from '@/composables/useStores'
-import { formatDistance } from '@/utils/distance'
+import { formatDistance, formatTravelTime } from '@/utils/distance'
 import { useAddress } from '@/composables/useAddress'
 
 const { t, lang } = useConsumerLanguage()
 
-defineProps({
+const props = defineProps({
   modelValue: {
     type: Boolean,
     default: false
@@ -101,10 +101,24 @@ const { address } = useAddress()
 
 const mapEl = ref(null)
 const searchQuery = ref('')
+const storePopupOpen = ref(false)
 
 let map = null
 let unmounted = false
+let mapSession = 0
 const markersById = {}
+
+const disposeMap = () => {
+  mapSession += 1
+  map?.remove()
+  map = null
+  Object.keys(markersById).forEach((key) => delete markersById[key])
+  storePopupOpen.value = false
+}
+
+watch(() => props.modelValue, (open) => {
+  if (!open) disposeMap()
+})
 
 const storeIcon = L.divIcon({
   className: 'store-map-marker',
@@ -150,7 +164,7 @@ const buildStorePopup = (store) => {
       ${image ? `<img src="${image}" alt="${name}" class="store-popup-img" />` : ''}
       <div class="store-popup-body">
         <div class="store-popup-name">${name}</div>
-        ${store.distance_meters != null ? `<div class="store-popup-distance">${formatDistance(store.distance_meters)}</div>` : ''}
+        ${store.distance_meters != null ? `<div class="store-popup-distance">${formatTravelTime(store.distance_meters)} · ${formatDistance(store.distance_meters)}</div>` : ''}
         <a href="#/consumer/stores/${store.slug || store.id}" class="store-popup-link">${escapeHtml(t('View Store'))} →</a>
       </div>
     </div>
@@ -196,6 +210,7 @@ const closeDialog = () => emit('update:modelValue', false)
 
 const locateMe = () => {
   if (!map) return
+  const currentMap = map
   const lat = localStorage.getItem('consumer_lat')
   const lng = localStorage.getItem('consumer_lng')
   if (lat && lng) {
@@ -204,22 +219,26 @@ const locateMe = () => {
   }
   if (!navigator.geolocation) return
   navigator.geolocation.getCurrentPosition((position) => {
-    if (unmounted || !map) return
-    map.setView([position.coords.latitude, position.coords.longitude], 15)
+    if (unmounted || map !== currentMap) return
+    currentMap.setView([position.coords.latitude, position.coords.longitude], 15)
   })
 }
 
 const onDialogShow = async () => {
-  unmounted = false
+  disposeMap()
+  const session = mapSession
 
   const lat = localStorage.getItem('consumer_lat')
   const lng = localStorage.getItem('consumer_lng')
   const center = lat && lng ? [Number(lat), Number(lng)] : [14.5995, 120.9842]
 
   await nextTick()
-  if (unmounted || !mapEl.value) return
+  if (unmounted || !props.modelValue || session !== mapSession || !mapEl.value) return
 
   map = L.map(mapEl.value, { zoomControl: false }).setView(center, 15)
+  storePopupOpen.value = false
+  map.on('popupopen', () => { storePopupOpen.value = true })
+  map.on('popupclose', () => { storePopupOpen.value = false })
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
     maxZoom: 19
@@ -232,16 +251,13 @@ const onDialogShow = async () => {
   map.invalidateSize()
 
   await fetchStores()
-  if (unmounted) return
+  if (unmounted || session !== mapSession) return
   renderMarkers()
 }
 
 onBeforeUnmount(() => {
   unmounted = true
-  if (map) {
-    map.remove()
-    map = null
-  }
+  disposeMap()
 })
 </script>
 
@@ -403,6 +419,18 @@ onBeforeUnmount(() => {
   border-radius: var(--r-md);
 }
 
+@media (max-width: 900px) {
+  .sidebar-header {
+    padding: 10px 16px 0;
+    flex-shrink: 0;
+  }
+
+  .sidebar-search {
+    margin: 6px 16px 12px;
+    flex-shrink: 0;
+  }
+}
+
 .sidebar-loading {
   display: flex;
   flex-direction: column;
@@ -523,6 +551,10 @@ onBeforeUnmount(() => {
   font-size: var(--fs-xs);
 
   color: var(--c-muted);
+}
+
+.sidebar-store-distance :deep(.q-icon) {
+  flex-shrink: 0;
 }
 
 /* LEAFLET MARKERS + POPUP — targets Leaflet-injected DOM outside Vue's render tree. */
@@ -726,6 +758,63 @@ onBeforeUnmount(() => {
 
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+}
+@media (max-width: 900px) {
+  /* Keep the selected store readable instead of covering it with map overlays. */
+  .has-store-popup .map-address-overlay,
+  .has-store-popup .map-controls {
+    visibility: hidden;
+  }
+
+  .map-container :deep(.leaflet-popup-content) {
+    width: min(200px, calc(94vw - 64px)) !important;
+  }
+
+  .map-container :deep(.store-popup-img) {
+    height: 56px;
+  }
+
+  .map-container :deep(.store-popup-body) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 5px 8px;
+  }
+
+  .map-container :deep(.store-popup-name) {
+    font-size: 15px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .map-container :deep(.store-popup-distance) {
+    margin-top: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--c-text-2);
+  }
+
+  .map-container :deep(.store-popup-link) {
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0;
+    margin-top: 0;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .map-container :deep(.leaflet-popup-close-button) {
+    top: 4px !important;
+    right: 4px !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50%;
+    background: #ffffff;
+    color: var(--c-text-2) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    font-size: 22px !important;
   }
 }
 </style>
