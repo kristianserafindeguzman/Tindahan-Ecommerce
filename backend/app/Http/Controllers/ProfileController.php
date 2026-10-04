@@ -109,22 +109,125 @@ class ProfileController extends Controller
         return response()->json(['message' => 'Email updated successfully']);
     }
 
-    public function updatePassword(Request $request)
+    /** Cache key holding a password change that has passed its checks but is still waiting on an OTP. */
+    private function pendingPasswordKey(int $userId): string
+    {
+        return 'pending_password_' . $userId;
+    }
+
+    /** Shows enough of the number to confirm where the code went, without printing it in full. */
+    private function maskPhone(string $phone): string
+    {
+        return strlen($phone) <= 4 ? $phone : str_repeat('•', strlen($phone) - 4) . substr($phone, -4);
+    }
+
+    /**
+     * Step one of a password change: check the current password, then text a code.
+     *
+     * POST /api/profile/password-request-otp
+     */
+    public function requestPasswordOtp(Request $request, \App\Services\OtpService $otp)
     {
         $request->validate([
             'current_password' => 'required',
             'new_password' => 'required|string|min:8|confirmed',
         ]);
 
-        $user = collect(\Illuminate\Support\Facades\DB::select('SELECT password_hash FROM users WHERE user_id = ?', [$request->user()->user_id]))->first();
+        $user = $request->user();
 
-        if (!Hash::check($request->current_password, $user->password_hash)) {
+        $row = collect(\Illuminate\Support\Facades\DB::select('SELECT password_hash FROM users WHERE user_id = ?', [$user->user_id]))->first();
+
+        if (!$row || !Hash::check($request->current_password, $row->password_hash)) {
             return response()->json(['message' => 'Current password is incorrect.'], 400);
         }
 
-        User::where('user_id', $request->user()->user_id)->update(['password_hash' => Hash::make($request->new_password)]);
+        if (!$user->phone_number) {
+            return response()->json([
+                'message' => 'This account has no mobile number, so a code cannot be sent. Add one first.',
+            ], 422);
+        }
+
+        // Only the hash is held, never the typed password, and only as long as the code is valid.
+        \Illuminate\Support\Facades\Cache::put(
+            $this->pendingPasswordKey($user->user_id),
+            Hash::make($request->new_password),
+            now()->addMinutes(10)
+        );
+
+        $otp->send($user->phone_number, 'password_change', $user->user_id);
+
+        return response()->json([
+            'message' => 'Verification code sent.',
+            'phone_number' => $this->maskPhone($user->phone_number),
+        ]);
+    }
+
+    /**
+     * Step two: the code is what actually applies the change queued above.
+     *
+     * POST /api/profile/password-verify-otp
+     */
+    public function verifyPasswordOtp(Request $request, \App\Services\OtpService $otp)
+    {
+        $request->validate([
+            'code' => ['required', 'string', 'regex:/^\d{6}$/'],
+        ]);
+
+        $user = $request->user();
+        $cacheKey = $this->pendingPasswordKey($user->user_id);
+        $pendingHash = \Illuminate\Support\Facades\Cache::get($cacheKey);
+
+        if (!$pendingHash) {
+            return response()->json([
+                'message' => 'This password change expired. Please enter your passwords again.',
+            ], 422);
+        }
+
+        $result = $otp->verify($user->phone_number, 'password_change', $request->code);
+
+        if (!$result['ok']) {
+            return response()->json(['message' => $result['message']], $result['status']);
+        }
+
+        User::where('user_id', $user->user_id)->update(['password_hash' => $pendingHash]);
+
+        \Illuminate\Support\Facades\Cache::forget($cacheKey);
 
         return response()->json(['message' => 'Password updated successfully']);
+    }
+
+    /**
+     * A fresh code for the change already queued above.
+     *
+     * Separate from requestPasswordOtp because that one checks the current password, which makes it a
+     * guessing oracle and so tightly throttled; resending must not spend that budget.
+     *
+     * POST /api/profile/password-resend-otp
+     */
+    public function resendPasswordOtp(Request $request, \App\Services\OtpService $otp)
+    {
+        $user = $request->user();
+
+        if (!\Illuminate\Support\Facades\Cache::has($this->pendingPasswordKey($user->user_id))) {
+            return response()->json([
+                'message' => 'This password change expired. Please enter your passwords again.',
+            ], 422);
+        }
+
+        $otp->send($user->phone_number, 'password_change', $user->user_id);
+
+        return response()->json([
+            'message' => 'Verification code sent.',
+            'phone_number' => $this->maskPhone($user->phone_number),
+        ]);
+    }
+
+    /** Kept so an abandoned dialog does not leave a queued change sitting in the cache. */
+    public function cancelPasswordOtp(Request $request)
+    {
+        \Illuminate\Support\Facades\Cache::forget($this->pendingPasswordKey($request->user()->user_id));
+
+        return response()->json(['message' => 'Password change cancelled.']);
     }
 
     public function updateStoreHours(Request $request)

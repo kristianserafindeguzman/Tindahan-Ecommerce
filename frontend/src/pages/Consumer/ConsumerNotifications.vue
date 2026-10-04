@@ -5,15 +5,15 @@
     <div class="page-content">
       <div class="page-header-row">
         <div>
-          <h1 class="page-title">Notifications</h1>
-          <p class="page-subtitle">Order updates and store activity.</p>
+          <h1 class="page-title">{{ t('Notifications') }}</h1>
+          <p class="page-subtitle">{{ t('Order updates and store activity.') }}</p>
         </div>
 
         <q-btn
           v-if="unreadCount"
           unelevated
           no-caps
-          :label="`Mark all as read (${unreadCount})`"
+          :label="t('Mark all as read ({count})', { count: unreadCount })"
           class="mark-all-btn"
           :loading="markingAll"
           @click="markAllAsRead"
@@ -23,7 +23,7 @@
       <!-- Same skeleton shape as the rows below, so nothing shifts when they arrive. -->
       <div v-if="loading" class="notif-list">
         <div v-for="n in 5" :key="n" class="notif-row">
-          <q-skeleton type="QAvatar" size="40px" class="notif-skeleton-icon" />
+          <q-skeleton type="QAvatar" size="56px" class="notif-skeleton-icon" />
           <div class="notif-row-body">
             <q-skeleton type="text" class="notif-skeleton-title" />
             <q-skeleton type="text" class="notif-skeleton-text" />
@@ -33,8 +33,8 @@
 
       <div v-else-if="!notifications.length" class="notif-empty">
         <q-icon name="o_notifications_none" size="40px" class="notif-empty-icon" />
-        <p class="notif-empty-text">You have no notifications yet.</p>
-        <q-btn unelevated no-caps label="Browse Products" class="browse-btn" @click="router.push('/consumer/home')" />
+        <p class="notif-empty-text">{{ t('You have no notifications yet.') }}</p>
+        <q-btn unelevated no-caps :label="t('Browse Products')" class="browse-btn" @click="router.push('/consumer/home')" />
       </div>
 
       <div v-else class="notif-list">
@@ -49,13 +49,13 @@
           @click="notif.order_id ? openOrder(notif) : markRead(notif)"
         >
           <span class="notif-icon" :class="`notif-icon--${toneOf(notif)}`">
-            <q-icon :name="iconOf(notif)" size="22px" />
+            <q-icon :name="iconOf(notif)" size="26px" />
           </span>
 
           <span class="notif-row-body">
             <span class="notif-row-head">
               <span class="notif-row-title">{{ notif.title }}</span>
-              <span v-if="!notif.is_read" class="notif-dot" aria-label="Unread"></span>
+              <span v-if="!notif.is_read" class="notif-dot" :aria-label="t('Unread')"></span>
             </span>
             <span class="notif-row-text">{{ notif.message }}</span>
             <span class="notif-row-time">{{ relativeTime(notif.created_at) }}</span>
@@ -71,12 +71,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import { api } from '@/boot/axios'
+import { notificationPresentation, notificationTime } from '@/utils/notificationPresentation'
+import {
+  NOTIFICATION_READ_STATE_EVENT,
+  applyNotificationReadState,
+  publishNotificationReadState
+} from '@/utils/notificationSync'
+
+const { t, locale } = useConsumerLanguage()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -85,42 +95,15 @@ const notifications = ref([])
 const loading = ref(true)
 const markingAll = ref(false)
 
+const syncNotificationReadState = event => {
+  applyNotificationReadState(notifications.value, event.detail)
+}
+
 const unreadCount = computed(() => notifications.value.filter((n) => !n.is_read).length)
 
-/* Notifications have no status field, so the stage is matched on keywords and shown with the order tracker's icon in the colours of that status's pill. */
-const NOTIF_STAGES = [
-  { test: /cancel|reject|fail/, icon: 'o_cancel', tone: 'cancelled' },
-  { test: /picked up|collected|complete/, icon: 'o_task_alt', tone: 'done' },
-  { test: /ready/, icon: 'o_storefront', tone: 'ready' },
-  { test: /prepar|process/, icon: 'o_inventory_2', tone: 'preparing' },
-  { test: /placed|order received|confirmed/, icon: 'o_shopping_cart', tone: 'placed' }
-]
-
-const DEFAULT_STAGE = { icon: 'o_notifications', tone: 'brand' }
-
-const stageOf = (notif) => {
-  const t = `${notif.title} ${notif.message}`.toLowerCase()
-  return NOTIF_STAGES.find((s) => s.test.test(t)) || DEFAULT_STAGE
-}
-
-const toneOf = (notif) => stageOf(notif).tone
-const iconOf = (notif) => stageOf(notif).icon
-
-// Short relative form, matching the "30 mins ago" style used elsewhere in the app.
-const relativeTime = (value) => {
-  if (!value) return ''
-  const then = new Date(value)
-  if (Number.isNaN(then.getTime())) return ''
-  const secs = Math.floor((Date.now() - then.getTime()) / 1000)
-  if (secs < 60) return 'Just now'
-  const mins = Math.floor(secs / 60)
-  if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
-  const days = Math.floor(hours / 24)
-  if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`
-  return then.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-}
+const toneOf = notif => notificationPresentation(notif).tone
+const iconOf = notif => notificationPresentation(notif).icon
+const relativeTime = value => notificationTime(value, t, locale.value)
 
 const fetchNotifications = async () => {
   loading.value = true
@@ -135,14 +118,20 @@ const fetchNotifications = async () => {
   }
 }
 
-// Marked read locally first so the row responds at once, with the best-effort request reconciled by the next fetch.
+// Mark locally for an immediate row update, then restore it if persistence fails.
 const markRead = async (notif) => {
   if (notif.is_read) return
   notif.is_read = true
   try {
     await api.patch(`/consumer/notifications/${notif.notification_id}/read`)
-  } catch {
-    // Stays read locally.
+    publishNotificationReadState({
+      notificationId: notif.notification_id,
+      isRead: true
+    })
+  } catch (error) {
+    notif.is_read = false
+    console.error('Failed to mark notification as read', error)
+    $q.notify({ type: 'negative', message: t('Could not mark notifications as read') })
   }
 }
 
@@ -158,15 +147,23 @@ const markAllAsRead = async () => {
   notifications.value.forEach((n) => { n.is_read = true })
   try {
     await api.post('/consumer/notifications/read-all')
+    publishNotificationReadState({ all: true, isRead: true })
   } catch {
     notifications.value.forEach((n, i) => { n.is_read = previous[i] })
-    $q.notify({ type: 'negative', message: 'Could not mark notifications as read' })
+    $q.notify({ type: 'negative', message: t('Could not mark notifications as read') })
   } finally {
     markingAll.value = false
   }
 }
 
-onMounted(fetchNotifications)
+onMounted(() => {
+  window.addEventListener(NOTIFICATION_READ_STATE_EVENT, syncNotificationReadState)
+  fetchNotifications()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener(NOTIFICATION_READ_STATE_EVENT, syncNotificationReadState)
+})
 </script>
 
 <style scoped>
@@ -284,21 +281,14 @@ onMounted(fetchNotifications)
   background: var(--c-brand-tint);
 }
 
-/* Unread ones fill their disc with the status colour and a soft ring of its pill tint, so the newest news carries the emphasis. */
-.notif-row--unread .notif-icon {
-  background: var(--tone);
-  color: #ffffff;
-  box-shadow: 0 0 0 4px var(--tone-bg);
-}
-
 .notif-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 
-  width: 40px;
-  height: 40px;
+  width: 56px;
+  height: 56px;
 
   border-radius: var(--r-xl);
 
@@ -469,6 +459,16 @@ onMounted(fetchNotifications)
   .notif-row {
     gap: 12px;
     padding: 14px;
+  }
+
+  .notif-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .notif-skeleton-icon {
+    width: 48px !important;
+    height: 48px !important;
   }
 }
 </style>

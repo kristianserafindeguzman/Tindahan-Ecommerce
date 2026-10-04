@@ -22,36 +22,44 @@
           <div class="store-banner-meta">
             <span v-if="store.address" class="store-banner-meta-item">
               <q-icon name="o_location_on" size="14px" />
-              {{ store.address }} <span v-if="store.distance_meters != null" class="q-ml-xs">({{ formatDistance(store.distance_meters) }})</span>
+              {{ store.address }}
             </span>
             <span v-if="store.address" class="store-banner-meta-sep">•</span>
+            <!-- Its own item, so on a phone it wraps as a whole instead of splitting away from the address mid-phrase. -->
+            <template v-if="store.distance_meters != null">
+              <span class="store-banner-meta-item">
+                <q-icon :name="travelIcon(store.distance_meters)" size="14px" />
+                {{ formatDistance(store.distance_meters) }} · {{ formatTravelTime(store.distance_meters) }}
+              </span>
+              <span class="store-banner-meta-sep">•</span>
+            </template>
             <span class="store-banner-meta-item store-banner-status" :class="{ 'store-banner-status-closed': !store.isOpen }">
               <span class="store-banner-status-dot" :class="{ 'store-banner-status-dot-closed': !store.isOpen }" />
-              {{ store.scheduleStatusText || (store.isOpen ? `Open until ${store.closesAt}` : 'Closed now') }}
+              {{ storeStatus(store) }}
             </span>
           </div>
         </div>
 
-        <q-btn unelevated no-caps icon="o_directions" label="Directions" class="store-banner-directions" :disable="!hasDirections" @click="getDirections" />
+        <q-btn unelevated no-caps icon="o_directions" :label="t('Directions')" class="store-banner-directions" :disable="!hasDirections" @click="getDirections" />
       </div>
 
       <p v-else class="store-not-found">
-        Store not found.
-        <span class="store-not-found-link" @click="router.push('/consumer/stores')">Back to Stores</span>
+        {{ t('Store not found.') }}
+        <span class="store-not-found-link" @click="router.push('/consumer/stores')">{{ t('Back to Stores') }}</span>
       </p>
 
       <div class="page-header-row">
         <div>
-          <h2 class="page-title">Products</h2>
-          <p class="page-subtitle">Browse everything this store has to offer.</p>
+          <h2 class="page-title">{{ t('Products') }}</h2>
+          <p class="page-subtitle">{{ t('Browse everything this store has to offer.') }}</p>
         </div>
 
         <div class="page-header-actions">
           <div class="sort-inline">
-            <span class="sort-label">Sort by:</span>
+            <span class="sort-label">{{ t('Sort by:') }}</span>
             <q-select
               v-model="sortBy"
-              :options="SORT_OPTIONS"
+              :options="translateOptions(SORT_OPTIONS)"
               dense
               outlined
               emit-value
@@ -71,7 +79,7 @@
             no-caps
             dense
             icon="o_tune"
-            label="Filters"
+            :label="t('Filters')"
             class="filters-toggle-btn"
             @click="filtersOpen = !filtersOpen"
           >
@@ -81,7 +89,8 @@
       </div>
 
       <!-- CATEGORY PILLS -->
-      <div v-if="VISIBLE_CATEGORIES.length" class="category-pills-row">
+      <PillScroller v-if="VISIBLE_CATEGORIES.length">
+      <div class="category-pills-row">
         <q-chip
           clickable
           dense
@@ -89,7 +98,7 @@
           :class="{ 'category-pill-active': selectedCategory === 'All' }"
           @click="selectedCategory = 'All'"
         >
-          All
+          {{ t('All') }}
         </q-chip>
         <q-chip
           v-for="category in VISIBLE_CATEGORIES"
@@ -100,9 +109,10 @@
           :class="{ 'category-pill-active': selectedCategory === category.label }"
           @click="selectedCategory = category.label"
         >
-          {{ category.label }}
+          {{ t(category.label) }}
         </q-chip>
       </div>
+      </PillScroller>
 
       <div class="products-layout">
 
@@ -115,7 +125,7 @@
           </div>
 
           <p v-if="!productsLoading && !filteredProducts.length" class="products-empty">
-            No products match your filters.
+            {{ t('No products match your filters.') }}
           </p>
         </div>
 
@@ -169,6 +179,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
@@ -179,13 +191,16 @@ import ProductCard from '@/components/consumer/ProductCard.vue'
 import ProductFilters from '@/components/consumer/ProductFilters.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
 import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
+import PillScroller from '@/components/consumer/PillScroller.vue'
 import { useCategories } from '@/composables/useCategories'
 import { useGridColumns } from '@/composables/useGridColumns'
-import { formatDistance } from '@/utils/distance'
+import { formatDistance, formatTravelTime, travelIcon } from '@/utils/distance'
 import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'
 import { useReveal } from '@/composables/useReveal'
+
+const { t, storeStatus, translateOptions } = useConsumerLanguage()
 
 const $q = useQuasar()
 
@@ -245,9 +260,9 @@ const handleAddToCart = async (product) => {
 
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
   }
 }
 
@@ -260,8 +275,13 @@ onMounted(() => {
 
 // Only categories this store actually carries, not the full catalog list.
 const VISIBLE_CATEGORIES = computed(() => {
-  const storeCategoryLabels = new Set(storeProducts.value.map((product) => product.category))
-  return categories.value.filter((category) => storeCategoryLabels.has(category.label))
+  const map = new Map()
+  for (const product of storeProducts.value) {
+    if (product.category && !map.has(product.category)) {
+      map.set(product.category, { id: product.category, label: product.category, value: product.category })
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label))
 })
 
 const CATEGORY_SELECT_OPTIONS = computed(() => [
@@ -614,6 +634,9 @@ const clearFilters = () => {
 }
 
 .filters-toggle-btn {
+  /* A translated sort label ("I-sort ayon sa:") squeezes this row, and the button used to answer by wrapping its label under the icon, outside its fixed height. */
+  flex-shrink: 0;
+  white-space: nowrap;
   position: relative;
 
   height: 36px;
@@ -639,6 +662,7 @@ const clearFilters = () => {
 }
 
 .filters-toggle-btn :deep(.q-btn__content) {
+  flex-wrap: nowrap;
   gap: 6px;
 }
 
@@ -857,6 +881,21 @@ const clearFilters = () => {
 
   .page-header-row {
     flex-wrap: wrap;
+  }
+
+  /* The sort box may shrink on phones so the sort label, sort box and Filters stay on one line, even with the longer Filipino label. */
+  .page-header-actions {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .sort-inline {
+    min-width: 0;
+  }
+
+  .sort-select {
+    flex: 0 1 auto;
+    min-width: 0;
   }
 
   .page-subtitle {

@@ -3,11 +3,16 @@
     <div class="category-tile-icon" :class="`category-tile-icon--${category.tone || 'brand'}`">
       <q-icon :name="category.icon" size="22px" />
     </div>
-    <span class="category-tile-label">{{ category.label }}</span>
+    <!-- category.label stays the English name the tile routes with; only the text is translated. -->
+    <span class="category-tile-label">{{ t(category.label) }}</span>
   </q-card>
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
+const { t } = useConsumerLanguage()
+
 defineProps({
   category: {
     type: Object,
@@ -128,5 +133,60 @@ defineEmits(['click'])
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+@media (min-width: 601px) and (max-width: 1024px) {
+  .category-tile {
+    gap: 8px;
+
+    width: 110px;
+    min-height: 120px;
+    padding: 16px 10px;
+  }
+
+  .category-tile-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .category-tile-icon :deep(.q-icon) {
+    font-size: 20px !important;
+  }
+
+  .category-tile-label {
+    min-height: calc(1.25em * 2);
+
+    font-size: var(--fs-md);
+    line-height: 1.25;
+  }
+}
+
+/* Keep the category rail compact on phones so several choices remain visible at once. */
+@media (max-width: 600px) {
+  .category-tile {
+    gap: 7px;
+
+    width: 92px;
+    min-height: 108px;
+    padding: 12px 8px;
+
+    border-radius: var(--r-md);
+  }
+
+  .category-tile-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .category-tile-icon :deep(.q-icon) {
+    font-size: 18px !important;
+  }
+
+  .category-tile-label {
+    min-height: calc(1.25em * 2);
+
+    font-size: var(--fs-sm);
+    line-height: 1.25;
+  }
 }
 </style>

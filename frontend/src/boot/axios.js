@@ -2,8 +2,10 @@ import { boot } from 'quasar/wrappers'
 import axios from 'axios'
 import { clearAuthStorage } from '@/utils/authStorage'
 
+// Set in quasar.config.js > build.defineEnv: the production Hostinger path, or the local
+// `php artisan serve` address during development.
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api'
+  baseURL: import.meta.env.API_BASE_URL
 })
 
 // Attach the Sanctum bearer token to every request
@@ -24,8 +26,8 @@ api.interceptors.response.use(
       const status = error.response.status
       const errorCode = error.response.data?.error_code
 
-      const isAccountError = 
-        errorCode === 'ACCOUNT_SUSPENDED' || 
+      const isAccountError =
+        errorCode === 'ACCOUNT_SUSPENDED' ||
         errorCode === 'ACCOUNT_INACTIVE' ||
         errorCode === 'ACCOUNT_PENDING' ||
         errorCode === 'VENDOR_NOT_APPROVED'

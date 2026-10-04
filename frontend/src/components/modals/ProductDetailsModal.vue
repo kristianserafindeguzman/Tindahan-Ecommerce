@@ -8,8 +8,8 @@
         <div class="vp-dialog-head pm-head">
           <span class="vp-dialog-icon"><q-icon name="o_inventory_2" size="22px" /></span>
           <div class="pm-head-text">
-            <div class="vp-dialog-title">Product details</div>
-            <div class="vp-dialog-text">{{ product?.category?.category_name || 'Uncategorized' }}</div>
+            <div class="vp-dialog-title">Product Details</div>
+            <div class="vp-dialog-text">{{ product?.category?.category_name ? categoryLabel(product.category.category_name) : 'Uncategorized' }}</div>
           </div>
           <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
         </div>
@@ -28,7 +28,7 @@
               <div class="pm-info-head">
                 <div class="pm-name">{{ product?.product_name || 'Unnamed product' }}</div>
                 <div class="pm-price-row">
-                  <span class="pm-price"><span v-if="productHasVariants" class="pm-from">from </span>₱{{ formatNumber(displayPrice) }}</span>
+                  <span class="pm-price"><span v-if="productHasVariants" class="pm-from">from</span><span>₱{{ formatNumber(displayPrice) }}</span></span>
                   <template v-if="salesLoaded && !salesError">
                     <span class="pm-dot" aria-hidden="true" />
                     <span class="pm-sold">{{ totalSales }} sold</span>
@@ -57,8 +57,8 @@
                     </span>
                     <!-- One aligned row per size: its name, what is left, and its price on the right. -->
                     <ul v-else class="pm-variant-list">
-                      <li v-for="v in product.variants" :key="v.size" class="pm-variant-row" :class="{ 'pm-variant-row--out': !(v.quantity > 0) }">
-                        <span class="pm-variant-size">{{ v.size }}</span>
+                      <li v-for="(v, i) in product.variants" :key="i" class="pm-variant-row" :class="{ 'pm-variant-row--out': !(v.quantity > 0) }">
+                        <span class="pm-variant-size">{{ variantLabel(v, i) }}</span>
                         <span class="pm-variant-qty">{{ v.quantity > 0 ? `${v.quantity} left` : 'Out of stock' }}</span>
                         <span class="pm-variant-price">₱{{ formatNumber(v.price) }}</span>
                       </li>
@@ -68,6 +68,10 @@
                 <div class="pm-spec">
                   <dt>Description</dt>
                   <dd class="pm-desc">{{ product?.description || 'No description yet.' }}</dd>
+                </div>
+                <div v-if="product?.expiration_date" class="pm-spec">
+                  <dt>Best Before</dt>
+                  <dd class="pm-desc">{{ new Date(product.expiration_date).toLocaleDateString() }}</dd>
                 </div>
               </dl>
 
@@ -142,10 +146,10 @@
               </div>
 
               <div>
-                <label class="vp-field-label">Category</label>
+                <label class="vp-field-label">{{ tCategory('uiCategory') }}</label>
                 <q-select
                   v-model="form.category_id"
-                  :options="categories"
+                  :options="categoryOptions"
                   option-value="category_id"
                   option-label="category_name"
                   emit-value
@@ -154,9 +158,9 @@
                   dense
                   hide-bottom-space
                   behavior="menu"
-                  placeholder="Choose a category"
+                  :placeholder="tCategory('uiChooseCategory')"
                   class="vp-input"
-                  :rules="[val => !!val || 'Choose a category.']"
+                  :rules="[val => !!val || tCategory('uiChooseCategoryRule')]"
                 />
               </div>
 
@@ -170,6 +174,19 @@
                   autogrow
                   placeholder="Size, flavour, or anything that helps customers choose"
                   class="vp-input pm-textarea"
+                />
+              </div>
+
+              <div>
+                <label class="vp-field-label" for="pm-edit-exp">Best Before / Expiration Date <span class="vp-field-optional">(optional)</span></label>
+                <q-input
+                  v-model="form.expiration_date"
+                  for="pm-edit-exp"
+                  type="date"
+                  outlined
+                  dense
+                  hide-bottom-space
+                  class="vp-input"
                 />
               </div>
 
@@ -218,7 +235,7 @@
                     <span>Size</span><span>Price (₱)</span><span>Quantity</span><span />
                   </div>
                   <div v-for="(variant, index) in form.variants" :key="index" class="pm-variant">
-                    <q-input v-model="variant.size" outlined dense hide-bottom-space placeholder="e.g. Small" class="vp-input" :aria-label="`Size ${index + 1}`" :rules="[val => !!(val && String(val).trim()) || 'Required']" />
+                    <q-input v-model="variant.name" outlined dense hide-bottom-space placeholder="e.g. Small" class="vp-input" :aria-label="`Size ${index + 1}`" :rules="[val => !!(val && String(val).trim()) || 'Required']" />
                     <q-input v-model.number="variant.price" type="number" min="0" step="0.01" outlined dense hide-bottom-space placeholder="0.00" class="vp-input" :aria-label="`Price for size ${index + 1}`" />
                     <q-input v-model.number="variant.quantity" type="number" min="0" outlined dense hide-bottom-space placeholder="0" class="vp-input" :aria-label="`Quantity for size ${index + 1}`" />
                     <q-btn flat round dense icon="o_close" class="pm-variant-remove" :disable="form.variants.length === 1" :aria-label="`Remove size ${index + 1}`" @click="removeVariant(index)" />
@@ -336,6 +353,7 @@
 <script setup>
 import { ref, watch, onMounted, computed, nextTick } from 'vue'
 import { api } from '@/boot/axios'
+import { useCategoryLabels } from '@/composables/useCategories'
 import { useQuasar, date } from 'quasar'
 import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 // Imported here like the dashboards do, since the chart component isn't registered for the whole app.
@@ -369,6 +387,13 @@ watch(() => props.modelValue, async val => {
 watch(isOpen, val => emit('update:modelValue', val))
 
 const categories = ref([])
+
+// The select stores category_id, so only the label a vendor reads is translated.
+const { t: tCategory, categoryLabel, categoryDescription } = useCategoryLabels()
+const categoryOptions = computed(() => categories.value.map(category => ({
+  ...category,
+  category_name: categoryLabel(category.category_name)
+})))
 const hasVariants = ref(false)
 const isActive = ref(true)
 const saving = ref(false)
@@ -518,7 +543,8 @@ const form = ref({
   price: null,
   stock_quantity: null,
   product_picture: null,
-  variants: [{ size: '', price: null, quantity: null }]
+  expiration_date: null,
+  variants: [{ name: '', price: null, quantity: null }]
 })
 
 const enterEditMode = () => {
@@ -556,16 +582,21 @@ const populateForm = () => {
   form.value.product_name = p.product_name
   form.value.description = p.description || ''
   form.value.category_id = p.category_id
+  form.value.expiration_date = p.expiration_date || null
   isActive.value = p.status !== 'archived'
 
   if (p.variants && p.variants.length > 0) {
     hasVariants.value = true
-    form.value.variants = JSON.parse(JSON.stringify(p.variants))
+    form.value.variants = p.variants.map(v => ({
+      name: v.size || v.name || v.label || '',
+      price: v.price ?? null,
+      quantity: v.quantity ?? null
+    }))
   } else {
     hasVariants.value = false
     form.value.price = p.price
     form.value.stock_quantity = p.stock_quantity
-    form.value.variants = [{ size: '', price: null, quantity: null }]
+    form.value.variants = [{ name: '', price: null, quantity: null }]
   }
 
   imagePreview.value = p.image_url || null
@@ -574,7 +605,7 @@ const populateForm = () => {
 
 const fetchCategories = async () => {
   try {
-    const res = await api.get('/categories')
+    const res = await api.get('/vendor/products/categories')
     categories.value = res.data
   } catch (err) {
     console.error(err)
@@ -588,6 +619,10 @@ const showCameraLens = ref(false)
 const showCropper = ref(false)
 const videoElement = ref(null)
 let stream = null
+
+// Vendor forms save the label under 'size'; the seeded catalog uses 'name'. Both shapes exist.
+const variantLabel = (variant, index) =>
+  variant?.size || variant?.name || variant?.label || `Variant ${index + 1}`
 
 const addVariant = () => form.value.variants.push({ size: '', price: null, quantity: null })
 const removeVariant = index => { if (form.value.variants.length > 1) form.value.variants.splice(index, 1) }
@@ -695,6 +730,8 @@ const submitForm = async () => {
     formData.append('category_id', form.value.category_id)
     formData.append('status', isActive.value ? 'active' : 'archived')
     if (form.value.product_picture) formData.append('product_picture', form.value.product_picture)
+    if (form.value.expiration_date) formData.append('expiration_date', form.value.expiration_date)
+    
     if (hasVariants.value) {
       formData.append('variants', JSON.stringify(form.value.variants))
     } else {
@@ -893,7 +930,13 @@ const submitForm = async () => {
   min-height: 140px;
 }
 
+/* "from" and the amount are separate spans with a real gap, so it never reads "from₱80.00". */
 .pm-price {
+  display: inline-flex;
+  align-items: baseline;
+
+  gap: 5px;
+
   font-size: var(--fs-xl);
   font-weight: 700;
 

@@ -10,8 +10,8 @@
         <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" :loading="isExporting" @click="exportOrders" />
       </div>
 
-      <div class="vp-card">
-        <div class="vp-toolbar">
+      <div data-tour="ol-list" class="vp-card">
+        <div data-tour="ol-toolbar" class="vp-toolbar">
           <div class="vp-search-row">
             <q-input
               v-model="search"
@@ -31,7 +31,7 @@
           </div>
 
           <!-- Each status is a chip with its count, so the busy ones stand out before they are opened. -->
-          <div class="vp-chips" role="tablist" aria-label="Filter orders by status">
+          <div data-tour="ol-chips" class="vp-chips" role="tablist" aria-label="Filter orders by status">
             <button
               v-for="filter in localizedFilters"
               :key="filter.key"
@@ -113,7 +113,14 @@
                     <span class="vp-name">{{ order.consumer?.full_name || t('unknownCustomer') }}</span>
                   </div>
                 </td>
-                <td class="vp-muted">{{ formatDate(order.created_at) }}</td>
+                <td class="vp-muted">
+                  <div>{{ formatDate(order.created_at) }}</div>
+                  <!-- Only a scheduled order gets the tag, on its own line under the date; ASAP orders read as before. -->
+                  <div v-if="order.scheduled_pickup_at" class="ol-pickup-tag">
+                    <q-icon name="o_event" size="13px" />
+                    <span class="ol-pickup-text">{{ t('pickupLabel') }} {{ formatPickupSlot(order.scheduled_pickup_at, pickupLocale, { compact: true }) }}</span>
+                  </div>
+                </td>
                 <td class="text-right vp-amount">₱{{ formatNumber(order.total_amount) }}</td>
                 <td>
                   <span class="vp-status" :class="`vp-status--${getStatusTone(order.status)}`">
@@ -138,6 +145,10 @@
             <div class="vp-list-body">
               <span class="vp-name">{{ order.consumer?.full_name || t('unknownCustomer') }}</span>
               <div class="vp-list-meta">#{{ order.order_id }} · {{ formatDate(order.created_at) }}</div>
+              <div v-if="order.scheduled_pickup_at" class="ol-pickup-tag">
+                <q-icon name="o_event" size="13px" />
+                <span class="ol-pickup-text">{{ t('pickupLabel') }} {{ formatPickupSlot(order.scheduled_pickup_at, pickupLocale, { compact: true }) }}</span>
+              </div>
             </div>
             <div class="vp-list-side">
               <span class="vp-amount">₱{{ formatNumber(order.total_amount) }}</span>
@@ -169,6 +180,7 @@ import { api } from '@/boot/axios'
 import { statusKey } from '@/utils/orderStatus'
 import { emptyOrderFilters, applyOrderFilters, describeFilters, clearFilter, resetOrderFilters, toggleSort, sortDirection } from '@/utils/orderFilters'
 import { useLanguage } from '@/composables/useLanguage'
+import { formatPickupSlot } from '@/utils/pickupSlots'
 import OrderTableFilters from '@/components/vendor/OrderTableFilters.vue'
 import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 
@@ -204,7 +216,8 @@ const orderListDict = {
     statusReady: 'Ready for pickup',
     statusPickedUp: 'Picked up',
     statusCancelled: 'Cancelled',
-    exportFail: 'Failed to generate the order report. Please try again.'
+    exportFail: 'Failed to generate the order report. Please try again.',
+    pickupLabel: 'Pickup:'
   },
   ph: {
     title: 'Listahan ng Order',
@@ -233,11 +246,15 @@ const orderListDict = {
     statusReady: 'Pwede nang kunin',
     statusPickedUp: 'Nakuha na',
     statusCancelled: 'Kinansela',
-    exportFail: 'Failed ma-generate ang order report. Paki-try ulit.'
+    exportFail: 'Failed ma-generate ang order report. Paki-try ulit.',
+    pickupLabel: 'Pickup:'
   }
 }
 
 const { t, lang } = useLanguage(orderListDict)
+
+// Dates in the vendor's chosen language, for the scheduled-pickup tag.
+const pickupLocale = computed(() => (lang.value === 'ph' ? 'fil-PH' : 'en-PH'))
 
 // Determines the correct color class for the order status badges
 const getStatusTone = (status) => {
@@ -422,5 +439,36 @@ onMounted(async () => {
 
 .ol-empty-btn {
   margin-top: 10px;
+}
+
+/* A scheduled order's pickup time, as a quiet line of small text under the order date: only the
+   small blue calendar icon marks it, so it doesn't compete with the status badge. It never grows
+   wider than its column: a long label ends in "…" instead of running into the Total column. */
+.ol-pickup-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  max-width: 100%;
+  margin-top: 3px;
+
+  color: var(--c-muted);
+
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ol-pickup-tag .q-icon {
+  flex-shrink: 0;
+
+  color: #0284c7;
+}
+
+.ol-pickup-text {
+  min-width: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

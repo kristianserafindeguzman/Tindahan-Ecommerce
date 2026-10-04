@@ -7,25 +7,25 @@
   >
     <q-card class="map-dialog-card">
 
-      <div class="map-container">
+      <div class="map-container" :class="{ 'has-store-popup': storePopupOpen }">
         <div ref="mapEl" class="leaflet-map" />
 
         <div class="map-address-overlay">
-          <div class="map-address-label">Your Location</div>
-          <div class="map-address-text">{{ address || 'Enter Address' }}</div>
+          <div class="map-address-label">{{ t('Your Location') }}</div>
+          <div class="map-address-text">{{ address || t('Enter Address') }}</div>
         </div>
 
         <div class="map-controls">
-          <q-btn round unelevated class="map-control-btn" icon="o_add" aria-label="Zoom in" @click="zoomIn" />
-          <q-btn round unelevated class="map-control-btn" icon="o_remove" aria-label="Zoom out" @click="zoomOut" />
-          <q-btn round unelevated class="map-control-btn map-locate-btn" icon="o_my_location" aria-label="Centre on my location" @click="locateMe" />
+          <q-btn round unelevated class="map-control-btn" icon="o_add" :aria-label="t('Zoom in')" @click="zoomIn" />
+          <q-btn round unelevated class="map-control-btn" icon="o_remove" :aria-label="t('Zoom out')" @click="zoomOut" />
+          <q-btn round unelevated class="map-control-btn map-locate-btn" icon="o_my_location" :aria-label="t('Centre on my location')" @click="locateMe" />
         </div>
       </div>
 
       <aside class="map-sidebar">
         <div class="sidebar-header">
-          <div class="sidebar-title">Stores near you</div>
-          <q-btn flat round dense icon="o_close" class="sidebar-close-btn" aria-label="Close map" @click="closeDialog" />
+          <div class="sidebar-title">{{ t('Stores near you') }}</div>
+          <q-btn flat round dense icon="o_close" class="sidebar-close-btn" :aria-label="t('Close map')" @click="closeDialog" />
         </div>
 
         <q-input
@@ -33,7 +33,7 @@
           outlined
           dense
           hide-bottom-space
-          placeholder="Search Store"
+          :placeholder="t('Search Store')"
           class="sidebar-search"
         >
           <template #prepend>
@@ -43,9 +43,9 @@
 
         <div v-if="loading" class="sidebar-loading">
           <q-spinner size="24px" />
-          <p class="sidebar-loading-text">Loading stores…</p>
+          <p class="sidebar-loading-text">{{ t('Loading stores…') }}</p>
         </div>
-        <p v-else-if="!filteredStores.length" class="sidebar-empty">No stores found.</p>
+        <p v-else-if="!filteredStores.length" class="sidebar-empty">{{ t('No stores found.') }}</p>
 
         <div v-else class="sidebar-list">
           <div
@@ -62,7 +62,7 @@
               <div class="sidebar-store-name">{{ store.name }}</div>
               <div v-if="store.distance_meters != null" class="sidebar-store-distance">
                 <q-icon name="o_directions_walk" size="12px" />
-                {{ formatDistance(store.distance_meters) }}
+                <span>{{ formatTravelTime(store.distance_meters) }} · {{ formatDistance(store.distance_meters) }}</span>
               </div>
             </div>
           </div>
@@ -74,15 +74,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount, nextTick } from 'vue'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
+import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useStores } from '@/composables/useStores'
-import { formatDistance } from '@/utils/distance'
+import { formatDistance, formatTravelTime } from '@/utils/distance'
 import { useAddress } from '@/composables/useAddress'
 
-defineProps({
+const { t, lang } = useConsumerLanguage()
+
+const props = defineProps({
   modelValue: {
     type: Boolean,
     default: false
@@ -97,10 +101,24 @@ const { address } = useAddress()
 
 const mapEl = ref(null)
 const searchQuery = ref('')
+const storePopupOpen = ref(false)
 
 let map = null
 let unmounted = false
+let mapSession = 0
 const markersById = {}
+
+const disposeMap = () => {
+  mapSession += 1
+  map?.remove()
+  map = null
+  Object.keys(markersById).forEach((key) => delete markersById[key])
+  storePopupOpen.value = false
+}
+
+watch(() => props.modelValue, (open) => {
+  if (!open) disposeMap()
+})
 
 const storeIcon = L.divIcon({
   className: 'store-map-marker',
@@ -146,8 +164,8 @@ const buildStorePopup = (store) => {
       ${image ? `<img src="${image}" alt="${name}" class="store-popup-img" />` : ''}
       <div class="store-popup-body">
         <div class="store-popup-name">${name}</div>
-        ${store.distance_meters != null ? `<div class="store-popup-distance">${formatDistance(store.distance_meters)}</div>` : ''}
-        <a href="#/consumer/stores/${store.slug || store.id}" class="store-popup-link">View Store →</a>
+        ${store.distance_meters != null ? `<div class="store-popup-distance">${formatTravelTime(store.distance_meters)} · ${formatDistance(store.distance_meters)}</div>` : ''}
+        <a href="#/consumer/stores/${store.slug || store.id}" class="store-popup-link">${escapeHtml(t('View Store'))} →</a>
       </div>
     </div>
   `
@@ -168,6 +186,12 @@ const renderMarkers = () => {
   })
 }
 
+watch(lang, () => {
+  for (const store of stores.value) {
+    markersById[store.id]?.setPopupContent(buildStorePopup(store))
+  }
+})
+
 const focusStore = (store) => {
   const marker = markersById[store.id]
   if (!marker) {
@@ -186,6 +210,7 @@ const closeDialog = () => emit('update:modelValue', false)
 
 const locateMe = () => {
   if (!map) return
+  const currentMap = map
   const lat = localStorage.getItem('consumer_lat')
   const lng = localStorage.getItem('consumer_lng')
   if (lat && lng) {
@@ -194,22 +219,26 @@ const locateMe = () => {
   }
   if (!navigator.geolocation) return
   navigator.geolocation.getCurrentPosition((position) => {
-    if (unmounted || !map) return
-    map.setView([position.coords.latitude, position.coords.longitude], 15)
+    if (unmounted || map !== currentMap) return
+    currentMap.setView([position.coords.latitude, position.coords.longitude], 15)
   })
 }
 
 const onDialogShow = async () => {
-  unmounted = false
+  disposeMap()
+  const session = mapSession
 
   const lat = localStorage.getItem('consumer_lat')
   const lng = localStorage.getItem('consumer_lng')
   const center = lat && lng ? [Number(lat), Number(lng)] : [14.5995, 120.9842]
 
   await nextTick()
-  if (unmounted || !mapEl.value) return
+  if (unmounted || !props.modelValue || session !== mapSession || !mapEl.value) return
 
   map = L.map(mapEl.value, { zoomControl: false }).setView(center, 15)
+  storePopupOpen.value = false
+  map.on('popupopen', () => { storePopupOpen.value = true })
+  map.on('popupclose', () => { storePopupOpen.value = false })
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
     maxZoom: 19
@@ -222,16 +251,13 @@ const onDialogShow = async () => {
   map.invalidateSize()
 
   await fetchStores()
-  if (unmounted) return
+  if (unmounted || session !== mapSession) return
   renderMarkers()
 }
 
 onBeforeUnmount(() => {
   unmounted = true
-  if (map) {
-    map.remove()
-    map = null
-  }
+  disposeMap()
 })
 </script>
 
@@ -369,6 +395,20 @@ onBeforeUnmount(() => {
   color: var(--c-subtle);
 }
 
+/* On phones the map's close button is a 44px thumb-sized target. */
+@media (max-width: 600px) {
+  .sidebar-close-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .sidebar-close-btn :deep(.q-icon) {
+    font-size: 26px;
+  }
+}
+
 .sidebar-search {
   margin: 12px 16px;
 }
@@ -377,6 +417,18 @@ onBeforeUnmount(() => {
   height: 40px;
 
   border-radius: var(--r-md);
+}
+
+@media (max-width: 900px) {
+  .sidebar-header {
+    padding: 10px 16px 0;
+    flex-shrink: 0;
+  }
+
+  .sidebar-search {
+    margin: 6px 16px 12px;
+    flex-shrink: 0;
+  }
 }
 
 .sidebar-loading {
@@ -499,6 +551,10 @@ onBeforeUnmount(() => {
   font-size: var(--fs-xs);
 
   color: var(--c-muted);
+}
+
+.sidebar-store-distance :deep(.q-icon) {
+  flex-shrink: 0;
 }
 
 /* LEAFLET MARKERS + POPUP — targets Leaflet-injected DOM outside Vue's render tree. */
@@ -655,12 +711,110 @@ onBeforeUnmount(() => {
     flex-direction: column;
   }
 
+  /* Share the card by proportion rather than giving the sidebar a fixed 240px. A fixed
+     height had to grow to fit the hint, which squeezed the map until its address card and
+     zoom controls collided, and on a short phone pushed the last store card out of the
+     rounded bottom edge. Splitting it means the hint just shortens the scrolling list. */
+  .map-container {
+    flex: 0 0 45%;
+  }
+
   .map-sidebar {
     width: 100%;
-    height: 240px;
+    height: auto;
+
+    /* min-height: 0 lets this flex child shrink past its content so .sidebar-list scrolls
+       inside it instead of overflowing the card. */
+    flex: 1 1 auto;
+    min-height: 0;
 
     border-left: none;
     border-top: 1px solid var(--c-border);
+  }
+
+  /* Both of these were pinned to the map's left edge, which is fine beside a tall desktop
+     map and not at all fine on a short stacked one: the zoom column grew up into the
+     address card. On phones the controls sit along the bottom-right instead. */
+  .map-controls {
+    left: auto;
+    right: 12px;
+    bottom: 12px;
+
+    flex-direction: row;
+  }
+
+  .map-address-overlay {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+
+    padding: 8px 12px;
+  }
+
+  /* The overlay now spans the map, so a long address ellipses rather than wrapping to
+     three lines and eating the map. */
+  .map-address-text {
+    overflow: hidden;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+@media (max-width: 900px) {
+  /* Keep the selected store readable instead of covering it with map overlays. */
+  .has-store-popup .map-address-overlay,
+  .has-store-popup .map-controls {
+    visibility: hidden;
+  }
+
+  .map-container :deep(.leaflet-popup-content) {
+    width: min(200px, calc(94vw - 64px)) !important;
+  }
+
+  .map-container :deep(.store-popup-img) {
+    height: 56px;
+  }
+
+  .map-container :deep(.store-popup-body) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 5px 8px;
+  }
+
+  .map-container :deep(.store-popup-name) {
+    font-size: 15px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .map-container :deep(.store-popup-distance) {
+    margin-top: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--c-text-2);
+  }
+
+  .map-container :deep(.store-popup-link) {
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0;
+    margin-top: 0;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .map-container :deep(.leaflet-popup-close-button) {
+    top: 4px !important;
+    right: 4px !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50%;
+    background: #ffffff;
+    color: var(--c-text-2) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    font-size: 22px !important;
   }
 }
 </style>

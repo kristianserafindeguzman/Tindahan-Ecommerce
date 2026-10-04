@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Inventory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class InventoryController extends Controller
 {
@@ -51,13 +52,20 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'product_name'    => 'required|string|max:100',
             'description'     => 'nullable|string',
-            'category_id'     => 'required|integer|exists:categories,category_id',
+            'category_id'     => [
+                'required',
+                'integer',
+                \Illuminate\Validation\Rule::exists('categories', 'category_id')->where(function ($query) use ($store) {
+                    $query->whereNull('store_id')->orWhere('store_id', $store->store_id);
+                }),
+            ],
             'product_picture' => 'nullable|image|max:10240',
             // Base price/qty for single item
             'price'           => 'nullable|numeric|min:0',
             'stock_quantity'  => 'nullable|integer|min:0',
             // Variants array
             'variants'        => 'nullable|string', // Will be JSON decoded
+            'expiration_date' => 'nullable|date|after_or_equal:today',
         ]);
 
         // Process variants if any
@@ -69,17 +77,26 @@ class InventoryController extends Controller
         $price = $validated['price'] ?? 0;
         $stock = $validated['stock_quantity'] ?? 0;
 
+        $normalizedVariants = [];
         if (!empty($variants) && is_array($variants)) {
             $stock = 0;
             $lowestPrice = null;
             foreach ($variants as $variant) {
+                // Normalize 'size' to 'name'
+                if (isset($variant['size']) && !isset($variant['name'])) {
+                    $variant['name'] = $variant['size'];
+                    unset($variant['size']);
+                }
+                
                 $stock += (int)($variant['quantity'] ?? 0);
                 $vPrice = (float)($variant['price'] ?? 0);
                 if ($lowestPrice === null || $vPrice < $lowestPrice) {
                     $lowestPrice = $vPrice;
                 }
+                $normalizedVariants[] = $variant;
             }
             $price = $lowestPrice ?? 0;
+            $variants = $normalizedVariants;
         }
 
         $photoPath = null;
@@ -98,6 +115,7 @@ class InventoryController extends Controller
             'variants'        => empty($variants) ? null : $variants,
             'product_picture' => $photoPath,
             'status'          => 'active',
+            'expiration_date' => $validated['expiration_date'] ?? null,
         ]);
 
         return response()->json([
@@ -119,12 +137,19 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'product_name'    => 'sometimes|string|max:100',
             'description'     => 'nullable|string',
-            'category_id'     => 'sometimes|integer|exists:categories,category_id',
+            'category_id'     => [
+                'sometimes',
+                'integer',
+                \Illuminate\Validation\Rule::exists('categories', 'category_id')->where(function ($query) use ($store) {
+                    $query->whereNull('store_id')->orWhere('store_id', $store->store_id);
+                }),
+            ],
             'product_picture' => 'nullable|image|max:10240',
             'price'           => 'nullable|numeric|min:0',
             'stock_quantity'  => 'nullable|integer|min:0',
             'variants'        => 'nullable|string',
             'status'          => 'sometimes|in:active,archived',
+            'expiration_date' => 'nullable|date',
         ]);
 
         if (array_key_exists('variants', $validated)) {
@@ -136,16 +161,23 @@ class InventoryController extends Controller
             if (!empty($variants) && is_array($variants)) {
                 $stock = 0;
                 $lowestPrice = null;
+                $normalizedVariants = [];
                 foreach ($variants as $variant) {
+                    if (isset($variant['size']) && !isset($variant['name'])) {
+                        $variant['name'] = $variant['size'];
+                        unset($variant['size']);
+                    }
+                    
                     $stock += (int)($variant['quantity'] ?? 0);
                     $vPrice = (float)($variant['price'] ?? 0);
                     if ($lowestPrice === null || $vPrice < $lowestPrice) {
                         $lowestPrice = $vPrice;
                     }
+                    $normalizedVariants[] = $variant;
                 }
                 $item->stock_quantity = $stock;
                 $item->price = $lowestPrice ?? 0;
-                $item->variants = $variants;
+                $item->variants = $normalizedVariants;
             } else {
                 $item->variants = null;
                 if (isset($validated['price'])) $item->price = $validated['price'];
@@ -165,6 +197,10 @@ class InventoryController extends Controller
             $item->product_picture = $request->file('product_picture')->store('products', 'public');
         }
 
+        if (array_key_exists('expiration_date', $validated)) {
+            $item->expiration_date = $validated['expiration_date'];
+        }
+
         $item->save();
 
         return response()->json([
@@ -182,12 +218,28 @@ class InventoryController extends Controller
     {
         $store = $request->user()->store;
         $item = Inventory::where('store_id', $store->store_id)->findOrFail($id);
-        
-        $item->status = 'archived';
-        $item->save();
+
+        // order_items.inventory_id cascades on delete, so removing a product that has been sold
+        // would erase it from every past order. Those products can only be archived.
+        $orderedCount = \App\Models\OrderItem::where('inventory_id', $item->inventory_id)->count();
+
+        if ($orderedCount > 0) {
+            return response()->json([
+                'message' => 'This product appears in existing orders and cannot be deleted. Archive it instead to hide it from customers while keeping the order history.',
+            ], 409);
+        }
+
+        $picture = $item->product_picture;
+
+        $item->delete();
+
+        // Only the uploads this app stored; seeded images are shared and stay put.
+        if ($picture && !str_starts_with($picture, 'seed-images/') && Storage::disk('public')->exists($picture)) {
+            Storage::disk('public')->delete($picture);
+        }
 
         return response()->json([
-            'message' => 'Product archived successfully.',
+            'message' => 'Product deleted successfully.',
         ]);
     }
 
@@ -207,8 +259,13 @@ class InventoryController extends Controller
         $categories = \App\Models\Category::withCount(['products' => function ($query) use ($store) {
             $query->where('store_id', $store->store_id)
                   ->where('status', '!=', 'archived');
-        }])->orderBy('category_name')->get();
+        }])
+        ->where(function ($query) use ($store) {
+            $query->whereNull('store_id')->orWhere('store_id', $store->store_id);
+        })
+        ->orderBy('category_name')->get();
 
         return response()->json($categories);
     }
 }
+        

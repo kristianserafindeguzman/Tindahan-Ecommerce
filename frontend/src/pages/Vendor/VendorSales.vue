@@ -20,7 +20,9 @@
               </div>
             </q-popup-proxy>
           </q-btn>
-          <q-btn v-if="$q.screen.lt.lg" unelevated no-caps color="primary" icon="add" :label="t('btnRecordSale')" class="vp-primary-btn" @click="showMobileManualModal = true" />
+          <!-- Shares data-tour with the desktop aside below: only one of the two is ever
+               rendered, so the tutorial finds whichever this screen actually has. -->
+          <q-btn v-if="$q.screen.lt.lg" data-tour="sr-entry" unelevated no-caps color="primary" icon="add" :label="t('btnRecordSale')" class="vp-primary-btn" @click="showMobileManualModal = true" />
         </div>
       </div>
 
@@ -28,9 +30,9 @@
         <div class="sr-main">
 
           <!-- REVENUE — the total, what it came from, and a small bar chart of the records behind it. -->
-          <section class="sr-hero">
+          <section data-tour="sr-hero" class="sr-hero">
             <div class="sr-hero-main">
-              <div class="sr-hero-top">
+              <div data-tour="sr-hero-head" class="sr-hero-top">
                 <span class="sr-eyebrow"><q-icon name="o_payments" size="16px" /> {{ t('eyebrowRevenue') }} · {{ displayDate }}</span>
                 <span v-if="metrics.growthRate" class="sr-growth"><q-icon name="trending_up" size="16px" /> +{{ metrics.growthRate }}% {{ t('vsYesterday') }}</span>
               </div>
@@ -60,7 +62,7 @@
             <q-icon v-else name="o_insights" class="sr-hero-art" aria-hidden="true" />
           </section>
 
-          <div class="vp-stats sr-stats">
+          <div data-tour="sr-stats" class="vp-stats sr-stats">
             <div class="vp-card vp-stat">
               <div class="vp-stat-top">
                 <span class="vp-stat-label">{{ t('statAvgOrderValue') }}</span>
@@ -80,7 +82,7 @@
                 <span class="vp-stat-label">{{ t('statBestSeller') }}</span>
                 <span class="vp-stat-icon vp-tone--wait"><q-icon name="o_emoji_events" size="20px" /></span>
               </div>
-              <div class="vp-stat-value vp-stat-value--text">{{ metrics.bestSellingCategory || t('noDataYet') }}</div>
+              <div class="vp-stat-value vp-stat-value--text">{{ metrics.bestSellingCategory ? categoryLabel(metrics.bestSellingCategory) : t('noDataYet') }}</div>
             </div>
           </div>
 
@@ -182,7 +184,7 @@
         </div>
 
         <!-- RECORD A SALE — beside the records on wide screens, in a sheet on smaller ones. -->
-        <aside v-if="!$q.screen.lt.lg" class="vp-card sr-entry">
+        <aside v-if="!$q.screen.lt.lg" data-tour="sr-entry" class="vp-card sr-entry">
           <div class="sr-entry-head">
             <span class="vp-stat-icon vp-tone--brand"><q-icon name="o_add_shopping_cart" size="20px" /></span>
             <div>
@@ -336,6 +338,7 @@ import { api } from '@/boot/axios'
 import OrderStatusBadge from '@/components/vendor/OrderStatusBadge.vue'
 import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 import { useLanguage } from '@/composables/useLanguage'
+import { useCategoryLabels } from '@/composables/useCategories'
 
 const $q = useQuasar()
 
@@ -472,6 +475,8 @@ const vendorSalesDict = {
 }
 
 const { t } = useLanguage(vendorSalesDict)
+// Seeded category names are stored in English and shown in the current language.
+const { categoryLabel } = useCategoryLabels()
 
 const PAGE_SIZES = [10, 25, 50]
 
@@ -1196,14 +1201,6 @@ onMounted(fetchSalesData)
 
   .sr-card-head {
     padding: 14px 16px;
-  }
-
-  .vp-header-actions {
-    width: 100%;
-  }
-
-  .vp-header-actions .q-btn {
-    flex: 1;
   }
 }
 </style>

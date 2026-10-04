@@ -8,16 +8,16 @@
 
       <div class="page-header-row">
         <div>
-          <h1 class="page-title">Nearby Stores</h1>
-          <p class="page-subtitle">Browse all sari-sari stores near you.</p>
+          <h1 class="page-title">{{ t('Nearby Stores') }}</h1>
+          <p class="page-subtitle">{{ t('Browse all sari-sari stores near you.') }}</p>
         </div>
 
         <div class="page-header-actions">
           <div class="sort-inline">
-            <span class="sort-label">Sort by:</span>
+            <span class="sort-label">{{ t('Sort by:') }}</span>
             <q-select
               v-model="sortBy"
-              :options="SORT_OPTIONS"
+              :options="translateOptions(SORT_OPTIONS)"
               dense
               outlined
               emit-value
@@ -37,7 +37,7 @@
             no-caps
             dense
             icon="o_tune"
-            label="Filters"
+            :label="t('Filters')"
             class="filters-toggle-btn"
             @click="filtersOpen = !filtersOpen"
           >
@@ -57,7 +57,7 @@
           </div>
 
           <p v-if="!storesLoading && !filteredStores.length" class="stores-empty">
-            No stores match your filters.
+            {{ t('No stores match your filters.') }}
           </p>
         </div>
 
@@ -99,6 +99,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
@@ -110,6 +112,8 @@ import AppPagination from '@/components/consumer/AppPagination.vue'
 import { useStores } from '@/composables/useStores'
 import { useGridColumns } from '@/composables/useGridColumns'
 import { useReveal } from '@/composables/useReveal'
+
+const { t, translateOptions } = useConsumerLanguage()
 
 const $q = useQuasar()
 
@@ -292,6 +296,9 @@ const clearFilters = () => {
 }
 
 .filters-toggle-btn {
+  /* A translated sort label ("I-sort ayon sa:") squeezes this row, and the button used to answer by wrapping its label under the icon, outside its fixed height. */
+  flex-shrink: 0;
+  white-space: nowrap;
   position: relative;
 
   height: 36px;
@@ -331,6 +338,7 @@ const clearFilters = () => {
 }
 
 .filters-toggle-btn :deep(.q-btn__content) {
+  flex-wrap: nowrap;
   gap: 6px;
 }
 
@@ -459,6 +467,21 @@ const clearFilters = () => {
 
   .page-header-row {
     flex-wrap: wrap;
+  }
+
+  /* The sort box may shrink on phones so the sort label, sort box and Filters stay on one line, even with the longer Filipino label. */
+  .page-header-actions {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .sort-inline {
+    min-width: 0;
+  }
+
+  .sort-select {
+    flex: 0 1 auto;
+    min-width: 0;
   }
 
   .page-subtitle {

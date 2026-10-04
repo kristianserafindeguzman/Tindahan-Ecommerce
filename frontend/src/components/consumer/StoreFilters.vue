@@ -2,22 +2,22 @@
   <div class="store-filters" :class="{ 'store-filters-sheet': isSheet }">
     <div class="filters-panel-header">
       <div class="filters-panel-title-group">
-        <span class="filters-panel-title">Filters</span>
+        <span class="filters-panel-title">{{ t('Filters') }}</span>
       </div>
-      <q-btn flat dense round :ripple="false" icon="o_close" class="filters-close-btn" aria-label="Close filters" @click="$emit('close')" />
+      <q-btn flat dense round :ripple="false" icon="o_close" class="filters-close-btn" :aria-label="t('Close filters')" @click="$emit('close')" />
     </div>
 
     <div class="filters-scroll">
       <div class="filter-group filter-group-row">
-        <label class="filter-label filter-label-inline">Open Now</label>
+        <label class="filter-label filter-label-inline">{{ t('Open Now') }}</label>
         <q-toggle v-model="openNow" dense color="primary" />
       </div>
 
       <div class="filter-group">
-        <label class="filter-label">Sort by</label>
+        <label class="filter-label">{{ t('Sort by') }}</label>
         <q-select
           v-model="sort"
-          :options="sortOptions"
+          :options="translateOptions(sortOptions)"
           dense
           outlined
           emit-value
@@ -32,7 +32,7 @@
       <q-separator class="filters-divider" />
 
       <q-btn
-        label="Apply Filters"
+        :label="t('Apply Filters')"
         unelevated
         no-caps
         class="apply-filters-btn"
@@ -40,13 +40,17 @@
       />
 
       <div class="clear-filters-row">
-        <span class="clear-filters-link" @click="$emit('clear')">Clear all filters</span>
+        <span class="clear-filters-link" @click="$emit('clear')">{{ t('Clear all filters') }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
+const { t, translateOptions } = useConsumerLanguage()
+
 defineProps({
   sortOptions: {
     type: Array,
@@ -152,6 +156,28 @@ const sort = defineModel('sort')
 
 .filters-close-btn:hover {
   background: var(--c-hairline);
+}
+
+/* In the phone bottom sheet the close button grows to a 44px thumb-sized target. */
+:global(.q-dialog__inner--bottom .filters-close-btn) {
+  width: 44px;
+  height: 44px;
+}
+
+:global(.q-dialog__inner--bottom .filters-close-btn .q-icon) {
+  font-size: 26px;
+}
+
+/* Touch screens get the same thumb-sized close button in the side panel too, e.g. a tablet held sideways. */
+@media (pointer: coarse) {
+  .filters-close-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .filters-close-btn :deep(.q-icon) {
+    font-size: 26px;
+  }
 }
 
 .filter-group {

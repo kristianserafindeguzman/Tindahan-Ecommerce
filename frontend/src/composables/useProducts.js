@@ -17,6 +17,8 @@ const load = async (params) => {
       name: product.name,
       description: product.description,
       category: product.category,
+      // Kept alongside the name so search logging can use the id directly instead of matching category names back to ids.
+      categoryId: product.category_id,
       price: Number(product.price),
       image: product.image,
       store: product.store,
@@ -24,7 +26,8 @@ const load = async (params) => {
       inStock: product.inStock,
       availableQuantity: product.availableQuantity,
       variants: product.variants,
-      distance_meters: product.distance_meters
+      distance_meters: product.distance_meters,
+      expiration_date: product.expiration_date
     }))
   } catch (error) {
     console.error('Failed to load products', error)

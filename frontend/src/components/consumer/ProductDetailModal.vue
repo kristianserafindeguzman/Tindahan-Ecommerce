@@ -4,7 +4,7 @@
 
       <div v-if="isSheet" class="detail-drag-handle" />
 
-      <q-btn icon="o_close" flat round dense class="close-btn" aria-label="Close product details" v-close-popup />
+      <q-btn icon="o_close" flat round dense class="close-btn" :aria-label="t('Close product details')" v-close-popup />
 
       <div class="detail-scroll">
 
@@ -20,8 +20,8 @@
             />
             <q-icon v-else name="o_inventory_2" size="48px" />
 
-            <span v-if="product.category" class="detail-category-tag">{{ product.category }}</span>
-            <span v-if="!product.inStock" class="detail-oos-tag">Out of Stock</span>
+            <span v-if="product.category" class="detail-category-tag">{{ t(product.category) }}</span>
+            <span v-if="!product.inStock" class="detail-oos-tag">{{ t('Out of Stock') }}</span>
           </div>
 
           <div class="detail-info">
@@ -31,15 +31,21 @@
               <div class="detail-price">₱{{ displayPrice.toFixed(2) }}</div>
 
               <div class="detail-stock" :class="{ 'detail-stock-oos': !product.inStock }">
-                {{ product.inStock ? 'In Stock' : 'Out of Stock' }}
+                {{ product.inStock ? t('In Stock') : t('Out of Stock') }}
               </div>
             </div>
 
             <p v-if="product.description" class="detail-description">{{ product.description }}</p>
 
+            <!-- EXPIRATION DATE / BEST BEFORE -->
+            <div v-if="expiryDate" class="detail-expiry">
+              <q-icon name="o_event" size="14px" />
+              <span>{{ t('Best Before') }}: {{ expiryDate }}</span>
+            </div>
+
             <!-- VARIANTS -->
             <div v-if="hasVariants" class="variants-section">
-              <div class="variants-label">Available Sizes</div>
+              <div class="variants-label">{{ t('Available Sizes') }}</div>
               <div class="variants-list">
                 <q-btn
                   v-for="(variant, i) in product.variants"
@@ -64,12 +70,12 @@
             <!-- Desktop: in-flow with the rest of the product info. -->
             <div v-if="!isSheet" class="cart-action-row">
               <div v-if="product.inStock" class="quantity-row">
-                <span class="quantity-label">Quantity</span>
+                <span class="quantity-label">{{ t('Quantity') }}</span>
                 <div class="stepper-wrapper">
                   <div class="quantity-stepper">
-                    <q-btn flat dense :ripple="false" icon="o_remove" class="stepper-btn" :disable="quantity <= 1" aria-label="Decrease quantity" @click="quantity--" />
+                    <q-btn flat dense :ripple="false" icon="o_remove" class="stepper-btn" :disable="quantity <= 1" :aria-label="t('Decrease quantity')" @click="quantity--" />
                     <span class="stepper-value">{{ quantity }}</span>
-                    <q-btn flat dense :ripple="false" icon="o_add" class="stepper-btn" :disable="quantity >= maxQuantity" aria-label="Increase quantity" @click="quantity++" />
+                    <q-btn flat dense :ripple="false" icon="o_add" class="stepper-btn" :disable="quantity >= maxQuantity" :aria-label="t('Increase quantity')" @click="quantity++" />
                   </div>
                 </div>
               </div>
@@ -80,7 +86,7 @@
                 icon="o_shopping_cart"
                 :disable="!product.inStock"
                 :loading="adding"
-                label="Add to Cart"
+                :label="t('Add to Cart')"
                 class="add-to-cart-btn"
                 @click="handleAddToCart"
               />
@@ -91,21 +97,22 @@
 
         <!-- STORE INFO -->
         <div v-if="store" class="store-section">
-          <div class="store-section-label">About this Store</div>
+          <div class="store-section-label">{{ t('About this Store') }}</div>
 
           <div class="store-row" v-close-popup @click="router.push(`/consumer/stores/${store.slug || store.id}`)">
             <div class="store-row-info">
               <div class="store-row-name">{{ store.name }}</div>
               <div class="store-row-status" :class="{ 'store-row-status-closed': !store.isOpen }">
-                {{ store.scheduleStatusText || (store.isOpen ? `Open until ${store.closesAt}` : 'Closed now') }}
+                {{ storeStatus(store) }}
               </div>
-              <div v-if="storeAddressText" class="store-row-address">
-                <q-icon name="o_location_on" size="12px" />
-                <span class="store-row-address-text">{{ storeAddressText }}</span>
+              <!-- One line, travel first: a long address is what gets cut off, never the minutes. -->
+              <div v-if="storeMetaText" class="store-row-address">
+                <q-icon :name="store.distance_meters != null ? travelIcon(store.distance_meters) : 'o_location_on'" size="12px" />
+                <span class="store-row-address-text">{{ storeMetaText }}</span>
               </div>
             </div>
             <div class="store-row-link">
-              View Store
+              {{ t('View Store') }}
               <q-icon name="o_chevron_right" size="16px" />
             </div>
           </div>
@@ -116,9 +123,9 @@
           <div v-if="product.inStock" class="quantity-row">
             <div class="stepper-wrapper">
               <div class="quantity-stepper">
-                <q-btn flat dense :ripple="false" icon="o_remove" class="stepper-btn" :disable="quantity <= 1" aria-label="Decrease quantity" @click="quantity--" />
+                <q-btn flat dense :ripple="false" icon="o_remove" class="stepper-btn" :disable="quantity <= 1" :aria-label="t('Decrease quantity')" @click="quantity--" />
                 <span class="stepper-value">{{ quantity }}</span>
-                <q-btn flat dense :ripple="false" icon="o_add" class="stepper-btn" :disable="quantity >= maxQuantity" aria-label="Increase quantity" @click="quantity++" />
+                <q-btn flat dense :ripple="false" icon="o_add" class="stepper-btn" :disable="quantity >= maxQuantity" :aria-label="t('Increase quantity')" @click="quantity++" />
               </div>
             </div>
           </div>
@@ -129,7 +136,7 @@
             icon="o_shopping_cart"
             :disable="!product.inStock"
             :loading="adding"
-            label="Add to Cart"
+            :label="t('Add to Cart')"
             class="add-to-cart-btn"
             @click="handleAddToCart"
           />
@@ -142,12 +149,16 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { useStores } from '@/composables/useStores'
-import { formatDistance } from '@/utils/distance'
+import { formatDistance, formatTravelTime, travelIcon } from '@/utils/distance'
 import { useCart } from '@/composables/useCart'
+
+const { t, locale, storeStatus } = useConsumerLanguage()
 
 const props = defineProps({
   modelValue: Boolean,
@@ -179,14 +190,29 @@ const store = computed(() =>
   props.product ? stores.value.find((s) => s.id === props.product.storeId) || null : null
 )
 
-const storeAddressText = computed(() => {
+// "430 m · 7 min walk · 456 Quezon Avenue, Quezon City"
+const storeMetaText = computed(() => {
   if (!store.value) return ''
-  const dist = store.value.distance_meters != null ? formatDistance(store.value.distance_meters) : ''
-  if (store.value.address && dist) return `${store.value.address} (${dist})`
-  return store.value.address || dist
+  const parts = []
+  if (store.value.distance_meters != null) {
+    parts.push(formatDistance(store.value.distance_meters), formatTravelTime(store.value.distance_meters))
+  }
+  if (store.value.address) parts.push(store.value.address)
+  return parts.join(' · ')
 })
 
 const hasVariants = computed(() => Array.isArray(props.product?.variants) && props.product.variants.length > 0)
+
+// Formatted through the shopper's own locale, like the notification timestamps. Returns ''
+// for a missing or unparseable date so the row hides itself rather than printing the
+// literal "Invalid Date" next to Best Before.
+const expiryDate = computed(() => {
+  const raw = props.product?.expiration_date
+  if (!raw) return ''
+  const parsed = new Date(raw)
+  if (Number.isNaN(parsed.getTime())) return ''
+  return parsed.toLocaleDateString(locale.value)
+})
 
 const imageFailed = ref(false)
 const quantity = ref(1)
@@ -230,10 +256,11 @@ const handleAddToCart = async () => {
 
   adding.value = true
   try {
-    await addToCart(props.product.id, quantity.value)
-    $q.notify({ type: 'positive', message: `${props.product.name} added to cart.` })
+    const variantName = selectedVariant.value?.name || selectedVariant.value?.size || selectedVariant.value?.label || null
+    await addToCart(props.product.id, quantity.value, variantName)
+    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: props.product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
   } finally {
     adding.value = false
   }
@@ -319,6 +346,13 @@ const handleAddToCart = async () => {
 
   background: rgba(255, 255, 255, 0.92);
   color: var(--c-text-2);
+
+  /* One line, cut with an ellipsis: long category names used to wrap onto a second line. */
+  max-width: calc(100% - 24px);
+  overflow: hidden;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
 
   font-size: var(--fs-2xs);
   font-weight: 700;
@@ -410,6 +444,22 @@ const handleAddToCart = async () => {
   color: var(--c-subtle);
 }
 
+/* BEST BEFORE — the one block in this column that had no rule of its own. It was styled
+   inline with a top margin and no bottom one, so it sat hard against the Available Sizes
+   label below it; it now carries the same 18px rhythm as its neighbours. */
+.detail-expiry {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+  margin: 0 0 18px;
+
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+
+  color: var(--c-subtle);
+}
+
 /* VARIANTS */
 
 .variants-section {
@@ -440,10 +490,11 @@ const handleAddToCart = async () => {
   min-height: auto;
 
   border-radius: var(--r-pill);
-  border: 1px solid var(--c-brand-tint-3);
+  border: 1px solid var(--c-border);
 
-  background: var(--c-brand-tint);
-  color: var(--c-brand-deep);
+  /* Neutral until picked: the old red tint made every size look already chosen. */
+  background: var(--c-surface);
+  color: var(--c-text-2);
 
   font-family: inherit;
   font-size: var(--fs-sm);
@@ -455,8 +506,8 @@ const handleAddToCart = async () => {
 }
 
 .variant-chip:hover:not(.disabled) {
-  border-color: var(--c-brand-tint-3);
-  background: var(--c-brand-tint-2);
+  border-color: var(--c-border-strong);
+  background: var(--c-hairline);
 }
 
 .variant-chip-selected,
@@ -470,7 +521,8 @@ const handleAddToCart = async () => {
 .variant-chip-oos {
   border-color: var(--c-border);
 
-  background: var(--c-surface);
+  /* A step darker than an available size, so the two never look alike. */
+  background: var(--c-hairline);
   color: var(--c-muted);
 
   text-decoration: line-through;
@@ -723,6 +775,16 @@ const handleAddToCart = async () => {
 
 .detail-card-sheet .close-btn {
   top: 20px;
+
+  /* A 44px thumb-sized target on the phone sheet. */
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.detail-card-sheet .close-btn :deep(.q-icon) {
+  font-size: 26px;
 }
 
 .detail-card-sheet .detail-grid {

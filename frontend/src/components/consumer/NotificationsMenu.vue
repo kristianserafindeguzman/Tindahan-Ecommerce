@@ -16,20 +16,20 @@
         class="notif__panel"
       >
       <div class="notif__head">
-        Notifications
+        {{ t('Notifications') }}
         <q-btn
           v-if="unreadCount"
           flat
           dense
           no-caps
           size="sm"
-          label="Mark all as read"
+          :label="t('Mark all as read')"
           color="primary"
           @click="markAllAsRead"
         />
       </div>
 
-      <p v-if="!notifications.length" class="notif__empty">No notifications yet.</p>
+      <p v-if="!notifications.length" class="notif__empty">{{ t('No notifications yet.') }}</p>
 
       <q-list v-else class="notif__scroll">
         <q-item
@@ -52,7 +52,7 @@
       <q-btn
         unelevated
         no-caps
-        label="View All Notifications"
+        :label="t('View All Notifications')"
         class="notif__view-all"
         @click="goToAll"
       />
@@ -62,10 +62,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
+import {
+  NOTIFICATION_READ_STATE_EVENT,
+  applyNotificationReadState,
+  publishNotificationReadState
+} from '@/utils/notificationSync'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -85,10 +94,14 @@ const MAX_SHOWN = 10
 const notifications = ref([])
 const open = ref(false)
 
+const syncNotificationReadState = event => {
+  applyNotificationReadState(notifications.value, event.detail)
+}
+
 const unreadCount = computed(() => notifications.value.filter((n) => !n.is_read).length)
 
 const ariaLabel = computed(() =>
-  unreadCount.value ? `Notifications, ${unreadCount.value} unread` : 'Notifications'
+  unreadCount.value ? t('Notifications, {count} unread', { count: unreadCount.value }) : t('Notifications')
 )
 
 const isLoggedIn = () => !!localStorage.getItem('auth_token')
@@ -114,17 +127,26 @@ const toggle = () => {
   if (open.value) fetchNotifications()
 }
 
-onMounted(fetchNotifications)
+onMounted(() => {
+  window.addEventListener(NOTIFICATION_READ_STATE_EVENT, syncNotificationReadState)
+  fetchNotifications()
+})
 
-// Marked locally first so the badge responds immediately; the request is best-effort.
+onBeforeUnmount(() => {
+  window.removeEventListener(NOTIFICATION_READ_STATE_EVENT, syncNotificationReadState)
+})
+
+// Mark locally for an immediate badge update, then restore it if persistence fails.
 const markAsRead = async (id) => {
   const notif = notifications.value.find((n) => n.notification_id === id)
   if (!notif || notif.is_read) return
   notif.is_read = true
   try {
     await api.patch(`/consumer/notifications/${id}/read`)
-  } catch {
-    // Stays read locally; the next fetch reconciles it.
+    publishNotificationReadState({ notificationId: id, isRead: true })
+  } catch (error) {
+    notif.is_read = false
+    console.error('Failed to mark notification as read', error)
   }
 }
 
@@ -143,11 +165,15 @@ const goToAll = () => {
 }
 
 const markAllAsRead = async () => {
+  const previous = notifications.value.map((n) => n.is_read)
   notifications.value.forEach((n) => { n.is_read = true })
   try {
     await api.post('/consumer/notifications/read-all')
-  } catch {
-    // Same best-effort treatment as markAsRead.
+    publishNotificationReadState({ all: true, isRead: true })
+  } catch (error) {
+    notifications.value.forEach((n, index) => { n.is_read = previous[index] })
+    console.error('Failed to mark all notifications as read', error)
+    $q.notify({ type: 'negative', message: t('Could not mark notifications as read') })
   }
 }
 </script>

@@ -1,6 +1,8 @@
 import { ref } from 'vue'
 
-const globalLang = ref(localStorage.getItem('vendor_lang') || 'en')
+// Globally shared state across Admin, Vendor, and Consumer.
+// Checks the new global key first, falls back to the old vendor key so no one's preference resets.
+const globalLang = ref(localStorage.getItem('tindahan_lang') || localStorage.getItem('vendor_lang') || 'en')
 
 // Global fallback dictionary for order statuses
 const globalStatusDict = {
@@ -24,9 +26,18 @@ const globalStatusDict = {
 
 export function useLanguage(componentDict = {}) {
   
+  // NEW: Added setLanguage so AdminLayout can use it
+  const setLanguage = (newLang) => {
+    globalLang.value = newLang
+    localStorage.setItem('tindahan_lang', newLang)
+    // Keep vendor_lang updated just in case older components rely on it directly
+    localStorage.setItem('vendor_lang', newLang) 
+  }
+
+  // Refactored to use the new setLanguage
   const toggleLanguage = () => {
-    globalLang.value = globalLang.value === 'en' ? 'ph' : 'en'
-    localStorage.setItem('vendor_lang', globalLang.value)
+    const nextLang = globalLang.value === 'en' ? 'ph' : 'en'
+    setLanguage(nextLang)
   }
 
   const t = (key) => {
@@ -37,6 +48,11 @@ export function useLanguage(componentDict = {}) {
       return componentDict[globalLang.value][key]
     }
 
+    // NEW: Fallback to English if translation is missing in Filipino
+    if (globalLang.value !== 'en' && componentDict['en']?.[key]) {
+      return componentDict['en'][key]
+    }
+
     // 2. Normalize status strings (e.g. "Ready for pickup" -> "ready_for_pickup")
     const normalizedKey = String(key).toLowerCase().trim().replace(/[\s-]+/g, '_')
 
@@ -45,6 +61,7 @@ export function useLanguage(componentDict = {}) {
       return globalStatusDict[globalLang.value][normalizedKey]
     }
 
+    // Fallback to the exact key name if not found anywhere
     return key
   }
 
@@ -67,6 +84,7 @@ export function useLanguage(componentDict = {}) {
 
   return { 
     lang: globalLang, 
+    setLanguage, // Exported for Admin
     toggleLanguage, 
     t, 
     getStatusTone, 

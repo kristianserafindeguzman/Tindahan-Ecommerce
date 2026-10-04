@@ -10,6 +10,7 @@ use App\Models\Notification;
 use App\Models\Order;
 use App\Models\Store;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\Sanctum;
 use Tests\RefreshesTestDatabase;
 use Tests\TestCase;
@@ -45,6 +46,10 @@ class VendorNotificationTest extends TestCase
             'closing_time' => '20:00:00',
             'latitude' => 14.5764,
             'longitude' => 121.0851,
+            // Opening hours are read from operating_days, and a store without them counts as closed.
+            'operating_days' => collect(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+                ->mapWithKeys(fn ($day) => [$day => ['is_open' => true, 'opening_time' => '08:00', 'closing_time' => '20:00']])
+                ->all(),
         ]);
     }
 
@@ -108,8 +113,18 @@ class VendorNotificationTest extends TestCase
         ]);
         CartItem::forceCreate(['consumer_id' => $consumer->user_id, 'inventory_id' => $item->inventory_id, 'quantity' => 2]);
 
+        // Checkout refuses a closed store and a shopper with no location, so the clock sits inside the
+        // store's 8 AM-8 PM hours and the request carries coordinates, as ScheduledPickupTest does.
+        Carbon::setTestNow(Carbon::parse('2026-09-29 10:00:00', 'Asia/Manila'));
+
         Sanctum::actingAs($consumer);
-        $orderId = $this->postJson('/api/consumer/checkout', ['store_id' => $store->store_id])->assertCreated()->json('order.order_id');
+        $orderId = $this->postJson('/api/consumer/checkout', [
+            'store_id' => $store->store_id,
+            'consumer_latitude' => 14.57,
+            'consumer_longitude' => 121.08,
+        ])->assertCreated()->json('order.order_id');
+
+        Carbon::setTestNow();
 
         $notice = Notification::where('user_id', $vendor->user_id)->first();
         $this->assertNotNull($notice);

@@ -1,11 +1,40 @@
 // Distance formatting and measurement, extracted from eight consumer files that each carried an identical copy.
+// Non-breaking spaces keep "7 m" on one line when a long address beside it wraps.
+const keepTogether = (text) => text.replace(/ /g, ' ')
 
-/** Metres to a short string such as 820 m away or 1.4 km away, or an empty string for null. */
+/** Metres to a short string such as 820 m or 1.4 km, or an empty string for null. */
 export function formatDistance(meters) {
   if (meters == null) return ''
   const rounded = Math.round(meters)
-  if (rounded < 1000) return `${rounded} m away`
-  return `${(meters / 1000).toFixed(1)} km away`
+  if (rounded < 1000) return keepTogether(`${rounded} m`)
+  return keepTogether(`${(meters / 1000).toFixed(1)} km`)
+}
+
+// Travel-time estimate. There is no routing service, only straight-line distance, so these are deliberately plain assumptions.
+const ROAD_FACTOR = 1.3 // streets wind; the straight line is shorter than the walk
+const WALK_M_PER_MIN = 80 // about 4.8 km/h
+
+/** Straight-line metres to estimated walking minutes, or null for null. */
+export function estimateTravel(meters) {
+  if (meters == null) return null
+  const minutes = Math.max(1, Math.ceil((meters * ROAD_FACTOR) / WALK_M_PER_MIN))
+  return { minutes, mode: 'walk' }
+}
+
+/** Metres to "7 min walk" or "1 hr 20 min walk", or an empty string for null. Kept in English in both languages by design. */
+export function formatTravelTime(meters) {
+  const travel = estimateTravel(meters)
+  if (!travel) return ''
+  if (travel.minutes < 60) return keepTogether(`${travel.minutes} min walk`)
+
+  const hours = Math.floor(travel.minutes / 60)
+  const minutes = travel.minutes % 60
+  return keepTogether(minutes ? `${hours} hr ${minutes} min walk` : `${hours} hr walk`)
+}
+
+/** Material icon for walking travel estimates. */
+export function travelIcon() {
+  return 'o_directions_walk'
 }
 
 /** Coordinate to a finite number or null, rejecting what PHP's is_numeric rejects, since Number(null) would give a valid 0. */

@@ -14,6 +14,10 @@ return [
     |
     */
 
+    'ml_api' => [
+        'url' => env('ML_API_URL'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],
@@ -40,6 +44,14 @@ return [
     'sender_name' => env('SEMAPHORE_SENDER_NAME', 'Thesis'),
     // When set on a local machine, every code is this value and no text is sent, so sign-up can be tried without a phone.
     'fake_code' => env('SEMAPHORE_FAKE_CODE'),
+    ],
+
+    'tindahan' => [
+        'logo_url' => env('TINDahan_LOGO_URL'),
+    ],
+
+    'frontend' => [
+        'url' => env('FRONTEND_URL'),
     ],
 
 ];

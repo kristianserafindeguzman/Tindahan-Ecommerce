@@ -186,24 +186,6 @@ class SalesController extends Controller
 
         $storeId = $vendor->store->store_id;
 
-        // Verify inventory belongs to vendor
-        $inventory = Inventory::where('inventory_id', $request->inventory_id)
-            ->where('store_id', $storeId)
-            ->first();
-
-        if (!$inventory) {
-            return response()->json(['message' => 'Invalid inventory item.'], 400);
-        }
-
-        // Reduce stock
-        if ($inventory->stock_quantity >= $request->quantity) {
-            $inventory->stock_quantity -= $request->quantity;
-            $inventory->save();
-        } else {
-            return response()->json(['message' => 'Insufficient stock for this manual sale.'], 400);
-        }
-
-        // Create the Order inside a transaction
         // Ensure manual sales save exactly the intended date by forcing UTC 
         // since the app uses default UTC for updated_at storage but we want it
         // to show up under that exact day in Asia/Manila.
@@ -211,27 +193,52 @@ class SalesController extends Controller
         $saleDateUtc = clone $saleDateManila;
         $saleDateUtc->setTimezone('UTC');
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($vendor, $storeId, $request, $inventory, $saleDateUtc) {
-            $order = new Order();
-            $order->consumer_id = $vendor->user_id; // Map manual sale to the vendor themselves
-            $order->store_id = $storeId;
-            $order->total_amount = $request->total_amount;
-            $order->status = 'picked_up';
-            $order->timestamps = false;
-            $order->created_at = $saleDateUtc;
-            $order->updated_at = $saleDateUtc;
-            $order->save();
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($vendor, $storeId, $request, $saleDateUtc) {
+                // Fetch inventory with lockForUpdate
+                $inventory = Inventory::where('inventory_id', $request->inventory_id)
+                    ->where('store_id', $storeId)
+                    ->lockForUpdate()
+                    ->first();
 
-            // Create the OrderItem
-            $orderItem = new OrderItem();
-            $orderItem->order_id = $order->order_id;
-            $orderItem->inventory_id = $inventory->inventory_id;
-            $orderItem->quantity = $request->quantity;
-            $orderItem->subtotal = $request->total_amount;
-            $orderItem->unit_price = $request->unit_price;
-            $orderItem->save();
-        });
+                if (!$inventory) {
+                    throw new \Exception('Invalid inventory item.');
+                }
 
-        return response()->json(['message' => 'Manual sale recorded successfully']);
+                $availableQuantity = $inventory->stock_quantity - $inventory->reserved_quantity;
+
+                // Reduce stock
+                if ($availableQuantity >= $request->quantity) {
+                    $inventory->stock_quantity -= $request->quantity;
+                    $inventory->save();
+                } else {
+                    throw new \Exception('Insufficient stock for this manual sale.');
+                }
+
+                // Create the Order
+                $order = new Order();
+                $order->consumer_id = $vendor->user_id; // Map manual sale to the vendor themselves
+                $order->store_id = $storeId;
+                $order->total_amount = $request->total_amount;
+                $order->status = 'picked_up';
+                $order->timestamps = false;
+                $order->created_at = $saleDateUtc;
+                $order->updated_at = $saleDateUtc;
+                $order->save();
+
+                // Create the OrderItem
+                $orderItem = new OrderItem();
+                $orderItem->order_id = $order->order_id;
+                $orderItem->inventory_id = $inventory->inventory_id;
+                $orderItem->quantity = $request->quantity;
+                $orderItem->subtotal = $request->total_amount;
+                $orderItem->unit_price = $request->unit_price;
+                $orderItem->save();
+            });
+
+            return response()->json(['message' => 'Manual sale recorded successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
     }
 }

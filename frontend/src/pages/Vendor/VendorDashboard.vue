@@ -5,9 +5,13 @@
       <!-- ================= WELCOME BANNER ================= -->
       <!-- The consumer home's red banner, turned into the store owner's daily welcome. -->
       <!-- Its colour and icon follow the time of day, from a sunrise orange to a night indigo. -->
-      <section class="dash-hero" :class="`dash-hero--${dayPhase.key}`">
+      <section data-tour="dash-hero" class="dash-hero" :class="`dash-hero--${dayPhase.key}`">
         <div class="dash-hero-content">
           <div class="hero-eyebrow-row">
+            <span class="hero-eyebrow hero-eyebrow--panel">
+              <q-icon name="o_storefront" size="14px" />
+              {{ t('panelLabel').replace('{store}', vendorStore?.store_name || t('myStoreFallback')) }}
+            </span>
             <span class="hero-eyebrow">
               <q-icon :name="dayPhase.icon" size="14px" />
               {{ currentDate }}
@@ -45,7 +49,7 @@
       </section>
 
       <!-- ================= ORDER COUNTS ================= -->
-      <div class="row q-col-gutter-md q-mb-md">
+      <div data-tour="dash-kpis" class="row q-col-gutter-md q-mb-md">
         <div v-for="kpi in kpis" :key="kpi.key" class="col-6 col-md-3">
           <div class="dash-card kpi-card">
             <div class="kpi-top">
@@ -64,8 +68,8 @@
 
         <!-- ================= REVENUE ================= -->
         <div class="col-12 col-md-8">
-          <div class="dash-card dash-card--fill">
-            <div class="card-header">
+          <div data-tour="dash-revenue" class="dash-card dash-card--fill">
+            <div data-tour="dash-revenue-head" class="card-header card-header--stack">
               <div>
                 <div class="section-title">{{ t('revenueTitle') }}</div>
                 <div class="section-subtitle">{{ t('revenueSub') }}</div>
@@ -111,8 +115,8 @@
         <!-- ================= DEMAND FORECAST ================= -->
         <div class="col-12 col-md-4">
           <!-- The forecast is the system's own prediction, so it gets a deep red card of its own. -->
-          <div class="dash-card dash-card--fill forecast-card">
-            <div class="card-header">
+          <div data-tour="dash-forecast" class="dash-card dash-card--fill forecast-card">
+            <div data-tour="dash-forecast-head" class="card-header">
               <div>
                 <div class="section-title forecast-title">
                   <span class="forecast-badge"><q-icon name="o_auto_awesome" size="16px" /></span>
@@ -122,6 +126,7 @@
               </div>
               <q-btn flat round dense icon="o_refresh" size="sm" class="forecast-refresh-btn"
                 :loading="mlForecast.refreshing"
+                :aria-label="t('refreshForecast')"
                 @click="refreshForecast" />
             </div>
 
@@ -173,8 +178,8 @@
       </div>
 
       <!-- ================= RECENT ORDERS ================= -->
-      <div class="dash-card">
-        <div class="card-header">
+      <div data-tour="dash-recent" class="dash-card">
+        <div data-tour="dash-recent-head" class="card-header">
           <div>
             <div class="section-title">{{ t('recentOrdersTitle') }}</div>
             <div class="section-subtitle">{{ t('recentOrdersSub') }}</div>
@@ -273,7 +278,8 @@
           <div class="preview-banner">
             <img v-if="vendorStore?.store_picture_url" :src="vendorStore.store_picture_url" alt="Storefront" />
             <div v-else class="preview-banner-empty"><q-icon name="o_storefront" size="48px" /></div>
-            <span class="store-status preview-status" :class="isStoreOpen ? 'store-status--open' : 'store-status--closed'">
+            <!-- Same guard as the banner pill, so a dialog opened mid-load never shows "Closed now" for an open store. -->
+            <span v-if="!loading" class="store-status preview-status" :class="isStoreOpen ? 'store-status--open' : 'store-status--closed'">
               <span class="store-status-dot" />
               {{ isStoreOpen ? t('openNow') : t('closedNow') }}
             </span>
@@ -341,6 +347,7 @@ import { useVendorNotifications } from '@/composables/useVendorNotifications'
 import { useLanguage } from '@/composables/useLanguage'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { markerIconUrl, markerIcon2xUrl, markerShadowUrl } from '@/utils/leafletDefaultIcon'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -354,6 +361,7 @@ const dashboardDict = {
     greetingEvening: 'Good evening',
     heroSub: "Here's how {store} is doing today.",
     yourStoreFallback: 'your store',
+    panelLabel: '{store} Panel',
     viewStore: 'View Store',
     manageProducts: 'Manage Products',
     kpiPlaced: 'Placed Orders',
@@ -368,6 +376,7 @@ const dashboardDict = {
     totalPeriod: 'Total for this period',
     forecastTitle: 'Demand Forecast',
     forecastSub: 'Items likely to sell today.',
+    refreshForecast: 'Refresh forecast',
     forecastLoading: 'Reading your recent sales…',
     forecastErrorTitle: 'Forecast unavailable',
     forecastErrorSub: "We couldn't load predictions right now.",
@@ -415,6 +424,7 @@ const dashboardDict = {
     greetingEvening: 'Magandang gabi',
     heroSub: 'Ganito ang lagay ng {store} ngayong araw.',
     yourStoreFallback: 'iyong tindahan',
+    panelLabel: 'Panel ng {store}',
     viewStore: 'Tingnan ang Tindahan',
     manageProducts: 'I-manage ang Paninda',
     kpiPlaced: 'Mga Order',
@@ -429,6 +439,7 @@ const dashboardDict = {
     totalPeriod: 'Kabuuan para sa panahong ito',
     forecastTitle: 'Demand Forecast',
     forecastSub: 'Panindang malamang na mabenta ngayon.',
+    refreshForecast: 'I-refresh ang forecast',
     forecastLoading: 'Binabasa ang mga benta mo…',
     forecastErrorTitle: 'Walang forecast',
     forecastErrorSub: 'Hindi ma-load ang mga prediction ngayon.',
@@ -486,7 +497,7 @@ const getStatusTone = (status) => {
 const translateStatus = (status) => {
   if (!status) return ''
   const key = String(status).toLowerCase().trim().replace(/[\s-]+/g, '_')
-  
+
   const statusDict = {
     en: {
       placed: 'Placed',
@@ -786,9 +797,9 @@ const initMap = async () => {
       }).addTo(map)
 
       const icon = L.icon({
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconUrl: markerIconUrl,
+        iconRetinaUrl: markerIcon2xUrl,
+        shadowUrl: markerShadowUrl,
         iconSize: [25, 41],
         iconAnchor: [12, 41],
         popupAnchor: [1, -34],
@@ -863,15 +874,20 @@ onMounted(async () => {
 
 const refreshForecast = async () => {
   mlForecast.value.refreshing = true
+
   try {
     const { data } = await api.post('/vendor/demand-forecast/refresh')
-    if (data) {
-      mlForecast.value.has_forecast = data.has_forecast
+
+    if (data?.has_forecast) {
+      mlForecast.value.has_forecast = true
       mlForecast.value.low_data_warning = data.low_data_warning || false
       mlForecast.value.summary = data.summary
       mlForecast.value.top_products = data.top_products || []
       mlForecast.value.generated_at = data.generated_at
+    } else {
+      console.warn('Forecast refresh returned no forecast:', data)
     }
+
   } catch (err) {
     console.error('Failed to refresh forecast:', err)
   } finally {
@@ -1052,6 +1068,12 @@ const refreshForecast = async () => {
   white-space: nowrap;
 }
 
+/* The store-identity badge sits a touch bolder than the date pill beside it, so "[Store] Panel" reads first. */
+.hero-eyebrow--panel {
+  background: rgba(255, 255, 255, 0.2);
+  font-weight: 700;
+}
+
 .hero-title {
   margin: 0 0 8px;
 
@@ -1150,8 +1172,9 @@ const refreshForecast = async () => {
   color: var(--c-success);
 }
 
+/* A fixed red, since the pill stays white in dark mode too, where the grey text token turns light and vanishes. */
 .hero-status--closed {
-  color: var(--c-text-3);
+  color: #b91c1c;
 }
 
 /* The bell is a square outline button beside Manage Products, part of the banner's own row of actions. */
@@ -1506,6 +1529,29 @@ const refreshForecast = async () => {
 
 .forecast-card .section-subtitle {
   color: rgba(255, 255, 255, 0.72);
+}
+
+/* A soft glass circle on the red card, so the refresh reads as a button and not a stray glyph. */
+.forecast-refresh-btn {
+  flex-shrink: 0;
+
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+
+  transition: background-color 0.15s;
+}
+
+.forecast-refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.forecast-refresh-btn :deep(.q-icon) {
+  font-size: 18px;
 }
 
 .forecast-badge {
@@ -2088,6 +2134,7 @@ const refreshForecast = async () => {
 
 .preview-status.store-status--closed {
   background: #ffffff;
+  color: #b91c1c;
 }
 
 .info-row {
@@ -2284,9 +2331,21 @@ const refreshForecast = async () => {
     font-size: var(--fs-2xl);
   }
 
+  /* Other card headers keep their action (Refresh, View All) at the top right, beside a
+     title block that gives way to it instead of pushing it onto a row of its own. */
+  .card-header {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .card-header > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
   /* Revenue card — the segmented control and chart both need their own row and a
      contained width on phones, or the card overflows and the chart mismeasures. */
-  .card-header {
+  .card-header--stack {
     flex-direction: column;
     align-items: stretch;
   }

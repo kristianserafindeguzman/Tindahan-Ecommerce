@@ -1,41 +1,33 @@
 <template>
-  <q-page class="status-page">
-    <q-card class="status-dialog">
+  <AuthShell class="status-page">
+    <q-card flat class="status-dialog">
       <q-card-section class="status-content">
-        <img
-          src="@/assets/tindahan-mobile.png"
-          alt="Tindahan Logo"
-          class="status-logo"
-        />
-
         <div class="status-icon-wrap status-icon-danger">
           <q-icon name="o_block" size="32px" />
         </div>
 
-        <div class="status-title">Application Not Approved</div>
+        <div class="status-title">{{ t('Application Not Approved') }}</div>
 
         <p class="status-message">
-          We reviewed your merchant application for Tindahan. Unfortunately, we
-          cannot approve your request at this time due to specific compliance
-          requirements.
+          {{ t('We reviewed your merchant application for Tindahan. Unfortunately, we cannot approve your request at this time due to specific compliance requirements.') }}
         </p>
 
         <div v-if="rejectionReason" class="reason-box">
           <div class="reason-label">
             <q-icon name="o_error_outline" size="16px" />
-            Reason for Rejection
+            {{ t('Reason for Rejection') }}
           </div>
           <p class="reason-text">{{ rejectionReason }}</p>
           <div v-if="rejectedBy" class="rejected-by-label">
             <q-icon name="o_person" size="14px" />
-            Reviewed by {{ rejectedBy }}
+            {{ t('Reviewed by') }} {{ rejectedBy }}
           </div>
         </div>
       </q-card-section>
 
       <q-card-actions class="status-actions">
         <q-btn
-          label="Contact Support"
+          :label="t('Contact Support')"
           icon="o_support_agent"
           no-caps
           unelevated
@@ -43,7 +35,7 @@
           @click="showContactSupport = true"
         />
         <q-btn
-          label="Log out"
+          :label="t('Log out')"
           icon="logout"
           no-caps
           outline
@@ -54,15 +46,19 @@
     </q-card>
 
     <ContactSupportModal v-model="showContactSupport" />
-  </q-page>
+  </AuthShell>
 </template>
 
 <script setup>
+import AuthShell from '@/components/auth/AuthShell.vue'
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { api } from '@/boot/axios'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { useAuth } from '@/composables/useAuth'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
+
+const { t } = useConsumerLanguage()
 
 const route = useRoute()
 const { logout } = useAuth()
@@ -90,55 +86,11 @@ onMounted(fetchReason)
 </script>
 
 <style scoped>
-/* PAGE */
-
-/* Same red gradient as the login and sign-up pages. */
-.status-page {
-  min-height: 100vh;
-  width: 100%;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 40px 20px;
-
-  background:
-    linear-gradient(
-      145deg,
-      #c02226 0%,
-      #9c171b 55%,
-      #651012 100%
-    );
-
-  font-family: 'Roboto', Arial, sans-serif;
-}
-
-/* CARD */
-
-.status-dialog {
-  width: 100%;
-  max-width: 440px;
-
-  border-radius: var(--r-2xl);
-
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-}
 
 .status-content {
   text-align: center;
 
-  padding: 40px 36px 8px;
-}
-
-.status-logo {
-  display: block;
-
-  width: 130px;
-
-  margin: 0 auto 22px;
-
-  object-fit: contain;
+  padding: 8px 0;
 }
 
 /* Tinted tiles, the same icon language as the dialogs on the login page. */
@@ -187,7 +139,7 @@ onMounted(fetchReason)
 /* ACTIONS */
 
 .status-actions {
-  padding: 24px 36px 8px;
+  padding: 24px 0 8px;
 
   gap: 12px;
 }
@@ -312,30 +264,10 @@ onMounted(fetchReason)
 
 /* MOBILE */
 
-/* Full-bleed white on phones, the same as the login page. */
 @media (max-width: 600px) {
-  .status-page {
-    align-items: stretch;
-
-    padding: 0;
-
-    background: #ffffff;
-  }
-
-  .status-dialog {
-    max-width: 100%;
-
-    border-radius: 0;
-
-    box-shadow: none;
-  }
 
   .status-content {
-    padding: 32px 24px 8px;
-  }
-
-  .status-logo {
-    width: 110px;
+    padding: 0 0 8px;
   }
 
   .status-title {
@@ -354,4 +286,19 @@ onMounted(fetchReason)
     flex: none;
   }
 }
-</style>
+/* Slightly larger text on the auth screens: the shared size tokens go up about 1px here and in this page's own pop-ups. */
+.status-page {
+  --fs-2xs: 12.5px;
+  --fs-xs: 13.5px;
+  --fs-sm: 15px;
+  --fs-md: 16px;
+}
+
+@media (max-width: 600px) {
+  .status-page {
+    --fs-2xs: 11.5px;
+    --fs-xs: 12.5px;
+    --fs-sm: 14px;
+    --fs-md: 15px;
+  }
+}</style>

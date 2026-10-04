@@ -22,7 +22,7 @@
             v-for="tab in tabs"
             :key="tab.value"
             :name="tab.value"
-            :label="tab.label"
+            :label="t(tab.label)"
             @click="goToTab(tab)"
           />
         </q-tabs>
@@ -35,7 +35,7 @@
               dense
               borderless
               clearable
-              placeholder="Search products and stores"
+              :placeholder="t('Search products and stores')"
               class="header-search-input"
               autocomplete="off"
               @keyup.enter="submitSearch"
@@ -51,7 +51,7 @@
               unelevated
               dense
               icon="o_search"
-              aria-label="Search"
+              :aria-label="t('Search')"
               class="header-search-btn"
               @click="submitSearch"
             />
@@ -61,8 +61,8 @@
             <template v-if="!searchInput.trim()">
               <div v-if="recentSearches.length" class="suggestions-section">
                 <div class="suggestions-section-header">
-                  <span>Recent Searches</span>
-                  <span class="suggestions-clear" @click="clearRecentSearches">Clear</span>
+                  <span>{{ t('Recent Searches') }}</span>
+                  <span class="suggestions-clear" @click="clearRecentSearches">{{ t('Clear') }}</span>
                 </div>
                 <div
                   v-for="(term, i) in recentSearches"
@@ -75,12 +75,12 @@
                   <span class="suggestion-text">{{ term }}</span>
                 </div>
               </div>
-              <div v-else class="suggestions-empty">Start typing to search products and stores.</div>
+              <div v-else class="suggestions-empty">{{ t('Start typing to search products and stores.') }}</div>
             </template>
 
             <template v-else>
               <div v-if="productSuggestions.length" class="suggestions-section">
-                <div class="suggestions-section-header"><span>Products</span></div>
+                <div class="suggestions-section-header"><span>{{ t('Products') }}</span></div>
                 <div
                   v-for="(product, i) in productSuggestions"
                   :key="`p${product.id}`"
@@ -99,7 +99,7 @@
               </div>
 
               <div v-if="storeSuggestions.length" class="suggestions-section">
-                <div class="suggestions-section-header"><span>Stores</span></div>
+                <div class="suggestions-section-header"><span>{{ t('Stores') }}</span></div>
                 <div
                   v-for="(store, i) in storeSuggestions"
                   :key="`s${store.id}`"
@@ -118,13 +118,13 @@
               </div>
 
               <div v-if="!productSuggestions.length && !storeSuggestions.length" class="suggestions-empty">
-                No matches for "{{ searchInput }}"
+                {{ t('No matches for "{query}"', { query: searchInput }) }}
               </div>
             </template>
           </div>
         </div>
 
-        <div class="header-location" :title="address || 'Enter Address'" @click="toggleAddressMenu">
+        <div class="header-location" :title="address || t('Enter Address')" @click="toggleAddressMenu">
           <span class="header-location-pill" :class="{ 'header-location-expanded': addressMenuOpen }">
             <q-icon name="o_location_on" size="15px" />
             <span>{{ displayAddress }}</span>
@@ -141,42 +141,70 @@
           >
           <div class="address-menu-panel" :class="{ 'address-menu-panel-sheet': isAddressSheet }" @click.stop>
             <div v-if="isAddressSheet" class="address-menu-drag-handle" />
+            <q-btn
+              v-if="isAddressSheet"
+              flat
+              round
+              dense
+              icon="o_close"
+              class="address-sheet-close"
+              :aria-label="t('Close')"
+              @click="addressMenuOpen = false"
+            />
 
             <div class="address-menu-scroll">
               <div class="address-menu-title">
                 <q-icon name="o_location_on" size="16px" class="address-menu-title-icon" />
-                <span>Address</span>
+                <span>{{ t('Address') }}</span>
               </div>
 
-              <q-input
+              <AddressAutocomplete
+                ref="addressInputRef"
                 v-model="draftAddress"
                 dense
                 outlined
                 hide-bottom-space
-                placeholder="Enter your address"
+                :translate="t"
+                :placeholder="t('Enter your address')"
                 class="address-menu-input"
-                @keyup.enter="confirmAddress"
+                @pin="onAddressPin"
+                @enter="confirmAddress"
               />
 
-              <VendorLocationMap class="address-menu-map" @location-selected="onLocationSelected" />
+              <VendorLocationMap ref="addressMapRef" :translate="t" :initial="addressPin" class="address-menu-map" @location-selected="onLocationSelected" />
             </div>
 
             <div class="address-menu-footer">
               <q-btn
                 unelevated
                 no-caps
-                label="Confirm Address"
+                :label="t('Confirm Address')"
                 class="address-menu-confirm"
                 :disable="!draftAddress.trim()"
+                @mousedown.prevent
                 @click="confirmAddress"
               />
             </div>
           </div>
           </component>
+
+          <!-- Desktop only: a bubble hanging off the pill, which has room to its right in
+               the 1200px bar. The compact header places the same hint as its own row below,
+               since there the pill sits mid-grid and a bubble would run off the screen. -->
+          <ContextHint
+            v-if="showLocationHint && !isCompactHeader"
+            v-bind="locationHintProps"
+            class="header-location-hint"
+            arrow="top"
+            @click.stop
+            @dismiss="dismissLocationHint"
+          />
         </div>
 
-        <!-- Compact bar's right-hand cluster, holding notifications and the cart. -->
+        <!-- Compact bar's right-hand cluster, holding the language switch, notifications and the cart. -->
         <div v-if="isCompactHeader" ref="mobileActionsRef" class="header-mobile-actions">
+          <LanguageSwitcher header compact class="header-language header-language--compact" />
+
           <NotificationsMenu v-if="isLoggedIn" :anchor-target="mobileActionsRef" />
 
           <q-btn
@@ -184,7 +212,7 @@
             dense
             round
             icon="o_shopping_cart"
-            :aria-label="isLoggedIn && cartItemCount ? `Cart, ${cartItemCount} items` : 'Cart'"
+            :aria-label="isLoggedIn && cartItemCount ? t('Cart, {count} items', { count: cartItemCount }) : t('Cart')"
             class="header-mobile-btn"
             @click="router.push('/consumer/cart')"
           >
@@ -213,32 +241,50 @@
                 >
                 <div class="cart-menu-inner notifications-inner">
                   <div class="cart-menu-title notifications-title">
-                    Notifications
-                    <q-btn v-if="unreadNotificationCount" flat dense no-caps label="Mark all as read" color="primary" size="sm" @click="markAllAsRead" />
+                    {{ t('Notifications') }}
+                    <q-btn
+                      v-if="unreadNotificationCount"
+                      flat
+                      dense
+                      no-caps
+                      :label="t('Mark all as read')"
+                      color="primary"
+                      size="sm"
+                      :loading="markingNotifications"
+                      @click="markAllAsRead"
+                    />
                   </div>
 
-                  <div v-if="!notifications.length" class="cart-menu-empty">No notifications yet.</div>
+                  <div v-if="!notifications.length" class="cart-menu-empty">{{ t('No notifications yet.') }}</div>
 
                   <div v-else class="notifications-scroll">
-                    <div
+                    <button
                       v-for="notif in notifications.slice(0, 10)"
                       :key="notif.notification_id"
+                      type="button"
                       class="cart-menu-item notification-item"
                       :class="{ 'notification-item--unread': !notif.is_read }"
                       @click="handleNotificationClick(notif)"
                     >
-                      <div class="cart-menu-item-info" :style="notif.is_read ? 'opacity: 0.7;' : 'font-weight: bold;'">
-                        <div class="cart-menu-item-name">{{ notif.title }}</div>
-                        <div class="cart-menu-item-meta" style="white-space: normal; line-height: 1.3;">{{ notif.message }}</div>
+                      <span
+                        class="notification-menu-icon"
+                        :class="`notification-menu-icon--${notificationPresentation(notif).tone}`"
+                      >
+                        <q-icon :name="notificationPresentation(notif).icon" size="22px" />
+                      </span>
+                      <div class="cart-menu-item-info notification-menu-body">
+                        <div class="cart-menu-item-name notification-menu-title">{{ notif.title }}</div>
+                        <div class="cart-menu-item-meta notification-menu-message">{{ notif.message }}</div>
+                        <div class="notification-menu-time">{{ notificationTime(notif.created_at, t, locale.value) }}</div>
                       </div>
-                    </div>
+                    </button>
                   </div>
 
                   <!-- The panel shows ten notifications, so this links to the rest, like the cart menu's View All. -->
                   <q-btn
                     unelevated
                     no-caps
-                    label="View All Notifications"
+                    :label="t('View All Notifications')"
                     class="cart-menu-view-all"
                     @click="notificationsMenuOpen = false; router.push('/consumer/notifications')"
                   />
@@ -263,9 +309,9 @@
                   class="header-menu"
                 >
                 <div class="cart-menu-inner">
-                  <div class="cart-menu-title">My Cart</div>
+                  <div class="cart-menu-title">{{ t('My Cart') }}</div>
 
-                  <div v-if="!cartItems.length" class="cart-menu-empty">Your cart is empty.</div>
+                  <div v-if="!cartItems.length" class="cart-menu-empty">{{ t('Your cart is empty.') }}</div>
 
                   <template v-else>
                     <div v-for="item in cartItems.slice(0, 4)" :key="item.cartId" class="cart-menu-item">
@@ -275,18 +321,18 @@
                       </div>
                       <div class="cart-menu-item-info">
                         <div class="cart-menu-item-name">{{ item.name }}</div>
-                        <div class="cart-menu-item-meta">Qty {{ item.quantity }} · ₱{{ item.price.toFixed(2) }}</div>
+                        <div class="cart-menu-item-meta">{{ t('Qty') }} {{ item.quantity }} · ₱{{ item.price.toFixed(2) }}</div>
                       </div>
                     </div>
                     <div v-if="cartItems.length > 4" class="cart-menu-more">
-                      +{{ cartItems.length - 4 }} more item{{ cartItems.length - 4 === 1 ? '' : 's' }}
+                      +{{ t(cartItems.length - 4 === 1 ? '{count} more item' : '{count} more items', { count: cartItems.length - 4 }) }}
                     </div>
                   </template>
 
                   <q-btn
                     unelevated
                     no-caps
-                    label="View All Cart"
+                    :label="t('View All Cart')"
                     class="cart-menu-view-all"
                     @click="cartMenuOpen = false; router.push('/consumer/cart')"
                   />
@@ -315,14 +361,14 @@
                 <div class="cart-menu-inner account-menu-inner">
                   <q-list>
                     <q-item clickable @click="accountMenuOpen = false; router.push('/consumer/profile')">
-                      <q-item-section>My Profile</q-item-section>
+                      <q-item-section>{{ t('My Profile') }}</q-item-section>
                     </q-item>
                     <q-item clickable @click="accountMenuOpen = false; router.push('/consumer/orders')">
-                      <q-item-section>My Orders</q-item-section>
+                      <q-item-section>{{ t('My Orders') }}</q-item-section>
                     </q-item>
                     <q-separator />
                     <q-item clickable @click="accountMenuOpen = false; handleLogout()">
-                      <q-item-section class="text-red-9">Logout</q-item-section>
+                      <q-item-section class="text-red-9">{{ t('Logout') }}</q-item-section>
                     </q-item>
                   </q-list>
                 </div>
@@ -334,7 +380,7 @@
           <!-- GUEST -->
           <template v-else>
             <q-btn
-              label="Log in"
+              :label="t('Log in')"
               no-caps
               flat
               dense
@@ -343,7 +389,7 @@
               @click="goToLogin"
             />
             <q-btn
-              label="Sign up"
+              :label="t('Sign up')"
               no-caps
               unelevated
               dense
@@ -352,7 +398,21 @@
             />
           </template>
 
+          <!-- Last in the row, at the far right edge of the header, after the account and
+               auth buttons: it is a preference, not something reached on every visit. -->
+          <LanguageSwitcher header class="header-language" />
+
         </div>
+
+        <!-- Compact header only: a full-width row of the header grid, under the search box.
+             In flow rather than floating, so it can neither overflow the screen nor cover
+             the search bar; the header simply grows while the hint is up. -->
+        <ContextHint
+          v-if="showLocationHint && isCompactHeader"
+          v-bind="locationHintProps"
+          class="header-location-hint header-location-hint--row"
+          @dismiss="dismissLocationHint"
+        />
       </div>
     </div>
 
@@ -360,7 +420,7 @@
       <q-card class="mobile-menu">
         <div class="mobile-menu-head">
           <img src="@/assets/tindahan-mobile.png" alt="Tindahan" class="mobile-menu-logo" />
-          <q-btn v-close-popup flat round dense icon="close" aria-label="Close menu" class="mobile-menu-close" />
+          <q-btn v-close-popup flat round dense icon="close" :aria-label="t('Close menu')" class="mobile-menu-close" />
         </div>
 
         <q-separator />
@@ -369,31 +429,33 @@
         <div class="mobile-menu-scroll">
 
           <q-list v-if="isLoggedIn" padding>
-            <q-item v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/orders')">
-              <q-item-section avatar class="mobile-menu-avatar">
-                <q-icon name="o_receipt_long" size="22px" />
-              </q-item-section>
-              <q-item-section>My Orders</q-item-section>
-            </q-item>
-
-            <q-item v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/profile')">
+            <q-item v-if="isLoggedIn" v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/profile')">
               <q-item-section avatar class="mobile-menu-avatar">
                 <q-icon name="o_person" size="22px" />
               </q-item-section>
-              <q-item-section>My Profile</q-item-section>
+              <q-item-section>{{ t('My Profile') }}</q-item-section>
             </q-item>
 
-            <q-item v-close-popup clickable class="mobile-menu-item mobile-menu-logout" @click="handleLogout">
+            <q-item v-if="isLoggedIn" v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/orders')">
+              <q-item-section avatar class="mobile-menu-avatar">
+                <q-icon name="o_receipt_long" size="22px" />
+              </q-item-section>
+              <q-item-section>{{ t('My Orders') }}</q-item-section>
+            </q-item>
+
+            <q-separator v-if="isLoggedIn" />
+
+            <q-item v-if="isLoggedIn" v-close-popup clickable class="mobile-menu-item mobile-menu-logout" @click="handleLogout">
               <q-item-section avatar class="mobile-menu-avatar">
                 <q-icon name="o_logout" size="22px" />
               </q-item-section>
-              <q-item-section>Logout</q-item-section>
+              <q-item-section>{{ t('Logout') }}</q-item-section>
             </q-item>
           </q-list>
 
-          <div v-else class="mobile-menu-auth">
-            <q-btn v-close-popup unelevated no-caps label="Log in" class="mobile-menu-login" @click="goToLogin" />
-            <q-btn v-close-popup unelevated no-caps label="Sign up" class="mobile-menu-signup" @click="goToSignup" />
+          <div v-if="!isLoggedIn" class="mobile-menu-auth">
+            <q-btn v-close-popup unelevated no-caps :label="t('Log in')" class="mobile-menu-login" @click="goToLogin" />
+            <q-btn v-close-popup unelevated no-caps :label="t('Sign up')" class="mobile-menu-signup" @click="goToSignup" />
           </div>
         </div>
       </q-card>
@@ -408,7 +470,7 @@
   />
 
   <!-- Bottom tab bar below 1024px that replaces the header's nav row and hamburger, placed outside the sticky header so it stacks with the page. -->
-  <nav v-if="showBottomNav" class="bottom-nav" aria-label="Primary">
+  <nav v-if="showBottomNav" class="bottom-nav" :aria-label="t('Primary')">
     <div class="bottom-nav-inner">
       <q-btn
         v-for="tab in tabs"
@@ -424,7 +486,7 @@
         <span class="bottom-nav-pill">
           <q-icon :name="tab.icon" size="24px" />
         </span>
-        <span class="bottom-nav-label">{{ tab.label }}</span>
+        <span class="bottom-nav-label">{{ t(tab.label) }}</span>
       </q-btn>
 
       <!-- Opens the account drawer and is never lit, since it opens a dialog rather than a page. -->
@@ -440,14 +502,16 @@
         <span class="bottom-nav-pill">
           <q-icon name="o_menu" size="24px" />
         </span>
-        <span class="bottom-nav-label">Menu</span>
+        <span class="bottom-nav-label">{{ t('Menu') }}</span>
       </q-btn>
     </div>
   </nav>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { QMenu, QDialog } from 'quasar'
@@ -458,17 +522,68 @@ import { useCart } from '@/composables/useCart'
 import { useAddress } from '@/composables/useAddress'
 import { splitHighlightParts } from '@/utils/textHighlight'
 import { useCategories } from '@/composables/useCategories'
+import { useSearchLog } from '@/composables/useSearchLog'
 import { clearAuthStorage } from '@/utils/authStorage'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
+import AddressAutocomplete from '@/components/shared/AddressAutocomplete.vue'
 import NotificationsMenu from '@/components/consumer/NotificationsMenu.vue'
+import LanguageSwitcher from '@/components/consumer/LanguageSwitcher.vue'
+import ContextHint from '@/components/consumer/ContextHint.vue'
+import { useConsumerHints, HINT_LOCATION_SETUP } from '@/composables/useConsumerHints'
+import { notificationPresentation, notificationTime } from '@/utils/notificationPresentation'
+import {
+  NOTIFICATION_READ_STATE_EVENT,
+  applyNotificationReadState,
+  publishNotificationReadState
+} from '@/utils/notificationSync'
+
+const { t, locale } = useConsumerLanguage()
 
 const router = useRouter()
 const route = useRoute()
 const $q = useQuasar()
 
 const { address, setAddress, autoDetectAddress } = useAddress()
+
+// A pointer at the address pill for shoppers who have no address yet. autoDetectAddress may
+// still be resolving when the header mounts, so it waits before offering: a hint that
+// appears and then answers itself is worse than no hint.
+const { isDismissed, dismissHint } = useConsumerHints()
+const locationHintReady = ref(false)
+let locationHintTimer = null
+
+const showLocationHint = computed(
+  () =>
+    locationHintReady.value &&
+    !address.value &&
+    !addressMenuOpen.value &&
+    !isDismissed(HINT_LOCATION_SETUP)
+)
+
+const dismissLocationHint = () => dismissHint(HINT_LOCATION_SETUP)
+
+// Shared by the desktop bubble and the compact row, so the copy is written once.
+const locationHintProps = computed(() => ({
+  icon: 'o_location_on',
+  title: t('Set your location'),
+  text: t('Tap here to add your address. We use it to sort stores and products by how near they are to you.'),
+  dismissLabel: t('Close')
+}))
+
 const draftAddress = ref('')
 const draftLocation = ref(null)
+// The saved pin the panel opens on, so the map shows it instead of jumping to the device and relabelling the saved address.
+const addressPin = ref(null)
+const addressInputRef = ref(null)
+const addressMapRef = ref(null)
+
+const savedAddressPin = () => {
+  const latitude = Number(localStorage.getItem('consumer_lat'))
+  const longitude = Number(localStorage.getItem('consumer_lng'))
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null
+  if (latitude === 0 && longitude === 0) return null
+  return { latitude, longitude }
+}
 // The header dropdowns align to the action cluster's right edge rather than their own button, via the q-menu :target bindings.
 const headerActionsRef = ref(null)
 const mobileActionsRef = ref(null)
@@ -496,7 +611,7 @@ const avatarSize = '24px'
 const avatarIconSize = '16px'
 
 // Always the full address, which the pill ellipses when it does not fit, with the title attribute carrying the whole string.
-const displayAddress = computed(() => address.value || 'Enter Address')
+const displayAddress = computed(() => address.value || t('Enter Address'))
 
 const toggleAddressMenu = () => {
   const next = !addressMenuOpen.value
@@ -504,26 +619,40 @@ const toggleAddressMenu = () => {
   addressMenuOpen.value = next
   if (addressMenuOpen.value) {
     draftAddress.value = address.value
-    draftLocation.value = null
+    // Seeded from the saved pin, so confirming an address whose text was only edited keeps its coordinates instead of clearing them.
+    addressPin.value = savedAddressPin()
+    draftLocation.value = addressPin.value
     closeSuggestions()
   }
 }
 
-// Same plain-div dropdown pattern as .search-suggestions, so clicking outside closes it.
+// A map tap or late device fix fills the box only when the user has not typed in it, so an address missing from the suggestions survives being pinned.
 const onLocationSelected = (location) => {
-  draftAddress.value = location.address
+  // mapSelected runs whatever the lookup returned, since the pin still moved; a failed reverse geocode gives an empty address, which must not blank the box the shopper is editing.
+  const takesAddress = addressInputRef.value?.mapSelected(location) !== false
+  if (takesAddress && location.address) draftAddress.value = location.address
   draftLocation.value = location
 }
 
-const confirmAddress = () => {
+const onAddressPin = (location) => {
+  draftLocation.value = location
+  addressMapRef.value?.showLocation(location.latitude, location.longitude)
+}
+
+// The Confirm button's mousedown.prevent keeps the address box focused, so a search on just-typed text survives to be settled here and its pin is the one saved.
+const confirmAddress = async () => {
   if (!draftAddress.value.trim()) return
+  if (addressInputRef.value && !(await addressInputRef.value.settle())) return
   if (draftLocation.value) {
     setAddress(draftAddress.value.trim(), draftLocation.value.latitude, draftLocation.value.longitude)
   } else {
     setAddress(draftAddress.value.trim())
   }
   addressMenuOpen.value = false
-  
+
+  // They have found the pill and used it, so the pointer has done its job for good.
+  dismissLocationHint()
+
   // Refresh stores and products to apply new distance sorting
   fetchStores()
   fetchProducts()
@@ -532,6 +661,8 @@ const confirmAddress = () => {
 const { products, fetchProducts } = useProducts()
 const { stores, fetchStores } = useStores()
 const { categories, fetchCategories } = useCategories()
+
+const { logSearch } = useSearchLog()
 const { items: cartItems, itemCount: cartItemCount, fetchCart } = useCart()
 
 /* ------------------------------------------------------- MOBILE HEADER (< md) */
@@ -574,16 +705,25 @@ const toggleAccountMenu = () => {
 }
 
 onMounted(() => {
+  window.addEventListener(NOTIFICATION_READ_STATE_EVENT, syncNotificationReadState)
   // Search suggestions reuse already-fetched products, stores and categories, so the header only fetches them on the session's first page.
   if (!products.value.length) fetchProducts()
   if (!stores.value.length) fetchStores()
   if (!categories.value.length) fetchCategories()
   autoDetectAddress()
+  // Long enough for autoDetectAddress to have asked the browser and come back, so the
+  // hint only appears for shoppers who really are without an address.
+  locationHintTimer = setTimeout(() => { locationHintReady.value = true }, 2500)
   // Cart routes are auth-gated — an unconditional fetch would 401 for guests.
   if (isLoggedIn.value) {
     fetchCart()
     fetchNotifications()
   }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener(NOTIFICATION_READ_STATE_EVENT, syncNotificationReadState)
+  clearTimeout(locationHintTimer)
 })
 
 const userAvatar = computed(() => {
@@ -599,6 +739,11 @@ const notifications = ref([])
 const unreadNotificationCount = computed(() => notifications.value.filter(n => !n.is_read).length)
 
 const notificationsMenuOpen = ref(false)
+const markingNotifications = ref(false)
+
+const syncNotificationReadState = event => {
+  applyNotificationReadState(notifications.value, event.detail)
+}
 
 // Like handleCartIconClick, below md the bell opens the notifications page instead of the ten-row preview.
 const toggleNotificationsMenu = () => {
@@ -617,7 +762,7 @@ const fetchNotifications = async () => {
   if (!isLoggedIn.value) return
   try {
     const res = await api.get('/consumer/notifications')
-    notifications.value = res.data
+    notifications.value = Array.isArray(res.data) ? res.data : []
   } catch (err) {
     console.error('Failed to fetch notifications', err)
   }
@@ -629,7 +774,11 @@ const markAsRead = async (id) => {
     notif.is_read = true
     try {
       await api.patch(`/consumer/notifications/${id}/read`)
-    } catch (err) {}
+      publishNotificationReadState({ notificationId: id, isRead: true })
+    } catch (err) {
+      notif.is_read = false
+      console.error('Failed to mark notification as read', err)
+    }
   }
 }
 
@@ -645,10 +794,22 @@ const handleNotificationClick = async (notif) => {
 }
 
 const markAllAsRead = async () => {
+  if (markingNotifications.value) return
+  markingNotifications.value = true
+  const previous = notifications.value.map(n => n.is_read)
   notifications.value.forEach(n => n.is_read = true)
   try {
     await api.post('/consumer/notifications/read-all')
-  } catch (err) {}
+    publishNotificationReadState({ all: true, isRead: true })
+  } catch (err) {
+    notifications.value.forEach((n, index) => {
+      n.is_read = previous[index]
+    })
+    console.error('Failed to mark all notifications as read', err)
+    $q.notify({ type: 'negative', message: t('Could not mark notifications as read') })
+  } finally {
+    markingNotifications.value = false
+  }
 }
 
 const handleLogout = async () => {
@@ -755,78 +916,8 @@ function navigateToSearchPage(q) {
   }
 }
 
-const logSearch = async (query) => {
-  const token = localStorage.getItem('auth_token')
-
-  // Don't log guest searches
-  if (!token || !query) return
-
-  try {
-    const latitude = localStorage.getItem('consumer_lat')
-    const longitude = localStorage.getItem('consumer_lng')
-
-    if (!latitude || !longitude) {
-      console.warn('Search log skipped: consumer location is not available.')
-      return
-    }
-
-    const normalizedQuery = query.trim().toLowerCase()
-    
-    // 1. Match against product names (partial, case-insensitive)
-    let matchedProducts = products.value.filter(p => 
-        p.name?.toLowerCase().includes(normalizedQuery)
-    )
-    
-    // 2. If no product name match, try descriptions
-    if (matchedProducts.length === 0) {
-        matchedProducts = products.value.filter(p =>
-            p.description?.toLowerCase().includes(normalizedQuery)
-        )
-    }
-    
-    let categoryId = null;
-    
-    // 3. If products matched, use the first match's category
-    if (matchedProducts.length > 0) {
-        const firstMatch = matchedProducts[0]
-        const matchedCategory = categories.value.find(c => 
-            c.label?.toLowerCase() === firstMatch.category?.toLowerCase()
-        )
-        categoryId = matchedCategory?.id ?? matchedCategory?.category_id ?? null
-    } else {
-        // 4. Try direct category name match
-        const matchedCategory = categories.value.find(c =>
-            c.label?.toLowerCase().includes(normalizedQuery) || c.category_name?.toLowerCase().includes(normalizedQuery)
-        )
-        if (matchedCategory) {
-            categoryId = matchedCategory.id ?? matchedCategory.category_id
-        }
-    }
-
-    console.log('Search log data:', {
-      query,
-      category_id: categoryId,
-      latitude,
-      longitude
-    })
-
-    await api.post('/consumer/search-logs', {
-      search_query: query.trim(),
-      category_id: categoryId,
-      search_lat: Number(latitude),
-      search_lng: Number(longitude),
-    })
-
-    console.log('Search log saved successfully.')
-  } catch (error) {
-    console.error(
-      'Failed to save search log:',
-      error.response?.data || error
-    )
-  }
-}
-
-// The only place a search is actually saved — fires on submit (searchQuery change), never while typing.
+// Recent searches are local history only; the database log is written by submitSearch, so that
+// browser back/forward through ?q= does not record searches the consumer never made.
 watch(searchQuery, (q) => {
   if (q) {
     saveRecentSearch(q)
@@ -960,6 +1051,24 @@ const goToTab = (tab) => {
   flex-shrink: 0;
 }
 
+/* Language switch, first in the action cluster so it sits beside Notifications on every page. */
+/* Overhangs .header-bar-inner's 24px right padding so the pill sits flush with the outer
+   edge of the header's content column instead of indented with the buttons beside it. */
+.header-actions .header-language {
+  margin-right: -24px;
+}
+
+.header-language :deep(.language-header-btn) {
+  min-height: 38px;
+  padding: 0 10px;
+
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.header-language :deep(.language-header-btn:hover) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 /* Wraps each header icon button so it centres vertically in the action cluster. */
 .icon-btn-wrap {
   display: flex;
@@ -1016,16 +1125,23 @@ const goToTab = (tab) => {
   font-family: 'Roboto', Arial, sans-serif;
 }
 
+.notifications-inner {
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+  padding: 16px;
+}
+
 /* The account list hugs its own width, with no horizontal padding so each row's hover highlight spans the full panel. */
 .account-menu-inner {
   width: auto;
   min-width: 160px;
-  padding: 6px 0;
+  padding: 4px 0;
 }
 
 .account-menu-inner :deep(.q-item) {
   min-height: 40px;
-  padding: 9px 14px;
+  padding: 8px 16px;
 }
 
 .cart-menu-title {
@@ -1059,10 +1175,18 @@ const goToTab = (tab) => {
   align-items: flex-start;
 
   /* Runs edge to edge across the panel with square corners, so an unread row's tint is a clean full-width band. */
-  margin: 0 -14px;
-  padding: 10px 14px;
+  margin: 0 -16px;
+  gap: 12px;
+  width: calc(100% + 32px);
+  box-sizing: border-box;
+  padding: 12px 16px;
 
+  border: 0;
+  background: transparent;
   cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: background-color 0.15s;
 }
 
 /* A clearer divider than the panel's hairlines, so each notification reads as its own row, tinted or not. */
@@ -1072,6 +1196,116 @@ const goToTab = (tab) => {
 
 .notification-item--unread {
   background: var(--c-brand-tint);
+}
+
+.notification-item--unread:hover {
+  background: var(--c-brand-tint-2);
+}
+
+.notification-item:not(.notification-item--unread):hover {
+  background: var(--c-surface);
+}
+
+.notification-item:focus-visible {
+  z-index: 1;
+  outline: 2px solid var(--c-brand);
+  outline-offset: -2px;
+}
+
+.notification-menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-xl);
+
+  background: var(--tone-bg);
+  color: var(--tone);
+}
+
+.notification-menu-icon--placed {
+  --tone: var(--st-placed);
+  --tone-bg: var(--st-placed-bg);
+}
+
+.notification-menu-icon--preparing {
+  --tone: var(--st-preparing);
+  --tone-bg: var(--st-preparing-bg);
+}
+
+.notification-menu-icon--ready {
+  --tone: var(--st-ready);
+  --tone-bg: var(--st-ready-bg);
+}
+
+.notification-menu-icon--done {
+  --tone: var(--st-done);
+  --tone-bg: var(--st-done-bg);
+}
+
+.notification-menu-icon--cancelled {
+  --tone: var(--st-cancelled);
+  --tone-bg: var(--st-cancelled-bg);
+}
+
+.notification-menu-icon--brand {
+  --tone: var(--c-brand);
+  --tone-bg: var(--c-brand-tint);
+}
+
+.notification-menu-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.notification-menu-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+
+  color: var(--c-text);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.notification-item--unread .notification-menu-title {
+  font-weight: 700;
+}
+
+.notification-item--unread .notification-menu-title::after {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+
+  border-radius: var(--r-pill);
+  background: var(--c-brand);
+  content: '';
+}
+
+.notification-menu-message {
+  margin-top: 0;
+  white-space: normal;
+  text-wrap: pretty;
+  color: var(--c-text-3);
+  line-height: 1.35;
+}
+
+.notification-menu-time {
+  margin-top: 2px;
+  color: var(--c-muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 /* Title/"Mark all as read" row stays outside .notifications-scroll below, so it never scrolls out of view. */
@@ -1084,8 +1318,8 @@ const goToTab = (tab) => {
 /* Notifications can have up to 10 items; caps at roughly 5 rows tall before scrolling. */
 .notifications-scroll {
   max-height: 335px;
-  margin: 0 -14px;
-  padding: 0 14px;
+  margin: 0 -16px;
+  padding: 0 16px;
 
   overflow-y: auto;
 }
@@ -1411,6 +1645,16 @@ const goToTab = (tab) => {
 
 .mobile-menu-close {
   color: var(--c-muted);
+
+  /* The phone menu's close button is a 44px thumb-sized target. */
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.mobile-menu-close :deep(.q-icon) {
+  font-size: 26px;
 }
 
 .mobile-menu-scroll {
@@ -1503,7 +1747,7 @@ const goToTab = (tab) => {
 
   flex: 1 1 auto;
   min-width: 140px;
-  max-width: 400px;
+  max-width: 560px;
 
   transition: max-width 0.25s ease, min-width 0.25s ease;
 }
@@ -1791,13 +2035,30 @@ const goToTab = (tab) => {
   cursor: pointer;
 }
 
+/* Desktop bubble: hangs below the pill inside .header-location, which is already
+   position: relative. There is room to its right in the 1200px bar, so 300px never
+   reaches the edge of the screen. The compact header uses the row variant below instead. */
+.header-location-hint {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 5;
+
+  width: 300px;
+
+  cursor: default;
+
+  box-shadow: var(--sh-pop);
+}
+
 .header-location-pill {
   display: flex;
   align-items: center;
 
   gap: 6px;
   min-width: 0;
-  max-width: 300px;
+  /* A little narrower than it was, so the search box beside it can be wider, but still wide enough to read a street and barangay. */
+  max-width: 260px;
   padding: 6px 10px;
 
   border-radius: var(--r-pill);
@@ -1965,6 +2226,19 @@ const goToTab = (tab) => {
     padding: 6px 12px 12px;
   }
 
+  /* The location hint as a row of the header grid rather than a bubble off the pill: the
+     pill sits in the middle column here, so anything hanging from it would run off the
+     right edge and cover the search row. Spanning every column auto-places it into a third
+     row, which only exists while the hint is rendered, so the header keeps its height
+     otherwise. */
+  .header-location-hint--row {
+    position: static;
+
+    grid-column: 1 / -1;
+
+    width: auto;
+  }
+
   .header-logo {
     grid-area: logo;
     justify-self: start;
@@ -1978,6 +2252,22 @@ const goToTab = (tab) => {
 
     grid-area: actions;
     justify-self: end;
+  }
+
+  /* The caret is dropped on the compact bar so the globe and EN/FIL fit beside the 44px bell and cart without crowding the address pill. */
+  .header-language--compact :deep(.language-header-btn) {
+    min-height: 44px;
+    padding: 0 6px;
+
+    background: transparent;
+  }
+
+  .header-language--compact :deep(.q-btn-dropdown__arrow) {
+    display: none;
+  }
+
+  .header-language--compact :deep(.on-left) {
+    margin-right: 4px;
   }
 
   /* The desktop action cluster and nav row are hidden, with account links in the drawer and navigation in the bottom tab bar. */
@@ -2047,6 +2337,19 @@ const goToTab = (tab) => {
   }
 }
 
+/* Leave room for the selector and longer translated navigation on smaller desktops. */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .header-bar-inner {
+    gap: 14px;
+  }
+  .header-nav :deep(.q-tabs__content) {
+    gap: 14px;
+  }
+  .header-actions {
+    gap: 6px;
+  }
+}
+
 /* Focus-to-grow search only makes sense on the single-row desktop header. */
 
 @media (min-width: 1024px) {
@@ -2061,6 +2364,8 @@ const goToTab = (tab) => {
 
 /* QDialog pins and animates the sheet, so this only reshapes the panel for the full-width variant. */
 .address-menu-panel-sheet {
+  position: relative;
+
   display: flex;
   flex-direction: column;
 
@@ -2085,6 +2390,25 @@ const goToTab = (tab) => {
   border-radius: var(--r-pill);
 
   background: var(--c-border-strong);
+}
+
+/* The sheet's close button: a 44px thumb-sized target in the top corner, like the other consumer sheets. */
+.address-sheet-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+
+  color: var(--c-muted);
+}
+
+.address-sheet-close :deep(.q-icon) {
+  font-size: 26px;
 }
 
 /* flex: 1 1 auto (not flex: 1) — sizes to content first, only scrolls when it actually overflows. */

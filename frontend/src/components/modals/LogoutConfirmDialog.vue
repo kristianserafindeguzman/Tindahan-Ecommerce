@@ -118,18 +118,45 @@ const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } = useDialogPluginC
 .logout-cancel:hover {
   background: var(--c-brand-tint);
 }
+</style>
 
-/* The vendor and admin dark theme darkens every dialog, so the text lightens with it. */
-:global(body.body--dark) .logout-dialog {
+<!--
+  The dark overrides live in an unscoped block on purpose: `:global(...)` in a scoped block
+  replaces the whole selector with its argument, so `:global(body.body--dark) .logout-dialog`
+  would compile to a bare `body.body--dark` rule and never reach the dialog.
+  Every selector below is prefixed with .logout-dialog, so nothing leaks outside this popup.
+-->
+<style>
+/* The vendor and admin dark theme darkens every dialog, so the surface and text move with it. */
+body.body--dark .logout-dialog {
   background: #0f172a;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
 }
 
-:global(body.body--dark) .logout-title {
+body.body--dark .logout-dialog .logout-title {
   color: #f8fafc;
 }
 
-:global(body.body--dark) .logout-message,
-:global(body.body--dark) .logout-cancel {
+body.body--dark .logout-dialog .logout-message {
   color: #cbd5e1;
+}
+
+/* app.scss paints every dialog's q-card__actions #1e293b; this popup has no divider, so it stays one surface. */
+body.body--dark .logout-dialog .logout-actions {
+  background: transparent !important;
+  border-top: none !important;
+}
+
+/* Quasar draws the outline in the text colour, and the light red tint would glare against the dark card. */
+body.body--dark .logout-dialog .logout-cancel {
+  color: #cbd5e1;
+}
+
+body.body--dark .logout-dialog .logout-cancel:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
 }
 </style>

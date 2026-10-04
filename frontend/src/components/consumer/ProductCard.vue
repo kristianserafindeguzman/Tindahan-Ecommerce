@@ -10,8 +10,8 @@
       />
       <q-icon v-else name="o_inventory_2" size="36px" />
 
-      <span v-if="product.category" class="product-category-tag">{{ product.category }}</span>
-      <span v-if="!product.inStock" class="product-oos-tag">Out of Stock</span>
+      <span v-if="product.category" class="product-category-tag">{{ t(product.category) }}</span>
+      <span v-if="!product.inStock" class="product-oos-tag">{{ t('Out of Stock') }}</span>
 
       <q-btn
         v-if="product.inStock"
@@ -19,7 +19,7 @@
         unelevated
         dense
         icon="o_add"
-        aria-label="Add to cart"
+        :aria-label="t('Add to cart')"
         class="product-add-btn"
         @click.stop="$emit('add-to-cart', product)"
       />
@@ -32,18 +32,29 @@
         </template>
       </div>
       <div class="product-price">₱{{ product.price.toFixed(2) }}</div>
-      <div v-if="productMetaText" class="product-meta">
-        <q-icon name="o_storefront" size="13px" class="product-meta-icon" />
-        <span class="product-meta-text">{{ productMetaText }}</span>
+      <!-- Store and travel on separate lines: one shared line couldn't fit both on a narrow card, and the store name was the part that got cut. -->
+      <div v-if="product.store || hasDistance" class="product-meta">
+        <div v-if="product.store" class="product-meta-row">
+          <q-icon name="o_storefront" size="13px" class="product-meta-icon" />
+          <span class="product-meta-text">{{ product.store }}</span>
+        </div>
+        <div v-if="hasDistance" class="product-meta-row product-meta-row--travel">
+          <q-icon :name="travelIcon(product.distance_meters)" size="13px" class="product-meta-icon" />
+          <span class="product-meta-text">{{ travelText }}</span>
+        </div>
       </div>
     </q-card-section>
   </q-card>
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { computed, ref } from 'vue'
 import { splitHighlightParts } from '@/utils/textHighlight'
-import { formatDistance } from '@/utils/distance'
+import { formatDistance, formatTravelTime, travelIcon } from '@/utils/distance'
+
+const { t } = useConsumerLanguage()
 
 const props = defineProps({
   product: {
@@ -61,12 +72,12 @@ defineEmits(['add-to-cart', 'view-product'])
 const nameParts = computed(() => splitHighlightParts(props.product.name, props.highlightQuery))
 const imageFailed = ref(false)
 
-const productMetaText = computed(() => {
-  const parts = []
-  if (props.product.distance_meters != null) parts.push(formatDistance(props.product.distance_meters))
-  if (props.product.store) parts.push(props.product.store)
-  return parts.join(' • ')
-})
+const hasDistance = computed(() => props.product.distance_meters != null)
+
+// Distance first: "498 m · 7 min walk".
+const travelText = computed(() =>
+  `${formatDistance(props.product.distance_meters)} · ${formatTravelTime(props.product.distance_meters)}`
+)
 
 </script>
 
@@ -145,6 +156,13 @@ const productMetaText = computed(() => {
 
   background: rgba(255, 255, 255, 0.92);
   color: var(--c-text-2);
+
+  /* One line, cut with an ellipsis: long category names used to wrap onto a second line. */
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
 
   font-size: var(--fs-2xs);
   font-weight: 700;
@@ -244,9 +262,9 @@ const productMetaText = computed(() => {
 
 .product-meta {
   display: flex;
-  align-items: center;
+  flex-direction: column;
 
-  gap: 5px;
+  gap: 3px;
   min-width: 0;
   padding-top: 10px;
 
@@ -258,11 +276,20 @@ const productMetaText = computed(() => {
   color: var(--c-muted);
 }
 
+.product-meta-row {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+  min-width: 0;
+}
+
 .product-meta-icon {
   flex-shrink: 0;
 }
 
 .product-meta-text {
+  flex: 1;
   min-width: 0;
 
   overflow: hidden;
@@ -297,6 +324,7 @@ const productMetaText = computed(() => {
     top: 6px;
     left: 6px;
 
+    max-width: calc(100% - 12px);
     padding: 2px 6px;
 
     letter-spacing: 0.02em;

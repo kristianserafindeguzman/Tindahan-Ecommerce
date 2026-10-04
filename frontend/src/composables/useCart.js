@@ -9,13 +9,15 @@ export function useCart() {
   const itemCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0))
   const subtotal = computed(() => items.value.reduce((sum, item) => sum + item.price * item.quantity, 0))
 
-  const fetchCart = async () => {
-    loading.value = true
+  // A silent refetch leaves `loading` alone, so a background resync never swaps the cart for a spinner.
+  const fetchCart = async ({ silent = false } = {}) => {
+    if (!silent) loading.value = true
     try {
       const { data } = await api.get('/consumer/cart')
       items.value = (data || []).map((item) => ({
         cartId: item.cartId,
         inventoryId: item.inventoryId,
+        variantName: item.variantName,
         name: item.name,
         image: item.image,
         price: Number(item.price),
@@ -23,18 +25,24 @@ export function useCart() {
         availableQuantity: item.availableQuantity,
         inStock: item.inStock,
         store: item.store,
-        storeId: item.storeId
+        storeId: item.storeId,
+        expiresAt: item.expiresAt,
+        isExpired: item.isExpired
       }))
     } catch (error) {
       console.error('Failed to load cart', error)
       items.value = []
     } finally {
-      loading.value = false
+      if (!silent) loading.value = false
     }
   }
 
-  const addToCart = async (inventoryId, quantity = 1) => {
-    await api.post('/consumer/cart', { inventory_id: inventoryId, quantity })
+  const addToCart = async (inventoryId, quantity = 1, variantName = null) => {
+    await api.post('/consumer/cart', {
+      inventory_id: inventoryId,
+      quantity,
+      variant_name: variantName
+    })
     await fetchCart()
   }
 
@@ -45,7 +53,13 @@ export function useCart() {
     if (item) item.quantity = quantity
 
     try {
-      await api.patch(`/consumer/cart/${cartId}`, { quantity })
+      const { data } = await api.patch(`/consumer/cart/${cartId}`, { quantity })
+
+      // The server clamps to real stock, so reconcile the optimistic value above with what it stored.
+      if (item && data) {
+        if (Number.isFinite(data.quantity)) item.quantity = data.quantity
+        if (data.expiresAt) item.expiresAt = data.expiresAt
+      }
     } catch (error) {
       if (item) item.quantity = previousQuantity
       throw error
@@ -64,14 +78,21 @@ export function useCart() {
     }
   }
 
-  const checkout = async (storeId) => {
-    const lat = localStorage.getItem('consumer_lat')
-    const lng = localStorage.getItem('consumer_lng')
-    
-    const payload = { store_id: storeId }
-    if (lat && !isNaN(lat)) payload.consumer_latitude = parseFloat(lat)
-    if (lng && !isNaN(lng)) payload.consumer_longitude = parseFloat(lng)
-    
+  // scheduledPickupAt is the chosen pickup slot's start as an ISO time, or null for ASAP.
+  const checkout = async (storeId, { scheduledPickupAt = null } = {}) => {
+    const lat = Number(localStorage.getItem('consumer_lat'))
+    const lng = Number(localStorage.getItem('consumer_lng'))
+    const hasLocation = Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng)
+
+    // Always sent, null included: the backend requires a location and rejects the checkout with
+    // LOCATION_REQUIRED, so the keys are never quietly dropped from the payload.
+    const payload = {
+      store_id: storeId,
+      consumer_latitude: hasLocation ? lat : null,
+      consumer_longitude: hasLocation ? lng : null,
+      scheduled_pickup_at: scheduledPickupAt
+    }
+
     const { data } = await api.post('/consumer/checkout', payload)
     await fetchCart() // Refresh cart to remove checked-out items
     return data

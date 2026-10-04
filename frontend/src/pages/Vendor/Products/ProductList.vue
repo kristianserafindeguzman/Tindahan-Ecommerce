@@ -8,31 +8,68 @@
           <p class="vp-subtitle">{{ t('subtitle') }}</p>
         </div>
         <div class="vp-header-actions">
-          <q-btn flat dense no-caps icon="o_refresh" :label="t('refreshInsights')" :loading="insightsRefreshing" class="vp-pill-btn" @click="refreshInsights" />
           <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" @click="openExportWizard" />
-          <q-btn unelevated no-caps color="primary" icon="add" :label="t('addBtn')" class="vp-primary-btn" @click="showAddModal = true" />
+          <q-btn data-tour="add-product" unelevated no-caps color="primary" icon="add" :label="t('addBtn')" class="vp-primary-btn" @click="showAddModal = true" />
         </div>
       </div>
 
-      <!-- Forecast insights from the demand model. -->
-      <div class="vp-stats vp-stats--insights">
-        <div v-for="card in insightCards" :key="card.key" class="vp-card vp-stat">
-          <div class="vp-stat-top">
-            <span class="vp-stat-label">{{ card.label }}</span>
-            <span class="vp-stat-icon" :class="`vp-tone--${card.tone}`"><q-icon :name="card.icon" size="20px" /></span>
-          </div>
-          <div class="vp-stat-value vp-stat-value--text">{{ card.value }}</div>
-          <div class="vp-stat-notes">
-            <span v-for="note in card.notes" :key="note.text" class="vp-stat-note" :class="`vp-tone--${note.tone || card.tone}`">
-              <q-icon :name="note.icon" size="14px" />
-              {{ note.text }}
+      <!-- Forecast insights from the demand model, with the refresh that re-runs it right above the cards it updates. -->
+      <section data-tour="pl-insights" class="pl-insights" :aria-busy="insightsBusy">
+        <div class="pl-insights-head">
+          <div class="pl-insights-heading">
+            <span class="pl-insights-title">{{ t('insightsTitle') }}</span>
+            <span class="pl-insights-meta" aria-live="polite">
+              <q-icon :name="insightsRefreshing ? 'o_autorenew' : 'o_schedule'" size="14px" :class="{ 'pl-spin': insightsRefreshing }" />
+              {{ insightsMeta }}
             </span>
           </div>
+          <q-btn
+            outline
+            no-caps
+            color="primary"
+            class="vp-pill-btn pl-refresh-btn"
+            :class="{ 'pl-refresh-btn--busy': insightsRefreshing }"
+            :disable="insightsRefreshing"
+            @click="refreshInsights"
+          >
+            <q-icon name="o_refresh" size="18px" class="pl-refresh-icon" :class="{ 'pl-spin': insightsRefreshing }" />
+            <span class="pl-refresh-label">{{ insightsRefreshing ? t('refreshingInsights') : t('refreshInsights') }}</span>
+          </q-btn>
         </div>
-      </div>
 
-      <div class="vp-card">
-        <div class="vp-toolbar">
+        <div class="vp-stats vp-stats--insights">
+          <!-- Keyed by the refresh count, so each finished refresh re-mounts the cards and plays their "updated" pulse. -->
+          <div
+            v-for="card in insightCards"
+            :key="`${card.key}-${insightsVersion}`"
+            class="vp-card vp-stat pl-insight"
+            :class="{ 'pl-insight--updated': insightsVersion > 0, 'pl-insight--busy': insightsBusy }"
+          >
+            <div class="vp-stat-top">
+              <span class="vp-stat-label">{{ card.label }}</span>
+              <span class="vp-stat-icon" :class="`vp-tone--${card.tone}`"><q-icon :name="card.icon" size="20px" /></span>
+            </div>
+            <template v-if="insightsBusy">
+              <q-skeleton type="text" width="78%" height="26px" class="pl-insight-skeleton" />
+              <div class="vp-stat-notes">
+                <q-skeleton type="QChip" width="62%" height="24px" class="pl-insight-skeleton" />
+              </div>
+            </template>
+            <template v-else>
+              <div class="vp-stat-value vp-stat-value--text">{{ card.value }}</div>
+              <div class="vp-stat-notes">
+                <span v-for="note in card.notes" :key="note.text" class="vp-stat-note" :class="`vp-tone--${note.tone || card.tone}`">
+                  <q-icon :name="note.icon" size="14px" />
+                  {{ note.text }}
+                </span>
+              </div>
+            </template>
+          </div>
+        </div>
+      </section>
+
+      <div data-tour="pl-list" class="vp-card">
+        <div data-tour="pl-toolbar" class="vp-toolbar">
           <div class="pl-search-row">
             <q-input
               v-model="search"
@@ -134,13 +171,18 @@
                     <span class="vp-name">{{ product.product_name }}</span>
                   </div>
                 </td>
-                <td class="vp-muted pl-ellipsis">{{ product.category?.category_name || t('uncategorized') }}</td>
+                <td class="vp-muted pl-ellipsis">{{ productCategoryName(product) }}</td>
                 <td>
-                  <span class="pl-stock" :class="stockClass(product)">{{ product.available_quantity }}</span>
-                  <span class="pl-stock-total"> {{ t('ofWord') }} {{ product.stock_quantity }}</span>
+                  <div class="pl-stock-row">
+                    <span class="pl-stock" :class="stockClass(product)">{{ product.available_quantity }}</span>
+                    <span class="pl-stock-total">{{ t('ofWord') }} {{ product.stock_quantity }}</span>
+                  </div>
                 </td>
                 <td class="text-right vp-amount">
-                  <span v-if="product.variants?.length" class="pl-from">{{ t('fromWord') }} </span>₱{{ formatNumber(product.price) }}
+                  <span class="pl-price">
+                    <span v-if="product.variants?.length" class="pl-from">{{ t('fromWord') }}</span>
+                    <span>₱{{ formatNumber(product.price) }}</span>
+                  </span>
                 </td>
                 <td><span class="vp-status" :class="`vp-status--${productTone(product.status)}`">{{ formatStatus(product.status) }}</span></td>
                 <td class="text-right" @click.stop @keydown.stop>
@@ -178,10 +220,17 @@
             <div class="vp-list-body">
               <span class="vp-name">{{ product.product_name }}</span>
               <div class="vp-list-meta">
-                {{ product.category?.category_name || t('uncategorized') }} · <span :class="stockClass(product)">{{ product.available_quantity }}</span> {{ t('ofWord') }} {{ product.stock_quantity }} {{ t('leftWord') }}
+                {{ productCategoryName(product) }} · 
+                <span class="pl-stock-row pl-stock-row--inline">
+                  <span :class="stockClass(product)">{{ product.available_quantity }}</span>
+                  <span>{{ t('ofWord') }} {{ product.stock_quantity }} {{ t('leftWord') }}</span>
+                </span>
               </div>
               <div class="pl-list-bottom">
-                <span class="vp-amount">₱{{ formatNumber(product.price) }}</span>
+                <span class="vp-amount pl-price">
+                  <span v-if="product.variants?.length" class="pl-from">{{ t('fromWord') }}</span>
+                  <span>₱{{ formatNumber(product.price) }}</span>
+                </span>
                 <span class="vp-status" :class="`vp-status--${productTone(product.status)}`">{{ formatStatus(product.status) }}</span>
               </div>
             </div>
@@ -212,20 +261,20 @@
     <AddProductModal v-model="showAddModal" @refresh="fetchProducts" />
     <ProductDetailsModal v-model="showDetailsModal" :product="selectedProduct" @refresh="fetchProducts" />
 
-    <!-- Deactivate or delete, in the Log out dialog's layout: everything centred, the icon above the title, and a line above two equal buttons. -->
+    <!-- Archive or delete, in the Log out dialog's layout: everything centred, the icon above the title, and a line above two equal buttons. -->
     <q-dialog v-model="confirm.open" persistent>
       <q-card class="vp-dialog pl-confirm">
         <div class="pl-confirm-body">
           <span class="vp-dialog-icon vp-dialog-icon--danger pl-confirm-icon">
-            <q-icon :name="confirm.kind === 'delete' ? 'o_delete' : 'o_block'" size="24px" />
+            <q-icon :name="confirm.kind === 'delete' ? 'o_delete' : 'o_inventory_2'" size="24px" />
           </span>
-          <div class="pl-confirm-title">{{ confirm.kind === 'delete' ? t('confirmDeleteTitle') : t('confirmDeactivateTitle') }}</div>
+          <div class="pl-confirm-title">{{ confirm.kind === 'delete' ? t('confirmDeleteTitle') : t('confirmArchiveTitle') }}</div>
           <p class="pl-confirm-text">
             <template v-if="confirm.kind === 'delete'">
               <strong>{{ confirm.product?.product_name }}</strong> {{ t('confirmDeleteDesc') }}
             </template>
             <template v-else>
-              {{ t('confirmDeactivateDesc1') }} <strong>{{ confirm.product?.product_name }}</strong> {{ t('confirmDeactivateDesc2') }}
+              {{ t('confirmArchiveDesc1') }} <strong>{{ confirm.product?.product_name }}</strong> {{ t('confirmArchiveDesc2') }}
             </template>
           </p>
         </div>
@@ -236,7 +285,7 @@
             unelevated
             no-caps
             color="primary"
-            :label="confirm.kind === 'delete' ? t('confirmDeleteBtn') : t('confirmDeactivateBtn')"
+            :label="confirm.kind === 'delete' ? t('confirmDeleteBtn') : t('confirmArchiveBtn')"
             class="vp-dialog-btn"
             :loading="confirm.busy"
             @click="runConfirm"
@@ -303,8 +352,9 @@ import { ref, computed, onMounted, onBeforeUnmount, reactive, nextTick, watch } 
 import html2canvas from 'html2canvas'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useLanguage } from '@/composables/useLanguage'
+import { useCategoryLabels } from '@/composables/useCategories'
 
 import AddProductModal from '@/components/modals/AddProductModal.vue'
 import ProductDetailsModal from '@/components/modals/ProductDetailsModal.vue'
@@ -319,6 +369,16 @@ const productListDict = {
     subtitle: 'Monitor and update your product catalog.',
     exportBtn: 'Export',
     addBtn: 'Add Product',
+    refreshInsights: 'Refresh Insights',
+    refreshingInsights: 'Refreshing…',
+    insightsTitle: 'Stock insights',
+    insightsUpdating: 'Re-running the demand forecast…',
+    insightsLoading: 'Loading insights…',
+    insightsUpdatedAt: 'Updated {time}',
+    insightsNotLoaded: 'Couldn’t load insights',
+    notifyInsightsRefreshed: 'Insights refreshed with the latest forecast.',
+    notifyInsightsNoForecast: 'Not enough sales data for a new forecast yet. Showing your latest insights.',
+    notifyInsightsFailed: 'Couldn’t refresh insights. Please try again.',
     insightRestockAlert: 'Restock alert',
     insightUpcomingTrend: 'Upcoming trend',
     insightTopPerformer: 'Top performer',
@@ -346,7 +406,6 @@ const productListDict = {
     optHighToLow: 'High to low',
     statusAll: 'All',
     statusActive: 'Active',
-    statusDeactivated: 'Deactivated',
     statusArchived: 'Archived',
     product: 'product',
     noMatchTitle: 'No matching products',
@@ -364,18 +423,18 @@ const productListDict = {
     fromWord: 'from',
     showingWord: 'Showing',
     actionView: 'View',
-    actionDeactivate: 'Deactivate',
+    actionArchive: 'Archive',
     actionDelete: 'Delete',
     confirmDeleteTitle: 'Delete this product?',
-    confirmDeactivateTitle: 'Deactivate this product?',
+    confirmArchiveTitle: 'Archive this product?',
     confirmDeleteDesc: 'will be removed for good. This can\'t be undone.',
-    confirmDeactivateDesc1: 'Customers won\'t be able to buy',
-    confirmDeactivateDesc2: 'until you turn it back on.',
+    confirmArchiveDesc1: 'Customers won\'t be able to buy',
+    confirmArchiveDesc2: 'until you restore it. Nothing else is removed.',
     cancelBtn: 'Cancel',
     confirmDeleteBtn: 'Delete Product',
-    confirmDeactivateBtn: 'Deactivate',
+    confirmArchiveBtn: 'Archive',
     notifyProductDeleted: 'Product deleted.',
-    notifyProductDeactivated: 'Product deactivated.',
+    notifyProductArchived: 'Product archived.',
     notifyFailedAction: 'Failed to {kind} the product.',
     exportWizardTitle: 'Export inventory',
     exportWizardDesc1: 'Choose a format for the inventory report.',
@@ -397,6 +456,16 @@ const productListDict = {
     subtitle: 'Bantayan at i-update ang iyong mga paninda.',
     exportBtn: 'I-export',
     addBtn: 'Magdagdag',
+    refreshInsights: 'I-refresh ang Insights',
+    refreshingInsights: 'Nire-refresh…',
+    insightsTitle: 'Insights sa stock',
+    insightsUpdating: 'Pinapatakbo ulit ang demand forecast…',
+    insightsLoading: 'Nilo-load ang insights…',
+    insightsUpdatedAt: 'Na-update {time}',
+    insightsNotLoaded: 'Hindi ma-load ang insights',
+    notifyInsightsRefreshed: 'Na-refresh ang insights gamit ang pinakabagong forecast.',
+    notifyInsightsNoForecast: 'Kulang pa ang sales data para sa bagong forecast. Ipinapakita ang pinakahuli mong insights.',
+    notifyInsightsFailed: 'Hindi ma-refresh ang insights. Subukan ulit.',
     insightRestockAlert: 'Restock alert',
     insightUpcomingTrend: 'Bagong trend',
     insightTopPerformer: 'Mataas ang benta',
@@ -424,7 +493,6 @@ const productListDict = {
     optHighToLow: 'Mataas pababa',
     statusAll: 'Lahat',
     statusActive: 'Active',
-    statusDeactivated: 'Naka-deactivate',
     statusArchived: 'Naka-archive',
     product: 'paninda',
     noMatchTitle: 'Walang nahanap na paninda',
@@ -442,18 +510,18 @@ const productListDict = {
     fromWord: 'mula',
     showingWord: 'Pinapakita',
     actionView: 'Tingnan',
-    actionDeactivate: 'I-deactivate',
+    actionArchive: 'I-archive',
     actionDelete: 'Burahin',
     confirmDeleteTitle: 'Burahin ang panindang ito?',
-    confirmDeactivateTitle: 'I-deactivate ang panindang ito?',
+    confirmArchiveTitle: 'I-archive ang panindang ito?',
     confirmDeleteDesc: 'ay mabubura nang tuluyan. Hindi na ito maibabalik.',
-    confirmDeactivateDesc1: 'Hindi na mabibili ang',
-    confirmDeactivateDesc2: 'hangga\'t hindi mo binabalik.',
+    confirmArchiveDesc1: 'Hindi na mabibili ang',
+    confirmArchiveDesc2: 'hangga\'t hindi mo binabalik. Walang ibang mabubura.',
     cancelBtn: 'I-cancel',
     confirmDeleteBtn: 'Burahin',
-    confirmDeactivateBtn: 'I-deactivate',
+    confirmArchiveBtn: 'I-archive',
     notifyProductDeleted: 'Nabura na ang paninda.',
-    notifyProductDeactivated: 'Na-deactivate na ang paninda.',
+    notifyProductArchived: 'Na-archive na ang paninda.',
     notifyFailedAction: 'Failed ma-{kind} ang paninda.',
     exportWizardTitle: 'I-export ang inventory',
     exportWizardDesc1: 'Pumili ng format para sa report.',
@@ -474,11 +542,21 @@ const productListDict = {
 
 const { t, lang } = useLanguage(productListDict)
 
+// Seeded categories are stored in English; this shows them in the current language, the
+// same as the Categories page. A category a vendor made up keeps the name they typed.
+const { categoryLabel } = useCategoryLabels()
+
+const categoryName = name => {
+  if (!name || name === 'Uncategorized') return t('uncategorized')
+  return categoryLabel(name)
+}
+
+const productCategoryName = product => categoryName(product.category?.category_name)
+
 // Reactive filters/options so they switch instantly
 const localizedStatusFilters = computed(() => [
   { key: 'all', label: t('statusAll') },
   { key: 'active', label: t('statusActive') },
-  { key: 'deactivated', label: t('statusDeactivated') },
   { key: 'archived', label: t('statusArchived') }
 ])
 
@@ -537,8 +615,32 @@ const mlInsights = ref({
 
 const isNumber = value => value !== null && value !== '' && !Number.isNaN(Number(value))
 
+// Picks an icon that actually matches the season/holiday text from the model,
+// instead of always showing a sun regardless of what season it names.
+const seasonIcon = (season, holiday) => {
+  const text = `${season || ''} ${holiday || ''}`.toLowerCase()
+  if (text.includes('rain') || text.includes('ulan') || text.includes('habagat')) return 'o_umbrella'
+  if (text.includes('typhoon') || text.includes('bagyo') || text.includes('storm')) return 'o_thunderstorm'
+  if (text.includes('school') || text.includes('eskwela') || text.includes('paaralan') || text.includes('klase')) return 'o_school'
+  if (text.includes('christmas') || text.includes('pasko')) return 'o_ac_unit'
+  if (text.includes('new year') || text.includes('bagong taon')) return 'o_celebration'
+  if (text.includes('holy week') || text.includes('semana santa')) return 'o_church'
+  if (text.includes('valentine')) return 'o_favorite'
+  if (text.includes('harvest') || text.includes('ani')) return 'o_agriculture'
+  if (text.includes('summer') || text.includes('tag-init') || text.includes('dry')) return 'o_wb_sunny'
+  return 'o_calendar_month'
+}
+
+// 'loading' until the first answer, then 'ready' when the model has insights for this store
+// or 'empty' when it does not. Kept apart from the values so the placeholder text follows
+// the language switch instead of being frozen in whichever language it was fetched in.
+const insightsStatus = ref('loading')
+const insightsUpdatedAt = ref(null)
+const insightsError = ref(false)
+
 const insightCards = computed(() => {
   const ml = mlInsights.value
+  const empty = insightsStatus.value === 'empty'
   const days = Number(ml.daysUntilStockout)
   const trendNotes = [{ 
     icon: 'o_insights', 
@@ -546,7 +648,7 @@ const insightCards = computed(() => {
   }]
   if (ml.currentSeason) {
     trendNotes.push({ 
-      icon: 'o_wb_sunny', 
+      icon: seasonIcon(ml.currentSeason, ml.currentHoliday), 
       tone: 'success', 
       text: `${t('insightSeason')}: ${ml.currentSeason}${ml.currentHoliday ? ` · ${ml.currentHoliday}` : ''}` 
     })
@@ -558,7 +660,7 @@ const insightCards = computed(() => {
       label: t('insightRestockAlert'),
       icon: 'o_warning_amber',
       tone: 'danger',
-      value: ml.restockProduct || t('insightAnalyzing'),
+      value: empty ? t('insightAwaitingData') : (ml.restockProduct || t('insightAnalyzing')),
       notes: [{ 
         icon: 'o_schedule', 
         text: isNumber(ml.daysUntilStockout) 
@@ -571,7 +673,7 @@ const insightCards = computed(() => {
       label: t('insightUpcomingTrend'), 
       icon: 'o_trending_up', 
       tone: 'info', 
-      value: ml.trendingCategory || t('insightGathering'), 
+      value: empty ? t('insightAwaitingData') : (ml.trendingCategory ? categoryName(ml.trendingCategory) : t('insightGathering')), 
       notes: trendNotes 
     },
     { 
@@ -579,23 +681,52 @@ const insightCards = computed(() => {
       label: t('insightTopPerformer'), 
       icon: 'o_emoji_events', 
       tone: 'wait', 
-      value: ml.topCategory || t('insightCalculating'), 
+      value: empty ? t('insightAwaitingData') : (ml.topCategory ? categoryName(ml.topCategory) : t('insightCalculating')), 
       notes: [{ icon: 'o_star_outline', text: t('insightHighestRevenue') }] 
     }
   ]
 })
 
 const insightsRefreshing = ref(false)
+// Bumped after each finished refresh; the cards are keyed on it so they re-mount and pulse.
+const insightsVersion = ref(0)
+
+// Skeletons stand in for the values while the first load or a refresh is running.
+const insightsBusy = computed(() => insightsRefreshing.value || insightsStatus.value === 'loading')
+
+const formatClock = value => value.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+
+const insightsMeta = computed(() => {
+  if (insightsRefreshing.value) return t('insightsUpdating')
+  if (insightsStatus.value === 'loading') return t('insightsLoading')
+  if (insightsError.value && !insightsUpdatedAt.value) return t('insightsNotLoaded')
+  return insightsUpdatedAt.value ? t('insightsUpdatedAt').replace('{time}', formatClock(insightsUpdatedAt.value)) : ''
+})
+
+// A fast answer would only flash the skeletons, so a refresh stays visible at least this long.
+const MIN_REFRESH_MS = 700
 
 const refreshInsights = async () => {
+  if (insightsRefreshing.value) return
   insightsRefreshing.value = true
+  const minimumWait = new Promise(resolve => setTimeout(resolve, MIN_REFRESH_MS))
   try {
-    // Trigger the shared forecast refresh
-    await api.post('/vendor/demand-forecast/refresh')
-    // Then re-fetch insights
-    await fetchMlInsights()
+    // Re-runs this store's forecast, then reloads the cards from it.
+    const { data } = await api.post('/vendor/demand-forecast/refresh')
+    const loaded = await fetchMlInsights()
+    await minimumWait
+    if (!loaded) throw new Error('Insights could not be reloaded.')
+
+    insightsVersion.value += 1
+    if (data?.has_forecast === false) {
+      $q.notify({ type: 'info', message: t('notifyInsightsNoForecast') })
+    } else {
+      $q.notify({ type: 'positive', message: t('notifyInsightsRefreshed') })
+    }
   } catch (err) {
     console.error('Failed to refresh insights:', err)
+    await minimumWait
+    $q.notify({ type: 'negative', message: t('notifyInsightsFailed') })
   } finally {
     insightsRefreshing.value = false
   }
@@ -664,7 +795,7 @@ const resetFilters = () => {
 const categoryOptions = computed(() => {
   const cats = new Map()
   products.value.forEach(p => {
-    if (p.category) cats.set(p.category_id, p.category.category_name)
+    if (p.category) cats.set(p.category_id, categoryName(p.category.category_name))
   })
   return Array.from(cats, ([value, label]) => ({ value, label }))
 })
@@ -674,7 +805,6 @@ const categorySelectOptions = computed(() => [{ label: t('optAllCategories'), va
 const formatStatus = status => {
   const s = String(status || 'active').toLowerCase()
   if (s === 'active') return t('statusActive')
-  if (s === 'deactivated') return t('statusDeactivated')
   if (s === 'archived') return t('statusArchived')
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
@@ -682,7 +812,6 @@ const formatStatus = status => {
 const productTone = status => {
   switch (String(status || 'active').toLowerCase()) {
     case 'active': return 'success'
-    case 'deactivated':
     case 'inactive': return 'danger'
     case 'out of stock': return 'warning'
     default: return 'neutral'
@@ -722,7 +851,8 @@ const askConfirm = (kind, product) => {
 
 const rowActions = product => [
   { label: t('actionView'), icon: 'o_visibility', run: () => viewProduct(product) },
-  ...(product.status !== 'deactivated' ? [{ label: t('actionDeactivate'), icon: 'o_block', run: () => askConfirm('deactivate', product) }] : []),
+  // 'archived' is the only inactive state the inventory table has, so an already archived product has nothing to archive.
+  ...(product.status !== 'archived' ? [{ label: t('actionArchive'), icon: 'o_inventory_2', run: () => askConfirm('archive', product) }] : []),
   { label: t('actionDelete'), icon: 'o_delete', danger: true, run: () => askConfirm('delete', product) }
 ]
 
@@ -736,8 +866,9 @@ const runConfirm = async () => {
       await api.delete(`/vendor/products/${product.inventory_id}`)
       $q.notify({ type: 'positive', message: t('notifyProductDeleted') })
     } else {
-      await api.patch(`/vendor/products/${product.inventory_id}/status`, { status: 'deactivated' })
-      $q.notify({ type: 'positive', message: t('notifyProductDeactivated') })
+      // The existing product update endpoint owns the status column; there is no separate /status route.
+      await api.patch(`/vendor/products/${product.inventory_id}`, { status: 'archived' })
+      $q.notify({ type: 'positive', message: t('notifyProductArchived') })
     }
     confirm.open = false
     fetchProducts()
@@ -873,6 +1004,7 @@ const executeFinalExport = async () => {
   }
 }
 
+// Resolves true once the cards hold the latest answer, false when the request failed.
 const fetchMlInsights = async () => {
   try {
     const res = await api.get('/vendor/ml-insights')
@@ -880,37 +1012,60 @@ const fetchMlInsights = async () => {
       mlInsights.value.restockProduct = res.data.restockProduct
       mlInsights.value.daysUntilStockout = res.data.daysUntilStockout
       mlInsights.value.trendingCategory = res.data.trendingCategory
-      mlInsights.value.trendMultiplier = res.data.trendMultiplier ?? t('insightNA')
+      mlInsights.value.trendMultiplier = res.data.trendMultiplier ?? null
       mlInsights.value.topCategory = res.data.topCategory
       mlInsights.value.currentSeason = res.data.currentSeason ?? null
       mlInsights.value.currentHoliday = res.data.currentHoliday ?? null
+      insightsStatus.value = 'ready'
     } else {
-      mlInsights.value.restockProduct = t('insightAwaitingData')
-      mlInsights.value.daysUntilStockout = t('insightNA')
-      mlInsights.value.trendingCategory = t('insightAwaitingData')
-      mlInsights.value.trendMultiplier = t('insightNA')
-      mlInsights.value.topCategory = t('insightAwaitingData')
+      // The placeholders themselves come from insightCards, in the current language.
+      mlInsights.value.restockProduct = null
+      mlInsights.value.daysUntilStockout = null
+      mlInsights.value.trendingCategory = null
+      mlInsights.value.trendMultiplier = null
+      mlInsights.value.topCategory = null
+      insightsStatus.value = 'empty'
     }
+    insightsUpdatedAt.value = new Date()
+    insightsError.value = false
+    return true
   } catch (err) {
     console.error('Failed to load ML insights:', err)
+    insightsError.value = true
+    // A first load that fails leaves the cards on their "awaiting data" text, not on skeletons forever.
+    if (insightsStatus.value === 'loading') insightsStatus.value = 'empty'
+    return false
   }
 }
 
 // A link from Categories carries ?category=, so the list opens already filtered to it.
 const route = useRoute()
+const router = useRouter()
+
+// "Add Your First Product" at the end of the vendor tutorial sends ?add=1. The query is
+// dropped again once the modal is open, so a refresh or a back button does not reopen it.
+const openAddFromQuery = () => {
+  if (route.query.add !== '1') return
+  showAddModal.value = true
+  router.replace({ path: route.path, query: { ...route.query, add: undefined } })
+}
+
+// Watched as well as read on mount, since the tutorial can send ?add=1 while this page is
+// already the active route, which mounts nothing new.
+watch(() => route.query.add, openAddFromQuery)
 
 onMounted(() => {
   const linkedCategory = Number(route.query.category)
   if (Number.isFinite(linkedCategory) && linkedCategory > 0) filters.category = linkedCategory
   fetchProducts()
   fetchMlInsights()
+  openAddFromQuery()
 })
 </script>
 
 <style scoped>
 .pl-search-row {
   display: flex;
-
   flex: 1 1 360px;
   gap: 8px;
   max-width: 460px;
@@ -922,117 +1077,137 @@ onMounted(() => {
 
 .pl-search-row > .q-btn {
   flex-shrink: 0;
-
   white-space: nowrap;
 }
 
 .pl-filter-panel {
   display: flex;
   flex-direction: column;
-
   gap: 12px;
 }
 
-/* CONFIRM — deactivate and delete share the Log out dialog's layout, keeping their icon and adding a line above the buttons. */
-.pl-confirm {
-  width: 400px;
+/* INSIGHTS — a small heading row (title, when it was last updated, and Refresh) over the cards. */
+.pl-insights {
+  margin-bottom: var(--sp-gap);
 }
 
-.pl-confirm-body {
+.pl-insights .vp-stats {
+  margin-bottom: 0;
+}
+
+.pl-insights-head {
   display: flex;
-  flex-direction: column;
   align-items: center;
-
-  padding: 28px 28px 22px;
-
-  text-align: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 12px;
 }
 
-.pl-confirm-icon {
-  margin-bottom: 14px;
-}
-
-.pl-confirm-title {
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 1.3;
-
-  color: var(--c-text);
-}
-
-.pl-confirm-text {
-  margin: 8px 0 0;
-
-  font-size: var(--fs-sm);
-  line-height: 1.6;
-
-  color: var(--c-text-3);
-}
-
-.pl-confirm-text strong {
-  color: var(--c-text);
-}
-
-.pl-confirm-sep {
-  background: var(--c-hairline);
-}
-
-/* Cancel and the action share the row equally, as Cancel and Log out do. */
-.pl-confirm-actions {
+.pl-insights-heading {
   display: flex;
-
-  gap: 12px;
-  padding: 18px 28px 24px;
-}
-
-.pl-confirm-actions .vp-dialog-btn {
-  flex: 1;
-
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
   min-width: 0;
-  height: 48px;
 }
 
-.pl-thumb {
-  display: flex;
+.pl-insights-title {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.pl-insights-meta {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  width: 44px;
-  height: 44px;
-  overflow: hidden;
-
-  border: 1px solid var(--c-hairline);
-  border-radius: var(--r-control);
-
-  background: var(--c-surface);
+  gap: 5px;
+  font-size: var(--fs-xs);
   color: var(--c-muted);
 }
 
-/* The photo fills its rounded frame, so its own corners come out rounded instead of sitting square inside. */
-.pl-thumb img {
-  width: 100%;
-  height: 100%;
-
-  border-radius: inherit;
-
-  object-fit: cover;
+.pl-refresh-btn {
+  flex-shrink: 0;
 }
 
-.pl-thumb--lg {
-  width: 56px;
-  height: 56px;
+/* The icon and label sit on one line with even spacing, whichever label is showing. */
+.pl-refresh-btn :deep(.q-btn__content) {
+  flex-wrap: nowrap;
+  gap: 8px;
 }
 
-.pl-ellipsis {
-  overflow: hidden;
+.pl-refresh-label {
+  white-space: nowrap;
+}
 
-  text-overflow: ellipsis;
+/* Disabled while it runs, but still clearly the button that is working rather than a greyed-out one. */
+.pl-refresh-btn--busy.disabled {
+  opacity: 1 !important;
+  background: var(--c-brand-tint) !important;
+}
+
+.pl-spin {
+  animation: pl-spin 0.9s linear infinite;
+}
+
+@keyframes pl-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Cards dim slightly under their skeletons, then pulse once when the new figures land. */
+.pl-insight {
+  transition: opacity 0.2s ease;
+}
+
+.pl-insight--busy {
+  opacity: 0.85;
+}
+
+.pl-insight-skeleton {
+  border-radius: var(--r-control);
+}
+
+.pl-insight--updated {
+  animation: pl-insight-pulse 1.1s ease-out;
+}
+
+@keyframes pl-insight-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--c-brand-tint-2, rgba(189, 36, 39, 0.3));
+    transform: translateY(2px);
+  }
+  30% {
+    box-shadow: 0 0 0 4px var(--c-brand-tint-2, rgba(189, 36, 39, 0.3));
+    transform: translateY(0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-spin,
+  .pl-insight--updated {
+    animation: none;
+  }
+}
+
+/* STOCK CELL */
+.pl-stock-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.pl-stock-row--inline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
 }
 
 .pl-stock {
   font-weight: 700;
-
   color: var(--c-text);
 }
 
@@ -1046,14 +1221,21 @@ onMounted(() => {
 
 .pl-stock-total {
   font-size: var(--fs-xs);
-
   color: var(--c-muted);
+}
+
+/* "from" and the amount are two spans with a real gap between them, so a variant product
+   reads "from ₱80.00" and never "from₱80.00". */
+.pl-price {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 .pl-from {
   font-size: var(--fs-xs);
   font-weight: 500;
-
   color: var(--c-muted);
 }
 
@@ -1063,11 +1245,92 @@ onMounted(() => {
 .pl-table .col-status { width: 14%; }
 .pl-table .col-act { width: 7%; }
 
+/* CONFIRM MODAL */
+.pl-confirm {
+  width: 400px;
+}
+
+.pl-confirm-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 28px 22px;
+  text-align: center;
+}
+
+.pl-confirm-icon {
+  margin-bottom: 14px;
+}
+
+.pl-confirm-title {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--c-text);
+}
+
+.pl-confirm-text {
+  margin: 8px 0 0;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--c-text-3);
+}
+
+.pl-confirm-text strong {
+  color: var(--c-text);
+}
+
+.pl-confirm-sep {
+  background: var(--c-hairline);
+}
+
+.pl-confirm-actions {
+  display: flex;
+  gap: 12px;
+  padding: 18px 28px 24px;
+}
+
+.pl-confirm-actions .vp-dialog-btn {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+}
+
+.pl-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border: 1px solid var(--c-hairline);
+  border-radius: var(--r-control);
+  background: var(--c-surface);
+  color: var(--c-muted);
+}
+
+.pl-thumb img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.pl-thumb--lg {
+  width: 56px;
+  height: 56px;
+}
+
+.pl-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .pl-list-bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   gap: 8px;
   margin-top: 6px;
 }
@@ -1079,7 +1342,6 @@ onMounted(() => {
 .pl-format-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-
   gap: 12px;
 }
 
@@ -1087,20 +1349,14 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-
   gap: 6px;
   padding: 18px 12px;
-
   border: 1.5px solid var(--c-border);
   border-radius: var(--r-surface);
-
   background: #ffffff;
-
   font-family: inherit;
   text-align: center;
-
   cursor: pointer;
-
   transition: border-color 0.15s, background-color 0.15s;
 }
 
@@ -1116,7 +1372,6 @@ onMounted(() => {
 .pl-format--active,
 .pl-format--active:hover {
   border-color: var(--c-brand);
-
   background: var(--c-brand-tint);
 }
 
@@ -1124,13 +1379,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-
   width: 44px;
   height: 44px;
   margin-bottom: 2px;
-
   border-radius: var(--r-surface);
-
   background: var(--c-surface);
   color: var(--c-muted);
 }
@@ -1143,35 +1395,28 @@ onMounted(() => {
 .pl-format-title {
   font-size: var(--fs-sm);
   font-weight: 700;
-
   color: var(--c-text);
 }
 
 .pl-format-sub {
   font-size: var(--fs-xs);
-
   color: var(--c-muted);
 }
 
 .pl-summary {
   display: flex;
   flex-direction: column;
-
   gap: 8px;
   padding: 14px 16px;
-
   border: 1px solid var(--c-border);
   border-radius: var(--r-control);
-
   background: var(--c-surface-2);
 }
 
 .pl-summary-row {
   display: flex;
   justify-content: space-between;
-
   font-size: var(--fs-sm);
-
   color: var(--c-text-3);
 }
 
@@ -1180,12 +1425,22 @@ onMounted(() => {
 }
 
 @media (max-width: 600px) {
-  .vp-header-actions {
-    width: 100%;
+  /* The title and its "Updated" line stack on the left, with a compact Refresh on the right. */
+  .pl-insights-head {
+    flex-wrap: nowrap;
   }
 
-  .vp-header-actions .q-btn {
-    flex: 1;
+  .pl-insights-heading {
+    flex-direction: column;
+    align-items: flex-start;
+
+    gap: 2px;
+  }
+
+  .pl-insights-head .pl-refresh-btn {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 12px;
   }
 
   .pl-search-row {

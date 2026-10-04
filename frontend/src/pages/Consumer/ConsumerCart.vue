@@ -6,27 +6,59 @@
     <!-- MAIN CONTENT -->
     <div class="page-content">
 
-      <h1 class="page-title">My Cart</h1>
-      <p v-if="items.length" class="page-subtitle">Choose a store to checkout.</p>
+      <!-- A shortcut to past and in-progress orders, so a shopper checking on an order doesn't
+           have to go through the account menu. -->
+      <div class="cart-title-row">
+        <h1 class="page-title">{{ t('My Cart') }}</h1>
+        <q-btn
+          outline
+          no-caps
+          color="primary"
+          icon="o_receipt_long"
+          :label="t('My Orders')"
+          to="/consumer/orders"
+          class="orders-shortcut"
+        />
+      </div>
+      <p v-if="items.length" class="page-subtitle">{{ t('Choose a store to checkout.') }}</p>
 
       <div v-if="loading" class="cart-loading">
         <q-spinner size="32px" />
-        <p class="cart-loading-text">Loading your cart…</p>
+        <p class="cart-loading-text">{{ t('Loading your cart…') }}</p>
       </div>
 
-      <div v-else-if="!items.length" class="cart-empty">
-        <q-icon name="o_shopping_cart" size="40px" class="cart-empty-icon" />
-        <p class="cart-empty-text">Your cart is empty.</p>
-        <q-btn
-          unelevated
-          no-caps
-          label="Browse Products"
-          class="browse-btn"
-          @click="router.push('/consumer/products')"
-        />
-      </div>
+      <!-- The same empty state the orders page uses: icon, title, a line on what to do next, button. -->
+      <EmptyState
+        v-else-if="!items.length"
+        class="cart-empty"
+        icon="o_shopping_cart"
+        :title="t('Your cart is empty')"
+        :text="t('Items you add from a store will wait here until you are ready to check out. You pay and collect at the store itself.')"
+      >
+        <template #action>
+          <q-btn
+            unelevated
+            no-caps
+            :label="t('Browse Products')"
+            class="browse-btn"
+            @click="router.push('/consumer/products')"
+          />
+        </template>
+      </EmptyState>
 
       <template v-else>
+      <!-- Shown once, above the cart itself: there is no delivery in Tindahan, and the
+           pickup note in the summary below is easy to miss before checkout. -->
+      <ContextHint
+        v-if="showPickupHint"
+        class="cart-pickup-hint"
+        icon="o_storefront"
+        :title="t('Pickup only')"
+        :text="t('Tindahan orders are collected at the store. There is no delivery — you pay the store when you pick your order up.')"
+        :dismiss-label="t('Close')"
+        @dismiss="dismissPickupHint"
+      />
+
       <div class="cart-layout">
 
         <div class="cart-main">
@@ -48,11 +80,17 @@
                   @update:model-value="toggleStoreSelection(group.storeId)"
                 />
                 <q-icon name="o_storefront" size="15px" />
-                <span>{{ group.store }}</span>
+                <span class="store-card-name">{{ group.store }}</span>
               </div>
+
+              <!-- Back to this group's own store, since a cart is checked out one store at a time. -->
+              <router-link v-if="group.storeId" :to="`/consumer/stores/${group.storeId}`" class="continue-shopping-link continue-shopping-link--header">
+                {{ t('Continue Shopping') }}
+                <q-icon name="o_chevron_right" size="16px" />
+              </router-link>
             </div>
 
-            <div v-for="item in group.items" class="cart-item" :key="item.cartId" :class="{ 'cart-item-oos': !item.inStock }">
+            <div v-for="item in group.items" class="cart-item" :key="item.cartId" :class="{ 'cart-item-oos': !item.inStock || hasExpired(item) }">
               <div class="cart-item-image">
                 <img v-if="item.image" :src="item.image" :alt="item.name" />
                 <q-icon v-else name="o_inventory_2" size="22px" />
@@ -60,7 +98,10 @@
 
               <div class="cart-item-info">
                 <div class="cart-item-name">{{ item.name }}</div>
-                <div v-if="!item.inStock" class="cart-item-oos-tag">Out of Stock</div>
+                <div v-if="item.variantName" class="cart-item-variant">{{ item.variantName }}</div>
+                <div v-if="hasExpired(item)" class="cart-item-oos-tag">{{ t('Expired') }}</div>
+                <div v-else-if="!item.inStock" class="cart-item-oos-tag">{{ t('Out of Stock') }}</div>
+                <div v-else-if="item.expiresAt" class="cart-item-expiry-tag">{{ formatTimeLeft(item.expiresAt) }}</div>
                 <div class="cart-item-price">₱{{ item.price.toFixed(2) }}</div>
               </div>
 
@@ -73,8 +114,8 @@
                     :ripple="false"
                     icon="o_remove"
                     class="stepper-btn"
-                    :disable="item.quantity <= 1"
-                    :aria-label="`Decrease quantity of ${item.name}`"
+                    :disable="item.quantity <= 1 || hasExpired(item)"
+                    :aria-label="t('Decrease quantity of {name}', { name: item.name })"
                     @click="changeQuantity(item, item.quantity - 1)"
                   />
                   <span class="stepper-value">{{ item.quantity }}</span>
@@ -84,13 +125,13 @@
                     :ripple="false"
                     icon="o_add"
                     class="stepper-btn"
-                    :disable="item.quantity >= item.availableQuantity"
-                    :aria-label="`Increase quantity of ${item.name}`"
+                    :disable="item.quantity >= item.availableQuantity || hasExpired(item)"
+                    :aria-label="t('Increase quantity of {name}', { name: item.name })"
                     @click="changeQuantity(item, item.quantity + 1)"
                   />
                 </div>
-                <div v-if="item.quantity >= item.availableQuantity" class="stepper-limit">
-                  Max ({{ item.availableQuantity }} limit)
+                <div v-if="item.quantity >= item.availableQuantity && !hasExpired(item)" class="stepper-limit">
+                  {{ t('Max (') }}{{ item.availableQuantity }} {{ t('limit)') }}
                 </div>
               </div>
 
@@ -102,22 +143,30 @@
                 :ripple="false"
                 icon="o_delete"
                 class="remove-btn"
-                :aria-label="`Remove ${item.name} from cart`"
+                :aria-label="t('Remove {name} from cart', { name: item.name })"
                 @click="removeItem(item)"
               />
             </div>
 
             <div class="store-card-subtotal">
-              <span>Subtotal</span>
+              <span>{{ t('Subtotal') }}</span>
               <strong>₱{{ group.subtotal.toFixed(2) }}</strong>
+            </div>
+
+            <!-- Phone copy of the header link: there the store name needs the whole header row. -->
+            <div v-if="group.storeId" class="store-card-footer">
+              <router-link :to="`/consumer/stores/${group.storeId}`" class="continue-shopping-link">
+                {{ t('Continue Shopping') }}
+                <q-icon name="o_chevron_right" size="16px" />
+              </router-link>
             </div>
           </div>
         </div>
 
         <aside v-if="!$q.screen.lt.md" class="cart-summary">
-          <div class="summary-title">Order Summary</div>
+          <div class="summary-title">{{ t('Order Summary') }}</div>
 
-          <p v-if="!selectedGroup" class="summary-empty-hint">Select a store from your cart to continue to checkout.</p>
+          <p v-if="!selectedGroup" class="summary-empty-hint">{{ t('Select a store from your cart to continue to checkout.') }}</p>
 
           <template v-else>
             <div class="summary-row">
@@ -126,20 +175,24 @@
             </div>
             <q-separator class="summary-separator" />
             <div class="summary-row summary-total">
-              <span>Total</span>
+              <span>{{ t('Total') }}</span>
               <span>₱{{ selectedGroup.subtotal.toFixed(2) }}</span>
             </div>
           </template>
 
+          <p v-if="selectedHasExpired" class="summary-expired-hint">
+            {{ t('A reservation in this store expired. Remove the expired item to continue.') }}
+          </p>
+
           <q-btn
             unelevated
             no-caps
-            label="Proceed to Checkout"
+            :label="t('Proceed to Checkout')"
             class="checkout-btn"
-            :disable="!selectedGroup"
+            :disable="checkoutBlocked"
             @click="router.push({ path: '/consumer/checkout', query: { storeId: selectedGroup.storeId } })"
           />
-          <p class="summary-pickup-note">You'll pay and pick up your order at the store.</p>
+          <p class="summary-pickup-note">{{ t('You\'ll pay and pick up your order at the store.') }}</p>
         </aside>
 
       </div>
@@ -148,10 +201,11 @@
       <div v-if="showCheckoutBar" ref="checkoutBarEl" class="cart-checkout-bar">
         <div class="cart-checkout-bar-top">
           <div class="cart-checkout-bar-info">
-            <div class="cart-checkout-bar-title">{{ selectedGroup ? 'Total' : 'Select a store to checkout' }}</div>
-            <div class="cart-checkout-bar-subtitle">
-              <template v-if="selectedGroup">{{ selectedItemCount }} item{{ selectedItemCount === 1 ? '' : 's' }} · {{ selectedGroup.store }}</template>
-              <template v-else>Choose a store above to view your total.</template>
+            <div class="cart-checkout-bar-title">{{ selectedGroup ? t('Total') : t('Select a store to checkout') }}</div>
+            <div class="cart-checkout-bar-subtitle" :class="{ 'cart-checkout-bar-subtitle-expired': selectedHasExpired }">
+              <template v-if="selectedHasExpired">{{ t('Remove the expired item to continue.') }}</template>
+              <template v-else-if="selectedGroup">{{ itemCount(selectedItemCount) }} · {{ selectedGroup.store }}</template>
+              <template v-else>{{ t('Choose a store above to view your total.') }}</template>
             </div>
           </div>
           <div class="cart-checkout-bar-price">₱{{ (selectedGroup ? selectedGroup.subtotal : 0).toFixed(2) }}</div>
@@ -160,9 +214,9 @@
         <q-btn
           unelevated
           no-caps
-          label="Proceed to Checkout"
+          :label="t('Proceed to Checkout')"
           class="checkout-btn"
-          :disable="!selectedGroup"
+          :disable="checkoutBlocked"
           @click="router.push({ path: '/consumer/checkout', query: { storeId: selectedGroup.storeId } })"
         />
       </div>
@@ -176,19 +230,36 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
+import ContextHint from '@/components/consumer/ContextHint.vue'
+import EmptyState from '@/components/consumer/EmptyState.vue'
 import { useCart } from '@/composables/useCart'
+import { useCartExpiry } from '@/composables/useCartExpiry'
+import { useConsumerHints, HINT_PICKUP_ONLY } from '@/composables/useConsumerHints'
+
+const { t, itemCount } = useConsumerLanguage()
 
 const $q = useQuasar()
 const router = useRouter()
 
 const { items, loading, fetchCart, updateQuantity, removeFromCart } = useCart()
 
-onMounted(fetchCart)
+const { isDismissed, dismissHint } = useConsumerHints()
+const showPickupHint = computed(() => !isDismissed(HINT_PICKUP_ONLY))
+const dismissPickupHint = () => dismissHint(HINT_PICKUP_ONLY)
+
+// Shared with ConsumerCheckout: the ticking clock that flips a reservation to expired between fetches.
+const { hasExpired, formatTimeLeft } = useCartExpiry()
+
+onMounted(() => {
+  fetchCart()
+})
 
 // Mobile/tablet: sticky checkout bar replaces the Order Summary sidebar.
 const showCheckoutBar = computed(() => $q.screen.lt.md && items.value.length > 0)
@@ -214,7 +285,9 @@ watch(checkoutBarEl, (el) => {
   checkoutBarObserver.observe(el)
 })
 
-onBeforeUnmount(() => checkoutBarObserver?.disconnect())
+onBeforeUnmount(() => {
+  checkoutBarObserver?.disconnect()
+})
 
 // Only one store can be checked out from at a time — the checkout flow is per-store pickup, not a combined order.
 const selectedStoreId = ref(null)
@@ -229,11 +302,17 @@ const groupedByStore = computed(() => {
 
   for (const item of items.value) {
     if (!groups.has(item.storeId)) {
-      groups.set(item.storeId, { storeId: item.storeId, store: item.store, items: [], subtotal: 0 })
+      groups.set(item.storeId, { storeId: item.storeId, store: item.store, items: [], subtotal: 0, expiredCount: 0 })
     }
     const group = groups.get(item.storeId)
     group.items.push(item)
-    group.subtotal += item.price * item.quantity
+
+    // An expired reservation is no longer yours to buy, so it stays listed but out of every total.
+    if (hasExpired(item)) {
+      group.expiredCount += 1
+    } else {
+      group.subtotal += item.price * item.quantity
+    }
   }
 
   return Array.from(groups.values())
@@ -245,24 +324,35 @@ const selectedGroup = computed(() =>
 )
 
 const selectedItemCount = computed(() =>
-  selectedGroup.value ? selectedGroup.value.items.reduce((sum, item) => sum + item.quantity, 0) : 0
+  selectedGroup.value
+    ? selectedGroup.value.items.reduce((sum, item) => (hasExpired(item) ? sum : sum + item.quantity), 0)
+    : 0
+)
+
+const selectedHasExpired = computed(() => !!selectedGroup.value?.expiredCount)
+
+// The server re-checks every reservation, so the button blocks here rather than failing at the last step.
+const checkoutBlocked = computed(() =>
+  !selectedGroup.value || selectedHasExpired.value || selectedItemCount.value === 0
 )
 
 const changeQuantity = async (item, newQuantity) => {
+  // Editing an expired item would silently renew its reservation server-side, so it can only be removed.
+  if (hasExpired(item)) return
   if (newQuantity < 1 || newQuantity > item.availableQuantity) return
   try {
     await updateQuantity(item.cartId, newQuantity)
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to update quantity.' })
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to update quantity.') })
   }
 }
 
 const removeItem = async (item) => {
   try {
     await removeFromCart(item.cartId)
-    $q.notify({ type: 'positive', message: `${item.name} removed from cart.` })
+    $q.notify({ type: 'positive', message: t('{name} removed from cart.', { name: item.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to remove item.' })
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to remove item.') })
   }
 }
 </script>
@@ -291,8 +381,42 @@ const removeItem = async (item) => {
   padding: 24px;
 }
 
-.page-title {
+.cart-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
   margin: 0 0 4px;
+}
+
+.orders-shortcut {
+  flex-shrink: 0;
+
+  height: 38px;
+  min-height: 38px;
+  padding: 0 14px;
+
+  border-radius: var(--r-pill);
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  transition: background-color 0.15s;
+
+  animation: cart-fade-up 0.5s ease both;
+}
+
+.orders-shortcut:hover {
+  background: var(--c-brand-tint);
+}
+
+.orders-shortcut :deep(.q-icon) {
+  font-size: 18px;
+}
+
+.page-title {
+  margin: 0;
 
   font-size: var(--fs-3xl);
   font-weight: 700;
@@ -331,14 +455,14 @@ const removeItem = async (item) => {
   font-size: var(--fs-md);
 }
 
+/* EmptyState brings its own layout; the cart only adds its page-entrance animation. */
 .cart-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  animation: cart-fade-up 0.5s ease both;
+}
 
-  padding: 60px 24px;
-
-  text-align: center;
+/* Above the cart columns, spanning the page's full width. */
+.cart-pickup-hint {
+  margin-bottom: 16px;
 
   animation: cart-fade-up 0.5s ease both;
 }
@@ -358,24 +482,12 @@ const removeItem = async (item) => {
 
 @media (prefers-reduced-motion: reduce) {
   .cart-empty,
+  .cart-pickup-hint,
   .page-title,
+  .orders-shortcut,
   .cart-layout {
     animation: none;
   }
-}
-
-.cart-empty-icon {
-  margin-bottom: 10px;
-
-  color: var(--c-border);
-}
-
-.cart-empty-text {
-  margin: 0 0 20px;
-
-  font-size: var(--fs-md);
-
-  color: var(--c-muted);
 }
 
 .browse-btn {
@@ -425,6 +537,11 @@ const removeItem = async (item) => {
   gap: 20px;
 
   align-items: start;
+}
+
+/* A grid track never shrinks below its content by default, so one long no-wrap row could push every card past the screen edge. */
+.cart-main {
+  min-width: 0;
 }
 
 /* STORE CARDS — each store is its own card, matching the app's canonical card recipe. */
@@ -485,6 +602,51 @@ const removeItem = async (item) => {
   color: var(--c-brand);
 }
 
+/* Lets a long store name give way to the link instead of pushing it out of the card. */
+.store-card-header-info {
+  min-width: 0;
+}
+
+.store-card-name {
+  min-width: 0;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Quiet brand-coloured text, like the search page's "Show all" link, so it stays below the store name. */
+.continue-shopping-link {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 2px;
+
+  margin-left: 12px;
+
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+
+  color: var(--c-brand);
+}
+
+.continue-shopping-link:hover {
+  text-decoration: underline;
+}
+
+/* Desktop and tablet keep the link in the header, so the footer row only exists on phones. */
+.store-card-footer {
+  display: none;
+}
+
+.continue-shopping-link:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
 .cart-item {
   display: grid;
   grid-template-columns: 46px 1fr auto auto auto;
@@ -542,6 +704,13 @@ const removeItem = async (item) => {
   text-overflow: ellipsis;
 }
 
+.cart-item-variant {
+  margin-top: 1px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--c-muted);
+}
+
 .cart-item-oos-tag {
   margin-top: 2px;
 
@@ -550,6 +719,15 @@ const removeItem = async (item) => {
   text-transform: uppercase;
 
   color: var(--c-danger);
+}
+
+.cart-item-expiry-tag {
+  margin-top: 2px;
+
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+
+  color: var(--c-brand);
 }
 
 .cart-item-price {
@@ -714,6 +892,16 @@ const removeItem = async (item) => {
   color: var(--c-muted);
 }
 
+/* Says why the disabled Proceed to Checkout button is disabled. */
+.summary-expired-hint {
+  margin: 12px 0 0;
+
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+
+  color: var(--c-danger);
+}
+
 .summary-row {
   display: flex;
   justify-content: space-between;
@@ -835,6 +1023,10 @@ const removeItem = async (item) => {
   color: var(--c-muted);
 }
 
+.cart-checkout-bar-subtitle-expired {
+  color: var(--c-danger);
+}
+
 .cart-checkout-bar-price {
   flex-shrink: 0;
 
@@ -895,8 +1087,35 @@ const removeItem = async (item) => {
     padding: 16px;
   }
 
+  .orders-shortcut {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 12px;
+
+    font-size: var(--fs-xs);
+  }
+
   .store-card {
     padding: 12px 14px;
+  }
+
+  /* The store name gets the full header row on phones; the link moves to its own row at the bottom of the card. */
+  .continue-shopping-link--header {
+    display: none;
+  }
+
+  .store-card-footer {
+    display: flex;
+    justify-content: flex-end;
+
+    margin-top: 10px;
+    padding-top: 10px;
+
+    border-top: 1px solid var(--c-hairline);
+  }
+
+  .store-card-footer .continue-shopping-link {
+    margin-left: 0;
   }
 }
 </style>

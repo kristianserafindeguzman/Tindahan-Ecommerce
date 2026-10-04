@@ -1,6 +1,8 @@
 <template>
   <div class="categories-row">
-    <div class="categories-track" ref="track">
+    <q-btn flat dense round :ripple="false" icon="o_chevron_left" class="categories-nav" :disable="atStart" :aria-label="t('Previous categories')" @click="scrollByPage(-1)" />
+
+    <div class="categories-track" ref="track" @scroll.passive="updateEnds">
       <CategoryCard
         v-for="category in categories"
         :key="category.id"
@@ -9,15 +11,19 @@
       />
     </div>
 
-    <q-btn flat dense round :ripple="false" icon="o_chevron_right" class="categories-next" aria-label="More categories" @click="scrollNext" />
+    <q-btn flat dense round :ripple="false" icon="o_chevron_right" class="categories-nav" :disable="atEnd" :aria-label="t('More categories')" @click="scrollByPage(1)" />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
+import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import CategoryCard from '@/components/consumer/CategoryCard.vue'
 
-defineProps({
+const { t } = useConsumerLanguage()
+
+const props = defineProps({
   categories: {
     type: Array,
     required: true
@@ -26,20 +32,34 @@ defineProps({
 
 defineEmits(['select'])
 
-// The ">" button nudges the track forward by roughly one "page" of cards.
+// The "<" and ">" buttons move the track by roughly one "page" of cards, and each dims once there is nothing further that way.
 const track = ref(null)
+const atStart = ref(true)
+const atEnd = ref(true)
 
-const scrollNext = () => {
+const updateEnds = () => {
   const el = track.value
   if (!el) return
-
-  const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4
-
-  el.scrollBy({
-    left: atEnd ? -el.clientWidth : el.clientWidth,
-    behavior: 'smooth'
-  })
+  atStart.value = el.scrollLeft <= 4
+  atEnd.value = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4
 }
+
+const scrollByPage = direction => {
+  track.value?.scrollBy({ left: direction * track.value.clientWidth, behavior: 'smooth' })
+}
+
+// The ends change when the window resizes or the categories arrive, not only on scroll.
+let resizeObserver = null
+
+onMounted(() => {
+  updateEnds()
+  resizeObserver = new ResizeObserver(updateEnds)
+  if (track.value) resizeObserver.observe(track.value)
+})
+
+onBeforeUnmount(() => resizeObserver?.disconnect())
+
+watch(() => props.categories.length, () => nextTick(updateEnds))
 </script>
 
 <style scoped>
@@ -53,6 +73,7 @@ const scrollNext = () => {
 .categories-track {
   display: flex;
   align-items: stretch;
+  flex: 1;
 
   gap: 12px;
   min-width: 0;
@@ -68,11 +89,11 @@ const scrollNext = () => {
   display: none;
 }
 
-.categories-next :deep(.q-icon) {
+.categories-nav :deep(.q-icon) {
   font-size: 20px;
 }
 
-.categories-next {
+.categories-nav {
   min-width: auto;
   min-height: auto;
 
@@ -92,13 +113,70 @@ const scrollNext = () => {
   background: #ffffff;
   color: var(--c-brand);
 
-  transition: background-color 0.15s, border-color 0.15s;
+  transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
 
   cursor: pointer;
 }
 
-.categories-next:hover {
+.categories-nav:hover {
   border-color: var(--c-brand);
   background: var(--c-brand-tint);
+}
+
+/* Quasar's own disabled look is 0.6 opacity; a lighter fade keeps the pair visible as a set. */
+.categories-nav.disabled {
+  opacity: 0.4 !important;
+}
+
+.categories-nav.disabled:hover {
+  border-color: var(--c-border);
+  background: #ffffff;
+}
+
+@media (min-width: 601px) and (max-width: 1024px) {
+  .categories-row {
+    gap: 8px;
+  }
+
+  .categories-track {
+    gap: 10px;
+  }
+
+  .categories-nav {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+  }
+}
+
+@media (max-width: 600px) {
+  .categories-row {
+    gap: 6px;
+  }
+
+  .categories-track {
+    gap: 8px;
+    margin: -6px -3px;
+    padding: 6px 3px 10px;
+
+    /* A deliberate partial card hints that the row can also be swiped. */
+    scroll-snap-type: x proximity;
+  }
+
+  .categories-track :deep(.category-tile) {
+    scroll-snap-align: start;
+  }
+
+  .categories-nav {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+
+    border-radius: var(--r-md);
+  }
+
+  .categories-nav :deep(.q-icon) {
+    font-size: 18px;
+  }
 }
 </style>

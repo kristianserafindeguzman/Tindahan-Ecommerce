@@ -31,10 +31,10 @@
               </div>
 
               <div>
-                <label class="vp-field-label">Category</label>
+                <label class="vp-field-label">{{ tCategory('uiCategory') }}</label>
                 <q-select
                   v-model="form.category_id"
-                  :options="categories"
+                  :options="categoryOptions"
                   option-value="category_id"
                   option-label="category_name"
                   emit-value
@@ -43,9 +43,9 @@
                   dense
                   hide-bottom-space
                   behavior="menu"
-                  placeholder="Choose a category"
+                  :placeholder="tCategory('uiChooseCategory')"
                   class="vp-input"
-                  :rules="[val => !!val || 'Choose a category.']"
+                  :rules="[val => !!val || tCategory('uiChooseCategoryRule')]"
                 />
                 <div v-if="form.category_id" class="pm-hint">
                   <q-icon name="o_info" size="14px" />
@@ -63,6 +63,19 @@
                   autogrow
                   placeholder="Size, flavour, or anything that helps customers choose"
                   class="vp-input pm-textarea"
+                />
+              </div>
+
+              <div>
+                <label class="vp-field-label" for="pm-add-exp">Best Before / Expiration Date <span class="vp-field-optional">(optional)</span></label>
+                <q-input
+                  v-model="form.expiration_date"
+                  for="pm-add-exp"
+                  type="date"
+                  outlined
+                  dense
+                  hide-bottom-space
+                  class="vp-input"
                 />
               </div>
 
@@ -111,7 +124,7 @@
                     <span>Size</span><span>Price (₱)</span><span>Quantity</span><span />
                   </div>
                   <div v-for="(variant, index) in form.variants" :key="index" class="pm-variant">
-                    <q-input v-model="variant.size" outlined dense hide-bottom-space placeholder="e.g. Small" class="vp-input" :aria-label="`Size ${index + 1}`" :rules="[val => !!(val && String(val).trim()) || 'Required']" />
+                    <q-input v-model="variant.name" outlined dense hide-bottom-space placeholder="e.g. Small" class="vp-input" :aria-label="`Size ${index + 1}`" :rules="[val => !!(val && String(val).trim()) || 'Required']" />
                     <q-input v-model.number="variant.price" type="number" min="0" step="0.01" outlined dense hide-bottom-space placeholder="0.00" class="vp-input" :aria-label="`Price for size ${index + 1}`" />
                     <q-input v-model.number="variant.quantity" type="number" min="0" outlined dense hide-bottom-space placeholder="0" class="vp-input" :aria-label="`Quantity for size ${index + 1}`" />
                     <q-btn flat round dense icon="o_close" class="pm-variant-remove" :disable="form.variants.length === 1" :aria-label="`Remove size ${index + 1}`" @click="removeVariant(index)" />
@@ -228,6 +241,7 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import { api } from '@/boot/axios'
+import { useCategoryLabels } from '@/composables/useCategories'
 import { useQuasar } from 'quasar'
 import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 
@@ -244,6 +258,13 @@ const showCameraLens = ref(false)
 const showCropper = ref(false)
 
 const categories = ref([])
+
+// The select stores category_id, so only the label a vendor reads is translated.
+const { t: tCategory, categoryLabel, categoryDescription } = useCategoryLabels()
+const categoryOptions = computed(() => categories.value.map(category => ({
+  ...category,
+  category_name: categoryLabel(category.category_name)
+})))
 const hasVariants = ref(false)
 const saving = ref(false)
 const imagePreview = ref(null)
@@ -258,11 +279,12 @@ const form = ref({
   price: null,
   stock_quantity: null,
   product_picture: null,
-  variants: [{ size: '', price: null, quantity: null }]
+  expiration_date: null,
+  variants: [{ name: '', price: null, quantity: null }]
 })
 
 const selectedAddCategoryGuide = computed(() => {
-  if (!form.value.category_id && !form.value.category) return 'Select a category to see its description.'
+  if (!form.value.category_id && !form.value.category) return tCategory('uiCategoryGuideEmpty')
 
   const matchedCategory = categories.value.find(c =>
     c.category_id === form.value.category_id ||
@@ -270,7 +292,8 @@ const selectedAddCategoryGuide = computed(() => {
     c.category_name === form.value.category?.label
   )
 
-  return matchedCategory?.description || 'No description available for this category.'
+  return categoryDescription(matchedCategory?.category_name, matchedCategory?.description) ||
+    tCategory('uiCategoryGuideNone')
 })
 
 const openCameraViewfinder = () => {
@@ -356,7 +379,7 @@ const applyCrop = async () => {
 
 const fetchCategories = async () => {
   try {
-    const res = await api.get('/categories')
+    const res = await api.get('/vendor/products/categories')
     categories.value = res.data
   } catch (err) {
     console.error(err)
@@ -365,11 +388,11 @@ const fetchCategories = async () => {
 
 onMounted(fetchCategories)
 
-const addVariant = () => { form.value.variants.push({ size: '', price: null, quantity: null }) }
+const addVariant = () => { form.value.variants.push({ name: '', price: null, quantity: null }) }
 const removeVariant = index => { if (form.value.variants.length > 1) form.value.variants.splice(index, 1) }
 
 const resetForm = () => {
-  form.value = { product_name: '', description: '', category_id: null, price: null, stock_quantity: null, product_picture: null, variants: [{ size: '', price: null, quantity: null }] }
+  form.value = { product_name: '', description: '', category_id: null, price: null, stock_quantity: null, product_picture: null, expiration_date: null, variants: [{ name: '', price: null, quantity: null }] }
   hasVariants.value = false
   removePhoto()
 }
@@ -382,6 +405,8 @@ const submitForm = async () => {
     if (form.value.description) formData.append('description', form.value.description)
     formData.append('category_id', form.value.category_id)
     if (form.value.product_picture) formData.append('product_picture', form.value.product_picture)
+    if (form.value.expiration_date) formData.append('expiration_date', form.value.expiration_date)
+    
     if (hasVariants.value) {
       formData.append('variants', JSON.stringify(form.value.variants))
     } else {

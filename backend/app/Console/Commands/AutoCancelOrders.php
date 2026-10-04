@@ -5,8 +5,11 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Order;
 use App\Models\Inventory;
+use App\Models\Notification;
+use App\Services\CartReservationService;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class AutoCancelOrders extends Command
 {
@@ -22,23 +25,71 @@ class AutoCancelOrders extends Command
      *
      * @var string
      */
-    protected $description = 'Automatically cancel orders stuck in placed status for more than 60 minutes';
+    protected $description = 'Automatically cancel expired cart items, vendor unaccepted orders, and unpicked orders.';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $expiredOrders = Order::with('items')
+        $this->cleanupExpiredCarts();
+        $this->cancelUnpreparedOrders();
+        $this->cancelUnpickedOrders();
+    }
+
+    private function cleanupExpiredCarts()
+    {
+        // Shared with the cart and checkout controllers, so a reservation is released the same way
+        // whether this job gets there first or a shopper touches the product.
+        $released = app(CartReservationService::class)->releaseAllExpired();
+
+        if ($released > 0) {
+            $this->info("Released {$released} reserved unit(s) from expired cart items.");
+        }
+    }
+
+    private function cancelUnpreparedOrders()
+    {
+        $prepMinutes = config('tindahan.order_preparation_minutes', 180);
+        $cutoff = Carbon::now()->subMinutes($prepMinutes);
+
+        // An ASAP order's window starts when it was placed; a scheduled one's starts at its
+        // pickup time, so an order for tomorrow is not cancelled before the store could start it.
+        $expiredOrders = Order::with('items.inventory', 'store')
             ->where('status', 'placed')
-            ->where('created_at', '<', Carbon::now()->subMinutes(60))
+            ->where(function ($query) use ($cutoff) {
+                $query->where(fn ($q) => $q->whereNull('scheduled_pickup_at')->where('created_at', '<', $cutoff))
+                    ->orWhere(fn ($q) => $q->whereNotNull('scheduled_pickup_at')->where('scheduled_pickup_at', '<', $cutoff));
+            })
             ->get();
 
+        $this->cancelOrders($expiredOrders, 'Vendor did not prepare the order in time.');
+    }
+
+    private function cancelUnpickedOrders()
+    {
+        $pickupMinutes = config('tindahan.order_pickup_minutes', 720);
+        $expiredOrders = Order::with('items.inventory', 'store')
+            ->where('status', 'ready_for_pickup')
+            ->whereNotNull('ready_for_pickup_at')
+            ->where('ready_for_pickup_at', '<', Carbon::now()->subMinutes($pickupMinutes))
+            ->get();
+
+        $this->cancelOrders($expiredOrders, 'Consumer did not pick up the order in time.');
+    }
+
+    private function cancelOrders($orders, $reason)
+    {
         $count = 0;
 
-        foreach ($expiredOrders as $order) {
+        foreach ($orders as $order) {
             try {
-                DB::transaction(function () use ($order) {
+                DB::transaction(function () use ($order, $reason) {
+                    $lockedOrder = Order::where('order_id', $order->order_id)->lockForUpdate()->first();
+                    if (!$lockedOrder || in_array($lockedOrder->status, ['cancelled', 'picked_up'])) {
+                        return; // Already processed
+                    }
+
                     // Revert reservation
                     foreach ($order->items as $item) {
                         $inventory = Inventory::where('inventory_id', $item->inventory_id)->lockForUpdate()->first();
@@ -48,8 +99,103 @@ class AutoCancelOrders extends Command
                         }
                     }
 
-                    $order->status = 'cancelled';
-                    $order->save();
+                    $lockedOrder->status = 'cancelled';
+                    $lockedOrder->cancellation_reason = $reason;
+                    $lockedOrder->save();
+
+
+                // Notifications
+                try {
+                    // =========================
+                    // CONSUMER NOTIFICATION
+                    // =========================
+                    $consumerMessage = "Your order #{$lockedOrder->order_id} was cancelled. Reason: {$reason}";
+
+                    // In-app notification
+                    Notification::create([
+                        'user_id' => $lockedOrder->consumer_id,
+                        'order_id' => $lockedOrder->order_id,
+                        'title' => 'Order Cancelled',
+                        'message' => $consumerMessage,
+                    ]);
+
+                    // Email notification
+                    try {
+                        $consumer = \App\Models\User::find($lockedOrder->consumer_id);
+
+                        if ($consumer && $consumer->email) {
+                            $orderUrl = rtrim(config('services.frontend.url'), '/')
+                                . '/#/consumer/orders/'
+                                . $lockedOrder->order_id;
+
+                            $consumer->notify(
+                                new \App\Notifications\SystemNotification(
+                                    'Order Cancelled',
+                                    $consumerMessage,
+                                    $lockedOrder->order_id,
+                                    $orderUrl,
+                                    'View Order'
+                                )
+                            );
+                        }
+                    } catch (\Throwable $e) {
+                        Log::error(
+                            "Failed to send consumer cancellation email for order {$lockedOrder->order_id}: "
+                            . $e->getMessage()
+                        );
+                    }
+
+
+                    // =========================
+                    // VENDOR NOTIFICATION
+                    // =========================
+                    $ownerId = optional($order->store)->owner_id;
+
+                    if ($ownerId) {
+                        $vendorMessage = "Order #{$lockedOrder->order_id} was cancelled automatically. Reason: {$reason}";
+
+                        // In-app notification
+                        Notification::create([
+                            'user_id' => $ownerId,
+                            'order_id' => $lockedOrder->order_id,
+                            'title' => 'Order Cancelled Automatically',
+                            'message' => $vendorMessage,
+                        ]);
+
+                        // Email notification
+                        try {
+                            $vendor = \App\Models\User::find($ownerId);
+
+                            if ($vendor && $vendor->email) {
+                                $orderUrl = rtrim(config('services.frontend.url'), '/')
+                                    . '/#/vendor/orders/'
+                                    . $lockedOrder->order_id;
+
+                                $vendor->notify(
+                                    new \App\Notifications\SystemNotification(
+                                        'Order Cancelled Automatically',
+                                        $vendorMessage,
+                                        $lockedOrder->order_id,
+                                        $orderUrl,
+                                        'View Order'
+                                    )
+                                );
+                            }
+                        } catch (\Throwable $e) {
+                            Log::error(
+                                "Failed to send vendor cancellation email for order {$lockedOrder->order_id}: "
+                                . $e->getMessage()
+                            );
+                        }
+                    }
+
+                } catch (\Throwable $e) {
+                    Log::error(
+                        "Failed to create cancellation notifications for order {$lockedOrder->order_id}: "
+                        . $e->getMessage()
+                    );
+                }
+
                 });
                 $count++;
             } catch (\Exception $e) {
@@ -57,6 +203,6 @@ class AutoCancelOrders extends Command
             }
         }
 
-        $this->info("Successfully cancelled {$count} expired orders.");
+        if ($count > 0) $this->info("Successfully cancelled {$count} orders. Reason: {$reason}");
     }
 }

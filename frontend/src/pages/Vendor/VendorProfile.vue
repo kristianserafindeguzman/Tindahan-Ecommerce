@@ -9,9 +9,9 @@
       <div class="row q-col-gutter-md items-stretch">
 
         <div class="col-12 col-md-8">
-          <q-card flat bordered class="profile-card profile-card-fill">
+          <q-card data-tour="pf-personal" flat bordered class="profile-card profile-card-fill">
             <q-card-section>
-              <div class="card-header">
+              <div data-tour="pf-personal-head" class="card-header">
                 <div>
                   <div class="section-title">{{ t('personalInfoTitle') }}</div>
                   <div class="section-subtitle">{{ t('personalInfoSubtitle') }}</div>
@@ -26,6 +26,33 @@
                   :disable="!profileLoaded"
                   @click="startEditPersonal"
                 />
+              </div>
+
+              <!-- The owner's photo, stored on users.profile_picture like the consumer profile, and shown in the sidebar. -->
+              <div class="owner-photo-row">
+                <div class="owner-photo-wrap">
+                  <q-avatar size="72px" class="owner-avatar">
+                    <img v-if="shownAvatar" :src="shownAvatar" alt="" />
+                    <q-icon v-else name="o_person" size="34px" />
+                  </q-avatar>
+
+                  <q-btn round unelevated color="primary" class="owner-photo-btn" :aria-label="t('changeAvatarBtn')" @click="triggerAvatarUpload">
+                    <q-icon name="o_photo_camera" size="14px" />
+                  </q-btn>
+
+                  <input id="vendorAvatarUpload" type="file" accept="image/png, image/jpeg, image/gif" style="display: none;" @change="onAvatarSelected" />
+                </div>
+
+                <div class="owner-photo-text">
+                  <div class="info-label">{{ t('avatarLabel') }}</div>
+                  <div class="owner-photo-hint">{{ t('avatarHint') }}</div>
+
+                  <div v-if="avatarFile" class="owner-photo-actions">
+                    <q-btn unelevated no-caps dense color="primary" :label="t('savePhotoBtn')" :loading="savingAvatar" @click="saveAvatar" />
+                    <q-btn outline no-caps dense color="primary" :label="t('cancelBtn')" :disable="savingAvatar" @click="cancelAvatar" />
+                  </div>
+                  <q-btn v-else outline no-caps dense color="primary" class="owner-photo-change" :label="t('changeAvatarBtn')" @click="triggerAvatarUpload" />
+                </div>
               </div>
 
               <div class="info-row">
@@ -56,9 +83,9 @@
         </div>
 
         <div class="col-12 col-md-4 col-photo">
-          <q-card flat bordered class="profile-card profile-card-fill">
+          <q-card data-tour="pf-photo" flat bordered class="profile-card profile-card-fill">
             <q-card-section class="photo-card-section">
-              <div>
+              <div data-tour="pf-photo-head">
                 <div class="section-title">{{ t('storePhotoTitle') }}</div>
                 <div class="section-subtitle">{{ t('storePhotoSubtitle') }}</div>
               </div>
@@ -96,9 +123,9 @@
 
         <div class="col-12">
 
-          <q-card flat bordered class="profile-card q-mb-md">
+          <q-card data-tour="pf-details" flat bordered class="profile-card q-mb-md">
             <q-card-section>
-              <div class="card-header">
+              <div data-tour="pf-details-head" class="card-header">
                 <div>
                   <div class="section-title">{{ t('storeDetailsTitle') }}</div>
                   <div class="section-subtitle">{{ t('storeDetailsSubtitle') }}</div>
@@ -140,7 +167,7 @@
             </q-card-section>
           </q-card>
 
-          <q-card flat bordered class="profile-card q-mb-md">
+          <q-card data-tour="pf-security" flat bordered class="profile-card q-mb-md">
             <q-card-section>
               <div class="card-header">
                 <div>
@@ -149,7 +176,7 @@
                 </div>
               </div>
 
-              <div class="info-row info-row-last">
+              <div class="info-row info-row-last info-row--action">
                 <div class="info-icon"><q-icon name="o_lock" size="18px" /></div>
                 <div class="info-body">
                   <div class="info-label">{{ t('passwordLabel') }}</div>
@@ -163,6 +190,34 @@
                   :label="t('changePwdBtn')"
                   class="card-action-btn"
                   @click="showPasswordModal = true"
+                />
+              </div>
+            </q-card-section>
+          </q-card>
+
+          <q-card data-tour="pf-help" flat bordered class="profile-card q-mb-md">
+            <q-card-section>
+              <div class="card-header">
+                <div>
+                  <div class="section-title">{{ t('helpTitle') }}</div>
+                  <div class="section-subtitle">{{ t('helpSubtitle') }}</div>
+                </div>
+              </div>
+
+              <div class="info-row info-row-last info-row--action">
+                <div class="info-icon"><q-icon name="o_school" size="18px" /></div>
+                <div class="info-body">
+                  <div class="help-title">{{ t('replayTutorialLabel') }}</div>
+                  <div class="help-desc">{{ t('replayTutorialDesc') }}</div>
+                </div>
+                <q-btn
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="o_play_circle"
+                  :label="t('replayTutorialBtn')"
+                  class="card-action-btn"
+                  @click="requestReplay"
                 />
               </div>
             </q-card-section>
@@ -280,7 +335,7 @@
       </q-card>
     </q-dialog>
 
-    <q-dialog v-model="showAddressModal" persistent transition-show="scale" transition-hide="scale" @show="addressMapReady = true" @hide="addressMapReady = false">
+    <q-dialog v-model="showAddressModal" persistent :allow-focus-outside="addressMapEnlarged" transition-show="scale" transition-hide="scale" @show="addressMapReady = true" @hide="addressMapReady = false; addressMapEnlarged = false; addressLookupPending = false">
       <q-card class="profile-dialog-card" style="width: 560px; max-width: 90vw;">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_place" size="22px" /></div>
@@ -293,18 +348,53 @@
 
         <q-form ref="addressFormRef" greedy>
           <q-card-section class="dialog-body">
-            <div class="address-map-frame">
-              <VendorLocationMap v-if="addressMapReady" :initial="addressInitial" @location-selected="onLocationSelected" />
-            </div>
-            <div class="edit-field-hint" :class="{ 'edit-field-hint-success': editAddress.latitude !== null }">
-              <q-icon v-if="editAddress.latitude !== null" name="o_check_circle" size="12px" />
-              {{ editAddress.latitude !== null ? t('pinPlaced') : t('pinMissing') }}
+            <!-- Enlarging teleports this block to the body, which keeps the same map and pin while lifting it clear of the dialog. -->
+            <Teleport to="body" :disabled="!addressMapEnlarged">
+              <div class="address-map-frame" :class="{ 'address-map-frame-enlarged': addressMapEnlarged }">
+                <VendorLocationMap v-if="addressMapReady" ref="addressMapRef" :initial="addressInitial" @pin-placed="onPinPlaced" @location-selected="onLocationSelected" />
+
+                <q-btn
+                  v-if="addressMapReady && !addressMapEnlarged"
+                  unelevated
+                  no-caps
+                  dense
+                  icon="o_open_in_full"
+                  :label="t('enlargeMapBtn')"
+                  class="map-enlarge-btn"
+                  @click="addressMapEnlarged = true"
+                />
+
+                <!-- The pin's address rides along the top while enlarged, because the address field below is off screen. -->
+                <div v-else-if="addressMapReady" class="map-enlarged-bar">
+                  <q-icon name="o_location_on" size="18px" class="map-enlarged-bar-icon" />
+                  <span class="map-enlarged-bar-text">{{ editAddress.address || addressPinHint }}</span>
+
+                  <q-btn
+                    unelevated
+                    no-caps
+                    dense
+                    icon="o_close_fullscreen"
+                    :label="t('doneBtn')"
+                    class="map-enlarge-btn map-enlarge-btn-inline"
+                    @click="addressMapEnlarged = false"
+                  />
+                </div>
+              </div>
+            </Teleport>
+            <div class="edit-field-hint" :class="{ 'edit-field-hint-success': addressPinReady }">
+              <q-icon v-if="addressPinReady" name="o_check_circle" size="12px" />
+              {{ addressPinHint }}
             </div>
 
             <div class="edit-field">
               <div class="edit-field-label">{{ t('addressFieldLabel') }}</div>
-              <q-input
+              <!-- Sits below the map, so its suggestions open upward over it. -->
+              <AddressAutocomplete
+                ref="addressInputRef"
                 v-model="editAddress.address"
+                above
+                :translate="t"
+                :pinned="addressInitial"
                 type="textarea"
                 autogrow
                 outlined
@@ -314,6 +404,7 @@
                 maxlength="255"
                 class="address-input"
                 :rules="[val => !!val?.trim() || t('addressRule')]"
+                @pin="onAddressPin"
               />
             </div>
           </q-card-section>
@@ -321,7 +412,7 @@
 
         <q-card-actions align="right">
           <q-btn outline no-caps :label="t('cancelBtn')" color="primary" :disable="savingAddress" @click="attemptCloseAddress" />
-          <q-btn unelevated no-caps color="primary" :label="t('saveAddressBtn')" :loading="savingAddress" :disable="!canSaveAddress" class="btn-gradient" @click="saveAddress" />
+          <q-btn unelevated no-caps color="primary" :label="t('saveAddressBtn')" :loading="savingAddress" :disable="!canSaveAddress" class="btn-gradient" @mousedown.prevent @click="saveAddress" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -538,7 +629,7 @@
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_sms" size="22px" /></div>
           <div class="dialog-header-text">
-            <div class="text-h6">{{ t('otpTitle') }}</div>
+            <div class="text-h6">{{ otpPurpose === 'password' ? t('otpPwdTitle') : t('otpTitle') }}</div>
             <div class="section-subtitle">{{ t('otpSubtitle').replace('{phone}', maskedPhone) }}</div>
           </div>
           <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close verification" :disable="verifyingOtp" @click="cancelOtp" />
@@ -635,14 +726,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import { clearAuthStorage } from '@/utils/authStorage'
 import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
+import AddressAutocomplete from '@/components/shared/AddressAutocomplete.vue'
 import { useLanguage } from '@/composables/useLanguage'
+import { useVendorTutorial } from '@/composables/useVendorTutorial'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -658,6 +751,12 @@ const vendorProfileDict = {
     phoneLabel: 'Phone Number',
     emailLabel: 'Email Address',
     notSet: 'Not set',
+    avatarLabel: 'Profile Photo',
+    avatarHint: 'Shown with your name across the vendor and admin pages. JPG, PNG or GIF, up to 2MB.',
+    changeAvatarBtn: 'Change Profile Photo',
+    errUpdateAvatar: 'Failed to update your profile photo.',
+    successAvatarTitle: 'Profile Photo Updated!',
+    successAvatarMsg: 'Your profile photo has been updated successfully.',
     storePhotoTitle: 'Store Photo',
     storePhotoSubtitle: 'Customers see this on your store page.',
     changePhotoBtn: 'Change Photo',
@@ -676,6 +775,11 @@ const vendorProfileDict = {
     securitySubtitle: 'Keep your account secure.',
     passwordLabel: 'Password',
     changePwdBtn: 'Change Password',
+    helpTitle: 'Help & Support',
+    helpSubtitle: 'Learn your way around your store.',
+    replayTutorialLabel: 'Guided Tutorial',
+    replayTutorialDesc: 'Walk through the dashboard, products, orders, sales and settings again.',
+    replayTutorialBtn: 'Replay Tutorial',
     dangerZoneTitle: 'Danger Zone',
     dangerZoneSubtitle: 'Actions here are permanent and cannot be undone.',
     deleteAccountTitle: 'Delete My Store Account',
@@ -697,6 +801,8 @@ const vendorProfileDict = {
     editAddressSubtitle: 'Tap the map to move your pin, then check the address below.',
     pinPlaced: 'Pin placed.',
     pinMissing: 'Tap the map to drop a pin on your store.',
+    lookingUpAddress: 'Finding the address...',
+    addressNotFound: 'No address found for this pin. Type it below.',
     addressFieldLabel: 'Street, building, house no.',
     addressRule: 'Address is required.',
     saveAddressBtn: 'Save Address',
@@ -713,6 +819,7 @@ const vendorProfileDict = {
     keepEditingBtn: 'Keep Editing',
     discardBtn: 'Discard',
     doneBtn: 'Done',
+    enlargeMapBtn: 'Enlarge map',
     cropTitle: 'Crop Store Photo',
     cropSubtitle: 'Drag the photo to move it, and zoom until the frame shows your storefront.',
     applyCropBtn: 'Apply Crop',
@@ -728,6 +835,7 @@ const vendorProfileDict = {
     confirmPwdSuccess: 'Passwords match.',
     updatePwdBtn: 'Update Password',
     otpTitle: 'Verify New Phone',
+    otpPwdTitle: 'Verify Password Change',
     otpSubtitle: 'Enter the 6-digit verification code sent to {phone}. Sent via SMS.',
     otpExpired: 'Code expired. Please resend a new code.',
     otpDidntReceive: "Didn't receive the code?",
@@ -792,6 +900,12 @@ const vendorProfileDict = {
     phoneLabel: 'Phone Number',
     emailLabel: 'Email Address',
     notSet: 'Wala pa',
+    avatarLabel: 'Profile Picture',
+    avatarHint: 'Ito ang makikita kasama ng pangalan mo sa vendor at admin pages. JPG, PNG o GIF, hanggang 2MB.',
+    changeAvatarBtn: 'Palitan ang Profile Picture',
+    errUpdateAvatar: 'Failed ma-update ang profile picture mo.',
+    successAvatarTitle: 'Updated na ang Profile Picture!',
+    successAvatarMsg: 'Na-update nang matagumpay ang profile picture mo.',
     storePhotoTitle: 'Picture ng Tindahan',
     storePhotoSubtitle: 'Ito ang nakikita ng customers sa iyong tindahan.',
     changePhotoBtn: 'Palitan ang Picture',
@@ -810,6 +924,11 @@ const vendorProfileDict = {
     securitySubtitle: 'Panatilihing secure ang iyong account.',
     passwordLabel: 'Password',
     changePwdBtn: 'Palitan ang Password',
+    helpTitle: 'Tulong at Suporta',
+    helpSubtitle: 'Alamin ang bawat bahagi ng iyong tindahan.',
+    replayTutorialLabel: 'Gabay na Tutorial',
+    replayTutorialDesc: 'Balikan ang dashboard, paninda, order, benta at settings.',
+    replayTutorialBtn: 'Ulitin ang Tutorial',
     dangerZoneTitle: 'Danger Zone',
     dangerZoneSubtitle: 'Pangmatagalan ang mga aksyon dito at hindi na mababago.',
     deleteAccountTitle: 'I-delete ang Account',
@@ -831,9 +950,16 @@ const vendorProfileDict = {
     editAddressSubtitle: 'I-tap ang map para ilipat ang pin, tapos i-check ang address sa ibaba.',
     pinPlaced: 'Nailagay na ang pin.',
     pinMissing: 'I-tap ang map para ilagay ang pin ng tindahan mo.',
+    lookingUpAddress: 'Hinahanap ang address...',
+    addressNotFound: 'Walang nahanap na address. I-type ito sa ibaba.',
     addressFieldLabel: 'Street, building, house no.',
     addressRule: 'Kailangan ang address.',
     saveAddressBtn: 'I-save ang Address',
+    // AddressAutocomplete's own messages, keyed by their English text.
+    'Finding places...': 'Hinahanap ang mga lugar...',
+    "Can't find it? Pin your spot on the map, then edit the address if needed.":
+      'Hindi makita? I-pin ang lugar mo sa map, tapos i-edit ang address kung kailangan.',
+    'Pin not on your exact spot? Tap the map to move it.': 'Hindi eksakto ang pin? I-tap ang map para ilipat ito.',
     editHoursTitle: 'I-edit ang Oras ng Bukas',
     editHoursSubtitle: 'Ilagay kung kailan pwedeng mag-pick up ang customers.',
     hoursHint: 'I-off ang isang araw kung sarado ang tindahan.',
@@ -847,6 +973,7 @@ const vendorProfileDict = {
     keepEditingBtn: 'Ipagpatuloy ang pag-edit',
     discardBtn: 'Huwag i-save',
     doneBtn: 'Tapos na',
+    enlargeMapBtn: 'Palakihin ang map',
     cropTitle: 'I-crop ang Picture',
     cropSubtitle: 'I-drag ang picture para i-move, at i-zoom hanggang sakto ang tindahan mo sa frame.',
     applyCropBtn: 'I-crop',
@@ -862,6 +989,7 @@ const vendorProfileDict = {
     confirmPwdSuccess: 'Pareho ang password.',
     updatePwdBtn: 'I-update ang Password',
     otpTitle: 'I-verify ang Bagong Phone',
+    otpPwdTitle: 'I-verify ang Pagpalit ng Password',
     otpSubtitle: 'Ilagay ang 6-digit verification code na nai-send sa {phone} via SMS.',
     otpExpired: 'Expired na ang code. Mag-request ulit ng bago.',
     otpDidntReceive: "Hindi nakuha ang code?",
@@ -920,7 +1048,11 @@ const vendorProfileDict = {
 
 const { t } = useLanguage(vendorProfileDict)
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+// Help & Support → Replay Tutorial. The tour itself is mounted in VendorLayout, since it
+// outlives this page the moment it routes to the product list.
+const { requestReplay } = useVendorTutorial()
+
+const DAYS =['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 const user = ref({})
 const store = ref({})
@@ -1153,6 +1285,8 @@ const savePersonal = async () => {
 // --- Phone verification ---
 
 const showOtpModal = ref(false)
+// The one OTP dialog serves both flows; this says which one opened it.
+const otpPurpose = ref('phone')
 const pendingPhone = ref('')
 const otpInput = ref(['', '', '', '', '', ''])
 const otpRefs = ref([])
@@ -1163,11 +1297,14 @@ const canVerifyOtp = computed(() => otpInput.value.every(digit => digit !== ''))
 
 // e.g. "09981234567" -> "0998•••4567"
 const maskedPhone = computed(() => {
-  const digits = pendingPhone.value || ''
+  // A password change codes the registered number, not the one being changed to.
+  const digits = (otpPurpose.value === 'password' ? user.value?.phone_number : pendingPhone.value) || ''
   return digits.length < 7 ? digits : `${digits.slice(0, 4)}•••${digits.slice(-4)}`
 })
 
-const OTP_EXPIRY_SECONDS = 300
+// Matches OtpService, which keeps a texted code valid for 10 minutes; a shorter figure here would call
+// a working code expired.
+const OTP_EXPIRY_SECONDS = 600
 const OTP_RESEND_COOLDOWN = 30
 const otpSecondsLeft = ref(OTP_EXPIRY_SECONDS)
 const resendSecondsLeft = ref(OTP_RESEND_COOLDOWN)
@@ -1214,7 +1351,12 @@ const requestPhoneOtp = async (phone) => {
 const resendOtpCode = async () => {
   if (!canResendOtp.value || otpVerifiedFlash.value) return
   try {
-    await api.post('/vendor/profile/phone-request-otp', { phone_number: pendingPhone.value })
+    if (otpPurpose.value === 'password') {
+      // Its own endpoint: re-requesting would re-check the current password and spend that throttle.
+      await api.post('/vendor/profile/password-resend-otp')
+    } else {
+      await api.post('/vendor/profile/phone-request-otp', { phone_number: pendingPhone.value })
+    }
     otpInput.value = ['', '', '', '', '', '']
     otpError.value = ''
     startOtpTimers()
@@ -1257,31 +1399,98 @@ const onOtpPaste = (event) => {
   if (canVerifyOtp.value) verifyOtp()
 }
 
-const cancelOtp = () => {
+const cancelOtp = async () => {
+  if (otpPurpose.value === 'password') await cancelPasswordOtp()
   stopOtpTimers()
   showOtpModal.value = false
+  otpPurpose.value = 'phone'
 }
 
 const verifyOtp = async () => {
   const code = otpInput.value.join('')
   if (code.length !== 6 || verifyingOtp.value || otpVerifiedFlash.value) return
 
+  const isPassword = otpPurpose.value === 'password'
+
   verifyingOtp.value = true
   otpError.value = ''
   try {
-    await api.post('/vendor/profile/phone-verify-otp', { phone_number: pendingPhone.value, code })
-    user.value.phone_number = pendingPhone.value
+    if (isPassword) {
+      await api.post('/vendor/profile/password-verify-otp', { code })
+      passwords.current = ''
+      passwords.new = ''
+      passwords.confirm = ''
+    } else {
+      await api.post('/vendor/profile/phone-verify-otp', { phone_number: pendingPhone.value, code })
+      user.value.phone_number = pendingPhone.value
+    }
     stopOtpTimers()
     otpVerifiedFlash.value = true
     // Flashes green briefly, then hands over to the shared success dialog.
     setTimeout(() => {
       showOtpModal.value = false
-      openSuccessModal(t('successInfoTitle'), t('successInfoMsg'))
+      otpPurpose.value = 'phone'
+      if (isPassword) {
+        openSuccessModal(t('successPwdTitle'), t('successPwdMsg'))
+      } else {
+        openSuccessModal(t('successInfoTitle'), t('successInfoMsg'))
+      }
     }, 450)
   } catch (err) {
     otpError.value = errorMessage(err, t('otpInvalid'))
   } finally {
     verifyingOtp.value = false
+  }
+}
+
+// --- Owner profile photo ---
+// Reuses POST /vendor/profile/photo, which is ProfileController::updatePhoto, the same method and
+// public-disk storage behind the consumer profile photo. No new image handling.
+const avatarFile = ref(null)
+const avatarPreview = ref(null)
+const savingAvatar = ref(false)
+
+const shownAvatar = computed(() => avatarPreview.value || user.value.profile_picture_url || null)
+
+const triggerAvatarUpload = () => document.getElementById('vendorAvatarUpload').click()
+
+const onAvatarSelected = (event) => {
+  const file = event.target.files?.[0]
+  // Cleared so choosing the same file again after cancelling still fires change.
+  event.target.value = ''
+  if (!file) return
+
+  avatarFile.value = file
+  avatarPreview.value = URL.createObjectURL(file)
+}
+
+const cancelAvatar = () => {
+  avatarFile.value = null
+  avatarPreview.value = null
+}
+
+const saveAvatar = async () => {
+  if (!avatarFile.value) return
+  savingAvatar.value = true
+  try {
+    const fd = new FormData()
+    fd.append('profile_picture', avatarFile.value)
+    const { data } = await api.post('/vendor/profile/photo', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+
+    user.value.profile_picture_url = data.profile_picture_url
+
+    // Same as the consumer profile: keeps the cached user in step so the sidebar avatar follows.
+    const lsUser = JSON.parse(localStorage.getItem('auth_user') || '{}')
+    lsUser.profile_picture_url = data.profile_picture_url
+    localStorage.setItem('auth_user', JSON.stringify(lsUser))
+
+    avatarFile.value = null
+    avatarPreview.value = null
+    openSuccessModal(t('successAvatarTitle'), t('successAvatarMsg'))
+  } catch (err) {
+    $q.notify({ type: 'negative', message: errorMessage(err, t('errUpdateAvatar')) })
+  } finally {
+    savingAvatar.value = false
   }
 }
 
@@ -1395,6 +1604,23 @@ const addressFormRef = ref(null)
 const addressMapReady = ref(false)
 const addressInitial = ref(null)
 const editAddress = reactive({ address: '', latitude: null, longitude: null })
+const addressInputRef = ref(null)
+const addressMapRef = ref(null)
+
+// Pinning an exact spot is hard in a small box, so the map can fill the screen while the vendor places it.
+const addressMapEnlarged = ref(false)
+
+// Esc leaves the enlarged map, as it would any full-screen view. The dialog itself is persistent, so it stays open.
+const onAddressMapEscape = (event) => {
+  if (event.key === 'Escape') addressMapEnlarged.value = false
+}
+
+watch(addressMapEnlarged, (enlarged) => {
+  if (enlarged) window.addEventListener('keydown', onAddressMapEscape)
+  else window.removeEventListener('keydown', onAddressMapEscape)
+})
+
+onUnmounted(() => window.removeEventListener('keydown', onAddressMapEscape))
 
 const addressChanged = computed(() =>
   editAddress.address.trim() !== (store.value.address || '') ||
@@ -1416,17 +1642,53 @@ const startEditAddress = () => {
   showAddressModal.value = true
 }
 
-const onLocationSelected = ({ latitude, longitude, address }) => {
+// Set between a pin moving and its address arriving, so the dialog can say the lookup is running rather than just looking empty.
+// Closing the dialog unmounts the map, which drops a lookup still in flight without ever answering, so the dialog's @hide clears this too.
+const addressLookupPending = ref(false)
+
+const addressPinReady = computed(() =>
+  editAddress.latitude !== null && !addressLookupPending.value && !!editAddress.address.trim()
+)
+
+// The line under the map explains why the address box is empty, since a failed lookup leaves the vendor to type it.
+const addressPinHint = computed(() => {
+  if (editAddress.latitude === null) return t('pinMissing')
+  if (addressLookupPending.value) return t('lookingUpAddress')
+  if (!editAddress.address.trim()) return t('addressNotFound')
+  return t('pinPlaced')
+})
+
+const onPinPlaced = ({ latitude, longitude }) => {
   editAddress.latitude = latitude
   editAddress.longitude = longitude
-  if (address) editAddress.address = address
+  addressLookupPending.value = true
+}
+
+// The address box takes the map's address unless the vendor typed in it, so an address missing from the suggestions survives being pinned.
+const onLocationSelected = (location) => {
+  addressLookupPending.value = false
+  editAddress.latitude = location.latitude
+  editAddress.longitude = location.longitude
+  // mapSelected runs whatever the lookup returned, since the pin still moved; a failed reverse geocode gives an empty address, which must not blank the box.
+  const takesAddress = addressInputRef.value?.mapSelected(location) !== false
+  if (takesAddress && location.address) editAddress.address = location.address
+}
+
+const onAddressPin = ({ latitude, longitude }) => {
+  editAddress.latitude = latitude
+  editAddress.longitude = longitude
+  // showLocation retires any reverse lookup still running for the old pin, so nothing would ever clear this flag again.
+  addressLookupPending.value = false
+  addressMapRef.value?.showLocation(latitude, longitude)
 }
 
 const attemptCloseAddress = () => {
   requestClose(addressChanged.value, () => { showAddressModal.value = false })
 }
 
+// Save's mousedown.prevent keeps the address box focused, so a search on just-typed text survives to be settled here and its pin is the one saved.
 const saveAddress = async () => {
+  if (addressInputRef.value && !(await addressInputRef.value.settle())) return
   if (!canSaveAddress.value) return
   if (!(await addressFormRef.value.validate())) return
   savingAddress.value = true
@@ -1525,22 +1787,38 @@ const attemptClosePasswordModal = () => {
   requestClose(hasPasswordChanges.value, cancelPasswordModal)
 }
 
+// The change is only queued here; the texted code in the OTP dialog is what applies it.
 const savePassword = async () => {
   if (!(await passwordFormRef.value.validate())) return
   savingPassword.value = true
   try {
-    await api.put('/vendor/profile/password', {
+    await api.post('/vendor/profile/password-request-otp', {
       current_password: passwords.current,
       new_password: passwords.new,
       new_password_confirmation: passwords.confirm
     })
-    cancelPasswordModal()
-    openSuccessModal(t('successPwdTitle'), t('successPwdMsg'))
+    showPasswordModal.value = false
+    otpPurpose.value = 'password'
+    otpInput.value = ['', '', '', '', '', '']
+    otpError.value = ''
+    otpVerifiedFlash.value = false
+    showOtpModal.value = true
+    startOtpTimers()
   } catch (err) {
     $q.notify({ type: 'negative', message: errorMessage(err, t('errUpdatePwd')) })
   } finally {
     savingPassword.value = false
   }
+}
+
+// Clears the queued change server-side, so an abandoned dialog leaves nothing pending.
+const cancelPasswordOtp = async () => {
+  try {
+    await api.post('/vendor/profile/password-cancel-otp')
+  } catch {
+    // The queued change expires on its own in 10 minutes, so a failed cancel is not worth a notice.
+  }
+  cancelPasswordModal()
 }
 
 // --- Delete account ---
@@ -1864,6 +2142,14 @@ const deleteAccount = async () => {
   color: var(--c-brand);
 }
 
+/* Dark mode swaps the light-mode's flat pink-on-navy tint for a deeper gradient plus
+   a soft red glow, so the tile reads as a lit accent instead of a muddy patch. */
+.vendor-layout--dark .info-icon {
+  background: linear-gradient(145deg, rgba(255, 77, 77, 0.24) 0%, rgba(255, 77, 77, 0.08) 100%);
+  box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.28), 0 0 18px rgba(255, 77, 77, 0.28);
+  color: #ff6a6a;
+}
+
 .info-body {
   flex: 1;
   min-width: 0;
@@ -1885,6 +2171,23 @@ const deleteAccount = async () => {
   color: var(--c-text);
 
   overflow-wrap: anywhere;
+}
+
+/* Title-over-description inside an .info-row, the neutral twin of .danger-title/.danger-desc. */
+.help-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+
+  color: var(--c-text);
+}
+
+.help-desc {
+  margin-top: 1px;
+
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+
+  color: var(--c-text-3);
 }
 
 /* Whether the store has a map pin, under its address. */
@@ -2056,6 +2359,13 @@ const deleteAccount = async () => {
 .danger-icon {
   background: linear-gradient(145deg, var(--c-danger-tint) 0%, var(--c-danger-tint) 100%);
   color: var(--c-danger);
+}
+
+/* Same glow treatment as .info-icon above, in the danger red rather than the brand red. */
+.vendor-layout--dark .danger-icon {
+  background: linear-gradient(145deg, rgba(255, 92, 92, 0.26) 0%, rgba(255, 92, 92, 0.1) 100%);
+  box-shadow: 0 0 0 1px rgba(255, 92, 92, 0.3), 0 0 18px rgba(255, 92, 92, 0.3);
+  color: #ff7a7a;
 }
 
 .danger-title {
@@ -2288,6 +2598,8 @@ const deleteAccount = async () => {
 /* ADDRESS DIALOG */
 
 .address-map-frame {
+  position: relative;
+
   overflow: hidden;
 
   border: 1px solid var(--c-border);
@@ -2296,6 +2608,103 @@ const deleteAccount = async () => {
 
 .address-map-frame :deep(.location-wrapper .map) {
   height: 260px;
+}
+
+/* Full screen for pinning. Teleported to the body, so the dialog cannot clip it, and above the dialog's own layer. */
+.address-map-frame-enlarged {
+  position: fixed;
+  inset: 0;
+  z-index: 7000;
+
+  border: none;
+  border-radius: 0;
+}
+
+/* The map's fixed height above would otherwise keep it 260px tall inside the full-screen frame. */
+.address-map-frame-enlarged :deep(.location-wrapper .map) {
+  height: 100%;
+}
+
+/* The map rounds its own corners for the boxed view; at full screen those corners would cut through to the dialog behind. */
+.address-map-frame-enlarged :deep(.location-wrapper) {
+  border-radius: 0;
+}
+
+/* Same white pill as the map's own "Your Location" button, in the opposite corner. */
+.map-enlarge-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+
+  height: 34px;
+  padding: 0 12px;
+
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: #222222;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.map-enlarge-btn:hover {
+  background: #f7f7f7;
+}
+
+/* Rides at the top of the enlarged map, clear of Leaflet's zoom buttons on the left, since the address fields are off screen while enlarged. */
+.map-enlarged-bar {
+  position: absolute;
+  top: 12px;
+  left: 56px;
+  right: 12px;
+  z-index: 1;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 8px 8px 8px 12px;
+
+  border-radius: 7px;
+
+  background: #ffffff;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.map-enlarged-bar-icon {
+  flex-shrink: 0;
+
+  color: var(--c-brand);
+}
+
+/* Two lines at most: a full address is long, and the map below is the point. */
+.map-enlarged-bar-text {
+  flex: 1;
+  min-width: 0;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+
+  overflow: hidden;
+
+  font-size: 12px;
+  line-height: 1.35;
+
+  color: #222222;
+}
+
+/* Inside the bar the button sits in the flow instead of the map's corner. */
+.map-enlarge-btn-inline {
+  position: static;
+
+  flex-shrink: 0;
 }
 
 /* HOURS DIALOG */
@@ -2673,6 +3082,153 @@ const deleteAccount = async () => {
     min-width: 0 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+  }
+}
+/* Owner profile photo, sized to sit beside the personal-info rows without reshaping the card. */
+.owner-photo-row {
+  display: flex;
+  align-items: center;
+
+  gap: 16px;
+
+  padding-bottom: 16px;
+  margin-bottom: 4px;
+
+  border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.owner-photo-wrap {
+  position: relative;
+
+  flex-shrink: 0;
+}
+
+.owner-avatar {
+  background: rgba(148, 163, 184, 0.18);
+  color: #64748b;
+}
+
+.owner-photo-btn {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+}
+
+.owner-photo-text {
+  min-width: 0;
+}
+
+.owner-photo-hint {
+  margin: 2px 0 8px;
+
+  font-size: 12px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.owner-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px;
+}
+
+@media (max-width: 599px) {
+  /* On a phone the owner photo becomes a centred profile panel: the avatar on top, its label
+     and hint under it, and full-width buttons below, instead of a small avatar stranded at
+     the left over a loose column of text. */
+  .owner-photo-row {
+    flex-direction: column;
+    align-items: center;
+
+    gap: 14px;
+    margin: 4px 0 8px;
+    padding: 20px 16px 16px;
+
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-surface);
+
+    background: var(--c-surface-2);
+
+    text-align: center;
+  }
+
+  /* q-avatar sizes itself from an inline font-size, so the larger size needs !important. */
+  .owner-avatar {
+    font-size: 88px !important;
+
+    box-shadow: 0 0 0 4px var(--c-surface-2), 0 4px 14px rgba(15, 23, 42, 0.12);
+  }
+
+  /* The camera badge gets a ring in the panel's colour, so it reads as sitting on the photo's edge. */
+  .owner-photo-btn {
+    right: 0;
+    bottom: 0;
+
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+
+    box-shadow: 0 0 0 3px var(--c-surface-2);
+  }
+
+  .owner-photo-text {
+    width: 100%;
+  }
+
+  .owner-photo-hint {
+    max-width: 300px;
+    margin: 4px auto 14px;
+  }
+
+  /* One full-width button, or Cancel and Save as two equal halves with Save on the right,
+     the same order as the dialogs' Cancel / Save rows. */
+  .owner-photo-change {
+    width: 100%;
+  }
+
+  .owner-photo-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    gap: 10px;
+  }
+
+  .owner-photo-actions .q-btn:last-child {
+    order: -1;
+  }
+
+  .owner-photo-change,
+  .owner-photo-actions .q-btn {
+    height: 42px;
+    min-height: 42px;
+    padding: 0 16px;
+  }
+
+  /* Change Password and Replay Tutorial drop under their text, lined up with it, instead of
+     squeezing the description into a narrow column beside them. */
+  .info-row--action {
+    flex-wrap: wrap;
+  }
+
+  .info-row--action .info-body {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .info-row--action > .q-btn {
+    flex: 1 1 100%;
+
+    height: 40px;
+    min-height: 40px;
+    margin-left: 48px;
   }
 }
 </style>

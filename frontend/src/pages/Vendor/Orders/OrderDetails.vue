@@ -94,8 +94,16 @@
           <div class="od-col od-col--main">
 
             <section class="vp-card od-card od-card--progress">
-              <div class="od-card-head">
+              <div class="od-card-head od-card-head--progress">
                 <span class="od-card-title">{{ t('orderProgress') }}</span>
+                <!-- When the customer wants to collect: ASAP, or the slot they scheduled at checkout. -->
+                <div class="od-pickup" :class="{ 'od-pickup--scheduled': order.scheduled_pickup_at }">
+                  <q-icon :name="order.scheduled_pickup_at ? 'o_event' : 'o_bolt'" size="14px" />
+                  <span class="od-pickup-label">{{ t('pickupTime') }}</span>
+                  <!-- The full slot on a wide card; just its start on a narrow one, so it fits beside the title. -->
+                  <span class="od-pickup-full">{{ formatPickupSlot(order.scheduled_pickup_at, pickupLocale) || t('pickupAsap') }}</span>
+                  <span class="od-pickup-short">{{ formatPickupSlot(order.scheduled_pickup_at, pickupLocale, { compact: true }) || t('pickupAsap') }}</span>
+                </div>
               </div>
               <ol class="od-steps" aria-label="Order progress">
                 <li
@@ -129,6 +137,7 @@
                   </span>
                   <div class="od-item-body">
                     <div class="od-item-name">{{ item.inventory?.product_name || item.product_name || t('productFallback') }}</div>
+                    <div v-if="item.variant_name" class="od-item-variant">{{ item.variant_name }}</div>
                     <div class="od-item-meta">₱{{ formatNumber(unitPrice(item)) }} × {{ item.quantity }}</div>
                   </div>
                   <div class="od-item-price">₱{{ formatNumber(lineTotal(item)) }}</div>
@@ -283,6 +292,7 @@ import OrderTrackingMap from '@/components/shared/OrderTrackingMap.vue'
 import OrderStatusBadge from '@/components/vendor/OrderStatusBadge.vue'
 import { statusIcon, statusLabel } from '@/utils/orderStatus'
 import { useLanguage } from '@/composables/useLanguage'
+import { formatPickupSlot } from '@/utils/pickupSlots'
 
 const props = defineProps({
   orderId: { type: [String, Number], default: null },
@@ -332,6 +342,8 @@ const orderDetailsDict = {
     storeFallback: 'Store',
     noAddress: 'No address saved',
     noRouteNote: "The customer's location wasn't recorded, so there's no route to show.",
+    pickupTime: 'Pickup time',
+    pickupAsap: 'As soon as possible',
     cancelDialogTitle: 'Cancel order',
     cancelDialogDesc: "Choose or write a reason. This can't be undone.",
     placeholderCancel: 'Tell the customer why…',
@@ -385,6 +397,8 @@ const orderDetailsDict = {
     storeFallback: 'Tindahan',
     noAddress: 'Walang naka-save na address',
     noRouteNote: "Walang record ng lokasyon ang customer, kaya walang map na maipakita.",
+    pickupTime: 'Oras ng pickup',
+    pickupAsap: 'Sa lalong madaling panahon',
     cancelDialogTitle: 'I-cancel ang order',
     cancelDialogDesc: "Pumili o magsulat ng dahilan. Hindi na ito maibabalik.",
     placeholderCancel: 'Sabihin sa customer kung bakit…',
@@ -409,7 +423,10 @@ const orderDetailsDict = {
   }
 }
 
-const { t } = useLanguage(orderDetailsDict)
+const { t, lang } = useLanguage(orderDetailsDict)
+
+// Dates in the vendor's chosen language, for the pickup time.
+const pickupLocale = computed(() => (lang.value === 'ph' ? 'fil-PH' : 'en-PH'))
 
 const showCancelDialog = ref(false)
 const cancelReason = ref('')
@@ -716,6 +733,88 @@ onMounted(fetchOrderDetails)
   font-size: var(--fs-sm);
 
   color: var(--c-subtle);
+}
+
+/* The pickup time, as a chip at the right of the Order Progress header — on one row with the
+   title at every width: neutral for ASAP, blue for a scheduled slot so a vendor scanning the page
+   sees at once that this order is for later. */
+.od-card-head--progress {
+  flex-wrap: nowrap;
+}
+
+.od-card-head--progress .od-card-title {
+  flex-shrink: 0;
+}
+
+/* A compact chip, smaller than the card title so it reads as a detail. */
+.od-pickup {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  min-width: 0;
+  height: 28px;
+  margin-left: auto;
+  padding: 0 10px;
+  box-sizing: border-box;
+
+  border-radius: 999px;
+
+  background: var(--c-surface-2);
+  color: var(--c-text-2);
+
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.od-pickup .q-icon {
+  flex-shrink: 0;
+
+  font-size: 14px !important;
+}
+
+.od-pickup-label {
+  font-weight: 500;
+
+  color: var(--c-subtle);
+}
+
+.od-pickup-full,
+.od-pickup-short {
+  min-width: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.od-pickup-short {
+  display: none;
+}
+
+.od-pickup--scheduled {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.od-pickup--scheduled .od-pickup-label {
+  color: #0369a1;
+}
+
+/* On a narrow card (a phone, or the side panel this page also opens in) the chip keeps its place
+   beside the title but drops its label and shows just the slot's start, so both fit on one row.
+   Measured on the card itself: its "odp" container, the one that stacks the progress steps.
+   Placed after the rules above so it wins over them. */
+@container odp (max-width: 519px) {
+  .od-pickup-label,
+  .od-pickup-full {
+    display: none;
+  }
+
+  .od-pickup-short {
+    display: inline;
+  }
 }
 
 /* A small dot between the meta details, quieter than icons. */
@@ -1241,6 +1340,20 @@ onMounted(fetchOrderDetails)
 
   min-width: 0;
   padding-top: 3px;
+}
+
+.od-item-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--c-text);
+  line-height: 1.35;
+}
+
+.od-item-variant {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--c-muted);
+  margin-top: 1px;
 }
 
 .od-step-label {

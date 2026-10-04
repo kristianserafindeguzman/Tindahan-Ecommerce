@@ -10,20 +10,20 @@
         <div class="hero-content">
           <span class="hero-eyebrow">
             <q-icon name="o_location_on" size="14px" />
-            Discover local stores
+            {{ t('Discover local stores') }}
           </span>
 
-          <h1 class="hero-title hero-title-lg">Explore sari-sari stores around you</h1>
+          <h1 class="hero-title hero-title-lg">{{ t('Explore sari-sari stores around you') }}</h1>
 
           <p class="hero-sub">
-            Find nearby stores, discover products, and shop from your local community.
+            {{ t('Find nearby stores, discover products, and shop from your local community.') }}
           </p>
 
           <div class="hero-actions">
-            <q-btn unelevated no-caps label="Browse Products" class="hero-cta" @click="router.push('/consumer/products')">
+            <q-btn unelevated no-caps :label="t('Browse Products')" class="hero-cta" @click="router.push('/consumer/products')">
               <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
             </q-btn>
-            <q-btn unelevated no-caps label="Show Map" class="hero-cta hero-cta--ghost" @click="showMapDialog = true">
+            <q-btn unelevated no-caps :label="t('Show Map')" class="hero-cta hero-cta--ghost" @click="showMapDialog = true">
               <q-icon name="o_map" size="16px" class="q-ml-xs" />
             </q-btn>
           </div>
@@ -40,7 +40,7 @@
 
 
       <!-- CATEGORIES -->
-      <SectionBlock title="Categories">
+      <SectionBlock :title="t('Categories')">
         <div v-if="categoriesLoading" class="categories-skeleton-row">
           <div v-for="n in 12" :key="n" class="category-skeleton-tile">
             <q-skeleton type="circle" class="category-skeleton-icon" />
@@ -61,7 +61,7 @@
       </SectionBlock>
 
       <!-- STORES NEAR YOU -->
-      <SectionBlock title="Stores near You" view-all @view-all="router.push('/consumer/stores')">
+      <SectionBlock :title="t('Stores near You')" view-all @view-all="router.push('/consumer/stores')">
         <div v-if="storesLoading" class="stores-row">
           <CardSkeleton v-for="n in 4" :key="n" variant="store" />
         </div>
@@ -71,7 +71,7 @@
       </SectionBlock>
 
       <!-- DISCOVER PRODUCTS -->
-      <SectionBlock title="Discover Products" view-all @view-all="router.push('/consumer/products')">
+      <SectionBlock :title="t('Discover Products')" view-all @view-all="router.push('/consumer/products')">
         <div v-if="productsLoading" class="products-grid">
           <CardSkeleton v-for="n in 6" :key="n" />
         </div>
@@ -83,7 +83,7 @@
           v-if="visibleDiscoverProducts.length < discoverProducts.length"
           flat
           no-caps
-          label="See More"
+          :label="t('See More')"
           class="see-more-btn"
           @click="discoverRowsShown += DISCOVER_ROWS_PER_PAGE"
         />
@@ -92,10 +92,10 @@
       <!-- Seller call-to-action for guests only, because /vendor/register is guest-only and would bounce a signed-in consumer straight back here. -->
       <section v-if="!isLoggedIn" class="seller-band">
         <div class="seller-copy">
-          <h2 class="seller-title">Own a sari-sari store?</h2>
-          <p class="seller-text">List what you stock and reach shoppers on your street.</p>
+          <h2 class="seller-title">{{ t('Own a sari-sari store?') }}</h2>
+          <p class="seller-text">{{ t('List what you stock and reach shoppers on your street.') }}</p>
         </div>
-        <q-btn unelevated no-caps label="Start selling" class="seller-cta" @click="router.push('/vendor/register')">
+        <q-btn unelevated no-caps :label="t('Start selling')" class="seller-cta" @click="router.push('/vendor/register')">
           <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
         </q-btn>
       </section>
@@ -110,6 +110,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -128,6 +130,8 @@ import { useProducts } from '@/composables/useProducts'
 import { useStores } from '@/composables/useStores'
 import { useCart } from '@/composables/useCart'
 import { useGridColumns } from '@/composables/useGridColumns'
+
+const { t } = useConsumerLanguage()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -190,14 +194,14 @@ const handleAddToCart = async (product) => {
 
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
   }
 }
 
 const resultsSectionTitle = computed(() =>
-  isLoggedIn.value ? 'Recommended for You' : 'Popular Products Near You'
+  isLoggedIn.value ? t('Recommended for You') : t('Popular Products Near You')
 )
 
 // Personalization is a logged-in-only route, so guests get routed to the guest-browsable catalog instead.
@@ -272,9 +276,9 @@ const visibleDiscoverProducts = computed(() =>
   align-items: center;
   justify-content: space-between;
 
-  gap: 40px;
-  padding: 44px 40px;
-  margin-bottom: 28px;
+  gap: 32px;
+  padding: 32px;
+  margin-bottom: 24px;
 
   border-radius: var(--r-2xl);
   box-shadow: 0 4px 16px rgba(101, 16, 18, 0.2);
@@ -309,7 +313,9 @@ const visibleDiscoverProducts = computed(() =>
   position: relative;
   z-index: 1;
 
-  max-width: 560px;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 620px;
 }
 
 /* Eyebrow states the model — reserve then collect — before the headline. */
@@ -318,7 +324,8 @@ const visibleDiscoverProducts = computed(() =>
   align-items: center;
   gap: 6px;
 
-  margin-bottom: 14px;
+  max-width: 100%;
+  margin-bottom: 12px;
   padding: 5px 12px;
 
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -329,18 +336,21 @@ const visibleDiscoverProducts = computed(() =>
 
   font-size: var(--fs-2xs);
   font-weight: 600;
+  line-height: 1.4;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  white-space: nowrap;
+  white-space: normal;
+}
+
+.hero-eyebrow :deep(.q-icon) {
+  flex-shrink: 0;
 }
 
 .hero-sub {
   max-width: 46ch;
-  margin: 0 0 22px;
-
+  margin: 0 0 20px;
   font-size: var(--fs-md);
   line-height: 1.5;
-
   color: rgba(255, 255, 255, 0.86);
 }
 
@@ -359,13 +369,14 @@ const visibleDiscoverProducts = computed(() =>
   align-items: center;
   justify-content: center;
 
-  width: 380px;
-  max-width: 46%;
+  width: 330px;
+  max-width: 36%;
 }
 
 .hero-logo {
   width: 100%;
   height: auto;
+  max-height: 210px;
 
   object-fit: contain;
 }
@@ -380,7 +391,7 @@ const visibleDiscoverProducts = computed(() =>
   color: #ffffff;
 }
 
-/* Display font Poppins, loaded in index.html, with a small bottom margin because .hero-sub sits directly under it. */
+/* Display font Poppins, loaded in index.html. */
 .hero-title-lg {
   margin: 0 0 12px;
 
@@ -392,7 +403,7 @@ const visibleDiscoverProducts = computed(() =>
 }
 
 .hero-cta {
-  height: 42px;
+  height: 44px;
   padding: 0 24px;
 
   border-radius: var(--r-sm);
@@ -616,12 +627,35 @@ const visibleDiscoverProducts = computed(() =>
   }
 }
 
-/* Below the laptop breakpoint the copy and logo no longer fit side by side, as the headline wrapped to five lines. */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .categories-skeleton-row {
+    gap: 10px;
+  }
+
+  .category-skeleton-tile {
+    gap: 8px;
+
+    width: 110px;
+    min-height: 120px;
+    padding: 16px 10px;
+  }
+
+  .category-skeleton-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .category-skeleton-label {
+    height: calc(var(--fs-md) * 1.25 * 2);
+  }
+}
+
+/* Keep the copy and logo balanced on smaller screens. */
 @media (max-width: 1023px) {
   /* Stays a row, because stacking the logo above the copy added its full height to the hero, 371px on a tablet. */
   .hero-banner {
     gap: 24px;
-    padding: 26px 28px;
+    padding: 24px;
   }
 
   .hero-content {
@@ -633,7 +667,7 @@ const visibleDiscoverProducts = computed(() =>
   }
 
   .hero-title-lg {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
 
   .hero-sub {
@@ -641,8 +675,8 @@ const visibleDiscoverProducts = computed(() =>
   }
 
   .hero-logo-wrap {
-    width: 250px;
-    max-width: 38%;
+    width: 220px;
+    max-width: 30%;
   }
 }
 
@@ -664,13 +698,36 @@ const visibleDiscoverProducts = computed(() =>
     padding: 16px;
   }
 
-  /* Trims the phone hero from 468px, over half an 844px screen, back to roughly a third of the viewport. */
+  .categories-skeleton-row {
+    gap: 8px;
+  }
+
+  .category-skeleton-tile {
+    gap: 7px;
+
+    width: 92px;
+    min-height: 108px;
+    padding: 12px 8px;
+
+    border-radius: var(--r-md);
+  }
+
+  .category-skeleton-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .category-skeleton-label {
+    height: calc(var(--fs-sm) * 1.25 * 2);
+  }
+
+  /* Keep the logo prominent without crowding the mobile controls. */
   .hero-banner {
     flex-direction: column-reverse;
     align-items: center;
 
-    gap: 10px;
-    padding: 18px;
+    gap: 12px;
+    padding: 24px 20px;
     text-align: center;
   }
 
@@ -680,25 +737,36 @@ const visibleDiscoverProducts = computed(() =>
     margin-right: auto;
   }
 
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex: none;
+    width: 100%;
+  }
+
   .hero-actions {
     justify-content: center;
+    width: 100%;
+    margin-top: 6px;
   }
 
   .hero-eyebrow {
-    margin-bottom: 10px;
+    margin-bottom: 0;
     padding: 4px 10px;
   }
 
   .hero-title-lg {
-    margin-bottom: 8px;
+    margin-bottom: 0;
     font-size: var(--fs-4xl);
   }
 
   .hero-sub {
-    margin-bottom: 14px;
+    display: none;
   }
 
-  /* The two buttons sit side by side rather than stacked, saving about 54px of hero height since both labels are short. */
+  /* Keep the actions together while there is room for both labels. */
   .hero-actions {
     gap: 10px;
   }
@@ -716,8 +784,25 @@ const visibleDiscoverProducts = computed(() =>
   }
 
   .hero-logo-wrap {
-    width: 150px;
-    max-width: 46%;
+    width: 185px;
+    max-width: 100%;
+    padding-top: 0;
+  }
+
+  .hero-logo {
+    display: block;
+    max-height: 114px;
+  }
+}
+
+@media (max-width: 400px) {
+  .hero-actions {
+    flex-direction: column;
+  }
+
+  .hero-cta {
+    flex: none;
+    width: 100%;
   }
 }
 </style>

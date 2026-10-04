@@ -2,17 +2,34 @@
   <div class="product-filters" :class="{ 'product-filters-sheet': isSheet }">
     <div class="filters-panel-header">
       <div class="filters-panel-title-group">
-        <span class="filters-panel-title">Filters</span>
+        <span class="filters-panel-title">{{ t('Filters') }}</span>
       </div>
-      <q-btn flat dense round :ripple="false" icon="o_close" class="filters-close-btn" aria-label="Close filters" @click="$emit('close')" />
+      <q-btn flat dense round :ripple="false" icon="o_close" class="filters-close-btn" :aria-label="t('Close filters')" @click="$emit('close')" />
     </div>
 
     <div class="filters-scroll">
-      <div class="filter-group">
-        <label class="filter-label">Categories</label>
+      <!-- Opt-in: only pages that pass distanceOptions show it, so the Products page is unchanged. -->
+      <div v-if="distanceOptions.length" class="filter-group">
+        <label class="filter-label">{{ t('Distance') }}</label>
+        <q-select
+          v-model="maxDistance"
+          :options="translateOptions(distanceOptions)"
+          :disable="distanceDisabled"
+          dense
+          outlined
+          emit-value
+          map-options
+          hide-bottom-space
+          behavior="menu"
+        />
+        <p v-if="distanceDisabled" class="filter-hint">{{ t('Set your location to filter by distance.') }}</p>
+      </div>
+
+      <div v-if="!hideCategory" class="filter-group">
+        <label class="filter-label">{{ t('Categories') }}</label>
         <q-select
           v-model="category"
-          :options="categoryOptions"
+          :options="translateOptions(categoryOptions)"
           dense
           outlined
           emit-value
@@ -23,19 +40,19 @@
       </div>
 
       <div class="filter-group">
-        <label class="filter-label">Price Range</label>
+        <label class="filter-label">{{ t('Price Range') }}</label>
         <div class="price-range-row">
-          <q-input v-model.number="priceMin" type="number" dense outlined hide-bottom-space placeholder="Min" />
+          <q-input v-model.number="priceMin" type="number" dense outlined hide-bottom-space :placeholder="t('Min')" />
           <span class="price-range-sep">–</span>
-          <q-input v-model.number="priceMax" type="number" dense outlined hide-bottom-space placeholder="Max" />
+          <q-input v-model.number="priceMax" type="number" dense outlined hide-bottom-space :placeholder="t('Max')" />
         </div>
       </div>
 
       <div v-if="!hideStore" class="filter-group">
-        <label class="filter-label">Store</label>
+        <label class="filter-label">{{ t('Store') }}</label>
         <q-select
           v-model="store"
-          :options="storeOptions"
+          :options="translateOptions(storeOptions, option => option.value === 'All')"
           dense
           outlined
           emit-value
@@ -45,16 +62,16 @@
         />
       </div>
 
-      <div class="filter-group filter-group-row">
-        <label class="filter-label filter-label-inline">In Stock Only</label>
+      <div v-if="!hideInStock" class="filter-group filter-group-row">
+        <label class="filter-label filter-label-inline">{{ t('In Stock Only') }}</label>
         <q-toggle v-model="inStock" dense color="primary" />
       </div>
 
       <div class="filter-group">
-        <label class="filter-label">Sort by</label>
+        <label class="filter-label">{{ t('Sort by') }}</label>
         <q-select
           v-model="sort"
-          :options="sortOptions"
+          :options="translateOptions(sortOptions)"
           dense
           outlined
           emit-value
@@ -69,7 +86,7 @@
       <q-separator class="filters-divider" />
 
       <q-btn
-        label="Apply Filters"
+        :label="t('Apply Filters')"
         unelevated
         no-caps
         class="apply-filters-btn"
@@ -77,17 +94,39 @@
       />
 
       <div class="clear-filters-row">
-        <span class="clear-filters-link" @click="$emit('clear')">Clear all filters</span>
+        <span class="clear-filters-link" @click="$emit('clear')">{{ t('Clear all filters') }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
+const { t, translateOptions } = useConsumerLanguage()
+
 defineProps({
   categoryOptions: {
     type: Array,
-    required: true
+    default: () => []
+  },
+  // Options in metres; empty hides the Distance filter entirely.
+  distanceOptions: {
+    type: Array,
+    default: () => []
+  },
+  // No location set means no distances to compare against.
+  distanceDisabled: {
+    type: Boolean,
+    default: false
+  },
+  hideCategory: {
+    type: Boolean,
+    default: false
+  },
+  hideInStock: {
+    type: Boolean,
+    default: false
   },
   storeOptions: {
     type: Array,
@@ -109,6 +148,7 @@ defineProps({
 
 defineEmits(['close', 'clear'])
 
+const maxDistance = defineModel('maxDistance')
 const category = defineModel('category')
 const store = defineModel('store')
 const priceMin = defineModel('priceMin')
@@ -207,6 +247,28 @@ const sort = defineModel('sort')
   background: var(--c-hairline);
 }
 
+/* In the phone bottom sheet the close button grows to a 44px thumb-sized target. */
+:global(.q-dialog__inner--bottom .filters-close-btn) {
+  width: 44px;
+  height: 44px;
+}
+
+:global(.q-dialog__inner--bottom .filters-close-btn .q-icon) {
+  font-size: 26px;
+}
+
+/* Touch screens get the same thumb-sized close button in the side panel too, e.g. a tablet held sideways. */
+@media (pointer: coarse) {
+  .filters-close-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .filters-close-btn :deep(.q-icon) {
+    font-size: 26px;
+  }
+}
+
 .filter-group {
   margin-bottom: 16px;
 }
@@ -233,6 +295,15 @@ const sort = defineModel('sort')
 
   font-size: var(--fs-sm);
   color: var(--c-text-2);
+}
+
+.filter-hint {
+  margin: 6px 0 0;
+
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+
+  color: var(--c-muted);
 }
 
 .price-range-row {

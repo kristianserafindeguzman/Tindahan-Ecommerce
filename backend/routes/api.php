@@ -31,7 +31,8 @@ Route::post('/register/consumer', [AuthController::class, 'registerConsumer']);
 Route::post('/register/vendor', [AuthController::class, 'registerVendor']);
 // Sends a text to any unregistered number, so it is limited per IP to keep SMS spam and cost down.
 Route::post('/register/vendor/otp', [AuthController::class, 'sendVendorOtp'])->middleware('throttle:5,10');
-Route::post('/login', [AuthController::class, 'login']);
+// Limited per IP so one address can't keep guessing passwords, for one account or many.
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:20,1');
 
 // ----- Public OTP Routes -----
 // Limited so the 6-digit codes can't be found by trying them all.
@@ -45,13 +46,13 @@ Route::post('/forgot-password/reset', [AuthController::class, 'resetPassword']);
 // ----- Authenticated Routes (Sanctum token required) -----
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', function (\Illuminate\Http\Request $request) {
-        \Log::info('API USER route hit');
-        return app(\App\Http\Controllers\AuthController::class)->user($request);
-    });
+    Route::get('/user', [AuthController::class, 'user']);
     // ----- Global Category Routes -----
-    Route::post('/categories', [CategoryController::class, 'store']);
-    Route::patch('/categories/{id}', [CategoryController::class, 'update']);
+    // Categories are shared by every store: vendors and admins can add and describe them, consumers can't,
+    // and only an admin may delete one.
+    Route::post('/categories', [CategoryController::class, 'store'])->middleware('role:Admin,Vendor');
+    Route::patch('/categories/{id}', [CategoryController::class, 'update'])->middleware('role:Admin,Vendor');
+    Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->middleware('role:Admin,Vendor');
 
     // ----- Admin Routes -----
     Route::middleware('role:Admin')->prefix('admin')->group(function () {
@@ -97,10 +98,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [\App\Http\Controllers\VendorController::class, 'profile']);
         Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'updatePersonalInfo']);
         Route::put('/profile/hours', [\App\Http\Controllers\ProfileController::class, 'updateStoreHours']);
-        Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword']);
+        // A password change is OTP-verified in two steps; there is deliberately no direct-change route.
+        Route::post('/profile/password-request-otp', [\App\Http\Controllers\ProfileController::class, 'requestPasswordOtp'])->middleware('throttle:5,10');
+        Route::post('/profile/password-resend-otp', [\App\Http\Controllers\ProfileController::class, 'resendPasswordOtp'])->middleware('throttle:5,1');
+        Route::post('/profile/password-verify-otp', [\App\Http\Controllers\ProfileController::class, 'verifyPasswordOtp'])->middleware('throttle:10,1');
+        Route::post('/profile/password-cancel-otp', [\App\Http\Controllers\ProfileController::class, 'cancelPasswordOtp']);
         Route::put('/store/info', [\App\Http\Controllers\ProfileController::class, 'updateStoreInfo']);
         Route::put('/store/address', [\App\Http\Controllers\ProfileController::class, 'updateStoreAddress']);
         Route::post('/profile/store-image', [\App\Http\Controllers\VendorController::class, 'uploadStoreImage']);
+        // The owner's own photo, through the same ProfileController method and storage the consumer profile uses.
+        Route::post('/profile/photo', [\App\Http\Controllers\ProfileController::class, 'updatePhoto']);
         Route::delete('/account', [\App\Http\Controllers\ProfileController::class, 'deleteAccount']);
         // The same phone and email changes the consumer profile offers, through the same controller methods.
         Route::post('/profile/phone-request-otp', [\App\Http\Controllers\ProfileController::class, 'requestPhoneOtp']);
@@ -114,7 +121,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/sales/metrics', [\App\Http\Controllers\SalesController::class, 'metrics']);
         Route::get('/sales/transactions', [\App\Http\Controllers\SalesController::class, 'transactions']);
         Route::post('/sales/manual', [\App\Http\Controllers\SalesController::class, 'storeManual']);
-        
+
         Route::get('/orders', [\App\Http\Controllers\VendorOrderController::class, 'index']);
         Route::get('/orders/export', [\App\Http\Controllers\VendorController::class, 'exportOrderListReport']);
         Route::get('/orders/{id}', [\App\Http\Controllers\VendorOrderController::class, 'show']);
@@ -122,11 +129,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/orders/{id}/status', [\App\Http\Controllers\VendorOrderController::class, 'updateStatus']);
         Route::get('/customers', [\App\Http\Controllers\VendorOrderController::class, 'customers']);
         Route::get('/customers/{id}/orders', [\App\Http\Controllers\VendorOrderController::class, 'customerOrders']);
-        
+
         // ML Integrations
         Route::get('/demand-forecast', [\App\Http\Controllers\VendorController::class, 'getDemandForecast']);
         Route::post('/demand-forecast/refresh', [\App\Http\Controllers\VendorController::class, 'refreshDemandForecast']);
         Route::get('/ml-insights', [\App\Http\Controllers\VendorController::class, 'getMlInsights']);
+
+        // The guided tour is offered once per vendor account, on its first login on any device.
+        Route::post('/tutorial/seen', [\App\Http\Controllers\VendorController::class, 'markTutorialSeen']);
     });
 
     // ----- Profile Routes -----
@@ -136,7 +146,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/phone-request-otp', [ProfileController::class, 'requestPhoneOtp']);
         Route::post('/phone-verify-otp', [ProfileController::class, 'verifyPhoneOtp']);
         Route::post('/email', [ProfileController::class, 'updateEmail']);
-        Route::post('/password', [ProfileController::class, 'updatePassword']);
+        // Same two-step OTP change the vendor side uses.
+        Route::post('/password-request-otp', [ProfileController::class, 'requestPasswordOtp'])->middleware('throttle:5,10');
+        Route::post('/password-resend-otp', [ProfileController::class, 'resendPasswordOtp'])->middleware('throttle:5,1');
+        Route::post('/password-verify-otp', [ProfileController::class, 'verifyPasswordOtp'])->middleware('throttle:10,1');
+        Route::post('/password-cancel-otp', [ProfileController::class, 'cancelPasswordOtp']);
         Route::delete('/delete', [ProfileController::class, 'deleteAccount']);
     });
 

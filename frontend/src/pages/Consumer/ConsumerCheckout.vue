@@ -9,16 +9,16 @@
       <template v-if="!orderPlaced">
         <span class="back-link" @click="router.push('/consumer/cart')">
           <q-icon name="o_arrow_back" size="15px" />
-          Back to Cart
+          {{ t('Back to Cart') }}
         </span>
 
-        <h1 class="page-title">Checkout</h1>
-        <p class="page-subtitle">Review your order before confirming.</p>
+        <h1 class="page-title">{{ t('Checkout') }}</h1>
+        <p class="page-subtitle">{{ t('Review your order before confirming.') }}</p>
       </template>
 
       <div v-if="loading" class="checkout-loading">
         <q-spinner size="32px" />
-        <p class="checkout-loading-text">Loading your order…</p>
+        <p class="checkout-loading-text">{{ t('Loading your order…') }}</p>
       </div>
 
       <div v-else-if="orderPlaced" class="success-view">
@@ -27,28 +27,28 @@
             <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </div>
-        <h2 class="success-title">Order Placed!</h2>
+        <h2 class="success-title">{{ t('Order Placed!') }}</h2>
 
         <p class="success-subtitle">
-          Your order at <strong>{{ placedOrder.store?.store_name }}</strong> has been confirmed.<br class="subtitle-break" />
-          We'll notify you when it's ready for pickup.
+          {{ t('Your order at') }} <strong>{{ placedOrder.store?.store_name }}</strong> {{ t('has been confirmed.') }}<br class="subtitle-break" />
+          {{ t('We\'ll notify you when it\'s ready for pickup.') }}
         </p>
 
         <div class="success-actions">
-          <q-btn unelevated no-caps outline label="Continue Shopping" class="continue-btn" @click="router.push('/consumer/home')" />
-          <q-btn unelevated no-caps label="View Order Details" class="view-order-btn" @click="viewOrderDetails" />
+          <q-btn unelevated no-caps outline :label="t('Continue Shopping')" class="continue-btn" @click="router.push('/consumer/home')" />
+          <q-btn unelevated no-caps :label="t('View Order Details')" class="view-order-btn" @click="viewOrderDetails" />
         </div>
 
         <div class="order-ref-card">
           <div class="order-ref-header">
             <div class="order-ref-header-info">
-              <div class="order-ref-label">Order Reference</div>
+              <div class="order-ref-label">{{ t('Order Reference') }}</div>
               <div class="order-ref-id">#{{ placedOrder.order_id }}</div>
             </div>
             <div class="order-ref-pickup">
               <div class="order-ref-pickup-label">
                 <q-icon name="o_schedule" size="12px" />
-                Estimated Pickup
+                {{ t('Estimated Pickup') }}
               </div>
               <div class="order-ref-pickup-value">{{ pickupTimeText }}</div>
             </div>
@@ -62,14 +62,14 @@
                 <img v-if="item.inventory?.image_url" :src="item.inventory.image_url" :alt="item.inventory?.product_name" />
                 <q-icon v-else name="o_inventory_2" size="16px" />
               </div>
-              <span class="order-ref-item-name"><strong class="order-ref-item-qty">{{ item.quantity }}x</strong> {{ item.inventory?.product_name || 'Item' }}</span>
+              <span class="order-ref-item-name"><strong class="order-ref-item-qty">{{ item.quantity }}x</strong> {{ item.inventory?.product_name || t('Item') }}</span>
               <span class="order-ref-item-price">₱{{ Number(item.subtotal).toFixed(2) }}</span>
             </div>
 
             <q-separator class="order-ref-separator" />
 
             <div class="order-ref-total">
-              <span>Total</span>
+              <span>{{ t('Total') }}</span>
               <span class="order-ref-total-amount">₱{{ Number(placedOrder.total_amount).toFixed(2) }}</span>
             </div>
           </div>
@@ -77,14 +77,14 @@
 
         <span class="need-help-link" @click="showContactSupport = true">
           <q-icon name="o_help" size="13px" />
-          Need help with this order?
+          {{ t('Need help with this order?') }}
         </span>
       </div>
 
       <div v-else-if="!checkoutItems.length" class="checkout-empty">
         <q-icon name="o_shopping_cart" size="40px" class="checkout-empty-icon" />
-        <p class="checkout-empty-text">There's nothing to check out.</p>
-        <q-btn unelevated no-caps label="Back to Cart" class="browse-btn" @click="router.push('/consumer/cart')" />
+        <p class="checkout-empty-text">{{ t('There\'s nothing to check out.') }}</p>
+        <q-btn unelevated no-caps :label="t('Back to Cart')" class="browse-btn" @click="router.push('/consumer/cart')" />
       </div>
 
       <template v-else>
@@ -92,9 +92,40 @@
 
         <div class="checkout-main">
 
+          <!-- Checkout needs the consumer's location so the vendor has pickup context; the
+               backend rejects the order without it, and this is the matching front-end gate. -->
+          <div v-if="!hasConsumerLocation" class="location-required-card">
+            <q-icon name="o_wrong_location" size="22px" class="location-required-icon" />
+            <div class="location-required-body">
+              <div class="location-required-title">{{ t('Set your location to continue') }}</div>
+              <div class="location-required-text">
+                {{ t('We need your location so the store knows where you are ordering from. Detect it now, or set your address from the location button in the header.') }}
+              </div>
+              <q-btn
+                unelevated
+                no-caps
+                icon="o_my_location"
+                :label="t('Detect My Location')"
+                class="location-required-btn"
+                :loading="detectingLocation"
+                @click="detectLocation"
+              />
+            </div>
+          </div>
+
+          <div v-if="storeDetails && !storeDetails.isOpen" class="location-required-card">
+            <q-icon name="o_schedule" size="22px" class="location-required-icon text-negative" />
+            <div class="location-required-body">
+              <div class="location-required-title">{{ t('Store is currently closed') }}</div>
+              <div class="location-required-text">
+                {{ storeDetails.scheduleStatusText }}. {{ t('You cannot place an order right now.') }}
+              </div>
+            </div>
+          </div>
+
           <!-- STORE INFO -->
           <div class="store-info-card">
-            <div class="checkout-items-title">Pickup Location</div>
+            <div class="checkout-items-title">{{ t('Pickup Location') }}</div>
             <q-separator class="card-divider" />
 
             <div v-if="storeDetails?.latitude && storeDetails?.longitude" ref="storeMapEl" class="store-map-preview" />
@@ -107,7 +138,7 @@
 
           <!-- ORDER ITEMS -->
           <div class="checkout-items-card">
-            <div class="checkout-items-title">Order Items</div>
+            <div class="checkout-items-title">{{ t('Order Items') }}</div>
             <q-separator class="card-divider" />
 
             <div v-for="item in checkoutItems" :key="item.cartId" class="checkout-item">
@@ -118,6 +149,10 @@
 
               <div class="checkout-item-info">
                 <div class="checkout-item-name">{{ item.name }}</div>
+                <div v-if="item.variantName" class="checkout-item-variant">{{ item.variantName }}</div>
+                <!-- Reservations lapse while this page is open, so the countdown belongs here too. -->
+                <div v-if="hasExpired(item)" class="checkout-item-expired">{{ t('Expired') }}</div>
+                <div v-else-if="item.expiresAt" class="checkout-item-expiry">{{ formatTimeLeft(item.expiresAt) }}</div>
                 <div class="checkout-item-price">₱{{ item.price.toFixed(2) }} × {{ item.quantity }}</div>
               </div>
 
@@ -127,7 +162,7 @@
 
           <!-- PICKUP TIME -->
           <div class="pickup-time-card">
-            <div class="checkout-items-title">Pickup Time</div>
+            <div class="checkout-items-title">{{ t('Pickup Time') }}</div>
             <q-separator class="card-divider" />
 
             <div class="pickup-time-options">
@@ -138,8 +173,8 @@
               >
                 <span class="time-option-radio" />
                 <div>
-                  <div class="time-option-title">ASAP (10 - 15 mins)</div>
-                  <div class="time-option-desc">We'll start preparing your order immediately.</div>
+                  <div class="time-option-title">{{ t('ASAP (10 - 15 mins)') }}</div>
+                  <div class="time-option-desc">{{ t('We\'ll start preparing your order immediately.') }}</div>
                 </div>
               </div>
 
@@ -150,56 +185,74 @@
               >
                 <span class="time-option-radio" />
                 <div>
-                  <div class="time-option-title">Schedule for later</div>
+                  <div class="time-option-title">{{ t('Schedule for later') }}</div>
                   <div class="time-option-desc">
                     <span v-if="scheduledSlotText">{{ scheduledSlotText }}</span>
-                    <span v-else>Choose a specific time today.</span>
+                    <span v-else>{{ t('Choose a day and time within store hours.') }}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             <div v-if="pickupOption === 'schedule' && showScheduler" class="scheduler-panel">
-              <div class="scheduler-label">Select Day</div>
-              <div class="day-pills">
-                <div
-                  v-for="day in dayOptions"
-                  :key="day.value"
-                  class="day-pill"
-                  :class="{ 'day-pill-selected': selectedDay === day.value }"
-                  @click="selectedDay = day.value"
-                >
-                  <div class="day-pill-label">{{ day.label }}</div>
-                  <div class="day-pill-date">{{ day.date }}</div>
-                </div>
+              <!-- The store's hours arrive with the store list, a moment after the page. -->
+              <div v-if="!storeHoursLoaded" class="scheduler-empty">
+                <q-spinner size="16px" />
+                {{ t('Loading store hours…') }}
               </div>
 
-              <div class="scheduler-label">Select Time</div>
-              <q-select
-                v-model="selectedSlot"
-                :options="timeSlots"
-                outlined
-                dense
-                hide-bottom-space
-                behavior="menu"
-                placeholder="Choose a time slot"
-                class="time-select"
-              />
+              <!-- Nothing to offer in the next few days, e.g. a store closed all weekend. -->
+              <div v-else-if="!hasAnyPickupSlot" class="scheduler-empty">
+                <q-icon name="o_event_busy" size="18px" />
+                {{ t('There are no pickup times left in the next few days. Choose ASAP instead.') }}
+              </div>
 
-              <q-btn
-                unelevated
-                no-caps
-                label="Confirm Time"
-                class="confirm-time-btn"
-                :disable="!selectedSlot"
-                @click="confirmSchedule"
-              />
+              <template v-else>
+                <div class="scheduler-label">{{ t('Select Day') }}</div>
+                <div class="day-pills">
+                  <!-- A day the store is closed, or has no times left today, stays visible but can't be picked. -->
+                  <div
+                    v-for="day in dayOptions"
+                    :key="day.value"
+                    class="day-pill"
+                    :class="{ 'day-pill-selected': selectedDay === day.value, 'day-pill-disabled': day.disabled }"
+                    :aria-disabled="day.disabled"
+                    @click="selectDay(day)"
+                  >
+                    <div class="day-pill-label">{{ day.label }}</div>
+                    <div class="day-pill-date">{{ day.disabled ? t('Closed') : day.date }}</div>
+                  </div>
+                </div>
+
+                <div class="scheduler-label">{{ t('Select Time') }}</div>
+                <q-select
+                  v-model="selectedSlot"
+                  :options="timeSlots"
+                  emit-value
+                  map-options
+                  outlined
+                  dense
+                  hide-bottom-space
+                  behavior="menu"
+                  :placeholder="t('Choose a time slot')"
+                  class="time-select"
+                />
+
+                <q-btn
+                  unelevated
+                  no-caps
+                  :label="t('Confirm Time')"
+                  class="confirm-time-btn"
+                  :disable="!selectedSlot"
+                  @click="confirmSchedule"
+                />
+              </template>
             </div>
           </div>
 
           <!-- CONTACT DETAILS -->
           <div class="contact-details-card">
-            <div class="checkout-items-title">Contact Details</div>
+            <div class="checkout-items-title">{{ t('Contact Details') }}</div>
             <q-separator class="card-divider" />
 
             <div class="details-display-row">
@@ -208,7 +261,7 @@
                   <q-icon name="o_person" size="18px" />
                 </span>
                 <div>
-                  <div class="contact-field-label">Full Name</div>
+                  <div class="contact-field-label">{{ t('Full Name') }}</div>
                   <div class="contact-field-value">{{ fullName || '—' }}</div>
                 </div>
               </div>
@@ -220,7 +273,7 @@
                   <q-icon name="o_phone" size="18px" />
                 </span>
                 <div>
-                  <div class="contact-field-label">Phone Number</div>
+                  <div class="contact-field-label">{{ t('Phone Number') }}</div>
                   <div class="contact-field-value">{{ phoneNumber || '—' }}</div>
                 </div>
               </div>
@@ -233,15 +286,15 @@
               <q-icon name="o_storefront" size="16px" />
             </span>
             <div>
-              <div class="pickup-info-title">Store Pickup</div>
-              <div class="pickup-info-text">You'll pay and pick up this order at the store. No delivery.</div>
+              <div class="pickup-info-title">{{ t('Store Pickup') }}</div>
+              <div class="pickup-info-text">{{ t('You\'ll pay and pick up this order at the store. No delivery.') }}</div>
             </div>
           </div>
 
         </div>
 
         <aside v-if="!$q.screen.lt.md" class="checkout-summary">
-          <div class="summary-title">Order Summary</div>
+          <div class="summary-title">{{ t('Order Summary') }}</div>
           <div class="summary-store">{{ storeName }}</div>
 
           <div v-for="item in checkoutItems" :key="item.cartId" class="summary-item-row">
@@ -251,7 +304,8 @@
             </div>
             <div class="summary-item-info">
               <div class="summary-item-name">{{ item.name }}</div>
-              <div class="summary-item-qty">Qty: {{ item.quantity }}</div>
+              <div v-if="item.variantName" class="summary-item-variant">{{ item.variantName }}</div>
+              <div class="summary-item-qty">{{ t('Qty:') }} {{ item.quantity }}</div>
             </div>
             <div class="summary-item-price">₱{{ (item.price * item.quantity).toFixed(2) }}</div>
           </div>
@@ -259,23 +313,31 @@
           <q-separator class="summary-separator" />
 
           <div class="summary-row summary-total">
-            <span>Total</span>
+            <span>{{ t('Total') }}</span>
             <span>₱{{ subtotal.toFixed(2) }}</span>
           </div>
 
           <q-btn
             unelevated
             no-caps
-            label="Place Order"
+            :label="t('Place Order')"
             class="place-order-btn"
             :loading="placingOrder"
+            :disable="orderBlocked"
             @click="placeOrder"
           />
+          <p v-if="hasExpiredItems" class="summary-expired-note">
+            {{ t('A reservation expired while you were here. Go back to your cart to fix it.') }}
+            <a href="#" class="summary-expired-link" @click.prevent="router.push('/consumer/cart')">{{ t('Back to Cart') }}</a>
+          </p>
+          <p v-else-if="!hasConsumerLocation" class="summary-location-note">
+            {{ t('Set your location to place this order.') }}
+          </p>
           <p class="summary-terms-note">
-            By placing your order, you agree to our
-            <a href="#" class="summary-terms-link" @click.prevent="showTerms = true">Terms of Service</a>
-            and
-            <a href="#" class="summary-terms-link" @click.prevent="showPrivacy = true">Privacy Policy</a>.
+            {{ t('By placing your order, you agree to our') }}
+            <a href="#" class="summary-terms-link" @click.prevent="showTerms = true">{{ t('Terms of Service') }}</a>
+            {{ t('and') }}
+            <a href="#" class="summary-terms-link" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.
           </p>
         </aside>
 
@@ -285,8 +347,11 @@
       <div v-if="showCheckoutBar" ref="checkoutBarEl" class="checkout-sticky-bar">
         <div class="checkout-sticky-bar-top">
           <div class="checkout-sticky-bar-info">
-            <div class="checkout-sticky-bar-title">Total</div>
-            <div class="checkout-sticky-bar-subtitle">{{ checkoutItemCount }} item{{ checkoutItemCount === 1 ? '' : 's' }}</div>
+            <div class="checkout-sticky-bar-title">{{ t('Total') }}</div>
+            <div class="checkout-sticky-bar-subtitle" :class="{ 'checkout-sticky-bar-subtitle-expired': hasExpiredItems }">
+              <template v-if="hasExpiredItems">{{ t('A reservation expired — go back to your cart.') }}</template>
+              <template v-else>{{ itemCount(checkoutItemCount) }}</template>
+            </div>
           </div>
           <div class="checkout-sticky-bar-price">₱{{ subtotal.toFixed(2) }}</div>
         </div>
@@ -294,9 +359,10 @@
         <q-btn
           unelevated
           no-caps
-          label="Place Order"
+          :label="t('Place Order')"
           class="place-order-btn"
           :loading="placingOrder"
+          :disable="orderBlocked"
           @click="placeOrder"
         />
       </div>
@@ -314,6 +380,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import L from 'leaflet'
@@ -325,16 +393,49 @@ import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
 import { useQuasar } from 'quasar'
 import { useCart } from '@/composables/useCart'
+import { useCartExpiry } from '@/composables/useCartExpiry'
 import { formatDistance } from '@/utils/distance'
+import { buildPickupDays, SLOT_MINUTES, STORE_TIME_ZONE } from '@/utils/pickupSlots'
 import { useStores } from '@/composables/useStores'
+import { useAddress } from '@/composables/useAddress'
 import { api } from '@/boot/axios'
+
+const { t, itemCount, locale } = useConsumerLanguage()
 
 const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
 
 const { items, loading, fetchCart, checkout } = useCart()
+const { hasExpired, formatTimeLeft } = useCartExpiry()
 const { stores, fetchStores } = useStores()
+const { locationVersion, detectAddress } = useAddress()
+
+const detectingLocation = ref(false)
+
+// The coordinates live in localStorage, which is not reactive, so the shared counter is read too:
+// every save bumps it, including one that stores a pin whose lookup came back with no address text.
+const hasConsumerLocation = computed(() => {
+  void locationVersion.value
+  const lat = Number(localStorage.getItem('consumer_lat'))
+  const lng = Number(localStorage.getItem('consumer_lng'))
+  return Number.isFinite(lat) && Number.isFinite(lng) && Boolean(lat || lng)
+})
+
+const detectLocation = async () => {
+  detectingLocation.value = true
+  try {
+    const detected = await detectAddress()
+    if (!detected) {
+      $q.notify({
+        type: 'negative',
+        message: t('We could not detect your location. Please allow location access, or set your address from the location button in the header.')
+      })
+    }
+  } finally {
+    detectingLocation.value = false
+  }
+}
 
 const user = ref({})
 const placingOrder = ref(false)
@@ -343,15 +444,35 @@ const placedOrder = ref(null)
 const showContactSupport = ref(false)
 
 const placeOrder = async () => {
+  // Mirrors the backend's LOCATION_REQUIRED guard, so nothing is sent that is certain to fail.
+  if (!hasConsumerLocation.value) {
+    $q.notify({
+      type: 'negative',
+      message: t('Set your location before placing this order.')
+    })
+    return
+  }
+
+  // "Schedule for later" without a confirmed time used to go through as ASAP without a word;
+  // the shopper is asked for a time instead, so the store never gets the wrong one.
+  if (pickupOption.value === 'schedule' && !confirmedSlot.value) {
+    showScheduler.value = true
+    selectFirstOpenDay()
+    $q.notify({ type: 'negative', message: t('Choose a pickup time first.') })
+    return
+  }
+
   placingOrder.value = true
   try {
-    const data = await checkout(storeId.value)
+    const data = await checkout(storeId.value, {
+      scheduledPickupAt: pickupOption.value === 'schedule' ? confirmedSlot.value.iso : null
+    })
     placedOrder.value = data.order
     orderPlaced.value = true
   } catch (error) {
     $q.notify({
       type: 'negative',
-      message: error.response?.data?.message || 'Failed to place order.'
+      message: t(error.response?.data?.message || 'Failed to place order.')
     })
   } finally {
     placingOrder.value = false
@@ -388,6 +509,15 @@ const storeDetails = computed(() => stores.value.find((s) => s.id === storeId.va
 
 const subtotal = computed(() => checkoutItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0))
 const checkoutItemCount = computed(() => checkoutItems.value.reduce((sum, item) => sum + item.quantity, 0))
+
+// The server rejects the whole order if one reservation lapsed, so block before the form is filled in.
+const hasExpiredItems = computed(() => checkoutItems.value.some(hasExpired))
+
+const orderBlocked = computed(() =>
+  hasExpiredItems.value ||
+  !hasConsumerLocation.value ||
+  Boolean(storeDetails.value && !storeDetails.value.isOpen)
+)
 
 // Mobile/tablet: sticky checkout bar replaces the Order Summary sidebar.
 const showCheckoutBar = computed(() => $q.screen.lt.md && !loading.value && !orderPlaced.value && checkoutItems.value.length > 0)
@@ -429,62 +559,111 @@ watch(user, (value) => {
   phoneNumber.value = value.phone_number || ''
 })
 
-// PICKUP TIME
+// PICKUP TIME — "Schedule for later" offers only slots inside the store's opening hours (see
+// utils/pickupSlots.js), and the chosen slot is sent with the order so the store sees it.
 const pickupOption = ref('asap')
 const showScheduler = ref(false)
-const selectedDay = ref('today')
-const selectedSlot = ref('')
-const confirmedSlotLabel = ref('')
+const selectedDay = ref(0)
+const selectedSlot = ref(null)
+const confirmedSlot = ref(null) // { iso, label, dayLabel }
+
+// Re-read every minute, so a page left open drops slots that have already passed.
+const clockNow = ref(new Date())
+const clockTimer = setInterval(() => { clockNow.value = new Date() }, 60000)
+onBeforeUnmount(() => clearInterval(clockTimer))
 
 const DAY_LABELS = ['Today', 'Tomorrow']
 
-const dayOptions = computed(() => {
-  const days = []
-  for (let i = 0; i < 3; i++) {
-    const date = new Date()
-    date.setDate(date.getDate() + i)
-    days.push({
-      value: i === 0 ? 'today' : i === 1 ? 'tomorrow' : `day${i}`,
-      label: DAY_LABELS[i] || date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(),
-      date: date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })
-    })
-  }
-  return days
+const formatSlotTime = (iso) =>
+  new Date(iso).toLocaleTimeString(locale.value, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: STORE_TIME_ZONE })
+
+const pickupDays = computed(() => buildPickupDays(storeDetails.value?.hours, clockNow.value))
+
+const dayOptions = computed(() =>
+  pickupDays.value.map((day) => {
+    const noon = new Date(`${day.ymd}T12:00:00+08:00`)
+    return {
+      value: day.offset,
+      label: (DAY_LABELS[day.offset] ? t(DAY_LABELS[day.offset]) : null) ||
+        noon.toLocaleDateString(locale.value, { weekday: 'short', timeZone: STORE_TIME_ZONE }).toUpperCase(),
+      date: noon.toLocaleDateString(locale.value, { day: '2-digit', month: 'short', timeZone: STORE_TIME_ZONE }),
+      // A day the store is closed, or has no slots left today, can't be picked.
+      disabled: !day.slots.length
+    }
+  })
+)
+
+const timeSlots = computed(() =>
+  (pickupDays.value[selectedDay.value]?.slots || []).map((slot) => ({
+    value: slot.iso,
+    label: `${formatSlotTime(slot.iso)} - ${formatSlotTime(new Date(new Date(slot.iso).getTime() + SLOT_MINUTES * 60000).toISOString())}`
+  }))
+)
+
+const hasAnyPickupSlot = computed(() => dayOptions.value.some((day) => !day.disabled))
+
+// The store list (and with it the hours) loads a moment after the page, so the picker waits for
+// it instead of briefly claiming there are no pickup times.
+const storeHoursLoaded = computed(() => Boolean(storeDetails.value?.hours))
+
+// Opens on the first day that still has slots, and never leaves a closed day selected.
+const selectFirstOpenDay = () => {
+  const current = dayOptions.value[selectedDay.value]
+  if (current && !current.disabled) return
+  const firstOpen = dayOptions.value.find((day) => !day.disabled)
+  selectedDay.value = firstOpen ? firstOpen.value : 0
+}
+
+// Re-checked whenever the days change — when the hours arrive, or today's last slot passes — so
+// an open picker moves off a day that has become unavailable.
+watch(dayOptions, () => {
+  if (pickupOption.value === 'schedule') selectFirstOpenDay()
 })
 
-const timeSlots = computed(() => {
-  const formatTime = (date) => date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-  const start = new Date()
-  start.setMinutes(Math.ceil(start.getMinutes() / 15) * 15 + 30, 0, 0)
+const selectDay = (day) => {
+  if (day.disabled) return
+  selectedDay.value = day.value
+  selectedSlot.value = null
+}
 
-  const slots = []
-  for (let i = 0; i < 24; i++) {
-    const from = new Date(start.getTime() + i * 15 * 60000)
-    const to = new Date(from.getTime() + 15 * 60000)
-    slots.push(`${formatTime(from)} - ${formatTime(to)}`)
+// Hours can load after the page, and the clock can move a slot into the past: drop a choice
+// that is no longer on offer instead of keeping one checkout would refuse.
+watch(timeSlots, (slots) => {
+  if (selectedSlot.value && !slots.some((slot) => slot.value === selectedSlot.value)) {
+    selectedSlot.value = null
   }
-  return slots
+})
+
+watch(pickupDays, (days) => {
+  if (confirmedSlot.value && !days.some((day) => day.slots.some((slot) => slot.iso === confirmedSlot.value.iso))) {
+    confirmedSlot.value = null
+  }
 })
 
 const selectPickupOption = (option) => {
   pickupOption.value = option
   showScheduler.value = option === 'schedule'
+  if (option === 'schedule') selectFirstOpenDay()
 }
 
-const scheduledSlotText = computed(() => {
-  if (!confirmedSlotLabel.value) return ''
-  const dayLabel = dayOptions.value.find((day) => day.value === selectedDay.value)?.label || 'Today'
-  return `${dayLabel}, ${confirmedSlotLabel.value}`
-})
+const scheduledSlotText = computed(() =>
+  confirmedSlot.value ? `${confirmedSlot.value.dayLabel}, ${confirmedSlot.value.label}` : ''
+)
 
 const confirmSchedule = () => {
-  confirmedSlotLabel.value = selectedSlot.value
+  const slot = timeSlots.value.find((option) => option.value === selectedSlot.value)
+  if (!slot) return
+  confirmedSlot.value = {
+    iso: slot.value,
+    label: slot.label,
+    dayLabel: dayOptions.value[selectedDay.value]?.label || t('Today')
+  }
   showScheduler.value = false
 }
 
 const pickupTimeText = computed(() => {
   if (pickupOption.value === 'schedule' && scheduledSlotText.value) return scheduledSlotText.value
-  return 'ASAP (10 - 15 mins)'
+  return t('ASAP (10 - 15 mins)')
 })
 
 // STORE MAP PREVIEW — a small, non-interactive Leaflet "photo" pinning the store's location.
@@ -1180,6 +1359,33 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 
+.checkout-item-variant {
+  margin-top: 1px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--c-muted);
+}
+
+/* Same treatment as the cart's countdown, so the two pages read as one flow. */
+.checkout-item-expiry {
+  margin-top: 2px;
+
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+
+  color: var(--c-danger);
+}
+
+.checkout-item-expired {
+  margin-top: 2px;
+
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+
+  color: var(--c-danger);
+}
+
 .checkout-item-price {
   margin-top: 2px;
 
@@ -1344,6 +1550,36 @@ onBeforeUnmount(() => {
 
 .day-pill-selected .day-pill-date {
   color: var(--c-brand);
+}
+
+/* A closed day: shown so the shopper sees why it's missing, but greyed out and unclickable. */
+.day-pill-disabled,
+.day-pill-disabled:hover {
+  border-color: var(--c-hairline);
+  background: var(--c-surface-2);
+
+  cursor: not-allowed;
+}
+
+.day-pill-disabled .day-pill-label,
+.day-pill-disabled .day-pill-date {
+  color: var(--c-subtle);
+}
+
+.scheduler-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 12px 14px;
+
+  border-radius: var(--r-md);
+
+  background: var(--c-surface-2);
+
+  font-size: var(--fs-sm);
+
+  color: var(--c-muted);
 }
 
 .time-select {
@@ -1546,6 +1782,12 @@ onBeforeUnmount(() => {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.summary-item-variant {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--c-muted);
 }
 
 .summary-item-qty {
@@ -1755,5 +1997,91 @@ onBeforeUnmount(() => {
   .subtitle-break {
     display: none;
   }
+}
+/* Location gate, styled as a warning panel rather than an error: the order is not broken, it
+   just needs one more thing from the consumer. */
+.location-required-card {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 12px;
+
+  margin-bottom: 16px;
+  padding: 16px;
+
+  border: 1px solid #f2c744;
+  border-radius: var(--r-lg);
+
+  background: #fffaeb;
+}
+
+.location-required-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #b7791f;
+}
+
+.location-required-body {
+  min-width: 0;
+}
+
+.location-required-title {
+  margin-bottom: 4px;
+
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: #7b5804;
+}
+
+.location-required-text {
+  margin-bottom: 12px;
+
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: #8a6512;
+}
+
+.location-required-btn {
+  min-height: 40px;
+  padding: 0 16px;
+
+  border-radius: var(--r-pill);
+
+  background: var(--c-brand);
+  color: var(--c-white);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.summary-location-note {
+  margin: 8px 0 0;
+
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+  text-align: center;
+  color: #b7791f;
+}
+
+/* Says why Place Order is disabled, and offers the only way out of it. */
+.summary-expired-note {
+  margin: 8px 0 0;
+
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+  text-align: center;
+
+  color: var(--c-danger);
+}
+
+.summary-expired-link {
+  margin-left: 4px;
+
+  color: var(--c-danger);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.checkout-sticky-bar-subtitle-expired {
+  color: var(--c-danger);
 }
 </style>

@@ -8,16 +8,16 @@
 
       <div class="page-header-row">
         <div>
-          <h1 class="page-title">All Products</h1>
-          <p class="page-subtitle">Browse all products from sari-sari stores near you.</p>
+          <h1 class="page-title">{{ t('All Products') }}</h1>
+          <p class="page-subtitle">{{ t('Browse all products from sari-sari stores near you.') }}</p>
         </div>
 
         <div class="page-header-actions">
           <div class="sort-inline">
-            <span class="sort-label">Sort by:</span>
+            <span class="sort-label">{{ t('Sort by:') }}</span>
             <q-select
               v-model="sortBy"
-              :options="SORT_OPTIONS"
+              :options="translateOptions(SORT_OPTIONS)"
               dense
               outlined
               emit-value
@@ -37,7 +37,7 @@
             no-caps
             dense
             icon="o_tune"
-            label="Filters"
+            :label="t('Filters')"
             class="filters-toggle-btn"
             @click="filtersOpen = !filtersOpen"
           >
@@ -47,6 +47,7 @@
       </div>
 
       <!-- CATEGORY PILLS -->
+      <PillScroller>
       <div class="category-pills-row">
         <q-chip
           clickable
@@ -55,7 +56,7 @@
           :class="{ 'category-pill-active': selectedCategory === 'All' }"
           @click="selectedCategory = 'All'"
         >
-          All
+          {{ t('All') }}
         </q-chip>
         <q-chip
           v-for="category in VISIBLE_CATEGORIES"
@@ -66,13 +67,15 @@
           :class="{ 'category-pill-active': selectedCategory === category.label }"
           @click="selectedCategory = category.label"
         >
-          {{ category.label }}
+          <!-- The English label stays the filter value; only the text shown is translated. -->
+          {{ t(category.label) }}
         </q-chip>
         <q-chip clickable dense class="category-pill category-pill-more" @click="filtersOpen = true">
-          More
+          {{ t('More') }}
           <q-icon name="o_expand_more" size="16px" />
         </q-chip>
       </div>
+      </PillScroller>
 
       <div class="products-layout">
 
@@ -85,7 +88,7 @@
           </div>
 
           <p v-if="!productsLoading && !filteredProducts.length" class="products-empty">
-            No products match your filters.
+            {{ t('No products match your filters.') }}
           </p>
         </div>
 
@@ -141,6 +144,8 @@
 </template>
 
 <script setup>
+import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
+
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
@@ -149,6 +154,7 @@ import CardSkeleton from '@/components/consumer/CardSkeleton.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import ProductCard from '@/components/consumer/ProductCard.vue'
 import ProductFilters from '@/components/consumer/ProductFilters.vue'
+import PillScroller from '@/components/consumer/PillScroller.vue'
 import AppPagination from '@/components/consumer/AppPagination.vue'
 import ProductDetailModal from '@/components/consumer/ProductDetailModal.vue'
 import { useCategories } from '@/composables/useCategories'
@@ -156,6 +162,8 @@ import { useGridColumns } from '@/composables/useGridColumns'
 import { useProducts } from '@/composables/useProducts'
 import { useCart } from '@/composables/useCart'
 import { useReveal } from '@/composables/useReveal'
+
+const { t, translateOptions } = useConsumerLanguage()
 
 const $q = useQuasar()
 
@@ -190,9 +198,9 @@ const handleAddToCart = async (product) => {
 
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: `${product.name} added to cart.` })
+    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || 'Failed to add to cart.' })
+    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
   }
 }
 
@@ -402,6 +410,9 @@ const clearFilters = () => {
 }
 
 .filters-toggle-btn {
+  /* A translated sort label ("I-sort ayon sa:") squeezes this row, and the button used to answer by wrapping its label under the icon, outside its fixed height. */
+  flex-shrink: 0;
+  white-space: nowrap;
   position: relative;
 
   height: 36px;
@@ -427,6 +438,7 @@ const clearFilters = () => {
 }
 
 .filters-toggle-btn :deep(.q-btn__content) {
+  flex-wrap: nowrap;
   gap: 6px;
 }
 
@@ -634,6 +646,21 @@ const clearFilters = () => {
 
   .page-header-row {
     flex-wrap: wrap;
+  }
+
+  /* The sort box may shrink on phones so the sort label, sort box and Filters stay on one line, even with the longer Filipino label. */
+  .page-header-actions {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .sort-inline {
+    min-width: 0;
+  }
+
+  .sort-select {
+    flex: 0 1 auto;
+    min-width: 0;
   }
 
   .page-subtitle {

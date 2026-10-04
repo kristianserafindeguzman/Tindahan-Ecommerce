@@ -244,11 +244,40 @@ class AuthController extends Controller
         // The account and store are already saved, so a failed notice is logged rather than failing the sign-up.
         try {
             User::where('role', 'Admin')->pluck('user_id')->each(function ($adminId) use ($store, $user) {
+
+                $message = "{$store->store_name} by {$user->full_name} is waiting for your review.";
+
+                // In-app notification
                 Notification::create([
                     'user_id' => $adminId,
                     'title'   => 'New store application',
-                    'message' => "{$store->store_name} by {$user->full_name} is waiting for your review.",
+                    'message' => $message,
                 ]);
+
+                // Email notification
+                try {
+                    $admin = User::find($adminId);
+
+                    if ($admin && $admin->email) {
+                        $adminUrl = rtrim(config('services.frontend.url'), '/')
+                            . '/#/admin/approvals';
+
+                        $admin->notify(
+                            new \App\Notifications\SystemNotification(
+                                'New store application',
+                                $message,
+                                null,
+                                $adminUrl,
+                                'Review Application'
+                            )
+                        );
+                    }
+                } catch (\Throwable $e) {
+                    Log::error(
+                        "Failed to send new store application email to admin {$adminId}: "
+                        . $e->getMessage()
+                    );
+                }
             });
         } catch (\Throwable $e) {
             report($e);
@@ -641,33 +670,11 @@ class AuthController extends Controller
         $this->sendPhoneOtp($user->phone_number, $type, $type === 'registration' ? null : $user->user_id);
     }
 
-    /** Replaces any unverified code of this type for the phone with a new random one, stores only its hash, and texts it through Semaphore. */
+    /** Delegates to OtpService, which holds the single copy of the local-development bypass. */
     private function sendPhoneOtp(string $phoneNumber, string $type, ?int $userId = null): void
     {
-        OtpCode::where('phone_number', $phoneNumber)
-            ->where('type', $type)
-            ->whereNull('verified_at')
-            ->delete();
-
-        // TEMPORARY LOCAL DEVELOPMENT OTP BYPASS
-        // Accept the value of SEMAPHORE_FAKE_CODE (e.g., 123456) while testing against localhost.
-        // REMOVE/REVERT THIS BEFORE RETURNING TO THE CLOUD DATABASE AND REAL OTP SERVICE.
-        // The bypass only works if APP_ENV=local, ensuring it can never reach the live server.
-        $fakeCode = app()->environment('local') ? config('services.semaphore.fake_code') : null;
-
-        $code = $fakeCode ? (string) $fakeCode : str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-        OtpCode::create([
-            'user_id'      => $userId,
-            'phone_number' => $phoneNumber,
-            'code'         => Hash::make($code),
-            'type'         => $type,
-            'expires_at'   => now()->addMinutes(10),
-        ]);
-
-        if (!$fakeCode) {
-            $this->semaphoreService->sendOtp($phoneNumber, $code);
-        }
+        app(\App\Services\OtpService::class)->send($phoneNumber, $type, $userId);
     }
 
 }
+
