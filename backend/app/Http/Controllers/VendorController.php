@@ -710,7 +710,7 @@ class VendorController extends Controller
 
         $storeId = $store->store_id;
 
-        $mlApiUrl = rtrim(env('ML_API_URL'), '/');
+        $mlApiUrl = rtrim(config('services.ml_api.url'), '/');
 
         \Log::info('DEMAND REFRESH: ML API URL', [
             'url' => $mlApiUrl,
