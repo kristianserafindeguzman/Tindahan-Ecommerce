@@ -687,7 +687,19 @@ class VendorController extends Controller
     }
     public function refreshDemandForecast(Request $request)
     {
-        $store = auth()->user()->store;
+        \Log::info('DEMAND REFRESH: method started');
+
+        $user = auth()->user();
+
+        \Log::info('DEMAND REFRESH: authenticated user', [
+            'user_id' => $user?->user_id,
+        ]);
+
+        $store = $user?->store;
+
+        \Log::info('DEMAND REFRESH: store loaded', [
+            'store_id' => $store?->store_id,
+        ]);
 
         if (!$store) {
             return response()->json([
@@ -698,7 +710,12 @@ class VendorController extends Controller
 
         $storeId = $store->store_id;
 
-        $mlApiUrl = rtrim(env('ML_API_URL'), '/');
+        $mlApiUrl = rtrim(config('services.ml_api.url'), '/');
+
+        \Log::info('DEMAND REFRESH: ML API URL', [
+            'url' => $mlApiUrl,
+            'store_id' => $storeId,
+        ]);
 
         if (!$mlApiUrl) {
             return response()->json([
@@ -708,9 +725,21 @@ class VendorController extends Controller
         }
 
         try {
-            // Train the store-specific Random Forest model on Render.
+            // -----------------------------------------
+            // 1. Train the store-specific model on Render
+            // -----------------------------------------
+            \Log::info('DEMAND REFRESH: calling Render training', [
+                'store_id' => $storeId,
+            ]);
+
             $trainResponse = Http::timeout(300)
                 ->post("{$mlApiUrl}/train/demand?store_id={$storeId}");
+
+            \Log::info('DEMAND REFRESH: Render training response', [
+                'store_id' => $storeId,
+                'status' => $trainResponse->status(),
+                'body' => $trainResponse->body(),
+            ]);
 
             if (!$trainResponse->successful()) {
                 return response()->json([
@@ -724,14 +753,27 @@ class VendorController extends Controller
 
             if (($trainResult['status'] ?? null) !== 'success') {
                 return response()->json([
-                    'message' => $trainResult['message'] ?? 'ML model training failed.',
+                    'message' => $trainResult['message']
+                        ?? 'ML model training failed.',
                     'has_forecast' => false,
                 ], 422);
             }
 
-            // Generate the forecast using the newly trained model.
+            // -----------------------------------------
+            // 2. Generate the forecast on Render
+            // -----------------------------------------
+            \Log::info('DEMAND REFRESH: calling Render prediction', [
+                'store_id' => $storeId,
+            ]);
+
             $predictResponse = Http::timeout(120)
                 ->post("{$mlApiUrl}/predict/demand?store_id={$storeId}");
+
+            \Log::info('DEMAND REFRESH: Render prediction response', [
+                'store_id' => $storeId,
+                'status' => $predictResponse->status(),
+                'body' => $predictResponse->body(),
+            ]);
 
             if (!$predictResponse->successful()) {
                 return response()->json([
@@ -753,7 +795,9 @@ class VendorController extends Controller
                 ], 422);
             }
 
-            // Save the forecasts into Laravel's production database.
+            // -----------------------------------------
+            // 3. Save forecasts into Laravel database
+            // -----------------------------------------
             foreach ($predictResult['forecasts'] as $forecast) {
                 DemandForecast::updateOrCreate(
                     [
@@ -768,14 +812,11 @@ class VendorController extends Controller
                 );
             }
 
-            return response()->json([
-                'message' => 'Demand forecast refreshed successfully.',
-                'has_forecast' => true,
-                'data_sufficiency' => $trainResult['data_sufficiency'] ?? null,
-                'training_rows' => $trainResult['training_rows'] ?? null,
-                'distinct_dates' => $trainResult['distinct_dates'] ?? null,
-                'forecasts' => $predictResult['forecasts'],
-            ]);
+            // -----------------------------------------
+            // 4. Return the forecast using the same
+            //    response structure as the dashboard
+            // -----------------------------------------
+            return $this->getDemandForecast($request);
 
         } catch (\Throwable $e) {
             \Log::error('Render ML API request failed', [

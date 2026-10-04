@@ -9,6 +9,9 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
+use \App\Models\Notification;
+use \Illuminate\Support\Facades\Log;
+
 class AdminController extends Controller
 {
     /**
@@ -130,6 +133,53 @@ class AdminController extends Controller
             'reviewed_at' => now(),
         ]);
 
+        // Get the vendor who owns this store
+        $store = \App\Models\Store::with('owner')->findOrFail($storeId);
+        $vendor = $store->owner;
+
+        $message = "Your vendor account and store '{$store->store_name}' have been approved. You can now log in and start managing your store.";
+
+        // In-app notification
+        try {
+            if ($vendor) {
+                \App\Models\Notification::create([
+                    'user_id' => $vendor->user_id,
+                    'order_id' => null,
+                    'title'   => 'Vendor Account Approved',
+                    'message' => $message,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error(
+                "Failed to create vendor approval notification for store {$storeId}: "
+                . $e->getMessage()
+            );
+        }
+
+        // Email notification
+        try {
+            if ($vendor && $vendor->email) {
+                $vendorUrl = rtrim(config('services.frontend.url'), '/')
+                    . '/#/vendor/dashboard';
+
+                $vendor->notify(
+                    new \App\Notifications\SystemNotification(
+                        'Vendor Account Approved',
+                        $message,
+                        null,
+                        $vendorUrl,
+                        'Go to Dashboard'
+                    )
+                );
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error(
+                "Failed to send vendor approval email for store {$storeId}: "
+                . $e->getMessage()
+            );
+        }
+
+        // Audit log
         SystemAuditLog::create([
             'admin_id'         => $adminId,
             'action_performed' => "Approved vendor application for store ID {$storeId}",
@@ -162,6 +212,54 @@ class AdminController extends Controller
             'reviewed_at'      => now(),
         ]);
 
+        // Get the vendor who owns this store
+        $store = \App\Models\Store::with('owner')->findOrFail($storeId);
+        $vendor = $store->owner;
+
+        $message = "Your vendor application for '{$store->store_name}' has been rejected. "
+            . "Reason: {$request->rejection_reason}";
+
+        // In-app notification
+        try {
+            if ($vendor) {
+                \App\Models\Notification::create([
+                    'user_id'  => $vendor->user_id,
+                    'order_id' => null,
+                    'title'    => 'Vendor Application Rejected',
+                    'message'  => $message,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error(
+                "Failed to create vendor rejection notification for store {$storeId}: "
+                . $e->getMessage()
+            );
+        }
+
+        // Email notification
+        try {
+            if ($vendor && $vendor->email) {
+                $vendorUrl = rtrim(config('services.frontend.url'), '/')
+                    . '/#/vendor/dashboard';
+
+                $vendor->notify(
+                    new \App\Notifications\SystemNotification(
+                        'Vendor Application Rejected',
+                        $message,
+                        null,
+                        $vendorUrl,
+                        'Go to Dashboard'
+                    )
+                );
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error(
+                "Failed to send vendor rejection email for store {$storeId}: "
+                . $e->getMessage()
+            );
+        }
+
+        // Audit log
         SystemAuditLog::create([
             'admin_id'         => $adminId,
             'action_performed' => "Rejected vendor application for store ID {$storeId}. Reason: {$request->rejection_reason}",
@@ -259,7 +357,7 @@ class AdminController extends Controller
     public function getVendorProducts($storeId)
     {
         $store = \App\Models\Store::findOrFail($storeId);
-        
+
         $products = \App\Models\Inventory::where('store_id', $storeId)
             ->with('category')
             ->where('status', '!=', 'archived')
@@ -343,7 +441,7 @@ class AdminController extends Controller
             ->firstOrFail();
 
         $admin = $request->user();
-        
+
         $suspensionMessage = null;
         if ($request->account_status === 'suspended') {
             $reason = $request->suspension_message ?? 'Violation of terms';
@@ -488,7 +586,7 @@ class AdminController extends Controller
             ->firstOrFail();
 
         $admin = $request->user();
-        
+
         $suspensionMessage = null;
         if ($request->account_status === 'suspended') {
             $reason = $request->suspension_message ?? 'Violation of terms';
