@@ -708,7 +708,9 @@ class VendorController extends Controller
         }
 
         try {
-            // Train the store-specific Random Forest model on Render.
+            // -----------------------------------------
+            // 1. Train the store-specific model on Render
+            // -----------------------------------------
             $trainResponse = Http::timeout(300)
                 ->post("{$mlApiUrl}/train/demand?store_id={$storeId}");
 
@@ -724,12 +726,15 @@ class VendorController extends Controller
 
             if (($trainResult['status'] ?? null) !== 'success') {
                 return response()->json([
-                    'message' => $trainResult['message'] ?? 'ML model training failed.',
+                    'message' => $trainResult['message']
+                        ?? 'ML model training failed.',
                     'has_forecast' => false,
                 ], 422);
             }
 
-            // Generate the forecast using the newly trained model.
+            // -----------------------------------------
+            // 2. Generate the forecast on Render
+            // -----------------------------------------
             $predictResponse = Http::timeout(120)
                 ->post("{$mlApiUrl}/predict/demand?store_id={$storeId}");
 
@@ -753,7 +758,9 @@ class VendorController extends Controller
                 ], 422);
             }
 
-            // Save the forecasts into Laravel's production database.
+            // -----------------------------------------
+            // 3. Save forecasts into Laravel database
+            // -----------------------------------------
             foreach ($predictResult['forecasts'] as $forecast) {
                 DemandForecast::updateOrCreate(
                     [
@@ -768,14 +775,11 @@ class VendorController extends Controller
                 );
             }
 
-            return response()->json([
-                'message' => 'Demand forecast refreshed successfully.',
-                'has_forecast' => true,
-                'data_sufficiency' => $trainResult['data_sufficiency'] ?? null,
-                'training_rows' => $trainResult['training_rows'] ?? null,
-                'distinct_dates' => $trainResult['distinct_dates'] ?? null,
-                'forecasts' => $predictResult['forecasts'],
-            ]);
+            // -----------------------------------------
+            // 4. Return the forecast using the same
+            //    response structure as the dashboard
+            // -----------------------------------------
+            return $this->getDemandForecast($request);
 
         } catch (\Throwable $e) {
             \Log::error('Render ML API request failed', [
