@@ -687,7 +687,19 @@ class VendorController extends Controller
     }
     public function refreshDemandForecast(Request $request)
     {
-        $store = auth()->user()->store;
+        \Log::info('DEMAND REFRESH: method started');
+
+        $user = auth()->user();
+
+        \Log::info('DEMAND REFRESH: authenticated user', [
+            'user_id' => $user?->user_id,
+        ]);
+
+        $store = $user?->store;
+
+        \Log::info('DEMAND REFRESH: store loaded', [
+            'store_id' => $store?->store_id,
+        ]);
 
         if (!$store) {
             return response()->json([
