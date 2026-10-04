@@ -103,21 +103,21 @@ class VendorController extends Controller
         $data = [];
 
         if (strtolower($filter) === 'weekly') {
-            $grouped = $orders->groupBy(function($date) {
+            $grouped = $orders->groupBy(function ($date) {
                 return \Carbon\Carbon::parse($date->updated_at)->startOfWeek()->format('M d, Y');
             });
             foreach ($grouped as $key => $items) {
                 $data[] = ['period' => $key, 'total' => $items->sum('total_amount')];
             }
         } elseif (strtolower($filter) === 'monthly') {
-            $grouped = $orders->groupBy(function($date) {
+            $grouped = $orders->groupBy(function ($date) {
                 return \Carbon\Carbon::parse($date->updated_at)->format('M Y');
             });
             foreach ($grouped as $key => $items) {
                 $data[] = ['period' => $key, 'total' => $items->sum('total_amount')];
             }
         } else {
-            $grouped = $orders->groupBy(function($date) {
+            $grouped = $orders->groupBy(function ($date) {
                 return \Carbon\Carbon::parse($date->updated_at)->format('M d');
             });
             foreach ($grouped as $key => $items) {
@@ -126,7 +126,7 @@ class VendorController extends Controller
         }
 
         // Sort chronologically using Carbon parse on period
-        usort($data, function($a, $b) {
+        usort($data, function ($a, $b) {
             return \Carbon\Carbon::parse($a['period'])->timestamp <=> \Carbon\Carbon::parse($b['period'])->timestamp;
         });
 
@@ -191,16 +191,16 @@ class VendorController extends Controller
             // Calculate Summary
             $summary = [
                 'total_products' => $products->count(),
-                'available_products' => $products->where('status', 'active')->sum(function($prod) {
+                'available_products' => $products->where('status', 'active')->sum(function ($prod) {
                     if (is_array($prod->variants) && count($prod->variants) > 0) {
                         return collect($prod->variants)->sum('quantity');
                     }
                     return $prod->stock_quantity ?? 0;
                 }),
                 'archived_products' => $products->where('status', 'archived')->count(),
-                'inventory_value' => $products->where('status', 'active')->sum(function($prod) {
+                'inventory_value' => $products->where('status', 'active')->sum(function ($prod) {
                     if (is_array($prod->variants) && count($prod->variants) > 0) {
-                        return collect($prod->variants)->sum(function($v) {
+                        return collect($prod->variants)->sum(function ($v) {
                             return ($v['price'] ?? 0) * ($v['quantity'] ?? 0);
                         });
                     }
@@ -247,16 +247,16 @@ class VendorController extends Controller
             // Calculate Summary
             $summary = [
                 'total_products' => $products->count(),
-                'available_products' => $products->where('status', 'active')->sum(function($prod) {
+                'available_products' => $products->where('status', 'active')->sum(function ($prod) {
                     if (is_array($prod->variants) && count($prod->variants) > 0) {
                         return collect($prod->variants)->sum('quantity');
                     }
                     return $prod->stock_quantity ?? 0;
                 }),
                 'archived_products' => $products->where('status', 'archived')->count(),
-                'inventory_value' => $products->where('status', 'active')->sum(function($prod) {
+                'inventory_value' => $products->where('status', 'active')->sum(function ($prod) {
                     if (is_array($prod->variants) && count($prod->variants) > 0) {
-                        return collect($prod->variants)->sum(function($v) {
+                        return collect($prod->variants)->sum(function ($v) {
                             return ($v['price'] ?? 0) * ($v['quantity'] ?? 0);
                         });
                     }
@@ -318,9 +318,11 @@ class VendorController extends Controller
             $osmFailed = false;
 
             for ($x = $startTileX; $x <= $endTileX; $x++) {
-                if ($osmFailed) break;
+                if ($osmFailed)
+                    break;
                 for ($y = $startTileY; $y <= $endTileY; $y++) {
-                    if ($osmFailed) break;
+                    if ($osmFailed)
+                        break;
                     $tileUrl = "https://tile.openstreetmap.org/{$zoom}/{$x}/{$y}.png";
                     try {
                         $response = \Illuminate\Support\Facades\Http::timeout(1.5)
@@ -360,9 +362,12 @@ class VendorController extends Controller
 
             // Pin Triangle
             $points = [
-                (int) round($centerX - $r * 0.8), (int) round($pinY + $r * 0.4),
-                (int) round($centerX + $r * 0.8), (int) round($pinY + $r * 0.4),
-                $centerX, $centerY
+                (int) round($centerX - $r * 0.8),
+                (int) round($pinY + $r * 0.4),
+                (int) round($centerX + $r * 0.8),
+                (int) round($pinY + $r * 0.4),
+                $centerX,
+                $centerY
             ];
             imagefilledpolygon($canvas, $points, $red);
             imagefilledellipse($canvas, $centerX, $pinY, $r * 2, $r * 2, $red);
@@ -455,14 +460,16 @@ class VendorController extends Controller
             $user = auth()->user();
             $store = $user->store;
 
-            $categories = \App\Models\Category::withCount(['products' => function ($query) use ($store) {
-                $query->where('store_id', $store->store_id)
-                      ->where('status', '!=', 'archived');
-            }])
-            ->where(function ($query) use ($store) {
-                $query->whereNull('store_id')->orWhere('store_id', $store->store_id);
-            })
-            ->orderBy('category_name')->get();
+            $categories = \App\Models\Category::withCount([
+                'products' => function ($query) use ($store) {
+                    $query->where('store_id', $store->store_id)
+                        ->where('status', '!=', 'archived');
+                }
+            ])
+                ->where(function ($query) use ($store) {
+                    $query->whereNull('store_id')->orWhere('store_id', $store->store_id);
+                })
+                ->orderBy('category_name')->get();
 
             $mapUrl = $this->generateMapImage($store->latitude, $store->longitude);
 
@@ -524,6 +531,8 @@ class VendorController extends Controller
             );
             if ($salesStats->cnt < 30 || $salesStats->distinct_dates < 3) {
                 $warningMessage = 'Limited historical sales data. Forecast may be inaccurate. Continue recording sales for more accurate results.';
+            } else {
+                $warningMessage = 'Forecast accuracy could not be verified. Continue recording sales for better predictions.';
             }
         }
 
@@ -591,11 +600,13 @@ class VendorController extends Controller
             );
             if ($salesStats->cnt < 30 || $salesStats->distinct_dates < 3) {
                 $warningMessage = 'Limited historical sales data. Forecast may be inaccurate. Continue recording sales for more accurate results.';
+            } else {
+                $warningMessage = 'Forecast accuracy could not be verified. Continue recording sales for better predictions.';
             }
         }
 
         // Logic for restock alert: highest predicted demand / current stock
-        $restockCandidate = $forecasts->sortByDesc(function($f) {
+        $restockCandidate = $forecasts->sortByDesc(function ($f) {
             return $f->inventory->stock_quantity > 0
                 ? ($f->predicted_quantity / $f->inventory->stock_quantity)
                 : 9999;
@@ -655,14 +666,14 @@ class VendorController extends Controller
         $month = $now->month;
         $day = $now->day;
 
-        $currentSeason = match(true) {
+        $currentSeason = match (true) {
             in_array($month, [3, 4, 5]) => 'Summer',
             in_array($month, [6, 7, 8, 9, 10]) => 'Rainy',
             in_array($month, [11, 12, 1, 2]) => 'Amihan',
             default => 'Unknown',
         };
 
-        $currentHoliday = match(true) {
+        $currentHoliday = match (true) {
             $month == 12 && $day >= 16 => 'Christmas',
             ($month == 12 && $day == 31) || ($month == 1 && $day <= 2) => 'New Year',
             $month == 2 && $day >= 13 && $day <= 15 => 'Valentines',

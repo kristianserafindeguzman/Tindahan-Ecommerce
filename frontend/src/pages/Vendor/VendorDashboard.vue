@@ -382,6 +382,8 @@ const dashboardDict = {
     forecastErrorSub: "We couldn't load predictions right now.",
     forecastEmptyTitle: 'Collecting trends',
     forecastEmptySub: 'A few more completed orders are needed to predict your fast-moving items.',
+    notifyForecastRefreshed: "Demand forecast for today's sales refreshed successfully!",
+    notifyForecastFailed: "Couldn't refresh forecast. Please try again.",
     pcs: 'pcs',
     demandHigh: 'High demand',
     demandSteady: 'Steady sales',
@@ -445,6 +447,8 @@ const dashboardDict = {
     forecastErrorSub: 'Hindi ma-load ang mga prediction ngayon.',
     forecastEmptyTitle: 'Kinukuha pa ang trends',
     forecastEmptySub: 'Kailangan pa ng ilang order para mahulaan ang mga mabilis mabentang paninda.',
+    notifyForecastRefreshed: 'Matagumpay na na-refresh ang demand forecast para sa benta ngayong araw!',
+    notifyForecastFailed: 'Hindi ma-refresh ang forecast. Subukan ulit.',
     pcs: 'piraso',
     demandHigh: 'Mataas ang demand',
     demandSteady: 'Steady ang benta',
@@ -884,12 +888,14 @@ const refreshForecast = async () => {
       mlForecast.value.summary = data.summary
       mlForecast.value.top_products = data.top_products || []
       mlForecast.value.generated_at = data.generated_at
+      $q.notify({ type: 'positive', icon: 'o_check_circle', message: t('notifyForecastRefreshed') })
     } else {
       console.warn('Forecast refresh returned no forecast:', data)
     }
 
   } catch (err) {
     console.error('Failed to refresh forecast:', err)
+    $q.notify({ type: 'negative', icon: 'o_warning', message: t('notifyForecastFailed') })
   } finally {
     mlForecast.value.refreshing = false
   }

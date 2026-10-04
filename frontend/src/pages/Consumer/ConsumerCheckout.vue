@@ -118,7 +118,9 @@
             <div class="location-required-body">
               <div class="location-required-title">{{ t('Store is currently closed') }}</div>
               <div class="location-required-text">
-                {{ storeDetails.scheduleStatusText }}. {{ t('You cannot place an order right now.') }}
+                {{ storeDetails.scheduleStatusText }}.
+                <span v-if="pickupOption === 'schedule' && confirmedSlot">{{ t('This store is currently closed, but you can schedule a pickup for later.') }}</span>
+                <span v-else>{{ t('You cannot place an order right now.') }}</span>
               </div>
             </div>
           </div>
@@ -513,11 +515,14 @@ const checkoutItemCount = computed(() => checkoutItems.value.reduce((sum, item) 
 // The server rejects the whole order if one reservation lapsed, so block before the form is filled in.
 const hasExpiredItems = computed(() => checkoutItems.value.some(hasExpired))
 
-const orderBlocked = computed(() =>
-  hasExpiredItems.value ||
-  !hasConsumerLocation.value ||
-  Boolean(storeDetails.value && !storeDetails.value.isOpen)
-)
+const orderBlocked = computed(() => {
+  const storeClosed = Boolean(storeDetails.value && !storeDetails.value.isOpen)
+  const hasScheduledPickup = pickupOption.value === 'schedule' && confirmedSlot.value
+
+  return hasExpiredItems.value ||
+    !hasConsumerLocation.value ||
+    (storeClosed && !hasScheduledPickup)
+})
 
 // Mobile/tablet: sticky checkout bar replaces the Order Summary sidebar.
 const showCheckoutBar = computed(() => $q.screen.lt.md && !loading.value && !orderPlaced.value && checkoutItems.value.length > 0)

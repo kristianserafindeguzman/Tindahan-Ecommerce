@@ -356,7 +356,7 @@ class CartController extends Controller
         $storeId = $request->input('store_id');
 
         $store = Store::findOrFail($storeId);
-        if (!$storeHoursService->isOpen($store)) {
+        if (!$request->filled('scheduled_pickup_at') && !$storeHoursService->isOpen($store)) {
             return response()->json([
                 'message' => 'This store is currently closed. Please try again during operating hours.',
                 'error_code' => 'STORE_CLOSED',
