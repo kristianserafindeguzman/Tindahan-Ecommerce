@@ -712,6 +712,11 @@ class VendorController extends Controller
 
         $mlApiUrl = rtrim(env('ML_API_URL'), '/');
 
+        \Log::info('DEMAND REFRESH: ML API URL', [
+            'url' => $mlApiUrl,
+            'store_id' => $storeId,
+        ]);
+
         if (!$mlApiUrl) {
             return response()->json([
                 'message' => 'ML API is not configured.',
@@ -723,8 +728,18 @@ class VendorController extends Controller
             // -----------------------------------------
             // 1. Train the store-specific model on Render
             // -----------------------------------------
+            \Log::info('DEMAND REFRESH: calling Render training', [
+                'store_id' => $storeId,
+            ]);
+
             $trainResponse = Http::timeout(300)
                 ->post("{$mlApiUrl}/train/demand?store_id={$storeId}");
+
+            \Log::info('DEMAND REFRESH: Render training response', [
+                'store_id' => $storeId,
+                'status' => $trainResponse->status(),
+                'body' => $trainResponse->body(),
+            ]);
 
             if (!$trainResponse->successful()) {
                 return response()->json([
@@ -747,8 +762,18 @@ class VendorController extends Controller
             // -----------------------------------------
             // 2. Generate the forecast on Render
             // -----------------------------------------
+            \Log::info('DEMAND REFRESH: calling Render prediction', [
+                'store_id' => $storeId,
+            ]);
+
             $predictResponse = Http::timeout(120)
                 ->post("{$mlApiUrl}/predict/demand?store_id={$storeId}");
+
+            \Log::info('DEMAND REFRESH: Render prediction response', [
+                'store_id' => $storeId,
+                'status' => $predictResponse->status(),
+                'body' => $predictResponse->body(),
+            ]);
 
             if (!$predictResponse->successful()) {
                 return response()->json([
