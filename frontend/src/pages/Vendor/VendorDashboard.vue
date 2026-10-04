@@ -497,7 +497,7 @@ const getStatusTone = (status) => {
 const translateStatus = (status) => {
   if (!status) return ''
   const key = String(status).toLowerCase().trim().replace(/[\s-]+/g, '_')
-  
+
   const statusDict = {
     en: {
       placed: 'Placed',
@@ -874,15 +874,20 @@ onMounted(async () => {
 
 const refreshForecast = async () => {
   mlForecast.value.refreshing = true
+
   try {
     const { data } = await api.post('/vendor/demand-forecast/refresh')
-    if (data) {
-      mlForecast.value.has_forecast = data.has_forecast
+
+    if (data?.has_forecast) {
+      mlForecast.value.has_forecast = true
       mlForecast.value.low_data_warning = data.low_data_warning || false
       mlForecast.value.summary = data.summary
       mlForecast.value.top_products = data.top_products || []
       mlForecast.value.generated_at = data.generated_at
+    } else {
+      console.warn('Forecast refresh returned no forecast:', data)
     }
+
   } catch (err) {
     console.error('Failed to refresh forecast:', err)
   } finally {
