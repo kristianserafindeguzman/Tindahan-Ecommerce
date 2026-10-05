@@ -1,14 +1,43 @@
 <template>
   <!-- A store's full profile in a wide dialog: the profile scrolls, Close sits over the photo, and the page's buttons stay at the foot. -->
   <q-dialog v-model="open">
-    <q-card class="vp-dialog spd">
+    <q-card class="vp-dialog spd" :class="{ 'spd--reports': $slots.reports }">
+      <q-tabs
+        v-if="$slots.reports"
+        v-model="tab"
+        dense
+        no-caps
+        align="left"
+        active-color="primary"
+        indicator-color="primary"
+        class="spd-tabs"
+      >
+        <q-tab
+          name="profile"
+          icon="o_storefront"
+          :label="lang === 'ph' ? 'Profile ng tindahan' : 'Store profile'"
+        />
+        <q-tab
+          name="sales"
+          icon="o_show_chart"
+          :label="lang === 'ph' ? 'Performance ng benta' : 'Sales performance'"
+        />
+      </q-tabs>
       <div class="spd-scroll">
-        <StoreProfile v-bind="$attrs">
+        <StoreProfile
+          v-if="!$slots.reports || tab === 'profile'"
+          v-bind="$attrs"
+        >
           <template v-if="$slots.badge" #badge><slot name="badge" /></template>
           <template v-if="$slots.notice" #notice
             ><slot name="notice"
           /></template>
         </StoreProfile>
+        <slot
+          v-if="$slots.reports && tab === 'sales'"
+          name="reports"
+          :active="open && tab === 'sales'"
+        />
       </div>
 
       <q-btn
@@ -30,11 +59,19 @@
 
 <script setup>
 import StoreProfile from '@/components/shared/StoreProfile.vue'
+import { ref, watch } from 'vue'
+import { useLanguage } from '@/composables/useLanguage'
 
 // Every attribute is the store's details, passed straight to the profile rather than to the dialog.
 defineOptions({ inheritAttrs: false })
 
 const open = defineModel({ type: Boolean, default: false })
+const props = defineProps({ initialTab: { type: String, default: 'profile' } })
+const tab = ref(props.initialTab)
+const { lang } = useLanguage()
+watch(open, value => {
+  if (value) tab.value = props.initialTab
+})
 </script>
 
 <style scoped>
@@ -80,6 +117,19 @@ const open = defineModel({ type: Boolean, default: false })
   flex-shrink: 0;
 
   border-top: 1px solid var(--c-hairline);
+}
+
+.spd-tabs {
+  flex-shrink: 0;
+  padding: 10px 60px 0 16px;
+  border-bottom: 1px solid var(--c-hairline);
+  color: var(--c-muted);
+}
+.spd--reports .spd-close {
+  top: 16px;
+  right: 16px;
+  background: var(--c-surface);
+  box-shadow: none;
 }
 
 @media (max-width: 600px) {

@@ -42,8 +42,8 @@
           @click="select(notif)"
         >
           <q-item-section>
-            <q-item-label class="notif__title">{{ notif.title }}</q-item-label>
-            <q-item-label caption class="notif__body">{{ notif.message }}</q-item-label>
+            <q-item-label class="notif__title">{{ consumerNotificationText(notif, t).title }}</q-item-label>
+            <q-item-label caption class="notif__body">{{ consumerNotificationText(notif, t).message }}</q-item-label>
           </q-item-section>
         </q-item>
       </q-list>
@@ -68,6 +68,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
+import { consumerNotificationText } from '@/utils/notificationPresentation'
 import {
   NOTIFICATION_READ_STATE_EVENT,
   applyNotificationReadState,

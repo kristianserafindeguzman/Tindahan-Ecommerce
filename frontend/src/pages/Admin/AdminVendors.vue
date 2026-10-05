@@ -11,6 +11,8 @@
         :loading="loading"
       />
 
+      <VendorPerformance :vendors-loading="loading" @view="openPerformance" />
+
       <div class="vp-card">
         <div class="vp-toolbar adm-toolbar">
           <q-input
@@ -329,6 +331,7 @@
     <StoreProfileDialog
       v-if="viewing"
       v-model="viewOpen"
+      :initial-tab="viewTab"
       :name="viewing.store_name"
       :owner="viewing.full_name"
       :photo="viewing.store_picture_url"
@@ -394,6 +397,9 @@
             </q-list>
           </q-menu>
         </q-btn>
+      </template>
+      <template #reports="{ active: reportActive }">
+        <VendorSalesReport :key="`${viewing.store_id}:${performanceRange?.startDate || ''}:${performanceRange?.endDate || ''}`" :store-id="viewing.store_id" :store-name="viewing.store_name" :initial-start="performanceRange?.startDate" :initial-end="performanceRange?.endDate" :active="reportActive" />
       </template>
     </StoreProfileDialog>
 
@@ -514,6 +520,8 @@ import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 import AdminHero from '@/components/admin/AdminHero.vue'
 import AccountStatusDialog from '@/components/admin/AccountStatusDialog.vue'
 import StoreProfileDialog from '@/components/shared/StoreProfileDialog.vue'
+import VendorSalesReport from '@/components/admin/VendorSalesReport.vue'
+import VendorPerformance from '@/components/admin/VendorPerformance.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import {
   accountStatusTone,
@@ -710,6 +718,8 @@ const isExporting = ref(false)
 const statusDialog = ref(null)
 const viewing = ref(null)
 const viewOpen = ref(false)
+const viewTab = ref('profile')
+const performanceRange = ref(null)
 
 const photoOf = vendor => {
   const url = vendor?.store_picture_url
@@ -856,8 +866,24 @@ const openProducts = async (vendor) => {
 }
 
 const openView = vendor => {
+  performanceRange.value = null
+  viewTab.value = 'profile'
   viewing.value = vendor
   viewOpen.value = true
+}
+
+const openPerformance = async ({ storeId, startDate, endDate }) => {
+  let vendor = vendors.value.find(item => item.store_id === storeId && !item.deleted)
+  if (!vendor) {
+    await fetchVendors()
+    vendor = vendors.value.find(item => item.store_id === storeId && !item.deleted)
+  }
+  if (vendor) {
+    performanceRange.value = { startDate, endDate }
+    viewTab.value = 'sales'
+    viewing.value = vendor
+    viewOpen.value = true
+  }
 }
 
 const changeStatus = (vendor, status) => {
@@ -944,7 +970,7 @@ onMounted(fetchVendors)
 
 .vd-table th {
   padding: 12px 16px;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   font-weight: 700;
@@ -958,12 +984,13 @@ onMounted(fetchVendors)
   border-bottom: 1px solid var(--c-hairline, #f1f5f9);
 }
 
-.vd-table .col-store { width: 27%; }
-.vd-table .col-contact { width: 23%; }
-.vd-table .col-stat { width: 9%; }
-.vd-table .col-date { width: 14%; }
-.vd-table .col-status { width: 12%; }
-.vd-table .col-actions { width: 15%; }
+.vd-table .col-store { width: 25%; }
+.vd-table .col-contact { width: 21%; }
+.vd-table .col-stat { width: 8%; }
+.vd-table .col-date { width: 13%; }
+.vd-table .col-status { width: 11%; }
+.vd-table .col-actions { width: 14%; }
+.vd-table tr:last-child td { border-bottom: 0; }
 
 /* ALL-ICON UNIFIED ACTION GROUP */
 .vd-icon-action-group {
@@ -998,8 +1025,8 @@ onMounted(fetchVendors)
 
 /* COMPACT MENU POPUP */
 :deep(.compact-status-menu) {
-  border-radius: 8px !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  border-radius: var(--r-control) !important;
+  box-shadow: var(--sh-pop) !important;
   border: 1px solid var(--c-hairline, #e2e8f0);
   background: var(--c-surface, #ffffff) !important;
 }
@@ -1032,19 +1059,19 @@ onMounted(fetchVendors)
 }
 
 .compact-menu-item--danger {
-  color: #dc2626 !important;
+  color: var(--c-danger) !important;
 }
 
 .compact-menu-item--danger .compact-menu-avatar {
-  color: #dc2626 !important;
+  color: var(--c-danger) !important;
 }
 
 /* PRODUCTS MODAL */
 .products-compact-dialog {
   width: 820px;
   max-width: 94vw;
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  border-radius: var(--r-surface);
+  box-shadow: var(--sh-pop);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1059,9 +1086,9 @@ onMounted(fetchVendors)
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-control);
   background: var(--c-brand-tint, rgba(201, 35, 42, 0.08));
   color: var(--c-brand, #c9232a);
 }
@@ -1186,81 +1213,81 @@ onMounted(fetchVendors)
 <style>
 body.body--dark.admin-dark-mode .vp-dialog,
 body.body--dark.admin-dark-mode .products-compact-dialog {
-  background: #181b20 !important;
-  border: 1px solid #262a32 !important;
+  background: var(--c-surface) !important;
+  border: 1px solid var(--c-border) !important;
 }
 
 body.body--dark.admin-dark-mode .products-dialog-head {
-  background: #181b20 !important;
-  border-color: #262a32 !important;
+  background: var(--c-surface) !important;
+  border-color: var(--c-border) !important;
 }
 
 body.body--dark.admin-dark-mode .products-dialog-foot {
-  background: #1f2329 !important;
-  border-color: #262a32 !important;
+  background: var(--c-surface-2) !important;
+  border-color: var(--c-border) !important;
 }
 
 body.body--dark.admin-dark-mode .live-prod-table th {
-  background: #1f2329 !important;
-  border-color: #262a32 !important;
-  color: #94a3b8 !important;
+  background: var(--c-surface-2) !important;
+  border-color: var(--c-border) !important;
+  color: var(--c-muted) !important;
 }
 
 body.body--dark.admin-dark-mode .live-prod-table td {
-  border-color: #262a32 !important;
-  color: #f1f5f9 !important;
+  border-color: var(--c-border) !important;
+  color: var(--c-text) !important;
 }
 
 body.body--dark.admin-dark-mode .text-muted-themed,
 body.body--dark.admin-dark-mode .adm-sub {
-  color: #94a3b8 !important;
+  color: var(--c-muted) !important;
 }
 
 body.body--dark.admin-dark-mode .dialog-title-text,
 body.body--dark.admin-dark-mode .vp-name,
 body.body--dark.admin-dark-mode .adm-email {
-  color: #f8fafc !important;
+  color: var(--c-text) !important;
 }
 
 body.body--dark.admin-dark-mode .live-prod-thumb {
-  background: #20242b !important;
-  border-color: #2a2e35 !important;
+  background: var(--c-surface-2) !important;
+  border-color: var(--c-border) !important;
 }
 
 body.body--dark.admin-dark-mode .vp-dialog-close-float {
-  background: rgba(30, 34, 40, 0.94) !important;
-  color: #94a3b8 !important;
+  background: var(--c-surface-2) !important;
+  color: var(--c-muted) !important;
 }
 
 body.body--dark.admin-dark-mode .compact-status-menu {
-  background: #181b20 !important;
-  border-color: #262a32 !important;
+  background: var(--c-surface) !important;
+  border-color: var(--c-border) !important;
 }
 
 body.body--dark.admin-dark-mode .compact-menu-item {
-  color: #e2e8f0 !important;
+  color: var(--c-text-2) !important;
 }
 
 body.body--dark.admin-dark-mode .compact-menu-item:hover {
-  background: #20242b !important;
+  background: var(--c-surface-2) !important;
 }
 
 /* Status badges */
 body.body--dark.admin-dark-mode .vp-status--success {
-  background: rgba(21, 128, 61, 0.22) !important;
-  color: #4ade80 !important;
+  background: var(--c-success-tint) !important;
+  color: var(--c-success) !important;
   border: 1px solid rgba(74, 222, 128, 0.4) !important;
 }
 
 body.body--dark.admin-dark-mode .vp-status--neutral {
-  background: rgba(100, 116, 139, 0.22) !important;
-  color: #94a3b8 !important;
+  background: var(--c-surface-2) !important;
+  color: var(--c-muted) !important;
   border: 1px solid rgba(148, 163, 184, 0.3) !important;
 }
 
 body.body--dark.admin-dark-mode .vp-status--danger {
-  background: rgba(220, 38, 38, 0.22) !important;
-  color: #f87171 !important;
+  background: var(--c-danger-tint) !important;
+  color: var(--c-danger) !important;
   border: 1px solid rgba(248, 113, 113, 0.4) !important;
 }
 </style>

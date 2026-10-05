@@ -128,7 +128,7 @@
           <div class="db-panel-head">
             <h2 class="db-panel-title dialog-title-text">
               <span class="db-panel-icon vp-tone--brand">
-                <q-icon name="o_insights" size="18px" />
+                <q-icon name="o_bar_chart" size="18px" />
               </span>
               {{ t('platformOverview') }}
             </h2>
@@ -145,7 +145,7 @@
             <q-skeleton v-if="loading" type="rect" height="240px" />
             <VueApexCharts
               v-else
-              type="area"
+              type="bar"
               height="240"
               width="100%"
               :options="overviewOptions"
@@ -566,7 +566,8 @@ const overviewOptions = computed(() => {
   const isDark = $q.dark.isActive
   return {
     chart: {
-      type: 'area',
+      type: 'bar',
+      stacked: false,
       background: 'transparent',
       toolbar: { show: false },
       zoom: { enabled: false },
@@ -575,45 +576,47 @@ const overviewOptions = computed(() => {
     colors: [VENDOR_COLOR, CONSUMER_COLOR],
     dataLabels: { enabled: false },
     legend: { show: false },
-    stroke: { curve: 'smooth', width: 2.5 },
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: isDark ? 0.45 : 0.32,
-        opacityTo: 0.04,
-        stops: [0, 90, 100]
+    plotOptions: {
+      bar: {
+        horizontal: false,
+        columnWidth: '55%',
+        borderRadius: 3,
+        borderRadiusApplication: 'end'
       }
     },
-    markers: { size: 3, strokeWidth: 0, hover: { size: 5 } },
+    stroke: { show: true, width: 2, colors: ['transparent'] },
+    fill: { opacity: 1 },
     grid: {
-      borderColor: isDark ? '#262a32' : '#f0ebe7',
+      borderColor: isDark ? '#24314e' : '#f0ebe7',
       strokeDashArray: 3,
       padding: { left: 8, right: 8, top: 0, bottom: 0 }
     },
     xaxis: {
       categories: overviewDays.value.map(day =>
-        day.toLocaleDateString(currentLocale.value, { weekday: 'long' })
+        day.toLocaleDateString(currentLocale.value, { weekday: 'short' })
       ),
       axisBorder: { show: false },
       axisTicks: { show: false },
       labels: {
-        rotate: -20,
+        rotate: 0,
         rotateAlways: false,
         hideOverlappingLabels: true,
-        style: { colors: isDark ? '#94a3b8' : '#77716d', fontSize: '10.5px' }
+        style: { colors: isDark ? '#9fb1d1' : '#77716d', fontSize: '11px' }
       }
     },
     yaxis: {
       min: 0,
       forceNiceScale: true,
+      decimalsInFloat: 0,
       labels: {
         formatter: value => Math.round(value),
-        style: { colors: isDark ? '#94a3b8' : '#77716d', fontSize: '11px' }
+        style: { colors: isDark ? '#9fb1d1' : '#77716d', fontSize: '11px' }
       }
     },
     tooltip: {
       theme: isDark ? 'dark' : 'light',
+      shared: true,
+      intersect: false,
       y: { formatter: value => `${value}` }
     }
   }

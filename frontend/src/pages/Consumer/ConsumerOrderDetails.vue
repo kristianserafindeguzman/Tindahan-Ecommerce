@@ -249,48 +249,27 @@
         <q-card class="receipt-dialog-card">
           <q-btn flat round dense icon="close" class="receipt-close-btn" :aria-label="t('Close receipt')" v-close-popup />
 
-          <div class="receipt-icon-circle">
-            <q-icon name="o_storefront" size="26px" />
-          </div>
-
+          <div class="receipt-logo-frame"><img src="@/assets/tindahan-black.png" alt="Tindahan" class="receipt-logo" /></div>
+          <div class="receipt-document-title">{{ t('Order receipt') }}</div>
           <div class="receipt-store-name">{{ order?.store?.store_name }}</div>
-          <div v-if="order?.store?.address" class="receipt-store-address">
-            <q-icon name="o_location_on" size="12px" />
-            {{ order.store.address }}
-          </div>
-
-          <div class="receipt-ref-row">
-            <span class="receipt-ref-badge">{{ t('ORDER') }} <strong class="receipt-ref-number">#{{ order?.order_id }}</strong></span>
-          </div>
-
-          <div class="receipt-date-banner">
-            <q-icon name="o_calendar_month" size="14px" />
-            <span>{{ formatReceiptDateParts(order?.created_at) }}</span>
-          </div>
-
-          <div class="receipt-items-header">
-            <span>{{ t('Items') }}</span>
-            <span>{{ t('Amount') }}</span>
-          </div>
-
+          <div v-if="order?.store?.address" class="receipt-store-address">{{ order.store.address }}</div>
+          <div class="receipt-rule" />
+          <dl class="receipt-details">
+            <div><dt>{{ t('Order #') }}</dt><dd>{{ order?.order_id }}</dd></div>
+            <div><dt>{{ t('Date') }}</dt><dd>{{ formatReceiptDateParts(order?.created_at) }}</dd></div>
+            <div><dt>{{ t('Status') }}</dt><dd>{{ formatStatus(order?.status) }}</dd></div>
+          </dl>
+          <div class="receipt-rule" />
+          <div class="receipt-items-header"><span>{{ t('Qty') }}</span><span>{{ t('Item') }}</span><span>{{ t('Amount') }}</span></div>
           <div class="receipt-items">
             <div v-for="item in order?.items" :key="item.order_item_id" class="receipt-item-row">
-              <span class="receipt-item-qty">{{ item.quantity }}x</span>
-              <span class="receipt-item-name">
-                {{ item.inventory?.product_name || 'Product' }}
-                <template v-if="item.variant_name"> - {{ item.variant_name }}</template>
-              </span>
-              <span class="receipt-item-price">₱{{ formatNumber(item.subtotal) }}</span>
+              <span class="receipt-item-qty">{{ item.quantity }}</span>
+              <span class="receipt-item-name">{{ item.inventory?.product_name || t('Product') }}<span v-if="item.variant_name" class="receipt-item-variant">{{ item.variant_name }}</span><span v-if="item.unit_price != null" class="receipt-unit-price">@ PHP {{ formatNumber(item.unit_price) }}</span></span>
+              <span class="receipt-item-price">{{ formatNumber(item.subtotal) }}</span>
             </div>
           </div>
-
-          <q-separator class="receipt-divider" />
-
-          <div class="receipt-total-band">
-            <span>{{ t('Total') }}</span>
-            <span class="receipt-total-amount">₱{{ formatNumber(order?.total_amount) }}</span>
-          </div>
-
+          <div class="receipt-rule" />
+          <div class="receipt-total-band"><span>{{ t('Total') }}</span><span class="receipt-total-amount">PHP {{ formatNumber(order?.total_amount) }}</span></div>
           <div class="receipt-print-footer">{{ t('Thank you for shopping with Tindahan!') }}</div>
         </q-card>
 
@@ -1559,243 +1538,35 @@ onMounted(() => {
 }
 
 /* RECEIPT DIALOG */
-
-.receipt-dialog-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  gap: 16px;
-}
-
-.receipt-dialog-card {
-  position: relative;
-
-  width: 380px;
-  max-width: 92vw;
-
-  padding: 24px;
-
-  border-radius: var(--r-xl);
-  text-align: center;
-}
-
-.receipt-close-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-
-  color: var(--c-muted);
-}
-
-/* On phones the receipt's close button is a 44px thumb-sized target. */
-@media (max-width: 600px) {
-  .receipt-close-btn {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  .receipt-close-btn :deep(.q-icon) {
-    font-size: 26px;
-  }
-}
-
-.receipt-icon-circle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 52px;
-  height: 52px;
-  margin: 0 auto 14px;
-
-  border-radius: 999px !important;
-
-  background: var(--c-brand-tint);
-  color: var(--c-brand);
-}
-
-.receipt-store-name {
-  font-size: var(--fs-2xl);
-  font-weight: 700;
-
-  color: var(--c-text);
-}
-
-.receipt-store-address {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  gap: 4px;
-  margin-top: 4px;
-
-  font-size: var(--fs-sm);
-  line-height: 1.4;
-
-  color: var(--c-subtle);
-}
-
-.receipt-ref-row {
-  display: flex;
-  justify-content: center;
-
-  margin-top: 12px;
-}
-
-.receipt-ref-badge {
-  padding: 4px 12px;
-
-  border-radius: var(--r-sm);
-
-  background: var(--c-hairline);
-  color: var(--c-text-2);
-
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  letter-spacing: 0.03em;
-}
-
-.receipt-ref-number {
-  color: var(--c-brand);
-}
-
-.receipt-divider {
-  margin: 16px 0;
-
-  background: var(--c-hairline);
-}
-
-.receipt-date-banner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  gap: 8px;
-  margin-top: 14px;
-  padding: 10px 14px;
-
-  border-radius: var(--r-lg);
-
-  background: var(--c-surface);
-  color: var(--c-text-2);
-
-  font-size: var(--fs-xs);
-  font-weight: 600;
-
-  text-align: center;
-}
-
-.receipt-date-banner .q-icon {
-  color: var(--c-brand);
-}
-
-.receipt-items-header {
-  display: flex;
-  justify-content: space-between;
-
-  margin: 16px 0 10px;
-
-  font-size: var(--fs-2xs);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-
-  color: var(--c-muted);
-}
-
-.receipt-items {
-  display: flex;
-  flex-direction: column;
-
-  gap: 8px;
-}
-
-.receipt-item-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-
-  gap: 8px;
-
-  font-size: var(--fs-sm);
-
-  text-align: left;
-}
-
-.receipt-item-qty {
-  font-weight: 700;
-
-  color: var(--c-brand);
-}
-
-.receipt-item-name {
-  font-weight: 600;
-
-  color: var(--c-text);
-}
-
-.receipt-item-price {
-  font-weight: 700;
-
-  color: var(--c-text);
-}
-
-.receipt-total-band {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  margin-top: 4px;
-
-  font-size: var(--fs-xl);
-  font-weight: 700;
-
-  color: var(--c-text);
-}
-
-.receipt-total-amount {
-  color: var(--c-text);
-}
-
-.receipt-download-btn {
-  height: 46px;
-  padding: 0 28px;
-
-  border-radius: var(--r-pill);
-
-  background: #ffffff;
-  color: var(--c-text);
-
-  font-size: var(--fs-sm);
-  font-weight: 700;
-
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
-
-  transition: background-color 0.15s, transform 0.2s;
-}
-
-.receipt-download-btn :deep(.q-icon) {
-  margin-right: 0;
-
-  font-size: 18px;
-}
-
-.receipt-download-btn :deep(.q-btn__content) {
-  gap: 8px;
-}
-
-.receipt-download-btn:hover {
-  background: var(--c-hairline);
-
-  transform: translateY(-1px);
-}
-
-.receipt-print-footer {
-  display: none;
-}
+.receipt-dialog-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 400px; max-width: calc(100vw - 32px); }
+.receipt-dialog-card { position: relative; width: 100%; padding: 24px 28px 32px; border-radius: 3px; background: #fff; color: #242424; font-family: 'Courier New', Courier, monospace; text-align: center; box-shadow: 0 16px 48px rgba(0,0,0,0.2); }
+.receipt-dialog-card::after { content: ''; position: absolute; bottom: -8px; left: 0; right: 0; height: 10px; background: linear-gradient(135deg, #fff 5px, transparent 0) 0 0 / 12px 12px, linear-gradient(225deg, #fff 5px, transparent 0) 0 0 / 12px 12px; }
+.receipt-close-btn { position: absolute; top: 8px; right: 8px; color: #666; }
+.receipt-logo-frame { width: 150px; height: 80px; overflow: hidden; margin: 0 auto 4px; }
+.receipt-logo { display: block; width: 150px; height: 150px; margin-top: -36px; object-fit: contain; }
+.receipt-document-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; }
+.receipt-store-name { font-size: 17px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.receipt-store-address { margin-top: 5px; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.receipt-rule { border-top: 1px dashed #a3a3a3; margin: 16px 0; }
+.receipt-details { display: flex; flex-direction: column; gap: 6px; margin: 0; font-size: 11px; text-align: left; }
+.receipt-details > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.receipt-details dt { flex-shrink: 0; color: #666; }
+.receipt-details dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.receipt-items-header, .receipt-item-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; font-size: 12px; text-align: left; }
+.receipt-items-header { margin-bottom: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
+.receipt-items-header > span:last-child { text-align: right; }
+.receipt-items { display: flex; flex-direction: column; gap: 14px; }
+.receipt-item-row { align-items: start; line-height: 1.45; }
+.receipt-item-name { min-width: 0; overflow-wrap: anywhere; }
+.receipt-item-variant, .receipt-unit-price { display: block; color: #666; font-size: 10px; margin-top: 2px; }
+.receipt-item-price { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.receipt-total-band { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 15px; font-weight: 700; text-align: left; }
+.receipt-total-amount { font-size: 18px; font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+.receipt-print-footer { margin-top: 24px; padding-top: 16px; border-top: 1px dashed #a3a3a3; font-size: 11px; line-height: 1.6; text-align: center; color: #666; }
+.receipt-download-btn { width: 100%; min-height: 44px; border-radius: var(--r-control); background: var(--c-brand); color: #fff; font-size: var(--fs-sm); font-weight: 600; }
+.receipt-download-btn :deep(.q-btn__content) { gap: 8px; }
+.receipt-download-btn:hover { background: var(--c-brand-hover); }
+@media (max-width: 600px) { .receipt-dialog-card { padding: 24px 20px 28px; } .receipt-close-btn { width: 44px; height: 44px; min-width: 44px; min-height: 44px; } }
 
 /* PRINT — isolates the receipt card; positions are forced to `static` because Quasar's dialog transition leaves a `transform` on an ancestor that would break `position: fixed`. */
 
@@ -1845,6 +1616,7 @@ onMounted(() => {
     border-radius: 6px !important;
   }
 
+  .receipt-dialog-card::after,
   .receipt-close-btn,
   .receipt-download-btn {
     display: none !important;
