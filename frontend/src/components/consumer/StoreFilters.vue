@@ -40,7 +40,7 @@
       />
 
       <div class="clear-filters-row">
-        <span class="clear-filters-link" @click="$emit('clear')">{{ t('Clear all filters') }}</span>
+        <button type="button" class="clear-filters-link" @click="$emit('clear')">{{ t('Clear all filters') }}</button>
       </div>
     </div>
   </div>
@@ -271,6 +271,10 @@ const sort = defineModel('sort')
 }
 
 .clear-filters-link {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
   font-size: var(--fs-sm);
   font-weight: 500;
 
@@ -283,5 +287,14 @@ const sort = defineModel('sort')
 .clear-filters-link:hover {
   color: var(--c-brand-active);
   text-decoration: underline;
+}
+
+.clear-filters-link:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 3px;
+}
+
+.store-filters-sheet .filters-footer {
+  padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
 }
 </style>

@@ -91,6 +91,7 @@ async function renderAuth(file, overrides = {}) {
   for (const name of ['QSelect', 'QToggle']) app.component(name, { props: ['label'], setup: (props) => () => Vue.h('span', props.label) })
   app.component('BirthdayInput', { props: ['translate'], setup: (props) => () => Vue.h('span', props.translate('Birth Month')) })
   app.component('VendorLocationMap', { props: ['translate'], setup: (props) => () => Vue.h('span', props.translate('Your Location')) })
+  app.component('AddressAutocomplete', { render: () => null })
   for (const name of ['QIcon', 'QBtnToggle', 'TermsModal', 'PrivacyModal', 'ContactSupportModal', 'PhotoCropper']) app.component(name, { render: () => null })
   return renderToString(app)
 }
@@ -117,7 +118,7 @@ test('auth pages follow the Consumer language and restore their English view', a
 
 test('all auth pages expose the existing EN/FIL dropdown and preserve form values', async () => {
   for (const file of ['LoginPage.vue', 'consumer/ConsumerRegister.vue', 'consumer/ConsumerVerify.vue', 'consumer/ConsumerSuccess.vue', 'vendor/VendorRegister.vue', 'vendor/VendorRejected.vue', 'vendor/VendorUnderReview.vue']) {
-    const fields = { ownerName: 'Sample Owner', storeName: 'Sample Store', identifier: 'buyer@example.com', email: 'buyer@example.com', phoneNumber: '09123456789', password: 'SamePassword123', operatingDays: ['Mon'] }
+    const fields = { firstName: 'Sample', lastName: 'Owner', storeName: 'Sample Store', identifier: 'buyer@example.com', email: 'buyer@example.com', phoneNumber: '09123456789', password: 'SamePassword123', operatingDays: ['Mon'] }
     const state = { form: fields }
     language.setLanguage('en')
     const english = await renderAuth(file, state)
@@ -137,7 +138,8 @@ test('all auth pages expose the existing EN/FIL dropdown and preserve form value
 test('vendor registration translates steps, errors, location controls and dialogs without translating entered data', async () => {
   language.setLanguage('fil')
   const registration = await renderAuth('vendor/VendorRegister.vue', {
-    ownerNameTouched: true,
+    firstNameTouched: true,
+    lastNameTouched: true,
     phoneTouched: true,
     storeNameTouched: true,
     locationVisited: true,
@@ -150,12 +152,14 @@ test('vendor registration translates steps, errors, location controls and dialog
     registerError: 'Validation failed. Please check your inputs.',
     showCropModal: true,
     showSuccess: true,
-    form: { ownerName: 'Application Under Review', storeName: 'Your Store', detectedAddress: 'Store Location', phoneNumber: '09123456789', operatingDays: ['Mon'] },
+    ownerName: 'Application Under Review',
+    form: { firstName: 'Application', lastName: 'Under Review', storeName: 'Your Store', detectedAddress: 'Store Location', phoneNumber: '09123456789', operatingDays: ['Mon'] },
     finalAddress: 'Store Location'
   })
   for (const text of [
     'Step 1 sa 6',
-    'Ilagay ang pangalan ng store owner.',
+    'Ilagay ang pangalan mo.',
+    'Ilagay ang apelyido mo.',
     'Ilagay ang phone number mo.',
     'Ilagay ang store name.',
     'I-resend (0:12)',

@@ -129,6 +129,8 @@ export default {
   'Browse Products': 'Tingnan ang Products',
   'Show Map': 'Ipakita ang Map',
   Categories: 'Categories',
+  'Search...': 'Maghanap...',
+  'Filter stores': 'I-filter ang mga tindahan',
   'Stores near You': 'Stores Malapit sa Iyo',
   'Stores near you': 'Stores malapit sa iyo',
   'Discover Products': 'Mag-explore ng Products',

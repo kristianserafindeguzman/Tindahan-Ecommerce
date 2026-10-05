@@ -132,6 +132,7 @@
         <!-- FILTERS SIDEBAR (desktop) -->
         <aside v-if="filtersOpen && !isMobileFilters" class="filters-panel">
           <ProductFilters
+            v-model:search="filterSearch"
             v-model:category="selectedCategory"
             v-model:price-min="priceMin"
             v-model:price-max="priceMax"
@@ -154,6 +155,7 @@
         <q-card class="filters-dialog-card" :class="{ 'filters-dialog-card-sheet': isSheetFilters }">
           <div v-if="isSheetFilters" class="filters-drag-handle" />
           <ProductFilters
+            v-model:search="filterSearch"
             v-model:category="selectedCategory"
             v-model:price-min="priceMin"
             v-model:price-max="priceMax"
@@ -295,6 +297,7 @@ const SORT_OPTIONS = [
   { label: 'Price: High to Low', value: 'price_desc' }
 ]
 
+const filterSearch = ref('')
 const filtersOpen = ref(false)
 const selectedCategory = ref('All')
 const priceMin = ref(null)
@@ -314,6 +317,7 @@ const mobileFiltersOpen = computed({
 })
 
 const hasActiveFilters = computed(() =>
+  !!filterSearch.value?.trim() ||
   selectedCategory.value !== 'All' ||
   inStockOnly.value ||
   priceMin.value != null ||
@@ -322,7 +326,11 @@ const hasActiveFilters = computed(() =>
 )
 
 const filteredProducts = computed(() => {
+  const keyword = (filterSearch.value || '').trim().toLowerCase()
   const list = storeProducts.value.filter((product) => {
+    if (keyword && ![product.name, product.store].some(name =>
+      String(name || '').toLowerCase().includes(keyword)
+    )) return false
     if (selectedCategory.value !== 'All' && product.category !== selectedCategory.value) return false
     if (inStockOnly.value && !product.inStock) return false
     if (priceMin.value != null && product.price < priceMin.value) return false
@@ -352,12 +360,19 @@ const paginatedProducts = computed(() => {
 watch(filteredProducts, () => { currentPage.value = 1 })
 
 const clearFilters = () => {
+  filterSearch.value = ''
   selectedCategory.value = 'All'
   priceMin.value = null
   priceMax.value = null
   inStockOnly.value = false
   sortBy.value = 'popular'
 }
+
+watch(storeParam, () => {
+  clearFilters()
+  showProductModal.value = false
+  selectedProduct.value = null
+})
 </script>
 
 <style scoped>
@@ -841,6 +856,7 @@ const clearFilters = () => {
 
   max-width: 100%;
   max-height: 88vh;
+  max-height: 88dvh;
 
   border-radius: 16px 16px 0 0;
 }

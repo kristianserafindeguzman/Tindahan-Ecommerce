@@ -8,10 +8,12 @@ const loading = ref(false)
 // Callers in the same tick share one request, keyed by coordinates so an address change starts a fresh one.
 let inFlight = null
 let inFlightKey = null
+let latestRequest = 0
 
-const load = async (params) => {
+const load = async (params, requestId) => {
   try {
     const { data } = await api.get('/products', { params })
+    if (requestId !== latestRequest) return
     products.value = (data || []).map((product) => ({
       id: product.id,
       name: product.name,
@@ -30,6 +32,7 @@ const load = async (params) => {
       expiration_date: product.expiration_date
     }))
   } catch (error) {
+    if (requestId !== latestRequest) return
     console.error('Failed to load products', error)
     products.value = []
   }
@@ -48,7 +51,8 @@ export function useProducts() {
     inFlightKey = key
 
     // Cleared only by the newest request, so a superseded one cannot switch the spinner off early.
-    const promise = load(params).finally(() => {
+    const requestId = ++latestRequest
+    const promise = load(params, requestId).finally(() => {
       if (inFlight === promise) {
         inFlight = null
         inFlightKey = null

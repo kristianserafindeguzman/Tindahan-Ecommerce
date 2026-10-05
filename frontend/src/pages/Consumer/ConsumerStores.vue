@@ -436,6 +436,7 @@ const clearFilters = () => {
 
   max-width: 100%;
   max-height: 88vh;
+  max-height: 88dvh;
 
   border-radius: 16px 16px 0 0;
 }
