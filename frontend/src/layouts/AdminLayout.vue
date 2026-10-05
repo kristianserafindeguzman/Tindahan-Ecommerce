@@ -445,6 +445,7 @@ const handleLogout = () => logout()
   --c-warning-wash: rgba(251, 191, 36, 0.1);
   --c-success: #4ade80;
   --c-success-tint: rgba(74, 222, 128, 0.16);
+  --c-success-wash: rgba(74, 222, 128, 0.1);
   --c-info: #60a5fa;
   --c-info-tint: rgba(96, 165, 250, 0.16);
   --c-status-wait: #fbbf24;
@@ -1200,6 +1201,7 @@ const handleLogout = () => logout()
    DOM parent is <body>, not .admin-layout--dark — still inherits the same
    var(--c-*) tokens every vp-* rule and dialog already reads. */
 body.body--dark.admin-dark-mode {
+  --c-bg: #0a0f1e;
   --c-surface: #111a2e;
   --c-surface-2: #16213a;
   --c-text: #eef2fb;
@@ -1224,8 +1226,12 @@ body.body--dark.admin-dark-mode {
   --c-warning-tint: rgba(251, 191, 36, 0.16);
   --c-success: #4ade80;
   --c-success-tint: rgba(74, 222, 128, 0.16);
+  --c-success-wash: rgba(74, 222, 128, 0.1);
   --c-info: #60a5fa;
   --c-info-tint: rgba(96, 165, 250, 0.16);
+  background-color: var(--c-bg);
+  color: var(--c-text);
+  color-scheme: dark;
 }
 
 /* Every dialog card, whatever its own custom class — vp-dialog, spd (store
@@ -1233,9 +1239,61 @@ body.body--dark.admin-dark-mode {
    adm-form-dialog and so on all reduce to a plain <q-card> inside a
    <q-dialog>, so one generic selector reaches all of them, present or
    added later, instead of enumerating each page's own name for it. */
-body.body--dark.admin-dark-mode .q-dialog .q-card {
-  background-color: #111a2e !important;
-  color: #eef2fb !important;
+body.body--dark.admin-dark-mode .q-dialog .q-card,
+body.body--dark.admin-dark-mode .vp-card,
+body.body--dark.admin-dark-mode .q-menu {
+  background-color: var(--c-surface) !important;
+  border-color: var(--c-border) !important;
+  color: var(--c-text) !important;
+}
+
+/* These elements also live in Quasar's portals, outside the layout. */
+body.body--dark.admin-dark-mode .q-tooltip {
+  background-color: var(--c-surface-2);
+  color: var(--c-text);
+}
+
+body.body--dark.admin-dark-mode .apexcharts-tooltip.apexcharts-theme-dark,
+body.body--dark.admin-dark-mode .apexcharts-tooltip.apexcharts-theme-dark .apexcharts-tooltip-title {
+  background: var(--c-surface-2);
+  border-color: var(--c-border);
+  color: var(--c-text);
+}
+
+body.body--dark.admin-dark-mode .q-dialog .q-field__control {
+  background-color: var(--c-surface);
+}
+
+body.body--dark.admin-dark-mode .q-dialog .q-field__native,
+body.body--dark.admin-dark-mode .q-dialog .q-field__input,
+body.body--dark.admin-dark-mode .q-dialog .q-field__marginal {
+  color: var(--c-text);
+}
+
+body.body--dark.admin-dark-mode .q-dialog .q-field__label {
+  color: var(--c-muted);
+}
+
+body.body--dark.admin-dark-mode .q-dialog .q-field--outlined .q-field__control:before {
+  border-color: var(--c-border);
+}
+
+body.body--dark.admin-dark-mode .q-dialog .vp-chip {
+  background-color: var(--c-surface-2);
+  border-color: var(--c-border);
+  color: var(--c-muted);
+}
+
+body.body--dark.admin-dark-mode .q-dialog .vp-chip:hover {
+  border-color: var(--c-border-strong);
+  color: var(--c-text);
+}
+
+body.body--dark.admin-dark-mode .q-dialog .vp-chip--active,
+body.body--dark.admin-dark-mode .q-dialog .vp-chip--active:hover {
+  background-color: var(--c-brand-tint);
+  border-color: var(--c-brand);
+  color: var(--c-brand);
 }
 
 /* The store/consumer profile dialogs' own hardcoded white cards, and their

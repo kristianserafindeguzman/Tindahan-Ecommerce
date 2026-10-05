@@ -273,8 +273,8 @@
                         <q-icon :name="notificationPresentation(notif).icon" size="22px" />
                       </span>
                       <div class="cart-menu-item-info notification-menu-body">
-                        <div class="cart-menu-item-name notification-menu-title">{{ notif.title }}</div>
-                        <div class="cart-menu-item-meta notification-menu-message">{{ notif.message }}</div>
+                        <div class="cart-menu-item-name notification-menu-title">{{ consumerNotificationText(notif, t).title }}</div>
+                        <div class="cart-menu-item-meta notification-menu-message">{{ consumerNotificationText(notif, t).message }}</div>
                         <div class="notification-menu-time">{{ notificationTime(notif.created_at, t, locale.value) }}</div>
                       </div>
                     </button>
@@ -530,7 +530,7 @@ import NotificationsMenu from '@/components/consumer/NotificationsMenu.vue'
 import LanguageSwitcher from '@/components/consumer/LanguageSwitcher.vue'
 import ContextHint from '@/components/consumer/ContextHint.vue'
 import { useConsumerHints, HINT_LOCATION_SETUP } from '@/composables/useConsumerHints'
-import { notificationPresentation, notificationTime } from '@/utils/notificationPresentation'
+import { notificationPresentation, notificationTime, consumerNotificationText } from '@/utils/notificationPresentation'
 import {
   NOTIFICATION_READ_STATE_EVENT,
   applyNotificationReadState,

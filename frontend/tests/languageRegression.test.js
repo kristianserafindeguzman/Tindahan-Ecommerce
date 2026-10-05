@@ -10,6 +10,8 @@ import useFormChild from '../node_modules/quasar/src/composables/use-form/use-fo
 import { formKey } from '../node_modules/quasar/src/utils/private.symbols/symbols.js'
 import { isValidBirthday } from '../src/utils/birthday.js'
 import { useConsumerLanguage } from '../src/composables/useConsumerLanguage.js'
+import { notificationPresentation, notificationTime, consumerNotificationText } from '../src/utils/notificationPresentation.js'
+import { NOTIFICATION_READ_STATE_EVENT, applyNotificationReadState, publishNotificationReadState } from '../src/utils/notificationSync.js'
 
 const language = useConsumerLanguage()
 const vueExports = { ...Vue }
@@ -166,4 +168,94 @@ test('HTML language follows Consumer and auth routes and restores the original e
   app.unmount()
   assert.equal(document.documentElement.lang, 'en')
   language.setLanguage('en')
+})
+
+test('consumer notification filters, live translation and read actions preserve order navigation', async () => {
+  const previousWindow = globalThis.window
+  const previousStorage = globalThis.localStorage
+  globalThis.window = new EventTarget()
+  const saved = {}
+  globalThis.localStorage = { getItem: key => saved[key], setItem: (key, value) => { saved[key] = value } }
+  const notices = Array.from({ length: 23 }, (_, index) => ({ notification_id: index + 1, order_id: index + 1, title: 'Order Ready', message: `Your order #${index + 1} is ready for pickup at 'Nena Store'.`, created_at: new Date().toISOString(), is_read: false }))
+  notices.push({ notification_id: 24, order_id: 24, title: 'Order Cancelled', message: 'You successfully cancelled your order #24.', created_at: new Date().toISOString(), is_read: false })
+  const calls = []
+  const routes = []
+  const api = { get: async () => ({ data: notices }), patch: async url => { calls.push(url) }, post: async url => { calls.push(url) } }
+  const component = await loadComponent('../src/pages/Consumer/ConsumerNotifications.vue', {
+    useConsumerLanguage, useRouter: () => ({ push: path => routes.push(path) }), useQuasar: () => ({ notify() {} }),
+    SiteHeader: { render: () => null }, SiteFooter: { render: () => null }, api,
+    notificationPresentation, notificationTime, consumerNotificationText,
+    NOTIFICATION_READ_STATE_EVENT, applyNotificationReadState, publishNotificationReadState
+  })
+  const root = { children: [] }
+  const app = renderer.createApp(component)
+  app.config.warnHandler = () => {}
+  const nodes = node => [node, ...(node.children || []).flatMap(nodes)]
+  const findTab = label => nodes(root).find(node => node.props?.role === 'tab' && textContent(node).startsWith(label))
+  const rows = () => nodes(root).filter(node => node.props?.class?.includes('nt-item') && node.type === 'button')
+  try {
+    language.setLanguage('en')
+    app.mount(root)
+    await settle()
+    assert.equal(rows().length, 20)
+    findTab('Cancellations').props.onClick()
+    await settle()
+    assert.equal(rows().length, 1)
+    language.setLanguage('fil')
+    await settle()
+    assert.match(textContent(root), /Na-cancel mo na ang order #24/)
+    assert.match(textContent(root), /Mga kinansela/)
+    findTab('Hindi pa nabasa').props.onClick()
+    await settle()
+    assert.equal(rows().length, 20)
+    await rows()[0].props.onClick()
+    await settle()
+    assert.equal(notices[0].is_read, true)
+    assert.equal(saved.consumer_selected_order_id, 1)
+    assert.deepEqual(routes, ['/consumer/orders/details'])
+    assert.equal(calls[0], '/consumer/notifications/1/read')
+    nodes(root).find(node => node.props?.label === language.t('Mark all as read')).props.onClick()
+    await settle()
+    assert.ok(notices.every(notice => notice.is_read))
+    assert.equal(rows().length, 0)
+    assert.equal(calls.at(-1), '/consumer/notifications/read-all')
+  } finally {
+    app.unmount()
+    language.setLanguage('en')
+    globalThis.window = previousWindow
+    globalThis.localStorage = previousStorage
+  }
+})
+
+test('receipt displays the Tindahan logo and historical item amounts without changing the download gate', async () => {
+  const source = await readFile(new URL('../src/pages/Consumer/ConsumerOrderDetails.vue', import.meta.url), 'utf8')
+  const start = source.indexOf('<q-dialog v-model="showReceiptDialog">')
+  const template = source.slice(start, source.indexOf('</q-dialog>', start) + '</q-dialog>'.length)
+  const { code } = compile(template, { mode: 'function', prefixIdentifiers: true })
+  const order = Vue.reactive({ order_id: 42, status: 'picked_up', created_at: '2026-10-05T00:00:00Z', total_amount: 155.5, store: { store_name: 'Nena Store', address: 'Pasig City' }, items: [{ order_item_id: 1, quantity: 2, unit_price: 77.75, subtotal: 155.5, variant_name: 'Large', inventory: { product_name: 'Milk' } }] })
+  const root = { children: [] }
+  const app = renderer.createApp({ data: () => ({ order, showReceiptDialog: true, isExporting: false, t: language.t, formatNumber: value => Number(value).toFixed(2), formatReceiptDateParts: () => 'Oct 5, 2026', formatStatus: () => language.t('Picked Up'), downloadReceipt() {} }), render: new Function('Vue', code)(Vue) })
+  app.config.warnHandler = () => {}
+  app.directive('close-popup', {})
+  const nodes = node => [node, ...(node.children || []).flatMap(nodes)]
+  try {
+    language.setLanguage('en')
+    app.mount(root)
+    await settle()
+    assert.ok(nodes(root).some(node => node.type === 'img' && node.props?.alt === 'Tindahan' && node.props.src.includes('tindahan-black.png')))
+    assert.match(textContent(root), /Nena Store/)
+    assert.match(textContent(root), /Milk/)
+    assert.match(textContent(root), /Large/)
+    assert.match(textContent(root), /155\.50/)
+    assert.ok(nodes(root).some(node => node.props?.label === 'Download PDF'))
+    language.setLanguage('fil')
+    await settle()
+    assert.match(textContent(root), /Resibo ng order/)
+    order.status = 'preparing'
+    await settle()
+    assert.ok(!nodes(root).some(node => node.props?.label === language.t('Download PDF')))
+  } finally {
+    app.unmount()
+    language.setLanguage('en')
+  }
 })

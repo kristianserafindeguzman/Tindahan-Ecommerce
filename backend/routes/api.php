@@ -67,7 +67,9 @@ Route::middleware('auth:sanctum')->group(function () {
         // Vendors Management
         Route::get('/vendors', [AdminController::class, 'listVendors']);
         Route::get('/vendors/export', [AdminController::class, 'exportVendors']);
+        Route::get('/vendors/performance', [\App\Http\Controllers\AdminVendorSalesController::class, 'performance']);
         Route::get('/vendors/{storeId}/products', [AdminController::class, 'getVendorProducts']);
+        Route::get('/vendors/{storeId}/sales', [\App\Http\Controllers\AdminVendorSalesController::class, 'show']);
         Route::patch('/vendors/{userId}/status', [AdminController::class, 'updateVendorStatus']);
         Route::delete('/vendors/{userId}', [AdminController::class, 'deleteVendor']);
 
