@@ -494,10 +494,21 @@ class VendorController extends Controller
     {
         $store = auth()->user()->store;
 
-        // Get the active forecasts for this store
+        $latestForecastDate = \App\Models\DemandForecast::where('store_id', $store->store_id)
+            ->max('forecast_date');
+
+        if (!$latestForecastDate) {
+            return response()->json([
+                'has_forecast' => false,
+                'low_data_warning' => false,
+                'summary' => null,
+                'top_products' => []
+            ]);
+        }
+
         $forecasts = \App\Models\DemandForecast::with('inventory')
             ->where('store_id', $store->store_id)
-            ->whereDate('forecast_date', '>=', now()->subDays(7)->toDateString())
+            ->whereDate('forecast_date', $latestForecastDate)
             ->orderBy('predicted_quantity', 'desc')
             ->get();
 
@@ -509,6 +520,7 @@ class VendorController extends Controller
                 'top_products' => []
             ]);
         }
+
 
         $metricsPath = base_path("../ml/models/demand_model_{$store->store_id}_metrics.json");
         $warningMessage = null;
