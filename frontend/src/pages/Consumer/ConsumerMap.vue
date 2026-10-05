@@ -15,6 +15,11 @@
           <div class="map-address-text">{{ address || t('Enter Address') }}</div>
         </div>
 
+        <div class="map-status-legend">
+          <span><span class="map-status-dot map-status-dot-open" />{{ t('Open') }}</span>
+          <span><span class="map-status-dot map-status-dot-closed" />{{ t('Closed') }}</span>
+        </div>
+
         <div class="map-controls">
           <q-btn round unelevated class="map-control-btn" icon="o_add" :aria-label="t('Zoom in')" @click="zoomIn" />
           <q-btn round unelevated class="map-control-btn" icon="o_remove" :aria-label="t('Zoom out')" @click="zoomOut" />
@@ -32,14 +37,31 @@
           v-model="searchQuery"
           outlined
           dense
+          clearable
           hide-bottom-space
           :placeholder="t('Search Store')"
+          :aria-label="t('Search Store')"
           class="sidebar-search"
         >
           <template #prepend>
             <q-icon name="o_search" size="16px" />
           </template>
         </q-input>
+
+        <div class="sidebar-status-filters" role="group" :aria-label="t('Filter stores')">
+          <button
+            v-for="filter in statusFilters"
+            :key="filter.value"
+            type="button"
+            class="sidebar-status-filter"
+            :class="{ 'sidebar-status-filter-active': statusFilter === filter.value }"
+            :aria-pressed="statusFilter === filter.value"
+            @click="statusFilter = filter.value"
+          >
+            {{ filter.label }}
+            <span class="sidebar-status-count">{{ filter.count }}</span>
+          </button>
+        </div>
 
         <div v-if="loading" class="sidebar-loading">
           <q-spinner size="24px" />
@@ -48,24 +70,28 @@
         <p v-else-if="!filteredStores.length" class="sidebar-empty">{{ t('No stores found.') }}</p>
 
         <div v-else class="sidebar-list">
-          <div
+          <button
             v-for="store in filteredStores"
             :key="store.id"
+            type="button"
             class="sidebar-store-card"
             @click="focusStore(store)"
           >
-            <div class="sidebar-store-image">
+            <span class="sidebar-store-image">
               <img v-if="store.image" :src="store.image" :alt="store.name" />
               <q-icon v-else name="o_storefront" size="20px" />
-            </div>
-            <div class="sidebar-store-info">
-              <div class="sidebar-store-name">{{ store.name }}</div>
-              <div v-if="store.distance_meters != null" class="sidebar-store-distance">
+            </span>
+            <span class="sidebar-store-info">
+              <span class="sidebar-store-name">{{ store.name }}</span>
+              <span class="sidebar-store-hours" :class="{ 'sidebar-store-hours-closed': !store.isOpen }">
+                {{ storeStatus(store) }}
+              </span>
+              <span v-if="store.distance_meters != null" class="sidebar-store-distance">
                 <q-icon name="o_directions_walk" size="12px" />
                 <span>{{ formatTravelTime(store.distance_meters) }} · {{ formatDistance(store.distance_meters) }}</span>
-              </div>
-            </div>
-          </div>
+              </span>
+            </span>
+          </button>
         </div>
       </aside>
 
@@ -84,7 +110,8 @@ import { useStores } from '@/composables/useStores'
 import { formatDistance, formatTravelTime } from '@/utils/distance'
 import { useAddress } from '@/composables/useAddress'
 
-const { t, lang } = useConsumerLanguage()
+const { t, lang, storeStatus } = useConsumerLanguage()
+const REFRESH_MS = 60000
 
 const props = defineProps({
   modelValue: {
@@ -97,21 +124,27 @@ const emit = defineEmits(['update:modelValue'])
 
 const router = useRouter()
 const { stores, loading, fetchStores } = useStores()
-const { address } = useAddress()
+const { address, locationVersion } = useAddress()
 
 const mapEl = ref(null)
 const searchQuery = ref('')
+const statusFilter = ref('all')
 const storePopupOpen = ref(false)
 
 let map = null
 let unmounted = false
 let mapSession = 0
+let refreshTimer = null
+let consumerMarker = null
 const markersById = {}
 
 const disposeMap = () => {
   mapSession += 1
+  clearInterval(refreshTimer)
+  refreshTimer = null
   map?.remove()
   map = null
+  consumerMarker = null
   Object.keys(markersById).forEach((key) => delete markersById[key])
   storePopupOpen.value = false
 }
@@ -120,11 +153,11 @@ watch(() => props.modelValue, (open) => {
   if (!open) disposeMap()
 })
 
-const storeIcon = L.divIcon({
-  className: 'store-map-marker',
+const storeIcon = (isOpen) => L.divIcon({
+  className: `store-map-marker ${isOpen ? 'store-map-marker-open' : 'store-map-marker-closed'}`,
   html: `
     <svg width="30" height="40" viewBox="0 0 30 40">
-      <path d="M15 0C6.7 0 0 6.7 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.7 23.3 0 15 0z" fill="var(--c-brand)" stroke="#ffffff" stroke-width="1.5"/>
+      <path d="M15 0C6.7 0 0 6.7 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.7 23.3 0 15 0z" fill="currentColor" stroke="#ffffff" stroke-width="1.5"/>
       <circle cx="15" cy="15" r="6.5" fill="#ffffff"/>
     </svg>
   `,
@@ -147,10 +180,53 @@ const meIcon = L.divIcon({
   iconAnchor: [17, 17]
 })
 
+const savedPosition = () => {
+  const lat = localStorage.getItem('consumer_lat')
+  const lng = localStorage.getItem('consumer_lng')
+  if (lat == null || lng == null || !lat.trim() || !lng.trim()) return null
+  const latitude = Number(lat)
+  const longitude = Number(lng)
+  return Number.isFinite(latitude) && Math.abs(latitude) <= 90 &&
+    Number.isFinite(longitude) && Math.abs(longitude) <= 180
+    ? [latitude, longitude]
+    : null
+}
+
+const updateConsumerMarker = (position = savedPosition()) => {
+  if (!map || unmounted) return
+  if (!position) {
+    if (consumerMarker) map.removeLayer(consumerMarker)
+    consumerMarker = null
+  } else if (consumerMarker) {
+    consumerMarker.setLatLng(position)
+  } else {
+    consumerMarker = L.marker(position, { icon: meIcon }).addTo(map)
+  }
+}
+
+watch(locationVersion, () => {
+  if (!map || unmounted || !props.modelValue) return
+  const position = savedPosition()
+  updateConsumerMarker(position)
+  if (position && !storePopupOpen.value) {
+    map.setView(position, map.getZoom(), { animate: false })
+  }
+  fetchStores({ silent: true })
+})
+
+const openCount = computed(() => stores.value.filter(store => store.isOpen).length)
+const statusFilters = computed(() => [
+  { value: 'all', label: t('All'), count: stores.value.length },
+  { value: 'open', label: t('Open'), count: openCount.value },
+  { value: 'closed', label: t('Closed'), count: stores.value.length - openCount.value }
+])
+
 const filteredStores = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return stores.value
-  return stores.value.filter((store) => store.name.toLowerCase().includes(q))
+  const q = (searchQuery.value || '').trim().toLowerCase()
+  return stores.value
+    .filter(store => statusFilter.value === 'all' || (statusFilter.value === 'open') === !!store.isOpen)
+    .filter(store => !q || store.name.toLowerCase().includes(q))
+    .sort((a, b) => Number(b.isOpen) - Number(a.isOpen))
 })
 
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
@@ -163,7 +239,8 @@ const buildStorePopup = (store) => {
     <div class="store-popup">
       ${image ? `<img src="${image}" alt="${name}" class="store-popup-img" />` : ''}
       <div class="store-popup-body">
-        <div class="store-popup-name">${name}</div>
+        <div class="store-popup-name" title="${name}">${name}</div>
+        <div class="store-popup-hours ${store.isOpen ? '' : 'store-popup-hours-closed'}">${escapeHtml(storeStatus(store))}</div>
         ${store.distance_meters != null ? `<div class="store-popup-distance">${formatTravelTime(store.distance_meters)} · ${formatDistance(store.distance_meters)}</div>` : ''}
         <a href="#/consumer/stores/${store.slug || store.id}" class="store-popup-link">${escapeHtml(t('View Store'))} →</a>
       </div>
@@ -174,23 +251,33 @@ const buildStorePopup = (store) => {
 const renderMarkers = () => {
   if (!map || unmounted) return
 
-  Object.values(markersById).forEach((marker) => map.removeLayer(marker))
-  Object.keys(markersById).forEach((key) => delete markersById[key])
-
-  stores.value.forEach((store) => {
+  const seen = new Set()
+  filteredStores.value.forEach((store) => {
     if (store.latitude == null || store.longitude == null) return
-    const marker = L.marker([store.latitude, store.longitude], { icon: storeIcon })
-      .addTo(map)
-      .bindPopup(buildStorePopup(store))
-    markersById[store.id] = marker
+    seen.add(String(store.id))
+    const title = `${store.name}: ${t(store.isOpen ? 'Open' : 'Closed')}`
+    const existing = markersById[store.id]
+    if (existing) {
+      existing.setLatLng([store.latitude, store.longitude])
+      existing.setIcon(storeIcon(store.isOpen))
+      existing.setPopupContent(buildStorePopup(store))
+      existing.getElement()?.setAttribute('title', title)
+    } else {
+      markersById[store.id] = L.marker([store.latitude, store.longitude], { icon: storeIcon(store.isOpen), title })
+        .addTo(map)
+        .bindPopup(buildStorePopup(store))
+    }
   })
+
+  for (const id of Object.keys(markersById)) {
+    if (!seen.has(id)) {
+      map.removeLayer(markersById[id])
+      delete markersById[id]
+    }
+  }
 }
 
-watch(lang, () => {
-  for (const store of stores.value) {
-    markersById[store.id]?.setPopupContent(buildStorePopup(store))
-  }
-})
+watch([filteredStores, lang], renderMarkers)
 
 const focusStore = (store) => {
   const marker = markersById[store.id]
@@ -199,27 +286,35 @@ const focusStore = (store) => {
     router.push(`/consumer/stores/${store.slug || store.id}`)
     return
   }
-  map.setView(marker.getLatLng(), 16)
+  map.setView(marker.getLatLng(), 16, { animate: false })
   marker.openPopup()
 }
 
 const zoomIn = () => map?.zoomIn()
 const zoomOut = () => map?.zoomOut()
 
+const repositionOpenPopup = () => {
+  if (!map || unmounted) return
+  Object.values(markersById).forEach(marker => {
+    if (marker.isPopupOpen()) marker.getPopup()?.update()
+  })
+}
+
 const closeDialog = () => emit('update:modelValue', false)
 
 const locateMe = () => {
   if (!map) return
   const currentMap = map
-  const lat = localStorage.getItem('consumer_lat')
-  const lng = localStorage.getItem('consumer_lng')
-  if (lat && lng) {
-    map.setView([Number(lat), Number(lng)], 15)
+  const position = savedPosition()
+  if (position) {
+    updateConsumerMarker(position)
+    map.setView(position, 15)
     return
   }
   if (!navigator.geolocation) return
   navigator.geolocation.getCurrentPosition((position) => {
     if (unmounted || map !== currentMap) return
+    updateConsumerMarker([position.coords.latitude, position.coords.longitude])
     currentMap.setView([position.coords.latitude, position.coords.longitude], 15)
   })
 }
@@ -228,31 +323,33 @@ const onDialogShow = async () => {
   disposeMap()
   const session = mapSession
 
-  const lat = localStorage.getItem('consumer_lat')
-  const lng = localStorage.getItem('consumer_lng')
-  const center = lat && lng ? [Number(lat), Number(lng)] : [14.5995, 120.9842]
-
   await nextTick()
   if (unmounted || !props.modelValue || session !== mapSession || !mapEl.value) return
 
+  const position = savedPosition()
+  const center = position || [14.5995, 120.9842]
   map = L.map(mapEl.value, { zoomControl: false }).setView(center, 15)
   storePopupOpen.value = false
   map.on('popupopen', () => { storePopupOpen.value = true })
   map.on('popupclose', () => { storePopupOpen.value = false })
+  map.on('resize', repositionOpenPopup)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
     maxZoom: 19
   }).addTo(map)
 
-  if (lat && lng) {
-    L.marker([Number(lat), Number(lng)], { icon: meIcon }).addTo(map)
-  }
+  updateConsumerMarker(position)
 
   map.invalidateSize()
 
   await fetchStores()
   if (unmounted || session !== mapSession) return
   renderMarkers()
+  refreshTimer = setInterval(() => {
+    if (!unmounted && props.modelValue && session === mapSession) {
+      fetchStores({ silent: true })
+    }
+  }, REFRESH_MS)
 }
 
 onBeforeUnmount(() => {
@@ -262,13 +359,17 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.map-dialog :deep(.q-dialog__inner) {
+:global(.map-dialog .q-dialog__inner) {
   padding: 24px;
 }
 
 .map-dialog-card {
+  --map-open-color: var(--c-success);
+  --map-closed-color: #94a3b8;
+
   width: min(1200px, 94vw);
   height: min(760px, 88vh);
+  height: min(760px, 88dvh);
   max-width: none;
 
   display: flex;
@@ -283,6 +384,8 @@ onBeforeUnmount(() => {
 .map-container {
   flex: 1;
   position: relative;
+  min-width: 0;
+  min-height: 0;
 }
 
 .leaflet-map {
@@ -295,6 +398,7 @@ onBeforeUnmount(() => {
   top: 16px;
   left: 16px;
   z-index: 1000;
+  max-width: calc(100% - 32px);
 
   padding: 10px 16px;
 
@@ -320,38 +424,80 @@ onBeforeUnmount(() => {
   font-weight: 600;
 
   color: var(--c-text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.map-status-legend {
+  position: absolute;
+  bottom: 24px;
+  left: 16px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.map-status-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.map-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.map-status-dot-open {
+  background: var(--map-open-color);
+}
+
+.map-status-dot-closed {
+  background: var(--map-closed-color);
 }
 
 .map-controls {
   position: absolute;
-  bottom: 20px;
-  left: 16px;
+  right: 16px;
+  bottom: 24px;
   z-index: 1000;
-
   display: flex;
-  flex-direction: column;
-
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
 }
 
 .map-control-btn {
   width: 38px;
   height: 38px;
+  min-width: 38px;
+  min-height: 38px;
 
   background: #ffffff;
   color: var(--c-text-2);
-
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 
-  transition: box-shadow 0.2s, transform 0.15s, background-color 0.15s;
+  transition: background-color 0.15s;
+}
+
+.map-control-btn :deep(.q-icon) {
+  font-size: 20px;
 }
 
 .map-control-btn:hover {
   background: var(--c-surface-2);
-
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-
-  transform: translateY(-1px);
 }
 
 .map-locate-btn {
@@ -380,6 +526,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 
   padding: 16px 16px 0;
 }
@@ -411,6 +558,51 @@ onBeforeUnmount(() => {
 
 .sidebar-search {
   margin: 12px 16px;
+  flex-shrink: 0;
+}
+
+.sidebar-status-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.sidebar-status-filter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-pill);
+  background: #ffffff;
+  font: inherit;
+  font-size: var(--fs-xs);
+  line-height: 1;
+  color: var(--c-text-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sidebar-status-filter-active {
+  border-color: var(--c-brand);
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
+}
+
+.sidebar-status-filter:focus-visible,
+.sidebar-store-card:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: -2px;
+}
+
+.sidebar-status-count {
+  font-weight: 700;
 }
 
 .sidebar-search :deep(.q-field__control) {
@@ -463,6 +655,7 @@ onBeforeUnmount(() => {
 
 .sidebar-list {
   flex: 1;
+  min-height: 0;
 
   overflow-y: auto;
   padding: 0 10px 10px;
@@ -488,6 +681,11 @@ onBeforeUnmount(() => {
 
   gap: 12px;
   padding: 10px 6px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
 
   border-radius: var(--r-lg);
 
@@ -527,9 +725,11 @@ onBeforeUnmount(() => {
 
 .sidebar-store-info {
   min-width: 0;
+  flex: 1;
 }
 
 .sidebar-store-name {
+  display: block;
   font-size: var(--fs-md);
   font-weight: 700;
   line-height: 1.3;
@@ -539,6 +739,20 @@ onBeforeUnmount(() => {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.sidebar-store-hours,
+.map-container :deep(.store-popup-hours) {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-success);
+}
+
+.sidebar-store-hours-closed,
+.map-container :deep(.store-popup-hours-closed) {
+  color: var(--c-danger);
 }
 
 .sidebar-store-distance {
@@ -561,6 +775,14 @@ onBeforeUnmount(() => {
 
 .map-container :deep(.store-map-marker) {
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+}
+
+.map-container :deep(.store-map-marker-open) {
+  color: var(--map-open-color);
+}
+
+.map-container :deep(.store-map-marker-closed) {
+  color: var(--map-closed-color);
 }
 
 .map-container :deep(.me-map-marker) {
@@ -672,10 +894,15 @@ onBeforeUnmount(() => {
 }
 
 .map-container :deep(.store-popup-body) {
-  padding: 10px 12px 12px;
+  padding: 8px 10px;
 }
 
 .map-container :deep(.store-popup-name) {
+  min-width: 0;
+  padding-right: 26px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: var(--fs-md);
   font-weight: 700;
 
@@ -691,9 +918,11 @@ onBeforeUnmount(() => {
 }
 
 .map-container :deep(.store-popup-link) {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
 
-  margin-top: 6px;
+  margin-top: 4px;
 
   font-size: var(--fs-xs);
   font-weight: 600;
@@ -732,21 +961,19 @@ onBeforeUnmount(() => {
     border-top: 1px solid var(--c-border);
   }
 
-  /* Both of these were pinned to the map's left edge, which is fine beside a tall desktop
-     map and not at all fine on a short stacked one: the zoom column grew up into the
-     address card. On phones the controls sit along the bottom-right instead. */
-  .map-controls {
-    left: auto;
-    right: 12px;
-    bottom: 12px;
+  .map-status-legend {
+    left: 12px;
+  }
 
-    flex-direction: row;
+  .map-controls {
+    right: 12px;
   }
 
   .map-address-overlay {
     top: 12px;
     left: 12px;
     right: 12px;
+    max-width: none;
 
     padding: 8px 12px;
   }
@@ -763,6 +990,7 @@ onBeforeUnmount(() => {
 @media (max-width: 900px) {
   /* Keep the selected store readable instead of covering it with map overlays. */
   .has-store-popup .map-address-overlay,
+  .has-store-popup .map-status-legend,
   .has-store-popup .map-controls {
     visibility: hidden;
   }
@@ -785,7 +1013,6 @@ onBeforeUnmount(() => {
   .map-container :deep(.store-popup-name) {
     font-size: 15px;
     line-height: 1.35;
-    overflow-wrap: anywhere;
   }
 
   .map-container :deep(.store-popup-distance) {
@@ -798,7 +1025,7 @@ onBeforeUnmount(() => {
   .map-container :deep(.store-popup-link) {
     display: flex;
     align-items: center;
-    min-height: 28px;
+    min-height: 24px;
     padding: 0;
     margin-top: 0;
     font-size: 13px;
@@ -808,13 +1035,62 @@ onBeforeUnmount(() => {
   .map-container :deep(.leaflet-popup-close-button) {
     top: 4px !important;
     right: 4px !important;
-    width: 32px !important;
-    height: 32px !important;
+    width: 28px !important;
+    height: 28px !important;
     border-radius: 50%;
     background: #ffffff;
     color: var(--c-text-2) !important;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-    font-size: 22px !important;
+    font-size: 18px !important;
+  }
+}
+
+@media (pointer: coarse) {
+  .sidebar-close-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .sidebar-search :deep(.q-field__native) {
+    font-size: 16px;
+  }
+
+  .map-container :deep(.leaflet-popup-close-button) {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 18px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  :global(.map-dialog .q-dialog__inner) {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
+  :global(.map-dialog .q-dialog__inner) {
+    padding: 8px;
+  }
+
+  .map-dialog-card {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    height: calc(100dvh - 16px);
+    flex-direction: row;
+  }
+
+  .map-container {
+    flex: 1;
+  }
+
+  .map-sidebar {
+    width: clamp(240px, 43vw, 320px);
+    flex: 0 0 auto;
+    border-top: none;
+    border-left: 1px solid var(--c-border);
   }
 }
 </style>

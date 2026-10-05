@@ -203,6 +203,7 @@
       <!-- FILTERS SIDEBAR (desktop), same component and treatment as the Products page -->
       <aside v-if="filtersOpen && !isMobileFilters" class="filters-panel">
         <ProductFilters
+          v-model:search="filterSearch"
           v-model:max-distance="maxDistance"
           v-model:price-min="priceMin"
           v-model:price-max="priceMax"
@@ -224,6 +225,7 @@
         <q-card class="filters-dialog-card filters-dialog-card-sheet">
           <div class="filters-drag-handle" />
           <ProductFilters
+            v-model:search="filterSearch"
             v-model:max-distance="maxDistance"
             v-model:price-min="priceMin"
             v-model:price-max="priceMax"
@@ -358,6 +360,7 @@ const DISTANCE_OPTIONS = [
   { label: 'Within 10 km', value: 10000 }
 ]
 
+const filterSearch = ref('')
 const filtersOpen = ref(false)
 const maxDistance = ref(ANY_DISTANCE)
 const priceMin = ref(null)
@@ -387,6 +390,7 @@ const distanceLimit = computed(() =>
 )
 
 const hasActiveFilters = computed(() =>
+  !!filterSearch.value?.trim() ||
   distanceLimit.value != null ||
   minPrice.value != null ||
   maxPrice.value != null ||
@@ -409,6 +413,7 @@ const mobileFiltersOpen = computed({
 })
 
 const clearFilters = () => {
+  filterSearch.value = ''
   maxDistance.value = ANY_DISTANCE
   priceMin.value = null
   priceMax.value = null
@@ -416,7 +421,11 @@ const clearFilters = () => {
 }
 
 const filteredProducts = computed(() => {
+  const keyword = (filterSearch.value || '').trim().toLowerCase()
   const list = queryProducts.value.filter((product) => {
+    if (keyword && ![product.name, product.store].some(name =>
+      String(name || '').toLowerCase().includes(keyword)
+    )) return false
     if (!withinDistance(product)) return false
     if (minPrice.value != null && product.price < minPrice.value) return false
     if (maxPrice.value != null && product.price > maxPrice.value) return false
@@ -429,9 +438,10 @@ const filteredProducts = computed(() => {
   return list
 })
 
-// Price has no meaning for a store, so only distance narrows the store rows.
+// Store rows match names and distance; price filters apply only to products.
 const matchedStores = computed(() => {
-  const list = queryStores.value.filter(withinDistance)
+  const keyword = (filterSearch.value || '').trim().toLowerCase()
+  const list = queryStores.value.filter(store => withinDistance(store) && store.name.toLowerCase().includes(keyword))
   return sortBy.value === 'nearest' ? [...list].sort(byDistance) : list
 })
 
@@ -750,6 +760,7 @@ const goToRecentSearch = (term) => {
 
   max-width: 100%;
   max-height: 88vh;
+  max-height: 88dvh;
 
   border-radius: 16px 16px 0 0;
 }

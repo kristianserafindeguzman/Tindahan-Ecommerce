@@ -95,6 +95,7 @@
         <!-- FILTERS SIDEBAR (desktop) -->
         <aside v-if="filtersOpen && !isMobileFilters" class="filters-panel">
           <ProductFilters
+            v-model:search="filterSearch"
             v-model:category="selectedCategory"
             v-model:store="selectedStore"
             v-model:price-min="priceMin"
@@ -118,6 +119,7 @@
         <q-card class="filters-dialog-card" :class="{ 'filters-dialog-card-sheet': isSheetFilters }">
           <div v-if="isSheetFilters" class="filters-drag-handle" />
           <ProductFilters
+            v-model:search="filterSearch"
             v-model:category="selectedCategory"
             v-model:store="selectedStore"
             v-model:price-min="priceMin"
@@ -227,6 +229,7 @@ const SORT_OPTIONS = [
   { label: 'Price: High to Low', value: 'price_desc' }
 ]
 
+const filterSearch = ref('')
 const filtersOpen = ref(false)
 // Lets a category card/pill link straight here pre-filtered, e.g. /consumer/products?category=Beverages.
 const selectedCategory = ref(route.query.category || 'All')
@@ -235,6 +238,10 @@ const priceMin = ref(null)
 const priceMax = ref(null)
 const inStockOnly = ref(false)
 const sortBy = ref('popular')
+
+watch(() => route.query.category, category => {
+  selectedCategory.value = category || 'All'
+})
 
 // Below this width the sidebar doesn't fit, so filtersOpen opens a popup dialog instead.
 const isMobileFilters = computed(() => $q.screen.width < 900)
@@ -248,6 +255,7 @@ const mobileFiltersOpen = computed({
 })
 
 const hasActiveFilters = computed(() =>
+  !!filterSearch.value?.trim() ||
   selectedCategory.value !== 'All' ||
   selectedStore.value !== 'All' ||
   inStockOnly.value ||
@@ -257,7 +265,11 @@ const hasActiveFilters = computed(() =>
 )
 
 const filteredProducts = computed(() => {
+  const keyword = (filterSearch.value || '').trim().toLowerCase()
   const list = products.value.filter((product) => {
+    if (keyword && ![product.name, product.store].some(name =>
+      String(name || '').toLowerCase().includes(keyword)
+    )) return false
     if (selectedCategory.value !== 'All' && product.category !== selectedCategory.value) return false
     if (selectedStore.value !== 'All' && product.store !== selectedStore.value) return false
     if (inStockOnly.value && !product.inStock) return false
@@ -288,6 +300,7 @@ const paginatedProducts = computed(() => {
 watch(filteredProducts, () => { currentPage.value = 1 })
 
 const clearFilters = () => {
+  filterSearch.value = ''
   selectedCategory.value = 'All'
   selectedStore.value = 'All'
   priceMin.value = null
@@ -621,6 +634,7 @@ const clearFilters = () => {
 
   max-width: 100%;
   max-height: 88vh;
+  max-height: 88dvh;
 
   border-radius: 16px 16px 0 0;
 }

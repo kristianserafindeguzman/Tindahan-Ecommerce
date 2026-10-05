@@ -7,10 +7,18 @@ const loading = ref(false)
 
 let inFlight = null
 let inFlightKey = null
+let latestRequest = 0
 
-const load = async (params) => {
+const toCoordinate = (value, limit) => {
+  if (value == null || String(value).trim() === '') return null
+  const number = Number(value)
+  return Number.isFinite(number) && Math.abs(number) <= limit ? number : null
+}
+
+const load = async (params, { silent, requestId }) => {
   try {
     const { data } = await api.get('/stores', { params })
+    if (requestId !== latestRequest) return
     stores.value = (data || []).map((store) => ({
       id: store.id,
       slug: store.slug,
@@ -22,17 +30,18 @@ const load = async (params) => {
       scheduleStatusText: store.scheduleStatusText,
       hours: store.hours || null,
       distance_meters: store.distance_meters,
-      latitude: store.latitude != null ? Number(store.latitude) : null,
-      longitude: store.longitude != null ? Number(store.longitude) : null
+      latitude: toCoordinate(store.latitude, 90),
+      longitude: toCoordinate(store.longitude, 180)
     }))
   } catch (error) {
+    if (requestId !== latestRequest) return
     console.error('Failed to load stores', error)
-    stores.value = []
+    if (!silent) stores.value = []
   }
 }
 
 export function useStores() {
-  const fetchStores = () => {
+  const fetchStores = ({ silent = false } = {}) => {
     const lat = localStorage.getItem('consumer_lat')
     const lng = localStorage.getItem('consumer_lng')
     const params = (lat && lng) ? { lat, lng } : {}
@@ -40,10 +49,11 @@ export function useStores() {
 
     if (inFlight && inFlightKey === key) return inFlight
 
-    loading.value = true
+    if (!silent) loading.value = true
     inFlightKey = key
 
-    const promise = load(params).finally(() => {
+    const requestId = ++latestRequest
+    const promise = load(params, { silent, requestId }).finally(() => {
       if (inFlight === promise) {
         inFlight = null
         inFlightKey = null

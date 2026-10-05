@@ -8,6 +8,19 @@
     </div>
 
     <div class="filters-scroll">
+      <div class="filter-group">
+        <q-input
+          v-model="search"
+          dense
+          outlined
+          clearable
+          hide-bottom-space
+          :placeholder="t('Search...')"
+          :aria-label="t('Search products and stores')"
+        >
+          <template #prepend><q-icon name="o_search" /></template>
+        </q-input>
+      </div>
       <!-- Opt-in: only pages that pass distanceOptions show it, so the Products page is unchanged. -->
       <div v-if="distanceOptions.length" class="filter-group">
         <label class="filter-label">{{ t('Distance') }}</label>
@@ -94,7 +107,7 @@
       />
 
       <div class="clear-filters-row">
-        <span class="clear-filters-link" @click="$emit('clear')">{{ t('Clear all filters') }}</span>
+        <button type="button" class="clear-filters-link" @click="$emit('clear')">{{ t('Clear all filters') }}</button>
       </div>
     </div>
   </div>
@@ -148,11 +161,16 @@ defineProps({
 
 defineEmits(['close', 'clear'])
 
+const search = defineModel('search', { default: '' })
 const maxDistance = defineModel('maxDistance')
 const category = defineModel('category')
 const store = defineModel('store')
-const priceMin = defineModel('priceMin')
-const priceMax = defineModel('priceMax')
+const normalizePrice = value =>
+  value == null || String(value).trim() === '' || !Number.isFinite(Number(value))
+    ? null
+    : Number(value)
+const priceMin = defineModel('priceMin', { set: normalizePrice })
+const priceMax = defineModel('priceMax', { set: normalizePrice })
 const inStock = defineModel('inStock')
 const sort = defineModel('sort')
 </script>
@@ -315,6 +333,12 @@ const sort = defineModel('sort')
 
 .price-range-sep {
   color: var(--c-muted);
+  flex-shrink: 0;
+}
+
+.price-range-row :deep(.q-field) {
+  flex: 1;
+  min-width: 0;
 }
 
 .product-filters :deep(.q-field--outlined .q-field__control) {
@@ -380,6 +404,10 @@ const sort = defineModel('sort')
 }
 
 .clear-filters-link {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
   font-size: var(--fs-sm);
   font-weight: 500;
 
@@ -392,5 +420,14 @@ const sort = defineModel('sort')
 .clear-filters-link:hover {
   color: var(--c-brand-active);
   text-decoration: underline;
+}
+
+.clear-filters-link:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 3px;
+}
+
+.product-filters-sheet .filters-footer {
+  padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
 }
 </style>
