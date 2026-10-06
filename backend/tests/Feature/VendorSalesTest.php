@@ -241,4 +241,110 @@ class VendorSalesTest extends TestCase
         $this->postJson('/api/vendor/sales/manual', $payload)->assertOk();
         $this->assertDatabaseCount('orders', 2);
     }
+
+    public function test_daily_revenue_chart_matches_manila_reports_and_fills_seven_calendar_days(): void
+    {
+        $this->sale('2026-09-30 16:00:00'); // October 1, Manila midnight.
+        $this->sale('2026-10-06 16:00:00'); // October 7, Manila midnight.
+        $this->sale('2026-10-07 15:59:59'); // October 7, final second.
+        $this->sale('2026-09-30 15:59:59'); // Before the seven-day range.
+        $this->sale('2026-10-07 16:00:00'); // Tomorrow in Manila.
+        $this->sale('2026-10-06 16:00:00', 2);
+        $this->sale('2026-10-06 16:00:00', 1, 'cancelled');
+        $this->sale('2026-10-06 16:00:00', 1, 'ready_for_pickup');
+
+        $response = $this->getJson('/api/vendor/stats/chart?filter=Daily')
+            ->assertOk()->assertHeader('Cache-Control')->assertJsonCount(7);
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+        $chart = $response->json();
+        $this->assertSame([
+            'Oct 01, 2026', 'Oct 02, 2026', 'Oct 03, 2026', 'Oct 04, 2026',
+            'Oct 05, 2026', 'Oct 06, 2026', 'Oct 07, 2026',
+        ], array_column($chart, 'period'));
+        $this->assertEquals([20, 0, 0, 0, 0, 0, 40], array_column($chart, 'total'));
+
+        foreach ($chart as $point) {
+            $day = Carbon::parse($point['period'], 'Asia/Manila')->toDateString();
+            $report = $this->getJson("/api/vendor/sales/metrics?start_date={$day}&end_date={$day}")
+                ->assertOk()->json();
+            $this->assertEquals($report['revenue'], $point['total']);
+        }
+    }
+
+    public function test_daily_revenue_chart_preserves_years_and_chronological_order(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2027-01-02 12:00:00', 'Asia/Manila'));
+        $this->sale('2026-12-31 15:59:59');
+        $this->sale('2026-12-31 16:00:00');
+        $this->sale('2026-01-01 01:00:00'); // Same month/day in the previous year.
+
+        $chart = $this->getJson('/api/vendor/stats/chart')->assertOk()->assertJsonCount(7)->json();
+        $this->assertSame([
+            'Dec 27, 2026', 'Dec 28, 2026', 'Dec 29, 2026', 'Dec 30, 2026',
+            'Dec 31, 2026', 'Jan 01, 2027', 'Jan 02, 2027',
+        ], array_column($chart, 'period'));
+        $this->assertEquals([0, 0, 0, 0, 20, 20, 0], array_column($chart, 'total'));
+    }
+
+    public function test_weekly_revenue_chart_uses_manila_mondays_and_eight_calendar_weeks(): void
+    {
+        $this->sale('2026-08-16 16:00:00'); // First Monday of the range in Manila.
+        $this->sale('2026-08-16 15:59:59'); // Previous week, outside the range.
+        $this->sale('2026-10-04 15:59:59'); // Sunday, October 4 in Manila.
+        $this->sale('2026-10-04 16:00:00'); // Monday, October 5 in Manila.
+        $this->sale('2026-10-07 16:00:00'); // Tomorrow.
+
+        $chart = $this->getJson('/api/vendor/stats/chart?filter=Weekly')
+            ->assertOk()->assertJsonCount(8)->json();
+        $this->assertSame([
+            'Aug 17, 2026', 'Aug 24, 2026', 'Aug 31, 2026', 'Sep 07, 2026',
+            'Sep 14, 2026', 'Sep 21, 2026', 'Sep 28, 2026', 'Oct 05, 2026',
+        ], array_column($chart, 'period'));
+        $this->assertEquals([20, 0, 0, 0, 0, 0, 20, 20], array_column($chart, 'total'));
+        $this->getJson('/api/vendor/sales/metrics?start_date=2026-08-17&end_date=2026-10-07')
+            ->assertOk()->assertJsonPath('revenue', array_sum(array_column($chart, 'total')));
+    }
+
+    public function test_monthly_revenue_chart_uses_manila_months_and_six_calendar_months(): void
+    {
+        $this->sale('2026-04-30 16:00:00'); // May 1 in Manila.
+        $this->sale('2026-04-30 15:59:59'); // April, outside the range.
+        $this->sale('2026-09-30 15:59:59'); // September 30 in Manila.
+        $this->sale('2026-09-30 16:00:00'); // October 1 in Manila.
+        $this->sale('2026-10-07 16:00:00'); // Tomorrow.
+
+        $chart = $this->getJson('/api/vendor/stats/chart?filter=Monthly')
+            ->assertOk()->assertJsonCount(6)->json();
+        $this->assertSame([
+            'May 2026', 'Jun 2026', 'Jul 2026', 'Aug 2026', 'Sep 2026', 'Oct 2026',
+        ], array_column($chart, 'period'));
+        $this->assertEquals([20, 0, 0, 0, 20, 20], array_column($chart, 'total'));
+        $this->getJson('/api/vendor/sales/metrics?start_date=2026-05-01&end_date=2026-10-07')
+            ->assertOk()->assertJsonPath('revenue', array_sum(array_column($chart, 'total')));
+    }
+
+    public function test_empty_revenue_charts_return_complete_zero_revenue_periods(): void
+    {
+        foreach (['Daily' => 7, 'Weekly' => 8, 'Monthly' => 6] as $filter => $count) {
+            $chart = $this->getJson('/api/vendor/stats/chart?filter=' . $filter)
+                ->assertOk()->assertJsonCount($count)->json();
+            $this->assertEquals(array_fill(0, $count, 0), array_column($chart, 'total'));
+        }
+    }
+
+    public function test_recorded_manual_sales_appear_on_the_matching_dashboard_day(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-06 16:15:00', 'UTC'));
+        $this->postJson('/api/vendor/sales/manual', [
+            'inventory_id' => 1, 'quantity' => 2, 'unit_price' => 0.29,
+            'total_amount' => 0.58, 'sale_date' => '2026-10-07',
+        ])->assertOk();
+
+        $this->getJson('/api/vendor/stats/chart')->assertOk()->assertJsonCount(7)
+            ->assertJsonPath('5.total', 0)
+            ->assertJsonPath('6.period', 'Oct 07, 2026')
+            ->assertJsonPath('6.total', 0.58);
+        $this->getJson('/api/vendor/sales/metrics?start_date=2026-10-07&end_date=2026-10-07')
+            ->assertOk()->assertJsonPath('revenue', 0.58);
+    }
 }

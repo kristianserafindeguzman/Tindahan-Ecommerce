@@ -605,25 +605,51 @@ const chartOptions = ref({
   fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.28, opacityTo: 0.02, stops: [0, 100] } }
 })
 
-const fetchChartData = async () => {
-  chartLoading.value = true
+let chartRequestId = 0
+let chartController = null
+let chartRefreshTimer
+
+const fetchChartData = async ({ background = false } = {}) => {
+  if (background && (chartController || document.hidden)) return
+
+  const requestId = ++chartRequestId
+  chartController?.abort()
+  const request = new AbortController()
+  chartController = request
+  if (!background) chartLoading.value = true
+
   try {
-    const res = await api.get('/vendor/stats/chart', { params: { filter: activeRevenueFilter.value } })
+    const res = await api.get('/vendor/stats/chart', {
+      params: { filter: activeRevenueFilter.value },
+      signal: request.signal
+    })
+    if (requestId !== chartRequestId || request.signal.aborted) return
+
     if (res.data) {
-      chartSeries.value = [{ name: 'Revenue', data: res.data.map(item => item.total) }]
+      chartSeries.value = [{ name: 'Revenue', data: res.data.map(item => Number(item.total)) }]
       chartOptions.value = {
         ...chartOptions.value,
         xaxis: { ...chartOptions.value.xaxis, categories: res.data.map(item => item.period) }
       }
     }
   } catch (error) {
-    console.error('Failed to load chart data:', error)
+    if (requestId === chartRequestId && !request.signal.aborted) {
+      console.error('Failed to load chart data:', error)
+    }
   } finally {
-    chartLoading.value = false
+    if (requestId === chartRequestId) {
+      chartLoading.value = false
+      chartController = null
+    }
   }
 }
 
-watch(activeRevenueFilter, fetchChartData)
+watch(activeRevenueFilter, () => fetchChartData())
+onBeforeUnmount(() => {
+  clearInterval(chartRefreshTimer)
+  chartRequestId++
+  chartController?.abort()
+})
 
 // --- Greeting and store status ---
 
@@ -822,6 +848,7 @@ const initMap = async () => {
 
 onMounted(async () => {
   fetchChartData()
+  chartRefreshTimer = setInterval(() => fetchChartData({ background: true }), 15000)
 
   try {
     const [profileRes, statsRes, productsRes] = await Promise.allSettled([

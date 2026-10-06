@@ -10,6 +10,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 // use Illuminate\Support\Facades\Http;
 
 use App\Models\DemandForecast;
+use Carbon\Carbon;
 
 class VendorController extends Controller
 {
@@ -93,53 +94,46 @@ class VendorController extends Controller
         if (!$vendor || !$vendor->store) {
             return response()->json([]);
         }
-        $storeId = $vendor->store->store_id;
-        $filter = $request->query('filter', 'Daily');
 
-        $orders = \App\Models\Order::where('store_id', $storeId)
+        $filter = strtolower($request->query('filter', 'Daily'));
+        $today = now('Asia/Manila')->startOfDay();
+        $end = $today->copy()->endOfDay();
+        $start = match ($filter) {
+            'weekly' => $today->copy()->startOfWeek(Carbon::MONDAY)->subWeeks(7),
+            'monthly' => $today->copy()->startOfMonth()->subMonths(5),
+            default => $today->copy()->subDays(6),
+        };
+
+        // Sales reports use Manila calendar dates against UTC order timestamps.
+        $orders = \App\Models\Order::where('store_id', $vendor->store->store_id)
             ->where('status', 'picked_up')
-            ->get();
+            ->whereBetween('updated_at', [$start->copy()->utc(), $end->copy()->utc()])
+            ->get(['updated_at', 'total_amount']);
 
-        $data = [];
-
-        if (strtolower($filter) === 'weekly') {
-            $grouped = $orders->groupBy(function ($date) {
-                return \Carbon\Carbon::parse($date->updated_at)->startOfWeek()->format('M d, Y');
-            });
-            foreach ($grouped as $key => $items) {
-                $data[] = ['period' => $key, 'total' => $items->sum('total_amount')];
-            }
-        } elseif (strtolower($filter) === 'monthly') {
-            $grouped = $orders->groupBy(function ($date) {
-                return \Carbon\Carbon::parse($date->updated_at)->format('M Y');
-            });
-            foreach ($grouped as $key => $items) {
-                $data[] = ['period' => $key, 'total' => $items->sum('total_amount')];
-            }
-        } else {
-            $grouped = $orders->groupBy(function ($date) {
-                return \Carbon\Carbon::parse($date->updated_at)->format('M d');
-            });
-            foreach ($grouped as $key => $items) {
-                $data[] = ['period' => $key, 'total' => $items->sum('total_amount')];
-            }
-        }
-
-        // Sort chronologically using Carbon parse on period
-        usort($data, function ($a, $b) {
-            return \Carbon\Carbon::parse($a['period'])->timestamp <=> \Carbon\Carbon::parse($b['period'])->timestamp;
+        $grouped = $orders->groupBy(function ($order) use ($filter) {
+            $date = $order->updated_at->copy()->setTimezone('Asia/Manila');
+            return match ($filter) {
+                'weekly' => $date->startOfWeek(Carbon::MONDAY)->toDateString(),
+                'monthly' => $date->startOfMonth()->toDateString(),
+                default => $date->toDateString(),
+            };
         });
 
-        // Limit results for visualization
-        if (strtolower($filter) === 'weekly') {
-            $data = array_slice($data, -8); // last 8 weeks
-        } elseif (strtolower($filter) === 'monthly') {
-            $data = array_slice($data, -6); // last 6 months
-        } else {
-            $data = array_slice($data, -7); // last 7 days
+        // Generate calendar periods in order, including periods without sales.
+        $data = [];
+        for ($period = $start->copy(); $period->lte($end);) {
+            $data[] = [
+                'period' => $period->format($filter === 'monthly' ? 'M Y' : 'M d, Y'),
+                'total' => (float) $grouped->get($period->toDateString(), collect())->sum('total_amount'),
+            ];
+            match ($filter) {
+                'weekly' => $period->addWeek(),
+                'monthly' => $period->addMonth(),
+                default => $period->addDay(),
+            };
         }
 
-        return response()->json(array_values($data));
+        return response()->json($data)->header('Cache-Control', 'no-store');
     }
 
     /**
