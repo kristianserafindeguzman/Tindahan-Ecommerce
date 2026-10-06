@@ -7,6 +7,7 @@ import { compile } from '@vue/compiler-dom'
 import { renderToString } from '@vue/server-renderer'
 import { parse as parseJavaScript } from '@babel/parser'
 import { useConsumerLanguage } from '../src/composables/useConsumerLanguage.js'
+import { PASSWORD_REQUIREMENTS } from '../src/utils/passwordValidation.js'
 
 const language = useConsumerLanguage()
 
@@ -24,6 +25,7 @@ async function renderAuth(file, overrides = {}) {
   const state = Object.fromEntries([...code.matchAll(/_ctx\.(\w+)/g)].map((match) => [match[1], false]))
   Object.assign(state, {
     t: language.t,
+    PASSWORD_REQUIREMENTS,
     locale: language.locale.value,
     form: { identifier: '', password: '', firstName: '', lastName: '', birthday: '', email: '', phoneNumber: '', confirmPassword: '', operatingDays: [] },
     step: 1,

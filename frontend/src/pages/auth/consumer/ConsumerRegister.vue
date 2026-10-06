@@ -116,6 +116,8 @@
         <div class="field-group">
           <q-input
             v-model="form.password"
+            :hint="t(PASSWORD_REQUIREMENTS)"
+            hide-hint
             outlined
             dense
             no-error-icon
@@ -235,6 +237,7 @@ import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
+import { PASSWORD_REQUIREMENTS, validatePassword } from '@/utils/passwordValidation'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import BirthdayInput from '@/components/shared/BirthdayInput.vue'
@@ -269,7 +272,7 @@ const nameRule = val =>
 
 const emailRule = val => /.+@.+\..+/.test(val) || t('Enter a valid email address.')
 const phoneRule = val => /^09\d{9}$/.test(val) || t('Mobile number must start with 09 and contain 11 digits.')
-const passwordRule = val => val.length >= 8 || t('Minimum 8 characters')
+const passwordRule = val => validatePassword(val, t)
 
 const birthdayRule = val => isValidBirthday(val) || t('Enter a valid birthday.')
 
@@ -312,7 +315,7 @@ const handleRegister = async () => {
   const isValid = await registerForm.value.validate()
 
   // Confirm Password isn't part of the form's own :rules, so it needs its own guard here.
-  if (!isValid || !form.confirmPassword || form.confirmPassword !== form.password) {
+  if (!isValid || !canRegister.value) {
     return
   }
 

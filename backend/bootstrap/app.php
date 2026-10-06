@@ -20,6 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
         ]);
 
+        // Preserve profile passwords exactly as typed, just like registration passwords.
+        $middleware->trimStrings(except: ['new_password', 'new_password_confirmation']);
+
         // Append last-activity tracker to the API middleware stack
         $middleware->api(append: [
             UpdateLastActivity::class,

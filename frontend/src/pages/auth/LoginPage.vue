@@ -273,13 +273,12 @@
               <q-icon name="o_lock_reset" size="32px" />
             </div>
             <div class="status-title">{{ t('Create New Password') }}</div>
-            <p class="status-message">
-              {{ t('Your new password must be at least 8 characters long.') }}
-            </p>
 
             <div class="field-group">
               <q-input
                 v-model="forgotPassword1"
+                :hint="t(PASSWORD_REQUIREMENTS)"
+                hide-hint
                 outlined
                 dense
                 no-error-icon
@@ -459,6 +458,7 @@ import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
+import { PASSWORD_REQUIREMENTS, validatePassword } from '@/utils/passwordValidation'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
@@ -585,7 +585,7 @@ const forgotError = ref('')
 
 // Same rules as ConsumerRegister.vue's phone/password fields.
 const phoneRule = val => /^09\d{9}$/.test(val) || t('Mobile number must start with 09 and contain 11 digits.')
-const passwordRule = val => val.length >= 8 || t('Minimum 8 characters')
+const passwordRule = val => validatePassword(val, t)
 const canRequestReset = computed(() => phoneRule(forgotPhone.value) === true)
 
 // Same masking as ConsumerVerify.vue's displayPhone.
@@ -915,7 +915,7 @@ const submitNewPassword = async () => {
     showForgotReset.value = false
     showResetSuccess.value = true
   } catch (error) {
-    forgotError.value = error.response?.data?.message || 'Failed to reset password.'
+    forgotError.value = error.response?.data?.errors?.password?.[0] || error.response?.data?.message || 'Failed to reset password.'
   } finally {
     forgotLoading.value = false
   }

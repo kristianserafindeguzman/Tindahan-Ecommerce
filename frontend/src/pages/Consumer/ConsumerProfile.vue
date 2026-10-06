@@ -371,6 +371,8 @@
               <div class="edit-field-label">{{ t('New Password') }}</div>
               <q-input
                 v-model="passwords.new"
+                :hint="t(PASSWORD_REQUIREMENTS)"
+                hide-hint
                 outlined
                 dense
                 no-error-icon
@@ -556,6 +558,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
+import { PASSWORD_REQUIREMENTS, validatePassword } from '@/utils/passwordValidation'
 import { useAuth } from '@/composables/useAuth'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
@@ -712,12 +715,13 @@ const showNewPassword = ref(false)
 const showConfirmPassword = ref(false)
 
 // Same rule as ConsumerRegister.vue's passwordRule.
-const isNewPasswordValid = computed(() => passwords.new.length >= 8)
+const isNewPasswordValid = computed(() => validatePassword(passwords.new) === true)
 
 const newPasswordMessage = computed(() => {
   if (!passwords.new) return null
-  if (!isNewPasswordValid.value) {
-    return { type: 'error', text: t('Minimum 8 characters') }
+  const validation = validatePassword(passwords.new, t)
+  if (validation !== true) {
+    return { type: 'error', text: validation }
   }
   return { type: 'success', text: t('Strong password.') }
 })
@@ -1109,7 +1113,7 @@ const saveEmail = async () => {
 // The change is only queued here; the texted code in the OTP dialog is what applies it.
 const savePassword = async () => {
   const isValid = await passwordFormRef.value.validate()
-  if (!isValid) return
+  if (!isValid || !canSavePassword.value) return
 
   savingPassword.value = true
   try {
@@ -1126,7 +1130,7 @@ const savePassword = async () => {
     showOtpModal.value = true
     startOtpTimers()
   } catch (err) {
-    $q.notify({ type: 'negative', message: t(err.response?.data?.message || 'Failed to update password.') })
+    $q.notify({ type: 'negative', message: t(err.response?.data?.errors?.new_password?.[0] || err.response?.data?.message || 'Failed to update password.') })
   } finally {
     savingPassword.value = false
   }

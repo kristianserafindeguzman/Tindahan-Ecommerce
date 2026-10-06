@@ -124,6 +124,8 @@
         <div class="field-group">
           <q-input
             v-model="form.password"
+            :hint="t(PASSWORD_REQUIREMENTS)"
+            hide-hint
             outlined
             dense
             no-error-icon
@@ -622,6 +624,7 @@ import AuthShell from '@/components/auth/AuthShell.vue'
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
+import { PASSWORD_REQUIREMENTS, validatePassword } from '@/utils/passwordValidation'
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
@@ -700,7 +703,7 @@ const nameRule = val =>
 
 const emailRule = val => /.+@.+\..+/.test(val) || t('Enter a valid email')
 const phoneRule = val => /^09\d{9}$/.test(val) || t('Phone must be exactly 11 digits starting with 09')
-const passwordRule = val => val.length >= 8 || t('Minimum 8 characters')
+const passwordRule = val => validatePassword(val, t)
 
 // Shown once the password passes its rule, the same positive state as the consumer sign-up and profile password fields.
 const passwordStrong = computed(() => !!form.password && passwordRule(form.password) === true)
@@ -858,7 +861,7 @@ const submitAccount = async () => {
   passwordTouched.value = true
 
   const isValid = await accountForm.value.validate()
-  if (!isValid) return
+  if (!isValid || passwordRule(form.password) !== true) return
 
   // Confirm Password isn't part of the form's own :rules, so it needs its own guard here.
   if (!form.confirmPassword || form.confirmPassword !== form.password) {
@@ -1093,6 +1096,10 @@ const handleVendorRegister = async () => {
       editingFromReview.value = true
       goTo(2)
       if (await sendCode()) otpError.value = `${errors.phone_number[0]} We sent you a new code.`
+    } else if (errors?.password) {
+      editingFromReview.value = true
+      goTo(1)
+      stepError.value = errors.password[0]
     } else if (errors?.email) {
       editingFromReview.value = true
       goTo(1)

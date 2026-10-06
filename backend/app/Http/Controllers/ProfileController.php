@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Rules\StrongPassword;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -130,7 +131,7 @@ class ProfileController extends Controller
     {
         $request->validate([
             'current_password' => 'required',
-            'new_password' => 'required|string|min:8|confirmed',
+            'new_password' => ['required', 'string', new StrongPassword(), 'confirmed'],
         ]);
 
         $user = $request->user();
