@@ -26,10 +26,10 @@ class ProfileController extends Controller
             }
 
             $path = $request->file('profile_picture')->store('profiles', 'public');
-            
+
             // Bypass mass assignment or timestamps just in case
             User::where('user_id', $user->user_id)->update(['profile_picture' => $path]);
-            
+
             return response()->json([
                 'message' => 'Profile photo updated successfully',
                 'profile_picture_url' => asset('storage/' . $path)
@@ -58,44 +58,56 @@ class ProfileController extends Controller
         return response()->json(['message' => 'Personal info updated successfully']);
     }
 
-    public function requestPhoneOtp(Request $request)
+    public function requestPhoneOtp(Request $request, \App\Services\OtpService $otp)
     {
         $request->validate([
             'phone_number' => 'required|string|max:15|unique:users,phone_number,' . $request->user()->user_id . ',user_id'
         ]);
 
-        // Mock OTP generation based on AuthController::generateOtp()
-        $otp = '123456'; 
-        
-        // In a real application, we would save this to the DB with an expiry, and send via SMS.
-        // For now, we will store it in the session or cache. Since it's an API, cache is better.
-        \Illuminate\Support\Facades\Cache::put('phone_otp_' . $request->user()->user_id, [
-            'phone_number' => $request->phone_number,
-            'otp' => $otp
-        ], now()->addMinutes(10));
+        $user = $request->user();
 
-        return response()->json(['message' => 'OTP sent successfully']);
+        $otp->send(
+            $request->phone_number,
+            'registration',
+            $user->user_id
+        );
+
+        return response()->json([
+            'message' => 'OTP sent successfully'
+        ]);
     }
 
-    public function verifyPhoneOtp(Request $request)
-    {
+    public function verifyPhoneOtp(
+        Request $request,
+        \App\Services\OtpService $otp
+    ) {
         $request->validate([
             'phone_number' => 'required|string|max:15',
             'code' => 'required|string|size:6'
         ]);
 
-        $cacheKey = 'phone_otp_' . $request->user()->user_id;
-        $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+        $user = $request->user();
 
-        if (!$cached || $cached['phone_number'] !== $request->phone_number || $cached['otp'] !== $request->code) {
-            return response()->json(['message' => 'Invalid or expired verification code.'], 400);
+        $result = $otp->verify(
+            $request->phone_number,
+            'registration',
+            $request->code
+        );
+
+        if (!$result['ok']) {
+            return response()->json([
+                'message' => $result['message']
+            ], $result['status']);
         }
 
-        User::where('user_id', $request->user()->user_id)->update(['phone_number' => $request->phone_number]);
-        
-        \Illuminate\Support\Facades\Cache::forget($cacheKey);
+        User::where('user_id', $user->user_id)
+            ->update([
+                'phone_number' => $request->phone_number
+            ]);
 
-        return response()->json(['message' => 'Phone number updated successfully']);
+        return response()->json([
+            'message' => 'Phone number updated successfully'
+        ]);
     }
 
     public function updateEmail(Request $request)
@@ -306,7 +318,7 @@ class ProfileController extends Controller
             }
 
             $store->save();
-            
+
             return response()->json([
                 'message' => 'Store info updated successfully',
                 'store_picture_url' => $store->store_picture_url
@@ -328,14 +340,14 @@ class ProfileController extends Controller
         if ($user->role === 'Vendor' && $user->store) {
             $store = $user->store;
             $store->address = $request->address;
-            
+
             if ($request->has('latitude')) {
                 $store->latitude = $request->latitude;
             }
             if ($request->has('longitude')) {
                 $store->longitude = $request->longitude;
             }
-            
+
             $store->save();
         }
 
@@ -345,10 +357,10 @@ class ProfileController extends Controller
     public function deleteAccount(Request $request)
     {
         $user = clone $request->user();
-        
+
         // Revoke tokens
         $user->tokens()->delete();
-        
+
         // Soft delete user
         User::where('user_id', $user->user_id)->delete();
 
