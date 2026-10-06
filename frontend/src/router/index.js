@@ -75,7 +75,15 @@ export default defineRouter((/* { store, ssrContext } */) => {
     }
 
     // Guest-only route (login, register) while already signed in.
-    if (to.meta.guest && token && role) return homeForRole()
+    // Signed-in Admin/Vendor users cannot access consumer storefront pages.
+    if (
+      token &&
+      role &&
+      role !== 'Consumer' &&
+      to.path.startsWith('/consumer/')
+    ) {
+      return homeForRole()
+    }
 
     return true
   })
