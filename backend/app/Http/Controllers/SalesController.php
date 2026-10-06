@@ -6,16 +6,19 @@ use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Inventory;
+use Illuminate\Validation\ValidationException;
 
 class SalesController extends Controller
 {
     /**
-     * Get basic sales metrics (Skeleton: returns 0).
+     * Get sales metrics for the requested date range.
      *
      * GET /api/vendor/sales/metrics
      */
     public function metrics(Request $request)
     {
+        $this->validateReportDates($request);
+
         $vendor = $request->user();
         if (!$vendor || !$vendor->store) {
             return response()->json(['message' => 'Vendor store not found.'], 404);
@@ -98,12 +101,14 @@ class SalesController extends Controller
     }
 
     /**
-     * Get recent sales transactions.
+     * Get sales transactions for a date range, or daily totals for all time.
      *
      * GET /api/vendor/sales/transactions
      */
     public function transactions(Request $request)
     {
+        $this->validateReportDates($request);
+
         $vendor = $request->user();
         if (!$vendor || !$vendor->store) {
             return response()->json(['message' => 'Vendor store not found.'], 404);
@@ -117,7 +122,8 @@ class SalesController extends Controller
             $end = \Carbon\Carbon::parse($request->end_date, 'Asia/Manila')->endOfDay()->setTimezone('UTC');
             $query->whereBetween('updated_at', [$start, $end]);
 
-            $transactions = $query->orderBy('updated_at', 'desc')->limit(10)->get()->map(function ($order) {
+            // The report paginates these rows and uses the full result for its order/item totals.
+            $transactions = $query->orderByDesc('updated_at')->orderByDesc('order_id')->get()->map(function ($order) {
                 $firstItem = $order->items->first();
                 $productName = $firstItem && $firstItem->inventory ? $firstItem->inventory->product_name : 'Multiple Items';
                 if ($order->items->count() > 1) {
@@ -164,6 +170,14 @@ class SalesController extends Controller
         }
     }
 
+    private function validateReportDates(Request $request): void
+    {
+        $request->validate([
+            'start_date' => 'nullable|date_format:Y-m-d|required_with:end_date',
+            'end_date' => 'nullable|date_format:Y-m-d|required_with:start_date|after_or_equal:start_date',
+        ]);
+    }
+
     /**
      * Record a manual sale offline.
      *
@@ -171,13 +185,27 @@ class SalesController extends Controller
      */
     public function storeManual(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'inventory_id' => 'required|integer|exists:inventory,inventory_id',
-            'quantity' => 'required|integer|min:1',
-            'unit_price' => 'required|numeric|min:0',
+            'quantity' => 'required|integer|min:1|max:2147483647',
+            'unit_price' => 'required|numeric|min:0|max:999999.99|decimal:0,2',
             'total_amount' => 'required|numeric|min:0',
-            'sale_date' => 'required|date_format:Y-m-d',
+            'sale_date' => 'required|date_format:Y-m-d|before_or_equal:' . now('Asia/Manila')->toDateString(),
+        ], [
+            'sale_date.before_or_equal' => 'Sales cannot be recorded for a future date.',
         ]);
+
+        // Calculate in cents so the order total and item subtotal always agree.
+        $unitPriceCents = (int) round((float) $validated['unit_price'] * 100);
+        $totalCents = $unitPriceCents * (int) $validated['quantity'];
+        // order_items.subtotal and unit_price are DECIMAL(8, 2).
+        if ($totalCents > 99999999) {
+            throw ValidationException::withMessages([
+                'total_amount' => 'The sale total must not exceed ₱999,999.99.',
+            ]);
+        }
+        $unitPrice = $unitPriceCents / 100;
+        $totalAmount = $totalCents / 100;
 
         $vendor = $request->user();
         if (!$vendor || !$vendor->store) {
@@ -194,7 +222,7 @@ class SalesController extends Controller
         $saleDateUtc->setTimezone('UTC');
 
         try {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($vendor, $storeId, $request, $saleDateUtc) {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($vendor, $storeId, $request, $saleDateUtc, $unitPrice, $totalAmount) {
                 // Fetch inventory with lockForUpdate
                 $inventory = Inventory::where('inventory_id', $request->inventory_id)
                     ->where('store_id', $storeId)
@@ -219,7 +247,7 @@ class SalesController extends Controller
                 $order = new Order();
                 $order->consumer_id = $vendor->user_id; // Map manual sale to the vendor themselves
                 $order->store_id = $storeId;
-                $order->total_amount = $request->total_amount;
+                $order->total_amount = $totalAmount;
                 $order->status = 'picked_up';
                 $order->timestamps = false;
                 $order->created_at = $saleDateUtc;
@@ -231,8 +259,8 @@ class SalesController extends Controller
                 $orderItem->order_id = $order->order_id;
                 $orderItem->inventory_id = $inventory->inventory_id;
                 $orderItem->quantity = $request->quantity;
-                $orderItem->subtotal = $request->total_amount;
-                $orderItem->unit_price = $request->unit_price;
+                $orderItem->subtotal = $totalAmount;
+                $orderItem->unit_price = $unitPrice;
                 $orderItem->save();
             });
 
