@@ -30,14 +30,16 @@
         <div class="sr-main">
 
           <!-- REVENUE — the total, what it came from, and a small bar chart of the records behind it. -->
-          <section data-tour="sr-hero" class="sr-hero">
+          <section v-if="!loadError" data-tour="sr-hero" class="sr-hero">
             <div class="sr-hero-main">
               <div data-tour="sr-hero-head" class="sr-hero-top">
                 <span class="sr-eyebrow"><q-icon name="o_payments" size="16px" /> {{ t('eyebrowRevenue') }} · {{ displayDate }}</span>
-                <span v-if="metrics.growthRate" class="sr-growth"><q-icon name="trending_up" size="16px" /> +{{ metrics.growthRate }}% {{ t('vsYesterday') }}</span>
               </div>
-              <div class="sr-hero-value">₱{{ formatNumber(metrics.revenue) }}</div>
-              <div class="sr-hero-facts">
+              <div class="sr-hero-value">
+                <q-skeleton v-if="loading" type="rect" width="180px" height="52px" />
+                <span v-else>₱{{ formatNumber(metrics.revenue) }}</span>
+              </div>
+              <div v-if="!loading" class="sr-hero-facts">
                 <span class="sr-fact">
                   <q-icon name="o_receipt_long" size="16px" />
                   {{ recordCount }} {{ shownDate ? t('orderWord') : t('dayWord') }}{{ recordCount === 1 ? '' : 's' }}
@@ -53,36 +55,45 @@
               </div>
             </div>
 
-            <div v-if="heroBars.length" class="sr-hero-chart">
-              <div class="sr-bars" role="img" :aria-label="shownDate ? t('ariaBarsDay') : t('ariaBarsAllTime')">
+            <div v-if="!loading && heroBars.length" class="sr-hero-chart">
+              <div class="sr-bars" role="img" :aria-label="heroBarDescription">
                 <span v-for="bar in heroBars" :key="bar.key" class="sr-bar" :style="{ height: `${bar.height}%` }" :title="bar.title" />
               </div>
-              <div class="sr-bars-label">{{ shownDate ? t('labelBarsDay') : t('labelBarsAllTime') }}</div>
+              <div class="sr-bars-label">{{ heroBarLabel }}</div>
             </div>
             <q-icon v-else name="o_insights" class="sr-hero-art" aria-hidden="true" />
           </section>
 
-          <div data-tour="sr-stats" class="vp-stats sr-stats">
+          <div v-if="!loadError" data-tour="sr-stats" class="vp-stats sr-stats">
             <div class="vp-card vp-stat">
               <div class="vp-stat-top">
                 <span class="vp-stat-label">{{ t('statAvgOrderValue') }}</span>
                 <span class="vp-stat-icon vp-tone--info"><q-icon name="o_receipt_long" size="20px" /></span>
               </div>
-              <div class="vp-stat-value">₱{{ formatNumber(metrics.avgOrderValue) }}</div>
+              <div class="vp-stat-value">
+                <q-skeleton v-if="loading" type="text" width="120px" />
+                <span v-else>₱{{ formatNumber(metrics.avgOrderValue) }}</span>
+              </div>
             </div>
             <div class="vp-card vp-stat">
               <div class="vp-stat-top">
                 <span class="vp-stat-label">{{ t('statCancelRate') }}</span>
                 <span class="vp-stat-icon vp-tone--danger"><q-icon name="o_remove_shopping_cart" size="20px" /></span>
               </div>
-              <div class="vp-stat-value">{{ metrics.cancellationRate }}%</div>
+              <div class="vp-stat-value">
+                <q-skeleton v-if="loading" type="text" width="80px" />
+                <span v-else>{{ metrics.cancellationRate }}%</span>
+              </div>
             </div>
             <div class="vp-card vp-stat vp-stat--wide">
               <div class="vp-stat-top">
                 <span class="vp-stat-label">{{ t('statBestSeller') }}</span>
                 <span class="vp-stat-icon vp-tone--wait"><q-icon name="o_emoji_events" size="20px" /></span>
               </div>
-              <div class="vp-stat-value vp-stat-value--text">{{ metrics.bestSellingCategory ? categoryLabel(metrics.bestSellingCategory) : t('noDataYet') }}</div>
+              <div class="vp-stat-value vp-stat-value--text">
+                <q-skeleton v-if="loading" type="text" width="140px" />
+                <span v-else>{{ metrics.bestSellingCategory ? categoryLabel(metrics.bestSellingCategory) : t('noDataYet') }}</span>
+              </div>
             </div>
           </div>
 
@@ -94,7 +105,7 @@
                 <div class="sr-card-sub">{{ selectedDate ? t('ordersOn') + ' ' + displayDate : t('dailyTotalsAllTime') }}</div>
               </div>
               <q-skeleton v-if="loading" type="rect" width="30px" height="20px" class="sr-count-sk" />
-              <span v-else class="sr-count">{{ transactions.length }}</span>
+              <span v-else-if="!loadError" class="sr-count">{{ transactions.length }}</span>
             </div>
 
             <!-- Placeholder rows in the columns of the view being loaded: one day's orders, or All time's daily totals. -->
@@ -107,6 +118,13 @@
               :pill="!!selectedDate"
               class="sr-skeleton"
             />
+
+            <div v-else-if="loadError" class="vp-empty" role="alert">
+              <div class="vp-empty-icon"><q-icon name="o_error_outline" size="24px" /></div>
+              <div class="vp-empty-title">{{ t('loadErrorTitle') }}</div>
+              <div class="vp-empty-text">{{ t('loadErrorText') }}</div>
+              <q-btn outline no-caps color="primary" :label="t('btnRetry')" class="vp-pill-btn sr-retry" @click="fetchSalesData" />
+            </div>
 
             <div v-else-if="!transactions.length" class="vp-empty">
               <div class="vp-empty-icon"><q-icon name="o_query_stats" size="24px" /></div>
@@ -167,17 +185,17 @@
               </div>
             </div>
 
-            <div v-if="!loading && transactions.length > PAGE_SIZES[0]" class="vp-pager">
+            <div v-if="!loading && !loadError && transactions.length > PAGE_SIZES[0]" class="vp-pager sr-pager">
               <span>{{ t('showingWord') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('ofWord') }} {{ transactions.length }}</span>
               <div class="sr-pager-right">
                 <label class="sr-page-size">
                   {{ t('rowsWord') }}
                   <q-select v-model="pageSize" :options="PAGE_SIZES" dense outlined options-dense behavior="menu" class="vp-input sr-page-select" aria-label="Rows per page" />
                 </label>
-              </div>
-              <div class="vp-pager-btns">
-                <q-btn outline no-caps color="primary" icon="o_chevron_left" class="vp-pill-btn" aria-label="Previous page" :disable="page === 1" @click="page--" />
-                <q-btn outline no-caps color="primary" icon="o_chevron_right" class="vp-pill-btn" aria-label="Next page" :disable="page === pageCount" @click="page++" />
+                <div class="vp-pager-btns">
+                  <q-btn outline no-caps color="primary" icon="o_chevron_left" class="vp-pill-btn" aria-label="Previous page" :disable="page === 1" @click="page--" />
+                  <q-btn outline no-caps color="primary" icon="o_chevron_right" class="vp-pill-btn" aria-label="Next page" :disable="page >= pageCount" @click="page++" />
+                </div>
               </div>
             </div>
           </div>
@@ -193,10 +211,10 @@
             </div>
           </div>
 
-          <div v-if="!selectedDate" class="sr-locked">
+          <div v-if="!canRecordSaleDate" class="sr-locked">
             <div class="vp-empty-icon"><q-icon name="o_edit_calendar" size="24px" /></div>
-            <div class="vp-empty-title">{{ t('pickDayTitle') }}</div>
-            <div class="vp-empty-text">{{ t('pickDayDesc') }}</div>
+            <div class="vp-empty-title">{{ t(isFutureDate ? 'futureDayTitle' : 'pickDayTitle') }}</div>
+            <div class="vp-empty-text">{{ t(isFutureDate ? 'futureDayDesc' : 'pickDayDesc') }}</div>
           </div>
 
           <q-form v-else ref="asideForm" class="sr-form" @submit.prevent="askToRecord">
@@ -233,7 +251,7 @@
               </div>
               <div>
                 <label class="vp-field-label">{{ t('formUnitPrice') }}</label>
-                <q-input v-model.number="manualForm.unitPrice" type="number" min="0" :max="MAX_PRICE" step="0.01" outlined dense hide-bottom-space class="vp-input" :rules="priceRules" />
+                <q-input v-model.number="manualForm.unitPrice" type="number" min="0" :max="MAX_AMOUNT" step="0.01" outlined dense hide-bottom-space class="vp-input" :rules="priceRules" />
               </div>
             </div>
             <div class="sr-estimate">
@@ -258,10 +276,10 @@
           <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
         </div>
 
-        <div v-if="!selectedDate" class="sr-locked">
+        <div v-if="!canRecordSaleDate" class="sr-locked">
           <div class="vp-empty-icon"><q-icon name="o_edit_calendar" size="24px" /></div>
-          <div class="vp-empty-title">{{ t('pickDayTitle') }}</div>
-          <div class="vp-empty-text">{{ t('pickDayDesc') }}</div>
+          <div class="vp-empty-title">{{ t(isFutureDate ? 'futureDayTitle' : 'pickDayTitle') }}</div>
+          <div class="vp-empty-text">{{ t(isFutureDate ? 'futureDayDesc' : 'pickDayDesc') }}</div>
         </div>
 
         <q-form v-else ref="sheetForm" class="sr-form" @submit.prevent="askToRecord">
@@ -298,7 +316,7 @@
             </div>
             <div>
               <label class="vp-field-label">{{ t('formUnitPrice') }}</label>
-              <q-input v-model.number="manualForm.unitPrice" type="number" min="0" :max="MAX_PRICE" step="0.01" outlined dense hide-bottom-space class="vp-input" :rules="priceRules" />
+              <q-input v-model.number="manualForm.unitPrice" type="number" min="0" :max="MAX_AMOUNT" step="0.01" outlined dense hide-bottom-space class="vp-input" :rules="priceRules" />
             </div>
           </div>
           <div class="sr-estimate">
@@ -332,13 +350,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useQuasar, date } from 'quasar'
 import { api } from '@/boot/axios'
 import OrderStatusBadge from '@/components/vendor/OrderStatusBadge.vue'
 import SkeletonTable from '@/components/vendor/SkeletonTable.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { useCategoryLabels } from '@/composables/useCategories'
+import { manilaParts } from '@/utils/pickupSlots'
 
 const $q = useQuasar()
 
@@ -351,16 +370,17 @@ const vendorSalesDict = {
     btnToday: 'Today',
     btnRecordSale: 'Record Sale',
     eyebrowRevenue: 'Revenue',
-    vsYesterday: 'vs yesterday',
     orderWord: 'order',
     dayWord: 'day',
     itemSold: 'item',
     itemsSold: 'items',
     perOrder: 'per order',
     ariaBarsDay: 'Total of each order on this day',
-    ariaBarsAllTime: 'Revenue for each of the last 14 days',
+    ariaBarsRecentOrders: 'Total of each of the latest 16 orders on this day',
+    ariaBarsAllTime: 'Revenue for each of the latest 14 days with sales',
     labelBarsDay: 'Each order on this day',
-    labelBarsAllTime: 'Last 14 days',
+    labelBarsRecentOrders: 'Latest 16 orders on this day',
+    labelBarsAllTime: 'Latest 14 days with sales',
     statAvgOrderValue: 'Avg order value',
     statCancelRate: 'Cancellation rate',
     statBestSeller: 'Best seller',
@@ -368,6 +388,9 @@ const vendorSalesDict = {
     salesRecordsTitle: 'Sales Records',
     ordersOn: 'Orders on',
     dailyTotalsAllTime: 'Daily totals for all time',
+    loadErrorTitle: 'Unable to load sales',
+    loadErrorText: 'Please check your connection and try again.',
+    btnRetry: 'Try again',
     emptySalesTitle: 'No sales found',
     emptySalesText1: 'Nothing was recorded for',
     emptySalesText2: 'Orders and walk-in sales will show up here.',
@@ -388,6 +411,8 @@ const vendorSalesDict = {
     recordSaleSub: 'Add a walk-in sale for',
     pickDayTitle: 'Pick a day first',
     pickDayDesc: "Choose a specific date from the calendar to record a sale. All time can't take new entries.",
+    futureDayTitle: 'Future date selected',
+    futureDayDesc: 'Sales can only be recorded for today or a past date.',
     formProduct: 'Product',
     searchProduct: 'Search product',
     ruleProduct: 'Choose a product.',
@@ -398,7 +423,9 @@ const vendorSalesDict = {
     ruleQuantityWhole: 'Enter a whole number above 0.',
     ruleQuantityStock: 'Only {max} in stock.',
     rulePriceValid: 'Enter a valid price.',
-    rulePriceMax: 'Enter a price up to ₱1,000,000.',
+    rulePricePrecision: 'Use up to 2 decimal places.',
+    rulePriceMax: 'Enter a price up to ₱999,999.99.',
+    ruleTotalMax: 'Sale total cannot exceed ₱999,999.99.',
     confirmSaleTitle: 'Record this sale?',
     confirmSaleFor: 'for',
     confirmSaleOn: 'on',
@@ -415,16 +442,17 @@ const vendorSalesDict = {
     btnToday: 'Ngayon',
     btnRecordSale: 'I-record ang Benta',
     eyebrowRevenue: 'Kita',
-    vsYesterday: 'kumpara kahapon',
     orderWord: 'order',
     dayWord: 'araw',
     itemSold: 'paninda',
     itemsSold: 'mga paninda',
     perOrder: 'kada order',
     ariaBarsDay: 'Kabuuan ng bawat order sa araw na ito',
-    ariaBarsAllTime: 'Kita sa bawat araw ng nakalipas na dalawang linggo',
+    ariaBarsRecentOrders: 'Kabuuan ng bawat isa sa pinakahuling 16 order sa araw na ito',
+    ariaBarsAllTime: 'Kita sa bawat isa sa pinakahuling 14 araw na may benta',
     labelBarsDay: 'Bawat order ngayong araw',
-    labelBarsAllTime: 'Nakalipas na 14 araw',
+    labelBarsRecentOrders: 'Pinakahuling 16 order sa araw na ito',
+    labelBarsAllTime: 'Pinakahuling 14 araw na may benta',
     statAvgOrderValue: 'Average na halaga ng order',
     statCancelRate: 'Cancellation rate',
     statBestSeller: 'Pinakamabenta',
@@ -432,6 +460,9 @@ const vendorSalesDict = {
     salesRecordsTitle: 'Records ng Benta',
     ordersOn: 'Mga order noong',
     dailyTotalsAllTime: 'Araw-araw na kabuuan sa buong panahon',
+    loadErrorTitle: 'Hindi ma-load ang benta',
+    loadErrorText: 'Suriin ang iyong koneksyon at subukan muli.',
+    btnRetry: 'Subukan muli',
     emptySalesTitle: 'Walang nahanap na benta',
     emptySalesText1: 'Walang nai-record noong',
     emptySalesText2: 'Dito lalabas ang mga order at walk-in sales.',
@@ -452,6 +483,8 @@ const vendorSalesDict = {
     recordSaleSub: 'Magdagdag ng walk-in sale para sa',
     pickDayTitle: 'Pumili muna ng araw',
     pickDayDesc: "Pumili ng partikular na petsa sa kalendaryo. Hindi pwedeng magdagdag ng benta sa 'Buong panahon'.",
+    futureDayTitle: 'Petsa sa hinaharap ang napili',
+    futureDayDesc: 'Maaari lang mag-record ng benta para sa araw na ito o sa nakaraang petsa.',
     formProduct: 'Paninda',
     searchProduct: 'Hanapin ang paninda',
     ruleProduct: 'Pumili ng paninda.',
@@ -462,7 +495,9 @@ const vendorSalesDict = {
     ruleQuantityWhole: 'Maglagay ng buong numero na higit sa 0.',
     ruleQuantityStock: 'Hanggang {max} na lang ang stock.',
     rulePriceValid: 'Maglagay ng tamang presyo.',
-    rulePriceMax: 'Maglagay ng presyo hanggang ₱1,000,000.',
+    rulePricePrecision: 'Gumamit ng hanggang 2 decimal place.',
+    rulePriceMax: 'Maglagay ng presyo hanggang ₱999,999.99.',
+    ruleTotalMax: 'Hanggang ₱999,999.99 lamang ang kabuuang benta.',
     confirmSaleTitle: 'I-record ang bentang ito?',
     confirmSaleFor: 'sa halagang',
     confirmSaleOn: 'ngayong',
@@ -493,15 +528,18 @@ const ALL_TIME_SKELETON = [
   { width: '30%', type: 'text' },
   { width: '30%', type: 'text', align: 'right' }
 ]
-const todayKey = () => date.formatDate(Date.now(), 'YYYY/MM/DD')
+const todayKey = () => manilaParts(new Date(Date.now())).ymd.replace(/-/g, '/')
+const today = ref(todayKey())
+const refreshToday = () => { today.value = todayKey() }
 
-const selectedDate = ref(todayKey())
+const selectedDate = ref(today.value)
 const showMobileManualModal = ref(false)
 const confirmOpen = ref(false)
 const datePopup = ref(null)
 const asideForm = ref(null)
 const sheetForm = ref(null)
 const loading = ref(true)
+const loadError = ref(false)
 const page = ref(1)
 const pageSize = ref(PAGE_SIZES[0])
 // The date the loaded rows belong to, so switching dates never reads old rows in the new layout while the new ones load.
@@ -509,18 +547,23 @@ const shownDate = ref(null)
 
 const displayDate = computed(() => {
   if (!selectedDate.value) return t('notifyAllTimeString')
-  return date.formatDate(new Date(selectedDate.value.replace(/\//g, '-')), 'MMM DD, YYYY')
+  const [year, month, day] = selectedDate.value.split('/').map(Number)
+  return date.formatDate(new Date(year, month - 1, day), 'MMM DD, YYYY')
 })
 
-const isToday = computed(() => selectedDate.value === todayKey())
+const isToday = computed(() => selectedDate.value === today.value)
+const isFutureDate = computed(() => !!selectedDate.value && selectedDate.value > today.value)
+const canRecordSaleDate = computed(() => !!selectedDate.value && !isFutureDate.value)
 
 const closeDatePopup = () => datePopup.value?.hide()
 const clearDate = () => { selectedDate.value = null }
-const setToday = () => { selectedDate.value = todayKey() }
+const setToday = () => {
+  refreshToday()
+  selectedDate.value = today.value
+}
 
 const metrics = reactive({
   revenue: 0,
-  growthRate: null,
   avgOrderValue: 0,
   cancellationRate: 0,
   bestSellingCategory: null
@@ -537,16 +580,22 @@ watch(pageSize, () => { page.value = 1 })
 
 const formatNumber = num => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-// A day's rows are order items, so orders are counted once each; All time counts the days.
+// Count orders across all loaded records, independent of the current table page; All time counts days.
 const recordCount = computed(() => (shownDate.value ? new Set(transactions.value.map(row => row.order_id)).size : transactions.value.length))
 
 const itemsSold = computed(() => transactions.value.reduce((sum, row) => sum + Number((shownDate.value ? row.quantity : row.total_items) || 0), 0))
 
-// The hero's bars: each record's total on one day, or the last 14 days' revenue for All time, scaled to the largest.
+const heroBarLabel = computed(() => t(shownDate.value
+  ? (transactions.value.length > 16 ? 'labelBarsRecentOrders' : 'labelBarsDay')
+  : 'labelBarsAllTime'))
+const heroBarDescription = computed(() => t(shownDate.value
+  ? (transactions.value.length > 16 ? 'ariaBarsRecentOrders' : 'ariaBarsDay')
+  : 'ariaBarsAllTime'))
+
+// The API sorts sales newest first, including backdated walk-in orders.
+// Show a small chronological sample while the totals include every record.
 const heroBars = computed(() => {
-  const rows = shownDate.value
-    ? [...transactions.value].sort((a, b) => Number(a.order_id) - Number(b.order_id)).slice(-16)
-    : [...transactions.value].sort((a, b) => new Date(a.sale_date) - new Date(b.sale_date)).slice(-14)
+  const rows = transactions.value.slice(0, shownDate.value ? 16 : 14).reverse()
   const values = rows.map(row => Number((shownDate.value ? row.total : row.daily_revenue) || 0))
   const max = Math.max(0, ...values)
   if (!max) return []
@@ -563,10 +612,10 @@ const manualForm = reactive({
   unitPrice: 0
 })
 
-const estimatedTotal = computed(() => (manualForm.quantity || 0) * (manualForm.unitPrice || 0))
+const estimatedTotal = computed(() => (manualForm.quantity || 0) * Math.round(Number(manualForm.unitPrice || 0) * 100) / 100)
 
-// Limits that keep a sale realistic: no more than the chosen product has in stock, and a price up to one million.
-const MAX_PRICE = 1000000
+// Keep the price and total within the database's DECIMAL(8, 2) money columns.
+const MAX_AMOUNT = 999999.99
 const maxQuantity = computed(() => {
   const product = manualForm.product
   const stock = Number(product?.available_quantity ?? product?.stock_quantity)
@@ -580,7 +629,9 @@ const quantityRules = computed(() => [
 
 const priceRules = computed(() => [
   val => (val !== '' && val !== null && Number(val) >= 0) || t('rulePriceValid'),
-  val => Number(val) <= MAX_PRICE || t('rulePriceMax')
+  val => /^\d+(\.\d{1,2})?$/.test(String(val)) || t('rulePricePrecision'),
+  val => Number(val) <= MAX_AMOUNT || t('rulePriceMax'),
+  val => Math.round(Number(val) * 100) * Number(manualForm.quantity || 0) <= MAX_AMOUNT * 100 || t('ruleTotalMax')
 ])
 
 // The total only shows once both fields pass their checks, so an out-of-range entry never prints a meaningless figure.
@@ -605,10 +656,14 @@ const onProductSelected = val => {
 
 // The form's own rules run first, then the sale is confirmed before it is saved.
 const askToRecord = () => {
+  refreshToday()
+  if (!canRecordSaleDate.value) return
   confirmOpen.value = true
 }
 
 const recordSale = async () => {
+  refreshToday()
+  if (!canRecordSaleDate.value || submitting.value) return
   submitting.value = true
   try {
     await api.post('/vendor/sales/manual', {
@@ -616,7 +671,7 @@ const recordSale = async () => {
       quantity: manualForm.quantity,
       unit_price: manualForm.unitPrice,
       total_amount: estimatedTotal.value,
-      sale_date: selectedDate.value ? selectedDate.value.replace(/\//g, '-') : date.formatDate(Date.now(), 'YYYY-MM-DD')
+      sale_date: selectedDate.value.replace(/\//g, '-')
     })
     $q.notify({ type: 'positive', message: t('notifySaleRecorded'), position: 'top-right' })
     confirmOpen.value = false
@@ -640,9 +695,11 @@ const recordSale = async () => {
 let lastRequest = 0
 
 const fetchSalesData = async () => {
+  refreshToday()
   const requestId = ++lastRequest
   const requestedDate = selectedDate.value
   loading.value = true
+  loadError.value = false
   try {
     const day = requestedDate ? requestedDate.replace(/\//g, '-') : null
     const requestParams = day ? { start_date: day, end_date: day } : {}
@@ -658,7 +715,6 @@ const fetchSalesData = async () => {
 
     if (metricsRes.data) {
       metrics.revenue = metricsRes.data.revenue || 0
-      metrics.growthRate = metricsRes.data.growth_rate || null
       metrics.avgOrderValue = metricsRes.data.avg_order_value || 0
       metrics.cancellationRate = metricsRes.data.cancellation_rate || 0
       metrics.bestSellingCategory = metricsRes.data.best_selling_category || null
@@ -669,15 +725,25 @@ const fetchSalesData = async () => {
     shownDate.value = requestedDate
     page.value = 1
   } catch (error) {
+    if (requestId !== lastRequest) return
+    loadError.value = true
     console.error('Failed to load sales data', error)
   } finally {
     if (requestId === lastRequest) loading.value = false
   }
 }
 
-watch(selectedDate, fetchSalesData)
+watch(selectedDate, () => {
+  confirmOpen.value = false
+  fetchSalesData()
+})
 
-onMounted(fetchSalesData)
+let dayTimer
+onMounted(() => {
+  dayTimer = setInterval(refreshToday, 60000)
+  fetchSalesData()
+})
+onUnmounted(() => clearInterval(dayTimer))
 </script>
 
 <style scoped>
@@ -744,23 +810,6 @@ onMounted(fetchSalesData)
 
   font-size: var(--fs-xs);
   font-weight: 600;
-}
-
-.sr-growth {
-  display: inline-flex;
-  align-items: center;
-
-  gap: 4px;
-  padding: 5px 10px;
-
-  border-radius: var(--r-pill);
-
-  background: #ffffff;
-
-  font-size: var(--fs-xs);
-  font-weight: 700;
-
-  color: var(--c-success);
 }
 
 .sr-hero-value {
@@ -967,11 +1016,20 @@ onMounted(fetchSalesData)
   font-size: var(--fs-lg);
 }
 
+.sr-retry {
+  margin-top: 16px;
+}
+
+.sr-pager {
+  flex-wrap: wrap;
+}
+
 .sr-pager-right {
   display: flex;
   align-items: center;
 
   margin-left: auto;
+  gap: 12px;
 }
 
 .sr-page-size {
