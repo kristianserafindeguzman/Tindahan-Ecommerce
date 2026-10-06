@@ -23,7 +23,11 @@ class AdminController extends Controller
     {
         return response()->json([
             'total_vendors' => User::where('role', 'Vendor')
-                ->where('account_status', 'active')
+                ->whereHas('store', function ($q) {
+                    $q->whereHas('approvalStatus', function ($q2) {
+                        $q2->where('status', 'approved');
+                    });
+                })
                 ->count(),
             'pending_approvals' => ApprovalStatus::where('status', 'pending')->count(),
             'total_consumers'   => User::where('role', 'Consumer')
