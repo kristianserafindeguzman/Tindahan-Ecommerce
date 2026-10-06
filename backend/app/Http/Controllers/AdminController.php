@@ -22,7 +22,9 @@ class AdminController extends Controller
     public function stats()
     {
         return response()->json([
-            'total_vendors'     => User::where('role', 'Vendor')->count(),
+            'total_vendors' => User::where('role', 'Vendor')
+                ->where('account_status', 'active')
+                ->count(),
             'pending_approvals' => ApprovalStatus::where('status', 'pending')->count(),
             'total_consumers'   => User::where('role', 'Consumer')
                 ->where('account_status', '!=', 'deleted')

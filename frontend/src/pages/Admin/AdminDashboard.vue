@@ -426,28 +426,50 @@ const clockTime = computed(() =>
 )
 
 const formatFullDayDate = value => {
-  const date = new Date(value)
+  if (!value) return ''
+
+  const raw = String(value)
+
+  // Local API already uses Philippine local time.
+  // Production API returns UTC without timezone information.
+  const date = window.location.hostname === 'localhost'
+    ? new Date(raw)
+    : new Date(raw.replace(' ', 'T') + 'Z')
+
   if (Number.isNaN(date.getTime())) return ''
-  
+
   let formatted = date.toLocaleDateString(currentLocale.value, {
     weekday: 'long',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
+    timeZone: 'Asia/Manila'
   })
 
-  // Fix: Force 'Set' to 'Sept' for proper formatting in Taglish mode
   if (lang.value === 'ph') {
     formatted = formatted.replace(/\bSet\b/i, 'Sept').replace('Set ', 'Sept ')
   }
-  
+
   return formatted
 }
 
 const formatTime = value => {
-  const date = new Date(value)
+  if (!value) return ''
+
+  const raw = String(value)
+
+  // Local API already uses Philippine local time.
+  // Production API returns UTC without timezone information.
+  const date = window.location.hostname === 'localhost'
+    ? new Date(raw)
+    : new Date(raw.replace(' ', 'T') + 'Z')
+
   return Number.isNaN(date.getTime())
     ? ''
-    : date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    : date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZone: 'Asia/Manila'
+      })
 }
 
 const attention = computed(() => {
@@ -796,7 +818,7 @@ onBeforeUnmount(() => clearInterval(clockTimer))
 
 <style scoped>
 /* =========================================================
-   ANIMATIONS 
+   ANIMATIONS
 ========================================================= */
 @keyframes slideFadeUp {
   0% { opacity: 0; transform: translateY(20px); }
