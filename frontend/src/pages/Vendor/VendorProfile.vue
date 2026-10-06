@@ -575,6 +575,8 @@
               <div class="edit-field-label">{{ t('newPwdLabel') }}</div>
               <q-input
                 v-model="passwords.new"
+                :hint="t(PASSWORD_REQUIREMENTS)"
+                hide-hint
                 outlined
                 dense
                 no-error-icon
@@ -730,6 +732,7 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
+import { PASSWORD_REQUIREMENTS, validatePassword } from '@/utils/passwordValidation'
 import { clearAuthStorage } from '@/utils/authStorage'
 import PhotoCropper from '@/components/shared/PhotoCropper.vue'
 import VendorLocationMap from '@/components/leaflet/VendorLocationMap.vue'
@@ -829,6 +832,11 @@ const vendorProfileDict = {
     currentPwdRule: 'Current password is required',
     newPwdLabel: 'New Password',
     newPwdRuleLength: 'Minimum 8 characters',
+    'Password must be at least 8 characters.': 'Password must be at least 8 characters.',
+    'Password must contain at least one uppercase letter.': 'Password must contain at least one uppercase letter.',
+    'Password must contain at least one lowercase letter.': 'Password must contain at least one lowercase letter.',
+    'Password must contain at least one symbol.': 'Password must contain at least one symbol.',
+    'At least 8 characters, including one uppercase letter, one lowercase letter, and one symbol.': 'At least 8 characters, including one uppercase letter, one lowercase letter, and one symbol.',
     newPwdSuccess: 'Strong password.',
     confirmPwdLabel: 'Confirm New Password',
     confirmPwdError: 'Passwords do not match.',
@@ -983,6 +991,11 @@ const vendorProfileDict = {
     currentPwdRule: 'Kailangan ang kasalukuyang password',
     newPwdLabel: 'Bagong Password',
     newPwdRuleLength: 'Kailangan hindi bababa sa 8 characters',
+    'Password must be at least 8 characters.': 'Dapat at least 8 characters ang password.',
+    'Password must contain at least one uppercase letter.': 'Dapat may kahit isang malaking titik ang password.',
+    'Password must contain at least one lowercase letter.': 'Dapat may kahit isang maliit na titik ang password.',
+    'Password must contain at least one symbol.': 'Dapat may kahit isang simbolo ang password, gaya ng !, @, o #.',
+    'At least 8 characters, including one uppercase letter, one lowercase letter, and one symbol.': 'At least 8 characters, na may isang malaking titik, isang maliit na titik, at isang simbolo.',
     newPwdSuccess: 'Matibay na password.',
     confirmPwdLabel: 'Ulitin ang Bagong Password',
     confirmPwdError: 'Hindi magkapareho ang password.',
@@ -1755,11 +1768,12 @@ const showConfirmPassword = ref(false)
 const passwords = reactive({ current: '', new: '', confirm: '' })
 
 // Same rule as sign-up's password check.
-const isNewPasswordValid = computed(() => passwords.new.length >= 8)
+const isNewPasswordValid = computed(() => validatePassword(passwords.new) === true)
 
 const newPasswordMessage = computed(() => {
   if (!passwords.new) return null
-  if (!isNewPasswordValid.value) return { type: 'error', text: t('newPwdRuleLength') }
+  const validation = validatePassword(passwords.new, t)
+  if (validation !== true) return { type: 'error', text: validation }
   return { type: 'success', text: t('newPwdSuccess') }
 })
 
@@ -1789,7 +1803,8 @@ const attemptClosePasswordModal = () => {
 
 // The change is only queued here; the texted code in the OTP dialog is what applies it.
 const savePassword = async () => {
-  if (!(await passwordFormRef.value.validate())) return
+  const isValid = await passwordFormRef.value.validate()
+  if (!isValid || !canSavePassword.value) return
   savingPassword.value = true
   try {
     await api.post('/vendor/profile/password-request-otp', {
@@ -1805,7 +1820,7 @@ const savePassword = async () => {
     showOtpModal.value = true
     startOtpTimers()
   } catch (err) {
-    $q.notify({ type: 'negative', message: errorMessage(err, t('errUpdatePwd')) })
+    $q.notify({ type: 'negative', message: err.response?.data?.errors?.new_password?.[0] ? t(err.response.data.errors.new_password[0]) : errorMessage(err, t('errUpdatePwd')) })
   } finally {
     savingPassword.value = false
   }

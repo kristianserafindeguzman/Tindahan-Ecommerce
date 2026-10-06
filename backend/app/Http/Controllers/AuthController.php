@@ -8,6 +8,7 @@ use App\Models\OtpCode;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Rules\StrongPassword;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -35,7 +36,7 @@ class AuthController extends Controller
             'phone_number'    => 'required|string|max:15',
             // A real calendar date before today, and no earlier than 1900, sent as YYYY-MM-DD.
             'birthday'        => 'required|date_format:Y-m-d|before:today|after_or_equal:1900-01-01',
-            'password'        => 'required|string|min:8|confirmed',
+            'password'        => ['required', 'string', new StrongPassword(), 'confirmed'],
             'profile_picture' => 'nullable|image|max:2048',
         ]);
 
@@ -166,7 +167,7 @@ class AuthController extends Controller
             'email'         => 'required|email|max:100|unique:users,email',
             'phone_number'  => ['required', 'string', 'regex:/^09\d{9}$/'],
             'verification_token' => 'required|string',
-            'password'      => 'required|string|min:8|confirmed',
+            'password'      => ['required', 'string', new StrongPassword(), 'confirmed'],
             'store_name'    => 'required|string|max:150',
             'store_picture' => 'required|image|max:10240',
             'operating_days'=> 'required|string',
@@ -478,7 +479,7 @@ class AuthController extends Controller
         $request->validate([
             'phone_number' => 'required|string',
             'reset_token'  => 'required|string',
-            'password'     => 'required|string|min:8|confirmed',
+            'password'     => ['required', 'string', new StrongPassword(), 'confirmed'],
         ]);
 
         $user = User::where('phone_number', $request->phone_number)->first();

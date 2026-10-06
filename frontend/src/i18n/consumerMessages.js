@@ -484,6 +484,11 @@ export default {
   "We'll send a verification link to your new email.":
     'Magpapadala kami ng verification link sa bagong email mo.',
   'Minimum 8 characters': 'At least 8 characters',
+  'Password must be at least 8 characters.': 'Dapat at least 8 characters ang password.',
+  'Password must contain at least one uppercase letter.': 'Dapat may kahit isang malaking titik ang password.',
+  'Password must contain at least one lowercase letter.': 'Dapat may kahit isang maliit na titik ang password.',
+  'Password must contain at least one symbol.': 'Dapat may kahit isang simbolo ang password, gaya ng !, @, o #.',
+  'At least 8 characters, including one uppercase letter, one lowercase letter, and one symbol.': 'At least 8 characters, na may isang malaking titik, isang maliit na titik, at isang simbolo.',
   'Strong password.': 'Strong ang password.',
   'Passwords do not match.': 'Hindi tugma ang passwords.',
   'Passwords match.': 'Tugma ang passwords.',

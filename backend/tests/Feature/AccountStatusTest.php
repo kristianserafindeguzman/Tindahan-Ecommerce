@@ -53,8 +53,8 @@ class AccountStatusTest extends TestCase
             'birthday' => '1995-06-15',
             'email' => 'juan@example.com',
             'phone_number' => '09171234567',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
         ], $overrides));
     }
 
@@ -202,7 +202,7 @@ class AccountStatusTest extends TestCase
     {
         $this->signUp()->assertCreated();
 
-        $this->postJson('/api/login', ['email' => 'juan@example.com', 'password' => 'password123'])
+        $this->postJson('/api/login', ['email' => 'juan@example.com', 'password' => 'Password123!'])
             ->assertForbidden()
             ->assertJson(['account_status' => 'pending', 'contact_support' => true]);
     }
