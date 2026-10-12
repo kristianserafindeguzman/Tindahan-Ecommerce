@@ -1,11 +1,9 @@
 <template>
   <q-page class="storefront-page">
-
     <SiteHeader />
 
     <!-- MAIN CONTENT -->
     <div class="home-content">
-
       <section class="hero-banner">
         <div class="hero-content">
           <span class="hero-eyebrow">
@@ -13,17 +11,35 @@
             {{ t('Discover local stores') }}
           </span>
 
-          <h1 class="hero-title hero-title-lg">{{ t('Explore sari-sari stores around you') }}</h1>
+          <h1 class="hero-title hero-title-lg">{{
+            t('Explore sari-sari stores around you')
+          }}</h1>
 
           <p class="hero-sub">
-            {{ t('Find nearby stores, discover products, and shop from your local community.') }}
+            {{
+              t(
+                'Find nearby stores, discover products, and shop from your local community.'
+              )
+            }}
           </p>
 
           <div class="hero-actions">
-            <q-btn unelevated no-caps :label="t('Browse Products')" class="hero-cta" @click="router.push('/consumer/products')">
+            <q-btn
+              unelevated
+              no-caps
+              :label="t('Browse Products')"
+              class="hero-cta"
+              @click="router.push('/consumer/products')"
+            >
               <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
             </q-btn>
-            <q-btn unelevated no-caps :label="t('Show Map')" class="hero-cta hero-cta--ghost" @click="showMapDialog = true">
+            <q-btn
+              unelevated
+              no-caps
+              :label="t('Show Map')"
+              class="hero-cta hero-cta--ghost"
+              @click="showMapDialog = true"
+            >
               <q-icon name="o_map" size="16px" class="q-ml-xs" />
             </q-btn>
           </div>
@@ -38,7 +54,6 @@
         </div>
       </section>
 
-
       <!-- CATEGORIES -->
       <SectionBlock :title="t('Categories')">
         <div v-if="categoriesLoading" class="categories-skeleton-row">
@@ -47,36 +62,71 @@
             <q-skeleton type="text" class="category-skeleton-label" />
           </div>
         </div>
-        <CategoryCarousel v-else :categories="categories" @select="goToCategory" />
+        <CategoryCarousel
+          v-else
+          :categories="categories"
+          @select="goToCategory"
+        />
       </SectionBlock>
 
       <!-- RECOMMENDED / POPULAR PRODUCTS -->
-      <SectionBlock :title="resultsSectionTitle" view-all @view-all="router.push(resultsViewAllPath)">
-        <div v-if="isLoggedIn ? loadingPersonalized : productsLoading" class="products-grid">
+      <SectionBlock
+        :title="resultsSectionTitle"
+        view-all
+        @view-all="router.push(resultsViewAllPath)"
+      >
+        <div
+          v-if="isLoggedIn ? loadingPersonalized : productsLoading"
+          class="products-grid"
+        >
           <CardSkeleton v-for="n in 6" :key="n" />
         </div>
         <div v-else ref="productsGridEl" class="products-grid">
-          <ProductCard v-for="product in recommendedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
+          <ProductCard
+            v-for="product in recommendedProducts"
+            :key="product.id"
+            :product="product"
+            @add-to-cart="handleAddToCart"
+            @view-product="openProductModal"
+          />
         </div>
       </SectionBlock>
 
       <!-- STORES NEAR YOU -->
-      <SectionBlock :title="t('Stores near You')" view-all @view-all="router.push('/consumer/stores')">
+      <SectionBlock
+        :title="t('Stores near You')"
+        view-all
+        @view-all="router.push('/consumer/stores')"
+      >
         <div v-if="storesLoading" class="stores-row">
           <CardSkeleton v-for="n in 4" :key="n" variant="store" />
         </div>
         <div v-else class="stores-row">
-          <StoreCard v-for="store in nearbyStores" :key="store.id" :store="store" />
+          <StoreCard
+            v-for="store in nearbyStores"
+            :key="store.id"
+            :store="store"
+          />
         </div>
       </SectionBlock>
 
       <!-- DISCOVER PRODUCTS -->
-      <SectionBlock :title="t('Discover Products')" view-all @view-all="router.push('/consumer/products')">
+      <SectionBlock
+        :title="t('Discover Products')"
+        view-all
+        @view-all="router.push('/consumer/products')"
+      >
         <div v-if="productsLoading" class="products-grid">
           <CardSkeleton v-for="n in 6" :key="n" />
         </div>
         <div v-else class="products-grid">
-          <ProductCard v-for="product in visibleDiscoverProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
+          <ProductCard
+            v-for="product in visibleDiscoverProducts"
+            :key="product.id"
+            :product="product"
+            @add-to-cart="handleAddToCart"
+            @view-product="openProductModal"
+          />
         </div>
 
         <q-btn
@@ -93,9 +143,17 @@
       <section v-if="!isLoggedIn" class="seller-band">
         <div class="seller-copy">
           <h2 class="seller-title">{{ t('Own a sari-sari store?') }}</h2>
-          <p class="seller-text">{{ t('List what you stock and reach shoppers on your street.') }}</p>
+          <p class="seller-text">{{
+            t('List what you stock and reach shoppers on your street.')
+          }}</p>
         </div>
-        <q-btn unelevated no-caps :label="t('Start selling')" class="seller-cta" @click="router.push('/vendor/register')">
+        <q-btn
+          unelevated
+          no-caps
+          :label="t('Start selling')"
+          class="seller-cta"
+          @click="router.push('/vendor/register')"
+        >
           <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
         </q-btn>
       </section>
@@ -105,14 +163,13 @@
 
     <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
     <ConsumerMap v-model="showMapDialog" />
-
   </q-page>
 </template>
 
 <script setup>
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
@@ -141,7 +198,7 @@ const showProductModal = ref(false)
 const selectedProduct = ref(null)
 const showMapDialog = ref(false)
 
-const openProductModal = (product) => {
+const openProductModal = product => {
   selectedProduct.value = product
   showProductModal.value = true
 }
@@ -149,7 +206,11 @@ const openProductModal = (product) => {
 // This page renders for guests and logged-in consumers alike, so SiteHeader reads localStorage directly instead of route-guarding.
 const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 
-const { categories, loading: categoriesLoading, fetchCategories } = useCategories()
+const {
+  categories,
+  loading: categoriesLoading,
+  fetchCategories
+} = useCategories()
 const { products, loading: productsLoading, fetchProducts } = useProducts()
 const { stores, loading: storesLoading, fetchStores } = useStores()
 
@@ -163,7 +224,8 @@ const fetchPersonalizedFeed = async () => {
     const lat = localStorage.getItem('consumer_lat')
     const lng = localStorage.getItem('consumer_lng')
     const params = lat && lng ? { lat, lng } : {}
-    
+    params._t = Date.now() // Prevent stale cached results
+
     const response = await api.get('/consumer/personalized-feed', { params })
     personalizedFeed.value = response.data.products || []
   } catch (error) {
@@ -180,13 +242,25 @@ onMounted(() => {
   if (isLoggedIn.value) {
     fetchPersonalizedFeed()
   }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('search-logged', fetchPersonalizedFeed)
+  }
 })
 
-const goToCategory = (category) => {
-  router.push({ path: '/consumer/products', query: { category: category.label } })
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('search-logged', fetchPersonalizedFeed)
+  }
+})
+
+const goToCategory = category => {
+  router.push({
+    path: '/consumer/products',
+    query: { category: category.label }
+  })
 }
 
-const handleAddToCart = async (product) => {
+const handleAddToCart = async product => {
   if (!isLoggedIn.value) {
     router.push('/login')
     return
@@ -194,9 +268,15 @@ const handleAddToCart = async (product) => {
 
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
+    $q.notify({
+      type: 'positive',
+      message: t('{name} added to cart.', { name: product.name })
+    })
   } catch (error) {
-    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
+    $q.notify({
+      type: 'negative',
+      message: t(error.response?.data?.message || 'Failed to add to cart.')
+    })
   }
 }
 
@@ -205,7 +285,9 @@ const resultsSectionTitle = computed(() =>
 )
 
 // Personalization is a logged-in-only route, so guests get routed to the guest-browsable catalog instead.
-const resultsViewAllPath = computed(() => isLoggedIn.value ? '/consumer/personalize' : '/consumer/products')
+const resultsViewAllPath = computed(() =>
+  isLoggedIn.value ? '/consumer/personalize' : '/consumer/products'
+)
 
 // Nearby stores are the first four entries of the store list fetched for the current address.
 const NEARBY_STORES_COUNT = 4
@@ -285,7 +367,8 @@ const visibleDiscoverProducts = computed(() =>
 
   /* Dot-grid texture over the gradient, instead of the old flat gradient + two decorative circles — subtle enough not to fight the white text. */
   background:
-    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0 0 / 26px 26px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0
+      0 / 26px 26px,
     linear-gradient(
       145deg,
       var(--c-brand) 0%,
@@ -298,10 +381,15 @@ const visibleDiscoverProducts = computed(() =>
 
 /* Hero entrance on page load only, since the sections below use the scroll reveal in SectionBlock.vue. */
 @keyframes home-fade-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-
 
 @media (prefers-reduced-motion: reduce) {
   .hero-banner {
@@ -418,7 +506,10 @@ const visibleDiscoverProducts = computed(() =>
   /* Neutral (not brand-red) shadow — a red-tinted shadow would disappear against this red banner. */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .hero-cta:hover {
@@ -517,7 +608,10 @@ const visibleDiscoverProducts = computed(() =>
 
   box-shadow: var(--sh-brand);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .seller-cta:hover {
@@ -561,7 +655,10 @@ const visibleDiscoverProducts = computed(() =>
 
   cursor: pointer;
 
-  transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
 }
 
 .see-more-btn:hover {
