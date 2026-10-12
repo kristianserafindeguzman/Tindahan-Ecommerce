@@ -1,23 +1,46 @@
 <template>
   <!-- ADD PRODUCT — the vendor dialog shape: details on the left, the photo on the right. -->
-  <q-dialog v-model="isOpen" persistent :maximized="$q.screen.xs" @hide="resetForm">
-    <q-card class="vp-dialog pm-dialog" :class="{ 'pm-dialog--full': $q.screen.xs }">
+  <q-dialog
+    v-model="isOpen"
+    persistent
+    :maximized="$q.screen.xs"
+    @hide="resetForm"
+  >
+    <q-card
+      class="vp-dialog pm-dialog"
+      :class="{ 'pm-dialog--full': $q.screen.xs }"
+    >
       <!-- The whole card is the form, so Save runs the field checks before sending. -->
       <q-form greedy class="pm-form" @submit.prevent="submitForm">
         <div class="vp-dialog-head pm-head">
-          <span class="vp-dialog-icon"><q-icon name="o_add_box" size="22px" /></span>
+          <span class="vp-dialog-icon"
+            ><q-icon name="o_add_box" size="22px"
+          /></span>
           <div>
             <div class="vp-dialog-title">Add product</div>
-            <div class="vp-dialog-text">Fill in what customers will see in your store.</div>
+            <div class="vp-dialog-text"
+              >Fill in what customers will see in your store.</div
+            >
           </div>
-          <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" :disable="saving" />
+          <q-btn
+            v-close-popup
+            flat
+            round
+            dense
+            icon="o_close"
+            class="vp-dialog-close"
+            aria-label="Close"
+            :disable="saving"
+          />
         </div>
 
         <div class="pm-body">
           <div class="pm-grid">
             <div class="pm-fields">
               <div>
-                <label class="vp-field-label" for="pm-add-name">Product name</label>
+                <label class="vp-field-label" for="pm-add-name"
+                  >Product name</label
+                >
                 <q-input
                   v-model="form.product_name"
                   for="pm-add-name"
@@ -26,12 +49,16 @@
                   hide-bottom-space
                   placeholder="e.g. Lucky Me Pancit Canton"
                   class="vp-input"
-                  :rules="[val => !!(val && val.trim()) || 'Enter a product name.']"
+                  :rules="[
+                    val => !!(val && val.trim()) || 'Enter a product name.'
+                  ]"
                 />
               </div>
 
               <div>
-                <label class="vp-field-label">{{ tCategory('uiCategory') }}</label>
+                <label class="vp-field-label">{{
+                  tCategory('uiCategory')
+                }}</label>
                 <q-select
                   v-model="form.category_id"
                   :options="categoryOptions"
@@ -54,7 +81,10 @@
               </div>
 
               <div>
-                <label class="vp-field-label" for="pm-add-desc">Description <span class="vp-field-optional">(optional)</span></label>
+                <label class="vp-field-label" for="pm-add-desc"
+                  >Description
+                  <span class="vp-field-optional">(optional)</span></label
+                >
                 <q-input
                   v-model="form.description"
                   for="pm-add-desc"
@@ -67,7 +97,10 @@
               </div>
 
               <div>
-                <label class="vp-field-label" for="pm-add-exp">Best Before / Expiration Date <span class="vp-field-optional">(optional)</span></label>
+                <label class="vp-field-label" for="pm-add-exp"
+                  >Best Before / Expiration Date
+                  <span class="vp-field-optional">(optional)</span></label
+                >
                 <q-input
                   v-model="form.expiration_date"
                   for="pm-add-exp"
@@ -82,12 +115,20 @@
               <div class="pm-section">
                 <div class="pm-section-head">
                   <span class="pm-section-title">Pricing and stock</span>
-                  <q-toggle v-model="hasVariants" dense color="primary" label="Has sizes" class="pm-toggle" />
+                  <q-toggle
+                    v-model="hasVariants"
+                    dense
+                    color="primary"
+                    label="Has sizes"
+                    class="pm-toggle"
+                  />
                 </div>
 
                 <div v-if="!hasVariants" class="pm-row">
                   <div>
-                    <label class="vp-field-label" for="pm-add-price">Price (₱)</label>
+                    <label class="vp-field-label" for="pm-add-price"
+                      >Price (₱)</label
+                    >
                     <q-input
                       v-model.number="form.price"
                       for="pm-add-price"
@@ -99,11 +140,17 @@
                       hide-bottom-space
                       placeholder="0.00"
                       class="vp-input"
-                      :rules="[val => (val !== null && val !== '' && val >= 0) || 'Enter a price.']"
+                      :rules="[
+                        val =>
+                          (val !== null && val !== '' && val >= 0) ||
+                          'Enter a price.'
+                      ]"
                     />
                   </div>
                   <div>
-                    <label class="vp-field-label" for="pm-add-qty">Quantity</label>
+                    <label class="vp-field-label" for="pm-add-qty"
+                      >Quantity</label
+                    >
                     <q-input
                       v-model.number="form.stock_quantity"
                       for="pm-add-qty"
@@ -114,22 +161,80 @@
                       hide-bottom-space
                       placeholder="0"
                       class="vp-input"
-                      :rules="[val => (val !== null && val !== '' && val >= 0) || 'Enter a quantity.']"
+                      :rules="[
+                        val =>
+                          (val !== null && val !== '' && val >= 0) ||
+                          'Enter a quantity.'
+                      ]"
                     />
                   </div>
                 </div>
 
                 <div v-else class="pm-variants">
                   <div class="pm-variant pm-variant--labels" aria-hidden="true">
-                    <span>Size</span><span>Price (₱)</span><span>Quantity</span><span />
+                    <span>Size</span><span>Price (₱)</span><span>Quantity</span
+                    ><span />
                   </div>
-                  <div v-for="(variant, index) in form.variants" :key="index" class="pm-variant">
-                    <q-input v-model="variant.name" outlined dense hide-bottom-space placeholder="e.g. Small" class="vp-input" :aria-label="`Size ${index + 1}`" :rules="[val => !!(val && String(val).trim()) || 'Required']" />
-                    <q-input v-model.number="variant.price" type="number" min="0" step="0.01" outlined dense hide-bottom-space placeholder="0.00" class="vp-input" :aria-label="`Price for size ${index + 1}`" />
-                    <q-input v-model.number="variant.quantity" type="number" min="0" outlined dense hide-bottom-space placeholder="0" class="vp-input" :aria-label="`Quantity for size ${index + 1}`" />
-                    <q-btn flat round dense icon="o_close" class="pm-variant-remove" :disable="form.variants.length === 1" :aria-label="`Remove size ${index + 1}`" @click="removeVariant(index)" />
+                  <div
+                    v-for="(variant, index) in form.variants"
+                    :key="index"
+                    class="pm-variant"
+                  >
+                    <q-input
+                      v-model="variant.name"
+                      outlined
+                      dense
+                      hide-bottom-space
+                      placeholder="e.g. Small"
+                      class="vp-input"
+                      :aria-label="`Size ${index + 1}`"
+                      :rules="[
+                        val => !!(val && String(val).trim()) || 'Required'
+                      ]"
+                    />
+                    <q-input
+                      v-model.number="variant.price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      outlined
+                      dense
+                      hide-bottom-space
+                      placeholder="0.00"
+                      class="vp-input"
+                      :aria-label="`Price for size ${index + 1}`"
+                    />
+                    <q-input
+                      v-model.number="variant.quantity"
+                      type="number"
+                      min="0"
+                      outlined
+                      dense
+                      hide-bottom-space
+                      placeholder="0"
+                      class="vp-input"
+                      :aria-label="`Quantity for size ${index + 1}`"
+                    />
+                    <q-btn
+                      flat
+                      round
+                      dense
+                      icon="o_close"
+                      class="pm-variant-remove"
+                      :disable="form.variants.length === 1"
+                      :aria-label="`Remove size ${index + 1}`"
+                      @click="removeVariant(index)"
+                    />
                   </div>
-                  <q-btn outline no-caps color="primary" icon="add" label="Add size" class="vp-pill-btn pm-add-variant" @click="addVariant" />
+                  <q-btn
+                    outline
+                    no-caps
+                    color="primary"
+                    icon="add"
+                    label="Add size"
+                    class="vp-pill-btn pm-add-variant"
+                    @click="addVariant"
+                  />
                 </div>
               </div>
             </div>
@@ -139,25 +244,82 @@
               <div v-if="imagePreview" class="pm-photo-frame">
                 <img :src="imagePreview" alt="Product photo preview" />
               </div>
-              <button v-else type="button" class="pm-dropzone" @click="showOptionMenu = true">
-                <span class="pm-dropzone-icon"><q-icon name="o_add_photo_alternate" size="30px" /></span>
+              <button
+                v-else
+                type="button"
+                class="pm-dropzone"
+                @click="showOptionMenu = true"
+              >
+                <span class="pm-dropzone-icon"
+                  ><q-icon name="o_add_photo_alternate" size="30px"
+                /></span>
                 <span class="pm-dropzone-title">Add a photo</span>
-                <span class="pm-dropzone-text">Take one or upload from your device</span>
+                <span class="pm-dropzone-text"
+                  >Take one or upload from your device</span
+                >
               </button>
               <div v-if="imagePreview" class="pm-photo-actions">
-                <q-btn outline no-caps color="primary" icon="o_crop" label="Crop" class="vp-pill-btn" @click="openCropperForAdd" />
-                <q-btn outline no-caps color="primary" icon="o_sync" label="Replace" class="vp-pill-btn" @click="showOptionMenu = true" />
-                <q-btn flat no-caps icon="o_delete" label="Remove" class="pm-remove" @click="removePhoto" />
+                <q-btn
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="o_crop"
+                  label="Crop"
+                  class="vp-pill-btn"
+                  @click="openCropperForAdd"
+                />
+                <q-btn
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="o_sync"
+                  label="Replace"
+                  class="vp-pill-btn"
+                  @click="showOptionMenu = true"
+                />
+                <q-btn
+                  flat
+                  no-caps
+                  icon="o_delete"
+                  label="Remove"
+                  class="pm-remove"
+                  @click="removePhoto"
+                />
               </div>
-              <div class="pm-photo-tip">A square photo on a plain background looks best in your store.</div>
-              <input ref="fileInput" type="file" class="pm-hidden" accept="image/*" @change="onFileSelected" />
+              <div class="pm-photo-tip"
+                >A square photo on a plain background looks best in your
+                store.</div
+              >
+              <input
+                ref="fileInput"
+                type="file"
+                class="pm-hidden"
+                accept="image/*"
+                @change="onFileSelected"
+              />
             </div>
           </div>
         </div>
 
         <div class="vp-dialog-actions pm-actions">
-          <q-btn v-close-popup outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" :disable="saving" />
-          <q-btn type="submit" unelevated no-caps color="primary" label="Save Product" class="vp-dialog-btn" :loading="saving" />
+          <q-btn
+            v-close-popup
+            outline
+            no-caps
+            color="primary"
+            label="Cancel"
+            class="vp-dialog-btn"
+            :disable="saving"
+          />
+          <q-btn
+            type="submit"
+            unelevated
+            no-caps
+            color="primary"
+            label="Save Product"
+            class="vp-dialog-btn"
+            :loading="saving"
+          />
         </div>
       </q-form>
     </q-card>
@@ -167,16 +329,30 @@
   <q-dialog v-model="showOptionMenu">
     <q-card class="vp-dialog pm-source-dialog">
       <div class="vp-dialog-head">
-        <span class="vp-dialog-icon"><q-icon name="o_add_a_photo" size="22px" /></span>
+        <span class="vp-dialog-icon"
+          ><q-icon name="o_add_a_photo" size="22px"
+        /></span>
         <div>
           <div class="vp-dialog-title">Add product photo</div>
-          <div class="vp-dialog-text">A clear photo on a plain background works best.</div>
+          <div class="vp-dialog-text"
+            >A clear photo on a plain background works best.</div
+          >
         </div>
-        <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
+        <q-btn
+          v-close-popup
+          flat
+          round
+          dense
+          icon="o_close"
+          class="vp-dialog-close"
+          aria-label="Close"
+        />
       </div>
       <div class="vp-dialog-body pm-sources">
         <button type="button" class="pm-source" @click="openCameraViewfinder">
-          <span class="pm-source-icon"><q-icon name="o_photo_camera" size="22px" /></span>
+          <span class="pm-source-icon"
+            ><q-icon name="o_photo_camera" size="22px"
+          /></span>
           <span class="pm-source-body">
             <span class="pm-source-title">Take a photo</span>
             <span class="pm-source-text">Use your camera</span>
@@ -184,7 +360,9 @@
           <q-icon name="o_chevron_right" size="20px" class="pm-source-arrow" />
         </button>
         <button type="button" class="pm-source" @click="triggerDeviceUpload">
-          <span class="pm-source-icon"><q-icon name="o_upload_file" size="22px" /></span>
+          <span class="pm-source-icon"
+            ><q-icon name="o_upload_file" size="22px"
+          /></span>
           <span class="pm-source-body">
             <span class="pm-source-title">Upload from device</span>
             <span class="pm-source-text">Choose an image file</span>
@@ -196,22 +374,61 @@
   </q-dialog>
 
   <!-- CAMERA -->
-  <q-dialog v-model="showCameraLens" persistent :maximized="$q.screen.lt.md" @show="startCamera" @hide="stopCamera">
-    <q-card class="vp-dialog vp-dialog--wide pm-camera" :class="{ 'pm-dialog--full': $q.screen.lt.md }">
+  <q-dialog
+    v-model="showCameraLens"
+    persistent
+    :maximized="$q.screen.lt.md"
+    @show="startCamera"
+    @hide="stopCamera"
+  >
+    <q-card
+      class="vp-dialog vp-dialog--wide pm-camera"
+      :class="{ 'pm-dialog--full': $q.screen.lt.md }"
+    >
       <div class="vp-dialog-head">
-        <span class="vp-dialog-icon"><q-icon name="o_photo_camera" size="22px" /></span>
+        <span class="vp-dialog-icon"
+          ><q-icon name="o_photo_camera" size="22px"
+        /></span>
         <div>
           <div class="vp-dialog-title">Take product photo</div>
           <div class="vp-dialog-text">Center the product in the frame.</div>
         </div>
-        <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
+        <q-btn
+          v-close-popup
+          flat
+          round
+          dense
+          icon="o_close"
+          class="vp-dialog-close"
+          aria-label="Close"
+        />
       </div>
       <div class="pm-camera-view">
-        <video ref="videoElement" autoplay playsinline class="pm-camera-feed"></video>
+        <video
+          ref="videoElement"
+          autoplay
+          playsinline
+          class="pm-camera-feed"
+        ></video>
       </div>
       <div class="vp-dialog-actions">
-        <q-btn v-close-popup outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" />
-        <q-btn unelevated no-caps color="primary" icon="o_camera" label="Capture" class="vp-dialog-btn" @click="capturePhoto" />
+        <q-btn
+          v-close-popup
+          outline
+          no-caps
+          color="primary"
+          label="Cancel"
+          class="vp-dialog-btn"
+        />
+        <q-btn
+          unelevated
+          no-caps
+          color="primary"
+          icon="o_camera"
+          label="Capture"
+          class="vp-dialog-btn"
+          @click="capturePhoto"
+        />
       </div>
     </q-card>
   </q-dialog>
@@ -223,16 +440,48 @@
         <span class="vp-dialog-icon"><q-icon name="o_crop" size="22px" /></span>
         <div>
           <div class="vp-dialog-title">Crop product photo</div>
-          <div class="vp-dialog-text">Drag the photo to move it, and zoom until the product fills the square.</div>
+          <div class="vp-dialog-text"
+            >Drag the photo to move it, and zoom until the product fills the
+            square.</div
+          >
         </div>
-        <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
+        <q-btn
+          v-close-popup
+          flat
+          round
+          dense
+          icon="o_close"
+          class="vp-dialog-close"
+          aria-label="Close"
+        />
       </div>
       <div class="vp-dialog-body">
-        <PhotoCropper ref="cropperRef" :src="cropSrc" :aspect="1" :output-width="800" @ready="cropReady = true" />
+        <PhotoCropper
+          ref="cropperRef"
+          :src="cropSrc"
+          :aspect="1"
+          :output-width="800"
+          @ready="cropReady = true"
+        />
       </div>
       <div class="vp-dialog-actions">
-        <q-btn v-close-popup outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" />
-        <q-btn unelevated no-caps color="primary" label="Apply Crop" class="vp-dialog-btn" :disable="!cropReady" @click="applyCrop" />
+        <q-btn
+          v-close-popup
+          outline
+          no-caps
+          color="primary"
+          label="Cancel"
+          class="vp-dialog-btn"
+        />
+        <q-btn
+          unelevated
+          no-caps
+          color="primary"
+          label="Apply Crop"
+          class="vp-dialog-btn"
+          :disable="!cropReady"
+          @click="applyCrop"
+        />
       </div>
     </q-card>
   </q-dialog>
@@ -250,7 +499,12 @@ const emit = defineEmits(['update:modelValue', 'refresh'])
 const $q = useQuasar()
 
 const isOpen = ref(props.modelValue)
-watch(() => props.modelValue, val => { isOpen.value = val })
+watch(
+  () => props.modelValue,
+  val => {
+    isOpen.value = val
+  }
+)
 watch(isOpen, val => emit('update:modelValue', val))
 
 const showOptionMenu = ref(false)
@@ -261,10 +515,12 @@ const categories = ref([])
 
 // The select stores category_id, so only the label a vendor reads is translated.
 const { t: tCategory, categoryLabel, categoryDescription } = useCategoryLabels()
-const categoryOptions = computed(() => categories.value.map(category => ({
-  ...category,
-  category_name: categoryLabel(category.category_name)
-})))
+const categoryOptions = computed(() =>
+  categories.value.map(category => ({
+    ...category,
+    category_name: categoryLabel(category.category_name)
+  }))
+)
 const hasVariants = ref(false)
 const saving = ref(false)
 const imagePreview = ref(null)
@@ -284,16 +540,22 @@ const form = ref({
 })
 
 const selectedAddCategoryGuide = computed(() => {
-  if (!form.value.category_id && !form.value.category) return tCategory('uiCategoryGuideEmpty')
+  if (!form.value.category_id && !form.value.category)
+    return tCategory('uiCategoryGuideEmpty')
 
-  const matchedCategory = categories.value.find(c =>
-    c.category_id === form.value.category_id ||
-    c.category_name === form.value.category ||
-    c.category_name === form.value.category?.label
+  const matchedCategory = categories.value.find(
+    c =>
+      c.category_id === form.value.category_id ||
+      c.category_name === form.value.category ||
+      c.category_name === form.value.category?.label
   )
 
-  return categoryDescription(matchedCategory?.category_name, matchedCategory?.description) ||
-    tCategory('uiCategoryGuideNone')
+  return (
+    categoryDescription(
+      matchedCategory?.category_name,
+      matchedCategory?.description
+    ) || tCategory('uiCategoryGuideNone')
+  )
 })
 
 const openCameraViewfinder = () => {
@@ -312,7 +574,9 @@ const triggerDeviceUpload = () => {
 
 const startCamera = async () => {
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    })
     if (videoElement.value) videoElement.value.srcObject = stream
   } catch (err) {
     console.error('Camera access denied or unavailable', err)
@@ -331,11 +595,15 @@ const capturePhoto = () => {
   const canvas = document.createElement('canvas')
   canvas.width = videoElement.value.videoWidth
   canvas.height = videoElement.value.videoHeight
-  canvas.getContext('2d').drawImage(videoElement.value, 0, 0, canvas.width, canvas.height)
+  canvas
+    .getContext('2d')
+    .drawImage(videoElement.value, 0, 0, canvas.width, canvas.height)
 
   const dataUrl = canvas.toDataURL('image/png')
   canvas.toBlob(blob => {
-    form.value.product_picture = new File([blob], 'product_capture.png', { type: 'image/png' })
+    form.value.product_picture = new File([blob], 'product_capture.png', {
+      type: 'image/png'
+    })
     imagePreview.value = dataUrl
     stopCamera()
     showCameraLens.value = false
@@ -372,7 +640,9 @@ const openCropperForAdd = () => {
 const applyCrop = async () => {
   const blob = await cropperRef.value?.toBlob()
   if (!blob) return
-  form.value.product_picture = new File([blob], `product_${Date.now()}.jpg`, { type: 'image/jpeg' })
+  form.value.product_picture = new File([blob], `product_${Date.now()}.jpg`, {
+    type: 'image/jpeg'
+  })
   imagePreview.value = URL.createObjectURL(blob)
   showCropper.value = false
 }
@@ -388,11 +658,24 @@ const fetchCategories = async () => {
 
 onMounted(fetchCategories)
 
-const addVariant = () => { form.value.variants.push({ name: '', price: null, quantity: null }) }
-const removeVariant = index => { if (form.value.variants.length > 1) form.value.variants.splice(index, 1) }
+const addVariant = () => {
+  form.value.variants.push({ name: '', price: null, quantity: null })
+}
+const removeVariant = index => {
+  if (form.value.variants.length > 1) form.value.variants.splice(index, 1)
+}
 
 const resetForm = () => {
-  form.value = { product_name: '', description: '', category_id: null, price: null, stock_quantity: null, product_picture: null, expiration_date: null, variants: [{ name: '', price: null, quantity: null }] }
+  form.value = {
+    product_name: '',
+    description: '',
+    category_id: null,
+    price: null,
+    stock_quantity: null,
+    product_picture: null,
+    expiration_date: null,
+    variants: [{ name: '', price: null, quantity: null }]
+  }
   hasVariants.value = false
   removePhoto()
 }
@@ -402,11 +685,14 @@ const submitForm = async () => {
   try {
     const formData = new FormData()
     formData.append('product_name', form.value.product_name.trim())
-    if (form.value.description) formData.append('description', form.value.description)
+    if (form.value.description)
+      formData.append('description', form.value.description)
     formData.append('category_id', form.value.category_id)
-    if (form.value.product_picture) formData.append('product_picture', form.value.product_picture)
-    if (form.value.expiration_date) formData.append('expiration_date', form.value.expiration_date)
-    
+    if (form.value.product_picture)
+      formData.append('product_picture', form.value.product_picture)
+    if (form.value.expiration_date)
+      formData.append('expiration_date', form.value.expiration_date)
+
     if (hasVariants.value) {
       formData.append('variants', JSON.stringify(form.value.variants))
     } else {
@@ -414,13 +700,18 @@ const submitForm = async () => {
       formData.append('stock_quantity', form.value.stock_quantity)
     }
 
-    await api.post('/vendor/products', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+    await api.post('/vendor/products', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
     $q.notify({ type: 'positive', message: 'Product added.' })
     resetForm()
     isOpen.value = false
     emit('refresh')
   } catch (err) {
-    $q.notify({ type: 'negative', message: err.response?.data?.message || 'Failed to save the product.' })
+    $q.notify({
+      type: 'negative',
+      message: err.response?.data?.message || 'Failed to save the product.'
+    })
   } finally {
     saving.value = false
   }
@@ -641,7 +932,9 @@ onBeforeUnmount(stopCamera)
 
   cursor: pointer;
 
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .pm-dropzone:hover {
@@ -759,7 +1052,9 @@ onBeforeUnmount(stopCamera)
 
   cursor: pointer;
 
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .pm-source:hover {
@@ -875,7 +1170,10 @@ onBeforeUnmount(stopCamera)
   }
 
   .pm-variant {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.9fr) 28px;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(
+        0,
+        0.9fr
+      ) 28px;
 
     gap: 6px;
   }

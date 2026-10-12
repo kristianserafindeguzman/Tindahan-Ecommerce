@@ -42,7 +42,10 @@ defineEmits(['update:modelValue'])
   border-radius: var(--r-sm);
   font-weight: 600;
 
-  transition: background-color 0.15s, color 0.15s, box-shadow 0.2s;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    box-shadow 0.2s;
 }
 
 .app-pagination-row :deep(.q-btn.bg-primary) {

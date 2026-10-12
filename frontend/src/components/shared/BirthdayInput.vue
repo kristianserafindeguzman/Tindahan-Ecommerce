@@ -68,10 +68,14 @@ import { computed, ref, watch } from 'vue'
 import { useFormChild } from 'quasar'
 import { isValidBirthday } from '@/utils/birthday'
 
-const MONTHS = computed(() => Array.from({ length: 12 }, (_, i) => ({
-  label: new Date(2000, i, 1).toLocaleDateString(props.locale, { month: 'long' }),
-  value: i + 1
-})))
+const MONTHS = computed(() =>
+  Array.from({ length: 12 }, (_, i) => ({
+    label: new Date(2000, i, 1).toLocaleDateString(props.locale, {
+      month: 'long'
+    }),
+    value: i + 1
+  }))
+)
 
 // Newest first and never past this year, so recent birth years sit at the top of the list.
 const THIS_YEAR = new Date().getFullYear()

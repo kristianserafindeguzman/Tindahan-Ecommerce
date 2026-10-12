@@ -1,5 +1,9 @@
 <template>
-  <q-card flat class="store-card" @click="router.push(`/consumer/stores/${store.slug || store.id}`)">
+  <q-card
+    flat
+    class="store-card"
+    @click="router.push(`/consumer/stores/${store.slug || store.id}`)"
+  >
     <div class="store-card-image">
       <img
         v-if="store.image && !imageFailed"
@@ -10,8 +14,14 @@
       />
       <q-icon v-else name="o_storefront" size="36px" />
 
-      <span class="store-status-tag" :class="{ 'store-status-tag-closed': !store.isOpen }">
-        <span class="status-dot" :class="{ 'status-dot-closed': !store.isOpen }" />
+      <span
+        class="store-status-tag"
+        :class="{ 'store-status-tag-closed': !store.isOpen }"
+      >
+        <span
+          class="status-dot"
+          :class="{ 'status-dot-closed': !store.isOpen }"
+        />
         {{ store.isOpen ? t('Open') : t('Closed') }}
       </span>
     </div>
@@ -22,11 +32,17 @@
           <template v-else>{{ part.text }}</template>
         </template>
       </div>
-      <div class="store-card-hours" :class="{ 'store-card-hours-closed': !store.isOpen }">
+      <div
+        class="store-card-hours"
+        :class="{ 'store-card-hours-closed': !store.isOpen }"
+      >
         {{ storeStatus(store) }}
       </div>
       <!-- Same split as ProductCard: travel on its own line, so the address isn't what gets squeezed out. -->
-      <div v-if="hasDistance" class="store-card-distance store-card-distance--travel">
+      <div
+        v-if="hasDistance"
+        class="store-card-distance store-card-distance--travel"
+      >
         <q-icon :name="travelIcon(store.distance_meters)" size="13px" />
         <span class="store-card-distance-text">{{ travelText }}</span>
       </div>
@@ -61,13 +77,16 @@ const props = defineProps({
   }
 })
 
-const nameParts = computed(() => splitHighlightParts(props.store.name, props.highlightQuery))
+const nameParts = computed(() =>
+  splitHighlightParts(props.store.name, props.highlightQuery)
+)
 const imageFailed = ref(false)
 
 const hasDistance = computed(() => props.store.distance_meters != null)
 
-const travelText = computed(() =>
-  `${formatDistance(props.store.distance_meters)} · ${formatTravelTime(props.store.distance_meters)}`
+const travelText = computed(
+  () =>
+    `${formatDistance(props.store.distance_meters)} · ${formatTravelTime(props.store.distance_meters)}`
 )
 </script>
 
@@ -84,10 +103,12 @@ const travelText = computed(() =>
 
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 
-  transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s;
+  transition:
+    box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.2s;
 
   cursor: pointer;
-
 }
 
 .store-card:hover {
@@ -107,14 +128,22 @@ const travelText = computed(() =>
   aspect-ratio: 4 / 3;
   overflow: hidden;
 
-  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-surface) 0%,
+    var(--c-surface) 100%
+  );
   color: var(--c-brand);
 
   transition: background 0.2s;
 }
 
 .store-card:hover .store-card-image {
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-brand-tint) 0%,
+    var(--c-brand-tint-2) 100%
+  );
 }
 
 .store-card-img {

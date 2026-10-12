@@ -1,7 +1,14 @@
 <template>
   <!-- Notification bell for the compact header, where tapping it opens the notifications page rather than this panel. -->
   <div class="notif">
-    <q-btn flat dense :ripple="false" class="notif__btn" :aria-label="ariaLabel" @click="toggle">
+    <q-btn
+      flat
+      dense
+      :ripple="false"
+      class="notif__btn"
+      :aria-label="ariaLabel"
+      @click="toggle"
+    >
       <q-icon name="o_notifications" size="24px" />
       <span v-if="unreadCount" class="notif__count">{{ unreadCount }}</span>
 
@@ -15,47 +22,53 @@
         :offset="[0, 8]"
         class="notif__panel"
       >
-      <div class="notif__head">
-        {{ t('Notifications') }}
+        <div class="notif__head">
+          {{ t('Notifications') }}
+          <q-btn
+            v-if="unreadCount"
+            flat
+            dense
+            no-caps
+            size="sm"
+            :label="t('Mark all as read')"
+            color="primary"
+            @click="markAllAsRead"
+          />
+        </div>
+
+        <p v-if="!notifications.length" class="notif__empty">{{
+          t('No notifications yet.')
+        }}</p>
+
+        <q-list v-else class="notif__scroll">
+          <q-item
+            v-for="notif in notifications.slice(0, MAX_SHOWN)"
+            :key="notif.notification_id"
+            v-close-popup
+            clickable
+            class="notif__item"
+            :class="{ 'notif__item--unread': !notif.is_read }"
+            @click="select(notif)"
+          >
+            <q-item-section>
+              <q-item-label class="notif__title">{{
+                consumerNotificationText(notif, t).title
+              }}</q-item-label>
+              <q-item-label caption class="notif__body">{{
+                consumerNotificationText(notif, t).message
+              }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+
+        <!-- Always offered, even with an empty list, so the full history is one tap away. -->
         <q-btn
-          v-if="unreadCount"
-          flat
-          dense
+          unelevated
           no-caps
-          size="sm"
-          :label="t('Mark all as read')"
-          color="primary"
-          @click="markAllAsRead"
+          :label="t('View All Notifications')"
+          class="notif__view-all"
+          @click="goToAll"
         />
-      </div>
-
-      <p v-if="!notifications.length" class="notif__empty">{{ t('No notifications yet.') }}</p>
-
-      <q-list v-else class="notif__scroll">
-        <q-item
-          v-for="notif in notifications.slice(0, MAX_SHOWN)"
-          :key="notif.notification_id"
-          v-close-popup
-          clickable
-          class="notif__item"
-          :class="{ 'notif__item--unread': !notif.is_read }"
-          @click="select(notif)"
-        >
-          <q-item-section>
-            <q-item-label class="notif__title">{{ consumerNotificationText(notif, t).title }}</q-item-label>
-            <q-item-label caption class="notif__body">{{ consumerNotificationText(notif, t).message }}</q-item-label>
-          </q-item-section>
-        </q-item>
-      </q-list>
-
-      <!-- Always offered, even with an empty list, so the full history is one tap away. -->
-      <q-btn
-        unelevated
-        no-caps
-        :label="t('View All Notifications')"
-        class="notif__view-all"
-        @click="goToAll"
-      />
       </q-menu>
     </q-btn>
   </div>
@@ -99,10 +112,14 @@ const syncNotificationReadState = event => {
   applyNotificationReadState(notifications.value, event.detail)
 }
 
-const unreadCount = computed(() => notifications.value.filter((n) => !n.is_read).length)
+const unreadCount = computed(
+  () => notifications.value.filter(n => !n.is_read).length
+)
 
 const ariaLabel = computed(() =>
-  unreadCount.value ? t('Notifications, {count} unread', { count: unreadCount.value }) : t('Notifications')
+  unreadCount.value
+    ? t('Notifications, {count} unread', { count: unreadCount.value })
+    : t('Notifications')
 )
 
 const isLoggedIn = () => !!localStorage.getItem('auth_token')
@@ -129,17 +146,23 @@ const toggle = () => {
 }
 
 onMounted(() => {
-  window.addEventListener(NOTIFICATION_READ_STATE_EVENT, syncNotificationReadState)
+  window.addEventListener(
+    NOTIFICATION_READ_STATE_EVENT,
+    syncNotificationReadState
+  )
   fetchNotifications()
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener(NOTIFICATION_READ_STATE_EVENT, syncNotificationReadState)
+  window.removeEventListener(
+    NOTIFICATION_READ_STATE_EVENT,
+    syncNotificationReadState
+  )
 })
 
 // Mark locally for an immediate badge update, then restore it if persistence fails.
-const markAsRead = async (id) => {
-  const notif = notifications.value.find((n) => n.notification_id === id)
+const markAsRead = async id => {
+  const notif = notifications.value.find(n => n.notification_id === id)
   if (!notif || notif.is_read) return
   notif.is_read = true
   try {
@@ -151,7 +174,7 @@ const markAsRead = async (id) => {
   }
 }
 
-const select = async (notif) => {
+const select = async notif => {
   if (!notif.is_read) await markAsRead(notif.notification_id)
   if (notif.order_id) {
     localStorage.setItem('consumer_selected_order_id', notif.order_id)
@@ -166,15 +189,22 @@ const goToAll = () => {
 }
 
 const markAllAsRead = async () => {
-  const previous = notifications.value.map((n) => n.is_read)
-  notifications.value.forEach((n) => { n.is_read = true })
+  const previous = notifications.value.map(n => n.is_read)
+  notifications.value.forEach(n => {
+    n.is_read = true
+  })
   try {
     await api.post('/consumer/notifications/read-all')
     publishNotificationReadState({ all: true, isRead: true })
   } catch (error) {
-    notifications.value.forEach((n, index) => { n.is_read = previous[index] })
+    notifications.value.forEach((n, index) => {
+      n.is_read = previous[index]
+    })
     console.error('Failed to mark all notifications as read', error)
-    $q.notify({ type: 'negative', message: t('Could not mark notifications as read') })
+    $q.notify({
+      type: 'negative',
+      message: t('Could not mark notifications as read')
+    })
   }
 }
 </script>

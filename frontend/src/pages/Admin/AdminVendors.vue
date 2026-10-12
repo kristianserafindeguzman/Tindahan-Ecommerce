@@ -118,7 +118,9 @@
                       <span class="vp-name ellipsis">{{
                         vendor.store_name || t('unnamedStore')
                       }}</span>
-                      <span class="adm-sub text-muted-themed ellipsis">{{ vendor.full_name }}</span>
+                      <span class="adm-sub text-muted-themed ellipsis">{{
+                        vendor.full_name
+                      }}</span>
                     </div>
                   </div>
                 </td>
@@ -126,7 +128,9 @@
                 <!-- CONTACT -->
                 <td class="col-contact">
                   <div class="adm-two-lines">
-                    <span class="adm-email ellipsis">{{ vendor.email || '—' }}</span>
+                    <span class="adm-email ellipsis">{{
+                      vendor.email || '—'
+                    }}</span>
                     <span class="adm-sub text-muted-themed ellipsis">{{
                       vendor.phone_number || t('noPhone')
                     }}</span>
@@ -135,9 +139,14 @@
 
                 <!-- PRODUCTS -->
                 <td class="col-stat text-center">
-                  <div class="row items-center justify-center no-wrap text-muted-themed">
+                  <div
+                    class="row items-center justify-center no-wrap text-muted-themed"
+                  >
                     <q-icon name="o_inventory_2" size="20px" class="q-mr-xs" />
-                    <span class="text-weight-bold dialog-title-text" style="font-size: 13px;">
+                    <span
+                      class="text-weight-bold dialog-title-text"
+                      style="font-size: 13px"
+                    >
                       {{ vendor.active_products ?? 0 }}
                     </span>
                   </div>
@@ -145,9 +154,14 @@
 
                 <!-- ORDERS -->
                 <td class="col-stat text-center">
-                  <div class="row items-center justify-center no-wrap text-muted-themed">
+                  <div
+                    class="row items-center justify-center no-wrap text-muted-themed"
+                  >
                     <q-icon name="o_receipt_long" size="20px" class="q-mr-xs" />
-                    <span class="text-weight-bold dialog-title-text" style="font-size: 13px;">
+                    <span
+                      class="text-weight-bold dialog-title-text"
+                      style="font-size: 13px"
+                    >
                       {{ vendor.orders_count ?? 0 }}
                     </span>
                   </div>
@@ -172,7 +186,11 @@
                 </td>
 
                 <!-- ALL-ICON UNIFIED ACTION GROUP -->
-                <td class="col-actions text-right" @click.stop @keydown.enter.stop>
+                <td
+                  class="col-actions text-right"
+                  @click.stop
+                  @keydown.enter.stop
+                >
                   <div class="vd-icon-action-group">
                     <q-btn
                       flat
@@ -182,7 +200,9 @@
                       class="vd-action-icon-btn"
                       @click="openView(vendor)"
                     >
-                      <q-tooltip anchor="top middle" self="bottom middle">{{ t('tooltipViewProfile') }}</q-tooltip>
+                      <q-tooltip anchor="top middle" self="bottom middle">{{
+                        t('tooltipViewProfile')
+                      }}</q-tooltip>
                     </q-btn>
 
                     <q-btn
@@ -193,7 +213,9 @@
                       class="vd-action-icon-btn vd-action-icon-btn--primary"
                       @click="openProducts(vendor)"
                     >
-                      <q-tooltip anchor="top middle" self="bottom middle">{{ t('tooltipViewProducts') }}</q-tooltip>
+                      <q-tooltip anchor="top middle" self="bottom middle">{{
+                        t('tooltipViewProducts')
+                      }}</q-tooltip>
                     </q-btn>
 
                     <q-btn
@@ -205,8 +227,15 @@
                       class="vd-action-icon-btn text-muted-themed"
                       :aria-label="`${t('changeStatusFor')} ${vendor.full_name}`"
                     >
-                      <q-tooltip anchor="top middle" self="bottom middle">{{ t('tooltipOptions') }}</q-tooltip>
-                      <q-menu anchor="bottom right" self="top right" auto-close class="compact-status-menu">
+                      <q-tooltip anchor="top middle" self="bottom middle">{{
+                        t('tooltipOptions')
+                      }}</q-tooltip>
+                      <q-menu
+                        anchor="bottom right"
+                        self="top right"
+                        auto-close
+                        class="compact-status-menu"
+                      >
                         <q-list dense class="compact-menu-list">
                           <q-item
                             v-for="option in localizedStatusOptions(vendor)"
@@ -214,13 +243,17 @@
                             clickable
                             v-ripple
                             class="compact-menu-item"
-                            :class="{ 'compact-menu-item--danger': option.danger }"
+                            :class="{
+                              'compact-menu-item--danger': option.danger
+                            }"
                             @click="changeStatus(vendor, option.status)"
                           >
                             <q-item-section avatar class="compact-menu-avatar">
                               <q-icon :name="option.icon" size="16px" />
                             </q-item-section>
-                            <q-item-section class="compact-menu-label">{{ option.label }}</q-item-section>
+                            <q-item-section class="compact-menu-label">{{
+                              option.label
+                            }}</q-item-section>
                           </q-item>
                         </q-list>
                       </q-menu>
@@ -252,18 +285,25 @@
                 vendor.store_name || t('unnamedStore')
               }}</span>
               <div class="vp-list-meta text-muted-themed">
-                {{ vendor.full_name }} · {{ formatActivity(vendor.last_activity_at) }}
+                {{ vendor.full_name }} ·
+                {{ formatActivity(vendor.last_activity_at) }}
               </div>
               <div class="row items-center q-gutter-x-md q-mt-xs">
                 <div class="row items-center no-wrap text-muted-themed">
                   <q-icon name="o_inventory_2" size="18px" class="q-mr-xs" />
-                  <span class="text-weight-bold dialog-title-text">{{ vendor.active_products ?? 0 }}</span>
+                  <span class="text-weight-bold dialog-title-text">{{
+                    vendor.active_products ?? 0
+                  }}</span>
                   <span class="q-ml-xs text-caption">{{ t('items') }}</span>
                 </div>
                 <div class="row items-center no-wrap text-muted-themed">
                   <q-icon name="o_receipt_long" size="18px" class="q-mr-xs" />
-                  <span class="text-weight-bold dialog-title-text">{{ vendor.orders_count ?? 0 }}</span>
-                  <span class="q-ml-xs text-caption">{{ t('ordersWord') }}</span>
+                  <span class="text-weight-bold dialog-title-text">{{
+                    vendor.orders_count ?? 0
+                  }}</span>
+                  <span class="q-ml-xs text-caption">{{
+                    t('ordersWord')
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -300,7 +340,10 @@
         </div>
 
         <div v-if="!loading && pageCount > 1" class="vp-pager">
-          <span>{{ t('showing') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('of') }} {{ filtered.length }}</span>
+          <span
+            >{{ t('showing') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('of') }}
+            {{ filtered.length }}</span
+          >
           <div class="vp-pager-btns">
             <q-btn
               outline
@@ -392,28 +435,48 @@
                 <q-item-section avatar class="compact-menu-avatar">
                   <q-icon :name="option.icon" size="18px" />
                 </q-item-section>
-                <q-item-section class="compact-menu-label">{{ option.label }}</q-item-section>
+                <q-item-section class="compact-menu-label">{{
+                  option.label
+                }}</q-item-section>
               </q-item>
             </q-list>
           </q-menu>
         </q-btn>
       </template>
       <template #reports="{ active: reportActive }">
-        <VendorSalesReport :key="`${viewing.store_id}:${performanceRange?.startDate || ''}:${performanceRange?.endDate || ''}`" :store-id="viewing.store_id" :store-name="viewing.store_name" :initial-start="performanceRange?.startDate" :initial-end="performanceRange?.endDate" :active="reportActive" />
+        <VendorSalesReport
+          :key="`${viewing.store_id}:${performanceRange?.startDate || ''}:${performanceRange?.endDate || ''}`"
+          :store-id="viewing.store_id"
+          :store-name="viewing.store_name"
+          :initial-start="performanceRange?.startDate"
+          :initial-end="performanceRange?.endDate"
+          :active="reportActive"
+        />
       </template>
     </StoreProfileDialog>
 
     <!-- COMPACT & POLISHED PRODUCTS VIEW DIALOG -->
-    <q-dialog v-model="productsOpen" transition-show="scale" transition-hide="scale">
+    <q-dialog
+      v-model="productsOpen"
+      transition-show="scale"
+      transition-hide="scale"
+    >
       <q-card class="products-compact-dialog vp-dialog">
         <!-- Header Strip -->
-        <div class="products-dialog-head row items-center justify-between no-wrap q-px-lg q-py-md">
+        <div
+          class="products-dialog-head row items-center justify-between no-wrap q-px-lg q-py-md"
+        >
           <div class="row items-center no-wrap ellipsis">
             <span class="dialog-title-icon q-mr-sm">
               <q-icon name="o_inventory_2" size="18px" />
             </span>
-            <div class="text-subtitle1 text-weight-bold dialog-title-text ellipsis">
-              {{ t('liveProducts') }} · <span class="text-primary">{{ viewingVendor?.store_name || t('unnamedStore') }}</span>
+            <div
+              class="text-subtitle1 text-weight-bold dialog-title-text ellipsis"
+            >
+              {{ t('liveProducts') }} ·
+              <span class="text-primary">{{
+                viewingVendor?.store_name || t('unnamedStore')
+              }}</span>
             </div>
           </div>
           <q-btn
@@ -433,10 +496,21 @@
             <q-spinner-dots size="40px" color="primary" />
           </div>
 
-          <div v-else-if="!vendorProducts.length" class="q-py-xl flex flex-center column text-center">
-            <q-icon name="o_inventory_2" size="44px" class="q-mb-sm text-muted-themed" />
-            <div class="text-body2 text-weight-bold dialog-title-text">{{ t('noProductsListed') }}</div>
-            <div class="text-caption text-muted-themed">{{ t('noProductsDesc') }}</div>
+          <div
+            v-else-if="!vendorProducts.length"
+            class="q-py-xl flex flex-center column text-center"
+          >
+            <q-icon
+              name="o_inventory_2"
+              size="44px"
+              class="q-mb-sm text-muted-themed"
+            />
+            <div class="text-body2 text-weight-bold dialog-title-text">{{
+              t('noProductsListed')
+            }}</div>
+            <div class="text-caption text-muted-themed">{{
+              t('noProductsDesc')
+            }}</div>
           </div>
 
           <div v-else class="vp-table-wrap">
@@ -445,9 +519,15 @@
                 <tr>
                   <th class="col-prod-name">{{ t('colProduct') }}</th>
                   <th class="col-prod-cat">{{ t('colCategory') }}</th>
-                  <th class="col-prod-price text-right">{{ t('colSellingPrice') }}</th>
-                  <th class="col-prod-qty text-center">{{ t('colInStock') }}</th>
-                  <th class="col-prod-status text-center">{{ t('colProdStatus') }}</th>
+                  <th class="col-prod-price text-right">{{
+                    t('colSellingPrice')
+                  }}</th>
+                  <th class="col-prod-qty text-center">{{
+                    t('colInStock')
+                  }}</th>
+                  <th class="col-prod-status text-center">{{
+                    t('colProdStatus')
+                  }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -455,24 +535,48 @@
                   <td class="col-prod-name">
                     <div class="vp-person no-wrap">
                       <span class="live-prod-thumb">
-                        <img v-if="prod.image_url && !prod.imageError" :src="prod.image_url" alt="" @error="prod.imageError = true" />
+                        <img
+                          v-if="prod.image_url && !prod.imageError"
+                          :src="prod.image_url"
+                          alt=""
+                          @error="prod.imageError = true"
+                        />
                         <q-icon v-else name="o_image" size="18px" />
                       </span>
-                      <span class="vp-name ellipsis">{{ prod.product_name }}</span>
+                      <span class="vp-name ellipsis">{{
+                        prod.product_name
+                      }}</span>
                     </div>
                   </td>
-                  <td class="col-prod-cat text-muted-themed">{{ prod.category?.category_name || t('uncategorized') }}</td>
+                  <td class="col-prod-cat text-muted-themed">{{
+                    prod.category?.category_name || t('uncategorized')
+                  }}</td>
                   <td class="col-prod-price text-right">
-                    <div class="text-weight-bold dialog-title-text">₱{{ Number(prod.price).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}</div>
-                    <div v-if="prod.variants && prod.variants.length > 0" class="text-caption text-muted-themed mt-xs">
+                    <div class="text-weight-bold dialog-title-text"
+                      >₱{{
+                        Number(prod.price).toLocaleString('en-PH', {
+                          minimumFractionDigits: 2
+                        })
+                      }}</div
+                    >
+                    <div
+                      v-if="prod.variants && prod.variants.length > 0"
+                      class="text-caption text-muted-themed mt-xs"
+                    >
                       <!-- Vendor forms save the label under 'size', the seeded catalog under 'name'. -->
                       <div v-for="(v, vi) in prod.variants" :key="vi">
-                        {{ v.size || v.name || `#${vi + 1}` }}: ₱{{ Number(v.price).toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}
+                        {{ v.size || v.name || `#${vi + 1}` }}: ₱{{
+                          Number(v.price).toLocaleString('en-PH', {
+                            minimumFractionDigits: 2
+                          })
+                        }}
                       </div>
                     </div>
                   </td>
                   <td class="col-prod-qty text-center">
-                    <span class="text-weight-bold dialog-title-text">{{ prod.available_quantity }}</span>
+                    <span class="text-weight-bold dialog-title-text">{{
+                      prod.available_quantity
+                    }}</span>
                   </td>
                   <td class="col-prod-status text-center">
                     <span
@@ -489,7 +593,9 @@
         </div>
 
         <!-- Compact Footer -->
-        <div class="products-dialog-foot row items-center justify-end q-px-lg q-py-sm">
+        <div
+          class="products-dialog-foot row items-center justify-end q-px-lg q-py-sm"
+        >
           <q-btn
             v-close-popup
             flat
@@ -536,7 +642,8 @@ const $q = useQuasar()
 const vendorsDict = {
   en: {
     title: 'Manage Vendors',
-    subtitle: "See every approved store, how it's doing, and manage its account.",
+    subtitle:
+      "See every approved store, how it's doing, and manage its account.",
     searchPlaceholder: 'Search store, owner or email',
     filterAll: 'All',
     filterActive: 'Active',
@@ -593,7 +700,8 @@ const vendorsDict = {
     colInStock: 'In Stock',
     colProdStatus: 'Product Status',
     uncategorized: 'Uncategorized',
-    deleteWarning: 'will be signed out, and their store will be hidden from customers. Their order history is kept.',
+    deleteWarning:
+      'will be signed out, and their store will be hidden from customers. Their order history is kept.',
     optSetActive: 'Set active',
     optSetInactive: 'Set inactive',
     optSuspend: 'Suspend...',
@@ -603,7 +711,8 @@ const vendorsDict = {
   },
   ph: {
     title: 'Manage Vendors',
-    subtitle: 'Tingnan ang lahat ng approved stores, ang status nila, at i-manage ang accounts nila.',
+    subtitle:
+      'Tingnan ang lahat ng approved stores, ang status nila, at i-manage ang accounts nila.',
     searchPlaceholder: 'Mag-search ng store, owner o email',
     filterAll: 'Lahat',
     filterActive: 'Active',
@@ -619,15 +728,19 @@ const vendorsDict = {
     accounts: 'accounts',
     exportReport: 'Export Report',
     emptyTitle_all: 'Wala pang vendors',
-    emptyText_all: 'Dito lalabas ang mga stores kapag approved na ang application nila.',
+    emptyText_all:
+      'Dito lalabas ang mga stores kapag approved na ang application nila.',
     emptyTitle_active: 'Walang active vendors',
-    emptyText_active: 'Dito nakalista ang mga vendors na pwedeng mag-sign in at magbenta.',
+    emptyText_active:
+      'Dito nakalista ang mga vendors na pwedeng mag-sign in at magbenta.',
     emptyTitle_inactive: 'Walang inactive vendors',
-    emptyText_inactive: 'Dito nakalista ang mga vendors na sinet mong inactive.',
+    emptyText_inactive:
+      'Dito nakalista ang mga vendors na sinet mong inactive.',
     emptyTitle_suspended: 'Walang suspended vendors',
     emptyText_suspended: 'Dito nakalista ang mga vendors na sinuspend mo.',
     emptyTitle_deleted: 'Walang deleted vendors',
-    emptyText_deleted: 'Naka-store dito ang mga deleted accounts for record purposes.',
+    emptyText_deleted:
+      'Naka-store dito ang mga deleted accounts for record purposes.',
     noMatchTitle: 'Walang nag-match',
     noMatchText: 'Try mag-search ng ibang pangalan, store o email.',
     colStore: 'Store & Owner',
@@ -660,7 +773,8 @@ const vendorsDict = {
     colInStock: 'In Stock',
     colProdStatus: 'Status',
     uncategorized: 'Uncategorized',
-    deleteWarning: 'ay masa-sign out, at maha-hide ang store nila sa customers. Mananatili pa rin ang order history nila.',
+    deleteWarning:
+      'ay masa-sign out, at maha-hide ang store nila sa customers. Mananatili pa rin ang order history nila.',
     optSetActive: 'Set as active',
     optSetInactive: 'Set as inactive',
     optSuspend: 'Suspend...',
@@ -785,7 +899,12 @@ const localizedStatusOptions = vendor => {
   const options = [
     { status: 'active', label: t('optSetActive'), icon: 'o_check_circle' },
     { status: 'inactive', label: t('optSetInactive'), icon: 'o_pause_circle' },
-    { status: 'suspended', label: t('optSuspend'), icon: 'o_block', danger: true },
+    {
+      status: 'suspended',
+      label: t('optSuspend'),
+      icon: 'o_block',
+      danger: true
+    },
     { status: 'delete', label: t('optDelete'), icon: 'o_delete', danger: true }
   ]
   return options.filter(o => o.status !== vendor.account_status)
@@ -847,12 +966,12 @@ const productsLoading = ref(false)
 const viewingVendor = ref(null)
 const vendorProducts = ref([])
 
-const openProducts = async (vendor) => {
+const openProducts = async vendor => {
   viewingVendor.value = vendor
   productsOpen.value = true
   productsLoading.value = true
   vendorProducts.value = []
-  
+
   try {
     const { data } = await api.get(`/admin/vendors/${vendor.store_id}/products`)
     if (data && data.products) {
@@ -873,10 +992,14 @@ const openView = vendor => {
 }
 
 const openPerformance = async ({ storeId, startDate, endDate }) => {
-  let vendor = vendors.value.find(item => item.store_id === storeId && !item.deleted)
+  let vendor = vendors.value.find(
+    item => item.store_id === storeId && !item.deleted
+  )
   if (!vendor) {
     await fetchVendors()
-    vendor = vendors.value.find(item => item.store_id === storeId && !item.deleted)
+    vendor = vendors.value.find(
+      item => item.store_id === storeId && !item.deleted
+    )
   }
   if (vendor) {
     performanceRange.value = { startDate, endDate }
@@ -984,13 +1107,27 @@ onMounted(fetchVendors)
   border-bottom: 1px solid var(--c-hairline, #f1f5f9);
 }
 
-.vd-table .col-store { width: 25%; }
-.vd-table .col-contact { width: 21%; }
-.vd-table .col-stat { width: 8%; }
-.vd-table .col-date { width: 13%; }
-.vd-table .col-status { width: 11%; }
-.vd-table .col-actions { width: 14%; }
-.vd-table tr:last-child td { border-bottom: 0; }
+.vd-table .col-store {
+  width: 25%;
+}
+.vd-table .col-contact {
+  width: 21%;
+}
+.vd-table .col-stat {
+  width: 8%;
+}
+.vd-table .col-date {
+  width: 13%;
+}
+.vd-table .col-status {
+  width: 11%;
+}
+.vd-table .col-actions {
+  width: 14%;
+}
+.vd-table tr:last-child td {
+  border-bottom: 0;
+}
 
 /* ALL-ICON UNIFIED ACTION GROUP */
 .vd-icon-action-group {
@@ -1128,11 +1265,21 @@ onMounted(fetchVendors)
   font-size: 13px;
 }
 
-.live-prod-table .col-prod-name { width: 34%; }
-.live-prod-table .col-prod-cat { width: 20%; }
-.live-prod-table .col-prod-price { width: 18%; }
-.live-prod-table .col-prod-qty { width: 13%; }
-.live-prod-table .col-prod-status { width: 15%; }
+.live-prod-table .col-prod-name {
+  width: 34%;
+}
+.live-prod-table .col-prod-cat {
+  width: 20%;
+}
+.live-prod-table .col-prod-price {
+  width: 18%;
+}
+.live-prod-table .col-prod-qty {
+  width: 13%;
+}
+.live-prod-table .col-prod-status {
+  width: 15%;
+}
 
 .live-prod-thumb {
   display: inline-flex;
@@ -1183,7 +1330,6 @@ onMounted(fetchVendors)
     right: 18px;
   }
 }
-
 </style>
 
 <!--

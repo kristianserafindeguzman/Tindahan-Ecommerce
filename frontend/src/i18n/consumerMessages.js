@@ -4,14 +4,22 @@ export default {
   'Order Ready': 'Ready na ang Order',
   'Order Picked Up': 'Nakuha na ang Order',
   'New Order': 'Bagong Order',
-  'The store {store} is preparing your order #{id}.': 'Inihahanda na ng {store} ang order mo #{id}.',
-  'Your order #{id} is ready for pickup at {store}.': 'Ready na ang order mo #{id} para kunin sa {store}.',
-  'Your order #{id} has been picked up. Thank you!': 'Nakuha mo na ang order #{id}. Salamat!',
-  'Your order #{id} at {store} was cancelled.': 'Kinansela ang order mo #{id} sa {store}.',
-  'You successfully cancelled your order #{id}.': 'Na-cancel mo na ang order #{id}.',
-  'Your order #{id} was cancelled. Reason: {reason}': 'Kinansela ang order mo #{id}. Dahilan: {reason}',
-  'Vendor did not prepare the order in time.': 'Hindi naihanda ng tindahan ang order sa takdang oras.',
-  'Consumer did not pick up the order in time.': 'Hindi nakuha ang order sa takdang oras.',
+  'The store {store} is preparing your order #{id}.':
+    'Inihahanda na ng {store} ang order mo #{id}.',
+  'Your order #{id} is ready for pickup at {store}.':
+    'Ready na ang order mo #{id} para kunin sa {store}.',
+  'Your order #{id} has been picked up. Thank you!':
+    'Nakuha mo na ang order #{id}. Salamat!',
+  'Your order #{id} at {store} was cancelled.':
+    'Kinansela ang order mo #{id} sa {store}.',
+  'You successfully cancelled your order #{id}.':
+    'Na-cancel mo na ang order #{id}.',
+  'Your order #{id} was cancelled. Reason: {reason}':
+    'Kinansela ang order mo #{id}. Dahilan: {reason}',
+  'Vendor did not prepare the order in time.':
+    'Hindi naihanda ng tindahan ang order sa takdang oras.',
+  'Consumer did not pick up the order in time.':
+    'Hindi nakuha ang order sa takdang oras.',
   'Filter notifications': 'I-filter ang notifications',
   Cancellations: 'Mga kinansela',
   Yesterday: 'Kahapon',
@@ -21,10 +29,11 @@ export default {
   'No notifications in this filter': 'Walang notification sa filter na ito',
   'Previous page': 'Nakaraang pahina',
   'Next page': 'Susunod na pahina',
-  'Showing {start}–{end} of {total}': 'Pinapakita ang {start}–{end} mula sa {total}',
+  'Showing {start}–{end} of {total}':
+    'Pinapakita ang {start}–{end} mula sa {total}',
   'Order receipt': 'Resibo ng order',
-  'Date': 'Petsa',
-  'Status': 'Status',
+  Date: 'Petsa',
+  Status: 'Status',
   Orders: 'Mga order',
   'Only letters are allowed.': 'Mga letra lang ang pwede.',
   'Log in to your Tindahan account.': 'Mag-log in sa Tindahan account mo.',
@@ -32,38 +41,50 @@ export default {
   'Forgot Password?': 'Nakalimutan ang Password?',
   'New to Tindahan?': 'Bago ka sa Tindahan?',
   'Create an account': 'Gumawa ng account',
-  'By continuing, you agree to our': 'Kapag nagpatuloy ka, pumapayag ka sa aming',
-  'By signing up, you agree to our': 'Kapag nag-sign up ka, pumapayag ka sa aming',
+  'By continuing, you agree to our':
+    'Kapag nagpatuloy ka, pumapayag ka sa aming',
+  'By signing up, you agree to our':
+    'Kapag nag-sign up ka, pumapayag ka sa aming',
   'Choose how you want to register.': 'Piliin kung paano ka magre-register.',
   'Register as Consumer': 'Mag-register bilang Consumer',
   'Register as Vendor': 'Mag-register bilang Vendor',
-  'Enter your registered mobile number. We will send an SMS with a 6-digit verification code.': 'Ilagay ang registered mobile number mo. Magse-send kami ng 6-digit verification code sa SMS.',
+  'Enter your registered mobile number. We will send an SMS with a 6-digit verification code.':
+    'Ilagay ang registered mobile number mo. Magse-send kami ng 6-digit verification code sa SMS.',
   'Verify Phone Number': 'I-verify ang Phone Number',
-  'We sent a 6-digit verification code to': 'Nag-send kami ng 6-digit verification code sa',
-  'Didn\'t receive a code?': 'Hindi mo natanggap ang code?',
+  'We sent a 6-digit verification code to':
+    'Nag-send kami ng 6-digit verification code sa',
+  "Didn't receive a code?": 'Hindi mo natanggap ang code?',
   'Verify Code': 'I-verify ang Code',
   'Create New Password': 'Gumawa ng Bagong Password',
-  'Your new password must be at least 8 characters long.': 'Dapat at least 8 characters ang bagong password mo.',
+  'Your new password must be at least 8 characters long.':
+    'Dapat at least 8 characters ang bagong password mo.',
   'Password Reset Successful': 'Na-reset na ang Password',
-  'You can now log in with your new password.': 'Pwede ka nang mag-log in gamit ang bagong password mo.',
+  'You can now log in with your new password.':
+    'Pwede ka nang mag-log in gamit ang bagong password mo.',
   'Log in now': 'Mag-log in na',
   'Account Suspended': 'Suspended ang Account',
-  'Your account has been temporarily suspended.': 'Pansamantalang suspended ang account mo.',
+  'Your account has been temporarily suspended.':
+    'Pansamantalang suspended ang account mo.',
   'Back to Login': 'Bumalik sa Login',
   'Account Inactive': 'Inactive ang Account',
-  'Your account is inactive. Please contact support to reactivate it.': 'Inactive ang account mo. I-contact ang support para ma-activate ulit ito.',
+  'Your account is inactive. Please contact support to reactivate it.':
+    'Inactive ang account mo. I-contact ang support para ma-activate ulit ito.',
   'Verify your mobile number': 'I-verify ang mobile number mo',
-  'Your account isn\'t active yet because your mobile number hasn\'t been verified. We\'ll text you a new 6-digit code.': 'Hindi pa active ang account mo dahil hindi pa verified ang mobile number mo. Magse-send kami ng bagong 6-digit code sa SMS.',
+  "Your account isn't active yet because your mobile number hasn't been verified. We'll text you a new 6-digit code.":
+    'Hindi pa active ang account mo dahil hindi pa verified ang mobile number mo. Magse-send kami ng bagong 6-digit code sa SMS.',
   'Create an account to get started.': 'Gumawa ng account para makapagsimula.',
   'Create Password': 'Gumawa ng Password',
   'Create account': 'Gumawa ng account',
   'Already have an account?': 'May account ka na?',
   'Verify your account': 'I-verify ang account mo',
-  'Verify': 'I-verify',
-  'We don\'t know which number to verify': 'Hindi namin alam kung aling number ang ive-verify',
-  'Open this page right after signing up, or sign up again with the same details and we\'ll text you a new code.': 'Buksan ang page na ito pagkatapos mag-sign up, o mag-sign up ulit gamit ang parehong details para makatanggap ng bagong code.',
+  Verify: 'I-verify',
+  "We don't know which number to verify":
+    'Hindi namin alam kung aling number ang ive-verify',
+  "Open this page right after signing up, or sign up again with the same details and we'll text you a new code.":
+    'Buksan ang page na ito pagkatapos mag-sign up, o mag-sign up ulit gamit ang parehong details para makatanggap ng bagong code.',
   'Verification Successful': 'Verified na ang Account',
-  'Your account has been verified. You can now log in to start exploring local sari-sari stores.': 'Verified na ang account mo. Mag-log in na para makita ang mga sari-sari store malapit sa iyo.',
+  'Your account has been verified. You can now log in to start exploring local sari-sari stores.':
+    'Verified na ang account mo. Mag-log in na para makita ang mga sari-sari store malapit sa iyo.',
   'Email or mobile number is required.': 'Ilagay ang email o mobile number mo.',
   'Password is required.': 'Ilagay ang password mo.',
   'Mobile number is required.': 'Ilagay ang mobile number mo.',
@@ -71,37 +92,54 @@ export default {
   'Last name is required.': 'Ilagay ang apelyido mo.',
   'Birthday is required.': 'Ilagay ang birthday mo.',
   'Email is required.': 'Ilagay ang email mo.',
-  'Mobile number must start with 09 and contain 11 digits.': 'Dapat nagsisimula sa 09 at may 11 digits ang mobile number.',
-  'Enter a valid email or mobile number': 'Maglagay ng valid na email o mobile number',
-  'Invalid credentials. Please try again.': 'Mali ang email, mobile number, o password. Subukan ulit.',
+  'Mobile number must start with 09 and contain 11 digits.':
+    'Dapat nagsisimula sa 09 at may 11 digits ang mobile number.',
+  'Enter a valid email or mobile number':
+    'Maglagay ng valid na email o mobile number',
+  'Invalid credentials. Please try again.':
+    'Mali ang email, mobile number, o password. Subukan ulit.',
   'Unauthorized.': 'Hindi ka makapag-log in. Subukan ulit.',
   'Account access denied.': 'Hindi mo ma-access ang account na ito.',
-  'Something went wrong. Please try again later.': 'May naging problema. Subukan ulit mamaya.',
+  'Something went wrong. Please try again later.':
+    'May naging problema. Subukan ulit mamaya.',
   'Something went wrong.': 'May naging problema.',
-  'We could not send a code to that number.': 'Hindi kami makapag-send ng code sa number na iyon.',
+  'We could not send a code to that number.':
+    'Hindi kami makapag-send ng code sa number na iyon.',
   'Failed to send OTP.': 'Hindi na-send ang verification code. Subukan ulit.',
   'Please enter the complete 6-digit code.': 'Ilagay ang buong 6-digit code.',
   'Invalid OTP code.': 'Mali ang verification code. Subukan ulit.',
   'Failed to reset password.': 'Hindi na-reset ang password. Subukan ulit.',
-  'Validation failed. Please check your inputs.': 'May problema sa details mo. Paki-check ulit.',
-  'Missing phone number. Please register again.': 'Walang mobile number. Mag-register ulit.',
-  'The verification code you entered is incorrect.': 'Mali ang verification code na inilagay mo.',
+  'Validation failed. Please check your inputs.':
+    'May problema sa details mo. Paki-check ulit.',
+  'Missing phone number. Please register again.':
+    'Walang mobile number. Mag-register ulit.',
+  'The verification code you entered is incorrect.':
+    'Mali ang verification code na inilagay mo.',
   'your mobile number': 'mobile number mo',
   'Resend in {time}': 'I-resend ({time})',
   'Digit {number} of 6': 'Digit {number} sa 6',
-  'The provided credentials are incorrect.': 'Mali ang email, mobile number, o password.',
-  'The email or phone number has already been taken.': 'May gumagamit na ng email o mobile number na ito.',
+  'The provided credentials are incorrect.':
+    'Mali ang email, mobile number, o password.',
+  'The email or phone number has already been taken.':
+    'May gumagamit na ng email o mobile number na ito.',
   'This email is already registered.': 'Registered na ang email na ito.',
-  'This phone number is already registered.': 'Registered na ang mobile number na ito.',
-  'Please verify your phone number again before registering.': 'I-verify ulit ang mobile number mo bago mag-register.',
-  'No verification code found. Please request a new one.': 'Walang verification code. Mag-request ng bagong code.',
-  'Verification code has expired. Please request a new one.': 'Expired na ang verification code. Mag-request ng bagong code.',
-  'No account found with this phone number.': 'Walang account na naka-register sa mobile number na ito.',
-  'Invalid or expired reset token.': 'Expired o invalid na ang password reset. Mag-request ng bagong code.',
+  'This phone number is already registered.':
+    'Registered na ang mobile number na ito.',
+  'Please verify your phone number again before registering.':
+    'I-verify ulit ang mobile number mo bago mag-register.',
+  'No verification code found. Please request a new one.':
+    'Walang verification code. Mag-request ng bagong code.',
+  'Verification code has expired. Please request a new one.':
+    'Expired na ang verification code. Mag-request ng bagong code.',
+  'No account found with this phone number.':
+    'Walang account na naka-register sa mobile number na ito.',
+  'Invalid or expired reset token.':
+    'Expired o invalid na ang password reset. Mag-request ng bagong code.',
   Language: 'Language',
   Preferences: 'Preferences',
   'Manage your shopping preferences.': 'I-set ang shopping preferences mo.',
-  'Choose the language used across the site.': 'Piliin ang language na gagamitin sa site.',
+  'Choose the language used across the site.':
+    'Piliin ang language na gagamitin sa site.',
   'Change language': 'Palitan ang language',
   Home: 'Home',
   Products: 'Products',
@@ -122,7 +160,8 @@ export default {
   'Finding places...': 'Hinahanap ang mga lugar...',
   "Can't find it? Pin your spot on the map, then edit the address if needed.":
     'Hindi makita? I-pin ang lugar mo sa map, tapos i-edit ang address kung kailangan.',
-  'Pin not on your exact spot? Tap the map to move it.': 'Hindi eksakto ang pin? I-tap ang map para ilipat ito.',
+  'Pin not on your exact spot? Tap the map to move it.':
+    'Hindi eksakto ang pin? I-tap ang map para ilipat ito.',
   'Enlarge map': 'Palakihin ang map',
   'Finding the address...': 'Hinahanap ang address...',
   'Address customers will see': 'Address na makikita ng customers',
@@ -130,7 +169,8 @@ export default {
   'Use this': 'Gamitin ito',
   'This is the address we save. Leave it blank to use the pinned address above.':
     'Ito ang isi-save namin. Iwanang blangko para gamitin ang address ng pin sa itaas.',
-  'No address found for this pin. Type it below.': 'Walang nahanap na address. I-type ito sa ibaba.',
+  'No address found for this pin. Type it below.':
+    'Walang nahanap na address. I-type ito sa ibaba.',
   Notifications: 'Notifications',
   'Mark all as read': 'I-mark as read lahat',
   'Mark all as read ({count})': 'I-mark as read lahat ({count})',
@@ -211,7 +251,8 @@ export default {
   'Within 10 km': 'Hanggang 10 km',
   Relevance: 'Pinakatugma',
   Nearest: 'Pinakamalapit',
-  'Set your location to filter by distance.': 'I-set ang location mo para ma-filter ayon sa layo.',
+  'Set your location to filter by distance.':
+    'I-set ang location mo para ma-filter ayon sa layo.',
   'No results match your filters.': 'Walang resulta na tugma sa filters mo.',
   'Scroll left': 'I-scroll pakaliwa',
   'Scroll right': 'I-scroll pakanan',
@@ -288,12 +329,16 @@ export default {
   "We'll start preparing your order immediately.":
     'Ihahanda namin agad ang order mo.',
   'Schedule for later': 'Mag-schedule ng pickup',
-  'Choose a day and time within store hours.': 'Pumili ng araw at oras habang bukas ang tindahan.',
-  'There are no pickup times left in the next few days. Choose ASAP instead.': 'Wala nang available na pickup time sa mga susunod na araw. Piliin na lang ang ASAP.',
+  'Choose a day and time within store hours.':
+    'Pumili ng araw at oras habang bukas ang tindahan.',
+  'There are no pickup times left in the next few days. Choose ASAP instead.':
+    'Wala nang available na pickup time sa mga susunod na araw. Piliin na lang ang ASAP.',
   'Choose a pickup time first.': 'Pumili muna ng pickup time.',
   'Loading store hours…': 'Nilo-load ang oras ng tindahan…',
-  'Please choose a pickup time that is still available.': 'Pumili ng pickup time na available pa.',
-  'The store is closed at that pickup time. Please choose another time.': 'Sarado ang tindahan sa oras na iyon. Pumili ng ibang oras.',
+  'Please choose a pickup time that is still available.':
+    'Pumili ng pickup time na available pa.',
+  'The store is closed at that pickup time. Please choose another time.':
+    'Sarado ang tindahan sa oras na iyon. Pumili ng ibang oras.',
   'Select Day': 'Pumili ng Araw',
   'Select Time': 'Pumili ng Oras',
   'Choose a time slot': 'Pumili ng time slot',
@@ -337,7 +382,8 @@ export default {
   Refresh: 'I-refresh',
   'Order updated: {status}': 'Na-update ang order: {status}',
   'Your order is up to date.': 'Updated na ang order mo.',
-  'Could not refresh your order. Please try again.': 'Hindi ma-refresh ang order mo. Subukan ulit.',
+  'Could not refresh your order. Please try again.':
+    'Hindi ma-refresh ang order mo. Subukan ulit.',
   'Order Placed': 'Na-place na ang Order',
   'Order is Being Prepared': 'Inihahanda na ang Order',
   'Order is Ready for Pickup': 'Ready na ang Order for Pickup',
@@ -345,8 +391,7 @@ export default {
   'Order Cancelled': 'Cancelled ang Order',
   'The store has received your order and will begin preparing it soon.':
     'Natanggap na ng store ang order mo. Ihahanda na nila ito.',
-  'The store is preparing your order.':
-    'Inihahanda na ng store ang order mo.',
+  'The store is preparing your order.': 'Inihahanda na ng store ang order mo.',
   'This order has been picked up. Thanks for shopping with us!':
     'Nakuha na ang order na ito. Salamat sa pamimili!',
   'This order was cancelled.': 'Cancelled ang order na ito.',
@@ -457,7 +502,8 @@ export default {
   'Type "': 'I-type ang "',
   '" below to confirm account deletion.':
     '" sa ibaba para i-confirm na gusto mong i-delete ang account.',
-  'Name doesn\'t match. Please type "': 'Hindi tugma ang pangalan. I-type ang "',
+  'Name doesn\'t match. Please type "':
+    'Hindi tugma ang pangalan. I-type ang "',
   '" exactly.': '" nang eksakto.',
   'Delete My Account': 'I-delete ang Account Ko',
   'Discard Changes?': 'I-discard ang Changes?',
@@ -472,10 +518,8 @@ export default {
   'Go to Home': 'Bumalik sa Home',
   'Change profile photo': 'Palitan ang profile photo',
   Close: 'Isara',
-  'This action cannot be undone.':
-    'Hindi na pwedeng i-undo ang action na ito.',
-  'This will be displayed on your account.':
-    'Ito ang lalabas sa account mo.',
+  'This action cannot be undone.': 'Hindi na pwedeng i-undo ang action na ito.',
+  'This will be displayed on your account.': 'Ito ang lalabas sa account mo.',
   'Phone number must start with 09 and contain 11 digits.':
     'Dapat nagsisimula sa 09 ang phone number at may 11 digits.',
   "We'll send an OTP to verify your new phone number.":
@@ -484,11 +528,16 @@ export default {
   "We'll send a verification link to your new email.":
     'Magpapadala kami ng verification link sa bagong email mo.',
   'Minimum 8 characters': 'At least 8 characters',
-  'Password must be at least 8 characters.': 'Dapat at least 8 characters ang password.',
-  'Password must contain at least one uppercase letter.': 'Dapat may kahit isang malaking titik ang password.',
-  'Password must contain at least one lowercase letter.': 'Dapat may kahit isang maliit na titik ang password.',
-  'Password must contain at least one symbol.': 'Dapat may kahit isang simbolo ang password, gaya ng !, @, o #.',
-  'At least 8 characters, including one uppercase letter, one lowercase letter, and one symbol.': 'At least 8 characters, na may isang malaking titik, isang maliit na titik, at isang simbolo.',
+  'Password must be at least 8 characters.':
+    'Dapat at least 8 characters ang password.',
+  'Password must contain at least one uppercase letter.':
+    'Dapat may kahit isang malaking titik ang password.',
+  'Password must contain at least one lowercase letter.':
+    'Dapat may kahit isang maliit na titik ang password.',
+  'Password must contain at least one symbol.':
+    'Dapat may kahit isang simbolo ang password, gaya ng !, @, o #.',
+  'At least 8 characters, including one uppercase letter, one lowercase letter, and one symbol.':
+    'At least 8 characters, na may isang malaking titik, isang maliit na titik, at isang simbolo.',
   'Strong password.': 'Strong ang password.',
   'Passwords do not match.': 'Hindi tugma ang passwords.',
   'Passwords match.': 'Tugma ang passwords.',
@@ -587,11 +636,13 @@ export default {
   'Choose a month, day and year.': 'Pumili ng buwan, araw, at taon.',
   'Enter a valid birthday.': 'Maglagay ng valid na birthday.',
   'Vendor Registration': 'Mag-register bilang Vendor',
-  'Open your store on Tindahan and start selling today.': 'Buksan ang store mo sa Tindahan at magsimulang magbenta ngayon.',
+  'Open your store on Tindahan and start selling today.':
+    'Buksan ang store mo sa Tindahan at magsimulang magbenta ngayon.',
   'Step {step} of {total}': 'Step {step} sa {total}',
   'Registration progress': 'Progress ng registration',
   'Owner Account': 'Account ng Store Owner',
-  'We\'ll text a code to your phone number to make sure it\'s yours.': 'Magte-text kami ng code para ma-verify ang phone number mo.',
+  "We'll text a code to your phone number to make sure it's yours.":
+    'Magte-text kami ng code para ma-verify ang phone number mo.',
   'Store owner name': 'Pangalan ng store owner',
   'Store owner name is required.': 'Ilagay ang pangalan ng store owner.',
   'Phone number is required.': 'Ilagay ang phone number mo.',
@@ -599,57 +650,74 @@ export default {
   'Retype password': 'I-type ulit ang password',
   'Verify Your Phone': 'I-verify ang Phone Number',
   'Verify phone': 'I-verify ang phone',
-  'Enter the 6-digit code we sent to': 'Ilagay ang 6-digit code na ipinadala namin sa',
+  'Enter the 6-digit code we sent to':
+    'Ilagay ang 6-digit code na ipinadala namin sa',
   'Change number': 'Palitan ang number',
   'Your Store': 'Store Mo',
-  'Both are required, and customers will see this name and photo.': 'Kailangan ang store name at photo. Makikita ito ng customers.',
+  'Both are required, and customers will see this name and photo.':
+    'Kailangan ang store name at photo. Makikita ito ng customers.',
   'Store name is required.': 'Ilagay ang store name.',
   'Upload Store Exterior Photo': 'Mag-upload ng Photo ng Harap ng Store',
   'PNG, JPG, GIF up to 10MB': 'PNG, JPG, GIF hanggang 10MB',
   'Store exterior preview': 'Preview ng harap ng store',
   'Store photo': 'Photo ng store',
   'Remove photo': 'Alisin ang photo',
-  'Add a photo of your storefront.': 'Mag-upload ng photo ng harap ng store mo.',
+  'Add a photo of your storefront.':
+    'Mag-upload ng photo ng harap ng store mo.',
   'Business Hours': 'Oras ng Store',
-  'Let customers know when your store is open.': 'Ipaalam sa customers kung kailan bukas ang store mo.',
+  'Let customers know when your store is open.':
+    'Ipaalam sa customers kung kailan bukas ang store mo.',
   'Opening time': 'Oras ng pagbukas',
   'Closing time': 'Oras ng pagsara',
   'Operating Days': 'Mga Araw na Bukas',
   'Always Open (24/7)': 'Laging Bukas (24/7)',
   'Always open (24/7)': 'Laging bukas (24/7)',
-  'Hours': 'Oras',
+  Hours: 'Oras',
   'Store Location': 'Lokasyon ng Store',
-  'Location': 'Lokasyon',
-  'Move the pin to where your store is, or type the address below.': 'Ilipat ang pin sa lokasyon ng store mo, o i-type ang address sa ibaba.',
+  Location: 'Lokasyon',
+  'Move the pin to where your store is, or type the address below.':
+    'Ilipat ang pin sa lokasyon ng store mo, o i-type ang address sa ibaba.',
   'Waiting for location…': 'Hinihintay ang lokasyon…',
   'Pinned on the map': 'Naka-pin sa map',
   'Review & Submit': 'I-review at I-submit',
-  'Check your details before sending your application.': 'I-check ang details mo bago i-submit ang application.',
+  'Check your details before sending your application.':
+    'I-check ang details mo bago i-submit ang application.',
   'Register Store': 'I-register ang Store',
   'Already a partner?': 'May partner account ka na?',
   'Crop Store Photo': 'I-crop ang Store Photo',
-  'Drag the photo to move it, and zoom until the frame shows your storefront.': 'I-drag at i-zoom ang photo para magkasya sa frame ang harap ng store.',
+  'Drag the photo to move it, and zoom until the frame shows your storefront.':
+    'I-drag at i-zoom ang photo para magkasya sa frame ang harap ng store.',
   'Application Submitted!': 'Na-submit na ang Application!',
-  'Your vendor application has been submitted and is currently under review. Our team will process your application within 1–3 business days.': 'Na-submit na ang vendor application mo at nire-review na ito. Ipo-process ito ng team namin sa loob ng 1–3 business days.',
+  'Your vendor application has been submitted and is currently under review. Our team will process your application within 1–3 business days.':
+    'Na-submit na ang vendor application mo at nire-review na ito. Ipo-process ito ng team namin sa loob ng 1–3 business days.',
   'Application Not Approved': 'Hindi Na-approve ang Application',
-  'We reviewed your merchant application for Tindahan. Unfortunately, we cannot approve your request at this time due to specific compliance requirements.': 'Na-review na namin ang merchant application mo sa Tindahan. Hindi pa namin ito ma-approve dahil may kulang pa sa requirements.',
+  'We reviewed your merchant application for Tindahan. Unfortunately, we cannot approve your request at this time due to specific compliance requirements.':
+    'Na-review na namin ang merchant application mo sa Tindahan. Hindi pa namin ito ma-approve dahil may kulang pa sa requirements.',
   'Reason for Rejection': 'Dahilan Kung Bakit Hindi Na-approve',
   'Reviewed by': 'Ni-review ni',
   'Application Under Review': 'Nire-review ang Application',
-  'Our administrators are currently reviewing your store details and business credentials to ensure everything meets our community standards.': 'Nire-review ng admin team ang store details at business credentials mo para matiyak na pasok ang mga ito sa community standards namin.',
+  'Our administrators are currently reviewing your store details and business credentials to ensure everything meets our community standards.':
+    'Nire-review ng admin team ang store details at business credentials mo para matiyak na pasok ang mga ito sa community standards namin.',
   'Next Steps': 'Mga Susunod na Step',
-  'The verification process typically takes 1–3 business days. You will receive an email notification once your account has been approved and your store is ready for setup.': 'Karaniwang inaabot ng 1–3 business days ang verification. Makakatanggap ka ng email kapag approved na ang account mo at ready nang i-set up ang store.',
+  'The verification process typically takes 1–3 business days. You will receive an email notification once your account has been approved and your store is ready for setup.':
+    'Karaniwang inaabot ng 1–3 business days ang verification. Makakatanggap ka ng email kapag approved na ang account mo at ready nang i-set up ang store.',
   'Refresh Status': 'I-refresh ang Status',
   'Only letters are allowed': 'Mga letra lang ang pwede',
   'Enter a valid email': 'Maglagay ng valid na email',
-  'Phone must be exactly 11 digits starting with 09': 'Dapat 11 digits ang phone number at nagsisimula sa 09',
-  'Too many attempts. Please wait a few minutes and try again.': 'Masyadong maraming attempts. Maghintay ng ilang minuto bago subukan ulit.',
-  'We could not send a code right now. Please try again.': 'Hindi kami makapag-send ng code ngayon. Subukan ulit.',
+  'Phone must be exactly 11 digits starting with 09':
+    'Dapat 11 digits ang phone number at nagsisimula sa 09',
+  'Too many attempts. Please wait a few minutes and try again.':
+    'Masyadong maraming attempts. Maghintay ng ilang minuto bago subukan ulit.',
+  'We could not send a code right now. Please try again.':
+    'Hindi kami makapag-send ng code ngayon. Subukan ulit.',
   'Please retype the same password.': 'I-type ulit ang parehong password.',
   'The code you entered is incorrect.': 'Mali ang code na inilagay mo.',
-  'Choose your opening and closing time.': 'Piliin ang oras ng pagbukas at pagsara.',
-  'Choose at least one day your store is open.': 'Pumili ng kahit isang araw na bukas ang store mo.',
-  'Pick your store location on the map.': 'Piliin sa map ang lokasyon ng store mo.',
+  'Choose your opening and closing time.':
+    'Piliin ang oras ng pagbukas at pagsara.',
+  'Choose at least one day your store is open.':
+    'Pumili ng kahit isang araw na bukas ang store mo.',
+  'Pick your store location on the map.':
+    'Piliin sa map ang lokasyon ng store mo.',
   'Type your store address.': 'I-type ang address ng store mo.',
   '{error} We sent you a new code.': '{error} Nag-send kami ng bagong code.',
   'Need help?': 'Kailangan ng tulong?',
@@ -658,53 +726,65 @@ export default {
   'Welcome back!': 'Welcome back!',
   'First name': 'Pangalan',
   'Last name': 'Apelyido',
-  'Email': 'Email',
+  Email: 'Email',
   'Email address': 'Email address',
   'Mobile number': 'Mobile number',
   'Phone number': 'Phone number',
-  'Phone': 'Phone',
+  Phone: 'Phone',
   'Confirm Password': 'I-type ulit ang password',
   'Terms and Conditions': 'Terms and Conditions',
   'Reset Password': 'I-reset ang Password',
   'Send Code': 'I-send ang Code',
   'Notice:': 'Paalala:',
-  'Back': 'Bumalik',
-  'Continue': 'Magpatuloy',
+  Back: 'Bumalik',
+  Continue: 'Magpatuloy',
   'Store name': 'Store name',
   'Edit / Crop': 'I-edit / I-crop',
-  'Owner': 'May-ari',
-  'Verified': 'Verified',
-  'Code expired. Please resend a new code.': 'Expired na ang code. Mag-resend ng bagong code.',
+  Owner: 'May-ari',
+  Verified: 'Verified',
+  'Code expired. Please resend a new code.':
+    'Expired na ang code. Mag-resend ng bagong code.',
   'This product is out of stock.': 'Ubos na ang product na ito.',
-  'No items in cart for this store.': 'Walang items sa cart mo para sa store na ito.',
-  'Order cannot be cancelled at this stage.': 'Hindi na pwedeng i-cancel ang order sa stage na ito.',
+  'No items in cart for this store.':
+    'Walang items sa cart mo para sa store na ito.',
+  'Order cannot be cancelled at this stage.':
+    'Hindi na pwedeng i-cancel ang order sa stage na ito.',
   'Current password is incorrect.': 'Mali ang current password mo.',
-  'Invalid or expired verification code.': 'Mali o expired na ang verification code.',
+  'Invalid or expired verification code.':
+    'Mali o expired na ang verification code.',
   'Phone number not found.': 'Hindi mahanap ang phone number.',
   'User not found.': 'Walang nahanap na account.',
-  'This account is no longer active. Please contact support.': 'Hindi na active ang account na ito. I-contact ang support.',
-  'Your account is inactive. Please contact support.': 'Inactive ang account mo. I-contact ang support.',
-  'Please verify your mobile number to finish signing up.': 'I-verify ang mobile number mo para matapos ang sign-up.',
+  'This account is no longer active. Please contact support.':
+    'Hindi na active ang account na ito. I-contact ang support.',
+  'Your account is inactive. Please contact support.':
+    'Inactive ang account mo. I-contact ang support.',
+  'Please verify your mobile number to finish signing up.':
+    'I-verify ang mobile number mo para matapos ang sign-up.',
   '{distance} m away': '{distance} m ang layo',
   '{distance} km away': '{distance} km ang layo',
 
   // Checkout location gate.
   'Set your location to continue': 'I-set ang location mo para makatuloy',
-  'We need your location so the store knows where you are ordering from. Detect it now, or set your address from the location button in the header.': 'Kailangan namin ang location mo para malaman ng tindahan kung saan ka nag-order. I-detect na ngayon, o i-set ang address mo sa location button sa itaas.',
+  'We need your location so the store knows where you are ordering from. Detect it now, or set your address from the location button in the header.':
+    'Kailangan namin ang location mo para malaman ng tindahan kung saan ka nag-order. I-detect na ngayon, o i-set ang address mo sa location button sa itaas.',
   'Detect My Location': 'I-detect ang Location Ko',
-  'Set your location to place this order.': 'I-set ang location mo para maiorder ito.',
-  'Set your location before placing this order.': 'I-set muna ang location mo bago i-order ito.',
-  'We could not detect your location. Please allow location access, or set your address from the location button in the header.': 'Hindi namin ma-detect ang location mo. Paki-allow ang location access, o i-set ang address mo sa location button sa itaas.',
+  'Set your location to place this order.':
+    'I-set ang location mo para maiorder ito.',
+  'Set your location before placing this order.':
+    'I-set muna ang location mo bago i-order ito.',
+  'We could not detect your location. Please allow location access, or set your address from the location button in the header.':
+    'Hindi namin ma-detect ang location mo. Paki-allow ang location access, o i-set ang address mo sa location button sa itaas.',
   // Returned by the checkout endpoint when the consumer has no location.
-  'Set your location before checking out, so the store knows where you are ordering from.': 'I-set muna ang location mo bago mag-checkout, para malaman ng tindahan kung saan ka nag-order.',
+  'Set your location before checking out, so the store knows where you are ordering from.':
+    'I-set muna ang location mo bago mag-checkout, para malaman ng tindahan kung saan ka nag-order.',
 
   // Product categories, keyed by the English category_name stored in the database.
   'Cooking Essentials': 'Mga Sangkap sa Pagluluto',
-  'Beverages': 'Mga Inumin',
+  Beverages: 'Mga Inumin',
   'Snacks & Sweets': 'Tsitsirya at Matatamis',
   'Personal Care': 'Pangangalaga sa Sarili',
   'Laundry & Cleaning': 'Panlaba at Panlinis',
-  'Others': 'Iba Pa',
+  Others: 'Iba Pa',
   'Rice & Grains': 'Bigas at Butil',
   'Canned & Packaged Foods': 'De-lata at Nakabalot na Pagkain',
   'Instant Noodles & Pasta': 'Instant Noodles at Pasta',
@@ -724,19 +804,28 @@ export default {
 
   // Contextual hints and empty states.
   'Set your location': 'Itakda ang lokasyon mo',
-  'Tap here to add your address. We use it to sort stores and products by how near they are to you.': 'Pindutin dito para ilagay ang address mo. Ginagamit namin ito para isunod-sunod ang mga tindahan at paninda ayon sa lapit sa iyo.',
+  'Tap here to add your address. We use it to sort stores and products by how near they are to you.':
+    'Pindutin dito para ilagay ang address mo. Ginagamit namin ito para isunod-sunod ang mga tindahan at paninda ayon sa lapit sa iyo.',
   'Pickup only': 'Pickup lang',
-  'Tindahan orders are collected at the store. There is no delivery \u2014 you pay the store when you pick your order up.': 'Sa tindahan mismo kinukuha ang order sa Tindahan. Walang delivery \u2014 sa tindahan ka magbabayad kapag kinuha mo na ang order mo.',
+  'Tindahan orders are collected at the store. There is no delivery \u2014 you pay the store when you pick your order up.':
+    'Sa tindahan mismo kinukuha ang order sa Tindahan. Walang delivery \u2014 sa tindahan ka magbabayad kapag kinuha mo na ang order mo.',
   'Your cart is empty': 'Walang laman ang cart mo',
-  'Items you add from a store will wait here until you are ready to check out. You pay and collect at the store itself.': 'Ang mga idinagdag mo mula sa isang tindahan ay maghihintay dito hanggang handa ka nang mag-checkout. Sa tindahan mismo ka magbabayad at kukuha.',
+  'Items you add from a store will wait here until you are ready to check out. You pay and collect at the store itself.':
+    'Ang mga idinagdag mo mula sa isang tindahan ay maghihintay dito hanggang handa ka nang mag-checkout. Sa tindahan mismo ka magbabayad at kukuha.',
   'No orders yet': 'Wala pang order',
-  'Once you check out, your orders appear here so you can follow each one from placed to ready for pickup.': 'Kapag nag-checkout ka, lalabas dito ang mga order mo para masubaybayan mo ang bawat isa mula sa pag-order hanggang pwede nang kunin.',
+  'Once you check out, your orders appear here so you can follow each one from placed to ready for pickup.':
+    'Kapag nag-checkout ka, lalabas dito ang mga order mo para masubaybayan mo ang bawat isa mula sa pag-order hanggang pwede nang kunin.',
   'Nothing in progress': 'Walang kasalukuyang order',
-  'You have no active orders right now. Anything you order next shows up here while the store prepares it.': 'Wala kang aktibong order ngayon. Lalabas dito ang susunod mong order habang inihahanda ito ng tindahan.',
+  'You have no active orders right now. Anything you order next shows up here while the store prepares it.':
+    'Wala kang aktibong order ngayon. Lalabas dito ang susunod mong order habang inihahanda ito ng tindahan.',
   'No past orders': 'Walang lumang order',
-  'Orders you have picked up or cancelled will be kept here.': 'Dito itatago ang mga order na nakuha mo na o kinansela.',
-  'Your neighborhood sari-sari store, now online.': 'Ang sari-sari store sa inyong lugar, online na.',
-  "Browse stores near you, order ahead, and pick up when it's ready, all while helping local store owners grow.": "Mag-browse ng mga store malapit sa'yo, mag-order in advance, at i-pick up kapag ready na, habang tinutulungan ang mga local store owner na lumago.",
+  'Orders you have picked up or cancelled will be kept here.':
+    'Dito itatago ang mga order na nakuha mo na o kinansela.',
+  'Your neighborhood sari-sari store, now online.':
+    'Ang sari-sari store sa inyong lugar, online na.',
+  "Browse stores near you, order ahead, and pick up when it's ready, all while helping local store owners grow.":
+    "Mag-browse ng mga store malapit sa'yo, mag-order in advance, at i-pick up kapag ready na, habang tinutulungan ang mga local store owner na lumago.",
   'Go to home page': 'Pumunta sa home page',
-  'Too many login attempts. Try again in {time}.': 'Sobra na ang login attempts. Subukan ulit pagkalipas ng {time}.',
+  'Too many login attempts. Try again in {time}.':
+    'Sobra na ang login attempts. Subukan ulit pagkalipas ng {time}.'
 }

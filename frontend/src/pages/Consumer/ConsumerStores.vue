@@ -1,15 +1,15 @@
 <template>
   <q-page class="storefront-page">
-
     <SiteHeader />
 
     <!-- MAIN CONTENT -->
     <div class="page-content">
-
       <div class="page-header-row">
         <div>
           <h1 class="page-title">{{ t('Nearby Stores') }}</h1>
-          <p class="page-subtitle">{{ t('Browse all sari-sari stores near you.') }}</p>
+          <p class="page-subtitle">{{
+            t('Browse all sari-sari stores near you.')
+          }}</p>
         </div>
 
         <div class="page-header-actions">
@@ -47,16 +47,25 @@
       </div>
 
       <div class="stores-layout">
-
         <div class="stores-main">
           <div v-if="storesLoading" ref="gridEl" class="stores-grid">
             <CardSkeleton v-for="n in skeletonCount" :key="n" variant="store" />
           </div>
           <div v-else ref="gridEl" class="stores-grid">
-            <StoreCard v-for="(store, i) in paginatedStores" :key="store.id" v-intersection.once="onReveal" class="reveal" :style="{ '--reveal-delay': (i % 6) * 70 + 'ms' }" :store="store" />
+            <StoreCard
+              v-for="(store, i) in paginatedStores"
+              :key="store.id"
+              v-intersection.once="onReveal"
+              class="reveal"
+              :style="{ '--reveal-delay': (i % 6) * 70 + 'ms' }"
+              :store="store"
+            />
           </div>
 
-          <p v-if="!storesLoading && !filteredStores.length" class="stores-empty">
+          <p
+            v-if="!storesLoading && !filteredStores.length"
+            class="stores-empty"
+          >
             {{ t('No stores match your filters.') }}
           </p>
         </div>
@@ -71,14 +80,19 @@
             @clear="clearFilters"
           />
         </aside>
-
       </div>
 
       <AppPagination v-model="currentPage" :max="totalPages" />
 
       <!-- FILTERS POPUP (tablet: centered dialog, mobile: bottom sheet) -->
-      <q-dialog v-model="mobileFiltersOpen" :position="isSheetFilters ? 'bottom' : undefined">
-        <q-card class="filters-dialog-card" :class="{ 'filters-dialog-card-sheet': isSheetFilters }">
+      <q-dialog
+        v-model="mobileFiltersOpen"
+        :position="isSheetFilters ? 'bottom' : undefined"
+      >
+        <q-card
+          class="filters-dialog-card"
+          :class="{ 'filters-dialog-card-sheet': isSheetFilters }"
+        >
           <div v-if="isSheetFilters" class="filters-drag-handle" />
           <StoreFilters
             v-model:open-now="openNowOnly"
@@ -90,11 +104,9 @@
           />
         </q-card>
       </q-dialog>
-
     </div>
 
     <SiteFooter />
-
   </q-page>
 </template>
 
@@ -146,18 +158,23 @@ const isSheetFilters = computed(() => isMobileFilters.value)
 
 const mobileFiltersOpen = computed({
   get: () => filtersOpen.value && isMobileFilters.value,
-  set: (val) => { filtersOpen.value = val }
+  set: val => {
+    filtersOpen.value = val
+  }
 })
 
-const hasActiveFilters = computed(() => openNowOnly.value || sortBy.value !== 'popular')
+const hasActiveFilters = computed(
+  () => openNowOnly.value || sortBy.value !== 'popular'
+)
 
 const filteredStores = computed(() => {
-  const list = stores.value.filter((store) => {
+  const list = stores.value.filter(store => {
     if (openNowOnly.value && !store.isOpen) return false
     return true
   })
 
-  if (sortBy.value === 'name') return [...list].sort((a, b) => a.name.localeCompare(b.name))
+  if (sortBy.value === 'name')
+    return [...list].sort((a, b) => a.name.localeCompare(b.name))
   return list
 })
 
@@ -175,7 +192,9 @@ const paginatedStores = computed(() => {
 })
 
 // Jump back to page 1 when filters change shape, otherwise the user could be stranded on a now-empty page.
-watch(filteredStores, () => { currentPage.value = 1 })
+watch(filteredStores, () => {
+  currentPage.value = 1
+})
 
 const clearFilters = () => {
   openNowOnly.value = false
@@ -315,7 +334,9 @@ const clearFilters = () => {
   font-size: var(--fs-sm);
   font-weight: 500;
 
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 /* Hides Quasar's own focus/ripple overlay so it can't paint a stray ring over our border/hover treatment. */
@@ -388,8 +409,14 @@ const clearFilters = () => {
 
 /* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
 @keyframes stores-fade-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-header-row,
@@ -397,7 +424,9 @@ const clearFilters = () => {
   animation: stores-fade-up 0.5s ease both;
 }
 
-.stores-grid { animation-delay: 0.08s; }
+.stores-grid {
+  animation-delay: 0.08s;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .page-header-row,

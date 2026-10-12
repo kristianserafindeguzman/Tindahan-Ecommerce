@@ -1,25 +1,49 @@
 <template>
   <q-page class="vp-page">
     <div class="vp-container">
-
       <div class="vp-header">
         <div>
           <h1 class="vp-title">{{ t('title') }}</h1>
           <p class="vp-subtitle">{{ t('subtitle') }}</p>
         </div>
         <div class="vp-header-actions">
-          <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" @click="openExportWizard" />
-          <q-btn data-tour="add-product" unelevated no-caps color="primary" icon="add" :label="t('addBtn')" class="vp-primary-btn" @click="showAddModal = true" />
+          <q-btn
+            outline
+            no-caps
+            color="primary"
+            icon="o_download"
+            :label="t('exportBtn')"
+            class="vp-pill-btn"
+            @click="openExportWizard"
+          />
+          <q-btn
+            data-tour="add-product"
+            unelevated
+            no-caps
+            color="primary"
+            icon="add"
+            :label="t('addBtn')"
+            class="vp-primary-btn"
+            @click="showAddModal = true"
+          />
         </div>
       </div>
 
       <!-- Forecast insights from the demand model, with the refresh that re-runs it right above the cards it updates. -->
-      <section data-tour="pl-insights" class="pl-insights" :aria-busy="insightsBusy">
+      <section
+        data-tour="pl-insights"
+        class="pl-insights"
+        :aria-busy="insightsBusy"
+      >
         <div class="pl-insights-head">
           <div class="pl-insights-heading">
             <span class="pl-insights-title">{{ t('insightsTitle') }}</span>
             <span class="pl-insights-meta" aria-live="polite">
-              <q-icon :name="insightsRefreshing ? 'o_autorenew' : 'o_schedule'" size="14px" :class="{ 'pl-spin': insightsRefreshing }" />
+              <q-icon
+                :name="insightsRefreshing ? 'o_autorenew' : 'o_schedule'"
+                size="14px"
+                :class="{ 'pl-spin': insightsRefreshing }"
+              />
               {{ insightsMeta }}
             </span>
           </div>
@@ -32,8 +56,17 @@
             :disable="insightsRefreshing"
             @click="refreshInsights"
           >
-            <q-icon name="o_refresh" size="18px" class="pl-refresh-icon" :class="{ 'pl-spin': insightsRefreshing }" />
-            <span class="pl-refresh-label">{{ insightsRefreshing ? t('refreshingInsights') : t('refreshInsights') }}</span>
+            <q-icon
+              name="o_refresh"
+              size="18px"
+              class="pl-refresh-icon"
+              :class="{ 'pl-spin': insightsRefreshing }"
+            />
+            <span class="pl-refresh-label">{{
+              insightsRefreshing
+                ? t('refreshingInsights')
+                : t('refreshInsights')
+            }}</span>
           </q-btn>
         </div>
 
@@ -43,22 +76,44 @@
             v-for="card in insightCards"
             :key="`${card.key}-${insightsVersion}`"
             class="vp-card vp-stat pl-insight"
-            :class="{ 'pl-insight--updated': insightsVersion > 0, 'pl-insight--busy': insightsBusy }"
+            :class="{
+              'pl-insight--updated': insightsVersion > 0,
+              'pl-insight--busy': insightsBusy
+            }"
           >
             <div class="vp-stat-top">
               <span class="vp-stat-label">{{ card.label }}</span>
-              <span class="vp-stat-icon" :class="`vp-tone--${card.tone}`"><q-icon :name="card.icon" size="20px" /></span>
+              <span class="vp-stat-icon" :class="`vp-tone--${card.tone}`"
+                ><q-icon :name="card.icon" size="20px"
+              /></span>
             </div>
             <template v-if="insightsBusy">
-              <q-skeleton type="text" width="78%" height="26px" class="pl-insight-skeleton" />
+              <q-skeleton
+                type="text"
+                width="78%"
+                height="26px"
+                class="pl-insight-skeleton"
+              />
               <div class="vp-stat-notes">
-                <q-skeleton type="QChip" width="62%" height="24px" class="pl-insight-skeleton" />
+                <q-skeleton
+                  type="QChip"
+                  width="62%"
+                  height="24px"
+                  class="pl-insight-skeleton"
+                />
               </div>
             </template>
             <template v-else>
-              <div class="vp-stat-value vp-stat-value--text">{{ card.value }}</div>
+              <div class="vp-stat-value vp-stat-value--text">{{
+                card.value
+              }}</div>
               <div class="vp-stat-notes">
-                <span v-for="note in card.notes" :key="note.text" class="vp-stat-note" :class="`vp-tone--${note.tone || card.tone}`">
+                <span
+                  v-for="note in card.notes"
+                  :key="note.text"
+                  class="vp-stat-note"
+                  :class="`vp-tone--${note.tone || card.tone}`"
+                >
                   <q-icon :name="note.icon" size="14px" />
                   {{ note.text }}
                 </span>
@@ -87,19 +142,56 @@
             </q-input>
 
             <!-- A dropdown on wide screens and a bottom sheet on phones, the same as the order lists. -->
-            <FilterSheet :count="activeFilterCount" :result-count="filteredProducts.length" :noun="t('product')" @clear="resetFilters">
+            <FilterSheet
+              :count="activeFilterCount"
+              :result-count="filteredProducts.length"
+              :noun="t('product')"
+              @clear="resetFilters"
+            >
               <div class="pl-filter-panel">
                 <div>
-                  <label class="vp-field-label">{{ t('filterCategory') }}</label>
-                  <q-select v-model="filters.category" :options="categorySelectOptions" emit-value map-options outlined dense options-dense behavior="menu" class="vp-input" />
+                  <label class="vp-field-label">{{
+                    t('filterCategory')
+                  }}</label>
+                  <q-select
+                    v-model="filters.category"
+                    :options="categorySelectOptions"
+                    emit-value
+                    map-options
+                    outlined
+                    dense
+                    options-dense
+                    behavior="menu"
+                    class="vp-input"
+                  />
                 </div>
                 <div>
                   <label class="vp-field-label">{{ t('filterStock') }}</label>
-                  <q-select v-model="filters.stock" :options="localizedStockOptions" emit-value map-options outlined dense options-dense behavior="menu" class="vp-input" />
+                  <q-select
+                    v-model="filters.stock"
+                    :options="localizedStockOptions"
+                    emit-value
+                    map-options
+                    outlined
+                    dense
+                    options-dense
+                    behavior="menu"
+                    class="vp-input"
+                  />
                 </div>
                 <div>
                   <label class="vp-field-label">{{ t('filterPrice') }}</label>
-                  <q-select v-model="filters.priceSort" :options="localizedPriceOptions" emit-value map-options outlined dense options-dense behavior="menu" class="vp-input" />
+                  <q-select
+                    v-model="filters.priceSort"
+                    :options="localizedPriceOptions"
+                    emit-value
+                    map-options
+                    outlined
+                    dense
+                    options-dense
+                    behavior="menu"
+                    class="vp-input"
+                  />
                 </div>
               </div>
             </FilterSheet>
@@ -108,7 +200,10 @@
           <div
             ref="chipRow"
             class="vp-chips vp-chips--scroll"
-            :class="{ 'vp-chips--more-left': chipFade.left, 'vp-chips--more-right': chipFade.right }"
+            :class="{
+              'vp-chips--more-left': chipFade.left,
+              'vp-chips--more-right': chipFade.right
+            }"
             role="tablist"
             aria-label="Filter products by status"
             @scroll.passive="updateChipFade"
@@ -129,15 +224,33 @@
           </div>
         </div>
 
-        <SkeletonTable v-if="loading" :columns="SKELETON_COLUMNS" :list="$q.screen.lt.md" thumb />
+        <SkeletonTable
+          v-if="loading"
+          :columns="SKELETON_COLUMNS"
+          :list="$q.screen.lt.md"
+          thumb
+        />
 
         <div v-else-if="!filteredProducts.length" class="vp-empty">
-          <div class="vp-empty-icon"><q-icon name="o_inventory_2" size="24px" /></div>
-          <div class="vp-empty-title">{{ products.length ? t('noMatchTitle') : t('emptyTitle') }}</div>
+          <div class="vp-empty-icon"
+            ><q-icon name="o_inventory_2" size="24px"
+          /></div>
+          <div class="vp-empty-title">{{
+            products.length ? t('noMatchTitle') : t('emptyTitle')
+          }}</div>
           <div class="vp-empty-text">
             {{ products.length ? t('noMatchDesc') : t('emptyDesc') }}
           </div>
-          <q-btn v-if="!products.length" unelevated no-caps color="primary" icon="add" :label="t('addBtn')" class="vp-primary-btn pl-empty-btn" @click="showAddModal = true" />
+          <q-btn
+            v-if="!products.length"
+            unelevated
+            no-caps
+            color="primary"
+            icon="add"
+            :label="t('addBtn')"
+            class="vp-primary-btn pl-empty-btn"
+            @click="showAddModal = true"
+          />
         </div>
 
         <!-- A table on wide screens; a row opens the product. -->
@@ -165,32 +278,65 @@
                 <td>
                   <div class="vp-person">
                     <span class="pl-thumb">
-                      <img v-if="product.image_url" :src="product.image_url" alt="" />
+                      <img
+                        v-if="product.image_url"
+                        :src="product.image_url"
+                        alt=""
+                      />
                       <q-icon v-else name="o_image" size="20px" />
                     </span>
                     <span class="vp-name">{{ product.product_name }}</span>
                   </div>
                 </td>
-                <td class="vp-muted pl-ellipsis">{{ productCategoryName(product) }}</td>
+                <td class="vp-muted pl-ellipsis">{{
+                  productCategoryName(product)
+                }}</td>
                 <td>
                   <div class="pl-stock-row">
-                    <span class="pl-stock" :class="stockClass(product)">{{ product.available_quantity }}</span>
-                    <span class="pl-stock-total">{{ t('ofWord') }} {{ product.stock_quantity }}</span>
+                    <span class="pl-stock" :class="stockClass(product)">{{
+                      product.available_quantity
+                    }}</span>
+                    <span class="pl-stock-total"
+                      >{{ t('ofWord') }} {{ product.stock_quantity }}</span
+                    >
                   </div>
                 </td>
                 <td class="text-right vp-amount">
                   <span class="pl-price">
-                    <span v-if="product.variants?.length" class="pl-from">{{ t('fromWord') }}</span>
+                    <span v-if="product.variants?.length" class="pl-from">{{
+                      t('fromWord')
+                    }}</span>
                     <span>₱{{ formatNumber(product.price) }}</span>
                   </span>
                 </td>
-                <td><span class="vp-status" :class="`vp-status--${productTone(product.status)}`">{{ formatStatus(product.status) }}</span></td>
+                <td
+                  ><span
+                    class="vp-status"
+                    :class="`vp-status--${productTone(product.status)}`"
+                    >{{ formatStatus(product.status) }}</span
+                  ></td
+                >
                 <td class="text-right" @click.stop @keydown.stop>
-                  <q-btn flat round dense icon="o_more_vert" class="vp-open-btn" :aria-label="`Actions for ${product.product_name}`">
+                  <q-btn
+                    flat
+                    round
+                    dense
+                    icon="o_more_vert"
+                    class="vp-open-btn"
+                    :aria-label="`Actions for ${product.product_name}`"
+                  >
                     <q-menu anchor="bottom right" self="top right" auto-close>
                       <q-list class="vp-menu-list">
-                        <q-item v-for="action in rowActions(product)" :key="action.label" clickable :class="{ 'vp-menu-item--danger': action.danger }" @click="action.run">
-                          <q-item-section avatar><q-icon :name="action.icon" size="18px" /></q-item-section>
+                        <q-item
+                          v-for="action in rowActions(product)"
+                          :key="action.label"
+                          clickable
+                          :class="{ 'vp-menu-item--danger': action.danger }"
+                          @click="action.run"
+                        >
+                          <q-item-section avatar
+                            ><q-icon :name="action.icon" size="18px"
+                          /></q-item-section>
                           <q-item-section>{{ action.label }}</q-item-section>
                         </q-item>
                       </q-list>
@@ -220,25 +366,52 @@
             <div class="vp-list-body">
               <span class="vp-name">{{ product.product_name }}</span>
               <div class="vp-list-meta">
-                {{ productCategoryName(product) }} · 
+                {{ productCategoryName(product) }} ·
                 <span class="pl-stock-row pl-stock-row--inline">
-                  <span :class="stockClass(product)">{{ product.available_quantity }}</span>
-                  <span>{{ t('ofWord') }} {{ product.stock_quantity }} {{ t('leftWord') }}</span>
+                  <span :class="stockClass(product)">{{
+                    product.available_quantity
+                  }}</span>
+                  <span
+                    >{{ t('ofWord') }} {{ product.stock_quantity }}
+                    {{ t('leftWord') }}</span
+                  >
                 </span>
               </div>
               <div class="pl-list-bottom">
                 <span class="vp-amount pl-price">
-                  <span v-if="product.variants?.length" class="pl-from">{{ t('fromWord') }}</span>
+                  <span v-if="product.variants?.length" class="pl-from">{{
+                    t('fromWord')
+                  }}</span>
                   <span>₱{{ formatNumber(product.price) }}</span>
                 </span>
-                <span class="vp-status" :class="`vp-status--${productTone(product.status)}`">{{ formatStatus(product.status) }}</span>
+                <span
+                  class="vp-status"
+                  :class="`vp-status--${productTone(product.status)}`"
+                  >{{ formatStatus(product.status) }}</span
+                >
               </div>
             </div>
-            <q-btn flat round dense icon="o_more_vert" class="vp-open-btn" :aria-label="`Actions for ${product.product_name}`" @click.stop>
+            <q-btn
+              flat
+              round
+              dense
+              icon="o_more_vert"
+              class="vp-open-btn"
+              :aria-label="`Actions for ${product.product_name}`"
+              @click.stop
+            >
               <q-menu anchor="bottom right" self="top right" auto-close>
                 <q-list class="vp-menu-list">
-                  <q-item v-for="action in rowActions(product)" :key="action.label" clickable :class="{ 'vp-menu-item--danger': action.danger }" @click="action.run">
-                    <q-item-section avatar><q-icon :name="action.icon" size="18px" /></q-item-section>
+                  <q-item
+                    v-for="action in rowActions(product)"
+                    :key="action.label"
+                    clickable
+                    :class="{ 'vp-menu-item--danger': action.danger }"
+                    @click="action.run"
+                  >
+                    <q-item-section avatar
+                      ><q-icon :name="action.icon" size="18px"
+                    /></q-item-section>
                     <q-item-section>{{ action.label }}</q-item-section>
                   </q-item>
                 </q-list>
@@ -248,44 +421,90 @@
         </div>
 
         <div v-if="!loading && pageCount > 1" class="vp-pager">
-          <span>{{ t('showingWord') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('ofWord') }} {{ filteredProducts.length }}</span>
+          <span
+            >{{ t('showingWord') }} {{ rangeStart }}–{{ rangeEnd }}
+            {{ t('ofWord') }} {{ filteredProducts.length }}</span
+          >
           <div class="vp-pager-btns">
-            <q-btn outline no-caps color="primary" icon="o_chevron_left" class="vp-pill-btn" aria-label="Previous page" :disable="page === 1" @click="page--" />
-            <q-btn outline no-caps color="primary" icon="o_chevron_right" class="vp-pill-btn" aria-label="Next page" :disable="page === pageCount" @click="page++" />
+            <q-btn
+              outline
+              no-caps
+              color="primary"
+              icon="o_chevron_left"
+              class="vp-pill-btn"
+              aria-label="Previous page"
+              :disable="page === 1"
+              @click="page--"
+            />
+            <q-btn
+              outline
+              no-caps
+              color="primary"
+              icon="o_chevron_right"
+              class="vp-pill-btn"
+              aria-label="Next page"
+              :disable="page === pageCount"
+              @click="page++"
+            />
           </div>
         </div>
       </div>
-
     </div>
 
     <AddProductModal v-model="showAddModal" @refresh="fetchProducts" />
-    <ProductDetailsModal v-model="showDetailsModal" :product="selectedProduct" @refresh="fetchProducts" />
+    <ProductDetailsModal
+      v-model="showDetailsModal"
+      :product="selectedProduct"
+      @refresh="fetchProducts"
+    />
 
     <!-- Archive or delete, in the Log out dialog's layout: everything centred, the icon above the title, and a line above two equal buttons. -->
     <q-dialog v-model="confirm.open" persistent>
       <q-card class="vp-dialog pl-confirm">
         <div class="pl-confirm-body">
           <span class="vp-dialog-icon vp-dialog-icon--danger pl-confirm-icon">
-            <q-icon :name="confirm.kind === 'delete' ? 'o_delete' : 'o_inventory_2'" size="24px" />
+            <q-icon
+              :name="confirm.kind === 'delete' ? 'o_delete' : 'o_inventory_2'"
+              size="24px"
+            />
           </span>
-          <div class="pl-confirm-title">{{ confirm.kind === 'delete' ? t('confirmDeleteTitle') : t('confirmArchiveTitle') }}</div>
+          <div class="pl-confirm-title">{{
+            confirm.kind === 'delete'
+              ? t('confirmDeleteTitle')
+              : t('confirmArchiveTitle')
+          }}</div>
           <p class="pl-confirm-text">
             <template v-if="confirm.kind === 'delete'">
-              <strong>{{ confirm.product?.product_name }}</strong> {{ t('confirmDeleteDesc') }}
+              <strong>{{ confirm.product?.product_name }}</strong>
+              {{ t('confirmDeleteDesc') }}
             </template>
             <template v-else>
-              {{ t('confirmArchiveDesc1') }} <strong>{{ confirm.product?.product_name }}</strong> {{ t('confirmArchiveDesc2') }}
+              {{ t('confirmArchiveDesc1') }}
+              <strong>{{ confirm.product?.product_name }}</strong>
+              {{ t('confirmArchiveDesc2') }}
             </template>
           </p>
         </div>
         <q-separator class="pl-confirm-sep" />
         <div class="pl-confirm-actions">
-          <q-btn v-close-popup outline no-caps color="primary" :label="t('cancelBtn')" class="vp-dialog-btn" :disable="confirm.busy" />
+          <q-btn
+            v-close-popup
+            outline
+            no-caps
+            color="primary"
+            :label="t('cancelBtn')"
+            class="vp-dialog-btn"
+            :disable="confirm.busy"
+          />
           <q-btn
             unelevated
             no-caps
             color="primary"
-            :label="confirm.kind === 'delete' ? t('confirmDeleteBtn') : t('confirmArchiveBtn')"
+            :label="
+              confirm.kind === 'delete'
+                ? t('confirmDeleteBtn')
+                : t('confirmArchiveBtn')
+            "
             class="vp-dialog-btn"
             :loading="confirm.busy"
             @click="runConfirm"
@@ -297,18 +516,38 @@
     <q-dialog v-model="showExportModal" persistent>
       <q-card class="vp-dialog vp-dialog--wide">
         <div class="vp-dialog-head">
-          <span class="vp-dialog-icon"><q-icon name="o_download" size="22px" /></span>
+          <span class="vp-dialog-icon"
+            ><q-icon name="o_download" size="22px"
+          /></span>
           <div>
             <div class="vp-dialog-title">{{ t('exportWizardTitle') }}</div>
             <div class="vp-dialog-text">
-              {{ exportStep === 1 ? t('exportWizardDesc1') : t('exportWizardDesc2') }}
+              {{
+                exportStep === 1
+                  ? t('exportWizardDesc1')
+                  : t('exportWizardDesc2')
+              }}
             </div>
           </div>
-          <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" :disable="isExporting" />
+          <q-btn
+            v-close-popup
+            flat
+            round
+            dense
+            icon="o_close"
+            class="vp-dialog-close"
+            aria-label="Close"
+            :disable="isExporting"
+          />
         </div>
 
         <div class="vp-dialog-body">
-          <div v-if="exportStep === 1" class="pl-format-grid" role="radiogroup" aria-label="Export format">
+          <div
+            v-if="exportStep === 1"
+            class="pl-format-grid"
+            role="radiogroup"
+            aria-label="Export format"
+          >
             <button
               v-for="format in localizedExportFormats"
               :key="format.value"
@@ -319,36 +558,85 @@
               :aria-checked="exportFormat === format.value"
               @click="exportFormat = format.value"
             >
-              <span class="pl-format-icon"><q-icon :name="format.icon" size="24px" /></span>
+              <span class="pl-format-icon"
+                ><q-icon :name="format.icon" size="24px"
+              /></span>
               <span class="pl-format-title">{{ format.title }}</span>
               <span class="pl-format-sub">{{ format.sub }}</span>
             </button>
           </div>
 
           <div v-else class="pl-summary">
-            <div class="pl-summary-row"><span>{{ t('exportSummaryFormat') }}</span><strong>{{ exportFormat === 'pdf' ? t('formatPdfTitle') : t('formatImageTitle') }}</strong></div>
-            <div class="pl-summary-row"><span>{{ t('exportSummaryProducts') }}</span><strong>{{ filteredProducts.length }}</strong></div>
+            <div class="pl-summary-row"
+              ><span>{{ t('exportSummaryFormat') }}</span
+              ><strong>{{
+                exportFormat === 'pdf'
+                  ? t('formatPdfTitle')
+                  : t('formatImageTitle')
+              }}</strong></div
+            >
+            <div class="pl-summary-row"
+              ><span>{{ t('exportSummaryProducts') }}</span
+              ><strong>{{ filteredProducts.length }}</strong></div
+            >
           </div>
         </div>
 
         <div class="vp-dialog-actions">
           <template v-if="exportStep === 1">
-            <q-btn v-close-popup outline no-caps color="primary" :label="t('cancelBtn')" class="vp-dialog-btn" />
-            <q-btn unelevated no-caps color="primary" :label="t('nextBtn')" class="vp-dialog-btn" @click="proceedToPreview(exportFormat)" />
+            <q-btn
+              v-close-popup
+              outline
+              no-caps
+              color="primary"
+              :label="t('cancelBtn')"
+              class="vp-dialog-btn"
+            />
+            <q-btn
+              unelevated
+              no-caps
+              color="primary"
+              :label="t('nextBtn')"
+              class="vp-dialog-btn"
+              @click="proceedToPreview(exportFormat)"
+            />
           </template>
           <template v-else>
-            <q-btn outline no-caps color="primary" :label="t('backBtn')" class="vp-dialog-btn" :disable="isExporting" @click="exportStep = 1" />
-            <q-btn unelevated no-caps color="primary" :label="t('downloadBtn')" class="vp-dialog-btn" :loading="isExporting" @click="executeFinalExport" />
+            <q-btn
+              outline
+              no-caps
+              color="primary"
+              :label="t('backBtn')"
+              class="vp-dialog-btn"
+              :disable="isExporting"
+              @click="exportStep = 1"
+            />
+            <q-btn
+              unelevated
+              no-caps
+              color="primary"
+              :label="t('downloadBtn')"
+              class="vp-dialog-btn"
+              :loading="isExporting"
+              @click="executeFinalExport"
+            />
           </template>
         </div>
       </q-card>
     </q-dialog>
-
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, reactive, nextTick, watch } from 'vue'
+import {
+  ref,
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  reactive,
+  nextTick,
+  watch
+} from 'vue'
 import html2canvas from 'html2canvas'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
@@ -377,7 +665,8 @@ const productListDict = {
     insightsUpdatedAt: 'Updated {time}',
     insightsNotLoaded: 'Couldn’t load insights',
     notifyInsightsRefreshed: 'Insights refreshed with the latest forecast.',
-    notifyInsightsNoForecast: 'Not enough sales data for a new forecast yet. Showing your latest insights.',
+    notifyInsightsNoForecast:
+      'Not enough sales data for a new forecast yet. Showing your latest insights.',
     notifyInsightsFailed: 'Couldn’t refresh insights. Please try again.',
     insightRestockAlert: 'Restock alert',
     insightUpcomingTrend: 'Upcoming trend',
@@ -427,8 +716,8 @@ const productListDict = {
     actionDelete: 'Delete',
     confirmDeleteTitle: 'Delete this product?',
     confirmArchiveTitle: 'Archive this product?',
-    confirmDeleteDesc: 'will be removed for good. This can\'t be undone.',
-    confirmArchiveDesc1: 'Customers won\'t be able to buy',
+    confirmDeleteDesc: "will be removed for good. This can't be undone.",
+    confirmArchiveDesc1: "Customers won't be able to buy",
     confirmArchiveDesc2: 'until you restore it. Nothing else is removed.',
     cancelBtn: 'Cancel',
     confirmDeleteBtn: 'Delete Product',
@@ -463,8 +752,10 @@ const productListDict = {
     insightsLoading: 'Nilo-load ang insights…',
     insightsUpdatedAt: 'Na-update {time}',
     insightsNotLoaded: 'Hindi ma-load ang insights',
-    notifyInsightsRefreshed: 'Na-refresh ang insights gamit ang pinakabagong forecast.',
-    notifyInsightsNoForecast: 'Kulang pa ang sales data para sa bagong forecast. Ipinapakita ang pinakahuli mong insights.',
+    notifyInsightsRefreshed:
+      'Na-refresh ang insights gamit ang pinakabagong forecast.',
+    notifyInsightsNoForecast:
+      'Kulang pa ang sales data para sa bagong forecast. Ipinapakita ang pinakahuli mong insights.',
     notifyInsightsFailed: 'Hindi ma-refresh ang insights. Subukan ulit.',
     insightRestockAlert: 'Restock alert',
     insightUpcomingTrend: 'Bagong trend',
@@ -516,7 +807,7 @@ const productListDict = {
     confirmArchiveTitle: 'I-archive ang panindang ito?',
     confirmDeleteDesc: 'ay mabubura nang tuluyan. Hindi na ito maibabalik.',
     confirmArchiveDesc1: 'Hindi na mabibili ang',
-    confirmArchiveDesc2: 'hangga\'t hindi mo binabalik. Walang ibang mabubura.',
+    confirmArchiveDesc2: "hangga't hindi mo binabalik. Walang ibang mabubura.",
     cancelBtn: 'I-cancel',
     confirmDeleteBtn: 'Burahin',
     confirmArchiveBtn: 'I-archive',
@@ -551,7 +842,8 @@ const categoryName = name => {
   return categoryLabel(name)
 }
 
-const productCategoryName = product => categoryName(product.category?.category_name)
+const productCategoryName = product =>
+  categoryName(product.category?.category_name)
 
 // Reactive filters/options so they switch instantly
 const localizedStatusFilters = computed(() => [
@@ -572,8 +864,18 @@ const localizedPriceOptions = computed(() => [
 ])
 
 const localizedExportFormats = computed(() => [
-  { value: 'pdf', icon: 'o_picture_as_pdf', title: t('formatPdfTitle'), sub: t('formatPdfSub') },
-  { value: 'image', icon: 'o_image', title: t('formatImageTitle'), sub: t('formatImageSub') }
+  {
+    value: 'pdf',
+    icon: 'o_picture_as_pdf',
+    title: t('formatPdfTitle'),
+    sub: t('formatPdfSub')
+  },
+  {
+    value: 'image',
+    icon: 'o_image',
+    title: t('formatImageTitle'),
+    sub: t('formatImageSub')
+  }
 ])
 
 const PAGE_SIZE = 10
@@ -613,21 +915,45 @@ const mlInsights = ref({
   currentHoliday: null
 })
 
-const isNumber = value => value !== null && value !== '' && !Number.isNaN(Number(value))
+const isNumber = value =>
+  value !== null && value !== '' && !Number.isNaN(Number(value))
 
 // Picks an icon that actually matches the season/holiday text from the model,
 // instead of always showing a sun regardless of what season it names.
 const seasonIcon = (season, holiday) => {
   const text = `${season || ''} ${holiday || ''}`.toLowerCase()
-  if (text.includes('rain') || text.includes('ulan') || text.includes('habagat')) return 'o_umbrella'
-  if (text.includes('typhoon') || text.includes('bagyo') || text.includes('storm')) return 'o_thunderstorm'
-  if (text.includes('school') || text.includes('eskwela') || text.includes('paaralan') || text.includes('klase')) return 'o_school'
+  if (
+    text.includes('rain') ||
+    text.includes('ulan') ||
+    text.includes('habagat')
+  )
+    return 'o_umbrella'
+  if (
+    text.includes('typhoon') ||
+    text.includes('bagyo') ||
+    text.includes('storm')
+  )
+    return 'o_thunderstorm'
+  if (
+    text.includes('school') ||
+    text.includes('eskwela') ||
+    text.includes('paaralan') ||
+    text.includes('klase')
+  )
+    return 'o_school'
   if (text.includes('christmas') || text.includes('pasko')) return 'o_ac_unit'
-  if (text.includes('new year') || text.includes('bagong taon')) return 'o_celebration'
-  if (text.includes('holy week') || text.includes('semana santa')) return 'o_church'
+  if (text.includes('new year') || text.includes('bagong taon'))
+    return 'o_celebration'
+  if (text.includes('holy week') || text.includes('semana santa'))
+    return 'o_church'
   if (text.includes('valentine')) return 'o_favorite'
   if (text.includes('harvest') || text.includes('ani')) return 'o_agriculture'
-  if (text.includes('summer') || text.includes('tag-init') || text.includes('dry')) return 'o_wb_sunny'
+  if (
+    text.includes('summer') ||
+    text.includes('tag-init') ||
+    text.includes('dry')
+  )
+    return 'o_wb_sunny'
   return 'o_calendar_month'
 }
 
@@ -642,15 +968,19 @@ const insightCards = computed(() => {
   const ml = mlInsights.value
   const empty = insightsStatus.value === 'empty'
   const days = Number(ml.daysUntilStockout)
-  const trendNotes = [{ 
-    icon: 'o_insights', 
-    text: isNumber(ml.trendMultiplier) ? t('insightExpectedDemand').replace('{x}', ml.trendMultiplier) : t('insightNotEnoughData') 
-  }]
+  const trendNotes = [
+    {
+      icon: 'o_insights',
+      text: isNumber(ml.trendMultiplier)
+        ? t('insightExpectedDemand').replace('{x}', ml.trendMultiplier)
+        : t('insightNotEnoughData')
+    }
+  ]
   if (ml.currentSeason) {
-    trendNotes.push({ 
-      icon: seasonIcon(ml.currentSeason, ml.currentHoliday), 
-      tone: 'success', 
-      text: `${t('insightSeason')}: ${ml.currentSeason}${ml.currentHoliday ? ` · ${ml.currentHoliday}` : ''}` 
+    trendNotes.push({
+      icon: seasonIcon(ml.currentSeason, ml.currentHoliday),
+      tone: 'success',
+      text: `${t('insightSeason')}: ${ml.currentSeason}${ml.currentHoliday ? ` · ${ml.currentHoliday}` : ''}`
     })
   }
 
@@ -660,29 +990,43 @@ const insightCards = computed(() => {
       label: t('insightRestockAlert'),
       icon: 'o_warning_amber',
       tone: 'danger',
-      value: empty ? t('insightAwaitingData') : (ml.restockProduct || t('insightAnalyzing')),
-      notes: [{ 
-        icon: 'o_schedule', 
-        text: isNumber(ml.daysUntilStockout) 
-          ? (days === 1 ? t('insightStockOutSingular').replace('{x}', days) : t('insightStockOutPlural').replace('{x}', days)) 
-          : t('insightNoStockOut') 
-      }]
+      value: empty
+        ? t('insightAwaitingData')
+        : ml.restockProduct || t('insightAnalyzing'),
+      notes: [
+        {
+          icon: 'o_schedule',
+          text: isNumber(ml.daysUntilStockout)
+            ? days === 1
+              ? t('insightStockOutSingular').replace('{x}', days)
+              : t('insightStockOutPlural').replace('{x}', days)
+            : t('insightNoStockOut')
+        }
+      ]
     },
-    { 
-      key: 'trend', 
-      label: t('insightUpcomingTrend'), 
-      icon: 'o_trending_up', 
-      tone: 'info', 
-      value: empty ? t('insightAwaitingData') : (ml.trendingCategory ? categoryName(ml.trendingCategory) : t('insightGathering')), 
-      notes: trendNotes 
+    {
+      key: 'trend',
+      label: t('insightUpcomingTrend'),
+      icon: 'o_trending_up',
+      tone: 'info',
+      value: empty
+        ? t('insightAwaitingData')
+        : ml.trendingCategory
+          ? categoryName(ml.trendingCategory)
+          : t('insightGathering'),
+      notes: trendNotes
     },
-    { 
-      key: 'top', 
-      label: t('insightTopPerformer'), 
-      icon: 'o_emoji_events', 
-      tone: 'wait', 
-      value: empty ? t('insightAwaitingData') : (ml.topCategory ? categoryName(ml.topCategory) : t('insightCalculating')), 
-      notes: [{ icon: 'o_star_outline', text: t('insightHighestRevenue') }] 
+    {
+      key: 'top',
+      label: t('insightTopPerformer'),
+      icon: 'o_emoji_events',
+      tone: 'wait',
+      value: empty
+        ? t('insightAwaitingData')
+        : ml.topCategory
+          ? categoryName(ml.topCategory)
+          : t('insightCalculating'),
+      notes: [{ icon: 'o_star_outline', text: t('insightHighestRevenue') }]
     }
   ]
 })
@@ -692,15 +1036,24 @@ const insightsRefreshing = ref(false)
 const insightsVersion = ref(0)
 
 // Skeletons stand in for the values while the first load or a refresh is running.
-const insightsBusy = computed(() => insightsRefreshing.value || insightsStatus.value === 'loading')
+const insightsBusy = computed(
+  () => insightsRefreshing.value || insightsStatus.value === 'loading'
+)
 
-const formatClock = value => value.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+const formatClock = value =>
+  value.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 
 const insightsMeta = computed(() => {
   if (insightsRefreshing.value) return t('insightsUpdating')
   if (insightsStatus.value === 'loading') return t('insightsLoading')
-  if (insightsError.value && !insightsUpdatedAt.value) return t('insightsNotLoaded')
-  return insightsUpdatedAt.value ? t('insightsUpdatedAt').replace('{time}', formatClock(insightsUpdatedAt.value)) : ''
+  if (insightsError.value && !insightsUpdatedAt.value)
+    return t('insightsNotLoaded')
+  return insightsUpdatedAt.value
+    ? t('insightsUpdatedAt').replace(
+        '{time}',
+        formatClock(insightsUpdatedAt.value)
+      )
+    : ''
 })
 
 // A fast answer would only flash the skeletons, so a refresh stays visible at least this long.
@@ -709,7 +1062,9 @@ const MIN_REFRESH_MS = 700
 const refreshInsights = async () => {
   if (insightsRefreshing.value) return
   insightsRefreshing.value = true
-  const minimumWait = new Promise(resolve => setTimeout(resolve, MIN_REFRESH_MS))
+  const minimumWait = new Promise(resolve =>
+    setTimeout(resolve, MIN_REFRESH_MS)
+  )
   try {
     // Re-runs this store's forecast, then reloads the cards from it.
     const { data } = await api.post('/vendor/demand-forecast/refresh')
@@ -735,15 +1090,17 @@ const refreshInsights = async () => {
 // Search, category and stock narrow the list first, so each status chip can count what it would show.
 const baseProducts = computed(() => {
   const needle = (search.value || '').trim().toLowerCase()
-  return products.value.filter(p =>
-    (!needle || (p.product_name || '').toLowerCase().includes(needle)) &&
-    (filters.stock !== 'low_stock' || p.stock_quantity < 10) &&
-    (filters.category === 'all' || p.category_id === filters.category)
+  return products.value.filter(
+    p =>
+      (!needle || (p.product_name || '').toLowerCase().includes(needle)) &&
+      (filters.stock !== 'low_stock' || p.stock_quantity < 10) &&
+      (filters.category === 'all' || p.category_id === filters.category)
   )
 })
 
 const statusOf = product => String(product.status || 'active').toLowerCase()
-const statusCount = key => baseProducts.value.filter(p => key === 'all' || statusOf(p) === key).length
+const statusCount = key =>
+  baseProducts.value.filter(p => key === 'all' || statusOf(p) === key).length
 
 // On phones the status chips scroll sideways; these flags fade whichever edge still has chips beyond it.
 const chipRow = ref(null)
@@ -757,7 +1114,10 @@ const updateChipFade = () => {
 }
 
 // The counts change the chips' widths, so the fade is rechecked whenever they do.
-watch(() => localizedStatusFilters.value.map(f => statusCount(f.key)).join(), () => nextTick(updateChipFade))
+watch(
+  () => localizedStatusFilters.value.map(f => statusCount(f.key)).join(),
+  () => nextTick(updateChipFade)
+)
 
 onMounted(() => {
   nextTick(updateChipFade)
@@ -767,24 +1127,57 @@ onMounted(() => {
 onBeforeUnmount(() => window.removeEventListener('resize', updateChipFade))
 
 const filteredProducts = computed(() => {
-  const result = baseProducts.value.filter(p => filters.status === 'all' || statusOf(p) === filters.status)
-  if (filters.priceSort === 'low_to_high') return result.slice().sort((a, b) => (a.price || 0) - (b.price || 0))
-  if (filters.priceSort === 'high_to_low') return result.slice().sort((a, b) => (b.price || 0) - (a.price || 0))
+  const result = baseProducts.value.filter(
+    p => filters.status === 'all' || statusOf(p) === filters.status
+  )
+  if (filters.priceSort === 'low_to_high')
+    return result.slice().sort((a, b) => (a.price || 0) - (b.price || 0))
+  if (filters.priceSort === 'high_to_low')
+    return result.slice().sort((a, b) => (b.price || 0) - (a.price || 0))
   return result
 })
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filteredProducts.value.length / PAGE_SIZE)))
-const pagedProducts = computed(() => filteredProducts.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil(filteredProducts.value.length / PAGE_SIZE))
+)
+const pagedProducts = computed(() =>
+  filteredProducts.value.slice(
+    (page.value - 1) * PAGE_SIZE,
+    page.value * PAGE_SIZE
+  )
+)
 const rangeStart = computed(() => (page.value - 1) * PAGE_SIZE + 1)
-const rangeEnd = computed(() => Math.min(page.value * PAGE_SIZE, filteredProducts.value.length))
+const rangeEnd = computed(() =>
+  Math.min(page.value * PAGE_SIZE, filteredProducts.value.length)
+)
 
 // Any change to what is shown starts back on the first page.
-watch(() => [search.value, filters.stock, filters.category, filters.status, filters.priceSort], () => { page.value = 1 })
+watch(
+  () => [
+    search.value,
+    filters.stock,
+    filters.category,
+    filters.status,
+    filters.priceSort
+  ],
+  () => {
+    page.value = 1
+  }
+)
 
 // A refresh that removes rows keeps the page in range.
-watch(pageCount, count => { if (page.value > count) page.value = count })
+watch(pageCount, count => {
+  if (page.value > count) page.value = count
+})
 
-const activeFilterCount = computed(() => [filters.category !== 'all', filters.stock !== 'all', filters.priceSort !== 'default'].filter(Boolean).length)
+const activeFilterCount = computed(
+  () =>
+    [
+      filters.category !== 'all',
+      filters.stock !== 'all',
+      filters.priceSort !== 'default'
+    ].filter(Boolean).length
+)
 
 const resetFilters = () => {
   filters.stock = 'all'
@@ -795,12 +1188,16 @@ const resetFilters = () => {
 const categoryOptions = computed(() => {
   const cats = new Map()
   products.value.forEach(p => {
-    if (p.category) cats.set(p.category_id, categoryName(p.category.category_name))
+    if (p.category)
+      cats.set(p.category_id, categoryName(p.category.category_name))
   })
   return Array.from(cats, ([value, label]) => ({ value, label }))
 })
 
-const categorySelectOptions = computed(() => [{ label: t('optAllCategories'), value: 'all' }, ...categoryOptions.value])
+const categorySelectOptions = computed(() => [
+  { label: t('optAllCategories'), value: 'all' },
+  ...categoryOptions.value
+])
 
 const formatStatus = status => {
   const s = String(status || 'active').toLowerCase()
@@ -811,10 +1208,14 @@ const formatStatus = status => {
 
 const productTone = status => {
   switch (String(status || 'active').toLowerCase()) {
-    case 'active': return 'success'
-    case 'inactive': return 'danger'
-    case 'out of stock': return 'warning'
-    default: return 'neutral'
+    case 'active':
+      return 'success'
+    case 'inactive':
+      return 'danger'
+    case 'out of stock':
+      return 'warning'
+    default:
+      return 'neutral'
   }
 }
 
@@ -824,7 +1225,11 @@ const stockClass = product => {
   return ''
 }
 
-const formatNumber = num => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const formatNumber = num =>
+  Number(num || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 
 const fetchProducts = async () => {
   loading.value = true
@@ -843,17 +1248,39 @@ const viewProduct = product => {
   showDetailsModal.value = true
 }
 
-const confirm = reactive({ open: false, kind: 'delete', product: null, busy: false })
+const confirm = reactive({
+  open: false,
+  kind: 'delete',
+  product: null,
+  busy: false
+})
 
 const askConfirm = (kind, product) => {
   Object.assign(confirm, { open: true, kind, product, busy: false })
 }
 
 const rowActions = product => [
-  { label: t('actionView'), icon: 'o_visibility', run: () => viewProduct(product) },
+  {
+    label: t('actionView'),
+    icon: 'o_visibility',
+    run: () => viewProduct(product)
+  },
   // 'archived' is the only inactive state the inventory table has, so an already archived product has nothing to archive.
-  ...(product.status !== 'archived' ? [{ label: t('actionArchive'), icon: 'o_inventory_2', run: () => askConfirm('archive', product) }] : []),
-  { label: t('actionDelete'), icon: 'o_delete', danger: true, run: () => askConfirm('delete', product) }
+  ...(product.status !== 'archived'
+    ? [
+        {
+          label: t('actionArchive'),
+          icon: 'o_inventory_2',
+          run: () => askConfirm('archive', product)
+        }
+      ]
+    : []),
+  {
+    label: t('actionDelete'),
+    icon: 'o_delete',
+    danger: true,
+    run: () => askConfirm('delete', product)
+  }
 ]
 
 const runConfirm = async () => {
@@ -867,14 +1294,21 @@ const runConfirm = async () => {
       $q.notify({ type: 'positive', message: t('notifyProductDeleted') })
     } else {
       // The existing product update endpoint owns the status column; there is no separate /status route.
-      await api.patch(`/vendor/products/${product.inventory_id}`, { status: 'archived' })
+      await api.patch(`/vendor/products/${product.inventory_id}`, {
+        status: 'archived'
+      })
       $q.notify({ type: 'positive', message: t('notifyProductArchived') })
     }
     confirm.open = false
     fetchProducts()
   } catch (err) {
     console.error(err)
-    $q.notify({ type: 'negative', message: err.response?.data?.message || t('notifyFailedAction').replace('{kind}', kind) })
+    $q.notify({
+      type: 'negative',
+      message:
+        err.response?.data?.message ||
+        t('notifyFailedAction').replace('{kind}', kind)
+    })
   } finally {
     confirm.busy = false
   }
@@ -900,7 +1334,9 @@ const executeFinalExport = async () => {
   if (exportFormat.value === 'pdf') {
     try {
       isExporting.value = true
-      const response = await api.get('/vendor/inventory/export', { responseType: 'blob' })
+      const response = await api.get('/vendor/inventory/export', {
+        responseType: 'blob'
+      })
       const blob = new Blob([response.data], { type: 'application/pdf' })
       const url = window.URL.createObjectURL(blob)
 
@@ -952,7 +1388,10 @@ const executeFinalExport = async () => {
           }
         }
       })
-      await Promise.all([...imagePromises, document.fonts ? document.fonts.ready : Promise.resolve()])
+      await Promise.all([
+        ...imagePromises,
+        document.fonts ? document.fonts.ready : Promise.resolve()
+      ])
 
       // Embedded pictures are redrawn onto canvases so html2canvas captures them.
       container.querySelectorAll('img').forEach(img => {
@@ -961,12 +1400,16 @@ const executeFinalExport = async () => {
             const canvas = document.createElement('canvas')
             canvas.width = img.naturalWidth || img.width || 240
             canvas.height = img.naturalHeight || img.height || 160
-            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+            canvas
+              .getContext('2d')
+              .drawImage(img, 0, 0, canvas.width, canvas.height)
 
             canvas.style.cssText = img.style.cssText
             canvas.className = img.className
-            if (img.hasAttribute('width')) canvas.style.width = img.getAttribute('width') + 'px'
-            if (img.hasAttribute('height')) canvas.style.height = img.getAttribute('height') + 'px'
+            if (img.hasAttribute('width'))
+              canvas.style.width = img.getAttribute('width') + 'px'
+            if (img.hasAttribute('height'))
+              canvas.style.height = img.getAttribute('height') + 'px'
 
             img.parentNode.replaceChild(canvas, img)
           } catch (e) {
@@ -978,7 +1421,13 @@ const executeFinalExport = async () => {
       const pages = container.querySelectorAll('.page')
       if (pages.length > 0) {
         for (let i = 0; i < pages.length; i++) {
-          const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff' })
+          const canvas = await html2canvas(pages[i], {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+          })
           const imageLink = document.createElement('a')
           imageLink.download = `inventory-report-page-${i + 1}-${Date.now()}.png`
           imageLink.href = canvas.toDataURL('image/png')
@@ -986,7 +1435,12 @@ const executeFinalExport = async () => {
           await new Promise(r => setTimeout(r, 500))
         }
       } else {
-        const canvas = await html2canvas(container, { scale: 2, useCORS: true, allowTaint: true, logging: false })
+        const canvas = await html2canvas(container, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false
+        })
         const imageLink = document.createElement('a')
         imageLink.download = `inventory-report-${Date.now()}.png`
         imageLink.href = canvas.toDataURL('image/png')
@@ -1047,7 +1501,10 @@ const router = useRouter()
 const openAddFromQuery = () => {
   if (route.query.add !== '1') return
   showAddModal.value = true
-  router.replace({ path: route.path, query: { ...route.query, add: undefined } })
+  router.replace({
+    path: route.path,
+    query: { ...route.query, add: undefined }
+  })
 }
 
 // Watched as well as read on mount, since the tutorial can send ?add=1 while this page is
@@ -1056,7 +1513,8 @@ watch(() => route.query.add, openAddFromQuery)
 
 onMounted(() => {
   const linkedCategory = Number(route.query.category)
-  if (Number.isFinite(linkedCategory) && linkedCategory > 0) filters.category = linkedCategory
+  if (Number.isFinite(linkedCategory) && linkedCategory > 0)
+    filters.category = linkedCategory
   fetchProducts()
   fetchMlInsights()
   openAddFromQuery()
@@ -1151,8 +1609,12 @@ onMounted(() => {
 }
 
 @keyframes pl-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Cards dim slightly under their skeletons, then pulse once when the new figures land. */
@@ -1239,11 +1701,21 @@ onMounted(() => {
   color: var(--c-muted);
 }
 
-.pl-table .col-cat { width: 18%; }
-.pl-table .col-stock { width: 13%; }
-.pl-table .col-price { width: 14%; }
-.pl-table .col-status { width: 14%; }
-.pl-table .col-act { width: 7%; }
+.pl-table .col-cat {
+  width: 18%;
+}
+.pl-table .col-stock {
+  width: 13%;
+}
+.pl-table .col-price {
+  width: 14%;
+}
+.pl-table .col-status {
+  width: 14%;
+}
+.pl-table .col-act {
+  width: 7%;
+}
 
 /* CONFIRM MODAL */
 .pl-confirm {
@@ -1357,7 +1829,9 @@ onMounted(() => {
   font-family: inherit;
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .pl-format:hover {

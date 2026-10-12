@@ -69,15 +69,15 @@
   --st-cancelled-bg: #fee2e2;
 
   /* Radius */
-  --r-xs: 4px;    /* skeleton bars, text highlight marks */
-  --r-sm: 6px;    /* buttons and small controls */
-  --r-md: 8px;    /* inputs, medium controls */
-  --r-lg: 10px;   /* cards */
-  --r-xl: 12px;   /* dialogs, icon tiles */
-  --r-2xl: 16px;  /* sheets, hero and store banners */
+  --r-xs: 4px; /* skeleton bars, text highlight marks */
+  --r-sm: 6px; /* buttons and small controls */
+  --r-md: 8px; /* inputs, medium controls */
+  --r-lg: 10px; /* cards */
+  --r-xl: 12px; /* dialogs, icon tiles */
+  --r-2xl: 16px; /* sheets, hero and store banners */
   --r-pill: 999px;
   /* Two radii the vendor side uses everywhere: one for controls, one for surfaces. */
-  --r-control: 8px;  /* buttons, inputs, menus, thumbnails, notes inside cards */
+  --r-control: 8px; /* buttons, inputs, menus, thumbnails, notes inside cards */
   --r-surface: 12px; /* cards, dialogs, panels, banners, icon tiles */
 
   /* The gap between cards and page sections. */
@@ -127,8 +127,13 @@
 }
 
 /* Smooth transitions for theme switching */
-*, *::before, *::after {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+*,
+*::before,
+*::after {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 /* Global dark mode, applied across every module. */
@@ -326,10 +331,15 @@ body.body--dark {
   background: #ffffff;
   color: var(--c-text-2);
 
-  font: 400 20px/36px 'Roboto', Arial, sans-serif;
+  font:
+    400 20px/36px 'Roboto',
+    Arial,
+    sans-serif;
   text-indent: 0;
 
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .leaflet-container .leaflet-control-zoom.leaflet-bar a:last-child {
@@ -414,8 +424,10 @@ body.body--dark {
 }
 
 /* Matches the quicker exit above. */
-.q-dialog:has(.q-dialog__inner--bottom) > .q-transition--fade-leave-active.q-dialog__backdrop,
-.q-dialog:has(.q-dialog__inner--left) > .q-transition--fade-leave-active.q-dialog__backdrop {
+.q-dialog:has(.q-dialog__inner--bottom)
+  > .q-transition--fade-leave-active.q-dialog__backdrop,
+.q-dialog:has(.q-dialog__inner--left)
+  > .q-transition--fade-leave-active.q-dialog__backdrop {
   transition: background-color 240ms cubic-bezier(0.4, 0, 1, 1);
 }
 
@@ -429,11 +441,6 @@ body.body--dark {
     transition-duration: 0ms;
   }
 }
-
-
-
-
-
 
 /* Toasts are tinted per type like the terminal-state order cards, with the types registered in boot/notify.js. */
 

@@ -1,19 +1,35 @@
 <template>
   <footer class="site-footer">
     <div class="footer-inner">
-      <img src="@/assets/tindahan-black.png" alt="Tindahan Logo" class="footer-logo" />
+      <img
+        src="@/assets/tindahan-black.png"
+        alt="Tindahan Logo"
+        class="footer-logo"
+      />
 
       <nav class="footer-links">
-        <a href="#" class="footer-link" @click.prevent="showContactSupport = true">{{ t('Contact Support') }}</a>
+        <a
+          href="#"
+          class="footer-link"
+          @click.prevent="showContactSupport = true"
+          >{{ t('Contact Support') }}</a
+        >
         <span class="footer-divider" aria-hidden="true" />
-        <a href="#" class="footer-link" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>
+        <a href="#" class="footer-link" @click.prevent="showPrivacy = true">{{
+          t('Privacy Policy')
+        }}</a>
         <span class="footer-divider" aria-hidden="true" />
-        <a href="#" class="footer-link" @click.prevent="showTerms = true">{{ t('Terms & Conditions') }}</a>
+        <a href="#" class="footer-link" @click.prevent="showTerms = true">{{
+          t('Terms & Conditions')
+        }}</a>
       </nav>
     </div>
 
     <div class="footer-bottom">
-      <p>&copy; {{ currentYear }} {{ t('Tindahan App. All rights reserved.') }}</p>
+      <p
+        >&copy; {{ currentYear }}
+        {{ t('Tindahan App. All rights reserved.') }}</p
+      >
     </div>
 
     <TermsModal v-model="showTerms" />

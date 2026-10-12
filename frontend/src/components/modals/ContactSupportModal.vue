@@ -1,7 +1,9 @@
 <template>
-  <q-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)">
+  <q-dialog
+    :model-value="modelValue"
+    @update:model-value="$emit('update:modelValue', $event)"
+  >
     <q-card class="support-dialog">
-
       <q-card-section class="support-header">
         <div class="support-title">Contact Support</div>
         <q-btn
@@ -21,7 +23,10 @@
 
         <div class="support-row">
           <q-icon name="o_location_on" class="support-icon" />
-          <span>MMPC Coop Bldg., Mandaluyong City Hall Complex, Maysilo Circle, Boni Ave., Plainview, Mandaluyong City, Metro Manila</span>
+          <span
+            >MMPC Coop Bldg., Mandaluyong City Hall Complex, Maysilo Circle,
+            Boni Ave., Plainview, Mandaluyong City, Metro Manila</span
+          >
         </div>
 
         <div class="support-row">
@@ -46,7 +51,6 @@
           @click="$emit('update:modelValue', false)"
         />
       </q-card-actions>
-
     </q-card>
   </q-dialog>
 </template>
@@ -151,7 +155,10 @@ defineEmits(['update:modelValue'])
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .close-button:hover {

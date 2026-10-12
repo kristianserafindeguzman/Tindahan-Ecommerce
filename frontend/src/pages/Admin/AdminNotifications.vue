@@ -13,11 +13,7 @@
 
       <div class="vp-card">
         <div class="vp-toolbar adm-toolbar">
-          <div
-            class="vp-chips"
-            role="tablist"
-            :aria-label="t('filterAria')"
-          >
+          <div class="vp-chips" role="tablist" :aria-label="t('filterAria')">
             <button
               v-for="filter in localizedFilters"
               :key="filter.key"
@@ -72,9 +68,7 @@
             active === 'unread' ? t('allCaughtUpTitle') : t('emptyTitle')
           }}</div>
           <div class="vp-empty-text">{{
-            active === 'unread'
-              ? t('allCaughtUpText')
-              : t('emptyText')
+            active === 'unread' ? t('allCaughtUpText') : t('emptyText')
           }}</div>
         </div>
 
@@ -99,7 +93,9 @@
               <span class="nt-body">
                 <span class="nt-title">
                   {{ notif.title }}
-                  <span v-if="!notif.is_read" class="nt-new">{{ t('badgeNew') }}</span>
+                  <span v-if="!notif.is_read" class="nt-new">{{
+                    t('badgeNew')
+                  }}</span>
                 </span>
                 <span class="nt-message">{{ notif.message }}</span>
               </span>
@@ -117,7 +113,10 @@
           </section>
 
           <div v-if="pageCount > 1" class="vp-pager">
-            <span>{{ t('showing') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('of') }} {{ filtered.length }}</span>
+            <span
+              >{{ t('showing') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('of') }}
+              {{ filtered.length }}</span
+            >
             <div class="vp-pager-btns">
               <q-btn
                 outline
@@ -197,7 +196,8 @@ const notificationsDict = {
   },
   ph: {
     title: 'Notifications',
-    subtitle: 'Mga bagong store application na naghihintay para i-review, pinakabago muna.',
+    subtitle:
+      'Mga bagong store application na naghihintay para i-review, pinakabago muna.',
     statUnread: 'Hindi pa nababasa',
     notification: 'notification',
     notifications: 'notifications',
@@ -279,12 +279,15 @@ const dayLabel = dateString => {
   if (date.toDateString() === today.toDateString()) return t('today')
   if (date.toDateString() === yesterday.toDateString()) return t('yesterday')
 
-  let formatted = date.toLocaleDateString(lang.value === 'ph' ? 'fil-PH' : 'en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
+  let formatted = date.toLocaleDateString(
+    lang.value === 'ph' ? 'fil-PH' : 'en-US',
+    {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }
+  )
 
   // Normalize 'Set' to 'Sept'
   if (lang.value === 'ph') {
@@ -478,4 +481,4 @@ onMounted(fetchNotifications)
     display: none;
   }
 }
-</style> 
+</style>

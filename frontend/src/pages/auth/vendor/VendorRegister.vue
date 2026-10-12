@@ -1,7 +1,6 @@
 <template>
   <AuthShell wide class="vendor-page">
     <div class="vendor-card">
-
       <!-- HEADER -->
       <div class="vendor-header">
         <h1>{{ t('Vendor Registration') }}</h1>
@@ -13,7 +12,10 @@
 
       <!-- Shows how far through the six steps the vendor is. -->
       <div class="wizard-progress">
-        <div class="wizard-step-label">{{ t('Step {step} of {total}', { step, total: STEPS.length }) }} · {{ t(STEPS[step - 1]) }}</div>
+        <div class="wizard-step-label"
+          >{{ t('Step {step} of {total}', { step, total: STEPS.length }) }} ·
+          {{ t(STEPS[step - 1]) }}</div
+        >
         <div
           class="wizard-bar"
           role="progressbar"
@@ -32,9 +34,17 @@
       </div>
 
       <!-- STEP 1: OWNER ACCOUNT -->
-      <q-form v-show="step === 1" ref="accountForm" greedy class="vendor-form" @submit.prevent="submitAccount">
+      <q-form
+        v-show="step === 1"
+        ref="accountForm"
+        greedy
+        class="vendor-form"
+        @submit.prevent="submitAccount"
+      >
         <div class="section-title">{{ t('Owner Account') }}</div>
-        <p class="step-hint">{{ t('We\'ll text a code to your phone number to make sure it\'s yours.') }}</p>
+        <p class="step-hint">{{
+          t("We'll text a code to your phone number to make sure it's yours.")
+        }}</p>
 
         <!-- FIRST / LAST NAME, laid out like ConsumerRegister.vue -->
         <div class="name-row">
@@ -50,7 +60,10 @@
               class="login-input"
               reactive-rules
               :rules="[
-                val => !firstNameTouched || !!val?.trim() || t('First name is required.'),
+                val =>
+                  !firstNameTouched ||
+                  !!val?.trim() ||
+                  t('First name is required.'),
                 val => !firstNameTouched || nameRule(val)
               ]"
               @blur="firstNameTouched = true"
@@ -69,7 +82,10 @@
               class="login-input"
               reactive-rules
               :rules="[
-                val => !lastNameTouched || !!val?.trim() || t('Last name is required.'),
+                val =>
+                  !lastNameTouched ||
+                  !!val?.trim() ||
+                  t('Last name is required.'),
                 val => !lastNameTouched || nameRule(val)
               ]"
               @blur="lastNameTouched = true"
@@ -149,7 +165,10 @@
               />
             </template>
           </q-input>
-          <div v-if="passwordStrong" class="field-message field-message-success">
+          <div
+            v-if="passwordStrong"
+            class="field-message field-message-success"
+          >
             <q-icon name="check_circle" size="12px" />
             {{ t('Strong password.') }}
           </div>
@@ -176,27 +195,52 @@
               />
             </template>
           </q-input>
-          <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
-            <q-icon v-if="confirmPasswordMessage.type === 'success'" name="check_circle" size="12px" />
+          <div
+            v-if="confirmPasswordMessage"
+            class="field-message"
+            :class="`field-message-${confirmPasswordMessage.type}`"
+          >
+            <q-icon
+              v-if="confirmPasswordMessage.type === 'success'"
+              name="check_circle"
+              size="12px"
+            />
             {{ t(confirmPasswordMessage.text) }}
           </div>
         </div>
 
-        <div v-if="stepError && step === 1" class="error-message">{{ t(stepError) }}</div>
+        <div v-if="stepError && step === 1" class="error-message">{{
+          t(stepError)
+        }}</div>
 
-        <q-btn type="submit" :label="t('Continue')" no-caps unelevated class="login-button full-width" :loading="sendingCode" />
+        <q-btn
+          type="submit"
+          :label="t('Continue')"
+          no-caps
+          unelevated
+          class="login-button full-width"
+          :loading="sendingCode"
+        />
       </q-form>
 
       <!-- STEP 2: VERIFY PHONE -->
       <div v-show="step === 2" class="vendor-form">
         <div class="section-title">{{ t('Verify Your Phone') }}</div>
-        <p class="step-hint">{{ t('Enter the 6-digit code we sent to') }} <strong>{{ maskedPhone }}</strong>.</p>
+        <p class="step-hint"
+          >{{ t('Enter the 6-digit code we sent to') }}
+          <strong>{{ maskedPhone }}</strong
+          >.</p
+        >
 
         <div class="otp-row">
           <input
             v-for="(digit, index) in otp"
             :key="index"
-            :ref="el => { otpRefs[index] = el }"
+            :ref="
+              el => {
+                otpRefs[index] = el
+              }
+            "
             v-model="otp[index]"
             type="text"
             inputmode="numeric"
@@ -215,7 +259,7 @@
         <div v-if="otpError" class="error-message">{{ otpErrorText }}</div>
 
         <div class="resend-section">
-          <span>{{ t('Didn\'t receive a code?') }}</span>
+          <span>{{ t("Didn't receive a code?") }}</span>
           <button
             type="button"
             class="resend-btn"
@@ -223,20 +267,46 @@
             :disabled="resendTimer > 0 || sendingCode || otpVerified"
             @click="resendCode"
           >
-            {{ resendTimer > 0 ? t('Resend in {time}', { time: formattedResendTimer }) : t('Resend Code') }}
+            {{
+              resendTimer > 0
+                ? t('Resend in {time}', { time: formattedResendTimer })
+                : t('Resend Code')
+            }}
           </button>
         </div>
 
         <div class="wizard-actions">
-          <q-btn outline no-caps :label="t('Change number')" class="wizard-back" @click="previousStep" />
-          <q-btn unelevated no-caps :label="t('Verify')" class="login-button" :loading="verifyingCode" :disable="!otpComplete || otpVerified" @click="verifyCode" />
+          <q-btn
+            outline
+            no-caps
+            :label="t('Change number')"
+            class="wizard-back"
+            @click="previousStep"
+          />
+          <q-btn
+            unelevated
+            no-caps
+            :label="t('Verify')"
+            class="login-button"
+            :loading="verifyingCode"
+            :disable="!otpComplete || otpVerified"
+            @click="verifyCode"
+          />
         </div>
       </div>
 
       <!-- STEP 3: STORE -->
-      <q-form v-show="step === 3" ref="storeForm" greedy class="vendor-form" @submit.prevent="nextFromStore">
+      <q-form
+        v-show="step === 3"
+        ref="storeForm"
+        greedy
+        class="vendor-form"
+        @submit.prevent="nextFromStore"
+      >
         <div class="section-title">{{ t('Your Store') }}</div>
-        <p class="step-hint">{{ t('Both are required, and customers will see this name and photo.') }}</p>
+        <p class="step-hint">{{
+          t('Both are required, and customers will see this name and photo.')
+        }}</p>
 
         <div class="field-group">
           <q-input
@@ -251,13 +321,20 @@
             class="login-input"
             reactive-rules
             :rules="[
-              val => !storeNameTouched || !!val?.trim() || t('Store name is required.')
+              val =>
+                !storeNameTouched ||
+                !!val?.trim() ||
+                t('Store name is required.')
             ]"
             @blur="storeNameTouched = true"
           />
         </div>
 
-        <label class="upload-dropzone" :class="{ 'upload-dropzone--error': photoMissing }" for="storePhoto">
+        <label
+          class="upload-dropzone"
+          :class="{ 'upload-dropzone--error': photoMissing }"
+          for="storePhoto"
+        >
           <input
             id="storePhoto"
             type="file"
@@ -268,7 +345,9 @@
 
           <template v-if="!photoPreview">
             <q-icon name="add_a_photo" class="upload-icon" />
-            <div class="upload-label">{{ t('Upload Store Exterior Photo') }}</div>
+            <div class="upload-label">{{
+              t('Upload Store Exterior Photo')
+            }}</div>
             <div class="upload-hint">{{ t('PNG, JPG, GIF up to 10MB') }}</div>
           </template>
 
@@ -288,25 +367,48 @@
         <div v-if="photoFile" class="photo-info">
           <q-icon name="image" size="14px" />
           <span>{{ photoFile.name }}</span>
-          <button type="button" class="remove-photo" :aria-label="t('Remove photo')" @click="removePhoto">
+          <button
+            type="button"
+            class="remove-photo"
+            :aria-label="t('Remove photo')"
+            @click="removePhoto"
+          >
             <q-icon name="close" size="14px" />
           </button>
         </div>
 
-        <div v-if="photoMissing" class="photo-error" role="alert">{{ t('Add a photo of your storefront.') }}</div>
+        <div v-if="photoMissing" class="photo-error" role="alert">{{
+          t('Add a photo of your storefront.')
+        }}</div>
 
-        <div v-if="stepError && step === 3" class="error-message step-error">{{ t(stepError) }}</div>
+        <div v-if="stepError && step === 3" class="error-message step-error">{{
+          t(stepError)
+        }}</div>
 
         <div class="wizard-actions">
-          <q-btn outline no-caps :label="t('Back')" class="wizard-back" @click="previousStep" />
-          <q-btn type="submit" unelevated no-caps :label="t('Continue')" class="login-button" />
+          <q-btn
+            outline
+            no-caps
+            :label="t('Back')"
+            class="wizard-back"
+            @click="previousStep"
+          />
+          <q-btn
+            type="submit"
+            unelevated
+            no-caps
+            :label="t('Continue')"
+            class="login-button"
+          />
         </div>
       </q-form>
 
       <!-- STEP 4: HOURS -->
       <div v-show="step === 4" class="vendor-form">
         <div class="section-title">{{ t('Business Hours') }}</div>
-        <p class="step-hint">{{ t('Let customers know when your store is open.') }}</p>
+        <p class="step-hint">{{
+          t('Let customers know when your store is open.')
+        }}</p>
 
         <div class="hours-row">
           <div class="field-group">
@@ -373,23 +475,47 @@
           </div>
         </div>
 
-        <div v-if="stepError && step === 4" class="error-message step-error">{{ t(stepError) }}</div>
+        <div v-if="stepError && step === 4" class="error-message step-error">{{
+          t(stepError)
+        }}</div>
 
         <div class="wizard-actions">
-          <q-btn outline no-caps :label="t('Back')" class="wizard-back" @click="previousStep" />
-          <q-btn unelevated no-caps :label="t('Continue')" class="login-button" @click="nextFromHours" />
+          <q-btn
+            outline
+            no-caps
+            :label="t('Back')"
+            class="wizard-back"
+            @click="previousStep"
+          />
+          <q-btn
+            unelevated
+            no-caps
+            :label="t('Continue')"
+            class="login-button"
+            @click="nextFromHours"
+          />
         </div>
       </div>
 
       <!-- STEP 5: LOCATION, mounted on first visit because Leaflet can't size a map inside a hidden panel. -->
       <div v-if="locationVisited" v-show="step === 5" class="vendor-form">
         <div class="section-title">{{ t('Store Location') }}</div>
-        <p class="step-hint">{{ t('Move the pin to where your store is, or type the address below.') }}</p>
+        <p class="step-hint">{{
+          t('Move the pin to where your store is, or type the address below.')
+        }}</p>
 
         <!-- Enlarging teleports this block to the body, which keeps the same map and pin while escaping the card's own clipping and stacking. -->
         <Teleport to="body" :disabled="!mapEnlarged">
-          <div class="map-placeholder" :class="{ 'map-placeholder-enlarged': mapEnlarged }">
-            <VendorLocationMap ref="storeMapRef" :translate="t" @pin-placed="handlePinPlaced" @location-selected="handleLocationSelected" />
+          <div
+            class="map-placeholder"
+            :class="{ 'map-placeholder-enlarged': mapEnlarged }"
+          >
+            <VendorLocationMap
+              ref="storeMapRef"
+              :translate="t"
+              @pin-placed="handlePinPlaced"
+              @location-selected="handleLocationSelected"
+            />
 
             <q-btn
               v-if="!mapEnlarged"
@@ -404,8 +530,14 @@
 
             <!-- The address rides along the top while enlarged, because its box below is off screen. -->
             <div v-else class="map-enlarged-bar">
-              <q-icon name="o_location_on" size="18px" class="map-enlarged-bar-icon" />
-              <span class="map-enlarged-bar-text">{{ detectedAddressText }}</span>
+              <q-icon
+                name="o_location_on"
+                size="18px"
+                class="map-enlarged-bar-icon"
+              />
+              <span class="map-enlarged-bar-text">{{
+                detectedAddressText
+              }}</span>
 
               <q-btn
                 unelevated
@@ -455,22 +587,42 @@
           />
 
           <!-- Which of the two addresses is kept, now that the page shows both. -->
-          <div class="address-note">{{ t('This is the address we save. Leave it blank to use the pinned address above.') }}</div>
-
+          <div class="address-note">{{
+            t(
+              'This is the address we save. Leave it blank to use the pinned address above.'
+            )
+          }}</div>
         </div>
 
-        <div v-if="stepError && step === 5" class="error-message">{{ t(stepError) }}</div>
+        <div v-if="stepError && step === 5" class="error-message">{{
+          t(stepError)
+        }}</div>
 
         <div class="wizard-actions">
-          <q-btn outline no-caps :label="t('Back')" class="wizard-back" @click="previousStep" />
-          <q-btn unelevated no-caps :label="t('Continue')" class="login-button" @mousedown.prevent @click="nextFromLocation" />
+          <q-btn
+            outline
+            no-caps
+            :label="t('Back')"
+            class="wizard-back"
+            @click="previousStep"
+          />
+          <q-btn
+            unelevated
+            no-caps
+            :label="t('Continue')"
+            class="login-button"
+            @mousedown.prevent
+            @click="nextFromLocation"
+          />
         </div>
       </div>
 
       <!-- STEP 6: REVIEW -->
       <div v-show="step === 6" class="vendor-form">
         <div class="section-title">{{ t('Review & Submit') }}</div>
-        <p class="step-hint">{{ t('Check your details before sending your application.') }}</p>
+        <p class="step-hint">{{
+          t('Check your details before sending your application.')
+        }}</p>
 
         <div class="review-list">
           <div class="review-row">
@@ -479,7 +631,9 @@
               <div class="review-value">{{ ownerName }}</div>
               <div class="review-sub">{{ form.email }}</div>
             </div>
-            <button type="button" class="review-edit" @click="editStep(1)">{{ t('Edit') }}</button>
+            <button type="button" class="review-edit" @click="editStep(1)">{{
+              t('Edit')
+            }}</button>
           </div>
 
           <div class="review-row">
@@ -493,16 +647,25 @@
                 </span>
               </div>
             </div>
-            <button type="button" class="review-edit" @click="editStep(1)">{{ t('Edit') }}</button>
+            <button type="button" class="review-edit" @click="editStep(1)">{{
+              t('Edit')
+            }}</button>
           </div>
 
           <div class="review-row">
-            <img v-if="photoPreview" :src="photoPreview" :alt="t('Store photo')" class="review-thumb" />
+            <img
+              v-if="photoPreview"
+              :src="photoPreview"
+              :alt="t('Store photo')"
+              class="review-thumb"
+            />
             <div class="review-body">
               <div class="review-label">{{ t('Store') }}</div>
               <div class="review-value">{{ form.storeName }}</div>
             </div>
-            <button type="button" class="review-edit" @click="editStep(3)">{{ t('Edit') }}</button>
+            <button type="button" class="review-edit" @click="editStep(3)">{{
+              t('Edit')
+            }}</button>
           </div>
 
           <div class="review-row">
@@ -511,23 +674,45 @@
               <div class="review-value">{{ hoursSummary }}</div>
               <div class="review-sub">{{ daysSummary }}</div>
             </div>
-            <button type="button" class="review-edit" @click="editStep(4)">{{ t('Edit') }}</button>
+            <button type="button" class="review-edit" @click="editStep(4)">{{
+              t('Edit')
+            }}</button>
           </div>
 
           <div class="review-row">
             <div class="review-body">
               <div class="review-label">{{ t('Location') }}</div>
-              <div class="review-value">{{ finalAddress || t('Pinned on the map') }}</div>
+              <div class="review-value">{{
+                finalAddress || t('Pinned on the map')
+              }}</div>
             </div>
-            <button type="button" class="review-edit" @click="editStep(5)">{{ t('Edit') }}</button>
+            <button type="button" class="review-edit" @click="editStep(5)">{{
+              t('Edit')
+            }}</button>
           </div>
         </div>
 
-        <div v-if="registerError" class="error-message step-error">{{ t(registerError) }}</div>
+        <div v-if="registerError" class="error-message step-error">{{
+          t(registerError)
+        }}</div>
 
         <div class="wizard-actions">
-          <q-btn outline no-caps :label="t('Back')" class="wizard-back" @click="previousStep" />
-          <q-btn unelevated no-caps :label="t('Register Store')" class="login-button" :loading="loading" :disable="!canRegister" @click="handleVendorRegister" />
+          <q-btn
+            outline
+            no-caps
+            :label="t('Back')"
+            class="wizard-back"
+            @click="previousStep"
+          />
+          <q-btn
+            unelevated
+            no-caps
+            :label="t('Register Store')"
+            class="login-button"
+            :loading="loading"
+            :disable="!canRegister"
+            @click="handleVendorRegister"
+          />
         </div>
       </div>
 
@@ -547,11 +732,15 @@
       <!-- TERMS -->
       <p class="terms">
         {{ t('By signing up, you agree to our') }}
-        <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
+        <a href="#" @click.prevent="showTerms = true">{{
+          t('Terms and Conditions')
+        }}</a>
         {{ t('and') }}
-        <a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.
+        <a href="#" @click.prevent="showPrivacy = true">{{
+          t('Privacy Policy')
+        }}</a
+        >.
       </p>
-
     </div>
 
     <!-- CROP DIALOG -->
@@ -561,16 +750,47 @@
           <div class="crop-icon"><q-icon name="o_crop" size="22px" /></div>
           <div class="crop-header-text">
             <div class="crop-title">{{ t('Crop Store Photo') }}</div>
-            <div class="crop-subtitle">{{ t('Drag the photo to move it, and zoom until the frame shows your storefront.') }}</div>
+            <div class="crop-subtitle">{{
+              t(
+                'Drag the photo to move it, and zoom until the frame shows your storefront.'
+              )
+            }}</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="crop-close" :aria-label="t('Close photo cropper')" @click="showCropModal = false" />
+          <q-btn
+            flat
+            round
+            dense
+            icon="o_close"
+            class="crop-close"
+            :aria-label="t('Close photo cropper')"
+            @click="showCropModal = false"
+          />
         </q-card-section>
         <q-card-section class="crop-body">
-          <PhotoCropper ref="cropperRef" :src="originalPhotoUrl || ''" :aspect="16 / 9" :output-width="1280" @ready="cropReady = true" />
+          <PhotoCropper
+            ref="cropperRef"
+            :src="originalPhotoUrl || ''"
+            :aspect="16 / 9"
+            :output-width="1280"
+            @ready="cropReady = true"
+          />
         </q-card-section>
         <q-card-actions class="crop-actions">
-          <q-btn outline no-caps :label="t('Cancel')" class="crop-cancel" @click="showCropModal = false" />
-          <q-btn unelevated no-caps :label="t('Apply Crop')" class="crop-apply" :disable="!cropReady" @click="applyCrop" />
+          <q-btn
+            outline
+            no-caps
+            :label="t('Cancel')"
+            class="crop-cancel"
+            @click="showCropModal = false"
+          />
+          <q-btn
+            unelevated
+            no-caps
+            :label="t('Apply Crop')"
+            class="crop-apply"
+            :disable="!cropReady"
+            @click="applyCrop"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -578,7 +798,6 @@
     <!-- SUCCESS DIALOG -->
     <q-dialog v-model="showSuccess" persistent>
       <q-card class="success-dialog">
-
         <q-card-section class="success-content">
           <div class="success-icon-wrap">
             <q-icon name="o_check" size="32px" />
@@ -587,7 +806,11 @@
           <div class="success-title">{{ t('Application Submitted!') }}</div>
 
           <p class="success-message">
-            {{ t('Your vendor application has been submitted and is currently under review. Our team will process your application within 1–3 business days.') }}
+            {{
+              t(
+                'Your vendor application has been submitted and is currently under review. Our team will process your application within 1–3 business days.'
+              )
+            }}
           </p>
         </q-card-section>
 
@@ -607,7 +830,6 @@
             @click="showContactSupport = true"
           />
         </q-card-actions>
-
       </q-card>
     </q-dialog>
 
@@ -615,7 +837,6 @@
     <TermsModal v-model="showTerms" />
     <PrivacyModal v-model="showPrivacy" />
     <ContactSupportModal v-model="showContactSupport" />
-
   </AuthShell>
 </template>
 
@@ -624,7 +845,10 @@ import AuthShell from '@/components/auth/AuthShell.vue'
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
-import { PASSWORD_REQUIREMENTS, validatePassword } from '@/utils/passwordValidation'
+import {
+  PASSWORD_REQUIREMENTS,
+  validatePassword
+} from '@/utils/passwordValidation'
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
@@ -702,21 +926,32 @@ const nameRule = val =>
   /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || t('Only letters are allowed')
 
 const emailRule = val => /.+@.+\..+/.test(val) || t('Enter a valid email')
-const phoneRule = val => /^09\d{9}$/.test(val) || t('Phone must be exactly 11 digits starting with 09')
+const phoneRule = val =>
+  /^09\d{9}$/.test(val) || t('Phone must be exactly 11 digits starting with 09')
 const passwordRule = val => validatePassword(val, t)
 
 // Shown once the password passes its rule, the same positive state as the consumer sign-up and profile password fields.
-const passwordStrong = computed(() => !!form.password && passwordRule(form.password) === true)
+const passwordStrong = computed(
+  () => !!form.password && passwordRule(form.password) === true
+)
 
 // Confirm Password uses its own message (not Quasar's :rules) to show a positive "Passwords match" state — same pattern as ConsumerRegister.vue.
 const confirmPasswordMessage = computed(() => {
   if (!form.confirmPassword) return null
-  if (form.confirmPassword !== form.password) return { type: 'error', text: 'Passwords do not match.' }
+  if (form.confirmPassword !== form.password)
+    return { type: 'error', text: 'Passwords do not match.' }
   return { type: 'success', text: 'Passwords match.' }
 })
 
 // The six steps in order, named in the progress label.
-const STEPS = ['Account', 'Verify phone', 'Store', 'Hours', 'Location', 'Review']
+const STEPS = [
+  'Account',
+  'Verify phone',
+  'Store',
+  'Hours',
+  'Location',
+  'Review'
+]
 // The weekdays in display order, used by the day toggles and the review summary.
 const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -754,33 +989,60 @@ const resendTimer = ref(0)
 let resendInterval = null
 
 // The backend still stores one full_name, so the two fields are joined for the review step and the request.
-const ownerName = computed(() => `${form.firstName.trim()} ${form.lastName.trim()}`.trim())
+const ownerName = computed(() =>
+  `${form.firstName.trim()} ${form.lastName.trim()}`.trim()
+)
 
-const canRegister = computed(() =>
-  phoneVerified.value && verifiedPhone.value === form.phoneNumber &&
-  !!form.storeName.trim() &&
-  !!form.firstName.trim() && nameRule(form.firstName) === true &&
-  !!form.lastName.trim() && nameRule(form.lastName) === true &&
-  !!form.email && emailRule(form.email) === true &&
-  !!form.phoneNumber && phoneRule(form.phoneNumber) === true &&
-  !!form.password && passwordRule(form.password) === true &&
-  !!form.confirmPassword && form.confirmPassword === form.password &&
-  !!form.openingTime && !!form.closingTime && form.operatingDays.length > 0 &&
-  !!photoFile.value &&
-  !!form.latitude && !!form.longitude
+const canRegister = computed(
+  () =>
+    phoneVerified.value &&
+    verifiedPhone.value === form.phoneNumber &&
+    !!form.storeName.trim() &&
+    !!form.firstName.trim() &&
+    nameRule(form.firstName) === true &&
+    !!form.lastName.trim() &&
+    nameRule(form.lastName) === true &&
+    !!form.email &&
+    emailRule(form.email) === true &&
+    !!form.phoneNumber &&
+    phoneRule(form.phoneNumber) === true &&
+    !!form.password &&
+    passwordRule(form.password) === true &&
+    !!form.confirmPassword &&
+    form.confirmPassword === form.password &&
+    !!form.openingTime &&
+    !!form.closingTime &&
+    form.operatingDays.length > 0 &&
+    !!photoFile.value &&
+    !!form.latitude &&
+    !!form.longitude
 )
 
 const maskedPhone = computed(() => {
   const phone = form.phoneNumber || ''
-  return phone.length >= 10 ? `${phone.slice(0, 4)}***${phone.slice(-4)}` : phone
+  return phone.length >= 10
+    ? `${phone.slice(0, 4)}***${phone.slice(-4)}`
+    : phone
 })
 
-const formattedResendTimer = computed(() => `${Math.floor(resendTimer.value / 60)}:${String(resendTimer.value % 60).padStart(2, '0')}`)
+const formattedResendTimer = computed(
+  () =>
+    `${Math.floor(resendTimer.value / 60)}:${String(resendTimer.value % 60).padStart(2, '0')}`
+)
 
-const finalAddress = computed(() => form.manualAddress.trim() || form.detectedAddress)
-const timeLabel = value => timeOptions.find(option => option.value === value)?.label || value
-const hoursSummary = computed(() => (alwaysOpen.value ? t('Always open (24/7)') : `${timeLabel(form.openingTime)} – ${timeLabel(form.closingTime)}`))
-const daysSummary = computed(() => DAY_ORDER.filter(day => form.operatingDays.includes(day)).join(', '))
+const finalAddress = computed(
+  () => form.manualAddress.trim() || form.detectedAddress
+)
+const timeLabel = value =>
+  timeOptions.find(option => option.value === value)?.label || value
+const hoursSummary = computed(() =>
+  alwaysOpen.value
+    ? t('Always open (24/7)')
+    : `${timeLabel(form.openingTime)} – ${timeLabel(form.closingTime)}`
+)
+const daysSummary = computed(() =>
+  DAY_ORDER.filter(day => form.operatingDays.includes(day)).join(', ')
+)
 
 // A new code can be requested after 10 minutes, the time the texted code stays valid on the server.
 const RESEND_WAIT_SECONDS = 600
@@ -800,7 +1062,7 @@ onUnmounted(() => {
 })
 
 // Opens a step, clears the last step's error and brings the top of the form into view.
-const goTo = (target) => {
+const goTo = target => {
   stepError.value = ''
   step.value = target
   // The map itself watches its box for size changes, so showing the panel again needs no nudge here.
@@ -809,13 +1071,13 @@ const goTo = (target) => {
 }
 
 // Moves on after a step, returning to the review when the step was opened from one of its Edit links.
-const afterStep = (next) => {
+const afterStep = next => {
   const target = editingFromReview.value ? 6 : next
   if (target === 6) editingFromReview.value = false
   goTo(target)
 }
 
-const editStep = (target) => {
+const editStep = target => {
   editingFromReview.value = true
   goTo(target)
 }
@@ -827,9 +1089,14 @@ const previousStep = () => {
 }
 
 const errorMessage = (error, fallback) => {
-  if (error.response?.status === 429) return 'Too many attempts. Please wait a few minutes and try again.'
+  if (error.response?.status === 429)
+    return 'Too many attempts. Please wait a few minutes and try again.'
   const errors = error.response?.data?.errors
-  return Object.values(errors || {})[0]?.[0] || error.response?.data?.message || fallback
+  return (
+    Object.values(errors || {})[0]?.[0] ||
+    error.response?.data?.message ||
+    fallback
+  )
 }
 
 // Texts a code to the entered number, which the backend only does for an email and phone not already registered.
@@ -838,13 +1105,19 @@ const sendCode = async () => {
   stepError.value = ''
   otpError.value = ''
   try {
-    await api.post('/register/vendor/otp', { email: form.email, phone_number: form.phoneNumber })
+    await api.post('/register/vendor/otp', {
+      email: form.email,
+      phone_number: form.phoneNumber
+    })
     otp.value = ['', '', '', '', '', '']
     otpVerified.value = false
     startResendTimer()
     return true
   } catch (error) {
-    const message = errorMessage(error, 'We could not send a code right now. Please try again.')
+    const message = errorMessage(
+      error,
+      'We could not send a code right now. Please try again.'
+    )
     if (step.value === 2) otpError.value = message
     else stepError.value = message
     return false
@@ -919,7 +1192,7 @@ const verifyCode = async () => {
 }
 
 // Typing moves to the next box, and an autofilled SMS code that lands in one box as a string is spread across all six.
-const handleOtpInput = (index) => {
+const handleOtpInput = index => {
   const digits = otp.value[index].replace(/\D/g, '')
 
   if (digits.length >= 4) {
@@ -943,9 +1216,12 @@ const handleOtpKeydown = (index, event) => {
   }
 }
 
-const handleOtpPaste = (event) => {
+const handleOtpPaste = event => {
   event.preventDefault()
-  const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+  const pasted = event.clipboardData
+    .getData('text')
+    .replace(/\D/g, '')
+    .slice(0, 6)
   for (let i = 0; i < 6; i++) otp.value[i] = pasted[i] || ''
   otpRefs.value[Math.min(pasted.length, 5)]?.focus()
   otpError.value = ''
@@ -987,7 +1263,7 @@ const nextFromLocation = async () => {
   afterStep(6)
 }
 
-const toggleDay = (day) => {
+const toggleDay = day => {
   const index = form.operatingDays.indexOf(day)
   if (index > -1) {
     form.operatingDays.splice(index, 1)
@@ -996,7 +1272,7 @@ const toggleDay = (day) => {
   }
 }
 
-const handleAlwaysOpenToggle = (val) => {
+const handleAlwaysOpenToggle = val => {
   if (val) {
     form.operatingDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     form.openingTime = '00:00'
@@ -1033,7 +1309,11 @@ const openCropModal = () => {
 const applyCrop = async () => {
   const blob = await cropperRef.value?.toBlob()
   if (!blob) return
-  photoFile.value = new File([blob], 'cropped_' + (photoFile.value?.name || 'store.jpg'), { type: 'image/jpeg' })
+  photoFile.value = new File(
+    [blob],
+    'cropped_' + (photoFile.value?.name || 'store.jpg'),
+    { type: 'image/jpeg' }
+  )
   photoPreview.value = URL.createObjectURL(blob)
   showCropModal.value = false
 }
@@ -1052,11 +1332,21 @@ const handleVendorRegister = async () => {
   registerError.value = ''
 
   try {
-    const dayMap = { 'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday', 'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday' }
+    const dayMap = {
+      Mon: 'Monday',
+      Tue: 'Tuesday',
+      Wed: 'Wednesday',
+      Thu: 'Thursday',
+      Fri: 'Friday',
+      Sat: 'Saturday',
+      Sun: 'Sunday'
+    }
     const schedule = {}
 
     Object.values(dayMap).forEach(fullDay => {
-      const isDaySelected = form.operatingDays.some(shortDay => dayMap[shortDay] === fullDay)
+      const isDaySelected = form.operatingDays.some(
+        shortDay => dayMap[shortDay] === fullDay
+      )
       schedule[fullDay] = {
         is_open: isDaySelected,
         opening_time: isDaySelected ? form.openingTime : null,
@@ -1086,7 +1376,8 @@ const handleVendorRegister = async () => {
 
     showSuccess.value = true
   } catch (error) {
-    const errors = error.response?.status === 422 ? (error.response.data?.errors || {}) : null
+    const errors =
+      error.response?.status === 422 ? error.response.data?.errors || {} : null
 
     if (errors?.phone_number) {
       // The verification expired or the number was taken meanwhile, so the phone is verified again before returning to the review.
@@ -1095,7 +1386,8 @@ const handleVendorRegister = async () => {
       verificationToken.value = ''
       editingFromReview.value = true
       goTo(2)
-      if (await sendCode()) otpError.value = `${errors.phone_number[0]} We sent you a new code.`
+      if (await sendCode())
+        otpError.value = `${errors.phone_number[0]} We sent you a new code.`
     } else if (errors?.password) {
       editingFromReview.value = true
       goTo(1)
@@ -1110,7 +1402,9 @@ const handleVendorRegister = async () => {
       goTo(3)
       stepError.value = (errors.store_name || errors.store_picture)[0]
     } else if (errors) {
-      registerError.value = Object.values(errors)[0]?.[0] || 'Validation failed. Please check your inputs.'
+      registerError.value =
+        Object.values(errors)[0]?.[0] ||
+        'Validation failed. Please check your inputs.'
     } else {
       registerError.value = 'Something went wrong. Please try again later.'
     }
@@ -1128,24 +1422,23 @@ const goToLogin = () => {
   router.push('/login')
 }
 
-
 const storeMapRef = ref(null)
 
 // Pinning an exact spot is hard in a 280px box, so the map can fill the screen while the vendor places it.
 const mapEnlarged = ref(false)
 
 // Esc leaves the enlarged map, as it would any full-screen view.
-const onMapEscape = (event) => {
+const onMapEscape = event => {
   if (event.key === 'Escape') mapEnlarged.value = false
 }
 
-watch(mapEnlarged, (enlarged) => {
+watch(mapEnlarged, enlarged => {
   if (enlarged) window.addEventListener('keydown', onMapEscape)
   else window.removeEventListener('keydown', onMapEscape)
 })
 
 // A teleported block sits outside the step it belongs to, so leaving the step would strand the enlarged map over the wizard.
-watch(step, (value) => {
+watch(step, value => {
   if (value !== 5) mapEnlarged.value = false
 })
 
@@ -1177,7 +1470,6 @@ function handlePinPlaced(location) {
 }
 
 function handleLocationSelected(location) {
-
   // Save coordinates
   form.latitude = location.latitude
   form.longitude = location.longitude
@@ -1188,7 +1480,6 @@ function handleLocationSelected(location) {
 
   // Lets the box hold the pin and rank its searches near this spot; what the vendor typed is never overwritten from the map.
   manualAddressRef.value?.mapSelected(location)
-
 }
 
 // A picked suggestion or the best match for the typed address moves the pin, and the detected address shows where it landed.
@@ -1200,12 +1491,9 @@ function handleAddressPin(location) {
   addressLookupPending.value = false
   storeMapRef.value?.showLocation(location.latitude, location.longitude)
 }
-
-
 </script>
 
 <style scoped>
-
 /* HEADER */
 
 .vendor-header {
@@ -1424,7 +1712,9 @@ function handleAddressPin(location) {
   overflow: hidden;
   position: relative;
 
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 .upload-dropzone:hover {
@@ -1602,7 +1892,9 @@ function handleAddressPin(location) {
 
   cursor: pointer;
 
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .day-btn:last-child {
@@ -1816,7 +2108,10 @@ function handleAddressPin(location) {
 
   box-shadow: var(--sh-brand);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .login-button:not(.disabled):hover {
@@ -2125,7 +2420,9 @@ function handleAddressPin(location) {
 
   outline: none;
 
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .otp-box:focus {
@@ -2145,7 +2442,10 @@ function handleAddressPin(location) {
   background: var(--c-success-tint);
   color: var(--c-success);
 
-  transition: border-color 0.15s, background-color 0.2s, color 0.2s;
+  transition:
+    border-color 0.15s,
+    background-color 0.2s,
+    color 0.2s;
 }
 
 .resend-section {
@@ -2344,7 +2644,11 @@ function handleAddressPin(location) {
 
   border-radius: var(--r-xl);
 
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-brand-tint) 0%,
+    var(--c-brand-tint-2) 100%
+  );
   color: var(--c-brand);
 }
 
@@ -2459,7 +2763,6 @@ function handleAddressPin(location) {
 
 /* Full-bleed white on phones, the same as the login page. */
 @media (max-width: 600px) {
-
   .vendor-header h1 {
     font-size: 22px;
   }
@@ -2506,4 +2809,5 @@ function handleAddressPin(location) {
     padding-inline: 6px;
     margin-inline: -6px;
   }
-}</style>
+}
+</style>

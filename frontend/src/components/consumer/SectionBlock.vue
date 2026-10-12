@@ -2,7 +2,9 @@
   <section v-intersection.once="onReveal" class="section-block reveal">
     <div class="section-heading-row">
       <span class="section-heading">{{ title }}</span>
-      <span v-if="viewAll" class="section-link" @click="$emit('view-all')">{{ t('View All') }}</span>
+      <span v-if="viewAll" class="section-link" @click="$emit('view-all')">{{
+        t('View All')
+      }}</span>
     </div>
 
     <slot />

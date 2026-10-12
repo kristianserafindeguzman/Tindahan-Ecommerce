@@ -6,15 +6,19 @@ const items = ref([])
 const loading = ref(false)
 
 export function useCart() {
-  const itemCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0))
-  const subtotal = computed(() => items.value.reduce((sum, item) => sum + item.price * item.quantity, 0))
+  const itemCount = computed(() =>
+    items.value.reduce((sum, item) => sum + item.quantity, 0)
+  )
+  const subtotal = computed(() =>
+    items.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  )
 
   // A silent refetch leaves `loading` alone, so a background resync never swaps the cart for a spinner.
   const fetchCart = async ({ silent = false } = {}) => {
     if (!silent) loading.value = true
     try {
       const { data } = await api.get('/consumer/cart')
-      items.value = (data || []).map((item) => ({
+      items.value = (data || []).map(item => ({
         cartId: item.cartId,
         inventoryId: item.inventoryId,
         variantName: item.variantName,
@@ -48,7 +52,7 @@ export function useCart() {
 
   // Updates the local item immediately and rolls it back if the request fails, since the server stays the source of truth.
   const updateQuantity = async (cartId, quantity) => {
-    const item = items.value.find((i) => i.cartId === cartId)
+    const item = items.value.find(i => i.cartId === cartId)
     const previousQuantity = item?.quantity
     if (item) item.quantity = quantity
 
@@ -66,8 +70,8 @@ export function useCart() {
     }
   }
 
-  const removeFromCart = async (cartId) => {
-    const index = items.value.findIndex((i) => i.cartId === cartId)
+  const removeFromCart = async cartId => {
+    const index = items.value.findIndex(i => i.cartId === cartId)
     const removed = index !== -1 ? items.value.splice(index, 1)[0] : null
 
     try {
@@ -82,7 +86,8 @@ export function useCart() {
   const checkout = async (storeId, { scheduledPickupAt = null } = {}) => {
     const lat = Number(localStorage.getItem('consumer_lat'))
     const lng = Number(localStorage.getItem('consumer_lng'))
-    const hasLocation = Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng)
+    const hasLocation =
+      Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng)
 
     // Always sent, null included: the backend requires a location and rejects the checkout with
     // LOCATION_REQUIRED, so the keys are never quietly dropped from the payload.
@@ -98,5 +103,15 @@ export function useCart() {
     return data
   }
 
-  return { items, loading, itemCount, subtotal, fetchCart, addToCart, updateQuantity, removeFromCart, checkout }
+  return {
+    items,
+    loading,
+    itemCount,
+    subtotal,
+    fetchCart,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+    checkout
+  }
 }

@@ -1,12 +1,13 @@
 <template>
   <AuthShell class="login-page">
     <div class="login-content">
-
       <template v-if="hasPhone">
         <h1>{{ t('Verify your account') }}</h1>
 
         <p class="subtitle">
-          {{ t('We sent a 6-digit verification code to') }} <strong>{{ displayPhone }}</strong>.
+          {{ t('We sent a 6-digit verification code to') }}
+          <strong>{{ displayPhone }}</strong
+          >.
         </p>
 
         <!-- OTP INPUT BOXES -->
@@ -14,7 +15,11 @@
           <input
             v-for="(digit, index) in otp"
             :key="index"
-            :ref="el => { otpRefs[index] = el }"
+            :ref="
+              el => {
+                otpRefs[index] = el
+              }
+            "
             v-model="otp[index]"
             type="text"
             inputmode="numeric"
@@ -37,7 +42,7 @@
 
         <!-- RESEND -->
         <div class="resend-section">
-          <span>{{ t('Didn\'t receive a code?') }}</span>
+          <span>{{ t("Didn't receive a code?") }}</span>
 
           <button
             type="button"
@@ -46,9 +51,10 @@
             :disabled="timer > 0 || otpVerified"
             @click="resendCode"
           >
-            {{ timer > 0
-              ? t('Resend in {time}', { time: formattedTimer })
-              : t('Resend Code')
+            {{
+              timer > 0
+                ? t('Resend in {time}', { time: formattedTimer })
+                : t('Resend Code')
             }}
           </button>
         </div>
@@ -71,10 +77,14 @@
           <q-icon name="o_sms_failed" size="32px" />
         </div>
 
-        <h1>{{ t('We don\'t know which number to verify') }}</h1>
+        <h1>{{ t("We don't know which number to verify") }}</h1>
 
         <p class="subtitle">
-          {{ t('Open this page right after signing up, or sign up again with the same details and we\'ll text you a new code.') }}
+          {{
+            t(
+              "Open this page right after signing up, or sign up again with the same details and we'll text you a new code."
+            )
+          }}
         </p>
 
         <q-btn
@@ -85,7 +95,11 @@
           @click="router.push('/login')"
         />
 
-        <button type="button" class="text-button secondary-link" @click="router.push('/consumer/register')">
+        <button
+          type="button"
+          class="text-button secondary-link"
+          @click="router.push('/consumer/register')"
+        >
           {{ t('Create an account') }}
         </button>
       </div>
@@ -94,20 +108,27 @@
 
       <!-- TERMS -->
       <p class="terms">
-        <span class="terms-intro">{{ t('By continuing, you agree to our') }}</span>
+        <span class="terms-intro">{{
+          t('By continuing, you agree to our')
+        }}</span>
         <span class="terms-links">
-          <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
+          <a href="#" @click.prevent="showTerms = true">{{
+            t('Terms and Conditions')
+          }}</a>
           {{ t('and') }}
-          <span class="terms-policy"><a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.</span>
+          <span class="terms-policy"
+            ><a href="#" @click.prevent="showPrivacy = true">{{
+              t('Privacy Policy')
+            }}</a
+            >.</span
+          >
         </span>
       </p>
-
     </div>
 
     <!-- LEGAL MODALS -->
     <TermsModal v-model="showTerms" />
     <PrivacyModal v-model="showPrivacy" />
-
   </AuthShell>
 </template>
 
@@ -193,7 +214,7 @@ onUnmounted(() => {
 })
 
 // Handle typing in OTP boxes — auto-advance to next
-const handleOtpInput = (index) => {
+const handleOtpInput = index => {
   const digits = otp.value[index].replace(/\D/g, '')
 
   // An autofilled SMS code lands in the first box as one string, so it is spread across all six.
@@ -223,10 +244,13 @@ const handleOtpKeydown = (index, event) => {
 }
 
 // Handle paste — distribute across boxes
-const handleOtpPaste = (event) => {
+const handleOtpPaste = event => {
   event.preventDefault()
 
-  const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+  const pasted = event.clipboardData
+    .getData('text')
+    .replace(/\D/g, '')
+    .slice(0, 6)
 
   for (let i = 0; i < 6; i++) {
     otp.value[i] = pasted[i] || ''
@@ -249,7 +273,7 @@ const verifyOtp = async () => {
     otpError.value = 'Please enter the complete 6-digit code.'
     return
   }
-  
+
   if (!phoneNum) {
     otpError.value = 'Missing phone number. Please register again.'
     return
@@ -267,10 +291,19 @@ const verifyOtp = async () => {
 
     otpVerified.value = true
     // Holds the green boxes briefly before moving on to the success page.
-    verifiedTimer = setTimeout(() => router.push({ path: '/consumer/success', state: { phone_number: phoneNumber } }), 450)
+    verifiedTimer = setTimeout(
+      () =>
+        router.push({
+          path: '/consumer/success',
+          state: { phone_number: phoneNumber }
+        }),
+      450
+    )
   } catch (error) {
     console.error('OTP Verification Error:', error)
-    otpError.value = error.response?.data?.message || 'The verification code you entered is incorrect.'
+    otpError.value =
+      error.response?.data?.message ||
+      'The verification code you entered is incorrect.'
     otp.value = ['', '', '', '', '', '']
     otpRefs.value[0]?.focus()
   } finally {
@@ -282,7 +315,7 @@ const resendCode = async () => {
   if (timer.value > 0 || otpVerified.value) return
 
   otpError.value = ''
-  
+
   const phoneNum = history.state?.phone_number
   if (!phoneNum) {
     otpError.value = 'Missing phone number. Please register again.'
@@ -369,7 +402,9 @@ const resendCode = async () => {
 
   outline: none;
 
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .otp-box:focus {
@@ -389,7 +424,10 @@ const resendCode = async () => {
   background: var(--c-success-tint);
   color: var(--c-success);
 
-  transition: border-color 0.15s, background-color 0.2s, color 0.2s;
+  transition:
+    border-color 0.15s,
+    background-color 0.2s,
+    color 0.2s;
 }
 
 /* ERROR MESSAGE */
@@ -428,7 +466,10 @@ const resendCode = async () => {
 
   box-shadow: var(--sh-brand);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .login-button:not(.disabled):hover {
@@ -590,7 +631,6 @@ const resendCode = async () => {
 /* MOBILE */
 
 @media (max-width: 600px) {
-
   .login-content {
     max-width: 100%;
   }
@@ -638,4 +678,5 @@ const resendCode = async () => {
   .terms-links a {
     padding-block: 14px;
   }
-}</style>
+}
+</style>

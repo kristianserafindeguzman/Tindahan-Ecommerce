@@ -1,23 +1,67 @@
 <template>
   <!-- Order number, date and total ranges, plus the sort for phones, which have no column headings; a dropdown on wide screens and a bottom sheet on phones. -->
-  <FilterSheet title="Filter orders" :count="count" :result-count="resultCount" noun="order" @clear="resetOrderFilters(filters)">
+  <FilterSheet
+    title="Filter orders"
+    :count="count"
+    :result-count="resultCount"
+    noun="order"
+    @clear="resetOrderFilters(filters)"
+  >
     <div class="of-panel">
       <div class="of-field">
         <label class="vp-field-label">Order ID</label>
         <div class="of-range">
-          <q-input v-model.number="filters.idFrom" type="number" min="1" outlined dense hide-bottom-space placeholder="From #" class="vp-input" aria-label="Order ID from" />
+          <q-input
+            v-model.number="filters.idFrom"
+            type="number"
+            min="1"
+            outlined
+            dense
+            hide-bottom-space
+            placeholder="From #"
+            class="vp-input"
+            aria-label="Order ID from"
+          />
           <span class="of-dash" aria-hidden="true">–</span>
-          <q-input v-model.number="filters.idTo" type="number" min="1" outlined dense hide-bottom-space placeholder="To #" class="vp-input" aria-label="Order ID to" />
+          <q-input
+            v-model.number="filters.idTo"
+            type="number"
+            min="1"
+            outlined
+            dense
+            hide-bottom-space
+            placeholder="To #"
+            class="vp-input"
+            aria-label="Order ID to"
+          />
         </div>
-        <div v-if="flipped(filters.idFrom, filters.idTo)" class="of-warn">The first number is higher than the second.</div>
+        <div v-if="flipped(filters.idFrom, filters.idTo)" class="of-warn"
+          >The first number is higher than the second.</div
+        >
       </div>
 
       <div class="of-field">
         <label class="vp-field-label">Date placed</label>
         <div class="of-range">
-          <q-input v-model="filters.dateFrom" type="date" outlined dense hide-bottom-space class="vp-input" aria-label="From date" />
+          <q-input
+            v-model="filters.dateFrom"
+            type="date"
+            outlined
+            dense
+            hide-bottom-space
+            class="vp-input"
+            aria-label="From date"
+          />
           <span class="of-dash" aria-hidden="true">–</span>
-          <q-input v-model="filters.dateTo" type="date" outlined dense hide-bottom-space class="vp-input" aria-label="To date" />
+          <q-input
+            v-model="filters.dateTo"
+            type="date"
+            outlined
+            dense
+            hide-bottom-space
+            class="vp-input"
+            aria-label="To date"
+          />
         </div>
         <div class="of-presets">
           <button
@@ -31,22 +75,58 @@
             {{ preset.label }}
           </button>
         </div>
-        <div v-if="flipped(filters.dateFrom, filters.dateTo, true)" class="of-warn">The start date is after the end date.</div>
+        <div
+          v-if="flipped(filters.dateFrom, filters.dateTo, true)"
+          class="of-warn"
+          >The start date is after the end date.</div
+        >
       </div>
 
       <div class="of-field">
         <label class="vp-field-label">Total (₱)</label>
         <div class="of-range">
-          <q-input v-model.number="filters.minTotal" type="number" min="0" outlined dense hide-bottom-space placeholder="Min" class="vp-input" aria-label="Minimum total" />
+          <q-input
+            v-model.number="filters.minTotal"
+            type="number"
+            min="0"
+            outlined
+            dense
+            hide-bottom-space
+            placeholder="Min"
+            class="vp-input"
+            aria-label="Minimum total"
+          />
           <span class="of-dash" aria-hidden="true">–</span>
-          <q-input v-model.number="filters.maxTotal" type="number" min="0" outlined dense hide-bottom-space placeholder="Max" class="vp-input" aria-label="Maximum total" />
+          <q-input
+            v-model.number="filters.maxTotal"
+            type="number"
+            min="0"
+            outlined
+            dense
+            hide-bottom-space
+            placeholder="Max"
+            class="vp-input"
+            aria-label="Maximum total"
+          />
         </div>
-        <div v-if="flipped(filters.minTotal, filters.maxTotal)" class="of-warn">The minimum is higher than the maximum.</div>
+        <div v-if="flipped(filters.minTotal, filters.maxTotal)" class="of-warn"
+          >The minimum is higher than the maximum.</div
+        >
       </div>
 
       <div class="of-field">
         <label class="vp-field-label">Sort by</label>
-        <q-select v-model="filters.sort" :options="SORT_OPTIONS" emit-value map-options outlined dense options-dense behavior="menu" class="vp-input" />
+        <q-select
+          v-model="filters.sort"
+          :options="SORT_OPTIONS"
+          emit-value
+          map-options
+          outlined
+          dense
+          options-dense
+          behavior="menu"
+          class="vp-input"
+        />
       </div>
     </div>
   </FilterSheet>
@@ -55,7 +135,12 @@
 <script setup>
 import { computed } from 'vue'
 import FilterSheet from '@/components/vendor/FilterSheet.vue'
-import { SORT_OPTIONS, activeFilterCount, resetOrderFilters, dayKey } from '@/utils/orderFilters'
+import {
+  SORT_OPTIONS,
+  activeFilterCount,
+  resetOrderFilters,
+  dayKey
+} from '@/utils/orderFilters'
 
 const filters = defineModel({ type: Object, required: true })
 
@@ -80,11 +165,15 @@ const presetRange = key => {
   return { dateFrom: dayKey(start), dateTo: dayKey(today) }
 }
 
-const applyPreset = preset => Object.assign(filters.value, presetRange(preset.key))
+const applyPreset = preset =>
+  Object.assign(filters.value, presetRange(preset.key))
 
 const isPreset = preset => {
   const range = presetRange(preset.key)
-  return filters.value.dateFrom === range.dateFrom && filters.value.dateTo === range.dateTo
+  return (
+    filters.value.dateFrom === range.dateFrom &&
+    filters.value.dateTo === range.dateTo
+  )
 }
 
 // True when both ends are set the wrong way round, so the panel can say why nothing matches.

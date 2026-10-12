@@ -1,13 +1,8 @@
 <template>
   <q-page class="auth-modal-page">
     <div class="auth-modal-card">
-
       <!-- CLOSE BUTTON -->
-      <button
-        type="button"
-        class="close-button"
-        @click="$emit('close')"
-      >
+      <button type="button" class="close-button" @click="$emit('close')">
         <q-icon name="close" />
       </button>
 
@@ -24,7 +19,6 @@
       <div class="auth-modal-body">
         <slot />
       </div>
-
     </div>
   </q-page>
 </template>
@@ -66,8 +60,7 @@ defineEmits(['close'])
 
   background: #ffffff;
 
-  box-shadow:
-    0 12px 35px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
 
   border-radius: 4px;
 }

@@ -2,11 +2,10 @@
   <q-page class="flex flex-center">
     <h4>{{ message }}</h4>
 
-     <div class="col-4">
+    <div class="col-4">
       Ratio: 1
       <q-img src="https://picsum.photos/500/300" :ratio="1" />
     </div>
-    
   </q-page>
 </template>
 

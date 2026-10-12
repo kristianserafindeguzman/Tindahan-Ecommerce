@@ -1,15 +1,29 @@
 <template>
-  <q-dialog v-model="isOpen" :position="isSheet ? 'bottom' : 'standard'" @hide="resetLocalState">
-    <q-card v-if="product" flat class="detail-card" :class="{ 'detail-card-sheet': isSheet }">
-
+  <q-dialog
+    v-model="isOpen"
+    :position="isSheet ? 'bottom' : 'standard'"
+    @hide="resetLocalState"
+  >
+    <q-card
+      v-if="product"
+      flat
+      class="detail-card"
+      :class="{ 'detail-card-sheet': isSheet }"
+    >
       <div v-if="isSheet" class="detail-drag-handle" />
 
-      <q-btn icon="o_close" flat round dense class="close-btn" :aria-label="t('Close product details')" v-close-popup />
+      <q-btn
+        icon="o_close"
+        flat
+        round
+        dense
+        class="close-btn"
+        :aria-label="t('Close product details')"
+        v-close-popup
+      />
 
       <div class="detail-scroll">
-
         <div class="detail-grid">
-
           <div class="detail-image-wrap">
             <img
               v-if="product.image && !imageFailed"
@@ -20,8 +34,12 @@
             />
             <q-icon v-else name="o_inventory_2" size="48px" />
 
-            <span v-if="product.category" class="detail-category-tag">{{ t(product.category) }}</span>
-            <span v-if="!product.inStock" class="detail-oos-tag">{{ t('Out of Stock') }}</span>
+            <span v-if="product.category" class="detail-category-tag">{{
+              t(product.category)
+            }}</span>
+            <span v-if="!product.inStock" class="detail-oos-tag">{{
+              t('Out of Stock')
+            }}</span>
           </div>
 
           <div class="detail-info">
@@ -30,12 +48,17 @@
             <div class="price-stock-row">
               <div class="detail-price">₱{{ displayPrice.toFixed(2) }}</div>
 
-              <div class="detail-stock" :class="{ 'detail-stock-oos': !product.inStock }">
+              <div
+                class="detail-stock"
+                :class="{ 'detail-stock-oos': !product.inStock }"
+              >
                 {{ product.inStock ? t('In Stock') : t('Out of Stock') }}
               </div>
             </div>
 
-            <p v-if="product.description" class="detail-description">{{ product.description }}</p>
+            <p v-if="product.description" class="detail-description">{{
+              product.description
+            }}</p>
 
             <!-- EXPIRATION DATE / BEST BEFORE -->
             <div v-if="expiryDate" class="detail-expiry">
@@ -73,9 +96,27 @@
                 <span class="quantity-label">{{ t('Quantity') }}</span>
                 <div class="stepper-wrapper">
                   <div class="quantity-stepper">
-                    <q-btn flat dense :ripple="false" icon="o_remove" class="stepper-btn" :disable="quantity <= 1" :aria-label="t('Decrease quantity')" @click="quantity--" />
+                    <q-btn
+                      flat
+                      dense
+                      :ripple="false"
+                      icon="o_remove"
+                      class="stepper-btn"
+                      :disable="quantity <= 1"
+                      :aria-label="t('Decrease quantity')"
+                      @click="quantity--"
+                    />
                     <span class="stepper-value">{{ quantity }}</span>
-                    <q-btn flat dense :ripple="false" icon="o_add" class="stepper-btn" :disable="quantity >= maxQuantity" :aria-label="t('Increase quantity')" @click="quantity++" />
+                    <q-btn
+                      flat
+                      dense
+                      :ripple="false"
+                      icon="o_add"
+                      class="stepper-btn"
+                      :disable="quantity >= maxQuantity"
+                      :aria-label="t('Increase quantity')"
+                      @click="quantity++"
+                    />
                   </div>
                 </div>
               </div>
@@ -92,22 +133,35 @@
               />
             </div>
           </div>
-
         </div>
 
         <!-- STORE INFO -->
         <div v-if="store" class="store-section">
           <div class="store-section-label">{{ t('About this Store') }}</div>
 
-          <div class="store-row" v-close-popup @click="router.push(`/consumer/stores/${store.slug || store.id}`)">
+          <div
+            class="store-row"
+            v-close-popup
+            @click="router.push(`/consumer/stores/${store.slug || store.id}`)"
+          >
             <div class="store-row-info">
               <div class="store-row-name">{{ store.name }}</div>
-              <div class="store-row-status" :class="{ 'store-row-status-closed': !store.isOpen }">
+              <div
+                class="store-row-status"
+                :class="{ 'store-row-status-closed': !store.isOpen }"
+              >
                 {{ storeStatus(store) }}
               </div>
               <!-- One line, travel first: a long address is what gets cut off, never the minutes. -->
               <div v-if="storeMetaText" class="store-row-address">
-                <q-icon :name="store.distance_meters != null ? travelIcon(store.distance_meters) : 'o_location_on'" size="12px" />
+                <q-icon
+                  :name="
+                    store.distance_meters != null
+                      ? travelIcon(store.distance_meters)
+                      : 'o_location_on'
+                  "
+                  size="12px"
+                />
                 <span class="store-row-address-text">{{ storeMetaText }}</span>
               </div>
             </div>
@@ -123,9 +177,27 @@
           <div v-if="product.inStock" class="quantity-row">
             <div class="stepper-wrapper">
               <div class="quantity-stepper">
-                <q-btn flat dense :ripple="false" icon="o_remove" class="stepper-btn" :disable="quantity <= 1" :aria-label="t('Decrease quantity')" @click="quantity--" />
+                <q-btn
+                  flat
+                  dense
+                  :ripple="false"
+                  icon="o_remove"
+                  class="stepper-btn"
+                  :disable="quantity <= 1"
+                  :aria-label="t('Decrease quantity')"
+                  @click="quantity--"
+                />
                 <span class="stepper-value">{{ quantity }}</span>
-                <q-btn flat dense :ripple="false" icon="o_add" class="stepper-btn" :disable="quantity >= maxQuantity" :aria-label="t('Increase quantity')" @click="quantity++" />
+                <q-btn
+                  flat
+                  dense
+                  :ripple="false"
+                  icon="o_add"
+                  class="stepper-btn"
+                  :disable="quantity >= maxQuantity"
+                  :aria-label="t('Increase quantity')"
+                  @click="quantity++"
+                />
               </div>
             </div>
           </div>
@@ -141,9 +213,7 @@
             @click="handleAddToCart"
           />
         </div>
-
       </div>
-
     </q-card>
   </q-dialog>
 </template>
@@ -180,14 +250,19 @@ const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 const isSheet = computed(() => $q.screen.lt.sm)
 
 const isOpen = ref(props.modelValue)
-watch(() => props.modelValue, (val) => {
-  isOpen.value = val
-  if (val && !stores.value.length) fetchStores()
-})
-watch(isOpen, (val) => emit('update:modelValue', val))
+watch(
+  () => props.modelValue,
+  val => {
+    isOpen.value = val
+    if (val && !stores.value.length) fetchStores()
+  }
+)
+watch(isOpen, val => emit('update:modelValue', val))
 
 const store = computed(() =>
-  props.product ? stores.value.find((s) => s.id === props.product.storeId) || null : null
+  props.product
+    ? stores.value.find(s => s.id === props.product.storeId) || null
+    : null
 )
 
 // "430 m · 7 min walk · 456 Quezon Avenue, Quezon City"
@@ -195,13 +270,19 @@ const storeMetaText = computed(() => {
   if (!store.value) return ''
   const parts = []
   if (store.value.distance_meters != null) {
-    parts.push(formatDistance(store.value.distance_meters), formatTravelTime(store.value.distance_meters))
+    parts.push(
+      formatDistance(store.value.distance_meters),
+      formatTravelTime(store.value.distance_meters)
+    )
   }
   if (store.value.address) parts.push(store.value.address)
   return parts.join(' · ')
 })
 
-const hasVariants = computed(() => Array.isArray(props.product?.variants) && props.product.variants.length > 0)
+const hasVariants = computed(
+  () =>
+    Array.isArray(props.product?.variants) && props.product.variants.length > 0
+)
 
 // Formatted through the shopper's own locale, like the notification timestamps. Returns ''
 // for a missing or unparseable date so the row hides itself rather than printing the
@@ -226,15 +307,19 @@ const selectedVariant = computed(() =>
 )
 
 const displayPrice = computed(() =>
-  selectedVariant.value ? Number(selectedVariant.value.price) : props.product.price
+  selectedVariant.value
+    ? Number(selectedVariant.value.price)
+    : props.product.price
 )
 
 // ?? rather than ||, so a sold-out product's availableQuantity of 0 is not replaced by the 99 meant for a missing field.
 const maxQuantity = computed(() =>
-  selectedVariant.value ? selectedVariant.value.quantity : (props.product.availableQuantity ?? 99)
+  selectedVariant.value
+    ? selectedVariant.value.quantity
+    : (props.product.availableQuantity ?? 99)
 )
 
-const selectVariant = (i) => {
+const selectVariant = i => {
   selectedVariantIndex.value = selectedVariantIndex.value === i ? null : i
   quantity.value = 1
 }
@@ -256,11 +341,21 @@ const handleAddToCart = async () => {
 
   adding.value = true
   try {
-    const variantName = selectedVariant.value?.name || selectedVariant.value?.size || selectedVariant.value?.label || null
+    const variantName =
+      selectedVariant.value?.name ||
+      selectedVariant.value?.size ||
+      selectedVariant.value?.label ||
+      null
     await addToCart(props.product.id, quantity.value, variantName)
-    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: props.product.name }) })
+    $q.notify({
+      type: 'positive',
+      message: t('{name} added to cart.', { name: props.product.name })
+    })
   } catch (error) {
-    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
+    $q.notify({
+      type: 'negative',
+      message: t(error.response?.data?.message || 'Failed to add to cart.')
+    })
   } finally {
     adding.value = false
   }
@@ -324,7 +419,11 @@ const handleAddToCart = async () => {
   border-radius: var(--r-lg);
   border: 1px solid var(--c-border);
 
-  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-surface) 0%,
+    var(--c-surface) 100%
+  );
   color: var(--c-brand);
 }
 
@@ -502,7 +601,10 @@ const handleAddToCart = async () => {
 
   cursor: pointer;
 
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .variant-chip:hover:not(.disabled) {
@@ -612,7 +714,10 @@ const handleAddToCart = async () => {
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .add-to-cart-btn:hover {
@@ -671,7 +776,11 @@ const handleAddToCart = async () => {
 
   cursor: pointer;
 
-  transition: border-color 0.15s, background-color 0.15s, box-shadow 0.2s, transform 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.15s;
 }
 
 .store-row:hover {

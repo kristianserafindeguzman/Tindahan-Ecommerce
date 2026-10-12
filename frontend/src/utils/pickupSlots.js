@@ -27,7 +27,7 @@ export function manilaParts(date) {
       hourCycle: 'h23'
     })
       .formatToParts(date)
-      .map((part) => [part.type, part.value])
+      .map(part => [part.type, part.value])
   )
 
   return {
@@ -37,7 +37,7 @@ export function manilaParts(date) {
   }
 }
 
-const toMinutes = (hm) => {
+const toMinutes = hm => {
   const [h, m] = String(hm).split(':').map(Number)
   return h * 60 + m
 }
@@ -50,10 +50,15 @@ export function openWindows(dayHours) {
   // "Open all day" is stored as 00:00–23:59; its last minute runs to midnight.
   const closes = dayHours.closes === '23:59' ? 1440 : toMinutes(dayHours.closes)
 
-  return opens <= closes ? [[opens, closes]] : [[0, closes], [opens, 1440]]
+  return opens <= closes
+    ? [[opens, closes]]
+    : [
+        [0, closes],
+        [opens, 1440]
+      ]
 }
 
-const pad = (n) => String(n).padStart(2, '0')
+const pad = n => String(n).padStart(2, '0')
 
 // A Manila date and minute of the day as an ISO time the backend can parse unambiguously.
 export const slotIso = (ymd, minutes) =>
@@ -65,16 +70,33 @@ export const slotIso = (ymd, minutes) =>
  * such as a table column. Returns '' for an ASAP order (no scheduled time), so callers can show
  * their own ASAP label.
  */
-export function formatPickupSlot(value, locale = 'en-PH', { compact = false } = {}) {
+export function formatPickupSlot(
+  value,
+  locale = 'en-PH',
+  { compact = false } = {}
+) {
   if (!value) return ''
   const start = new Date(value)
   if (Number.isNaN(start.getTime())) return ''
   const end = new Date(start.getTime() + SLOT_MINUTES * 60000)
 
-  const day = start.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric', timeZone: STORE_TIME_ZONE })
-  const time = (date) => date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: STORE_TIME_ZONE })
+  const day = start.toLocaleDateString(locale, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    timeZone: STORE_TIME_ZONE
+  })
+  const time = date =>
+    date.toLocaleTimeString(locale, {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: STORE_TIME_ZONE
+    })
 
-  return compact ? `${day} · ${time(start)}` : `${day} · ${time(start)} – ${time(end)}`
+  return compact
+    ? `${day} · ${time(start)}`
+    : `${day} · ${time(start)} – ${time(end)}`
 }
 
 /**
@@ -85,11 +107,14 @@ export function formatPickupSlot(value, locale = 'en-PH', { compact = false } = 
  */
 export function buildPickupDays(hours, now = new Date()) {
   const today = manilaParts(now)
-  const earliestToday = Math.ceil((today.minutes + LEAD_MINUTES) / SLOT_MINUTES) * SLOT_MINUTES
+  const earliestToday =
+    Math.ceil((today.minutes + LEAD_MINUTES) / SLOT_MINUTES) * SLOT_MINUTES
 
   const days = []
   for (let offset = 0; offset < DAYS_AHEAD; offset++) {
-    const { ymd, weekday } = manilaParts(new Date(now.getTime() + offset * DAY_MS))
+    const { ymd, weekday } = manilaParts(
+      new Date(now.getTime() + offset * DAY_MS)
+    )
     const slots = []
 
     for (const [start, end] of openWindows(hours?.[weekday])) {

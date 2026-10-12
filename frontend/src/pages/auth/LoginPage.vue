@@ -1,19 +1,13 @@
 <template>
   <AuthShell class="login-page">
     <div class="login-content">
-
       <h1>{{ t('Welcome back!') }}</h1>
 
       <p class="subtitle">
         {{ t('Log in to your Tindahan account.') }}
       </p>
 
-      <q-form
-        ref="loginForm"
-        class="login-form"
-        @submit.prevent="handleLogin"
-      >
-
+      <q-form ref="loginForm" class="login-form" @submit.prevent="handleLogin">
         <!-- EMAIL OR MOBILE -->
         <div class="field-group">
           <q-input
@@ -29,7 +23,10 @@
             class="login-input"
             reactive-rules
             :rules="[
-              val => !identifierTouched || !!val || t('Email or mobile number is required.'),
+              val =>
+                !identifierTouched ||
+                !!val ||
+                t('Email or mobile number is required.'),
               val => !identifierTouched || identifierRule(val)
             ]"
             @blur="identifierTouched = true"
@@ -57,9 +54,7 @@
           >
             <template #append>
               <q-icon
-                :name="showPassword
-                  ? 'o_visibility'
-                  : 'o_visibility_off'"
+                :name="showPassword ? 'o_visibility' : 'o_visibility_off'"
                 class="password-icon cursor-pointer"
                 @click="showPassword = !showPassword"
               />
@@ -79,7 +74,11 @@
 
         <!-- ERROR MESSAGE -->
         <div v-if="lockoutSeconds > 0" class="error-message" role="alert">
-          {{ t('Too many login attempts. Try again in {time}.', { time: formattedLockout }) }}
+          {{
+            t('Too many login attempts. Try again in {time}.', {
+              time: formattedLockout
+            })
+          }}
         </div>
         <div v-else-if="loginError" class="error-message">
           {{ t(loginError) }}
@@ -95,7 +94,6 @@
           :loading="loading"
           :disable="!canLogin || lockoutSeconds > 0"
         />
-
       </q-form>
 
       <!-- CREATE ACCOUNT -->
@@ -115,20 +113,27 @@
 
       <!-- TERMS -->
       <p class="terms">
-        <span class="terms-intro">{{ t('By continuing, you agree to our') }}</span>
+        <span class="terms-intro">{{
+          t('By continuing, you agree to our')
+        }}</span>
         <span class="terms-links">
-          <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
+          <a href="#" @click.prevent="showTerms = true">{{
+            t('Terms and Conditions')
+          }}</a>
           {{ t('and') }}
-          <span class="terms-policy"><a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.</span>
+          <span class="terms-policy"
+            ><a href="#" @click.prevent="showPrivacy = true">{{
+              t('Privacy Policy')
+            }}</a
+            >.</span
+          >
         </span>
       </p>
-
     </div>
 
     <!-- REGISTRATION TYPE DIALOG -->
     <q-dialog v-model="showRegistrationOptions">
       <q-card class="registration-dialog">
-
         <q-card-section class="registration-header">
           <div class="registration-title">
             {{ t('Create an account') }}
@@ -140,7 +145,6 @@
         </q-card-section>
 
         <q-card-section class="registration-buttons">
-
           <q-btn
             :label="t('Register as Consumer')"
             no-caps
@@ -156,9 +160,7 @@
             class="vendor-registration-button full-width"
             @click="goToVendorRegister"
           />
-
         </q-card-section>
-
       </q-card>
     </q-dialog>
 
@@ -174,7 +176,11 @@
             </div>
             <div class="status-title">{{ t('Reset Password') }}</div>
             <p class="status-message">
-              {{ t('Enter your registered mobile number. We will send an SMS with a 6-digit verification code.') }}
+              {{
+                t(
+                  'Enter your registered mobile number. We will send an SMS with a 6-digit verification code.'
+                )
+              }}
             </p>
             <div class="field-group reset-phone-group">
               <q-input
@@ -189,17 +195,37 @@
                 class="login-input"
                 reactive-rules
                 :rules="[
-                  val => !forgotPhoneTouched || !!val || t('Mobile number is required.'),
+                  val =>
+                    !forgotPhoneTouched ||
+                    !!val ||
+                    t('Mobile number is required.'),
                   val => !forgotPhoneTouched || phoneRule(val)
                 ]"
                 @blur="forgotPhoneTouched = true"
               />
             </div>
-            <div v-if="forgotError" class="error-message">{{ t(forgotError) }}</div>
+            <div v-if="forgotError" class="error-message">{{
+              t(forgotError)
+            }}</div>
           </q-card-section>
           <q-card-actions class="status-actions" vertical>
-            <q-btn type="submit" :label="t('Send Code')" no-caps unelevated class="login-button full-width" :loading="forgotLoading" :disable="!canRequestReset" />
-            <q-btn outline no-caps color="primary" :label="t('Cancel')" class="cancel-outline full-width" @click="showForgotWarning = false" />
+            <q-btn
+              type="submit"
+              :label="t('Send Code')"
+              no-caps
+              unelevated
+              class="login-button full-width"
+              :loading="forgotLoading"
+              :disable="!canRequestReset"
+            />
+            <q-btn
+              outline
+              no-caps
+              color="primary"
+              :label="t('Cancel')"
+              class="cancel-outline full-width"
+              @click="showForgotWarning = false"
+            />
           </q-card-actions>
         </q-form>
       </q-card>
@@ -214,7 +240,9 @@
           </div>
           <div class="status-title">{{ t('Verify Phone Number') }}</div>
           <p class="status-message">
-            {{ t('We sent a 6-digit verification code to') }} <strong>{{ maskedForgotPhone }}</strong>.
+            {{ t('We sent a 6-digit verification code to') }}
+            <strong>{{ maskedForgotPhone }}</strong
+            >.
           </p>
 
           <!-- Same boxed OTP pattern as ConsumerVerify.vue -->
@@ -222,7 +250,11 @@
             <input
               v-for="(digit, index) in forgotOtp"
               :key="index"
-              :ref="el => { forgotOtpRefs[index] = el }"
+              :ref="
+                el => {
+                  forgotOtpRefs[index] = el
+                }
+              "
               v-model="forgotOtp[index]"
               type="text"
               inputmode="numeric"
@@ -237,11 +269,13 @@
             />
           </div>
 
-          <div v-if="forgotError" class="error-message">{{ t(forgotError) }}</div>
+          <div v-if="forgotError" class="error-message">{{
+            t(forgotError)
+          }}</div>
 
           <!-- Same resend/countdown pattern as ConsumerVerify.vue -->
           <div class="resend-section">
-            <span>{{ t('Didn\'t receive a code?') }}</span>
+            <span>{{ t("Didn't receive a code?") }}</span>
 
             <button
               type="button"
@@ -250,16 +284,32 @@
               :disabled="forgotResendTimer > 0"
               @click="resendForgotOtp"
             >
-              {{ forgotResendTimer > 0
-                ? t('Resend in {time}', { time: formattedForgotResendTimer })
-                : t('Resend Code')
+              {{
+                forgotResendTimer > 0
+                  ? t('Resend in {time}', { time: formattedForgotResendTimer })
+                  : t('Resend Code')
               }}
             </button>
           </div>
         </q-card-section>
         <q-card-actions class="status-actions" vertical>
-          <q-btn :label="t('Verify Code')" no-caps unelevated class="login-button full-width" :loading="forgotLoading" :disable="!forgotOtpComplete" @click="verifyResetOTP" />
-          <q-btn outline no-caps color="primary" :label="t('Cancel')" class="cancel-outline full-width" @click="showForgotOtp = false" />
+          <q-btn
+            :label="t('Verify Code')"
+            no-caps
+            unelevated
+            class="login-button full-width"
+            :loading="forgotLoading"
+            :disable="!forgotOtpComplete"
+            @click="verifyResetOTP"
+          />
+          <q-btn
+            outline
+            no-caps
+            color="primary"
+            :label="t('Cancel')"
+            class="cancel-outline full-width"
+            @click="showForgotOtp = false"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -289,20 +339,26 @@
                 class="login-input"
                 reactive-rules
                 :rules="[
-                  val => !newPasswordTouched || !!val || t('Password is required.'),
+                  val =>
+                    !newPasswordTouched || !!val || t('Password is required.'),
                   val => !newPasswordTouched || passwordRule(val)
                 ]"
                 @blur="newPasswordTouched = true"
               >
                 <template #append>
                   <q-icon
-                    :name="showNewPassword ? 'o_visibility' : 'o_visibility_off'"
+                    :name="
+                      showNewPassword ? 'o_visibility' : 'o_visibility_off'
+                    "
                     class="password-icon cursor-pointer"
                     @click="showNewPassword = !showNewPassword"
                   />
                 </template>
               </q-input>
-              <div v-if="newPasswordStrong" class="field-message field-message-success">
+              <div
+                v-if="newPasswordStrong"
+                class="field-message field-message-success"
+              >
                 <q-icon name="o_check_circle" size="12px" />
                 {{ t('Strong password.') }}
               </div>
@@ -323,23 +379,52 @@
               >
                 <template #append>
                   <q-icon
-                    :name="showConfirmNewPassword ? 'o_visibility' : 'o_visibility_off'"
+                    :name="
+                      showConfirmNewPassword
+                        ? 'o_visibility'
+                        : 'o_visibility_off'
+                    "
                     class="password-icon cursor-pointer"
                     @click="showConfirmNewPassword = !showConfirmNewPassword"
                   />
                 </template>
               </q-input>
-              <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
-                <q-icon v-if="confirmPasswordMessage.type === 'success'" name="o_check_circle" size="12px" />
+              <div
+                v-if="confirmPasswordMessage"
+                class="field-message"
+                :class="`field-message-${confirmPasswordMessage.type}`"
+              >
+                <q-icon
+                  v-if="confirmPasswordMessage.type === 'success'"
+                  name="o_check_circle"
+                  size="12px"
+                />
                 {{ t(confirmPasswordMessage.text) }}
               </div>
             </div>
 
-            <div v-if="forgotError" class="error-message">{{ t(forgotError) }}</div>
+            <div v-if="forgotError" class="error-message">{{
+              t(forgotError)
+            }}</div>
           </q-card-section>
           <q-card-actions class="status-actions" vertical>
-            <q-btn type="submit" :label="t('Reset Password')" no-caps unelevated class="login-button full-width" :loading="forgotLoading" :disable="!canSubmitNewPassword" />
-            <q-btn outline no-caps color="primary" :label="t('Cancel')" class="cancel-outline full-width" @click="showForgotReset = false" />
+            <q-btn
+              type="submit"
+              :label="t('Reset Password')"
+              no-caps
+              unelevated
+              class="login-button full-width"
+              :loading="forgotLoading"
+              :disable="!canSubmitNewPassword"
+            />
+            <q-btn
+              outline
+              no-caps
+              color="primary"
+              :label="t('Cancel')"
+              class="cancel-outline full-width"
+              @click="showForgotReset = false"
+            />
           </q-card-actions>
         </q-form>
       </q-card>
@@ -353,10 +438,18 @@
             <q-icon name="o_check" size="32px" />
           </div>
           <div class="status-title">{{ t('Password Reset Successful') }}</div>
-          <p class="status-message">{{ t('You can now log in with your new password.') }}</p>
+          <p class="status-message">{{
+            t('You can now log in with your new password.')
+          }}</p>
         </q-card-section>
         <q-card-actions class="status-actions" vertical>
-          <q-btn :label="t('Log in now')" no-caps unelevated class="login-button full-width" @click="finishPasswordReset" />
+          <q-btn
+            :label="t('Log in now')"
+            no-caps
+            unelevated
+            class="login-button full-width"
+            @click="finishPasswordReset"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -369,16 +462,33 @@
             <q-icon name="o_block" size="32px" />
           </div>
           <div class="status-title">{{ t('Account Suspended') }}</div>
-          <p class="status-message">{{ t('Your account has been temporarily suspended.') }}</p>
+          <p class="status-message">{{
+            t('Your account has been temporarily suspended.')
+          }}</p>
 
           <div class="notice-box notice-box-red">
             <q-icon name="o_info" size="16px" />
-            <p><strong>{{ t('Notice:') }}</strong> {{ suspensionMessage }}</p>
+            <p
+              ><strong>{{ t('Notice:') }}</strong> {{ suspensionMessage }}</p
+            >
           </div>
         </q-card-section>
         <q-card-actions class="status-actions" vertical>
-          <q-btn unelevated no-caps :label="t('Contact Support')" class="login-button full-width" @click="showContactSupport = true" />
-          <q-btn outline no-caps color="primary" :label="t('Back to Login')" class="cancel-outline full-width" @click="handleStatusLogout" />
+          <q-btn
+            unelevated
+            no-caps
+            :label="t('Contact Support')"
+            class="login-button full-width"
+            @click="showContactSupport = true"
+          />
+          <q-btn
+            outline
+            no-caps
+            color="primary"
+            :label="t('Back to Login')"
+            class="cancel-outline full-width"
+            @click="handleStatusLogout"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -391,16 +501,35 @@
             <q-icon name="o_person_off" size="32px" />
           </div>
           <div class="status-title">{{ t('Account Inactive') }}</div>
-          <p class="status-message">{{ t('Your account is inactive. Please contact support to reactivate it.') }}</p>
+          <p class="status-message">{{
+            t(
+              'Your account is inactive. Please contact support to reactivate it.'
+            )
+          }}</p>
 
           <div v-if="inactiveNotice" class="notice-box notice-box-red">
             <q-icon name="o_info" size="16px" />
-            <p><strong>{{ t('Notice:') }}</strong> {{ inactiveNotice }}</p>
+            <p
+              ><strong>{{ t('Notice:') }}</strong> {{ inactiveNotice }}</p
+            >
           </div>
         </q-card-section>
         <q-card-actions class="status-actions" vertical>
-          <q-btn unelevated no-caps :label="t('Contact Support')" class="login-button full-width" @click="showContactSupport = true" />
-          <q-btn outline no-caps color="primary" :label="t('Back to Login')" class="cancel-outline full-width" @click="showInactive = false" />
+          <q-btn
+            unelevated
+            no-caps
+            :label="t('Contact Support')"
+            class="login-button full-width"
+            @click="showContactSupport = true"
+          />
+          <q-btn
+            outline
+            no-caps
+            color="primary"
+            :label="t('Back to Login')"
+            class="cancel-outline full-width"
+            @click="showInactive = false"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -415,7 +544,11 @@
             </div>
             <div class="status-title">{{ t('Verify your mobile number') }}</div>
             <p class="status-message">
-              {{ t('Your account isn\'t active yet because your mobile number hasn\'t been verified. We\'ll text you a new 6-digit code.') }}
+              {{
+                t(
+                  "Your account isn't active yet because your mobile number hasn't been verified. We'll text you a new 6-digit code."
+                )
+              }}
             </p>
             <div class="field-group reset-phone-group">
               <q-input
@@ -433,12 +566,34 @@
                 @blur="unverifiedTouched = true"
               />
             </div>
-            <div v-if="unverifiedError" class="error-message">{{ t(unverifiedError) }}</div>
+            <div v-if="unverifiedError" class="error-message">{{
+              t(unverifiedError)
+            }}</div>
           </q-card-section>
           <q-card-actions class="status-actions" vertical>
-            <q-btn type="submit" :label="t('Send Code')" no-caps unelevated class="login-button full-width" :loading="unverifiedLoading" :disable="phoneRule(unverifiedPhone) !== true" />
-            <q-btn outline no-caps color="primary" :label="t('Back to Login')" class="cancel-outline full-width" @click="showUnverified = false" />
-            <button type="button" class="text-button cancel-link cancel-link-quiet" @click="showContactSupport = true">{{ t('Contact Support') }}</button>
+            <q-btn
+              type="submit"
+              :label="t('Send Code')"
+              no-caps
+              unelevated
+              class="login-button full-width"
+              :loading="unverifiedLoading"
+              :disable="phoneRule(unverifiedPhone) !== true"
+            />
+            <q-btn
+              outline
+              no-caps
+              color="primary"
+              :label="t('Back to Login')"
+              class="cancel-outline full-width"
+              @click="showUnverified = false"
+            />
+            <button
+              type="button"
+              class="text-button cancel-link cancel-link-quiet"
+              @click="showContactSupport = true"
+              >{{ t('Contact Support') }}</button
+            >
           </q-card-actions>
         </q-form>
       </q-card>
@@ -448,7 +603,6 @@
     <TermsModal v-model="showTerms" />
     <PrivacyModal v-model="showPrivacy" />
     <ContactSupportModal v-model="showContactSupport" />
-
   </AuthShell>
 </template>
 
@@ -458,7 +612,10 @@ import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
-import { PASSWORD_REQUIREMENTS, validatePassword } from '@/utils/passwordValidation'
+import {
+  PASSWORD_REQUIREMENTS,
+  validatePassword
+} from '@/utils/passwordValidation'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
@@ -518,7 +675,9 @@ const forgotPhone = ref('')
 const forgotPhoneTouched = ref(false)
 const forgotOtp = ref(['', '', '', '', '', ''])
 const forgotOtpRefs = ref([])
-const forgotOtpComplete = computed(() => forgotOtp.value.every(digit => digit !== ''))
+const forgotOtpComplete = computed(() =>
+  forgotOtp.value.every(digit => digit !== '')
+)
 
 // Same 10-minute resend countdown as ConsumerVerify.vue's OTP screen, the time the texted code stays valid.
 const FORGOT_RESEND_WAIT_SECONDS = 600
@@ -584,7 +743,9 @@ const forgotLoading = ref(false)
 const forgotError = ref('')
 
 // Same rules as ConsumerRegister.vue's phone/password fields.
-const phoneRule = val => /^09\d{9}$/.test(val) || t('Mobile number must start with 09 and contain 11 digits.')
+const phoneRule = val =>
+  /^09\d{9}$/.test(val) ||
+  t('Mobile number must start with 09 and contain 11 digits.')
 const passwordRule = val => validatePassword(val, t)
 const canRequestReset = computed(() => phoneRule(forgotPhone.value) === true)
 
@@ -601,16 +762,22 @@ const maskedForgotPhone = computed(() => {
 // Same live match/mismatch message as ConsumerRegister.vue's Confirm Password field.
 const confirmPasswordMessage = computed(() => {
   if (!forgotPassword2.value) return null
-  if (forgotPassword2.value !== forgotPassword1.value) return { type: 'error', text: 'Passwords do not match.' }
+  if (forgotPassword2.value !== forgotPassword1.value)
+    return { type: 'error', text: 'Passwords do not match.' }
   return { type: 'success', text: 'Passwords match.' }
 })
 
 // Shown once the new password passes its rule, the same positive state as the sign-up and profile password fields.
-const newPasswordStrong = computed(() => !!forgotPassword1.value && passwordRule(forgotPassword1.value) === true)
+const newPasswordStrong = computed(
+  () => !!forgotPassword1.value && passwordRule(forgotPassword1.value) === true
+)
 
-const canSubmitNewPassword = computed(() =>
-  !!forgotPassword1.value && passwordRule(forgotPassword1.value) === true &&
-  !!forgotPassword2.value && forgotPassword2.value === forgotPassword1.value
+const canSubmitNewPassword = computed(
+  () =>
+    !!forgotPassword1.value &&
+    passwordRule(forgotPassword1.value) === true &&
+    !!forgotPassword2.value &&
+    forgotPassword2.value === forgotPassword1.value
 )
 
 // Legal modals
@@ -633,7 +800,9 @@ const identifierRule = val => {
   )
 }
 
-const canLogin = computed(() => identifierRule(form.identifier) === true && !!form.password)
+const canLogin = computed(
+  () => identifierRule(form.identifier) === true && !!form.password
+)
 
 const handleLogin = async () => {
   identifierTouched.value = true
@@ -668,14 +837,11 @@ const handleLogin = async () => {
     // Route based on role
     if (role === 'Admin') {
       router.push('/admin/dashboard')
-
     } else if (role === 'Consumer') {
       router.push('/consumer/home')
-
     } else if (role === 'Vendor') {
       router.push('/vendor/dashboard')
     }
-
   } catch (error) {
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_user')
@@ -684,13 +850,16 @@ const handleLogin = async () => {
     if (error.response && error.response.status === 429) {
       // The route's per-IP throttle says how long to wait in its Retry-After header.
       const retryAfter = Number(error.response.headers?.['retry-after'])
-      startLockout(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60)
+      startLockout(
+        Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60
+      )
     } else if (error.response && error.response.status === 422) {
       const errors = error.response.data.errors
-      loginError.value = errors?.email?.[0] || 'Invalid credentials. Please try again.'
+      loginError.value =
+        errors?.email?.[0] || 'Invalid credentials. Please try again.'
     } else if (error.response && error.response.status === 401) {
       const data = error.response.data
-      
+
       if (data.error_code === 'ACCOUNT_REJECTED') {
         router.push({
           path: '/auth/vendor/rejected',
@@ -724,12 +893,12 @@ const handleLogin = async () => {
           showSuspended.value = true
         }
       } else {
-        loginError.value = error.response.data.message || 'Account access denied.'
+        loginError.value =
+          error.response.data.message || 'Account access denied.'
       }
     } else {
       loginError.value = 'Something went wrong. Please try again later.'
     }
-
   } finally {
     loading.value = false
   }
@@ -750,7 +919,7 @@ const handleStatusLogout = async () => {
 }
 
 // Numbers are stored in the 09 form, so a +63 identifier is converted and an email leaves the field blank.
-const toLocalMobile = (val) => {
+const toLocalMobile = val => {
   if (/^09\d{9}$/.test(val)) return val
   if (/^\+639\d{9}$/.test(val)) return '0' + val.slice(3)
   return ''
@@ -762,11 +931,23 @@ const sendVerificationCode = async () => {
   unverifiedError.value = ''
   unverifiedLoading.value = true
   try {
-    await api.post('/otp/resend', { phone_number: unverifiedPhone.value, type: 'registration' })
+    await api.post('/otp/resend', {
+      phone_number: unverifiedPhone.value,
+      type: 'registration'
+    })
     showUnverified.value = false
-    router.push({ path: '/verification', state: { phone_number: unverifiedPhone.value, type: 'registration', role: 'Consumer' } })
+    router.push({
+      path: '/verification',
+      state: {
+        phone_number: unverifiedPhone.value,
+        type: 'registration',
+        role: 'Consumer'
+      }
+    })
   } catch (error) {
-    unverifiedError.value = error.response?.data?.message || 'We could not send a code to that number.'
+    unverifiedError.value =
+      error.response?.data?.message ||
+      'We could not send a code to that number.'
   } finally {
     unverifiedLoading.value = false
   }
@@ -802,7 +983,7 @@ const requestResetOTP = async () => {
 }
 
 // Same auto-advance/backspace/paste behavior as ConsumerVerify.vue's OTP boxes.
-const handleForgotOtpInput = (index) => {
+const handleForgotOtpInput = index => {
   const digits = forgotOtp.value[index].replace(/\D/g, '')
 
   // An autofilled SMS code lands in the first box as one string, so it is spread across all six.
@@ -830,10 +1011,13 @@ const handleForgotOtpKeydown = (index, event) => {
   }
 }
 
-const handleForgotOtpPaste = (event) => {
+const handleForgotOtpPaste = event => {
   event.preventDefault()
 
-  const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+  const pasted = event.clipboardData
+    .getData('text')
+    .replace(/\D/g, '')
+    .slice(0, 6)
 
   for (let i = 0; i < 6; i++) {
     forgotOtp.value[i] = pasted[i] || ''
@@ -859,7 +1043,8 @@ const resendForgotOtp = async () => {
     forgotOtpRefs.value[0]?.focus()
     startForgotResendTimer()
   } catch (error) {
-    forgotError.value = error.response?.data?.message || 'Failed to resend code.'
+    forgotError.value =
+      error.response?.data?.message || 'Failed to resend code.'
   }
 }
 
@@ -915,7 +1100,10 @@ const submitNewPassword = async () => {
     showForgotReset.value = false
     showResetSuccess.value = true
   } catch (error) {
-    forgotError.value = error.response?.data?.errors?.password?.[0] || error.response?.data?.message || 'Failed to reset password.'
+    forgotError.value =
+      error.response?.data?.errors?.password?.[0] ||
+      error.response?.data?.message ||
+      'Failed to reset password.'
   } finally {
     forgotLoading.value = false
   }
@@ -1099,7 +1287,10 @@ const goToVendorRegister = () => {
 
   box-shadow: var(--sh-brand);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .login-button:not(.disabled):hover {
@@ -1258,7 +1449,9 @@ const goToVendorRegister = () => {
   font-size: var(--fs-sm);
   font-weight: 600;
 
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 .vendor-registration-button:hover {
@@ -1409,7 +1602,9 @@ const goToVendorRegister = () => {
 
   outline: none;
 
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .otp-box:focus {
@@ -1536,7 +1731,6 @@ const goToVendorRegister = () => {
 /* MOBILE */
 
 @media (max-width: 600px) {
-
   .login-content {
     max-width: 100%;
   }
@@ -1591,4 +1785,5 @@ const goToVendorRegister = () => {
     padding-inline: 6px;
     margin-inline: -6px;
   }
-}</style>
+}
+</style>

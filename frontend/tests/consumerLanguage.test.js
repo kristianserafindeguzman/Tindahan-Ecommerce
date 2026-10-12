@@ -118,14 +118,20 @@ test('filter option labels change while values stay stable', async () => {
   ])
 })
 
-
 test('inherited object property names never crash translation lookup', async () => {
   const language = (await createLanguage(storage()))()
   for (const locale of ['en', 'fil']) {
     language.setLanguage(locale)
-    for (const name of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+    for (const name of [
+      'constructor',
+      '__proto__',
+      'toString',
+      'hasOwnProperty'
+    ]) {
       assert.equal(language.t(name), name)
-      assert.deepEqual(language.translateOptions([name]), [{ label: name, value: name }])
+      assert.deepEqual(language.translateOptions([name]), [
+        { label: name, value: name }
+      ])
     }
   }
 })
@@ -135,7 +141,10 @@ test('open stores without closing times show a complete status', async () => {
   assert.equal(language.storeStatus({ isOpen: true }), 'Open')
   language.setLanguage('fil')
   assert.equal(language.storeStatus({ isOpen: true, closesAt: null }), 'Bukas')
-  assert.equal(language.storeStatus({ isOpen: true, closesAt: '8:00 PM' }), 'Bukas hanggang 8:00 PM')
+  assert.equal(
+    language.storeStatus({ isOpen: true, closesAt: '8:00 PM' }),
+    'Bukas hanggang 8:00 PM'
+  )
   assert.equal(language.storeStatus({ isOpen: false }), 'Sarado ngayon')
 })
 
@@ -147,15 +156,19 @@ test('store filters preserve seller names that match translation keys', async ()
     { label: 'Products', value: 'Products' }
   ]
   const original = structuredClone(options)
-  assert.deepEqual(language.translateOptions(options, option => option.value === 'All'), [
-    { label: 'Lahat ng Stores', value: 'All' },
-    { label: 'Store', value: 'Store' },
-    { label: 'Products', value: 'Products' }
-  ])
+  assert.deepEqual(
+    language.translateOptions(options, option => option.value === 'All'),
+    [
+      { label: 'Lahat ng Stores', value: 'All' },
+      { label: 'Store', value: 'Store' },
+      { label: 'Products', value: 'Products' }
+    ]
+  )
   assert.deepEqual(options, original)
-  assert.deepEqual(language.translateOptions(['Products'], () => false), [
-    { label: 'Products', value: 'Products' }
-  ])
+  assert.deepEqual(
+    language.translateOptions(['Products'], () => false),
+    [{ label: 'Products', value: 'Products' }]
+  )
 })
 
 test('birthday validation errors react to consumer language changes', async () => {
@@ -164,7 +177,10 @@ test('birthday validation errors react to consumer language changes', async () =
   assert.equal(error.value, 'Enter a valid birthday.')
   language.setLanguage('fil')
   assert.equal(error.value, 'Maglagay ng valid na birthday.')
-  assert.equal(language.t('Choose a month, day and year.'), 'Pumili ng buwan, araw, at taon.')
+  assert.equal(
+    language.t('Choose a month, day and year.'),
+    'Pumili ng buwan, araw, at taon.'
+  )
   language.setLanguage('en')
   assert.equal(error.value, 'Enter a valid birthday.')
 })

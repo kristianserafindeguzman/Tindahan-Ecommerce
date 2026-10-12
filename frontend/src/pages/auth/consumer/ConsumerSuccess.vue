@@ -1,7 +1,6 @@
 <template>
   <AuthShell class="login-page">
     <div class="login-content">
-
       <div class="success-wrapper">
         <div class="success-icon-wrap">
           <q-icon name="o_check" size="36px" />
@@ -10,7 +9,11 @@
         <h1>{{ t('Verification Successful') }}</h1>
 
         <p class="subtitle">
-          {{ t('Your account has been verified. You can now log in to start exploring local sari-sari stores.') }}
+          {{
+            t(
+              'Your account has been verified. You can now log in to start exploring local sari-sari stores.'
+            )
+          }}
         </p>
 
         <q-btn
@@ -21,7 +24,6 @@
           @click="goToLogin"
         />
       </div>
-
     </div>
   </AuthShell>
 </template>
@@ -37,7 +39,10 @@ const router = useRouter()
 
 // The verified number is carried over so the login form only needs the password.
 const goToLogin = () => {
-  router.push({ path: '/login', state: { identifier: history.state?.phone_number || '' } })
+  router.push({
+    path: '/login',
+    state: { identifier: history.state?.phone_number || '' }
+  })
 }
 </script>
 
@@ -126,7 +131,10 @@ const goToLogin = () => {
 
   box-shadow: var(--sh-brand);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .login-button:hover {
@@ -153,7 +161,6 @@ const goToLogin = () => {
 /* MOBILE */
 
 @media (max-width: 600px) {
-
   .login-content {
     max-width: 100%;
   }
@@ -178,4 +185,5 @@ const goToLogin = () => {
     --fs-sm: 14px;
     --fs-md: 15px;
   }
-}</style>
+}
+</style>

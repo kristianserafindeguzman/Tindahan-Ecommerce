@@ -36,10 +36,19 @@ api.interceptors.response.use(
         clearAuthStorage()
 
         // Only redirect if not already on a public page
-        const publicPaths = ['/login', '/consumer/register', '/vendor/register', '/consumer/verify', '/consumer/success']
+        const publicPaths = [
+          '/login',
+          '/consumer/register',
+          '/vendor/register',
+          '/consumer/verify',
+          '/consumer/success'
+        ]
         const currentPath = window.location.hash.replace('#', '')
 
-        if (!publicPaths.includes(currentPath) && !currentPath.startsWith('/auth/vendor/')) {
+        if (
+          !publicPaths.includes(currentPath) &&
+          !currentPath.startsWith('/auth/vendor/')
+        ) {
           window.location.href = '/#/login'
         }
       }

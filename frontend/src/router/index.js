@@ -3,7 +3,7 @@ import {
   createMemoryHistory,
   createRouter,
   createWebHashHistory,
-  createWebHistory,
+  createWebHistory
 } from 'vue-router'
 
 import routes from './routes.js'
@@ -13,7 +13,9 @@ import routes from './routes.js'
 export default defineRouter((/* { store, ssrContext } */) => {
   const createHistory = import.meta.env.QUASAR_SERVER
     ? createMemoryHistory
-    : (import.meta.env.QUASAR_VUE_ROUTER_MODE === 'history' ? createWebHistory : createWebHashHistory)
+    : import.meta.env.QUASAR_VUE_ROUTER_MODE === 'history'
+      ? createWebHistory
+      : createWebHashHistory
 
   const Router = createRouter({
     scrollBehavior: () => ({ left: 0, top: 0 }),
@@ -24,7 +26,7 @@ export default defineRouter((/* { store, ssrContext } */) => {
   })
 
   // Navigation guard for auth and roles, which returns values instead of calling next() because vue-router 5 deprecates next() and a fall-through could call it twice.
-  Router.beforeEach((to) => {
+  Router.beforeEach(to => {
     const token = localStorage.getItem('auth_token')
     const role = localStorage.getItem('auth_role')
 
@@ -53,7 +55,11 @@ export default defineRouter((/* { store, ssrContext } */) => {
         const userData = userDataStr ? JSON.parse(userDataStr) : {}
         const accountStatus = userData.account_status
 
-        if (accountStatus === 'suspended' || accountStatus === 'inactive' || accountStatus === 'pending') {
+        if (
+          accountStatus === 'suspended' ||
+          accountStatus === 'inactive' ||
+          accountStatus === 'pending'
+        ) {
           clearAuth()
           return '/login'
         }

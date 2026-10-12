@@ -7,7 +7,9 @@
         :subtitle="t('subtitle')"
         :stat-label="t('stat_' + active)"
         :stat-value="totalFor(active)"
-        :stat-unit="totalFor(active) === 1 ? t('application') : t('applications')"
+        :stat-unit="
+          totalFor(active) === 1 ? t('application') : t('applications')
+        "
         :loading="loading"
       />
 
@@ -194,7 +196,10 @@
         </div>
 
         <div v-if="!loading && pageCount > 1" class="vp-pager">
-          <span>{{ t('showing') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('of') }} {{ filtered.length }}</span>
+          <span
+            >{{ t('showing') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('of') }}
+            {{ filtered.length }}</span
+          >
           <div class="vp-pager-btns">
             <q-btn
               outline
@@ -264,7 +269,8 @@ const approvalsDict = {
     emptyTitle_approved: 'No approved applications yet',
     emptyText_approved: 'Stores you approve will be listed here.',
     emptyTitle_rejected: 'No rejected applications',
-    emptyText_rejected: 'Applications you reject will be listed here with their reason.',
+    emptyText_rejected:
+      'Applications you reject will be listed here with their reason.',
     colStore: 'Store',
     colContact: 'Contact',
     colApplied: 'Applied',
@@ -285,7 +291,8 @@ const approvalsDict = {
   },
   ph: {
     title: 'Vendor Approvals',
-    subtitle: 'I-review ang mga store application at magdesisyon kung sino ang pwedeng magbenta sa Tindahan.',
+    subtitle:
+      'I-review ang mga store application at magdesisyon kung sino ang pwedeng magbenta sa Tindahan.',
     stat_pending: 'Pending review',
     stat_approved: 'Approved',
     stat_rejected: 'Rejected',
@@ -300,11 +307,13 @@ const approvalsDict = {
     noMatchTitle: 'Walang nag-match',
     noMatchText: 'Try mag-search ng ibang pangalan, store o email.',
     emptyTitle_pending: 'Walang naghihintay na application',
-    emptyText_pending: 'Dito lalabas ang mga bagong store application para ma-review.',
+    emptyText_pending:
+      'Dito lalabas ang mga bagong store application para ma-review.',
     emptyTitle_approved: 'Wala pang approved applications',
     emptyText_approved: 'Dito nakalista ang mga stores na na-approve mo na.',
     emptyTitle_rejected: 'Walang rejected applications',
-    emptyText_rejected: 'Dito nakalista ang mga rejected application kasama ang dahilan.',
+    emptyText_rejected:
+      'Dito nakalista ang mga rejected application kasama ang dahilan.',
     colStore: 'Store',
     colContact: 'Contact',
     colApplied: 'Applied',

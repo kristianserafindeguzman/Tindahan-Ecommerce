@@ -72,9 +72,7 @@
             search ? t('noMatchTitle') : t('emptyTitle_' + active)
           }}</div>
           <div class="vp-empty-text">{{
-            search
-              ? t('noMatchText')
-              : t('emptyText_' + active)
+            search ? t('noMatchText') : t('emptyText_' + active)
           }}</div>
         </div>
 
@@ -120,7 +118,9 @@
                     </span>
                   </div>
                 </td>
-                <td class="vp-muted">{{ consumer.phone_number || t('noPhone') }}</td>
+                <td class="vp-muted">{{
+                  consumer.phone_number || t('noPhone')
+                }}</td>
                 <td class="vp-muted">{{
                   formatShortDate(consumer.created_at)
                 }}</td>
@@ -136,7 +136,11 @@
                 </td>
 
                 <!-- ALL-ICON UNIFIED ACTION GROUP -->
-                <td class="col-actions text-right" @click.stop @keydown.enter.stop>
+                <td
+                  class="col-actions text-right"
+                  @click.stop
+                  @keydown.enter.stop
+                >
                   <div class="vd-icon-action-group">
                     <q-btn
                       flat
@@ -146,7 +150,9 @@
                       class="vd-action-icon-btn"
                       @click="openView(consumer)"
                     >
-                      <q-tooltip anchor="top middle" self="bottom middle">{{ t('tooltipViewProfile') }}</q-tooltip>
+                      <q-tooltip anchor="top middle" self="bottom middle">{{
+                        t('tooltipViewProfile')
+                      }}</q-tooltip>
                     </q-btn>
 
                     <q-btn
@@ -158,8 +164,15 @@
                       class="vd-action-icon-btn text-muted-themed"
                       :aria-label="`Change ${consumer.full_name}'s account`"
                     >
-                      <q-tooltip anchor="top middle" self="bottom middle">{{ t('tooltipOptions') }}</q-tooltip>
-                      <q-menu anchor="bottom right" self="top right" auto-close class="compact-status-menu">
+                      <q-tooltip anchor="top middle" self="bottom middle">{{
+                        t('tooltipOptions')
+                      }}</q-tooltip>
+                      <q-menu
+                        anchor="bottom right"
+                        self="top right"
+                        auto-close
+                        class="compact-status-menu"
+                      >
                         <q-list dense class="compact-menu-list">
                           <q-item
                             v-for="option in localizedStatusOptions(consumer)"
@@ -167,13 +180,17 @@
                             clickable
                             v-ripple
                             class="compact-menu-item"
-                            :class="{ 'compact-menu-item--danger': option.danger }"
+                            :class="{
+                              'compact-menu-item--danger': option.danger
+                            }"
                             @click="changeStatus(consumer, option.status)"
                           >
                             <q-item-section avatar class="compact-menu-avatar">
                               <q-icon :name="option.icon" size="16px" />
                             </q-item-section>
-                            <q-item-section class="compact-menu-label">{{ option.label }}</q-item-section>
+                            <q-item-section class="compact-menu-label">{{
+                              option.label
+                            }}</q-item-section>
                           </q-item>
                         </q-list>
                       </q-menu>
@@ -302,7 +319,9 @@
                 <q-item-section avatar class="compact-menu-avatar">
                   <q-icon :name="option.icon" size="18px" />
                 </q-item-section>
-                <q-item-section class="compact-menu-label">{{ option.label }}</q-item-section>
+                <q-item-section class="compact-menu-label">{{
+                  option.label
+                }}</q-item-section>
               </q-item>
             </q-list>
           </q-menu>
@@ -388,7 +407,8 @@ const consumersDict = {
     nextPage: 'Next page',
     close: 'Close',
     changeStatus: 'Change Status',
-    deleteWarning: 'will be signed out and unable to log in. Their order history is kept.',
+    deleteWarning:
+      'will be signed out and unable to log in. Their order history is kept.',
     optSetActive: 'Set active',
     optSetInactive: 'Set inactive',
     optSuspend: 'Suspend...',
@@ -396,7 +416,8 @@ const consumersDict = {
   },
   ph: {
     title: 'Manage Consumers',
-    subtitle: 'Tingnan ang accounts ng mga shoppers at i-manage kung sino ang pwedeng gumamit ng Tindahan.',
+    subtitle:
+      'Tingnan ang accounts ng mga shoppers at i-manage kung sino ang pwedeng gumamit ng Tindahan.',
     searchPlaceholder: 'Mag-search ng pangalan, email o phone',
     filterAll: 'Lahat',
     filterActive: 'Active',
@@ -414,13 +435,16 @@ const consumersDict = {
     emptyTitle_all: 'Wala pang consumers',
     emptyText_all: 'Dito lalabas ang mga shoppers kapag nag-sign up na sila.',
     emptyTitle_active: 'Walang active consumers',
-    emptyText_active: 'Dito nakalista ang mga shoppers na pwedeng mag-sign in at umorder.',
+    emptyText_active:
+      'Dito nakalista ang mga shoppers na pwedeng mag-sign in at umorder.',
     emptyTitle_inactive: 'Walang inactive consumers',
-    emptyText_inactive: 'Dito nakalista ang mga accounts na sinet mong inactive.',
+    emptyText_inactive:
+      'Dito nakalista ang mga accounts na sinet mong inactive.',
     emptyTitle_suspended: 'Walang suspended consumers',
     emptyText_suspended: 'Dito nakalista ang mga accounts na sinuspend mo.',
     emptyTitle_deleted: 'Walang deleted consumers',
-    emptyText_deleted: 'Naka-store dito ang mga deleted accounts for record purposes.',
+    emptyText_deleted:
+      'Naka-store dito ang mga deleted accounts for record purposes.',
     noMatchTitle: 'Walang nag-match',
     noMatchText: 'Try mag-search ng ibang pangalan, email o phone number.',
     colConsumer: 'Consumer',
@@ -440,7 +464,8 @@ const consumersDict = {
     nextPage: 'Next page',
     close: 'Close',
     changeStatus: 'Change Status',
-    deleteWarning: 'ay masa-sign out at hindi na makaka-log in. Mananatili pa rin ang order history nila.',
+    deleteWarning:
+      'ay masa-sign out at hindi na makaka-log in. Mananatili pa rin ang order history nila.',
     optSetActive: 'Set as active',
     optSetInactive: 'Set as inactive',
     optSuspend: 'Suspend...',
@@ -556,7 +581,12 @@ const localizedStatusOptions = consumer => {
   const options = [
     { status: 'active', label: t('optSetActive'), icon: 'o_check_circle' },
     { status: 'inactive', label: t('optSetInactive'), icon: 'o_pause_circle' },
-    { status: 'suspended', label: t('optSuspend'), icon: 'o_block', danger: true },
+    {
+      status: 'suspended',
+      label: t('optSuspend'),
+      icon: 'o_block',
+      danger: true
+    },
     {
       status: 'delete',
       label: t('optDelete'),
@@ -734,7 +764,6 @@ onMounted(fetchConsumers)
 .text-muted-themed {
   color: var(--c-muted, #64748b);
 }
-
 </style>
 
 <!--

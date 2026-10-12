@@ -15,7 +15,7 @@
         :actions="heroActions"
         bell
         class="animate-slide-up"
-        style="animation-delay: 0s;"
+        style="animation-delay: 0s"
         @action="onHeroAction"
       >
         <template #side>
@@ -38,7 +38,7 @@
             'db-kpi--link': card.to,
             'db-kpi--alert': card.key === 'attention'
           }"
-          :style="{ animationDelay: `${0.1 + (index * 0.08)}s` }"
+          :style="{ animationDelay: `${0.1 + index * 0.08}s` }"
           @click="card.to && router.push(card.to)"
         >
           <div class="db-kpi-top">
@@ -51,18 +51,26 @@
           <div v-else class="db-kpi-figures">
             <span class="db-kpi-value">{{ card.value }}</span>
             <span v-if="card.delta > 0" class="db-kpi-delta">
-              <q-icon name="o_arrow_upward" size="13px" />{{ card.delta }} {{ t('thisWeek') }}
+              <q-icon name="o_arrow_upward" size="13px" />{{ card.delta }}
+              {{ t('thisWeek') }}
             </span>
           </div>
           <div v-if="card.to" class="db-kpi-foot">
-            <q-icon name="o_arrow_forward" size="16px" class="db-kpi-go q-ml-auto" />
+            <q-icon
+              name="o_arrow_forward"
+              size="16px"
+              class="db-kpi-go q-ml-auto"
+            />
           </div>
         </component>
       </div>
 
       <div class="db-grid">
         <!-- ================= NEEDS ATTENTION ================= -->
-        <section class="vp-card db-panel db-area-attention column animate-slide-up" style="animation-delay: 0.3s;">
+        <section
+          class="vp-card db-panel db-area-attention column animate-slide-up"
+          style="animation-delay: 0.3s"
+        >
           <div class="db-panel-head">
             <h2 class="db-panel-title dialog-title-text">
               <span class="db-panel-icon vp-tone--brand">
@@ -84,7 +92,12 @@
 
           <div v-if="loading" class="db-rows-loading col flex-1">
             <div v-for="n in 3" :key="n" class="db-att-grid db-skel-row">
-              <q-skeleton type="rect" width="36px" height="36px" class="db-skel-tile" />
+              <q-skeleton
+                type="rect"
+                width="36px"
+                height="36px"
+                class="db-skel-tile"
+              />
               <div class="db-two-lines">
                 <q-skeleton type="text" width="55%" />
                 <q-skeleton type="text" width="78%" height="12px" />
@@ -95,8 +108,15 @@
               </div>
             </div>
           </div>
-          <div v-else-if="!pending.length" class="db-empty col flex flex-center text-center">
-            <q-icon name="o_task_alt" size="28px" class="q-mb-xs text-muted-themed" />
+          <div
+            v-else-if="!pending.length"
+            class="db-empty col flex flex-center text-center"
+          >
+            <q-icon
+              name="o_task_alt"
+              size="28px"
+              class="q-mb-xs text-muted-themed"
+            />
             <span class="text-muted-themed">{{ t('noPendingApps') }}</span>
           </div>
           <template v-else>
@@ -111,12 +131,20 @@
                 <q-icon name="o_storefront" size="18px" />
               </span>
               <span class="db-two-lines">
-                <span class="db-strong">{{ app.store_name || t('unnamedStore') }}</span>
-                <span class="db-soft db-ellipsis text-muted-themed">{{ t('vendorAppPending') }}</span>
+                <span class="db-strong">{{
+                  app.store_name || t('unnamedStore')
+                }}</span>
+                <span class="db-soft db-ellipsis text-muted-themed">{{
+                  t('vendorAppPending')
+                }}</span>
               </span>
               <span class="db-two-lines db-att-date">
-                <span class="dialog-title-text">{{ formatFullDayDate(app.applied_at) }}</span>
-                <span class="db-soft text-muted-themed">{{ formatTime(app.applied_at) }}</span>
+                <span class="dialog-title-text">{{
+                  formatFullDayDate(app.applied_at)
+                }}</span>
+                <span class="db-soft text-muted-themed">{{
+                  formatTime(app.applied_at)
+                }}</span>
               </span>
               <q-icon name="o_chevron_right" size="20px" class="db-row-arrow" />
             </button>
@@ -124,7 +152,10 @@
         </section>
 
         <!-- ================= PLATFORM OVERVIEW ================= -->
-        <section class="vp-card db-panel db-area-overview db-overview animate-slide-up" style="animation-delay: 0.4s;">
+        <section
+          class="vp-card db-panel db-area-overview db-overview animate-slide-up"
+          style="animation-delay: 0.4s"
+        >
           <div class="db-panel-head">
             <h2 class="db-panel-title dialog-title-text">
               <span class="db-panel-icon vp-tone--brand">
@@ -134,10 +165,15 @@
             </h2>
             <div class="db-legend-inline">
               <span class="text-muted-themed">
-                <span class="db-dot" :style="{ background: VENDOR_COLOR }" />{{ t('vendorsLegend') }}
+                <span class="db-dot" :style="{ background: VENDOR_COLOR }" />{{
+                  t('vendorsLegend')
+                }}
               </span>
               <span class="text-muted-themed">
-                <span class="db-dot" :style="{ background: CONSUMER_COLOR }" />{{ t('consumersLegend') }}
+                <span
+                  class="db-dot"
+                  :style="{ background: CONSUMER_COLOR }"
+                />{{ t('consumersLegend') }}
               </span>
             </div>
           </div>
@@ -156,9 +192,14 @@
 
         <!-- ================= SIDE (ECOSYSTEM RATIO) ================= -->
         <div class="db-area-side">
-          <section class="vp-card db-panel db-ratio animate-slide-up" style="animation-delay: 0.5s;">
+          <section
+            class="vp-card db-panel db-ratio animate-slide-up"
+            style="animation-delay: 0.5s"
+          >
             <div class="db-panel-head">
-              <h2 class="db-panel-title dialog-title-text">{{ t('ecosystemRatio') }}</h2>
+              <h2 class="db-panel-title dialog-title-text">{{
+                t('ecosystemRatio')
+              }}</h2>
             </div>
             <div class="db-ratio-body">
               <div class="db-ratio-chart">
@@ -166,7 +207,9 @@
                   <q-skeleton type="circle" size="150px" />
                   <span class="db-skel-hole" />
                 </div>
-                <div v-else-if="!mixTotal" class="db-soft text-muted-themed">{{ t('noAccountsYet') }}</div>
+                <div v-else-if="!mixTotal" class="db-soft text-muted-themed">{{
+                  t('noAccountsYet')
+                }}</div>
                 <template v-else>
                   <VueApexCharts
                     type="donut"
@@ -176,18 +219,26 @@
                     :series="donutSeries"
                   />
                   <div class="db-ratio-center">
-                    <span :style="{ color: VENDOR_COLOR }">{{ mixRows[0].share }}</span>
-                    <span :style="{ color: CONSUMER_COLOR }">{{ mixRows[1].share }}</span>
+                    <span :style="{ color: VENDOR_COLOR }">{{
+                      mixRows[0].share
+                    }}</span>
+                    <span :style="{ color: CONSUMER_COLOR }">{{
+                      mixRows[1].share
+                    }}</span>
                   </div>
                 </template>
               </div>
               <ul class="db-ratio-legend">
                 <li v-for="row in mixRows" :key="row.label">
                   <span class="db-dot" :style="{ background: row.color }" />
-                  <span class="db-ratio-label text-muted-themed">{{ row.label }}</span>
+                  <span class="db-ratio-label text-muted-themed">{{
+                    row.label
+                  }}</span>
                   <span class="db-ratio-value dialog-title-text">
                     {{ loading ? '—' : row.value }}
-                    <span class="db-soft text-muted-themed">{{ loading ? '' : `(${row.share})` }}</span>
+                    <span class="db-soft text-muted-themed">{{
+                      loading ? '' : `(${row.share})`
+                    }}</span>
                   </span>
                 </li>
               </ul>
@@ -196,7 +247,10 @@
         </div>
 
         <!-- ================= RECENT ACTIVITY ================= -->
-        <section class="vp-card db-panel db-area-activity animate-slide-up" style="animation-delay: 0.6s;">
+        <section
+          class="vp-card db-panel db-area-activity animate-slide-up"
+          style="animation-delay: 0.6s"
+        >
           <div class="db-panel-head">
             <h2 class="db-panel-title dialog-title-text">
               <span class="db-panel-icon vp-tone--info">
@@ -221,14 +275,21 @@
               </div>
               <q-skeleton type="text" width="70%" class="db-act-text" />
               <div class="db-act-user">
-                <q-skeleton type="rect" width="28px" height="28px" class="db-skel-tile" />
+                <q-skeleton
+                  type="rect"
+                  width="28px"
+                  height="28px"
+                  class="db-skel-tile"
+                />
                 <q-skeleton type="text" width="60%" />
               </div>
             </div>
           </div>
           <div v-else-if="!activity.length" class="db-empty flex flex-center">
             <q-icon name="o_history" size="22px" class="text-muted-themed" />
-            <span class="q-ml-sm text-muted-themed">{{ t('nothingHappened') }}</span>
+            <span class="q-ml-sm text-muted-themed">{{
+              t('nothingHappened')
+            }}</span>
           </div>
           <template v-else>
             <button
@@ -239,8 +300,12 @@
               @click="router.push(item.to)"
             >
               <span class="db-act-time">
-                <span class="dialog-title-text">{{ formatFullDayDate(item.at) }}</span>
-                <span class="db-soft text-muted-themed">{{ formatTime(item.at) }}</span>
+                <span class="dialog-title-text">{{
+                  formatFullDayDate(item.at)
+                }}</span>
+                <span class="db-soft text-muted-themed">{{
+                  formatTime(item.at)
+                }}</span>
               </span>
               <span class="db-act-text text-muted-themed">{{ item.text }}</span>
               <span class="db-act-user">
@@ -249,7 +314,9 @@
                   size="16px"
                   :class="`db-act-icon--${item.kind}`"
                 />
-                <span class="db-act-name dialog-title-text">{{ item.who }}</span>
+                <span class="db-act-name dialog-title-text">{{
+                  item.who
+                }}</span>
               </span>
               <q-icon name="o_chevron_right" size="20px" class="db-row-arrow" />
             </button>
@@ -380,7 +447,9 @@ const actions = ref(null)
 
 const userName = (() => {
   try {
-    return JSON.parse(localStorage.getItem('auth_user') || '{}').full_name || 'Admin'
+    return (
+      JSON.parse(localStorage.getItem('auth_user') || '{}').full_name || 'Admin'
+    )
   } catch {
     return 'Admin'
   }
@@ -432,9 +501,10 @@ const formatFullDayDate = value => {
 
   // Local API already uses Philippine local time.
   // Production API returns UTC without timezone information.
-  const date = window.location.hostname === 'localhost'
-    ? new Date(raw)
-    : new Date(raw.replace(' ', 'T') + 'Z')
+  const date =
+    window.location.hostname === 'localhost'
+      ? new Date(raw)
+      : new Date(raw.replace(' ', 'T') + 'Z')
 
   if (Number.isNaN(date.getTime())) return ''
 
@@ -459,9 +529,10 @@ const formatTime = value => {
 
   // Local API already uses Philippine local time.
   // Production API returns UTC without timezone information.
-  const date = window.location.hostname === 'localhost'
-    ? new Date(raw)
-    : new Date(raw.replace(' ', 'T') + 'Z')
+  const date =
+    window.location.hostname === 'localhost'
+      ? new Date(raw)
+      : new Date(raw.replace(' ', 'T') + 'Z')
 
   return Number.isNaN(date.getTime())
     ? ''
@@ -508,8 +579,12 @@ const signupTimes = computed(() =>
 )
 
 const weekStart = computed(() => loadedAt.value.getTime() - 7 * DAY)
-const newVendors = computed(() => approvedTimes.value.filter(t => t > weekStart.value).length)
-const newConsumers = computed(() => signupTimes.value.filter(t => t > weekStart.value).length)
+const newVendors = computed(
+  () => approvedTimes.value.filter(t => t > weekStart.value).length
+)
+const newConsumers = computed(
+  () => signupTimes.value.filter(t => t > weekStart.value).length
+)
 
 const kpis = computed(() => [
   {
@@ -749,7 +824,8 @@ const activity = computed(() => {
   return items.sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 5)
 })
 
-const listOf = res => (Array.isArray(res.data) ? res.data : res.data?.data || [])
+const listOf = res =>
+  Array.isArray(res.data) ? res.data : res.data?.data || []
 
 const loadDashboard = async () => {
   try {
@@ -821,8 +897,14 @@ onBeforeUnmount(() => clearInterval(clockTimer))
    ANIMATIONS
 ========================================================= */
 @keyframes slideFadeUp {
-  0% { opacity: 0; transform: translateY(20px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-slide-up {
@@ -831,17 +913,25 @@ onBeforeUnmount(() => clearInterval(clockTimer))
 }
 
 /* TYPOGRAPHY OVERRIDES */
-.text-muted-themed { color: var(--c-muted, #64748b); }
-.dialog-title-text { color: var(--c-text, #1e293b); }
+.text-muted-themed {
+  color: var(--c-muted, #64748b);
+}
+.dialog-title-text {
+  color: var(--c-text, #1e293b);
+}
 
 /* DEEP DARK MODE OVERRIDES FOR ADMIN TEXTS */
 :deep(.body--dark) .text-muted-themed,
-:global(.admin-layout--dark) .text-muted-themed { color: #94a3b8 !important; }
+:global(.admin-layout--dark) .text-muted-themed {
+  color: #94a3b8 !important;
+}
 
 :deep(.body--dark) .dialog-title-text,
 :deep(.body--dark) .db-strong,
 :global(.admin-layout--dark) .dialog-title-text,
-:global(.admin-layout--dark) .db-strong { color: #f8fafc !important; }
+:global(.admin-layout--dark) .db-strong {
+  color: #f8fafc !important;
+}
 
 /* ------------------------------------------------------ */
 
@@ -894,7 +984,10 @@ onBeforeUnmount(() => clearInterval(clockTimer))
 
 .db-kpi--link {
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .db-kpi--link:hover {
@@ -969,7 +1062,9 @@ onBeforeUnmount(() => clearInterval(clockTimer))
 
 .db-kpi-go {
   color: var(--c-border-strong);
-  transition: color 0.15s, transform 0.2s;
+  transition:
+    color 0.15s,
+    transform 0.2s;
 }
 
 .db-kpi--link:hover .db-kpi-go {
@@ -1122,7 +1217,9 @@ onBeforeUnmount(() => clearInterval(clockTimer))
 
 .db-row-arrow {
   color: var(--c-border-strong);
-  transition: color 0.15s, transform 0.2s;
+  transition:
+    color 0.15s,
+    transform 0.2s;
 }
 
 .db-row:hover .db-row-arrow {

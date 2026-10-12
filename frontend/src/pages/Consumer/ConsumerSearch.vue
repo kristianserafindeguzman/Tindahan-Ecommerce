@@ -1,14 +1,14 @@
 <template>
   <q-page class="storefront-page">
-
     <SiteHeader />
 
     <!-- MAIN CONTENT -->
     <div class="page-content">
-
       <div class="page-header-row">
         <div class="page-header-text">
-          <h1 class="page-title">{{ query ? t('Search Results') : t('Search') }}</h1>
+          <h1 class="page-title">{{
+            query ? t('Search Results') : t('Search')
+          }}</h1>
           <p class="page-subtitle">{{ subtitleText }}</p>
         </div>
 
@@ -50,10 +50,14 @@
       <!-- EMPTY QUERY STATE -->
       <div v-if="!query" class="search-prompt">
         <q-icon name="o_search" size="40px" class="search-prompt-icon" />
-        <p class="search-prompt-text">{{ t('Start typing to search products and stores.') }}</p>
+        <p class="search-prompt-text">{{
+          t('Start typing to search products and stores.')
+        }}</p>
 
         <div v-if="recentSearches.length" class="search-prompt-recent">
-          <div class="search-prompt-recent-title">{{ t('Recent Searches') }}</div>
+          <div class="search-prompt-recent-title">{{
+            t('Recent Searches')
+          }}</div>
           <div class="search-prompt-recent-chips">
             <q-chip
               v-for="term in recentSearches"
@@ -70,187 +74,264 @@
       </div>
 
       <template v-else>
-      <div class="search-layout">
-      <div class="search-main">
+        <div class="search-layout">
+          <div class="search-main">
+            <template v-if="isSearching || hasAnyResults">
+              <!-- Store matches come first, because a typed store name means the user wants to go there. -->
+              <template v-if="showStoreStrip">
+                <!-- No heading, per design: the row survives only to carry the expander. -->
+                <div
+                  v-if="matchedStores.length > STORE_STRIP_MAX"
+                  class="results-section-header results-section-header--bare"
+                >
+                  <button
+                    v-if="matchedStores.length > STORE_STRIP_MAX"
+                    type="button"
+                    class="section-link"
+                    @click="storesExpanded = !storesExpanded"
+                  >
+                    {{
+                      storesExpanded
+                        ? t('Show less')
+                        : t('Show all {count} stores', {
+                            count: matchedStores.length
+                          })
+                    }}
+                  </button>
+                </div>
 
-        <template v-if="isSearching || hasAnyResults">
+                <div v-if="isSearching" class="stores-grid">
+                  <CardSkeleton v-for="n in 4" :key="n" variant="store" />
+                </div>
 
-          <!-- Store matches come first, because a typed store name means the user wants to go there. -->
-          <template v-if="showStoreStrip">
-            <!-- No heading, per design: the row survives only to carry the expander. -->
-            <div v-if="matchedStores.length > STORE_STRIP_MAX" class="results-section-header results-section-header--bare">
-              <button
-                v-if="matchedStores.length > STORE_STRIP_MAX"
-                type="button"
-                class="section-link"
-                @click="storesExpanded = !storesExpanded"
+                <!-- Stores show as compact rows that read as places to go, switching to full cards once the list is expanded. -->
+                <div v-else-if="storesExpanded" class="stores-grid">
+                  <StoreCard
+                    v-for="store in matchedStores"
+                    :key="store.id"
+                    :store="store"
+                    :highlight-query="query"
+                  />
+                </div>
+
+                <div v-else class="store-rows">
+                  <button
+                    v-for="store in strippedStores"
+                    :key="store.id"
+                    type="button"
+                    class="store-row"
+                    @click="goToStore(store)"
+                  >
+                    <span class="store-row-image">
+                      <img
+                        v-if="store.image"
+                        :src="store.image"
+                        :alt="store.name"
+                      />
+                      <q-icon v-else name="o_storefront" size="20px" />
+                    </span>
+
+                    <span class="store-row-body">
+                      <span class="store-row-name">
+                        <template
+                          v-for="(part, i) in storeNameParts(store)"
+                          :key="i"
+                        >
+                          <mark v-if="part.match" class="highlight-mark">{{
+                            part.text
+                          }}</mark>
+                          <template v-else>{{ part.text }}</template>
+                        </template>
+                      </span>
+                      <span class="store-row-meta">
+                        <span
+                          class="store-row-status"
+                          :class="{ 'store-row-status--closed': !store.isOpen }"
+                        >
+                          <span
+                            class="store-row-dot"
+                            :class="{ 'store-row-dot--closed': !store.isOpen }"
+                          />
+                          {{ store.isOpen ? t('Open') : t('Closed') }}
+                        </span>
+                        <span
+                          v-if="storeMetaText(store)"
+                          class="store-row-sub"
+                          >{{ storeMetaText(store) }}</span
+                        >
+                      </span>
+                    </span>
+
+                    <q-icon
+                      name="o_chevron_right"
+                      size="20px"
+                      class="store-row-chevron"
+                    />
+                  </button>
+                </div>
+              </template>
+
+              <!-- PRODUCTS -->
+              <template v-if="showProductGrid">
+                <div v-if="isSearching" class="products-grid">
+                  <CardSkeleton v-for="n in 6" :key="n" />
+                </div>
+
+                <!-- Infinite scroll rather than pages, since a search can return 200+ products, with QInfiniteScroll handling the sentinel. -->
+                <q-infinite-scroll
+                  v-else
+                  :offset="300"
+                  :disable="allProductsShown"
+                  @load="loadMoreProducts"
+                >
+                  <div class="products-grid">
+                    <ProductCard
+                      v-for="product in visibleProducts"
+                      :key="product.id"
+                      :product="product"
+                      :highlight-query="query"
+                      @add-to-cart="handleAddToCart"
+                      @view-product="openProductModal"
+                    />
+                  </div>
+
+                  <template #loading>
+                    <div class="products-grid infinite-loading">
+                      <CardSkeleton v-for="n in 4" :key="`more-${n}`" />
+                    </div>
+                  </template>
+                </q-infinite-scroll>
+
+                <p
+                  v-if="allProductsShown && filteredProducts.length > PAGE_SIZE"
+                  class="results-end"
+                >
+                  {{
+                    t("That's all {count} results.", {
+                      count: filteredProducts.length
+                    })
+                  }}
+                </p>
+              </template>
+
+              <!-- Stores can survive a price filter that hides every product, so the page still has results; say what's missing. -->
+              <div
+                v-if="!isSearching && !hasProducts && queryProducts.length"
+                class="results-filtered-note"
               >
-                {{ storesExpanded ? t('Show less') : t('Show all {count} stores', { count: matchedStores.length }) }}
-              </button>
-            </div>
+                <q-icon name="o_filter_alt_off" size="18px" />
+                <span>{{ t('No products match your filters.') }}</span>
+                <button
+                  type="button"
+                  class="section-link"
+                  @click="clearFilters"
+                  >{{ t('Clear filters') }}</button
+                >
+              </div>
 
-            <div v-if="isSearching" class="stores-grid">
-              <CardSkeleton v-for="n in 4" :key="n" variant="store" />
-            </div>
+              <!-- RELATED PRODUCTS (fills out the page when the search itself only turned up 1-2 results) -->
+              <div
+                v-if="!isSearching && showRelatedProducts"
+                class="related-section"
+              >
+                <h2 class="results-section-title">{{
+                  t('You May Also Like')
+                }}</h2>
+                <div class="products-grid">
+                  <ProductCard
+                    v-for="product in relatedProducts"
+                    :key="`related-${product.id}`"
+                    :product="product"
+                    @add-to-cart="handleAddToCart"
+                    @view-product="openProductModal"
+                  />
+                </div>
+              </div>
+            </template>
 
-            <!-- Stores show as compact rows that read as places to go, switching to full cards once the list is expanded. -->
-            <div v-else-if="storesExpanded" class="stores-grid">
-              <StoreCard
-                v-for="store in matchedStores"
-                :key="store.id"
-                :store="store"
-                :highlight-query="query"
+            <!-- The search matched, but the filters hid every result — a different keyword would not help. -->
+            <div v-else-if="hasQueryMatches" class="results-empty">
+              <q-icon
+                name="o_filter_alt_off"
+                size="32px"
+                class="results-empty-icon"
+              />
+              <p class="results-empty-title">{{
+                t('No results match your filters.')
+              }}</p>
+              <q-btn
+                outline
+                no-caps
+                :label="t('Clear filters')"
+                class="results-empty-btn"
+                @click="clearFilters"
               />
             </div>
 
-            <div v-else class="store-rows">
-              <button
-                v-for="store in strippedStores"
-                :key="store.id"
-                type="button"
-                class="store-row"
-                @click="goToStore(store)"
-              >
-                <span class="store-row-image">
-                  <img v-if="store.image" :src="store.image" :alt="store.name" />
-                  <q-icon v-else name="o_storefront" size="20px" />
-                </span>
-
-                <span class="store-row-body">
-                  <span class="store-row-name">
-                    <template v-for="(part, i) in storeNameParts(store)" :key="i">
-                      <mark v-if="part.match" class="highlight-mark">{{ part.text }}</mark>
-                      <template v-else>{{ part.text }}</template>
-                    </template>
-                  </span>
-                  <span class="store-row-meta">
-                    <span class="store-row-status" :class="{ 'store-row-status--closed': !store.isOpen }">
-                      <span class="store-row-dot" :class="{ 'store-row-dot--closed': !store.isOpen }" />
-                      {{ store.isOpen ? t('Open') : t('Closed') }}
-                    </span>
-                    <span v-if="storeMetaText(store)" class="store-row-sub">{{ storeMetaText(store) }}</span>
-                  </span>
-                </span>
-
-                <q-icon name="o_chevron_right" size="20px" class="store-row-chevron" />
-              </button>
-            </div>
-          </template>
-
-          <!-- PRODUCTS -->
-          <template v-if="showProductGrid">
-            <div v-if="isSearching" class="products-grid">
-              <CardSkeleton v-for="n in 6" :key="n" />
-            </div>
-
-            <!-- Infinite scroll rather than pages, since a search can return 200+ products, with QInfiniteScroll handling the sentinel. -->
-            <q-infinite-scroll v-else :offset="300" :disable="allProductsShown" @load="loadMoreProducts">
-              <div class="products-grid">
-                <ProductCard
-                  v-for="product in visibleProducts"
-                  :key="product.id"
-                  :product="product"
-                  :highlight-query="query"
-                  @add-to-cart="handleAddToCart"
-                  @view-product="openProductModal"
-                />
-              </div>
-
-              <template #loading>
-                <div class="products-grid infinite-loading">
-                  <CardSkeleton v-for="n in 4" :key="`more-${n}`" />
-                </div>
-              </template>
-            </q-infinite-scroll>
-
-            <p v-if="allProductsShown && filteredProducts.length > PAGE_SIZE" class="results-end">
-              {{ t('That\'s all {count} results.', { count: filteredProducts.length }) }}
-            </p>
-          </template>
-
-          <!-- Stores can survive a price filter that hides every product, so the page still has results; say what's missing. -->
-          <div v-if="!isSearching && !hasProducts && queryProducts.length" class="results-filtered-note">
-            <q-icon name="o_filter_alt_off" size="18px" />
-            <span>{{ t('No products match your filters.') }}</span>
-            <button type="button" class="section-link" @click="clearFilters">{{ t('Clear filters') }}</button>
-          </div>
-
-          <!-- RELATED PRODUCTS (fills out the page when the search itself only turned up 1-2 results) -->
-          <div v-if="!isSearching && showRelatedProducts" class="related-section">
-            <h2 class="results-section-title">{{ t('You May Also Like') }}</h2>
-            <div class="products-grid">
-              <ProductCard v-for="product in relatedProducts" :key="`related-${product.id}`" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
+            <!-- EMPTY RESULTS STATE -->
+            <div v-else class="results-empty">
+              <q-icon
+                name="o_search_off"
+                size="32px"
+                class="results-empty-icon"
+              />
+              <p class="results-empty-title">{{
+                t('No results found for "{query}".', { query })
+              }}</p>
+              <p class="results-empty-text">{{
+                t('Try searching for a different keyword.')
+              }}</p>
             </div>
           </div>
-        </template>
 
-        <!-- The search matched, but the filters hid every result — a different keyword would not help. -->
-        <div v-else-if="hasQueryMatches" class="results-empty">
-          <q-icon name="o_filter_alt_off" size="32px" class="results-empty-icon" />
-          <p class="results-empty-title">{{ t('No results match your filters.') }}</p>
-          <q-btn outline no-caps :label="t('Clear filters')" class="results-empty-btn" @click="clearFilters" />
+          <!-- FILTERS SIDEBAR (desktop), same component and treatment as the Products page -->
+          <aside v-if="filtersOpen && !isMobileFilters" class="filters-panel">
+            <ProductFilters
+              v-model:search="filterSearch"
+              v-model:max-distance="maxDistance"
+              v-model:price-min="priceMin"
+              v-model:price-max="priceMax"
+              v-model:sort="sortBy"
+              :distance-options="DISTANCE_OPTIONS"
+              :distance-disabled="!hasDistanceData"
+              :sort-options="sortOptions"
+              hide-category
+              hide-store
+              hide-in-stock
+              @close="filtersOpen = false"
+              @clear="clearFilters"
+            />
+          </aside>
         </div>
 
-        <!-- EMPTY RESULTS STATE -->
-        <div v-else class="results-empty">
-          <q-icon name="o_search_off" size="32px" class="results-empty-icon" />
-          <p class="results-empty-title">{{ t('No results found for "{query}".', { query }) }}</p>
-          <p class="results-empty-text">{{ t('Try searching for a different keyword.') }}</p>
-        </div>
-
-      </div>
-
-      <!-- FILTERS SIDEBAR (desktop), same component and treatment as the Products page -->
-      <aside v-if="filtersOpen && !isMobileFilters" class="filters-panel">
-        <ProductFilters
-          v-model:search="filterSearch"
-          v-model:max-distance="maxDistance"
-          v-model:price-min="priceMin"
-          v-model:price-max="priceMax"
-          v-model:sort="sortBy"
-          :distance-options="DISTANCE_OPTIONS"
-          :distance-disabled="!hasDistanceData"
-          :sort-options="sortOptions"
-          hide-category
-          hide-store
-          hide-in-stock
-          @close="filtersOpen = false"
-          @clear="clearFilters"
-        />
-      </aside>
-      </div>
-
-      <!-- FILTERS SHEET (below the sidebar breakpoint) -->
-      <q-dialog v-model="mobileFiltersOpen" position="bottom">
-        <q-card class="filters-dialog-card filters-dialog-card-sheet">
-          <div class="filters-drag-handle" />
-          <ProductFilters
-            v-model:search="filterSearch"
-            v-model:max-distance="maxDistance"
-            v-model:price-min="priceMin"
-            v-model:price-max="priceMax"
-            v-model:sort="sortBy"
-            :distance-options="DISTANCE_OPTIONS"
-            :distance-disabled="!hasDistanceData"
-            :sort-options="sortOptions"
-            hide-category
-            hide-store
-            hide-in-stock
-            is-sheet
-            @close="filtersOpen = false"
-            @clear="clearFilters"
-          />
-        </q-card>
-      </q-dialog>
-
+        <!-- FILTERS SHEET (below the sidebar breakpoint) -->
+        <q-dialog v-model="mobileFiltersOpen" position="bottom">
+          <q-card class="filters-dialog-card filters-dialog-card-sheet">
+            <div class="filters-drag-handle" />
+            <ProductFilters
+              v-model:search="filterSearch"
+              v-model:max-distance="maxDistance"
+              v-model:price-min="priceMin"
+              v-model:price-max="priceMax"
+              v-model:sort="sortBy"
+              :distance-options="DISTANCE_OPTIONS"
+              :distance-disabled="!hasDistanceData"
+              :sort-options="sortOptions"
+              hide-category
+              hide-store
+              hide-in-stock
+              is-sheet
+              @close="filtersOpen = false"
+              @clear="clearFilters"
+            />
+          </q-card>
+        </q-dialog>
       </template>
-
     </div>
 
     <SiteFooter />
 
     <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
-
   </q-page>
 </template>
 
@@ -291,7 +372,7 @@ const { products, fetchProducts } = useProducts()
 const { stores, fetchStores } = useStores()
 const { addToCart } = useCart()
 
-const handleAddToCart = async (product) => {
+const handleAddToCart = async product => {
   if (!isLoggedIn.value) {
     router.push('/login')
     return
@@ -299,16 +380,22 @@ const handleAddToCart = async (product) => {
 
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
+    $q.notify({
+      type: 'positive',
+      message: t('{name} added to cart.', { name: product.name })
+    })
   } catch (error) {
-    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
+    $q.notify({
+      type: 'negative',
+      message: t(error.response?.data?.message || 'Failed to add to cart.')
+    })
   }
 }
 
 const showProductModal = ref(false)
 const selectedProduct = ref(null)
 
-const openProductModal = (product) => {
+const openProductModal = product => {
   selectedProduct.value = product
   showProductModal.value = true
 }
@@ -323,7 +410,10 @@ onMounted(() => {
 const matchedCategory = computed(() => {
   const q = query.value.toLowerCase()
   if (!q) return null
-  return categories.value.find((category) => category.label.toLowerCase() === q) || null
+  return (
+    categories.value.find(category => category.label.toLowerCase() === q) ||
+    null
+  )
 })
 
 // What the query alone matches, before any filter — kept separate so the page can tell "nothing matched"
@@ -332,7 +422,7 @@ const queryProducts = computed(() => {
   const q = query.value.toLowerCase()
   const categoryMatch = matchedCategory.value
 
-  return products.value.filter((product) => {
+  return products.value.filter(product => {
     if (categoryMatch) return product.category === categoryMatch.label
     return q ? product.name.toLowerCase().includes(q) : false
   })
@@ -341,10 +431,12 @@ const queryProducts = computed(() => {
 const queryStores = computed(() => {
   const q = query.value.toLowerCase()
   if (!q) return []
-  return stores.value.filter((store) => store.name.toLowerCase().includes(q))
+  return stores.value.filter(store => store.name.toLowerCase().includes(q))
 })
 
-const hasQueryMatches = computed(() => queryProducts.value.length > 0 || queryStores.value.length > 0)
+const hasQueryMatches = computed(
+  () => queryProducts.value.length > 0 || queryStores.value.length > 0
+)
 
 /* --------------------------------------------------------------- FILTERS */
 
@@ -368,9 +460,10 @@ const priceMax = ref(null)
 const sortBy = ref('relevance')
 
 // Distances only exist once the consumer has set a location, so without one the distance controls are disabled.
-const hasDistanceData = computed(() =>
-  products.value.some((product) => product.distance_meters != null) ||
-  stores.value.some((store) => store.distance_meters != null)
+const hasDistanceData = computed(
+  () =>
+    products.value.some(product => product.distance_meters != null) ||
+    stores.value.some(store => store.distance_meters != null)
 )
 
 const sortOptions = computed(() => [
@@ -381,35 +474,45 @@ const sortOptions = computed(() => [
 ])
 
 // A cleared number field hands back '' rather than null, which would otherwise count as an active filter.
-const toPrice = (value) => (value === '' || value == null || !Number.isFinite(Number(value)) ? null : Number(value))
+const toPrice = value =>
+  value === '' || value == null || !Number.isFinite(Number(value))
+    ? null
+    : Number(value)
 
 const minPrice = computed(() => toPrice(priceMin.value))
 const maxPrice = computed(() => toPrice(priceMax.value))
 const distanceLimit = computed(() =>
-  hasDistanceData.value && maxDistance.value !== ANY_DISTANCE ? maxDistance.value : null
+  hasDistanceData.value && maxDistance.value !== ANY_DISTANCE
+    ? maxDistance.value
+    : null
 )
 
-const hasActiveFilters = computed(() =>
-  !!filterSearch.value?.trim() ||
-  distanceLimit.value != null ||
-  minPrice.value != null ||
-  maxPrice.value != null ||
-  sortBy.value !== 'relevance'
+const hasActiveFilters = computed(
+  () =>
+    !!filterSearch.value?.trim() ||
+    distanceLimit.value != null ||
+    minPrice.value != null ||
+    maxPrice.value != null ||
+    sortBy.value !== 'relevance'
 )
 
 // A result with no known distance cannot be shown to be within range, so a distance limit excludes it.
-const withinDistance = (item) =>
-  distanceLimit.value == null || (item.distance_meters != null && item.distance_meters <= distanceLimit.value)
+const withinDistance = item =>
+  distanceLimit.value == null ||
+  (item.distance_meters != null && item.distance_meters <= distanceLimit.value)
 
 // Unknown distances sort last rather than first.
-const byDistance = (a, b) => (a.distance_meters ?? Infinity) - (b.distance_meters ?? Infinity)
+const byDistance = (a, b) =>
+  (a.distance_meters ?? Infinity) - (b.distance_meters ?? Infinity)
 
 // Below this width the sidebar doesn't fit, matching the Products page breakpoint.
 const isMobileFilters = computed(() => $q.screen.width < 900)
 
 const mobileFiltersOpen = computed({
   get: () => filtersOpen.value && isMobileFilters.value,
-  set: (val) => { filtersOpen.value = val }
+  set: val => {
+    filtersOpen.value = val
+  }
 })
 
 const clearFilters = () => {
@@ -422,10 +525,16 @@ const clearFilters = () => {
 
 const filteredProducts = computed(() => {
   const keyword = (filterSearch.value || '').trim().toLowerCase()
-  const list = queryProducts.value.filter((product) => {
-    if (keyword && ![product.name, product.store].some(name =>
-      String(name || '').toLowerCase().includes(keyword)
-    )) return false
+  const list = queryProducts.value.filter(product => {
+    if (
+      keyword &&
+      ![product.name, product.store].some(name =>
+        String(name || '')
+          .toLowerCase()
+          .includes(keyword)
+      )
+    )
+      return false
     if (!withinDistance(product)) return false
     if (minPrice.value != null && product.price < minPrice.value) return false
     if (maxPrice.value != null && product.price > maxPrice.value) return false
@@ -433,15 +542,19 @@ const filteredProducts = computed(() => {
   })
 
   if (sortBy.value === 'nearest') return [...list].sort(byDistance)
-  if (sortBy.value === 'price_asc') return [...list].sort((a, b) => a.price - b.price)
-  if (sortBy.value === 'price_desc') return [...list].sort((a, b) => b.price - a.price)
+  if (sortBy.value === 'price_asc')
+    return [...list].sort((a, b) => a.price - b.price)
+  if (sortBy.value === 'price_desc')
+    return [...list].sort((a, b) => b.price - a.price)
   return list
 })
 
 // Store rows match names and distance; price filters apply only to products.
 const matchedStores = computed(() => {
   const keyword = (filterSearch.value || '').trim().toLowerCase()
-  const list = queryStores.value.filter(store => withinDistance(store) && store.name.toLowerCase().includes(keyword))
+  const list = queryStores.value.filter(
+    store => withinDistance(store) && store.name.toLowerCase().includes(keyword)
+  )
   return sortBy.value === 'nearest' ? [...list].sort(byDistance) : list
 })
 
@@ -457,33 +570,45 @@ const STORE_STRIP_MAX = 3
 const storesExpanded = ref(false)
 
 // A new query invalidates the expanded state.
-watch(query, () => { storesExpanded.value = false })
+watch(query, () => {
+  storesExpanded.value = false
+})
 
 const showStoreStrip = computed(() => isSearching.value || hasStores.value)
 const showProductGrid = computed(() => isSearching.value || hasProducts.value)
 
 const strippedStores = computed(() =>
-  storesExpanded.value ? matchedStores.value : matchedStores.value.slice(0, STORE_STRIP_MAX)
+  storesExpanded.value
+    ? matchedStores.value
+    : matchedStores.value.slice(0, STORE_STRIP_MAX)
 )
 
-const storeNameParts = (store) => splitHighlightParts(store.name, query.value)
+const storeNameParts = store => splitHighlightParts(store.name, query.value)
 
-const storeMetaText = (store) => {
+const storeMetaText = store => {
   const parts = []
-  if (store.distance_meters != null) parts.push(formatDistance(store.distance_meters))
+  if (store.distance_meters != null)
+    parts.push(formatDistance(store.distance_meters))
   if (store.address) parts.push(store.address)
   return parts.join(' · ')
 }
 
-const goToStore = (store) => router.push(`/consumer/stores/${store.slug || store.id}`)
+const goToStore = store =>
+  router.push(`/consumer/stores/${store.slug || store.id}`)
 
 // The page subtitle reports the query and its total result count.
 const subtitleText = computed(() => {
   if (!query.value) return t('Search for products and stores near you.')
-  if (isSearching.value) return t('Searching for "{query}"…', { query: query.value })
+  if (isSearching.value)
+    return t('Searching for "{query}"…', { query: query.value })
 
   const total = filteredProducts.value.length + matchedStores.value.length
-  return t(total === 1 ? 'Showing {count} result for "{query}".' : 'Showing {count} results for "{query}".', { count: total, query: query.value })
+  return t(
+    total === 1
+      ? 'Showing {count} result for "{query}".'
+      : 'Showing {count} results for "{query}".',
+    { count: total, query: query.value }
+  )
 })
 
 // Shows for any non-empty search — zero results gets its own empty state instead.
@@ -494,12 +619,14 @@ const showRelatedProducts = computed(() => {
 
 const relatedProducts = computed(() => {
   if (!showRelatedProducts.value) return []
-  const shownIds = new Set(filteredProducts.value.map((p) => p.id))
+  const shownIds = new Set(filteredProducts.value.map(p => p.id))
   const preferredCategory = filteredProducts.value[0]?.category
-  const pool = products.value.filter((p) => !shownIds.has(p.id))
-  const sameCategory = preferredCategory ? pool.filter((p) => p.category === preferredCategory) : []
-  const sameCategoryIds = new Set(sameCategory.map((p) => p.id))
-  const rest = pool.filter((p) => !sameCategoryIds.has(p.id))
+  const pool = products.value.filter(p => !shownIds.has(p.id))
+  const sameCategory = preferredCategory
+    ? pool.filter(p => p.category === preferredCategory)
+    : []
+  const sameCategoryIds = new Set(sameCategory.map(p => p.id))
+  const rest = pool.filter(p => !sameCategoryIds.has(p.id))
   return [...sameCategory, ...rest].slice(0, 6)
 })
 
@@ -508,8 +635,12 @@ const PAGE_SIZE = 12
 
 const visibleCount = ref(PAGE_SIZE)
 
-const visibleProducts = computed(() => filteredProducts.value.slice(0, visibleCount.value))
-const allProductsShown = computed(() => visibleCount.value >= filteredProducts.value.length)
+const visibleProducts = computed(() =>
+  filteredProducts.value.slice(0, visibleCount.value)
+)
+const allProductsShown = computed(
+  () => visibleCount.value >= filteredProducts.value.length
+)
 
 // QInfiniteScroll fires this as its sentinel scrolls into view; done(true) retires it.
 const loadMoreProducts = (index, done) => {
@@ -518,21 +649,29 @@ const loadMoreProducts = (index, done) => {
 }
 
 // A new result set starts from the top again, otherwise narrowing the search would keep the previous scroll depth.
-watch(filteredProducts, () => { visibleCount.value = PAGE_SIZE })
+watch(filteredProducts, () => {
+  visibleCount.value = PAGE_SIZE
+})
 
 // Brief simulated delay whenever the search term changes, so the UI has a visible "searching" state to show.
 const isSearching = ref(false)
 let loadingTimer = null
 
-watch(query, () => {
-  clearTimeout(loadingTimer)
-  if (!query.value) {
-    isSearching.value = false
-    return
-  }
-  isSearching.value = true
-  loadingTimer = setTimeout(() => { isSearching.value = false }, 350)
-}, { immediate: true })
+watch(
+  query,
+  () => {
+    clearTimeout(loadingTimer)
+    if (!query.value) {
+      isSearching.value = false
+      return
+    }
+    isSearching.value = true
+    loadingTimer = setTimeout(() => {
+      isSearching.value = false
+    }, 350)
+  },
+  { immediate: true }
+)
 
 const RECENT_SEARCHES_KEY = 'recent_searches'
 
@@ -547,7 +686,7 @@ const recentSearches = computed(() => {
 
 // Logged here as well as in the header, because this chip starts a search the header's submit
 // path never sees — the route watcher only syncs the input, it does not record anything.
-const goToRecentSearch = (term) => {
+const goToRecentSearch = term => {
   router.push({ path: '/consumer/search', query: { q: term } })
   logSearch(term)
 }
@@ -600,8 +739,14 @@ const goToRecentSearch = (term) => {
 }
 
 @keyframes search-fade-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -684,7 +829,9 @@ const goToRecentSearch = (term) => {
   font-size: var(--fs-sm);
   font-weight: 500;
 
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .filters-toggle-btn :deep(.q-focus-helper) {
@@ -858,7 +1005,9 @@ const goToRecentSearch = (term) => {
 
   font-size: var(--fs-sm);
 
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 .recent-chip:hover {
@@ -892,7 +1041,10 @@ const goToRecentSearch = (term) => {
 
   cursor: pointer;
 
-  transition: border-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .store-row:hover {

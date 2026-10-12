@@ -21,9 +21,30 @@
           </div>
 
           <div class="sm-map-controls">
-            <q-btn round unelevated class="sm-map-btn" icon="o_add" :aria-label="t('zoomIn')" @click="map?.zoomIn()" />
-            <q-btn round unelevated class="sm-map-btn" icon="o_remove" :aria-label="t('zoomOut')" @click="map?.zoomOut()" />
-            <q-btn round unelevated class="sm-map-btn" icon="o_fit_screen" :aria-label="t('showAll')" @click="fitAll" />
+            <q-btn
+              round
+              unelevated
+              class="sm-map-btn"
+              icon="o_add"
+              :aria-label="t('zoomIn')"
+              @click="map?.zoomIn()"
+            />
+            <q-btn
+              round
+              unelevated
+              class="sm-map-btn"
+              icon="o_remove"
+              :aria-label="t('zoomOut')"
+              @click="map?.zoomOut()"
+            />
+            <q-btn
+              round
+              unelevated
+              class="sm-map-btn"
+              icon="o_fit_screen"
+              :aria-label="t('showAll')"
+              @click="fitAll"
+            />
           </div>
         </div>
 
@@ -44,7 +65,11 @@
               </template>
             </q-input>
 
-            <div class="vp-chips" role="tablist" :aria-label="t('filterStores')">
+            <div
+              class="vp-chips"
+              role="tablist"
+              :aria-label="t('filterStores')"
+            >
               <button
                 v-for="filter in filters"
                 :key="filter.key"
@@ -56,7 +81,9 @@
                 @click="active = filter.key"
               >
                 {{ filter.label }}
-                <span class="vp-chip-count">{{ loading ? '–' : filter.count }}</span>
+                <span class="vp-chip-count">{{
+                  loading ? '–' : filter.count
+                }}</span>
               </button>
             </div>
 
@@ -79,7 +106,12 @@
 
           <div v-if="loading" class="sm-list">
             <div v-for="n in 5" :key="n" class="sm-row">
-              <q-skeleton type="rect" width="44px" height="44px" class="sm-skel-tile" />
+              <q-skeleton
+                type="rect"
+                width="44px"
+                height="44px"
+                class="sm-skel-tile"
+              />
               <div class="sm-row-info">
                 <q-skeleton type="text" width="60%" />
                 <q-skeleton type="text" width="40%" height="12px" />
@@ -109,7 +141,9 @@
               </span>
               <span
                 class="vp-status"
-                :class="store.isOpen ? 'vp-status--success' : 'vp-status--danger'"
+                :class="
+                  store.isOpen ? 'vp-status--success' : 'vp-status--danger'
+                "
               >
                 {{ store.isOpen ? t('open') : t('closed') }}
               </span>
@@ -122,7 +156,15 @@
 </template>
 
 <script setup>
-import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import {
+  ref,
+  shallowRef,
+  computed,
+  watch,
+  onMounted,
+  onBeforeUnmount,
+  nextTick
+} from 'vue'
 import { useQuasar } from 'quasar'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -139,7 +181,8 @@ const DEFAULT_CENTER = [14.5995, 120.9842]
 const storeMapDict = {
   en: {
     title: 'Store Map',
-    subtitle: 'See where every approved store is and which ones are open right now.',
+    subtitle:
+      'See where every approved store is and which ones are open right now.',
     openNow: 'Open now',
     ofStores: 'of {x} stores',
     open: 'Open',
@@ -161,7 +204,8 @@ const storeMapDict = {
   },
   ph: {
     title: 'Store Map',
-    subtitle: 'Tingnan kung nasaan ang bawat approved store at kung alin ang bukas ngayon.',
+    subtitle:
+      'Tingnan kung nasaan ang bawat approved store at kung alin ang bukas ngayon.',
     openNow: 'Bukas ngayon',
     ofStores: 'sa {x} na stores',
     open: 'Bukas',
@@ -200,53 +244,81 @@ const markersById = {}
 let refreshTimer = null
 let fittedOnce = false
 
-const openCount = computed(() => stores.value.filter(store => store.isOpen).length)
+const openCount = computed(
+  () => stores.value.filter(store => store.isOpen).length
+)
 
 const filters = computed(() => [
   { key: 'all', label: t('all'), count: stores.value.length },
   { key: 'open', label: t('open'), count: openCount.value },
-  { key: 'closed', label: t('closed'), count: stores.value.length - openCount.value }
+  {
+    key: 'closed',
+    label: t('closed'),
+    count: stores.value.length - openCount.value
+  }
 ])
 
 // Open stores first so the list reads as "what is trading now", then by name.
 const visibleStores = computed(() => {
   const q = (search.value || '').trim().toLowerCase()
   return stores.value
-    .filter(store => active.value === 'all' || (active.value === 'open') === store.isOpen)
-    .filter(store => !q || `${store.name} ${store.address || ''}`.toLowerCase().includes(q))
-    .sort((a, b) => Number(b.isOpen) - Number(a.isOpen) || a.name.localeCompare(b.name))
+    .filter(
+      store =>
+        active.value === 'all' || (active.value === 'open') === store.isOpen
+    )
+    .filter(
+      store =>
+        !q || `${store.name} ${store.address || ''}`.toLowerCase().includes(q)
+    )
+    .sort(
+      (a, b) =>
+        Number(b.isOpen) - Number(a.isOpen) || a.name.localeCompare(b.name)
+    )
 })
 
 const updatedLabel = computed(() =>
   updatedAt.value
-    ? updatedAt.value.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    ? updatedAt.value.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit'
+      })
     : '—'
 )
 
 // StoreHoursService sends "Open until 9:00 PM", "Closed till Monday 7:00 AM" or "Closed now".
 const scheduleText = store => {
   const text = store.scheduleStatusText || ''
-  if (text.startsWith('Open until ')) return t('openUntil').replace('{time}', text.slice(11))
-  if (text.startsWith('Closed till ')) return t('closedTill').replace('{time}', text.slice(12))
+  if (text.startsWith('Open until '))
+    return t('openUntil').replace('{time}', text.slice(11))
+  if (text.startsWith('Closed till '))
+    return t('closedTill').replace('{time}', text.slice(12))
   if (store.latitude == null || store.longitude == null) return t('noLocation')
   return store.isOpen ? t('open') : t('closedToday')
 }
 
-const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
-const escapeHtml = value => String(value).replace(/[&<>"']/g, char => HTML_ESCAPES[char])
+const HTML_ESCAPES = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+}
+const escapeHtml = value =>
+  String(value).replace(/[&<>"']/g, char => HTML_ESCAPES[char])
 
-const markerIcon = isOpen => L.divIcon({
-  className: `sm-marker ${isOpen ? 'sm-marker--open' : 'sm-marker--closed'}`,
-  html: `
+const markerIcon = isOpen =>
+  L.divIcon({
+    className: `sm-marker ${isOpen ? 'sm-marker--open' : 'sm-marker--closed'}`,
+    html: `
     <svg width="30" height="40" viewBox="0 0 30 40">
       <path d="M15 0C6.7 0 0 6.7 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.7 23.3 0 15 0z" fill="currentColor" stroke="#ffffff" stroke-width="1.5"/>
       <circle cx="15" cy="15" r="6.5" fill="#ffffff"/>
     </svg>
   `,
-  iconSize: [30, 40],
-  iconAnchor: [15, 40],
-  popupAnchor: [0, -36]
-})
+    iconSize: [30, 40],
+    iconAnchor: [15, 40],
+    popupAnchor: [0, -36]
+  })
 
 const buildPopup = store => {
   const name = escapeHtml(store.name)
@@ -281,7 +353,9 @@ const renderMarkers = () => {
       existing.setIcon(markerIcon(store.isOpen))
       existing.setPopupContent(buildPopup(store))
     } else {
-      markersById[store.id] = L.marker([store.latitude, store.longitude], { icon: markerIcon(store.isOpen) })
+      markersById[store.id] = L.marker([store.latitude, store.longitude], {
+        icon: markerIcon(store.isOpen)
+      })
         .addTo(map.value)
         .bindPopup(buildPopup(store))
     }
@@ -296,7 +370,9 @@ const renderMarkers = () => {
 }
 
 const fitAll = () => {
-  const points = stores.value.filter(hasCoords).map(store => [store.latitude, store.longitude])
+  const points = stores.value
+    .filter(hasCoords)
+    .map(store => [store.latitude, store.longitude])
   if (!map.value || !points.length) return
   map.value.fitBounds(points, { padding: [40, 40], maxZoom: 16 })
 }
@@ -361,7 +437,10 @@ onMounted(async () => {
   await nextTick()
   if (unmounted || !mapEl.value) return
 
-  map.value = L.map(mapEl.value, { zoomControl: false }).setView(DEFAULT_CENTER, 13)
+  map.value = L.map(mapEl.value, { zoomControl: false }).setView(
+    DEFAULT_CENTER,
+    13
+  )
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
     maxZoom: 19
@@ -444,8 +523,12 @@ onBeforeUnmount(() => {
   border-radius: 50%;
 }
 
-.sm-dot--open { background: #16a34a; }
-.sm-dot--closed { background: #94a3b8; }
+.sm-dot--open {
+  background: #16a34a;
+}
+.sm-dot--closed {
+  background: #94a3b8;
+}
 
 .sm-map-controls {
   position: absolute;
@@ -520,12 +603,19 @@ onBeforeUnmount(() => {
 }
 
 @keyframes sm-live {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.45); }
-  50% { box-shadow: 0 0 0 5px rgba(22, 163, 74, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(22, 163, 74, 0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sm-live-dot { animation: none; }
+  .sm-live-dot {
+    animation: none;
+  }
 }
 
 .sm-refresh {
@@ -648,8 +738,12 @@ onBeforeUnmount(() => {
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
 }
 
-.sm-map-wrap :deep(.sm-marker--open) { color: #16a34a; }
-.sm-map-wrap :deep(.sm-marker--closed) { color: #94a3b8; }
+.sm-map-wrap :deep(.sm-marker--open) {
+  color: #16a34a;
+}
+.sm-map-wrap :deep(.sm-marker--closed) {
+  color: #94a3b8;
+}
 
 .sm-map-wrap :deep(.leaflet-popup-content-wrapper) {
   padding: 0;
@@ -693,8 +787,14 @@ onBeforeUnmount(() => {
   font-weight: 700;
 }
 
-.sm-map-wrap :deep(.sm-popup-status--open) { background: #dcfce7; color: #15803d; }
-.sm-map-wrap :deep(.sm-popup-status--closed) { background: #fee2e2; color: #b91c1c; }
+.sm-map-wrap :deep(.sm-popup-status--open) {
+  background: #dcfce7;
+  color: #15803d;
+}
+.sm-map-wrap :deep(.sm-popup-status--closed) {
+  background: #fee2e2;
+  color: #b91c1c;
+}
 
 .sm-map-wrap :deep(.sm-popup-sub) {
   font-size: 12px;

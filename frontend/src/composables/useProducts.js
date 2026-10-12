@@ -14,7 +14,7 @@ const load = async (params, requestId) => {
   try {
     const { data } = await api.get('/products', { params })
     if (requestId !== latestRequest) return
-    products.value = (data || []).map((product) => ({
+    products.value = (data || []).map(product => ({
       id: product.id,
       name: product.name,
       description: product.description,
@@ -42,7 +42,7 @@ export function useProducts() {
   const fetchProducts = () => {
     const lat = localStorage.getItem('consumer_lat')
     const lng = localStorage.getItem('consumer_lng')
-    const params = (lat && lng) ? { lat, lng } : {}
+    const params = lat && lng ? { lat, lng } : {}
     const key = `${lat}|${lng}`
 
     if (inFlight && inFlightKey === key) return inFlight

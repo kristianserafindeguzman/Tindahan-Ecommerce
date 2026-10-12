@@ -1,6 +1,6 @@
 // Distance formatting and measurement, extracted from eight consumer files that each carried an identical copy.
 // Non-breaking spaces keep "7 m" on one line when a long address beside it wraps.
-const keepTogether = (text) => text.replace(/ /g, ' ')
+const keepTogether = text => text.replace(/ /g, ' ')
 
 /** Metres to a short string such as 820 m or 1.4 km, or an empty string for null. */
 export function formatDistance(meters) {
@@ -17,7 +17,10 @@ const WALK_M_PER_MIN = 80 // about 4.8 km/h
 /** Straight-line metres to estimated walking minutes, or null for null. */
 export function estimateTravel(meters) {
   if (meters == null) return null
-  const minutes = Math.max(1, Math.ceil((meters * ROAD_FACTOR) / WALK_M_PER_MIN))
+  const minutes = Math.max(
+    1,
+    Math.ceil((meters * ROAD_FACTOR) / WALK_M_PER_MIN)
+  )
   return { minutes, mode: 'walk' }
 }
 
@@ -29,7 +32,9 @@ export function formatTravelTime(meters) {
 
   const hours = Math.floor(travel.minutes / 60)
   const minutes = travel.minutes % 60
-  return keepTogether(minutes ? `${hours} hr ${minutes} min walk` : `${hours} hr walk`)
+  return keepTogether(
+    minutes ? `${hours} hr ${minutes} min walk` : `${hours} hr walk`
+  )
 }
 
 /** Material icon for walking travel estimates. */
@@ -54,7 +59,7 @@ export function calculateDistanceMeters(lat1, lng1, lat2, lng2) {
   if (a1 === null || o1 === null || a2 === null || o2 === null) return null
 
   const EARTH_RADIUS_M = 6371000
-  const toRad = (deg) => (deg * Math.PI) / 180
+  const toRad = deg => (deg * Math.PI) / 180
 
   const dLat = toRad(a2 - a1)
   const dLng = toRad(o2 - o1)

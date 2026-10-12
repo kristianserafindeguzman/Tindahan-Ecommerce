@@ -11,7 +11,8 @@ export function splitHighlightParts(text, query) {
   const parts = []
   if (index > 0) parts.push({ text: value.slice(0, index), match: false })
   parts.push({ text: value.slice(index, index + q.length), match: true })
-  if (index + q.length < value.length) parts.push({ text: value.slice(index + q.length), match: false })
+  if (index + q.length < value.length)
+    parts.push({ text: value.slice(index + q.length), match: false })
 
   return parts
 }

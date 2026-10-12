@@ -20,7 +20,7 @@ const sweep = () => {
   for (const el of pending) {
     if (el.getBoundingClientRect().top < viewportHeight) reached.push(el)
   }
-  reached.forEach((el) => el.classList.add(VISIBLE_CLASS))
+  reached.forEach(el => el.classList.add(VISIBLE_CLASS))
 }
 
 const queueSweep = () => {
@@ -39,7 +39,7 @@ const attachSweep = () => {
 export function useReveal() {
   attachSweep()
 
-  const onReveal = (entry) => {
+  const onReveal = entry => {
     if (entry.isIntersecting) {
       entry.target.classList.add(VISIBLE_CLASS)
     }

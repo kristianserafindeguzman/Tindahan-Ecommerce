@@ -158,7 +158,10 @@
 
   cursor: pointer;
 
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 
   &:hover {
     border-color: var(--c-border-strong);
@@ -334,20 +337,56 @@
   font-weight: 700;
   white-space: nowrap;
 
-  &--info { background: var(--c-info-tint); color: var(--c-info); }
-  &--wait { background: var(--c-status-wait-tint); color: var(--c-status-wait); }
-  &--active { background: var(--c-status-active-tint); color: var(--c-status-active); }
-  &--success { background: var(--c-success-tint); color: var(--c-success); }
-  &--danger { background: var(--c-danger-tint); color: var(--c-danger); }
-  &--warning { background: var(--c-warning-tint); color: var(--c-warning); }
-  &--neutral { background: var(--c-surface); color: var(--c-text-3); }
+  &--info {
+    background: var(--c-info-tint);
+    color: var(--c-info);
+  }
+  &--wait {
+    background: var(--c-status-wait-tint);
+    color: var(--c-status-wait);
+  }
+  &--active {
+    background: var(--c-status-active-tint);
+    color: var(--c-status-active);
+  }
+  &--success {
+    background: var(--c-success-tint);
+    color: var(--c-success);
+  }
+  &--danger {
+    background: var(--c-danger-tint);
+    color: var(--c-danger);
+  }
+  &--warning {
+    background: var(--c-warning-tint);
+    color: var(--c-warning);
+  }
+  &--neutral {
+    background: var(--c-surface);
+    color: var(--c-text-3);
+  }
 
   // Order statuses, each with its own colour so no two look alike.
-  &--placed { background: var(--st-placed-bg); color: var(--st-placed); }
-  &--preparing { background: var(--st-preparing-bg); color: var(--st-preparing); }
-  &--ready { background: var(--st-ready-bg); color: var(--st-ready); }
-  &--done { background: var(--st-done-bg); color: var(--st-done); }
-  &--cancelled { background: var(--st-cancelled-bg); color: var(--st-cancelled); }
+  &--placed {
+    background: var(--st-placed-bg);
+    color: var(--st-placed);
+  }
+  &--preparing {
+    background: var(--st-preparing-bg);
+    color: var(--st-preparing);
+  }
+  &--ready {
+    background: var(--st-ready-bg);
+    color: var(--st-ready);
+  }
+  &--done {
+    background: var(--st-done-bg);
+    color: var(--st-done);
+  }
+  &--cancelled {
+    background: var(--st-cancelled-bg);
+    color: var(--st-cancelled);
+  }
 }
 
 // SORTABLE HEADINGS — a heading that sorts its column, with an arrow for the direction.
@@ -534,7 +573,11 @@
 
   border-radius: var(--r-surface);
 
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-brand-tint) 0%,
+    var(--c-brand-tint-2) 100%
+  );
   color: var(--c-brand);
 }
 
@@ -694,19 +737,58 @@
 
 // TONES — the tinted icon tiles and notes, in the dashboard's status colours.
 
-.vp-tone--info { background: var(--c-info-tint); color: var(--c-info); }
-.vp-tone--wait { background: var(--c-status-wait-tint); color: var(--c-status-wait); }
-.vp-tone--active { background: var(--c-status-active-tint); color: var(--c-status-active); }
-.vp-tone--success { background: var(--c-success-tint); color: var(--c-success); }
-.vp-tone--danger { background: var(--c-danger-tint); color: var(--c-danger); }
-.vp-tone--warning { background: var(--c-warning-tint); color: var(--c-warning); }
-.vp-tone--brand { background: var(--c-brand-tint); color: var(--c-brand); }
-.vp-tone--neutral { background: var(--c-surface); color: var(--c-text-3); }
-.vp-tone--placed { background: var(--st-placed-bg); color: var(--st-placed); }
-.vp-tone--preparing { background: var(--st-preparing-bg); color: var(--st-preparing); }
-.vp-tone--ready { background: var(--st-ready-bg); color: var(--st-ready); }
-.vp-tone--done { background: var(--st-done-bg); color: var(--st-done); }
-.vp-tone--cancelled { background: var(--st-cancelled-bg); color: var(--st-cancelled); }
+.vp-tone--info {
+  background: var(--c-info-tint);
+  color: var(--c-info);
+}
+.vp-tone--wait {
+  background: var(--c-status-wait-tint);
+  color: var(--c-status-wait);
+}
+.vp-tone--active {
+  background: var(--c-status-active-tint);
+  color: var(--c-status-active);
+}
+.vp-tone--success {
+  background: var(--c-success-tint);
+  color: var(--c-success);
+}
+.vp-tone--danger {
+  background: var(--c-danger-tint);
+  color: var(--c-danger);
+}
+.vp-tone--warning {
+  background: var(--c-warning-tint);
+  color: var(--c-warning);
+}
+.vp-tone--brand {
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
+}
+.vp-tone--neutral {
+  background: var(--c-surface);
+  color: var(--c-text-3);
+}
+.vp-tone--placed {
+  background: var(--st-placed-bg);
+  color: var(--st-placed);
+}
+.vp-tone--preparing {
+  background: var(--st-preparing-bg);
+  color: var(--st-preparing);
+}
+.vp-tone--ready {
+  background: var(--st-ready-bg);
+  color: var(--st-ready);
+}
+.vp-tone--done {
+  background: var(--st-done-bg);
+  color: var(--st-done);
+}
+.vp-tone--cancelled {
+  background: var(--st-cancelled-bg);
+  color: var(--st-cancelled);
+}
 
 // STAT CARDS — the dashboard's KPI cards, wrapping to fewer columns as space runs out.
 
@@ -1042,18 +1124,38 @@
 
   // A soft fade on whichever side still has chips beyond it, a quiet hint that the row moves; it lifts once that end is reached.
   .vp-chips--more-right {
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+    -webkit-mask-image: linear-gradient(
+      to right,
+      #000 calc(100% - 40px),
+      transparent
+    );
     mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
   }
 
   .vp-chips--more-left {
-    -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent);
+    -webkit-mask-image: linear-gradient(
+      to left,
+      #000 calc(100% - 40px),
+      transparent
+    );
     mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent);
   }
 
   .vp-chips--more-left.vp-chips--more-right {
-    -webkit-mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
-    mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 40px,
+      #000 calc(100% - 40px),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 40px,
+      #000 calc(100% - 40px),
+      transparent
+    );
   }
 
   .vp-stat {

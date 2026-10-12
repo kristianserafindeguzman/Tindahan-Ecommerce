@@ -1,7 +1,11 @@
 <template>
   <div
     class="language-switcher"
-    :class="{ 'language-switcher-compact': compact, 'language-switcher-settings': settings, 'language-switcher-header': header }"
+    :class="{
+      'language-switcher-compact': compact,
+      'language-switcher-settings': settings,
+      'language-switcher-header': header
+    }"
     @click.stop
     @keydown.stop
   >
@@ -13,11 +17,17 @@
       icon="o_language"
       :label="lang === 'en' ? 'EN' : 'FIL'"
       dropdown-icon="o_expand_more"
-      :aria-label="t('Change language') + ': ' + (lang === 'en' ? 'English' : 'Filipino')"
+      :aria-label="
+        t('Change language') + ': ' + (lang === 'en' ? 'English' : 'Filipino')
+      "
       :menu-offset="[0, 8]"
       class="language-header-btn"
     >
-      <q-list class="language-menu" role="group" :aria-label="t('Change language')">
+      <q-list
+        class="language-menu"
+        role="group"
+        :aria-label="t('Change language')"
+      >
         <q-item
           v-for="language in languages"
           :key="language.value"
@@ -29,7 +39,12 @@
         >
           <q-item-section>{{ language.label }}</q-item-section>
           <q-item-section side>
-            <q-icon v-if="lang === language.value" name="o_check" size="18px" class="language-menu-check" />
+            <q-icon
+              v-if="lang === language.value"
+              name="o_check"
+              size="18px"
+              class="language-menu-check"
+            />
           </q-item-section>
         </q-item>
       </q-list>
@@ -70,7 +85,6 @@ const { lang, languages, setLanguage, t } = useConsumerLanguage()
   white-space: nowrap;
 }
 
-
 .language-options {
   width: 100%;
   padding: 3px;
@@ -90,7 +104,10 @@ const { lang, languages, setLanguage, t } = useConsumerLanguage()
   font-size: var(--fs-sm);
   font-weight: 600;
   line-height: 1.2;
-  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
 }
 
 .language-options :deep(.q-btn[aria-pressed='true']) {
@@ -131,7 +148,9 @@ const { lang, languages, setLanguage, t } = useConsumerLanguage()
   border-radius: var(--r-sm);
 }
 
-.language-switcher-settings .language-options :deep(.q-btn[aria-pressed='true']:not(:focus-visible)) {
+.language-switcher-settings
+  .language-options
+  :deep(.q-btn[aria-pressed='true']:not(:focus-visible)) {
   box-shadow: none;
 }
 

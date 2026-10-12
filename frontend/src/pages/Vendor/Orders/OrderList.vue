@@ -1,13 +1,21 @@
 <template>
   <q-page class="vp-page">
     <div class="vp-container">
-
       <div class="vp-header">
         <div>
           <h1 class="vp-title">{{ t('title') }}</h1>
           <p class="vp-subtitle">{{ t('subtitle') }}</p>
         </div>
-        <q-btn outline no-caps color="primary" icon="o_download" :label="t('exportBtn')" class="vp-pill-btn" :loading="isExporting" @click="exportOrders" />
+        <q-btn
+          outline
+          no-caps
+          color="primary"
+          icon="o_download"
+          :label="t('exportBtn')"
+          class="vp-pill-btn"
+          :loading="isExporting"
+          @click="exportOrders"
+        />
       </div>
 
       <div data-tour="ol-list" class="vp-card">
@@ -27,11 +35,19 @@
                 <q-icon name="o_search" size="18px" />
               </template>
             </q-input>
-            <OrderTableFilters v-model="filters" :result-count="filteredOrders.length" />
+            <OrderTableFilters
+              v-model="filters"
+              :result-count="filteredOrders.length"
+            />
           </div>
 
           <!-- Each status is a chip with its count, so the busy ones stand out before they are opened. -->
-          <div data-tour="ol-chips" class="vp-chips" role="tablist" aria-label="Filter orders by status">
+          <div
+            data-tour="ol-chips"
+            class="vp-chips"
+            role="tablist"
+            aria-label="Filter orders by status"
+          >
             <button
               v-for="filter in localizedFilters"
               :key="filter.key"
@@ -51,22 +67,50 @@
         <!-- The filters in use, each removable with one tap. -->
         <div v-if="filterChips.length" class="vp-filter-summary">
           <span class="vp-filter-summary-label">{{ t('filteredBy') }}</span>
-          <button v-for="chip in filterChips" :key="chip.key" type="button" class="vp-filter-chip" :aria-label="`Remove ${chip.label}`" @click="clearFilter(filters, chip.key)">
+          <button
+            v-for="chip in filterChips"
+            :key="chip.key"
+            type="button"
+            class="vp-filter-chip"
+            :aria-label="`Remove ${chip.label}`"
+            @click="clearFilter(filters, chip.key)"
+          >
             {{ chip.label }}
             <q-icon name="o_close" size="14px" />
           </button>
-          <button type="button" class="vp-filter-clear" @click="resetOrderFilters(filters)">{{ t('clearAll') }}</button>
+          <button
+            type="button"
+            class="vp-filter-clear"
+            @click="resetOrderFilters(filters)"
+            >{{ t('clearAll') }}</button
+          >
         </div>
 
-        <SkeletonTable v-if="loading" :columns="SKELETON_COLUMNS" :list="$q.screen.lt.md" />
+        <SkeletonTable
+          v-if="loading"
+          :columns="SKELETON_COLUMNS"
+          :list="$q.screen.lt.md"
+        />
 
         <div v-else-if="!filteredOrders.length" class="vp-empty">
-          <div class="vp-empty-icon"><q-icon name="o_receipt_long" size="24px" /></div>
-          <div class="vp-empty-title">{{ orders.length ? t('noMatchTitle') : t('emptyTitle') }}</div>
+          <div class="vp-empty-icon"
+            ><q-icon name="o_receipt_long" size="24px"
+          /></div>
+          <div class="vp-empty-title">{{
+            orders.length ? t('noMatchTitle') : t('emptyTitle')
+          }}</div>
           <div class="vp-empty-text">
             {{ orders.length ? t('noMatchText') : t('emptyText') }}
           </div>
-          <q-btn v-if="orders.length && filterChips.length" outline no-caps color="primary" :label="t('clearFilters')" class="vp-pill-btn ol-empty-btn" @click="resetOrderFilters(filters)" />
+          <q-btn
+            v-if="orders.length && filterChips.length"
+            outline
+            no-caps
+            color="primary"
+            :label="t('clearFilters')"
+            class="vp-pill-btn ol-empty-btn"
+            @click="resetOrderFilters(filters)"
+          />
         </div>
 
         <!-- A table on wide screens; the Order, Date and Total headings sort their columns. -->
@@ -75,19 +119,43 @@
             <thead>
               <tr>
                 <th class="col-order" :aria-sort="ariaSort('id')">
-                  <button type="button" class="vp-sort" :class="{ 'vp-sort--on': sortDirection(filters.sort, 'id') }" @click="sortBy('id')">
-                    {{ t('colOrder') }} <q-icon :name="sortIcon('id')" size="14px" />
+                  <button
+                    type="button"
+                    class="vp-sort"
+                    :class="{
+                      'vp-sort--on': sortDirection(filters.sort, 'id')
+                    }"
+                    @click="sortBy('id')"
+                  >
+                    {{ t('colOrder') }}
+                    <q-icon :name="sortIcon('id')" size="14px" />
                   </button>
                 </th>
                 <th>{{ t('colCustomer') }}</th>
                 <th class="col-date" :aria-sort="ariaSort('date')">
-                  <button type="button" class="vp-sort" :class="{ 'vp-sort--on': sortDirection(filters.sort, 'date') }" @click="sortBy('date')">
-                    {{ t('colDate') }} <q-icon :name="sortIcon('date')" size="14px" />
+                  <button
+                    type="button"
+                    class="vp-sort"
+                    :class="{
+                      'vp-sort--on': sortDirection(filters.sort, 'date')
+                    }"
+                    @click="sortBy('date')"
+                  >
+                    {{ t('colDate') }}
+                    <q-icon :name="sortIcon('date')" size="14px" />
                   </button>
                 </th>
                 <th class="text-right col-total" :aria-sort="ariaSort('total')">
-                  <button type="button" class="vp-sort" :class="{ 'vp-sort--on': sortDirection(filters.sort, 'total') }" @click="sortBy('total')">
-                    {{ t('colTotal') }} <q-icon :name="sortIcon('total')" size="14px" />
+                  <button
+                    type="button"
+                    class="vp-sort"
+                    :class="{
+                      'vp-sort--on': sortDirection(filters.sort, 'total')
+                    }"
+                    @click="sortBy('total')"
+                  >
+                    {{ t('colTotal') }}
+                    <q-icon :name="sortIcon('total')" size="14px" />
                   </button>
                 </th>
                 <th class="col-status">{{ t('colStatus') }}</th>
@@ -103,14 +171,22 @@
                 @click="goToOrder(order.order_id)"
                 @keydown.enter="goToOrder(order.order_id)"
               >
-                <td><span class="vp-id">#{{ order.order_id }}</span></td>
+                <td
+                  ><span class="vp-id">#{{ order.order_id }}</span></td
+                >
                 <td>
                   <div class="vp-person">
                     <q-avatar size="32px" class="vp-avatar">
-                      <img v-if="order.consumer?.profile_picture_url" :src="order.consumer.profile_picture_url" alt="" />
+                      <img
+                        v-if="order.consumer?.profile_picture_url"
+                        :src="order.consumer.profile_picture_url"
+                        alt=""
+                      />
                       <q-icon v-else name="o_person" size="18px" />
                     </q-avatar>
-                    <span class="vp-name">{{ order.consumer?.full_name || t('unknownCustomer') }}</span>
+                    <span class="vp-name">{{
+                      order.consumer?.full_name || t('unknownCustomer')
+                    }}</span>
                   </div>
                 </td>
                 <td class="vp-muted">
@@ -118,17 +194,39 @@
                   <!-- Only a scheduled order gets the tag, on its own line under the date; ASAP orders read as before. -->
                   <div v-if="order.scheduled_pickup_at" class="ol-pickup-tag">
                     <q-icon name="o_event" size="13px" />
-                    <span class="ol-pickup-text">{{ t('pickupLabel') }} {{ formatPickupSlot(order.scheduled_pickup_at, pickupLocale, { compact: true }) }}</span>
+                    <span class="ol-pickup-text"
+                      >{{ t('pickupLabel') }}
+                      {{
+                        formatPickupSlot(
+                          order.scheduled_pickup_at,
+                          pickupLocale,
+                          { compact: true }
+                        )
+                      }}</span
+                    >
                   </div>
                 </td>
-                <td class="text-right vp-amount">₱{{ formatNumber(order.total_amount) }}</td>
+                <td class="text-right vp-amount"
+                  >₱{{ formatNumber(order.total_amount) }}</td
+                >
                 <td>
-                  <span class="vp-status" :class="`vp-status--${getStatusTone(order.status)}`">
+                  <span
+                    class="vp-status"
+                    :class="`vp-status--${getStatusTone(order.status)}`"
+                  >
                     {{ translateStatus(order.status) }}
                   </span>
                 </td>
                 <td class="text-right">
-                  <q-btn flat round dense icon="o_chevron_right" class="vp-open-btn" :aria-label="`Open order #${order.order_id}`" @click.stop="goToOrder(order.order_id)" />
+                  <q-btn
+                    flat
+                    round
+                    dense
+                    icon="o_chevron_right"
+                    class="vp-open-btn"
+                    :aria-label="`Open order #${order.order_id}`"
+                    @click.stop="goToOrder(order.order_id)"
+                  />
                 </td>
               </tr>
             </tbody>
@@ -137,22 +235,48 @@
 
         <!-- A tappable list on phones, with the total and status on the right; the sort lives in the Filters panel. -->
         <div v-else class="vp-list">
-          <button v-for="order in pagedOrders" :key="order.order_id" type="button" class="vp-list-item" @click="goToOrder(order.order_id)">
+          <button
+            v-for="order in pagedOrders"
+            :key="order.order_id"
+            type="button"
+            class="vp-list-item"
+            @click="goToOrder(order.order_id)"
+          >
             <q-avatar size="38px" class="vp-avatar">
-              <img v-if="order.consumer?.profile_picture_url" :src="order.consumer.profile_picture_url" alt="" />
+              <img
+                v-if="order.consumer?.profile_picture_url"
+                :src="order.consumer.profile_picture_url"
+                alt=""
+              />
               <q-icon v-else name="o_person" size="20px" />
             </q-avatar>
             <div class="vp-list-body">
-              <span class="vp-name">{{ order.consumer?.full_name || t('unknownCustomer') }}</span>
-              <div class="vp-list-meta">#{{ order.order_id }} · {{ formatDate(order.created_at) }}</div>
+              <span class="vp-name">{{
+                order.consumer?.full_name || t('unknownCustomer')
+              }}</span>
+              <div class="vp-list-meta"
+                >#{{ order.order_id }} · {{ formatDate(order.created_at) }}</div
+              >
               <div v-if="order.scheduled_pickup_at" class="ol-pickup-tag">
                 <q-icon name="o_event" size="13px" />
-                <span class="ol-pickup-text">{{ t('pickupLabel') }} {{ formatPickupSlot(order.scheduled_pickup_at, pickupLocale, { compact: true }) }}</span>
+                <span class="ol-pickup-text"
+                  >{{ t('pickupLabel') }}
+                  {{
+                    formatPickupSlot(order.scheduled_pickup_at, pickupLocale, {
+                      compact: true
+                    })
+                  }}</span
+                >
               </div>
             </div>
             <div class="vp-list-side">
-              <span class="vp-amount">₱{{ formatNumber(order.total_amount) }}</span>
-              <span class="vp-status" :class="`vp-status--${getStatusTone(order.status)}`">
+              <span class="vp-amount"
+                >₱{{ formatNumber(order.total_amount) }}</span
+              >
+              <span
+                class="vp-status"
+                :class="`vp-status--${getStatusTone(order.status)}`"
+              >
                 {{ translateStatus(order.status) }}
               </span>
             </div>
@@ -160,14 +284,34 @@
         </div>
 
         <div v-if="!loading && pageCount > 1" class="vp-pager">
-          <span>{{ t('showing') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('of') }} {{ filteredOrders.length }}</span>
+          <span
+            >{{ t('showing') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('of') }}
+            {{ filteredOrders.length }}</span
+          >
           <div class="vp-pager-btns">
-            <q-btn outline no-caps color="primary" icon="o_chevron_left" class="vp-pill-btn" aria-label="Previous page" :disable="page === 1" @click="page--" />
-            <q-btn outline no-caps color="primary" icon="o_chevron_right" class="vp-pill-btn" aria-label="Next page" :disable="page === pageCount" @click="page++" />
+            <q-btn
+              outline
+              no-caps
+              color="primary"
+              icon="o_chevron_left"
+              class="vp-pill-btn"
+              aria-label="Previous page"
+              :disable="page === 1"
+              @click="page--"
+            />
+            <q-btn
+              outline
+              no-caps
+              color="primary"
+              icon="o_chevron_right"
+              class="vp-pill-btn"
+              aria-label="Next page"
+              :disable="page === pageCount"
+              @click="page++"
+            />
           </div>
         </div>
       </div>
-
     </div>
   </q-page>
 </template>
@@ -178,7 +322,15 @@ import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import { statusKey } from '@/utils/orderStatus'
-import { emptyOrderFilters, applyOrderFilters, describeFilters, clearFilter, resetOrderFilters, toggleSort, sortDirection } from '@/utils/orderFilters'
+import {
+  emptyOrderFilters,
+  applyOrderFilters,
+  describeFilters,
+  clearFilter,
+  resetOrderFilters,
+  toggleSort,
+  sortDirection
+} from '@/utils/orderFilters'
 import { useLanguage } from '@/composables/useLanguage'
 import { formatPickupSlot } from '@/utils/pickupSlots'
 import OrderTableFilters from '@/components/vendor/OrderTableFilters.vue'
@@ -257,8 +409,11 @@ const { t, lang } = useLanguage(orderListDict)
 const pickupLocale = computed(() => (lang.value === 'ph' ? 'fil-PH' : 'en-PH'))
 
 // Determines the correct color class for the order status badges
-const getStatusTone = (status) => {
-  const s = String(status || '').toLowerCase().trim().replace(/[\s_-]+/g, '_')
+const getStatusTone = status => {
+  const s = String(status || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[\s_-]+/g, '_')
   if (s.includes('ready')) return 'ready'
   if (s.includes('picked') || s.includes('complete')) return 'done'
   if (s.includes('cancel')) return 'cancelled'
@@ -267,9 +422,12 @@ const getStatusTone = (status) => {
 }
 
 // Directly translates the status string according to specified mappings
-const translateStatus = (status) => {
+const translateStatus = status => {
   if (!status) return ''
-  const key = String(status).toLowerCase().trim().replace(/[\s-]+/g, '_')
+  const key = String(status)
+    .toLowerCase()
+    .trim()
+    .replace(/[\s-]+/g, '_')
 
   const statusDict = {
     en: {
@@ -324,37 +482,76 @@ const filters = ref(emptyOrderFilters())
 
 const matchesSearch = order => {
   const term = (search.value || '').trim().toLowerCase().replace('#', '')
-  return !term || String(order.order_id).includes(term) || (order.consumer?.full_name || '').toLowerCase().includes(term)
+  return (
+    !term ||
+    String(order.order_id).includes(term) ||
+    (order.consumer?.full_name || '').toLowerCase().includes(term)
+  )
 }
 
-const matchesStatus = (order, key) => key === 'all' || statusKey(order.status) === key
+const matchesStatus = (order, key) =>
+  key === 'all' || statusKey(order.status) === key
 
 // Search and the filter panel apply first, so each status chip counts what it would show.
-const baseOrders = computed(() => applyOrderFilters(orders.value.filter(matchesSearch), filters.value))
+const baseOrders = computed(() =>
+  applyOrderFilters(orders.value.filter(matchesSearch), filters.value)
+)
 
-const countFor = key => baseOrders.value.filter(order => matchesStatus(order, key)).length
+const countFor = key =>
+  baseOrders.value.filter(order => matchesStatus(order, key)).length
 
-const filteredOrders = computed(() => baseOrders.value.filter(order => matchesStatus(order, activeStatus.value)))
+const filteredOrders = computed(() =>
+  baseOrders.value.filter(order => matchesStatus(order, activeStatus.value))
+)
 
 const filterChips = computed(() => describeFilters(filters.value))
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filteredOrders.value.length / PAGE_SIZE)))
-const pagedOrders = computed(() => filteredOrders.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil(filteredOrders.value.length / PAGE_SIZE))
+)
+const pagedOrders = computed(() =>
+  filteredOrders.value.slice(
+    (page.value - 1) * PAGE_SIZE,
+    page.value * PAGE_SIZE
+  )
+)
 const rangeStart = computed(() => (page.value - 1) * PAGE_SIZE + 1)
-const rangeEnd = computed(() => Math.min(page.value * PAGE_SIZE, filteredOrders.value.length))
+const rangeEnd = computed(() =>
+  Math.min(page.value * PAGE_SIZE, filteredOrders.value.length)
+)
 
 // A new search, status, filter or sort starts back on the first page.
-watch([search, activeStatus, () => JSON.stringify(filters.value)], () => { page.value = 1 })
+watch([search, activeStatus, () => JSON.stringify(filters.value)], () => {
+  page.value = 1
+})
 
-const sortBy = field => { filters.value.sort = toggleSort(filters.value.sort, field) }
-const sortIcon = field => ({ asc: 'o_arrow_upward', desc: 'o_arrow_downward' }[sortDirection(filters.value.sort, field)] || 'o_unfold_more')
-const ariaSort = field => ({ asc: 'ascending', desc: 'descending' }[sortDirection(filters.value.sort, field)] || 'none')
+const sortBy = field => {
+  filters.value.sort = toggleSort(filters.value.sort, field)
+}
+const sortIcon = field =>
+  ({ asc: 'o_arrow_upward', desc: 'o_arrow_downward' })[
+    sortDirection(filters.value.sort, field)
+  ] || 'o_unfold_more'
+const ariaSort = field =>
+  ({ asc: 'ascending', desc: 'descending' })[
+    sortDirection(filters.value.sort, field)
+  ] || 'none'
 
-const formatNumber = num => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const formatNumber = num =>
+  Number(num || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 
 const formatDate = dateString => {
   if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
 }
 
 const goToOrder = id => router.push('/vendor/orders/' + id)
@@ -362,18 +559,27 @@ const goToOrder = id => router.push('/vendor/orders/' + id)
 const exportOrders = async () => {
   isExporting.value = true
   try {
-    const response = await api.get('/vendor/orders/export', { responseType: 'blob' })
+    const response = await api.get('/vendor/orders/export', {
+      responseType: 'blob'
+    })
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `Tindahan-Order-List-Report-${new Date().toISOString().split('T')[0]}.pdf`)
+    link.setAttribute(
+      'download',
+      `Tindahan-Order-List-Report-${new Date().toISOString().split('T')[0]}.pdf`
+    )
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     setTimeout(() => window.URL.revokeObjectURL(url), 1000)
   } catch (error) {
     console.error('Export failed:', error)
-    $q.notify({ type: 'negative', message: t('exportFail'), position: 'top-right' })
+    $q.notify({
+      type: 'negative',
+      message: t('exportFail'),
+      position: 'top-right'
+    })
   } finally {
     isExporting.value = false
   }
@@ -431,11 +637,21 @@ onMounted(async () => {
 }
 
 /* Column widths as shares of the table, so the columns spread evenly at any width. */
-.vp-table .col-order { width: 12%; }
-.vp-table .col-date { width: 21%; }
-.vp-table .col-total { width: 13%; }
-.vp-table .col-status { width: 17%; }
-.vp-table .col-open { width: 6%; }
+.vp-table .col-order {
+  width: 12%;
+}
+.vp-table .col-date {
+  width: 21%;
+}
+.vp-table .col-total {
+  width: 13%;
+}
+.vp-table .col-status {
+  width: 17%;
+}
+.vp-table .col-open {
+  width: 6%;
+}
 
 .ol-empty-btn {
   margin-top: 10px;

@@ -4,12 +4,23 @@
       <div class="filters-panel-title-group">
         <span class="filters-panel-title">{{ t('Filters') }}</span>
       </div>
-      <q-btn flat dense round :ripple="false" icon="o_close" class="filters-close-btn" :aria-label="t('Close filters')" @click="$emit('close')" />
+      <q-btn
+        flat
+        dense
+        round
+        :ripple="false"
+        icon="o_close"
+        class="filters-close-btn"
+        :aria-label="t('Close filters')"
+        @click="$emit('close')"
+      />
     </div>
 
     <div class="filters-scroll">
       <div class="filter-group filter-group-row">
-        <label class="filter-label filter-label-inline">{{ t('Open Now') }}</label>
+        <label class="filter-label filter-label-inline">{{
+          t('Open Now')
+        }}</label>
         <q-toggle v-model="openNow" dense color="primary" />
       </div>
 
@@ -40,7 +51,12 @@
       />
 
       <div class="clear-filters-row">
-        <button type="button" class="clear-filters-link" @click="$emit('clear')">{{ t('Clear all filters') }}</button>
+        <button
+          type="button"
+          class="clear-filters-link"
+          @click="$emit('clear')"
+          >{{ t('Clear all filters') }}</button
+        >
       </div>
     </div>
   </div>
@@ -240,7 +256,10 @@ const sort = defineModel('sort')
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .apply-filters-btn:hover {

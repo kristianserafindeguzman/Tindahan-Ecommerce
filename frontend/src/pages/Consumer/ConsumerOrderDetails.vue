@@ -1,9 +1,15 @@
 <template>
-  <q-page class="storefront-page" :style="showActionsBar ? { paddingBottom: `calc(${actionsBarHeight}px + var(--bottom-nav-h))` } : null">
+  <q-page
+    class="storefront-page"
+    :style="
+      showActionsBar
+        ? { paddingBottom: `calc(${actionsBarHeight}px + var(--bottom-nav-h))` }
+        : null
+    "
+  >
     <SiteHeader />
 
     <div v-if="order" class="page-content">
-
       <span class="back-link" @click="router.push('/consumer/orders')">
         <q-icon name="o_arrow_back" size="15px" />
         {{ t('Back to Orders') }}
@@ -26,40 +32,59 @@
       </div>
 
       <div class="order-layout">
-
         <div class="order-main">
-
           <!-- STATUS -->
           <div class="status-card" :class="statusCardClass">
             <div class="status-card-top">
               <div class="status-label">{{ t('Order Status') }}</div>
-              <div v-if="!['picked_up', 'cancelled'].includes(order.status)" class="status-expected">{{ t('Expected Today') }}</div>
+              <div
+                v-if="!['picked_up', 'cancelled'].includes(order.status)"
+                class="status-expected"
+                >{{ t('Expected Today') }}</div
+              >
             </div>
-            <div class="status-title" :class="statusTitleClass">{{ t(statusTitle) }}</div>
+            <div class="status-title" :class="statusTitleClass">{{
+              t(statusTitle)
+            }}</div>
             <p class="status-desc">{{ statusDescription }}</p>
 
             <q-separator class="card-divider" />
 
-            <div v-if="order.status !== 'cancelled'" class="status-steps" :class="{ 'status-steps-done': order.status === 'picked_up' }">
+            <div
+              v-if="order.status !== 'cancelled'"
+              class="status-steps"
+              :class="{ 'status-steps-done': order.status === 'picked_up' }"
+            >
               <template v-for="(step, i) in statusSteps" :key="step.key">
                 <div class="status-step">
                   <div
                     class="status-step-circle"
                     :class="{
-                      'status-step-circle-done': isStatusActive(step.key) && !isStatusCurrent(step.key),
+                      'status-step-circle-done':
+                        isStatusActive(step.key) && !isStatusCurrent(step.key),
                       'status-step-circle-current': isStatusCurrent(step.key)
                     }"
                   >
                     <q-icon :name="step.icon" size="16px" />
                   </div>
-                  <div class="status-step-label" :class="{ 'status-step-label-active': isStatusActive(step.key) }">{{ t(step.label) }}</div>
+                  <div
+                    class="status-step-label"
+                    :class="{
+                      'status-step-label-active': isStatusActive(step.key)
+                    }"
+                    >{{ t(step.label) }}</div
+                  >
                 </div>
                 <div
                   v-if="i < statusSteps.length - 1"
                   class="status-step-line"
                   :class="{
-                    'status-step-line-active': isStatusActive(statusSteps[i + 1].key),
-                    'status-step-line-current': !isStatusActive(statusSteps[i + 1].key) && isStatusActive(step.key)
+                    'status-step-line-active': isStatusActive(
+                      statusSteps[i + 1].key
+                    ),
+                    'status-step-line-current':
+                      !isStatusActive(statusSteps[i + 1].key) &&
+                      isStatusActive(step.key)
                   }"
                 />
               </template>
@@ -68,8 +93,12 @@
             <div v-if="order.status === 'cancelled'" class="cancellation-note">
               <q-icon name="o_error_outline" size="16px" />
               <div>
-                <div class="cancellation-note-title">{{ t('Cancellation Reason') }}</div>
-                <div class="cancellation-note-text">{{ t(order.cancellation_reason || 'No reason provided.') }}</div>
+                <div class="cancellation-note-title">{{
+                  t('Cancellation Reason')
+                }}</div>
+                <div class="cancellation-note-text">{{
+                  t(order.cancellation_reason || 'No reason provided.')
+                }}</div>
               </div>
             </div>
           </div>
@@ -80,7 +109,9 @@
               <q-icon name="o_location_on" size="20px" class="store-info-pin" />
               <span class="store-info-name">{{ order.store?.store_name }}</span>
             </div>
-            <div v-if="storeAddressText" class="store-info-address">{{ storeAddressText }}</div>
+            <div v-if="storeAddressText" class="store-info-address">{{
+              storeAddressText
+            }}</div>
 
             <q-separator class="card-divider" />
 
@@ -89,12 +120,17 @@
                 <div class="order-meta-label">{{ t('Pickup Time') }}</div>
                 <div class="order-meta-value">
                   <q-icon name="o_schedule" size="13px" />
-                  {{ formatPickupSlot(order.scheduled_pickup_at, locale) || t('ASAP (10 - 15 mins)') }}
+                  {{
+                    formatPickupSlot(order.scheduled_pickup_at, locale) ||
+                    t('ASAP (10 - 15 mins)')
+                  }}
                 </div>
               </div>
               <div class="order-meta-placed">
                 <div class="order-meta-label">{{ t('Order Placed') }}</div>
-                <div class="order-meta-value">{{ formatDate(order.created_at) }}</div>
+                <div class="order-meta-value">{{
+                  formatDate(order.created_at)
+                }}</div>
               </div>
             </div>
 
@@ -112,7 +148,9 @@
                 :disable="order.status !== 'placed'"
                 @click="showCancelDialog = true"
               >
-                <q-tooltip v-if="order.status !== 'placed'">{{ t('Cancellation is no longer allowed at this stage.') }}</q-tooltip>
+                <q-tooltip v-if="order.status !== 'placed'">{{
+                  t('Cancellation is no longer allowed at this stage.')
+                }}</q-tooltip>
               </q-btn>
               <q-btn
                 unelevated
@@ -125,7 +163,6 @@
               />
             </div>
           </div>
-
         </div>
 
         <div class="order-summary-col">
@@ -133,17 +170,33 @@
             <div class="summary-title">{{ t('Order Summary') }}</div>
             <div class="summary-store">{{ order.store?.store_name }}</div>
 
-            <div v-for="item in order.items" :key="item.order_item_id" class="summary-item-row">
+            <div
+              v-for="item in order.items"
+              :key="item.order_item_id"
+              class="summary-item-row"
+            >
               <div class="summary-item-image">
-                <img v-if="item.inventory?.image_url" :src="item.inventory.image_url" :alt="item.inventory?.product_name" />
+                <img
+                  v-if="item.inventory?.image_url"
+                  :src="item.inventory.image_url"
+                  :alt="item.inventory?.product_name"
+                />
                 <q-icon v-else name="o_inventory_2" size="14px" />
               </div>
               <div class="summary-item-info">
-                <div class="summary-item-name">{{ item.inventory?.product_name || 'Product' }}</div>
-                <div v-if="item.variant_name" class="summary-item-variant">{{ item.variant_name }}</div>
-                <div class="summary-item-qty">{{ t('Qty:') }} {{ item.quantity }}</div>
+                <div class="summary-item-name">{{
+                  item.inventory?.product_name || 'Product'
+                }}</div>
+                <div v-if="item.variant_name" class="summary-item-variant">{{
+                  item.variant_name
+                }}</div>
+                <div class="summary-item-qty"
+                  >{{ t('Qty:') }} {{ item.quantity }}</div
+                >
               </div>
-              <div class="summary-item-price">₱{{ formatNumber(item.subtotal) }}</div>
+              <div class="summary-item-price"
+                >₱{{ formatNumber(item.subtotal) }}</div
+              >
             </div>
 
             <q-separator class="summary-separator" />
@@ -154,9 +207,15 @@
             </div>
           </aside>
 
-          <q-btn unelevated no-caps icon="o_receipt_long" :label="t('View Receipt')" class="view-receipt-btn" @click="showReceiptDialog = true" />
+          <q-btn
+            unelevated
+            no-caps
+            icon="o_receipt_long"
+            :label="t('View Receipt')"
+            class="view-receipt-btn"
+            @click="showReceiptDialog = true"
+          />
         </div>
-
       </div>
 
       <!-- Mobile: fixed bottom bar, same buttons/styling as the desktop in-card row. -->
@@ -171,7 +230,9 @@
           :disable="order.status !== 'placed'"
           @click="showCancelDialog = true"
         >
-          <q-tooltip v-if="order.status !== 'placed'">{{ t('Cancellation is no longer allowed at this stage.') }}</q-tooltip>
+          <q-tooltip v-if="order.status !== 'placed'">{{
+            t('Cancellation is no longer allowed at this stage.')
+          }}</q-tooltip>
         </q-btn>
         <q-btn
           unelevated
@@ -183,7 +244,6 @@
           @click="openDirections"
         />
       </div>
-
     </div>
 
     <div v-else class="order-loading">
@@ -193,15 +253,31 @@
 
     <SiteFooter />
 
-    <q-dialog v-model="showCancelDialog" :position="$q.screen.lt.sm ? 'bottom' : 'standard'">
-      <q-card class="cancel-dialog-card" :class="{ 'cancel-dialog-card-sheet': $q.screen.lt.sm }">
+    <q-dialog
+      v-model="showCancelDialog"
+      :position="$q.screen.lt.sm ? 'bottom' : 'standard'"
+    >
+      <q-card
+        class="cancel-dialog-card"
+        :class="{ 'cancel-dialog-card-sheet': $q.screen.lt.sm }"
+      >
         <div v-if="$q.screen.lt.sm" class="cancel-dialog-drag-handle" />
 
-        <q-btn flat round dense icon="close" class="cancel-dialog-close-btn" :aria-label="t('Close')" v-close-popup />
+        <q-btn
+          flat
+          round
+          dense
+          icon="close"
+          class="cancel-dialog-close-btn"
+          :aria-label="t('Close')"
+          v-close-popup
+        />
 
         <div class="cancel-dialog-scroll">
           <div class="cancel-dialog-title">{{ t('Cancel Order?') }}</div>
-          <p class="cancel-dialog-text">{{ t('Please select a reason for cancelling your order.') }}</p>
+          <p class="cancel-dialog-text">{{
+            t('Please select a reason for cancelling your order.')
+          }}</p>
 
           <q-separator class="card-divider" />
 
@@ -210,7 +286,9 @@
               v-for="reason in cancellationReasonOptions"
               :key="reason"
               class="cancel-reason-option"
-              :class="{ 'cancel-reason-option-selected': selectedCancelReason === reason }"
+              :class="{
+                'cancel-reason-option-selected': selectedCancelReason === reason
+              }"
               @click="selectedCancelReason = reason"
             >
               <span class="cancel-reason-radio" />
@@ -230,7 +308,14 @@
         </div>
 
         <div class="cancel-dialog-actions">
-          <q-btn unelevated no-caps flat :label="t('Keep Order')" class="keep-order-btn" v-close-popup />
+          <q-btn
+            unelevated
+            no-caps
+            flat
+            :label="t('Keep Order')"
+            class="keep-order-btn"
+            v-close-popup
+          />
           <q-btn
             unelevated
             no-caps
@@ -247,36 +332,93 @@
     <q-dialog v-model="showReceiptDialog">
       <div class="receipt-dialog-wrap">
         <q-card class="receipt-dialog-card">
-          <q-btn flat round dense icon="close" class="receipt-close-btn" :aria-label="t('Close receipt')" v-close-popup />
+          <q-btn
+            flat
+            round
+            dense
+            icon="close"
+            class="receipt-close-btn"
+            :aria-label="t('Close receipt')"
+            v-close-popup
+          />
 
-          <div class="receipt-logo-frame"><img src="@/assets/tindahan-black.png" alt="Tindahan" class="receipt-logo" /></div>
+          <div class="receipt-logo-frame"
+            ><img
+              src="@/assets/tindahan-black.png"
+              alt="Tindahan"
+              class="receipt-logo"
+          /></div>
           <div class="receipt-document-title">{{ t('Order receipt') }}</div>
           <div class="receipt-store-name">{{ order?.store?.store_name }}</div>
-          <div v-if="order?.store?.address" class="receipt-store-address">{{ order.store.address }}</div>
+          <div v-if="order?.store?.address" class="receipt-store-address">{{
+            order.store.address
+          }}</div>
           <div class="receipt-rule" />
           <dl class="receipt-details">
-            <div><dt>{{ t('Order #') }}</dt><dd>{{ order?.order_id }}</dd></div>
-            <div><dt>{{ t('Date') }}</dt><dd>{{ formatReceiptDateParts(order?.created_at) }}</dd></div>
-            <div><dt>{{ t('Status') }}</dt><dd>{{ formatStatus(order?.status) }}</dd></div>
+            <div
+              ><dt>{{ t('Order #') }}</dt
+              ><dd>{{ order?.order_id }}</dd></div
+            >
+            <div
+              ><dt>{{ t('Date') }}</dt
+              ><dd>{{ formatReceiptDateParts(order?.created_at) }}</dd></div
+            >
+            <div
+              ><dt>{{ t('Status') }}</dt
+              ><dd>{{ formatStatus(order?.status) }}</dd></div
+            >
           </dl>
           <div class="receipt-rule" />
-          <div class="receipt-items-header"><span>{{ t('Qty') }}</span><span>{{ t('Item') }}</span><span>{{ t('Amount') }}</span></div>
+          <div class="receipt-items-header"
+            ><span>{{ t('Qty') }}</span
+            ><span>{{ t('Item') }}</span
+            ><span>{{ t('Amount') }}</span></div
+          >
           <div class="receipt-items">
-            <div v-for="item in order?.items" :key="item.order_item_id" class="receipt-item-row">
+            <div
+              v-for="item in order?.items"
+              :key="item.order_item_id"
+              class="receipt-item-row"
+            >
               <span class="receipt-item-qty">{{ item.quantity }}</span>
-              <span class="receipt-item-name">{{ item.inventory?.product_name || t('Product') }}<span v-if="item.variant_name" class="receipt-item-variant">{{ item.variant_name }}</span><span v-if="item.unit_price != null" class="receipt-unit-price">@ PHP {{ formatNumber(item.unit_price) }}</span></span>
-              <span class="receipt-item-price">{{ formatNumber(item.subtotal) }}</span>
+              <span class="receipt-item-name"
+                >{{ item.inventory?.product_name || t('Product')
+                }}<span v-if="item.variant_name" class="receipt-item-variant">{{
+                  item.variant_name
+                }}</span
+                ><span v-if="item.unit_price != null" class="receipt-unit-price"
+                  >@ PHP {{ formatNumber(item.unit_price) }}</span
+                ></span
+              >
+              <span class="receipt-item-price">{{
+                formatNumber(item.subtotal)
+              }}</span>
             </div>
           </div>
           <div class="receipt-rule" />
-          <div class="receipt-total-band"><span>{{ t('Total') }}</span><span class="receipt-total-amount">PHP {{ formatNumber(order?.total_amount) }}</span></div>
-          <div class="receipt-print-footer">{{ t('Thank you for shopping with Tindahan!') }}</div>
+          <div class="receipt-total-band"
+            ><span>{{ t('Total') }}</span
+            ><span class="receipt-total-amount"
+              >PHP {{ formatNumber(order?.total_amount) }}</span
+            ></div
+          >
+          <div class="receipt-print-footer">{{
+            t('Thank you for shopping with Tindahan!')
+          }}</div>
         </q-card>
 
-        <q-btn v-if="order?.status === 'picked_up'" unelevated no-caps icon="o_download" :label="t('Download PDF')" class="receipt-download-btn" :loading="isExporting" @click="downloadReceipt" />
+        <q-btn
+          v-if="order?.status === 'picked_up'"
+          unelevated
+          no-caps
+          icon="o_download"
+          :label="t('Download PDF')"
+          class="receipt-download-btn"
+          :loading="isExporting"
+          @click="downloadReceipt"
+        />
       </div>
     </q-dialog>
-
   </q-page>
 </template>
 
@@ -303,21 +445,29 @@ const isCancelling = ref(false)
 const showReceiptDialog = ref(false)
 const isExporting = ref(false)
 
-const cancellationReasonOptions = ['I changed my mind', 'I ordered by mistake', 'Order is taking too long', 'Other']
+const cancellationReasonOptions = [
+  'I changed my mind',
+  'I ordered by mistake',
+  'Order is taking too long',
+  'Other'
+]
 const selectedCancelReason = ref('')
 const customCancelReason = ref('')
 
 const isCancelReasonValid = computed(() => {
   if (!selectedCancelReason.value) return false
-  if (selectedCancelReason.value === 'Other') return customCancelReason.value.trim().length > 0
+  if (selectedCancelReason.value === 'Other')
+    return customCancelReason.value.trim().length > 0
   return true
 })
 
 const finalCancelReason = computed(() => {
-  return selectedCancelReason.value === 'Other' ? customCancelReason.value.trim() : selectedCancelReason.value
+  return selectedCancelReason.value === 'Other'
+    ? customCancelReason.value.trim()
+    : selectedCancelReason.value
 })
 
-watch(showCancelDialog, (isOpen) => {
+watch(showCancelDialog, isOpen => {
   if (!isOpen) {
     selectedCancelReason.value = ''
     customCancelReason.value = ''
@@ -358,38 +508,67 @@ const STATUS_TITLES = {
   cancelled: 'Order Cancelled'
 }
 
-const statusTitle = computed(() => STATUS_TITLES[order.value?.status] || formatStatus(order.value?.status))
+const statusTitle = computed(
+  () => STATUS_TITLES[order.value?.status] || formatStatus(order.value?.status)
+)
 
 const statusDescription = computed(() => {
   switch (order.value?.status) {
-    case 'placed': return t('The store has received your order and will begin preparing it soon.')
-    case 'preparing': return t('The store is preparing your order.')
-    case 'ready_for_pickup': return t('Your order is ready — head to the store to pick it up.')
-    case 'picked_up': return t('This order has been picked up. Thanks for shopping with us!')
-    case 'cancelled': return t('This order was cancelled.')
-    default: return ''
+    case 'placed':
+      return t(
+        'The store has received your order and will begin preparing it soon.'
+      )
+    case 'preparing':
+      return t('The store is preparing your order.')
+    case 'ready_for_pickup':
+      return t('Your order is ready — head to the store to pick it up.')
+    case 'picked_up':
+      return t('This order has been picked up. Thanks for shopping with us!')
+    case 'cancelled':
+      return t('This order was cancelled.')
+    default:
+      return ''
   }
 })
 
-const formatStatus = (status) => {
+const formatStatus = status => {
   if (!status) return ''
-  const text = String(status).split('_').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  const text = String(status)
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
   return t(text)
 }
 
-const formatNumber = (num) => Number(num || 0).toLocaleString(locale.value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const formatNumber = num =>
+  Number(num || 0).toLocaleString(locale.value, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 
-const formatDate = (dateString) => {
+const formatDate = dateString => {
   if (!dateString) return ''
   const d = new Date(dateString)
-  return d.toLocaleDateString(locale.value, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString(locale.value, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
-const formatReceiptDateParts = (dateString) => {
+const formatReceiptDateParts = dateString => {
   if (!dateString) return ''
   const d = new Date(dateString)
-  const datePart = d.toLocaleDateString(locale.value, { year: 'numeric', month: 'short', day: 'numeric' })
-  const timePart = d.toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' })
+  const datePart = d.toLocaleDateString(locale.value, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+  const timePart = d.toLocaleTimeString(locale.value, {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
   return `${datePart} • ${timePart}`
 }
 
@@ -408,9 +587,9 @@ const storeAddressText = computed(() => {
 })
 
 // The current step is styled apart from completed ones, since isStatusActive alone would render every reached disc identically.
-const isStatusCurrent = (step) => order.value?.status === step
+const isStatusCurrent = step => order.value?.status === step
 
-const isStatusActive = (step) => {
+const isStatusActive = step => {
   if (!order.value) return false
   const flow = ['placed', 'preparing', 'ready_for_pickup', 'picked_up']
   const currentIndex = flow.indexOf(order.value.status)
@@ -424,14 +603,20 @@ const printOrder = () => {
 
 const downloadReceipt = async () => {
   if (!order.value) return
-  
+
   try {
     isExporting.value = true
-    const response = await api.get(`/consumer/orders/${order.value.order_id}/receipt`, { responseType: 'blob' })
+    const response = await api.get(
+      `/consumer/orders/${order.value.order_id}/receipt`,
+      { responseType: 'blob' }
+    )
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `Tindahan-Receipt-#${order.value.order_id}.pdf`)
+    link.setAttribute(
+      'download',
+      `Tindahan-Receipt-#${order.value.order_id}.pdf`
+    )
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -445,7 +630,12 @@ const downloadReceipt = async () => {
 
 const hasDirections = computed(() => {
   const o = order.value
-  return !!(o?.consumer_latitude != null && o?.consumer_longitude != null && o?.store?.latitude != null && o?.store?.longitude != null)
+  return !!(
+    o?.consumer_latitude != null &&
+    o?.consumer_longitude != null &&
+    o?.store?.latitude != null &&
+    o?.store?.longitude != null
+  )
 })
 
 const openDirections = () => {
@@ -453,7 +643,10 @@ const openDirections = () => {
   const { consumer_latitude: oLat, consumer_longitude: oLng } = order.value
   const { latitude: dLat, longitude: dLng } = order.value.store
 
-  window.open(`https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}`, '_blank')
+  window.open(
+    `https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}`,
+    '_blank'
+  )
 }
 
 // Mobile: fixed bottom bar, replaces the in-card actions row.
@@ -464,7 +657,7 @@ const actionsBarEl = ref(null)
 const actionsBarHeight = ref(0)
 let actionsBarObserver = null
 
-watch(actionsBarEl, (el) => {
+watch(actionsBarEl, el => {
   actionsBarObserver?.disconnect()
   actionsBarObserver = null
 
@@ -514,7 +707,10 @@ const confirmCancelOrder = async () => {
     customCancelReason.value = ''
     fetchOrderDetails()
   } catch (error) {
-    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to cancel order') })
+    $q.notify({
+      type: 'negative',
+      message: t(error.response?.data?.message || 'Failed to cancel order')
+    })
   } finally {
     isCancelling.value = false
   }
@@ -540,10 +736,20 @@ const refreshOrder = async () => {
         message: t('Order updated: {status}', { status: t(statusTitle.value) })
       })
     } else {
-      $q.notify({ type: 'info', message: t('Your order is up to date.'), timeout: 1500 })
+      $q.notify({
+        type: 'info',
+        message: t('Your order is up to date.'),
+        timeout: 1500
+      })
     }
   } catch (error) {
-    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Could not refresh your order. Please try again.') })
+    $q.notify({
+      type: 'negative',
+      message: t(
+        error.response?.data?.message ||
+          'Could not refresh your order. Please try again.'
+      )
+    })
   } finally {
     isRefreshing.value = false
   }
@@ -637,7 +843,9 @@ onMounted(() => {
   font-size: var(--fs-sm);
   font-weight: 500;
 
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .refresh-btn :deep(.q-focus-helper) {
@@ -694,8 +902,14 @@ onMounted(() => {
 
 /* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
 @keyframes orderdetails-fade-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-title-row {
@@ -773,7 +987,6 @@ onMounted(() => {
   gap: 12px;
 }
 
-
 .status-label {
   font-size: var(--fs-2xs);
   font-weight: 700;
@@ -847,14 +1060,21 @@ onMounted(() => {
   background: #ffffff;
   color: var(--c-muted);
 
-  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s;
 }
 
 /* Completed steps use the tinted-disc style shared by the app's other leading icons rather than a second solid fill. */
 .status-step-circle-done {
   border-color: transparent;
 
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-brand-tint) 0%,
+    var(--c-brand-tint-2) 100%
+  );
   color: var(--c-brand);
 }
 
@@ -897,7 +1117,11 @@ onMounted(() => {
 }
 
 .status-step-line-current {
-  background: linear-gradient(to right, var(--c-brand) 50%, var(--c-border) 50%);
+  background: linear-gradient(
+    to right,
+    var(--c-brand) 50%,
+    var(--c-border) 50%
+  );
 }
 
 /* A picked-up order turns the whole tracker green to match .status-title-done, so a finished order never reads as in progress. */
@@ -1035,7 +1259,10 @@ onMounted(() => {
   font-size: var(--fs-sm);
   font-weight: 600;
 
-  transition: border-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 /* Hides Quasar's own focus/ripple overlay so it can't paint a stray ring over our border/hover treatment. */
@@ -1085,7 +1312,10 @@ onMounted(() => {
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .get-directions-btn :deep(.q-icon) {
@@ -1182,7 +1412,11 @@ onMounted(() => {
   border-radius: var(--r-sm);
   border: 1px solid var(--c-border);
 
-  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-surface) 0%,
+    var(--c-surface) 100%
+  );
   color: var(--c-brand);
 
   overflow: hidden;
@@ -1268,7 +1502,10 @@ onMounted(() => {
   font-size: var(--fs-sm);
   font-weight: 600;
 
-  transition: border-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 /* Hides Quasar's own focus/ripple overlay so it can't paint a stray ring over our border/hover treatment. */
@@ -1421,7 +1658,9 @@ onMounted(() => {
 
   cursor: pointer;
 
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .cancel-reason-option:hover {
@@ -1447,7 +1686,9 @@ onMounted(() => {
 
   background: #ffffff;
 
-  transition: border-color 0.15s, border-width 0.15s;
+  transition:
+    border-color 0.15s,
+    border-width 0.15s;
 }
 
 .cancel-reason-option-selected .cancel-reason-radio {
@@ -1508,7 +1749,10 @@ onMounted(() => {
 
   box-shadow: 0 2px 8px rgba(185, 28, 28, 0.25);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .confirm-cancel-btn:hover:not(:disabled) {
@@ -1538,35 +1782,194 @@ onMounted(() => {
 }
 
 /* RECEIPT DIALOG */
-.receipt-dialog-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 400px; max-width: calc(100vw - 32px); }
-.receipt-dialog-card { position: relative; width: 100%; padding: 24px 28px 32px; border-radius: 3px; background: #fff; color: #242424; font-family: 'Courier New', Courier, monospace; text-align: center; box-shadow: 0 16px 48px rgba(0,0,0,0.2); }
-.receipt-dialog-card::after { content: ''; position: absolute; bottom: -8px; left: 0; right: 0; height: 10px; background: linear-gradient(135deg, #fff 5px, transparent 0) 0 0 / 12px 12px, linear-gradient(225deg, #fff 5px, transparent 0) 0 0 / 12px 12px; }
-.receipt-close-btn { position: absolute; top: 8px; right: 8px; color: #666; }
-.receipt-logo-frame { width: 150px; height: 80px; overflow: hidden; margin: 0 auto 4px; }
-.receipt-logo { display: block; width: 150px; height: 150px; margin-top: -36px; object-fit: contain; }
-.receipt-document-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; }
-.receipt-store-name { font-size: 17px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
-.receipt-store-address { margin-top: 5px; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
-.receipt-rule { border-top: 1px dashed #a3a3a3; margin: 16px 0; }
-.receipt-details { display: flex; flex-direction: column; gap: 6px; margin: 0; font-size: 11px; text-align: left; }
-.receipt-details > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.receipt-details dt { flex-shrink: 0; color: #666; }
-.receipt-details dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
-.receipt-items-header, .receipt-item-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; font-size: 12px; text-align: left; }
-.receipt-items-header { margin-bottom: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
-.receipt-items-header > span:last-child { text-align: right; }
-.receipt-items { display: flex; flex-direction: column; gap: 14px; }
-.receipt-item-row { align-items: start; line-height: 1.45; }
-.receipt-item-name { min-width: 0; overflow-wrap: anywhere; }
-.receipt-item-variant, .receipt-unit-price { display: block; color: #666; font-size: 10px; margin-top: 2px; }
-.receipt-item-price { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.receipt-total-band { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 15px; font-weight: 700; text-align: left; }
-.receipt-total-amount { font-size: 18px; font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
-.receipt-print-footer { margin-top: 24px; padding-top: 16px; border-top: 1px dashed #a3a3a3; font-size: 11px; line-height: 1.6; text-align: center; color: #666; }
-.receipt-download-btn { width: 100%; min-height: 44px; border-radius: var(--r-control); background: var(--c-brand); color: #fff; font-size: var(--fs-sm); font-weight: 600; }
-.receipt-download-btn :deep(.q-btn__content) { gap: 8px; }
-.receipt-download-btn:hover { background: var(--c-brand-hover); }
-@media (max-width: 600px) { .receipt-dialog-card { padding: 24px 20px 28px; } .receipt-close-btn { width: 44px; height: 44px; min-width: 44px; min-height: 44px; } }
+.receipt-dialog-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 400px;
+  max-width: calc(100vw - 32px);
+}
+.receipt-dialog-card {
+  position: relative;
+  width: 100%;
+  padding: 24px 28px 32px;
+  border-radius: 3px;
+  background: #fff;
+  color: #242424;
+  font-family: 'Courier New', Courier, monospace;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+}
+.receipt-dialog-card::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background:
+    linear-gradient(135deg, #fff 5px, transparent 0) 0 0 / 12px 12px,
+    linear-gradient(225deg, #fff 5px, transparent 0) 0 0 / 12px 12px;
+}
+.receipt-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #666;
+}
+.receipt-logo-frame {
+  width: 150px;
+  height: 80px;
+  overflow: hidden;
+  margin: 0 auto 4px;
+}
+.receipt-logo {
+  display: block;
+  width: 150px;
+  height: 150px;
+  margin-top: -36px;
+  object-fit: contain;
+}
+.receipt-document-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+}
+.receipt-store-name {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.receipt-store-address {
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.receipt-rule {
+  border-top: 1px dashed #a3a3a3;
+  margin: 16px 0;
+}
+.receipt-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  font-size: 11px;
+  text-align: left;
+}
+.receipt-details > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.receipt-details dt {
+  flex-shrink: 0;
+  color: #666;
+}
+.receipt-details dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.receipt-items-header,
+.receipt-item-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: 8px;
+  font-size: 12px;
+  text-align: left;
+}
+.receipt-items-header {
+  margin-bottom: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.receipt-items-header > span:last-child {
+  text-align: right;
+}
+.receipt-items {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.receipt-item-row {
+  align-items: start;
+  line-height: 1.45;
+}
+.receipt-item-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.receipt-item-variant,
+.receipt-unit-price {
+  display: block;
+  color: #666;
+  font-size: 10px;
+  margin-top: 2px;
+}
+.receipt-item-price {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.receipt-total-band {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+}
+.receipt-total-amount {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.receipt-print-footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px dashed #a3a3a3;
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+  color: #666;
+}
+.receipt-download-btn {
+  width: 100%;
+  min-height: 44px;
+  border-radius: var(--r-control);
+  background: var(--c-brand);
+  color: #fff;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.receipt-download-btn :deep(.q-btn__content) {
+  gap: 8px;
+}
+.receipt-download-btn:hover {
+  background: var(--c-brand-hover);
+}
+@media (max-width: 600px) {
+  .receipt-dialog-card {
+    padding: 24px 20px 28px;
+  }
+  .receipt-close-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
 
 /* PRINT — isolates the receipt card; positions are forced to `static` because Quasar's dialog transition leaves a `transform` on an ancestor that would break `position: fixed`. */
 
