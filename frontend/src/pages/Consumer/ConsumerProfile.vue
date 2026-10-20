@@ -1,24 +1,28 @@
 <template>
   <q-page class="profile-page">
-
     <SiteHeader />
 
     <div class="profile-container">
       <div class="page-header-block">
         <h1 class="page-title">{{ t('Profile Settings') }}</h1>
-        <p class="page-subtitle">{{ t('Manage your personal information and security preferences.') }}</p>
+        <p class="page-subtitle">{{
+          t('Manage your personal information and security preferences.')
+        }}</p>
       </div>
 
       <div class="row q-col-gutter-lg items-stretch">
-
         <!-- ================= PERSONAL INFO ================= -->
         <div class="col-12 col-md-8">
           <q-card flat bordered class="profile-card profile-card-fill">
             <q-card-section>
               <div class="card-header">
                 <div>
-                  <div class="section-title">{{ t('Personal Information') }}</div>
-                  <div class="section-subtitle">{{ t('View and update your personal details.') }}</div>
+                  <div class="section-title">{{
+                    t('Personal Information')
+                  }}</div>
+                  <div class="section-subtitle">{{
+                    t('View and update your personal details.')
+                  }}</div>
                 </div>
                 <q-btn
                   outline
@@ -32,7 +36,9 @@
               </div>
 
               <div class="info-row">
-                <div class="info-icon"><q-icon name="o_person" size="18px" /></div>
+                <div class="info-icon"
+                  ><q-icon name="o_person" size="18px"
+                /></div>
                 <div class="info-body">
                   <div class="info-label">{{ t('Name') }}</div>
                   <div class="info-value">{{ user.full_name }}</div>
@@ -40,7 +46,9 @@
               </div>
 
               <div class="info-row">
-                <div class="info-icon"><q-icon name="o_cake" size="18px" /></div>
+                <div class="info-icon"
+                  ><q-icon name="o_cake" size="18px"
+                /></div>
                 <div class="info-body">
                   <div class="info-label">{{ t('Birthday') }}</div>
                   <div class="info-value">{{ birthdayLabel }}</div>
@@ -48,7 +56,9 @@
               </div>
 
               <div class="info-row">
-                <div class="info-icon"><q-icon name="o_phone" size="18px" /></div>
+                <div class="info-icon"
+                  ><q-icon name="o_phone" size="18px"
+                /></div>
                 <div class="info-body">
                   <div class="info-label">{{ t('Phone Number') }}</div>
                   <div class="info-value-row">
@@ -58,7 +68,9 @@
               </div>
 
               <div class="info-row">
-                <div class="info-icon"><q-icon name="o_mail" size="18px" /></div>
+                <div class="info-icon"
+                  ><q-icon name="o_mail" size="18px"
+                /></div>
                 <div class="info-body">
                   <div class="info-label">{{ t('Email Address') }}</div>
                   <div class="info-value-row">
@@ -76,7 +88,9 @@
             <q-card-section class="photo-card-section">
               <div>
                 <div class="section-title">{{ t('Profile Photo') }}</div>
-                <div class="section-subtitle">{{ t('This will be displayed on your account.') }}</div>
+                <div class="section-subtitle">{{
+                  t('This will be displayed on your account.')
+                }}</div>
               </div>
 
               <div class="photo-card-body">
@@ -84,50 +98,114 @@
                   <div class="photo-avatar-wrap">
                     <q-avatar :size="avatarSize" class="bg-grey-3 photo-avatar">
                       <img v-if="photoPreview" :src="photoPreview" />
-                      <img v-else-if="user.profile_picture_url" :src="user.profile_picture_url" />
-                      <q-icon v-else name="person" :size="avatarIconSize" color="grey-6" />
+                      <img
+                        v-else-if="user.profile_picture_url"
+                        :src="user.profile_picture_url"
+                      />
+                      <q-icon
+                        v-else
+                        name="person"
+                        :size="avatarIconSize"
+                        color="grey-6"
+                      />
                     </q-avatar>
 
-                    <q-btn round unelevated color="primary" class="photo-camera-btn" :aria-label="t('Change profile photo')" @click="triggerUpload">
+                    <q-btn
+                      round
+                      unelevated
+                      color="primary"
+                      class="photo-camera-btn"
+                      :aria-label="t('Change profile photo')"
+                      @click="triggerUpload"
+                    >
                       <q-icon name="o_photo_camera" size="16px" />
                     </q-btn>
                   </div>
 
-                  <input type="file" id="photoUpload" accept="image/*" class="hidden" @change="onFileSelected" style="display: none;" />
+                  <input
+                    type="file"
+                    id="photoUpload"
+                    accept="image/*"
+                    class="hidden"
+                    @change="onFileSelected"
+                    style="display: none"
+                  />
                 </div>
 
                 <div class="text-center">
                   <template v-if="!photoFile">
-                    <q-btn outline no-caps color="primary" :label="t('Change Photo')" class="full-width" @click="triggerUpload" />
+                    <q-btn
+                      outline
+                      no-caps
+                      color="primary"
+                      :label="t('Change Photo')"
+                      class="full-width"
+                      @click="triggerUpload"
+                    />
                   </template>
                   <template v-else>
-                    <q-btn unelevated no-caps color="primary" :label="t('Save Photo')" :loading="savingPhoto" @click="savePhoto" class="full-width q-mb-sm btn-gradient" />
-                    <q-btn outline no-caps color="primary" :label="t('Cancel')" class="full-width" :disable="savingPhoto" @click="cancelPhoto" />
+                    <q-btn
+                      unelevated
+                      no-caps
+                      color="primary"
+                      :label="t('Save Photo')"
+                      :loading="savingPhoto"
+                      @click="savePhoto"
+                      class="full-width q-mb-sm btn-gradient"
+                    />
+                    <q-btn
+                      outline
+                      no-caps
+                      color="primary"
+                      :label="t('Cancel')"
+                      class="full-width"
+                      :disable="savingPhoto"
+                      @click="cancelPhoto"
+                    />
                   </template>
                 </div>
-                <div class="text-center photo-hint">{{ t('JPG, PNG or GIF. Max size of 2MB.') }}</div>
+                <div class="text-center photo-hint">{{
+                  t('JPG, PNG or GIF. Max size of 2MB.')
+                }}</div>
               </div>
             </q-card-section>
           </q-card>
         </div>
 
         <div class="col-12">
-
           <!-- ================= PREFERENCES ================= -->
-          <q-card flat bordered tag="section" class="profile-card q-mb-lg" aria-labelledby="preferences-title">
+          <q-card
+            flat
+            bordered
+            tag="section"
+            class="profile-card q-mb-lg"
+            aria-labelledby="preferences-title"
+          >
             <q-card-section>
               <div class="card-header">
                 <div>
-                  <h2 id="preferences-title" class="section-title preferences-title">{{ t('Preferences') }}</h2>
-                  <div class="section-subtitle">{{ t('Manage your shopping preferences.') }}</div>
+                  <h2
+                    id="preferences-title"
+                    class="section-title preferences-title"
+                    >{{ t('Preferences') }}</h2
+                  >
+                  <div class="section-subtitle">{{
+                    t('Manage your shopping preferences.')
+                  }}</div>
                 </div>
               </div>
 
               <div class="info-row info-row-last preferences-row">
-                <div class="info-icon"><q-icon name="o_language" size="18px" /></div>
+                <div class="info-icon"
+                  ><q-icon name="o_language" size="18px"
+                /></div>
                 <div class="info-body">
-                  <div class="info-label preferences-label">{{ t('Language') }}</div>
-                  <div class="section-subtitle">{{ t('Choose the language used across the site.') }}</div>
+                  <div class="info-label preferences-label">{{
+                    t('Language')
+                  }}</div>
+                  <div class="section-subtitle">{{
+                    t('Choose the language used across the site.')
+                  }}</div>
                 </div>
                 <LanguageSwitcher settings class="preferences-language" />
               </div>
@@ -140,12 +218,16 @@
               <div class="card-header">
                 <div>
                   <div class="section-title">{{ t('Security') }}</div>
-                  <div class="section-subtitle">{{ t('Keep your account secure.') }}</div>
+                  <div class="section-subtitle">{{
+                    t('Keep your account secure.')
+                  }}</div>
                 </div>
               </div>
 
               <div class="info-row info-row-last">
-                <div class="info-icon"><q-icon name="o_lock" size="18px" /></div>
+                <div class="info-icon"
+                  ><q-icon name="o_lock" size="18px"
+                /></div>
                 <div class="info-body">
                   <div class="info-label">{{ t('Password') }}</div>
                   <div class="info-value">••••••••••••</div>
@@ -167,7 +249,9 @@
           <q-card flat bordered class="profile-card danger-card">
             <q-card-section>
               <div class="section-title text-red-9">{{ t('Danger Zone') }}</div>
-              <div class="section-subtitle q-mb-md">{{ t('Actions here are permanent and cannot be undone.') }}</div>
+              <div class="section-subtitle q-mb-md">{{
+                t('Actions here are permanent and cannot be undone.')
+              }}</div>
 
               <!-- A real button for keyboards and screen readers: Tab reaches it, Enter or Space opens the delete dialog. -->
               <div
@@ -178,16 +262,19 @@
                 @keydown.enter.prevent="confirmDeleteAccount"
                 @keydown.space.prevent="confirmDeleteAccount"
               >
-                <div class="info-icon danger-icon"><q-icon name="o_delete" size="18px" /></div>
+                <div class="info-icon danger-icon"
+                  ><q-icon name="o_delete" size="18px"
+                /></div>
                 <div class="info-body">
                   <div class="danger-title">{{ t('Delete My Account') }}</div>
-                  <div class="danger-desc">{{ t('Permanently delete your account and all data.') }}</div>
+                  <div class="danger-desc">{{
+                    t('Permanently delete your account and all data.')
+                  }}</div>
                 </div>
                 <q-icon name="o_chevron_right" size="20px" color="red-4" />
               </div>
             </q-card-section>
           </q-card>
-
         </div>
       </div>
     </div>
@@ -195,15 +282,35 @@
     <SiteFooter />
 
     <!-- EDIT PERSONAL INFORMATION DIALOG -->
-    <q-dialog v-model="showEditPersonalModal" persistent transition-show="scale" transition-hide="scale" @keydown.esc="dialogEsc($event, attemptCloseEditPersonal, savingPersonal)">
-      <q-card class="profile-dialog-card edit-personal-card" style="width: 560px; max-width: 90vw;">
+    <q-dialog
+      v-model="showEditPersonalModal"
+      persistent
+      transition-show="scale"
+      transition-hide="scale"
+      @keydown.esc="dialogEsc($event, attemptCloseEditPersonal, savingPersonal)"
+    >
+      <q-card
+        class="profile-dialog-card edit-personal-card"
+        style="width: 560px; max-width: 90vw"
+      >
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_person" size="22px" /></div>
           <div class="dialog-header-text">
             <div class="text-h6">{{ t('Edit Personal Information') }}</div>
-            <div class="section-subtitle">{{ t('Update your personal details below.') }}</div>
+            <div class="section-subtitle">{{
+              t('Update your personal details below.')
+            }}</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="dialog-close-btn" :aria-label="t('Close edit profile')" :disable="savingPersonal" @click="attemptCloseEditPersonal" />
+          <q-btn
+            flat
+            round
+            dense
+            icon="o_close"
+            class="dialog-close-btn"
+            :aria-label="t('Close edit profile')"
+            :disable="savingPersonal"
+            @click="attemptCloseEditPersonal"
+          />
         </q-card-section>
 
         <q-form ref="editPersonalFormRef">
@@ -211,18 +318,36 @@
             <div class="edit-field-row">
               <div class="edit-field">
                 <div class="edit-field-label">{{ t('First Name') }}</div>
-                <q-input v-model="editForm.firstName" outlined dense no-error-icon hide-bottom-space :rules="[val => !!val || t('Required')]" />
+                <q-input
+                  v-model="editForm.firstName"
+                  outlined
+                  dense
+                  no-error-icon
+                  hide-bottom-space
+                  :rules="[val => !!val || t('Required')]"
+                />
               </div>
 
               <div class="edit-field">
                 <div class="edit-field-label">{{ t('Last Name') }}</div>
-                <q-input v-model="editForm.lastName" outlined dense no-error-icon hide-bottom-space :rules="[val => !!val || t('Required')]" />
+                <q-input
+                  v-model="editForm.lastName"
+                  outlined
+                  dense
+                  no-error-icon
+                  hide-bottom-space
+                  :rules="[val => !!val || t('Required')]"
+                />
               </div>
             </div>
 
             <div class="edit-field edit-field-tight">
               <div class="edit-field-label">{{ t('Birthday') }}</div>
-              <BirthdayInput v-model="editForm.birthday" :translate="t" :locale="locale" />
+              <BirthdayInput
+                v-model="editForm.birthday"
+                :translate="t"
+                :locale="locale"
+              />
             </div>
 
             <div class="edit-field edit-field-tight">
@@ -240,8 +365,16 @@
                 @keypress="blockNonDigitKey"
                 @paste="onPhoneNumberPaste"
               />
-              <div v-if="phoneMessage" class="edit-field-hint" :class="`edit-field-hint-${phoneMessage.type}`">
-                <q-icon v-if="phoneMessage.type === 'success'" name="o_check_circle" size="12px" />
+              <div
+                v-if="phoneMessage"
+                class="edit-field-hint"
+                :class="`edit-field-hint-${phoneMessage.type}`"
+              >
+                <q-icon
+                  v-if="phoneMessage.type === 'success'"
+                  name="o_check_circle"
+                  size="12px"
+                />
                 {{ phoneMessage.text }}
               </div>
             </div>
@@ -259,8 +392,16 @@
                 hide-bottom-space
                 :error="emailMessage?.type === 'error'"
               />
-              <div v-if="emailMessage" class="edit-field-hint" :class="`edit-field-hint-${emailMessage.type}`">
-                <q-icon v-if="emailMessage.type === 'success'" name="o_check_circle" size="12px" />
+              <div
+                v-if="emailMessage"
+                class="edit-field-hint"
+                :class="`edit-field-hint-${emailMessage.type}`"
+              >
+                <q-icon
+                  v-if="emailMessage.type === 'success'"
+                  name="o_check_circle"
+                  size="12px"
+                />
                 {{ emailMessage.text }}
               </div>
             </div>
@@ -268,7 +409,14 @@
         </q-form>
 
         <q-card-actions align="right">
-          <q-btn outline no-caps :label="t('Cancel')" color="primary" :disable="savingPersonal" @click="attemptCloseEditPersonal" />
+          <q-btn
+            outline
+            no-caps
+            :label="t('Cancel')"
+            color="primary"
+            :disable="savingPersonal"
+            @click="attemptCloseEditPersonal"
+          />
           <q-btn
             unelevated
             no-caps
@@ -284,64 +432,166 @@
     </q-dialog>
 
     <!-- DISCARD CHANGES CONFIRMATION (Edit Personal Information / Change Password), in the Log out dialog's layout: centred text over two equal buttons. -->
-    <q-dialog v-model="showDiscardConfirm" :persistent="discardingChanges" transition-show="scale" transition-hide="scale">
+    <q-dialog
+      v-model="showDiscardConfirm"
+      :persistent="discardingChanges"
+      transition-show="scale"
+      transition-hide="scale"
+    >
       <q-card class="discard-dialog">
         <q-card-section class="discard-content">
           <div class="discard-title">{{ t('Discard Changes?') }}</div>
-          <p class="discard-message">{{ t('You have unsaved changes. If you leave now, your changes will not be saved.') }}</p>
+          <p class="discard-message">{{
+            t(
+              'You have unsaved changes. If you leave now, your changes will not be saved.'
+            )
+          }}</p>
         </q-card-section>
         <q-card-actions class="discard-actions">
-          <q-btn outline no-caps :label="t('Keep Editing')" color="primary" autofocus :disable="discardingChanges" v-close-popup />
-          <q-btn unelevated no-caps :label="t('Discard')" class="btn-danger-gradient" :loading="discardingChanges" :disable="discardingChanges" @click="confirmDiscardChanges" />
+          <q-btn
+            outline
+            no-caps
+            :label="t('Keep Editing')"
+            color="primary"
+            autofocus
+            :disable="discardingChanges"
+            v-close-popup
+          />
+          <q-btn
+            unelevated
+            no-caps
+            :label="t('Discard')"
+            class="btn-danger-gradient"
+            :loading="discardingChanges"
+            :disable="discardingChanges"
+            @click="confirmDiscardChanges"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
     <!-- SUCCESS DIALOG (shared: personal info, password, photo updates) -->
-    <q-dialog v-model="showSuccessModal" transition-show="scale" transition-hide="scale">
-      <q-card class="profile-dialog-card success-card" style="width: 440px; max-width: 90vw;">
+    <q-dialog
+      v-model="showSuccessModal"
+      transition-show="scale"
+      transition-hide="scale"
+    >
+      <q-card
+        class="profile-dialog-card success-card"
+        style="width: 440px; max-width: 90vw"
+      >
         <q-card-section class="text-center">
           <div class="success-icon">
             <q-icon name="o_check" size="32px" />
           </div>
           <div class="text-h6">{{ t(successModal.title) }}</div>
           <p class="section-subtitle">{{ t(successModal.message) }}</p>
-          <q-btn unelevated no-caps color="primary" :label="t('Done')" class="full-width btn-gradient" autofocus v-close-popup />
+          <q-btn
+            unelevated
+            no-caps
+            color="primary"
+            :label="t('Done')"
+            class="full-width btn-gradient"
+            autofocus
+            v-close-popup
+          />
         </q-card-section>
       </q-card>
     </q-dialog>
 
     <!-- CROP DIALOG -->
-    <q-dialog v-model="showCropModal" persistent transition-show="scale" transition-hide="scale" @keydown.esc="dialogEsc($event, () => { showCropModal = false })">
-      <q-card class="profile-dialog-card" style="width: 560px; max-width: 90vw;">
+    <q-dialog
+      v-model="showCropModal"
+      persistent
+      transition-show="scale"
+      transition-hide="scale"
+      @keydown.esc="
+        dialogEsc($event, () => {
+          showCropModal = false
+        })
+      "
+    >
+      <q-card class="profile-dialog-card" style="width: 560px; max-width: 90vw">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_crop" size="22px" /></div>
           <div class="dialog-header-text">
             <div class="text-h6">{{ t('Crop Profile Photo') }}</div>
-            <div class="section-subtitle">{{ t('Drag the photo to move it, and zoom until your face fits the circle.') }}</div>
+            <div class="section-subtitle">{{
+              t(
+                'Drag the photo to move it, and zoom until your face fits the circle.'
+              )
+            }}</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="dialog-close-btn" :aria-label="t('Close photo cropper')" @click="showCropModal = false" />
+          <q-btn
+            flat
+            round
+            dense
+            icon="o_close"
+            class="dialog-close-btn"
+            :aria-label="t('Close photo cropper')"
+            @click="showCropModal = false"
+          />
         </q-card-section>
         <q-card-section class="dialog-body">
-          <PhotoCropper ref="cropperRef" :src="originalPhotoUrl || ''" round :aspect="1" :output-width="512" @ready="cropReady = true" />
+          <PhotoCropper
+            ref="cropperRef"
+            :src="originalPhotoUrl || ''"
+            round
+            :aspect="1"
+            :output-width="512"
+            @ready="cropReady = true"
+          />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn outline no-caps :label="t('Cancel')" color="primary" @click="showCropModal = false" />
-          <q-btn unelevated no-caps color="primary" :label="t('Apply Crop')" :disable="!cropReady" class="btn-gradient" @click="applyCrop" />
+          <q-btn
+            outline
+            no-caps
+            :label="t('Cancel')"
+            color="primary"
+            @click="showCropModal = false"
+          />
+          <q-btn
+            unelevated
+            no-caps
+            color="primary"
+            :label="t('Apply Crop')"
+            :disable="!cropReady"
+            class="btn-gradient"
+            @click="applyCrop"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
     <!-- CHANGE PASSWORD DIALOG -->
-    <q-dialog v-model="showPasswordModal" persistent transition-show="scale" transition-hide="scale" @keydown.esc="dialogEsc($event, attemptClosePasswordModal, savingPassword)">
-      <q-card class="profile-dialog-card" style="width: 460px; max-width: 90vw;">
+    <q-dialog
+      v-model="showPasswordModal"
+      persistent
+      transition-show="scale"
+      transition-hide="scale"
+      @keydown.esc="
+        dialogEsc($event, attemptClosePasswordModal, savingPassword)
+      "
+    >
+      <q-card class="profile-dialog-card" style="width: 460px; max-width: 90vw">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_lock" size="22px" /></div>
           <div class="dialog-header-text">
             <div class="text-h6">{{ t('Change Password') }}</div>
-            <div class="section-subtitle">{{ t('Keep your account secure with a strong password.') }}</div>
+            <div class="section-subtitle">{{
+              t('Keep your account secure with a strong password.')
+            }}</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="dialog-close-btn" :aria-label="t('Close change password')" :disable="savingPassword" @click="attemptClosePasswordModal" />
+          <q-btn
+            flat
+            round
+            dense
+            icon="o_close"
+            class="dialog-close-btn"
+            :aria-label="t('Close change password')"
+            :disable="savingPassword"
+            @click="attemptClosePasswordModal"
+          />
         </q-card-section>
 
         <q-form ref="passwordFormRef">
@@ -359,7 +609,9 @@
               >
                 <template #append>
                   <q-icon
-                    :name="showCurrentPassword ? 'o_visibility' : 'o_visibility_off'"
+                    :name="
+                      showCurrentPassword ? 'o_visibility' : 'o_visibility_off'
+                    "
                     class="password-icon cursor-pointer"
                     @click="showCurrentPassword = !showCurrentPassword"
                   />
@@ -382,20 +634,32 @@
               >
                 <template #append>
                   <q-icon
-                    :name="showNewPassword ? 'o_visibility' : 'o_visibility_off'"
+                    :name="
+                      showNewPassword ? 'o_visibility' : 'o_visibility_off'
+                    "
                     class="password-icon cursor-pointer"
                     @click="showNewPassword = !showNewPassword"
                   />
                 </template>
               </q-input>
-              <div v-if="newPasswordMessage" class="edit-field-hint" :class="`edit-field-hint-${newPasswordMessage.type}`">
-                <q-icon v-if="newPasswordMessage.type === 'success'" name="o_check_circle" size="12px" />
+              <div
+                v-if="newPasswordMessage"
+                class="edit-field-hint"
+                :class="`edit-field-hint-${newPasswordMessage.type}`"
+              >
+                <q-icon
+                  v-if="newPasswordMessage.type === 'success'"
+                  name="o_check_circle"
+                  size="12px"
+                />
                 {{ newPasswordMessage.text }}
               </div>
             </div>
 
             <div class="edit-field edit-field-tight">
-              <div class="edit-field-label">{{ t('Confirm New Password') }}</div>
+              <div class="edit-field-label">{{
+                t('Confirm New Password')
+              }}</div>
               <q-input
                 v-model="passwords.confirm"
                 outlined
@@ -407,14 +671,24 @@
               >
                 <template #append>
                   <q-icon
-                    :name="showConfirmPassword ? 'o_visibility' : 'o_visibility_off'"
+                    :name="
+                      showConfirmPassword ? 'o_visibility' : 'o_visibility_off'
+                    "
                     class="password-icon cursor-pointer"
                     @click="showConfirmPassword = !showConfirmPassword"
                   />
                 </template>
               </q-input>
-              <div v-if="confirmPasswordMessage" class="edit-field-hint" :class="`edit-field-hint-${confirmPasswordMessage.type}`">
-                <q-icon v-if="confirmPasswordMessage.type === 'success'" name="o_check_circle" size="12px" />
+              <div
+                v-if="confirmPasswordMessage"
+                class="edit-field-hint"
+                :class="`edit-field-hint-${confirmPasswordMessage.type}`"
+              >
+                <q-icon
+                  v-if="confirmPasswordMessage.type === 'success'"
+                  name="o_check_circle"
+                  size="12px"
+                />
                 {{ confirmPasswordMessage.text }}
               </div>
             </div>
@@ -422,7 +696,14 @@
         </q-form>
 
         <q-card-actions align="right">
-          <q-btn outline no-caps :label="t('Cancel')" color="primary" :disable="savingPassword" @click="attemptClosePasswordModal" />
+          <q-btn
+            outline
+            no-caps
+            :label="t('Cancel')"
+            color="primary"
+            :disable="savingPassword"
+            @click="attemptClosePasswordModal"
+          />
           <q-btn
             unelevated
             no-caps
@@ -438,15 +719,39 @@
     </q-dialog>
 
     <!-- OTP VERIFICATION DIALOG -->
-    <q-dialog v-model="showOtpModal" persistent transition-show="scale" transition-hide="scale" @keydown.esc="dialogEsc($event, cancelOtp, verifyingOtp)">
-      <q-card class="profile-dialog-card" style="width: 440px; max-width: 90vw;">
+    <q-dialog
+      v-model="showOtpModal"
+      persistent
+      transition-show="scale"
+      transition-hide="scale"
+      @keydown.esc="dialogEsc($event, cancelOtp, verifyingOtp)"
+    >
+      <q-card class="profile-dialog-card" style="width: 440px; max-width: 90vw">
         <q-card-section class="dialog-header">
           <div class="dialog-icon"><q-icon name="o_sms" size="22px" /></div>
           <div class="dialog-header-text">
-            <div class="text-h6">{{ otpPurpose === 'password' ? t('Verify Password Change') : t('Verify New Phone') }}</div>
-            <div class="section-subtitle">{{ t('Enter the 6-digit verification code sent to {phone}. Sent via SMS.', { phone: maskedPhone }) }}</div>
+            <div class="text-h6">{{
+              otpPurpose === 'password'
+                ? t('Verify Password Change')
+                : t('Verify New Phone')
+            }}</div>
+            <div class="section-subtitle">{{
+              t(
+                'Enter the 6-digit verification code sent to {phone}. Sent via SMS.',
+                { phone: maskedPhone }
+              )
+            }}</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="dialog-close-btn" :aria-label="t('Close verification')" :disable="verifyingOtp" @click="cancelOtp" />
+          <q-btn
+            flat
+            round
+            dense
+            icon="o_close"
+            class="dialog-close-btn"
+            :aria-label="t('Close verification')"
+            :disable="verifyingOtp"
+            @click="cancelOtp"
+          />
         </q-card-section>
         <q-card-section class="dialog-body text-center">
           <!-- Same boxed OTP pattern as ConsumerVerify.vue / LoginPage.vue's forgot-password flow -->
@@ -460,66 +765,150 @@
               :autocomplete="i === 0 ? 'one-time-code' : 'off'"
               :aria-label="`Digit ${i + 1} of 6`"
               class="otp-box"
-              :class="{ 'otp-box-error': otpError, 'otp-box-success': otpVerifiedFlash }"
+              :class="{
+                'otp-box-error': otpError,
+                'otp-box-success': otpVerifiedFlash
+              }"
               :disabled="otpVerifiedFlash"
               @focus="$event.target.select()"
               @input="onOtpInput(i)"
               @keydown.backspace="onOtpBackspace(i)"
               @paste="onOtpPaste"
-              :ref="el => { otpRefs[i] = el }"
+              :ref="
+                el => {
+                  otpRefs[i] = el
+                }
+              "
             />
           </div>
-          <div v-if="otpError" class="text-red otp-error q-mt-sm">{{ otpError }}</div>
+          <div v-if="otpError" class="text-red otp-error q-mt-sm">{{
+            otpError
+          }}</div>
 
           <div class="otp-meta">
             <span class="otp-resend">
               <template v-if="canResendOtp">
-                {{ t('Didn\'t receive the code?') }}
-                <a href="#" class="otp-resend-link" @click.prevent="resendOtpCode">{{ t('Resend Code') }}</a>
+                {{ t("Didn't receive the code?") }}
+                <a
+                  href="#"
+                  class="otp-resend-link"
+                  @click.prevent="resendOtpCode"
+                  >{{ t('Resend Code') }}</a
+                >
               </template>
               <template v-else>
-                {{ t('Didn\'t receive the code? Resend in {time}', { time: formattedResendTime }) }}
+                {{
+                  t("Didn't receive the code? Resend in {time}", {
+                    time: formattedResendTime
+                  })
+                }}
               </template>
             </span>
           </div>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn outline no-caps :label="t('Cancel')" color="primary" :disable="verifyingOtp" @click="cancelOtp" />
-          <q-btn unelevated no-caps color="primary" :label="t('Verify & Save')" :loading="verifyingOtp" :disable="!canVerifyOtp" class="btn-gradient" @click="verifyOtp" />
+          <q-btn
+            outline
+            no-caps
+            :label="t('Cancel')"
+            color="primary"
+            :disable="verifyingOtp"
+            @click="cancelOtp"
+          />
+          <q-btn
+            unelevated
+            no-caps
+            color="primary"
+            :label="t('Verify & Save')"
+            :loading="verifyingOtp"
+            :disable="!canVerifyOtp"
+            class="btn-gradient"
+            @click="verifyOtp"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
     <!-- DELETE ACCOUNT DIALOG -->
-    <q-dialog v-model="showDeleteModal" persistent transition-show="scale" transition-hide="scale" @keydown.esc="dialogEsc($event, cancelDeleteModal, deletingAccount)">
-      <q-card class="profile-dialog-card delete-dialog-card" style="width: 480px; max-width: 90vw;">
+    <q-dialog
+      v-model="showDeleteModal"
+      persistent
+      transition-show="scale"
+      transition-hide="scale"
+      @keydown.esc="dialogEsc($event, cancelDeleteModal, deletingAccount)"
+    >
+      <q-card
+        class="profile-dialog-card delete-dialog-card"
+        style="width: 480px; max-width: 90vw"
+      >
         <q-card-section class="dialog-header">
-          <div class="dialog-icon dialog-icon--danger"><q-icon name="o_delete" size="22px" /></div>
+          <div class="dialog-icon dialog-icon--danger"
+            ><q-icon name="o_delete" size="22px"
+          /></div>
           <div class="dialog-header-text">
             <div class="text-h6">{{ t('Delete Account') }}</div>
-            <div class="section-subtitle">{{ t('This action cannot be undone.') }}</div>
+            <div class="section-subtitle">{{
+              t('This action cannot be undone.')
+            }}</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="dialog-close-btn" :aria-label="t('Close delete account')" :disable="deletingAccount" @click="cancelDeleteModal" />
+          <q-btn
+            flat
+            round
+            dense
+            icon="o_close"
+            class="dialog-close-btn"
+            :aria-label="t('Close delete account')"
+            :disable="deletingAccount"
+            @click="cancelDeleteModal"
+          />
         </q-card-section>
 
         <q-card-section class="dialog-body">
           <p class="delete-warning">
-            {{ t('Are you absolutely sure you want to delete your account? All of your orders, saved details, and account data will be permanently removed. This cannot be undone.') }}
+            {{
+              t(
+                'Are you absolutely sure you want to delete your account? All of your orders, saved details, and account data will be permanently removed. This cannot be undone.'
+              )
+            }}
           </p>
 
           <div class="edit-field edit-field-tight">
             <div class="edit-field-label">
-              {{ t('Type "{name}" below to confirm account deletion.', { name: deleteConfirmName }) }}
+              {{
+                t('Type "{name}" below to confirm account deletion.', {
+                  name: deleteConfirmName
+                })
+              }}
             </div>
-            <q-input v-model="deleteConfirmInput" outlined dense no-error-icon :placeholder="deleteConfirmName" />
-            <div v-if="deleteConfirmInput && !deleteConfirmMatches" class="edit-field-hint edit-field-hint-error">
-              {{ t('Name doesn\'t match. Please type "{name}" exactly.', { name: deleteConfirmName }) }}
+            <q-input
+              v-model="deleteConfirmInput"
+              outlined
+              dense
+              no-error-icon
+              :placeholder="deleteConfirmName"
+            />
+            <div
+              v-if="deleteConfirmInput && !deleteConfirmMatches"
+              class="edit-field-hint edit-field-hint-error"
+            >
+              {{
+                t('Name doesn\'t match. Please type "{name}" exactly.', {
+                  name: deleteConfirmName
+                })
+              }}
             </div>
           </div>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn outline no-caps :label="t('Cancel')" color="primary" :disable="deletingAccount" @click="cancelDeleteModal" />
+          <q-btn
+            outline
+            no-caps
+            :label="t('Cancel')"
+            color="primary"
+            :disable="deletingAccount"
+            @click="cancelDeleteModal"
+          />
           <q-btn
             unelevated
             no-caps
@@ -535,19 +924,38 @@
 
     <!-- ACCOUNT DELETED CONFIRMATION -->
     <!-- No close button, since the account and its session are already gone and the only way out is Go to Home. -->
-    <q-dialog v-model="showAccountDeletedModal" persistent transition-show="scale" transition-hide="scale">
-      <q-card class="profile-dialog-card success-card" style="width: 440px; max-width: 90vw;">
+    <q-dialog
+      v-model="showAccountDeletedModal"
+      persistent
+      transition-show="scale"
+      transition-hide="scale"
+    >
+      <q-card
+        class="profile-dialog-card success-card"
+        style="width: 440px; max-width: 90vw"
+      >
         <q-card-section class="text-center">
           <div class="success-icon">
             <q-icon name="o_check" size="32px" />
           </div>
           <div class="text-h6">{{ t('Account Deleted!') }}</div>
-          <p class="section-subtitle">{{ t('Your account has been permanently deleted. Thank you for being part of Tindahan.') }}</p>
-          <q-btn unelevated no-caps color="primary" :label="t('Go to Home')" class="full-width btn-gradient" autofocus @click="goHomeAfterDelete" />
+          <p class="section-subtitle">{{
+            t(
+              'Your account has been permanently deleted. Thank you for being part of Tindahan.'
+            )
+          }}</p>
+          <q-btn
+            unelevated
+            no-caps
+            color="primary"
+            :label="t('Go to Home')"
+            class="full-width btn-gradient"
+            autofocus
+            @click="goHomeAfterDelete"
+          />
         </q-card-section>
       </q-card>
     </q-dialog>
-
   </q-page>
 </template>
 
@@ -558,7 +966,10 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
-import { PASSWORD_REQUIREMENTS, validatePassword } from '@/utils/passwordValidation'
+import {
+  PASSWORD_REQUIREMENTS,
+  validatePassword
+} from '@/utils/passwordValidation'
 import { useAuth } from '@/composables/useAuth'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
@@ -620,25 +1031,46 @@ const editForm = reactive({
   email: ''
 })
 
-const phoneChanged = computed(() => editForm.phone_number !== user.value.phone_number)
+const phoneChanged = computed(
+  () => editForm.phone_number !== user.value.phone_number
+)
 const emailChanged = computed(() => editForm.email !== user.value.email)
-const birthdayChanged = computed(() => (editForm.birthday || '') !== (user.value.birthday || ''))
+const birthdayChanged = computed(
+  () => (editForm.birthday || '') !== (user.value.birthday || '')
+)
 
 // Written out as a date, or Not set for accounts made before sign-up asked for a birthday.
-const birthdayLabel = computed(() => formatBirthday(user.value.birthday, locale.value) || t('Not set'))
-const isPhoneValid = computed(() => /^09\d{9}$/.test(editForm.phone_number || ''))
+const birthdayLabel = computed(
+  () => formatBirthday(user.value.birthday, locale.value) || t('Not set')
+)
+const isPhoneValid = computed(() =>
+  /^09\d{9}$/.test(editForm.phone_number || '')
+)
 const isEmailValid = computed(() => /.+@.+\..+/.test(editForm.email || ''))
 
 // One message per field: error > changed-helper > nothing.
 const phoneMessage = computed(() => {
-  if (!isPhoneValid.value) return { type: 'error', text: t('Phone number must start with 09 and contain 11 digits.') }
-  if (phoneChanged.value) return { type: 'helper', text: t('We\'ll send an OTP to verify your new phone number.') }
+  if (!isPhoneValid.value)
+    return {
+      type: 'error',
+      text: t('Phone number must start with 09 and contain 11 digits.')
+    }
+  if (phoneChanged.value)
+    return {
+      type: 'helper',
+      text: t("We'll send an OTP to verify your new phone number.")
+    }
   return null
 })
 
 const emailMessage = computed(() => {
-  if (!isEmailValid.value) return { type: 'error', text: t('Enter a valid email address.') }
-  if (emailChanged.value) return { type: 'helper', text: t('We\'ll send a verification link to your new email.') }
+  if (!isEmailValid.value)
+    return { type: 'error', text: t('Enter a valid email address.') }
+  if (emailChanged.value)
+    return {
+      type: 'helper',
+      text: t("We'll send a verification link to your new email.")
+    }
   return null
 })
 
@@ -686,25 +1118,27 @@ const hasPersonalChanges = computed(() => {
   )
 })
 
-const canSavePersonal = computed(() =>
-  hasPersonalChanges.value &&
-  !!editForm.firstName &&
-  !!editForm.lastName &&
-  isPhoneValid.value &&
-  isEmailValid.value
+const canSavePersonal = computed(
+  () =>
+    hasPersonalChanges.value &&
+    !!editForm.firstName &&
+    !!editForm.lastName &&
+    isPhoneValid.value &&
+    isEmailValid.value
 )
 
 // Blocks at the keystroke rather than via v-model transform, which has a sync-timing gap under fast typing.
-const blockNonDigitKey = (event) => {
+const blockNonDigitKey = event => {
   if (event.key.length === 1 && !/\d/.test(event.key)) {
     event.preventDefault()
   }
 }
 
-const onPhoneNumberPaste = (event) => {
+const onPhoneNumberPaste = event => {
   const pasted = event.clipboardData?.getData('text') || ''
   event.preventDefault()
-  editForm.phone_number = `${editForm.phone_number}${pasted.replace(/\D/g, '')}`.slice(0, 11)
+  editForm.phone_number =
+    `${editForm.phone_number}${pasted.replace(/\D/g, '')}`.slice(0, 11)
 }
 
 // Password dialog
@@ -715,7 +1149,9 @@ const showNewPassword = ref(false)
 const showConfirmPassword = ref(false)
 
 // Same rule as ConsumerRegister.vue's passwordRule.
-const isNewPasswordValid = computed(() => validatePassword(passwords.new) === true)
+const isNewPasswordValid = computed(
+  () => validatePassword(passwords.new) === true
+)
 
 const newPasswordMessage = computed(() => {
   if (!passwords.new) return null
@@ -728,26 +1164,34 @@ const newPasswordMessage = computed(() => {
 
 const confirmPasswordMessage = computed(() => {
   if (!passwords.confirm) return null
-  if (passwords.confirm !== passwords.new) return { type: 'error', text: t('Passwords do not match.') }
+  if (passwords.confirm !== passwords.new)
+    return { type: 'error', text: t('Passwords do not match.') }
   return { type: 'success', text: t('Passwords match.') }
 })
 
-const canSavePassword = computed(() =>
-  !!passwords.current &&
-  isNewPasswordValid.value &&
-  passwords.confirm === passwords.new
+const canSavePassword = computed(
+  () =>
+    !!passwords.current &&
+    isNewPasswordValid.value &&
+    passwords.confirm === passwords.new
 )
 
-const hasPasswordChanges = computed(() => !!passwords.current || !!passwords.new || !!passwords.confirm)
+const hasPasswordChanges = computed(
+  () => !!passwords.current || !!passwords.new || !!passwords.confirm
+)
 
 // Delete account dialog
 const showDeleteModal = ref(false)
 const showAccountDeletedModal = ref(false)
 const deletingAccount = ref(false)
 const deleteConfirmInput = ref('')
-const deleteConfirmName = computed(() => (user.value.full_name || '').trim().split(' ')[0] || '')
-const deleteConfirmMatches = computed(() =>
-  deleteConfirmInput.value.trim().toLowerCase() === deleteConfirmName.value.toLowerCase() && deleteConfirmName.value !== ''
+const deleteConfirmName = computed(
+  () => (user.value.full_name || '').trim().split(' ')[0] || ''
+)
+const deleteConfirmMatches = computed(
+  () =>
+    deleteConfirmInput.value.trim().toLowerCase() ===
+      deleteConfirmName.value.toLowerCase() && deleteConfirmName.value !== ''
 )
 
 // Photo Crop State
@@ -765,7 +1209,7 @@ const otpInput = ref(['', '', '', '', '', ''])
 const otpRefs = ref([])
 const otpError = ref('')
 const otpVerifiedFlash = ref(false)
-const canVerifyOtp = computed(() => otpInput.value.every((digit) => digit !== ''))
+const canVerifyOtp = computed(() => otpInput.value.every(digit => digit !== ''))
 
 // The one OTP dialog serves both flows; this says which one opened it.
 const otpPurpose = ref('phone')
@@ -773,9 +1217,10 @@ const otpPurpose = ref('phone')
 // e.g. "09981234567" -> "0998•••4567"
 const maskedPhone = computed(() => {
   // A password change codes the registered number, which the request response masks for us.
-  const digits = otpPurpose.value === 'password'
-    ? (user.value?.phone_number || '')
-    : (form.phone_number || '')
+  const digits =
+    otpPurpose.value === 'password'
+      ? user.value?.phone_number || ''
+      : form.phone_number || ''
   if (digits.length < 7) return digits
   return `${digits.slice(0, 4)}•••${digits.slice(-4)}`
 })
@@ -789,7 +1234,10 @@ let otpTimerHandle = null
 
 const canResendOtp = computed(() => resendSecondsLeft.value <= 0)
 // Minutes and seconds, e.g. 9:59, the same as the sign-up screens.
-const formattedResendTime = computed(() => `${Math.floor(resendSecondsLeft.value / 60)}:${String(resendSecondsLeft.value % 60).padStart(2, '0')}`)
+const formattedResendTime = computed(
+  () =>
+    `${Math.floor(resendSecondsLeft.value / 60)}:${String(resendSecondsLeft.value % 60).padStart(2, '0')}`
+)
 
 const startOtpTimers = () => {
   otpSecondsLeft.value = OTP_EXPIRY_SECONDS
@@ -801,7 +1249,8 @@ const startOtpTimers = () => {
     if (otpSecondsLeft.value <= 0) {
       clearInterval(otpTimerHandle)
       // The countdown UI is gone, so an expired code gets its own message instead of a generic invalid-code error.
-      if (!otpVerifiedFlash.value) otpError.value = t('Code expired. Please resend a new code.')
+      if (!otpVerifiedFlash.value)
+        otpError.value = t('Code expired. Please resend a new code.')
     }
   }, 1000)
 }
@@ -834,7 +1283,7 @@ const triggerUpload = () => {
   document.getElementById('photoUpload').click()
 }
 
-const onFileSelected = (event) => {
+const onFileSelected = event => {
   const file = event.target.files?.[0]
   // Cleared so choosing the same photo again after cancelling still opens the cropper.
   event.target.value = ''
@@ -849,7 +1298,9 @@ const onFileSelected = (event) => {
 const applyCrop = async () => {
   const blob = await cropperRef.value?.toBlob()
   if (!blob) return
-  photoFile.value = new File([blob], 'profile_cropped.jpg', { type: 'image/jpeg' })
+  photoFile.value = new File([blob], 'profile_cropped.jpg', {
+    type: 'image/jpeg'
+  })
   photoPreview.value = URL.createObjectURL(blob)
   showCropModal.value = false
 }
@@ -867,17 +1318,22 @@ const savePhoto = async () => {
   try {
     const fd = new FormData()
     fd.append('profile_picture', photoFile.value)
-    const res = await api.post('/profile/photo', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    const res = await api.post('/profile/photo', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
     user.value.profile_picture_url = res.data.profile_picture_url
-    
+
     // Update local storage so Header avatar updates on refresh
     const lsUser = JSON.parse(localStorage.getItem('auth_user') || '{}')
     lsUser.profile_picture_url = res.data.profile_picture_url
     localStorage.setItem('auth_user', JSON.stringify(lsUser))
-    
+
     photoFile.value = null
     photoPreview.value = null
-    openSuccessModal('Photo Updated!', 'Your profile photo has been updated successfully.')
+    openSuccessModal(
+      'Photo Updated!',
+      'Your profile photo has been updated successfully.'
+    )
   } catch (err) {
     $q.notify({ type: 'negative', message: t('Failed to update photo.') })
   } finally {
@@ -890,7 +1346,10 @@ const saveInfo = async () => {
   if (!form.full_name) return false
   savingInfo.value = true
   try {
-    await api.post('/profile/personal-info', { full_name: form.full_name, birthday: form.birthday || null })
+    await api.post('/profile/personal-info', {
+      full_name: form.full_name,
+      birthday: form.birthday || null
+    })
     user.value.full_name = form.full_name
     user.value.birthday = form.birthday || null
 
@@ -900,7 +1359,10 @@ const saveInfo = async () => {
     localStorage.setItem('auth_user', JSON.stringify(lsUser))
     return true
   } catch (err) {
-    $q.notify({ type: 'negative', message: t(err.response?.data?.message || 'Failed to update info.') })
+    $q.notify({
+      type: 'negative',
+      message: t(err.response?.data?.message || 'Failed to update info.')
+    })
     return false
   } finally {
     savingInfo.value = false
@@ -921,7 +1383,9 @@ const startEditPersonal = () => {
 
 // Only prompt if there's actually something to lose.
 const attemptCloseEditPersonal = () => {
-  requestClose(hasPersonalChanges.value, () => { showEditPersonalModal.value = false })
+  requestClose(hasPersonalChanges.value, () => {
+    showEditPersonalModal.value = false
+  })
 }
 
 const savePersonal = async () => {
@@ -929,7 +1393,8 @@ const savePersonal = async () => {
   const isValid = await editPersonalFormRef.value.validate()
   if (!isValid) return
 
-  const nameChanged = `${editForm.firstName} ${editForm.lastName}`.trim() !== user.value.full_name
+  const nameChanged =
+    `${editForm.firstName} ${editForm.lastName}`.trim() !== user.value.full_name
   const phoneIsChanged = phoneChanged.value
   const emailIsChanged = emailChanged.value
   const birthdayIsChanged = birthdayChanged.value
@@ -959,7 +1424,10 @@ const savePersonal = async () => {
         phoneVerificationRequired.value = true
       }
     } else if (nameChanged || emailIsChanged || birthdayIsChanged) {
-      openSuccessModal('Information Updated!', 'Your personal information has been updated successfully.')
+      openSuccessModal(
+        'Information Updated!',
+        'Your personal information has been updated successfully.'
+      )
     }
   } finally {
     savingPersonal.value = false
@@ -970,14 +1438,19 @@ const requestPhoneOtp = async () => {
   if (form.phone_number === user.value.phone_number) return
   requestingOtp.value = true
   try {
-    await api.post('/profile/phone-request-otp', { phone_number: form.phone_number })
+    await api.post('/profile/phone-request-otp', {
+      phone_number: form.phone_number
+    })
     otpInput.value = ['', '', '', '', '', '']
     otpError.value = ''
     otpVerifiedFlash.value = false
     showOtpModal.value = true
     startOtpTimers()
   } catch (err) {
-    $q.notify({ type: 'negative', message: t(err.response?.data?.message || 'Failed to request OTP.') })
+    $q.notify({
+      type: 'negative',
+      message: t(err.response?.data?.message || 'Failed to request OTP.')
+    })
   } finally {
     requestingOtp.value = false
   }
@@ -990,18 +1463,23 @@ const resendOtpCode = async () => {
       // Its own endpoint: re-requesting would re-check the current password and spend that throttle.
       await api.post('/profile/password-resend-otp')
     } else {
-      await api.post('/profile/phone-request-otp', { phone_number: form.phone_number })
+      await api.post('/profile/phone-request-otp', {
+        phone_number: form.phone_number
+      })
     }
     otpInput.value = ['', '', '', '', '', '']
     otpError.value = ''
     startOtpTimers()
     otpRefs.value[0]?.focus()
   } catch (err) {
-    $q.notify({ type: 'negative', message: t(err.response?.data?.message || 'Failed to resend code.') })
+    $q.notify({
+      type: 'negative',
+      message: t(err.response?.data?.message || 'Failed to resend code.')
+    })
   }
 }
 
-const onOtpInput = (index) => {
+const onOtpInput = index => {
   const digits = otpInput.value[index].replace(/\D/g, '')
 
   // An autofilled SMS code lands in the first box as one string, so it is spread across all six.
@@ -1028,17 +1506,21 @@ const onOtpInput = (index) => {
   }
 }
 
-const onOtpBackspace = (index) => {
+const onOtpBackspace = index => {
   if (!otpInput.value[index] && index > 0) {
     otpRefs.value[index - 1]?.focus()
   }
 }
 
-const onOtpPaste = (event) => {
-  const pasted = (event.clipboardData?.getData('text') || '').replace(/\D/g, '').slice(0, 6)
+const onOtpPaste = event => {
+  const pasted = (event.clipboardData?.getData('text') || '')
+    .replace(/\D/g, '')
+    .slice(0, 6)
   if (!pasted) return
   event.preventDefault()
-  pasted.split('').forEach((digit, i) => { otpInput.value[i] = digit })
+  pasted.split('').forEach((digit, i) => {
+    otpInput.value[i] = digit
+  })
   const lastIndex = Math.min(pasted.length, 6) - 1
   otpRefs.value[lastIndex]?.focus()
   if (canVerifyOtp.value) verifyOtp()
@@ -1085,13 +1567,22 @@ const verifyOtp = async () => {
       showOtpModal.value = false
       otpPurpose.value = 'phone'
       if (isPassword) {
-        openSuccessModal('Password Updated!', 'Your password has been changed successfully.')
+        openSuccessModal(
+          'Password Updated!',
+          'Your password has been changed successfully.'
+        )
       } else {
-        openSuccessModal('Information Updated!', 'Your personal information has been updated successfully.')
+        openSuccessModal(
+          'Information Updated!',
+          'Your personal information has been updated successfully.'
+        )
       }
     }, 450)
   } catch (err) {
-    otpError.value = t(err.response?.data?.message || 'Invalid verification code. Please try again.')
+    otpError.value = t(
+      err.response?.data?.message ||
+        'Invalid verification code. Please try again.'
+    )
   } finally {
     verifyingOtp.value = false
   }
@@ -1104,7 +1595,10 @@ const saveEmail = async () => {
     await api.post('/profile/email', { email: form.email })
     user.value.email = form.email
   } catch (err) {
-    $q.notify({ type: 'negative', message: t(err.response?.data?.message || 'Failed to update email.') })
+    $q.notify({
+      type: 'negative',
+      message: t(err.response?.data?.message || 'Failed to update email.')
+    })
   } finally {
     savingEmail.value = false
   }
@@ -1130,7 +1624,14 @@ const savePassword = async () => {
     showOtpModal.value = true
     startOtpTimers()
   } catch (err) {
-    $q.notify({ type: 'negative', message: t(err.response?.data?.errors?.new_password?.[0] || err.response?.data?.message || 'Failed to update password.') })
+    $q.notify({
+      type: 'negative',
+      message: t(
+        err.response?.data?.errors?.new_password?.[0] ||
+          err.response?.data?.message ||
+          'Failed to update password.'
+      )
+    })
   } finally {
     savingPassword.value = false
   }
@@ -1252,7 +1753,9 @@ const goHomeAfterDelete = () => {
   /* !important beats Quasar's `flat` prop, which adds its own no-shadow !important utility class. */
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
 
-  transition: box-shadow 0.2s, border-color 0.2s;
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s;
 
   animation: profile-fade-up 0.5s ease both;
   animation-delay: 0.06s;
@@ -1260,8 +1763,14 @@ const goHomeAfterDelete = () => {
 
 /* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
 @keyframes profile-fade-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-header-block {
@@ -1357,7 +1866,9 @@ const goHomeAfterDelete = () => {
   font-size: var(--fs-sm);
   font-weight: 600;
 
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 .card-action-btn:hover {
@@ -1395,7 +1906,8 @@ const goHomeAfterDelete = () => {
 
   /* The second selector outranks the desktop rule that keeps the dialog X at 19px. */
   .dialog-close-btn :deep(.q-icon),
-  .profile-dialog-card :deep(.dialog-header .q-btn--round.dialog-close-btn .q-icon) {
+  .profile-dialog-card
+    :deep(.dialog-header .q-btn--round.dialog-close-btn .q-icon) {
     font-size: 26px;
   }
 }
@@ -1414,7 +1926,10 @@ const goHomeAfterDelete = () => {
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .btn-gradient:hover {
@@ -1450,7 +1965,10 @@ const goHomeAfterDelete = () => {
 
   box-shadow: 0 2px 8px rgba(185, 28, 28, 0.3);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .btn-danger-gradient:hover {
@@ -1517,7 +2035,11 @@ const goHomeAfterDelete = () => {
 
   border-radius: var(--r-xl);
 
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-brand-tint) 0%,
+    var(--c-brand-tint-2) 100%
+  );
   color: var(--c-brand);
 }
 
@@ -1673,7 +2195,9 @@ const goHomeAfterDelete = () => {
 }
 
 .profile-container :deep(.q-btn--outline.text-primary) {
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 .profile-container :deep(.q-btn--outline.text-primary:hover) {
@@ -1684,7 +2208,10 @@ const goHomeAfterDelete = () => {
 /* Red outline buttons (Cancel, Keep Editing), the same design as the Edit pill, shared by every dialog and the photo card. */
 .profile-container :deep(.q-btn--outline.text-primary),
 .profile-dialog-card :deep(.q-btn--outline.text-primary) {
-  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .profile-dialog-card :deep(.q-btn--outline.text-primary:hover),
@@ -1723,7 +2250,11 @@ const goHomeAfterDelete = () => {
 
   cursor: pointer;
 
-  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.2s, transform 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.15s;
 }
 
 .danger-row:hover {
@@ -1743,7 +2274,11 @@ const goHomeAfterDelete = () => {
 .danger-icon {
   border-radius: var(--r-xl);
 
-  background: linear-gradient(145deg, var(--c-danger-tint) 0%, var(--c-danger-tint) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-danger-tint) 0%,
+    var(--c-danger-tint) 100%
+  );
   color: var(--c-danger);
 }
 
@@ -1926,7 +2461,10 @@ const goHomeAfterDelete = () => {
 
   outline: none;
 
-  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.2s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    background-color 0.2s;
 }
 
 .otp-box:focus {
@@ -2016,13 +2554,21 @@ const goHomeAfterDelete = () => {
 
   border-radius: var(--r-xl);
 
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-brand-tint) 0%,
+    var(--c-brand-tint-2) 100%
+  );
   color: var(--c-brand);
 }
 
 /* Destructive actions get the deeper end of the brand red rather than a new hue. */
 .dialog-icon--danger {
-  background: linear-gradient(145deg, var(--c-brand-tint-2) 0%, var(--c-brand-tint-3) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-brand-tint-2) 0%,
+    var(--c-brand-tint-3) 100%
+  );
   color: var(--c-brand-deep);
 }
 
@@ -2114,12 +2660,14 @@ const goHomeAfterDelete = () => {
 }
 
 /* Keep Editing is focused as the dialog opens, so Quasar's tint shows for keyboard focus and hover, not for that automatic focus alone. */
-.discard-actions :deep(.q-btn:focus:not(:focus-visible):not(:hover) > .q-focus-helper) {
+.discard-actions
+  :deep(.q-btn:focus:not(:focus-visible):not(:hover) > .q-focus-helper) {
   opacity: 0;
 }
 
 /* Hovering it then shows Quasar's plain hover strength, the same as Cancel in the Log out dialog, rather than its stronger focus tint. */
-.discard-actions :deep(.q-btn:focus:not(:focus-visible):hover > .q-focus-helper) {
+.discard-actions
+  :deep(.q-btn:focus:not(:focus-visible):hover > .q-focus-helper) {
   opacity: 0.15;
 }
 
@@ -2138,7 +2686,8 @@ const goHomeAfterDelete = () => {
 }
 
 /* A button focused as its dialog opens keeps Quasar's focus tint for keyboard users only, so after a mouse click it doesn't look pressed. */
-.profile-dialog-card :deep(.q-btn:focus:not(:focus-visible):not(:hover) > .q-focus-helper) {
+.profile-dialog-card
+  :deep(.q-btn:focus:not(:focus-visible):not(:hover) > .q-focus-helper) {
   opacity: 0;
 }
 
@@ -2310,10 +2859,10 @@ const goHomeAfterDelete = () => {
   }
 
   /* Same 48px as desktop; inputs shouldn't shrink for a small screen. */
-  .profile-dialog-card :deep(.q-field--outlined:not(.otp-box) .q-field__control) {
+  .profile-dialog-card
+    :deep(.q-field--outlined:not(.otp-box) .q-field__control) {
     height: 48px;
   }
-
 }
 
 /* Touch screens: 16px keeps iPhones from zooming in when a dialog field is tapped, the same rule the sign-up pages use. */

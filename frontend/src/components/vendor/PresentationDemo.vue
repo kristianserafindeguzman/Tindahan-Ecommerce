@@ -38,41 +38,41 @@ const steps = [
     }
   },
   {
-  route: ADMIN_DASHBOARD,
-  element: '[data-presentation="admin-dashboard-panels"]',
-  popover: {
-    title: 'Marketplace Overview',
-    description:
-      'These panels provide a closer look at pending applications, platform activity, the vendor-consumer ecosystem, and recent activity.'
-  }
-},
+    route: ADMIN_DASHBOARD,
+    element: '[data-presentation="admin-dashboard-panels"]',
+    popover: {
+      title: 'Marketplace Overview',
+      description:
+        'These panels provide a closer look at pending applications, platform activity, the vendor-consumer ecosystem, and recent activity.'
+    }
+  },
   {
-  route: ADMIN_APPROVALS,
-  element: '[data-presentation="admin-approval-view"]',
-  popover: {
-    title: 'Review Vendor Application',
-    description:
-      'Click View to open the vendor application and review its information.'
-  }
-},
-{
-  route: ADMIN_APPROVALS,
-  element: '[data-presentation="admin-review-info"]',
-  popover: {
-    title: 'Vendor Information',
-    description:
-      'The admin can review the vendor and store information before making a decision.'
-  }
-},
-{
-  route: ADMIN_APPROVALS,
-  element: '[data-presentation="admin-review-approve"]',
-  popover: {
-    title: 'Approve Vendor Application',
-    description:
-      'After reviewing the vendor information, the admin can approve the application.'
-  }
-},
+    route: ADMIN_APPROVALS,
+    element: '[data-presentation="admin-approval-view"]',
+    popover: {
+      title: 'Review Vendor Application',
+      description:
+        'Click View to open the vendor application and review its information.'
+    }
+  },
+  {
+    route: ADMIN_APPROVALS,
+    element: '[data-presentation="admin-review-info"]',
+    popover: {
+      title: 'Vendor Information',
+      description:
+        'The admin can review the vendor and store information before making a decision.'
+    }
+  },
+  {
+    route: ADMIN_APPROVALS,
+    element: '[data-presentation="admin-review-approve"]',
+    popover: {
+      title: 'Approve Vendor Application',
+      description:
+        'After reviewing the vendor information, the admin can approve the application.'
+    }
+  },
   {
     route: ADMIN_VENDORS,
     element: '[data-presentation="admin-view-products"]',
@@ -130,9 +130,7 @@ const handlePresentationClick = event => {
   if (tour?.getActiveIndex() !== 4) return
 
   setTimeout(async () => {
-    const info = await waitForElement(
-      '[data-presentation="admin-review-info"]'
-    )
+    const info = await waitForElement('[data-presentation="admin-review-info"]')
 
     if (!info || !tour?.isActive()) return
 
@@ -146,66 +144,65 @@ const startPresentationDemo = async () => {
   const currentIndex = steps.findIndex(step => step.route === route.path)
   const firstIndex = currentIndex >= 0 ? currentIndex : 0
 
-    tour = driver({
-  showProgress: true,
-  allowClose: true,
-  overlayClickBehavior: () => {},
-  disableActiveInteraction: false,
-  smoothScroll: true,
-  allowScroll: true,
-  stagePadding: 6,
-  stageRadius: 10,
-  popoverClass: 'tindahan-presentation-popover',
+  tour = driver({
+    showProgress: true,
+    allowClose: true,
+    overlayClickBehavior: () => {},
+    disableActiveInteraction: false,
+    smoothScroll: true,
+    allowScroll: true,
+    stagePadding: 6,
+    stageRadius: 10,
+    popoverClass: 'tindahan-presentation-popover',
 
-  nextBtnText: 'Next',
-  prevBtnText: 'Back',
-  doneBtnText: 'Finish',
+    nextBtnText: 'Next',
+    prevBtnText: 'Back',
+    doneBtnText: 'Finish',
 
+    onNextClick: async () => {
+      const current = tour?.getActiveIndex() ?? 0
+      const next = current + 1
 
-  onNextClick: async () => {
-    const current = tour?.getActiveIndex() ?? 0
-    const next = current + 1
+      if (next >= steps.length) {
+        tour?.destroy()
+        return
+      }
 
-    if (next >= steps.length) {
-      tour?.destroy()
-      return
-    }
+      const nextStep = steps[next]
 
-    const nextStep = steps[next]
+      await ensureRoute(nextStep.route)
 
-    await ensureRoute(nextStep.route)
+      if (nextStep.element) {
+        await waitForElement(nextStep.element)
+      }
 
-    if (nextStep.element) {
-      await waitForElement(nextStep.element)
-    }
+      tour?.moveNext()
+    },
 
-    tour?.moveNext()
-  },
+    onPrevClick: async () => {
+      const current = tour?.getActiveIndex() ?? 0
+      const previous = current - 1
 
-  onPrevClick: async () => {
-    const current = tour?.getActiveIndex() ?? 0
-    const previous = current - 1
+      if (previous < 0) {
+        return
+      }
 
-    if (previous < 0) {
-      return
-    }
+      const previousStep = steps[previous]
 
-    const previousStep = steps[previous]
+      await ensureRoute(previousStep.route)
 
-    await ensureRoute(previousStep.route)
+      if (previousStep.element) {
+        await waitForElement(previousStep.element)
+      }
 
-    if (previousStep.element) {
-      await waitForElement(previousStep.element)
-    }
+      tour?.movePrevious()
+    },
 
-    tour?.movePrevious()
-  },
-
-  steps: steps.map(step => ({
-    element: step.element,
-    popover: step.popover
-  }))
-})
+    steps: steps.map(step => ({
+      element: step.element,
+      popover: step.popover
+    }))
+  })
 
   if (steps[firstIndex].element) {
     await waitForElement(steps[firstIndex].element)

@@ -1,23 +1,48 @@
 <template>
   <!-- PRODUCT DETAILS — view the product, switch it on or off, or edit it, in the vendor dialog shape. -->
-  <q-dialog v-model="isOpen" persistent :maximized="$q.screen.xs" @hide="resetToViewMode">
-    <q-card class="vp-dialog pm-dialog" :class="{ 'pm-dialog--full': $q.screen.xs }">
-
+  <q-dialog
+    v-model="isOpen"
+    persistent
+    :maximized="$q.screen.xs"
+    @hide="resetToViewMode"
+  >
+    <q-card
+      class="vp-dialog pm-dialog"
+      :class="{ 'pm-dialog--full': $q.screen.xs }"
+    >
       <!-- VIEW MODE -->
       <template v-if="!isEditMode">
         <div class="vp-dialog-head pm-head">
-          <span class="vp-dialog-icon"><q-icon name="o_inventory_2" size="22px" /></span>
+          <span class="vp-dialog-icon"
+            ><q-icon name="o_inventory_2" size="22px"
+          /></span>
           <div class="pm-head-text">
             <div class="vp-dialog-title">Product Details</div>
-            <div class="vp-dialog-text">{{ product?.category?.category_name ? categoryLabel(product.category.category_name) : 'Uncategorized' }}</div>
+            <div class="vp-dialog-text">{{
+              product?.category?.category_name
+                ? categoryLabel(product.category.category_name)
+                : 'Uncategorized'
+            }}</div>
           </div>
-          <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
+          <q-btn
+            v-close-popup
+            flat
+            round
+            dense
+            icon="o_close"
+            class="vp-dialog-close"
+            aria-label="Close"
+          />
         </div>
 
         <div class="pm-body">
           <div class="pm-grid pm-grid--view">
             <div class="pm-photo-frame">
-              <img v-if="product?.image_url" :src="product.image_url" :alt="product?.product_name || 'Product photo'" />
+              <img
+                v-if="product?.image_url"
+                :src="product.image_url"
+                :alt="product?.product_name || 'Product photo'"
+              />
               <div v-else class="pm-no-photo">
                 <q-icon name="o_image_not_supported" size="34px" />
                 <span>No photo yet</span>
@@ -26,9 +51,14 @@
 
             <div class="pm-info">
               <div class="pm-info-head">
-                <div class="pm-name">{{ product?.product_name || 'Unnamed product' }}</div>
+                <div class="pm-name">{{
+                  product?.product_name || 'Unnamed product'
+                }}</div>
                 <div class="pm-price-row">
-                  <span class="pm-price"><span v-if="productHasVariants" class="pm-from">from</span><span>₱{{ formatNumber(displayPrice) }}</span></span>
+                  <span class="pm-price"
+                    ><span v-if="productHasVariants" class="pm-from">from</span
+                    ><span>₱{{ formatNumber(displayPrice) }}</span></span
+                  >
                   <template v-if="salesLoaded && !salesError">
                     <span class="pm-dot" aria-hidden="true" />
                     <span class="pm-sold">{{ totalSales }} sold</span>
@@ -37,14 +67,32 @@
               </div>
 
               <!-- Availability is a switch that saves straight away. -->
-              <div class="pm-availability" :class="{ 'pm-availability--off': !isActive }">
+              <div
+                class="pm-availability"
+                :class="{ 'pm-availability--off': !isActive }"
+              >
                 <div>
-                  <div class="pm-availability-title">{{ isActive ? 'Available to customers' : 'Archived' }}</div>
+                  <div class="pm-availability-title">{{
+                    isActive ? 'Available to customers' : 'Archived'
+                  }}</div>
                   <div class="pm-availability-text">
-                    {{ isActive ? 'Customers can find and order this product.' : 'Hidden from your store until you turn it back on.' }}
+                    {{
+                      isActive
+                        ? 'Customers can find and order this product.'
+                        : 'Hidden from your store until you turn it back on.'
+                    }}
                   </div>
                 </div>
-                <q-toggle v-model="isActive" color="positive" :aria-label="isActive ? 'Archive this product' : 'Make this product available'" @update:model-value="quickToggleStatus" />
+                <q-toggle
+                  v-model="isActive"
+                  color="positive"
+                  :aria-label="
+                    isActive
+                      ? 'Archive this product'
+                      : 'Make this product available'
+                  "
+                  @update:model-value="quickToggleStatus"
+                />
               </div>
 
               <!-- Stock and description as labelled rows, split by thin lines. -->
@@ -52,26 +100,47 @@
                 <div class="pm-spec">
                   <dt>Stock</dt>
                   <dd>
-                    <span v-if="!productHasVariants" class="pm-stock" :class="{ 'pm-stock--out': !(product?.stock_quantity > 0) }">
+                    <span
+                      v-if="!productHasVariants"
+                      class="pm-stock"
+                      :class="{
+                        'pm-stock--out': !(product?.stock_quantity > 0)
+                      }"
+                    >
                       {{ product?.stock_quantity || 0 }} in stock
                     </span>
                     <!-- One aligned row per size: its name, what is left, and its price on the right. -->
                     <ul v-else class="pm-variant-list">
-                      <li v-for="(v, i) in product.variants" :key="i" class="pm-variant-row" :class="{ 'pm-variant-row--out': !(v.quantity > 0) }">
-                        <span class="pm-variant-size">{{ variantLabel(v, i) }}</span>
-                        <span class="pm-variant-qty">{{ v.quantity > 0 ? `${v.quantity} left` : 'Out of stock' }}</span>
-                        <span class="pm-variant-price">₱{{ formatNumber(v.price) }}</span>
+                      <li
+                        v-for="(v, i) in product.variants"
+                        :key="i"
+                        class="pm-variant-row"
+                        :class="{ 'pm-variant-row--out': !(v.quantity > 0) }"
+                      >
+                        <span class="pm-variant-size">{{
+                          variantLabel(v, i)
+                        }}</span>
+                        <span class="pm-variant-qty">{{
+                          v.quantity > 0 ? `${v.quantity} left` : 'Out of stock'
+                        }}</span>
+                        <span class="pm-variant-price"
+                          >₱{{ formatNumber(v.price) }}</span
+                        >
                       </li>
                     </ul>
                   </dd>
                 </div>
                 <div class="pm-spec">
                   <dt>Description</dt>
-                  <dd class="pm-desc">{{ product?.description || 'No description yet.' }}</dd>
+                  <dd class="pm-desc">{{
+                    product?.description || 'No description yet.'
+                  }}</dd>
                 </div>
                 <div v-if="product?.expiration_date" class="pm-spec">
                   <dt>Best Before</dt>
-                  <dd class="pm-desc">{{ new Date(product.expiration_date).toLocaleDateString() }}</dd>
+                  <dd class="pm-desc">{{
+                    new Date(product.expiration_date).toLocaleDateString()
+                  }}</dd>
                 </div>
               </dl>
 
@@ -82,7 +151,13 @@
                   <span class="pm-block-note">{{ salesDateRange }}</span>
                 </div>
                 <div class="pm-chart">
-                  <div v-if="!hasSalesData" class="pm-chart-empty">{{ salesLoading ? 'Loading sales…' : salesError ? 'Couldn’t load sales' : 'No sales yet' }}</div>
+                  <div v-if="!hasSalesData" class="pm-chart-empty">{{
+                    salesLoading
+                      ? 'Loading sales…'
+                      : salesError
+                        ? 'Couldn’t load sales'
+                        : 'No sales yet'
+                  }}</div>
                   <VueApexCharts
                     v-if="renderChart"
                     type="area"
@@ -95,15 +170,38 @@
                 </div>
                 <!-- This week's figures for the chart above: revenue against the week before, and the revenue itself. -->
                 <div class="pm-sales-stats">
-                  <div class="pm-sales-stat" title="Revenue in the last 7 days compared with the 7 days before">
+                  <div
+                    class="pm-sales-stat"
+                    title="Revenue in the last 7 days compared with the 7 days before"
+                  >
                     <span class="pm-sales-stat-label">Growth</span>
-                    <q-skeleton v-if="salesLoading" type="text" width="55%" height="28px" />
-                    <span v-else class="pm-sales-stat-value" :class="`pm-sales-stat-value--${salesError ? 'flat' : growth.tone}`">{{ salesError ? '—' : growth.text }}</span>
+                    <q-skeleton
+                      v-if="salesLoading"
+                      type="text"
+                      width="55%"
+                      height="28px"
+                    />
+                    <span
+                      v-else
+                      class="pm-sales-stat-value"
+                      :class="`pm-sales-stat-value--${salesError ? 'flat' : growth.tone}`"
+                      >{{ salesError ? '—' : growth.text }}</span
+                    >
                   </div>
-                  <div class="pm-sales-stat" title="Picked-up orders and walk-in sales in the last 7 days">
+                  <div
+                    class="pm-sales-stat"
+                    title="Picked-up orders and walk-in sales in the last 7 days"
+                  >
                     <span class="pm-sales-stat-label">Revenue</span>
-                    <q-skeleton v-if="salesLoading" type="text" width="70%" height="28px" />
-                    <span v-else class="pm-sales-stat-value">{{ salesError ? '—' : '₱' + formatNumber(weekRevenue) }}</span>
+                    <q-skeleton
+                      v-if="salesLoading"
+                      type="text"
+                      width="70%"
+                      height="28px"
+                    />
+                    <span v-else class="pm-sales-stat-value">{{
+                      salesError ? '—' : '₱' + formatNumber(weekRevenue)
+                    }}</span>
                   </div>
                 </div>
               </div>
@@ -112,27 +210,55 @@
         </div>
 
         <div class="vp-dialog-actions pm-actions">
-          <q-btn v-close-popup outline no-caps color="primary" label="Close" class="vp-dialog-btn" />
-          <q-btn unelevated no-caps color="primary" icon="o_edit" label="Edit Product" class="vp-dialog-btn" @click="enterEditMode" />
+          <q-btn
+            v-close-popup
+            outline
+            no-caps
+            color="primary"
+            label="Close"
+            class="vp-dialog-btn"
+          />
+          <q-btn
+            unelevated
+            no-caps
+            color="primary"
+            icon="o_edit"
+            label="Edit Product"
+            class="vp-dialog-btn"
+            @click="enterEditMode"
+          />
         </div>
       </template>
 
       <!-- EDIT MODE — the whole card is the form, so Save runs the field checks. -->
       <q-form v-else greedy class="pm-form" @submit.prevent="submitForm">
         <div class="vp-dialog-head pm-head">
-          <span class="vp-dialog-icon"><q-icon name="o_edit" size="22px" /></span>
+          <span class="vp-dialog-icon"
+            ><q-icon name="o_edit" size="22px"
+          /></span>
           <div class="pm-head-text">
             <div class="vp-dialog-title">Edit product</div>
             <div class="vp-dialog-text">{{ product?.product_name }}</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="vp-dialog-close" aria-label="Stop editing" :disable="saving" @click="cancelEdit" />
+          <q-btn
+            flat
+            round
+            dense
+            icon="o_close"
+            class="vp-dialog-close"
+            aria-label="Stop editing"
+            :disable="saving"
+            @click="cancelEdit"
+          />
         </div>
 
         <div class="pm-body">
           <div class="pm-grid">
             <div class="pm-fields">
               <div>
-                <label class="vp-field-label" for="pm-edit-name">Product name</label>
+                <label class="vp-field-label" for="pm-edit-name"
+                  >Product name</label
+                >
                 <q-input
                   v-model="form.product_name"
                   for="pm-edit-name"
@@ -141,12 +267,16 @@
                   hide-bottom-space
                   placeholder="e.g. Oreo Vanilla"
                   class="vp-input"
-                  :rules="[val => !!(val && val.trim()) || 'Enter a product name.']"
+                  :rules="[
+                    val => !!(val && val.trim()) || 'Enter a product name.'
+                  ]"
                 />
               </div>
 
               <div>
-                <label class="vp-field-label">{{ tCategory('uiCategory') }}</label>
+                <label class="vp-field-label">{{
+                  tCategory('uiCategory')
+                }}</label>
                 <q-select
                   v-model="form.category_id"
                   :options="categoryOptions"
@@ -165,7 +295,10 @@
               </div>
 
               <div>
-                <label class="vp-field-label" for="pm-edit-desc">Description <span class="vp-field-optional">(optional)</span></label>
+                <label class="vp-field-label" for="pm-edit-desc"
+                  >Description
+                  <span class="vp-field-optional">(optional)</span></label
+                >
                 <q-input
                   v-model="form.description"
                   for="pm-edit-desc"
@@ -178,7 +311,10 @@
               </div>
 
               <div>
-                <label class="vp-field-label" for="pm-edit-exp">Best Before / Expiration Date <span class="vp-field-optional">(optional)</span></label>
+                <label class="vp-field-label" for="pm-edit-exp"
+                  >Best Before / Expiration Date
+                  <span class="vp-field-optional">(optional)</span></label
+                >
                 <q-input
                   v-model="form.expiration_date"
                   for="pm-edit-exp"
@@ -193,12 +329,20 @@
               <div class="pm-section">
                 <div class="pm-section-head">
                   <span class="pm-section-title">Pricing and stock</span>
-                  <q-toggle v-model="hasVariants" dense color="primary" label="Has sizes" class="pm-toggle" />
+                  <q-toggle
+                    v-model="hasVariants"
+                    dense
+                    color="primary"
+                    label="Has sizes"
+                    class="pm-toggle"
+                  />
                 </div>
 
                 <div v-if="!hasVariants" class="pm-row">
                   <div>
-                    <label class="vp-field-label" for="pm-edit-price">Price (₱)</label>
+                    <label class="vp-field-label" for="pm-edit-price"
+                      >Price (₱)</label
+                    >
                     <q-input
                       v-model.number="form.price"
                       for="pm-edit-price"
@@ -210,11 +354,17 @@
                       hide-bottom-space
                       placeholder="0.00"
                       class="vp-input"
-                      :rules="[val => (val !== null && val !== '' && val >= 0) || 'Enter a price.']"
+                      :rules="[
+                        val =>
+                          (val !== null && val !== '' && val >= 0) ||
+                          'Enter a price.'
+                      ]"
                     />
                   </div>
                   <div>
-                    <label class="vp-field-label" for="pm-edit-qty">Quantity</label>
+                    <label class="vp-field-label" for="pm-edit-qty"
+                      >Quantity</label
+                    >
                     <q-input
                       v-model.number="form.stock_quantity"
                       for="pm-edit-qty"
@@ -225,22 +375,80 @@
                       hide-bottom-space
                       placeholder="0"
                       class="vp-input"
-                      :rules="[val => (val !== null && val !== '' && val >= 0) || 'Enter a quantity.']"
+                      :rules="[
+                        val =>
+                          (val !== null && val !== '' && val >= 0) ||
+                          'Enter a quantity.'
+                      ]"
                     />
                   </div>
                 </div>
 
                 <div v-else class="pm-variants">
                   <div class="pm-variant pm-variant--labels" aria-hidden="true">
-                    <span>Size</span><span>Price (₱)</span><span>Quantity</span><span />
+                    <span>Size</span><span>Price (₱)</span><span>Quantity</span
+                    ><span />
                   </div>
-                  <div v-for="(variant, index) in form.variants" :key="index" class="pm-variant">
-                    <q-input v-model="variant.name" outlined dense hide-bottom-space placeholder="e.g. Small" class="vp-input" :aria-label="`Size ${index + 1}`" :rules="[val => !!(val && String(val).trim()) || 'Required']" />
-                    <q-input v-model.number="variant.price" type="number" min="0" step="0.01" outlined dense hide-bottom-space placeholder="0.00" class="vp-input" :aria-label="`Price for size ${index + 1}`" />
-                    <q-input v-model.number="variant.quantity" type="number" min="0" outlined dense hide-bottom-space placeholder="0" class="vp-input" :aria-label="`Quantity for size ${index + 1}`" />
-                    <q-btn flat round dense icon="o_close" class="pm-variant-remove" :disable="form.variants.length === 1" :aria-label="`Remove size ${index + 1}`" @click="removeVariant(index)" />
+                  <div
+                    v-for="(variant, index) in form.variants"
+                    :key="index"
+                    class="pm-variant"
+                  >
+                    <q-input
+                      v-model="variant.name"
+                      outlined
+                      dense
+                      hide-bottom-space
+                      placeholder="e.g. Small"
+                      class="vp-input"
+                      :aria-label="`Size ${index + 1}`"
+                      :rules="[
+                        val => !!(val && String(val).trim()) || 'Required'
+                      ]"
+                    />
+                    <q-input
+                      v-model.number="variant.price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      outlined
+                      dense
+                      hide-bottom-space
+                      placeholder="0.00"
+                      class="vp-input"
+                      :aria-label="`Price for size ${index + 1}`"
+                    />
+                    <q-input
+                      v-model.number="variant.quantity"
+                      type="number"
+                      min="0"
+                      outlined
+                      dense
+                      hide-bottom-space
+                      placeholder="0"
+                      class="vp-input"
+                      :aria-label="`Quantity for size ${index + 1}`"
+                    />
+                    <q-btn
+                      flat
+                      round
+                      dense
+                      icon="o_close"
+                      class="pm-variant-remove"
+                      :disable="form.variants.length === 1"
+                      :aria-label="`Remove size ${index + 1}`"
+                      @click="removeVariant(index)"
+                    />
                   </div>
-                  <q-btn outline no-caps color="primary" icon="add" label="Add size" class="vp-pill-btn pm-add-variant" @click="addVariant" />
+                  <q-btn
+                    outline
+                    no-caps
+                    color="primary"
+                    icon="add"
+                    label="Add size"
+                    class="vp-pill-btn pm-add-variant"
+                    @click="addVariant"
+                  />
                 </div>
               </div>
             </div>
@@ -250,26 +458,83 @@
               <div v-if="imagePreview" class="pm-photo-frame">
                 <img :src="imagePreview" alt="Product photo preview" />
               </div>
-              <button v-else type="button" class="pm-dropzone" @click="showOptionMenu = true">
-                <span class="pm-dropzone-icon"><q-icon name="o_add_photo_alternate" size="30px" /></span>
+              <button
+                v-else
+                type="button"
+                class="pm-dropzone"
+                @click="showOptionMenu = true"
+              >
+                <span class="pm-dropzone-icon"
+                  ><q-icon name="o_add_photo_alternate" size="30px"
+                /></span>
                 <span class="pm-dropzone-title">Add a photo</span>
-                <span class="pm-dropzone-text">Take one or upload from your device</span>
+                <span class="pm-dropzone-text"
+                  >Take one or upload from your device</span
+                >
               </button>
               <div v-if="imagePreview" class="pm-photo-actions">
-                <q-btn outline no-caps color="primary" icon="o_crop" label="Crop" class="vp-pill-btn" @click="openCropperForEdit" />
-                <q-btn outline no-caps color="primary" icon="o_sync" label="Replace" class="vp-pill-btn" @click="showOptionMenu = true" />
-                <q-btn flat no-caps icon="o_delete" label="Remove" class="pm-remove" @click="removeEditImage" />
+                <q-btn
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="o_crop"
+                  label="Crop"
+                  class="vp-pill-btn"
+                  @click="openCropperForEdit"
+                />
+                <q-btn
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="o_sync"
+                  label="Replace"
+                  class="vp-pill-btn"
+                  @click="showOptionMenu = true"
+                />
+                <q-btn
+                  flat
+                  no-caps
+                  icon="o_delete"
+                  label="Remove"
+                  class="pm-remove"
+                  @click="removeEditImage"
+                />
               </div>
-              <div class="pm-photo-tip">A square photo on a plain background looks best in your store.</div>
+              <div class="pm-photo-tip"
+                >A square photo on a plain background looks best in your
+                store.</div
+              >
               <!-- Kept outside the photo box, so choosing a file doesn't reopen the photo menu. -->
-              <input ref="fileInput" type="file" class="pm-hidden" accept="image/*" @change="handleImageUpload" />
+              <input
+                ref="fileInput"
+                type="file"
+                class="pm-hidden"
+                accept="image/*"
+                @change="handleImageUpload"
+              />
             </div>
           </div>
         </div>
 
         <div class="vp-dialog-actions pm-actions">
-          <q-btn outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" :disable="saving" @click="cancelEdit" />
-          <q-btn type="submit" unelevated no-caps color="primary" label="Save Changes" class="vp-dialog-btn" :loading="saving" />
+          <q-btn
+            outline
+            no-caps
+            color="primary"
+            label="Cancel"
+            class="vp-dialog-btn"
+            :disable="saving"
+            @click="cancelEdit"
+          />
+          <q-btn
+            type="submit"
+            unelevated
+            no-caps
+            color="primary"
+            label="Save Changes"
+            class="vp-dialog-btn"
+            :loading="saving"
+          />
         </div>
       </q-form>
     </q-card>
@@ -279,16 +544,30 @@
   <q-dialog v-model="showOptionMenu">
     <q-card class="vp-dialog pm-source-dialog">
       <div class="vp-dialog-head">
-        <span class="vp-dialog-icon"><q-icon name="o_add_a_photo" size="22px" /></span>
+        <span class="vp-dialog-icon"
+          ><q-icon name="o_add_a_photo" size="22px"
+        /></span>
         <div>
           <div class="vp-dialog-title">Add product photo</div>
-          <div class="vp-dialog-text">A clear photo on a plain background works best.</div>
+          <div class="vp-dialog-text"
+            >A clear photo on a plain background works best.</div
+          >
         </div>
-        <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
+        <q-btn
+          v-close-popup
+          flat
+          round
+          dense
+          icon="o_close"
+          class="vp-dialog-close"
+          aria-label="Close"
+        />
       </div>
       <div class="vp-dialog-body pm-sources">
         <button type="button" class="pm-source" @click="openCameraViewfinder">
-          <span class="pm-source-icon"><q-icon name="o_photo_camera" size="22px" /></span>
+          <span class="pm-source-icon"
+            ><q-icon name="o_photo_camera" size="22px"
+          /></span>
           <span class="pm-source-body">
             <span class="pm-source-title">Take a photo</span>
             <span class="pm-source-text">Use your camera</span>
@@ -296,7 +575,9 @@
           <q-icon name="o_chevron_right" size="20px" class="pm-source-arrow" />
         </button>
         <button type="button" class="pm-source" @click="triggerDeviceUpload">
-          <span class="pm-source-icon"><q-icon name="o_upload_file" size="22px" /></span>
+          <span class="pm-source-icon"
+            ><q-icon name="o_upload_file" size="22px"
+          /></span>
           <span class="pm-source-body">
             <span class="pm-source-title">Upload from device</span>
             <span class="pm-source-text">Choose an image file</span>
@@ -308,22 +589,61 @@
   </q-dialog>
 
   <!-- CAMERA -->
-  <q-dialog v-model="showCameraLens" persistent :maximized="$q.screen.lt.md" @show="startCamera" @hide="stopCamera">
-    <q-card class="vp-dialog vp-dialog--wide pm-camera" :class="{ 'pm-dialog--full': $q.screen.lt.md }">
+  <q-dialog
+    v-model="showCameraLens"
+    persistent
+    :maximized="$q.screen.lt.md"
+    @show="startCamera"
+    @hide="stopCamera"
+  >
+    <q-card
+      class="vp-dialog vp-dialog--wide pm-camera"
+      :class="{ 'pm-dialog--full': $q.screen.lt.md }"
+    >
       <div class="vp-dialog-head">
-        <span class="vp-dialog-icon"><q-icon name="o_photo_camera" size="22px" /></span>
+        <span class="vp-dialog-icon"
+          ><q-icon name="o_photo_camera" size="22px"
+        /></span>
         <div>
           <div class="vp-dialog-title">Take product photo</div>
           <div class="vp-dialog-text">Center the product in the frame.</div>
         </div>
-        <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
+        <q-btn
+          v-close-popup
+          flat
+          round
+          dense
+          icon="o_close"
+          class="vp-dialog-close"
+          aria-label="Close"
+        />
       </div>
       <div class="pm-camera-view">
-        <video ref="videoElement" autoplay playsinline class="pm-camera-feed"></video>
+        <video
+          ref="videoElement"
+          autoplay
+          playsinline
+          class="pm-camera-feed"
+        ></video>
       </div>
       <div class="vp-dialog-actions">
-        <q-btn v-close-popup outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" />
-        <q-btn unelevated no-caps color="primary" icon="o_camera" label="Capture" class="vp-dialog-btn" @click="capturePhoto" />
+        <q-btn
+          v-close-popup
+          outline
+          no-caps
+          color="primary"
+          label="Cancel"
+          class="vp-dialog-btn"
+        />
+        <q-btn
+          unelevated
+          no-caps
+          color="primary"
+          icon="o_camera"
+          label="Capture"
+          class="vp-dialog-btn"
+          @click="capturePhoto"
+        />
       </div>
     </q-card>
   </q-dialog>
@@ -335,16 +655,48 @@
         <span class="vp-dialog-icon"><q-icon name="o_crop" size="22px" /></span>
         <div>
           <div class="vp-dialog-title">Crop product photo</div>
-          <div class="vp-dialog-text">Drag the photo to move it, and zoom until the product fills the square.</div>
+          <div class="vp-dialog-text"
+            >Drag the photo to move it, and zoom until the product fills the
+            square.</div
+          >
         </div>
-        <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
+        <q-btn
+          v-close-popup
+          flat
+          round
+          dense
+          icon="o_close"
+          class="vp-dialog-close"
+          aria-label="Close"
+        />
       </div>
       <div class="vp-dialog-body">
-        <PhotoCropper ref="cropperRef" :src="cropSrc" :aspect="1" :output-width="800" @ready="cropReady = true" />
+        <PhotoCropper
+          ref="cropperRef"
+          :src="cropSrc"
+          :aspect="1"
+          :output-width="800"
+          @ready="cropReady = true"
+        />
       </div>
       <div class="vp-dialog-actions">
-        <q-btn v-close-popup outline no-caps color="primary" label="Cancel" class="vp-dialog-btn" />
-        <q-btn unelevated no-caps color="primary" label="Apply Crop" class="vp-dialog-btn" :disable="!cropReady" @click="applyCrop" />
+        <q-btn
+          v-close-popup
+          outline
+          no-caps
+          color="primary"
+          label="Cancel"
+          class="vp-dialog-btn"
+        />
+        <q-btn
+          unelevated
+          no-caps
+          color="primary"
+          label="Apply Crop"
+          class="vp-dialog-btn"
+          :disable="!cropReady"
+          @click="applyCrop"
+        />
       </div>
     </q-card>
   </q-dialog>
@@ -370,19 +722,22 @@ const isOpen = ref(props.modelValue)
 const isEditMode = ref(false)
 const renderChart = ref(false)
 
-watch(() => props.modelValue, async val => {
-  isOpen.value = val
-  if (val && props.product) {
-    populateForm()
-    fetchProductSales()
-    await nextTick()
-    setTimeout(() => {
-      renderChart.value = true
-    }, 200)
-  } else {
-    renderChart.value = false
+watch(
+  () => props.modelValue,
+  async val => {
+    isOpen.value = val
+    if (val && props.product) {
+      populateForm()
+      fetchProductSales()
+      await nextTick()
+      setTimeout(() => {
+        renderChart.value = true
+      }, 200)
+    } else {
+      renderChart.value = false
+    }
   }
-})
+)
 
 watch(isOpen, val => emit('update:modelValue', val))
 
@@ -390,24 +745,33 @@ const categories = ref([])
 
 // The select stores category_id, so only the label a vendor reads is translated.
 const { t: tCategory, categoryLabel, categoryDescription } = useCategoryLabels()
-const categoryOptions = computed(() => categories.value.map(category => ({
-  ...category,
-  category_name: categoryLabel(category.category_name)
-})))
+const categoryOptions = computed(() =>
+  categories.value.map(category => ({
+    ...category,
+    category_name: categoryLabel(category.category_name)
+  }))
+)
 const hasVariants = ref(false)
 const isActive = ref(true)
 const saving = ref(false)
 const fileInput = ref(null)
 const imagePreview = ref(null)
 
-const productHasVariants = computed(() => (props.product?.variants?.length || 0) > 0)
+const productHasVariants = computed(
+  () => (props.product?.variants?.length || 0) > 0
+)
 
 const displayPrice = computed(() => {
-  if (productHasVariants.value) return Math.min(...props.product.variants.map(v => Number(v.price)))
+  if (productHasVariants.value)
+    return Math.min(...props.product.variants.map(v => Number(v.price)))
   return props.product?.price || 0
 })
 
-const formatNumber = num => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const formatNumber = num =>
+  Number(num || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 
 // --- Sales, from this store's picked-up orders (walk-in sales included), the same ones the Sales page counts ---
 
@@ -452,51 +816,79 @@ const productSales = computed(() => {
   const id = Number(props.product?.inventory_id)
   return salesOrders.value
     .filter(order => order.status === 'picked_up')
-    .flatMap(order => (order.items || [])
-      .filter(item => Number(item.inventory_id) === id)
-      .map(item => ({ day: dayKey(new Date(order.updated_at || order.created_at)), units: Number(item.quantity) || 0, amount: Number(item.subtotal) || 0 })))
+    .flatMap(order =>
+      (order.items || [])
+        .filter(item => Number(item.inventory_id) === id)
+        .map(item => ({
+          day: dayKey(new Date(order.updated_at || order.created_at)),
+          units: Number(item.quantity) || 0,
+          amount: Number(item.subtotal) || 0
+        }))
+    )
 })
 
 // Fourteen days ending today, oldest first: the week before, then this week.
-const fortnight = computed(() => Array.from({ length: 14 }, (_, i) => {
-  const day = new Date(salesToday.value)
-  day.setHours(0, 0, 0, 0)
-  day.setDate(day.getDate() - (13 - i))
-  return day
-}))
+const fortnight = computed(() =>
+  Array.from({ length: 14 }, (_, i) => {
+    const day = new Date(salesToday.value)
+    day.setHours(0, 0, 0, 0)
+    day.setDate(day.getDate() - (13 - i))
+    return day
+  })
+)
 const thisWeek = computed(() => fortnight.value.slice(7))
 const lastWeek = computed(() => fortnight.value.slice(0, 7))
 
 const sumFor = (days, field) => {
   const keys = new Set(days.map(dayKey))
-  return productSales.value.filter(sale => keys.has(sale.day)).reduce((total, sale) => total + sale[field], 0)
+  return productSales.value
+    .filter(sale => keys.has(sale.day))
+    .reduce((total, sale) => total + sale[field], 0)
 }
 
-const totalSales = computed(() => productSales.value.reduce((total, sale) => total + sale.units, 0))
+const totalSales = computed(() =>
+  productSales.value.reduce((total, sale) => total + sale.units, 0)
+)
 const weekRevenue = computed(() => sumFor(thisWeek.value, 'amount'))
 
 // This week's revenue against the week before; "New" when the week before had none.
 const growth = computed(() => {
   const current = weekRevenue.value
   const previous = sumFor(lastWeek.value, 'amount')
-  if (!previous) return current ? { text: 'New', tone: 'up' } : { text: '—', tone: 'flat' }
+  if (!previous)
+    return current ? { text: 'New', tone: 'up' } : { text: '—', tone: 'flat' }
   const rounded = Math.round(((current - previous) / previous) * 1000) / 10
   if (rounded === 0) return { text: '0.0%', tone: 'flat' }
-  return { text: `${rounded > 0 ? '+' : '−'}${Math.abs(rounded).toFixed(1)}%`, tone: rounded > 0 ? 'up' : 'down' }
+  return {
+    text: `${rounded > 0 ? '+' : '−'}${Math.abs(rounded).toFixed(1)}%`,
+    tone: rounded > 0 ? 'up' : 'down'
+  }
 })
 
-const salesHistory = computed(() => thisWeek.value.map(day => ({ date: day, total_sold: sumFor([day], 'units') })))
-const hasSalesData = computed(() => salesHistory.value.some(record => record.total_sold > 0))
+const salesHistory = computed(() =>
+  thisWeek.value.map(day => ({ date: day, total_sold: sumFor([day], 'units') }))
+)
+const hasSalesData = computed(() =>
+  salesHistory.value.some(record => record.total_sold > 0)
+)
 
 // Without sales, a faint sample curve sits behind the "No sales yet" label.
 const dynamicChartSeries = computed(() => {
-  if (!hasSalesData.value) return [{ name: 'No Data', data: [15, 30, 20, 45, 25, 40, 50] }]
-  return [{ name: 'Sold', data: salesHistory.value.map(record => record.total_sold) }]
+  if (!hasSalesData.value)
+    return [{ name: 'No Data', data: [15, 30, 20, 45, 25, 40, 50] }]
+  return [
+    { name: 'Sold', data: salesHistory.value.map(record => record.total_sold) }
+  ]
 })
 
-const dynamicChartCategories = computed(() => salesHistory.value.map(record => date.formatDate(record.date, 'ddd')))
+const dynamicChartCategories = computed(() =>
+  salesHistory.value.map(record => date.formatDate(record.date, 'ddd'))
+)
 
-const salesDateRange = computed(() => `${date.formatDate(thisWeek.value[0], 'MMM D')} – ${date.formatDate(thisWeek.value[6], 'MMM D')}`)
+const salesDateRange = computed(
+  () =>
+    `${date.formatDate(thisWeek.value[0], 'MMM D')} – ${date.formatDate(thisWeek.value[6], 'MMM D')}`
+)
 
 // ApexCharts needs plain hex colours, so the brand red is written out here.
 const dynamicChartOptions = computed(() => ({
@@ -526,7 +918,12 @@ const dynamicChartOptions = computed(() => ({
   },
   fill: {
     type: 'gradient',
-    gradient: { shadeIntensity: 1, opacityFrom: 0.25, opacityTo: 0, stops: [0, 90, 100] }
+    gradient: {
+      shadeIntensity: 1,
+      opacityFrom: 0.25,
+      opacityTo: 0,
+      stops: [0, 90, 100]
+    }
   },
   grid: {
     borderColor: '#f0f0f0',
@@ -567,7 +964,10 @@ const quickToggleStatus = async val => {
       status: val ? 'active' : 'archived',
       _method: 'PATCH'
     })
-    $q.notify({ type: 'positive', message: `Product marked as ${val ? 'available' : 'archived'}.` })
+    $q.notify({
+      type: 'positive',
+      message: `Product marked as ${val ? 'available' : 'archived'}.`
+    })
     emit('refresh')
   } catch {
     $q.notify({ type: 'negative', message: 'Failed to update the status.' })
@@ -624,8 +1024,11 @@ let stream = null
 const variantLabel = (variant, index) =>
   variant?.size || variant?.name || variant?.label || `Variant ${index + 1}`
 
-const addVariant = () => form.value.variants.push({ size: '', price: null, quantity: null })
-const removeVariant = index => { if (form.value.variants.length > 1) form.value.variants.splice(index, 1) }
+const addVariant = () =>
+  form.value.variants.push({ size: '', price: null, quantity: null })
+const removeVariant = index => {
+  if (form.value.variants.length > 1) form.value.variants.splice(index, 1)
+}
 
 const handleImageUpload = event => {
   const file = event.target.files[0]
@@ -649,7 +1052,10 @@ const localCopy = async src => {
     return URL.createObjectURL(await res.blob())
   } catch (error) {
     console.error('Could not load the saved photo for cropping', error)
-    $q.notify({ type: 'warning', message: 'This photo can’t be cropped here. Upload it again to crop it.' })
+    $q.notify({
+      type: 'warning',
+      message: 'This photo can’t be cropped here. Upload it again to crop it.'
+    })
     return ''
   }
 }
@@ -665,7 +1071,9 @@ const openCropperForEdit = async () => {
 const applyCrop = async () => {
   const blob = await cropperRef.value?.toBlob()
   if (!blob) return
-  form.value.product_picture = new File([blob], `product_${Date.now()}.jpg`, { type: 'image/jpeg' })
+  form.value.product_picture = new File([blob], `product_${Date.now()}.jpg`, {
+    type: 'image/jpeg'
+  })
   imagePreview.value = URL.createObjectURL(blob)
   showCropper.value = false
 }
@@ -673,7 +1081,6 @@ const removeEditImage = () => {
   imagePreview.value = null
   form.value.product_picture = null
 }
-
 
 const openCameraViewfinder = () => {
   showOptionMenu.value = false
@@ -691,7 +1098,9 @@ const triggerDeviceUpload = () => {
 
 const startCamera = async () => {
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    })
     if (videoElement.value) videoElement.value.srcObject = stream
   } catch (err) {
     console.error('Camera access denied', err)
@@ -710,10 +1119,14 @@ const capturePhoto = () => {
   const canvas = document.createElement('canvas')
   canvas.width = videoElement.value.videoWidth
   canvas.height = videoElement.value.videoHeight
-  canvas.getContext('2d').drawImage(videoElement.value, 0, 0, canvas.width, canvas.height)
+  canvas
+    .getContext('2d')
+    .drawImage(videoElement.value, 0, 0, canvas.width, canvas.height)
   const dataUrl = canvas.toDataURL('image/png')
   canvas.toBlob(blob => {
-    form.value.product_picture = new File([blob], 'product_capture.png', { type: 'image/png' })
+    form.value.product_picture = new File([blob], 'product_capture.png', {
+      type: 'image/png'
+    })
     imagePreview.value = dataUrl
     stopCamera()
     showCameraLens.value = false
@@ -729,9 +1142,11 @@ const submitForm = async () => {
     formData.append('description', form.value.description || '')
     formData.append('category_id', form.value.category_id)
     formData.append('status', isActive.value ? 'active' : 'archived')
-    if (form.value.product_picture) formData.append('product_picture', form.value.product_picture)
-    if (form.value.expiration_date) formData.append('expiration_date', form.value.expiration_date)
-    
+    if (form.value.product_picture)
+      formData.append('product_picture', form.value.product_picture)
+    if (form.value.expiration_date)
+      formData.append('expiration_date', form.value.expiration_date)
+
     if (hasVariants.value) {
       formData.append('variants', JSON.stringify(form.value.variants))
     } else {
@@ -740,13 +1155,18 @@ const submitForm = async () => {
       formData.append('stock_quantity', form.value.stock_quantity)
     }
 
-    await api.post(`/vendor/products/${props.product.inventory_id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+    await api.post(`/vendor/products/${props.product.inventory_id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
 
     $q.notify({ type: 'positive', message: 'Product updated.' })
     isEditMode.value = false
     emit('refresh')
   } catch (err) {
-    $q.notify({ type: 'negative', message: err.response?.data?.message || 'Failed to update the product.' })
+    $q.notify({
+      type: 'negative',
+      message: err.response?.data?.message || 'Failed to update the product.'
+    })
   } finally {
     saving.value = false
   }
@@ -1362,7 +1782,9 @@ const submitForm = async () => {
 
   cursor: pointer;
 
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .pm-dropzone:hover {
@@ -1462,7 +1884,9 @@ const submitForm = async () => {
 
   cursor: pointer;
 
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .pm-source:hover {
@@ -1585,7 +2009,10 @@ const submitForm = async () => {
   }
 
   .pm-variant {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.9fr) 28px;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(
+        0,
+        0.9fr
+      ) 28px;
 
     gap: 6px;
   }

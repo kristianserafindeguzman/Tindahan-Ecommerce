@@ -1,13 +1,22 @@
 <template>
   <div class="tracking-map-wrapper">
-    <div v-if="!hasCoordinates" class="no-location-overlay flex flex-center bg-grey-2">
+    <div
+      v-if="!hasCoordinates"
+      class="no-location-overlay flex flex-center bg-grey-2"
+    >
       <div class="text-center text-grey-6 q-pa-md">
         <q-icon name="location_off" size="48px" class="q-mb-md opacity-50" />
         <div class="text-subtitle1 text-weight-bold">Location Unavailable</div>
-        <div class="text-caption">The consumer's location was not recorded for this order.</div>
+        <div class="text-caption"
+          >The consumer's location was not recorded for this order.</div
+        >
       </div>
     </div>
-    <div ref="mapEl" class="leaflet-map" :class="{ 'opacity-0': !hasCoordinates }"></div>
+    <div
+      ref="mapEl"
+      class="leaflet-map"
+      :class="{ 'opacity-0': !hasCoordinates }"
+    ></div>
   </div>
 </template>
 
@@ -15,7 +24,11 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { markerIconUrl, markerIcon2xUrl, markerShadowUrl } from '@/utils/leafletDefaultIcon'
+import {
+  markerIconUrl,
+  markerIcon2xUrl,
+  markerShadowUrl
+} from '@/utils/leafletDefaultIcon'
 
 const props = defineProps({
   storeLat: { type: [Number, String], default: null },
@@ -35,8 +48,12 @@ let consumerMarker = null
 let routeLine = null
 
 const hasCoordinates = computed(() => {
-  return props.storeLat !== null && props.storeLng !== null &&
-         props.consumerLat !== null && props.consumerLng !== null
+  return (
+    props.storeLat !== null &&
+    props.storeLng !== null &&
+    props.consumerLat !== null &&
+    props.consumerLng !== null
+  )
 })
 
 // Leaflet Icons
@@ -94,12 +111,18 @@ const initMap = () => {
     .bindPopup(`<b>${props.consumerName}</b><br>Delivery/Pickup Location`)
     .addTo(mapInstance)
 
-  routeLine = L.polyline([[cLat, cLng], [sLat, sLng]], {
-    color: '#bd2427',
-    weight: 3,
-    dashArray: '5, 10',
-    opacity: 0.7
-  }).addTo(mapInstance)
+  routeLine = L.polyline(
+    [
+      [cLat, cLng],
+      [sLat, sLng]
+    ],
+    {
+      color: '#bd2427',
+      weight: 3,
+      dashArray: '5, 10',
+      opacity: 0.7
+    }
+  ).addTo(mapInstance)
 
   const bounds = L.latLngBounds([sLat, sLng], [cLat, cLng])
   mapInstance.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 })
@@ -113,10 +136,13 @@ const destroyMap = () => {
   }
 }
 
-watch(() => props.consumerLat, () => {
-  destroyMap()
-  initMap()
-})
+watch(
+  () => props.consumerLat,
+  () => {
+    destroyMap()
+    initMap()
+  }
+)
 
 onMounted(() => {
   // Add a small delay so container can correctly size itself inside a Quasar flex column

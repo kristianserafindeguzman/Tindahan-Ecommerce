@@ -1,15 +1,37 @@
 <template>
   <!-- One layout for both uses: a full page at /vendor/orders/:id, or embedded inside Customer Orders. -->
-  <component :is="isEmbedded ? 'div' : QPage" :class="isEmbedded ? 'od-embedded' : 'vp-page'">
+  <component
+    :is="isEmbedded ? 'div' : QPage"
+    :class="isEmbedded ? 'od-embedded' : 'vp-page'"
+  >
     <div :class="{ 'vp-container': !isEmbedded }">
-
       <!-- An order that can't be loaded says so instead of spinning forever. -->
       <div v-if="loadError" class="vp-card vp-empty od-missing">
-        <div class="vp-empty-icon"><q-icon name="o_receipt_long" size="24px" /></div>
+        <div class="vp-empty-icon"
+          ><q-icon name="o_receipt_long" size="24px"
+        /></div>
         <div class="vp-empty-title">{{ t('orderNotFound') }}</div>
         <div class="vp-empty-text">{{ t('orderNotFoundDesc') }}</div>
-        <q-btn v-if="isEmbedded" outline no-caps color="primary" icon="o_arrow_back" :label="t('backToOrders')" class="vp-pill-btn od-missing-btn" @click="$emit('back')" />
-        <q-btn v-else outline no-caps color="primary" icon="o_arrow_back" :label="t('backToOrderList')" to="/vendor/orders/list" class="vp-pill-btn od-missing-btn" />
+        <q-btn
+          v-if="isEmbedded"
+          outline
+          no-caps
+          color="primary"
+          icon="o_arrow_back"
+          :label="t('backToOrders')"
+          class="vp-pill-btn od-missing-btn"
+          @click="$emit('back')"
+        />
+        <q-btn
+          v-else
+          outline
+          no-caps
+          color="primary"
+          icon="o_arrow_back"
+          :label="t('backToOrderList')"
+          to="/vendor/orders/list"
+          class="vp-pill-btn od-missing-btn"
+        />
       </div>
 
       <div v-else-if="!order" class="od-loading">
@@ -17,20 +39,37 @@
       </div>
 
       <div v-else class="od-body">
-
         <!-- HEADER — the back button beside the order number, its status and the actions. -->
         <header class="od-header">
           <div class="od-heading">
-            <q-btn v-if="isEmbedded" flat dense icon="o_arrow_back" class="od-back-btn" :aria-label="t('backToOrders')" @click="$emit('back')">
+            <q-btn
+              v-if="isEmbedded"
+              flat
+              dense
+              icon="o_arrow_back"
+              class="od-back-btn"
+              :aria-label="t('backToOrders')"
+              @click="$emit('back')"
+            >
               <q-tooltip>{{ t('backToOrders') }}</q-tooltip>
             </q-btn>
-            <q-btn v-else flat dense icon="o_arrow_back" class="od-back-btn" :aria-label="t('backToOrderList')" to="/vendor/orders/list">
+            <q-btn
+              v-else
+              flat
+              dense
+              icon="o_arrow_back"
+              class="od-back-btn"
+              :aria-label="t('backToOrderList')"
+              to="/vendor/orders/list"
+            >
               <q-tooltip>{{ t('backToOrderList') }}</q-tooltip>
             </q-btn>
 
             <div class="od-heading-text">
               <div class="od-title-row">
-                <component :is="isEmbedded ? 'h2' : 'h1'" class="od-title">{{ t('orderId') }} #{{ order.order_id }}</component>
+                <component :is="isEmbedded ? 'h2' : 'h1'" class="od-title"
+                  >{{ t('orderId') }} #{{ order.order_id }}</component
+                >
                 <OrderStatusBadge :status="order.status" />
               </div>
               <div class="od-meta">
@@ -44,7 +83,16 @@
           </div>
 
           <div class="od-actions">
-            <q-btn outline no-caps color="primary" icon="o_print" :label="t('printReceipt')" class="vp-pill-btn od-action" :loading="isExporting" @click="printOrder" />
+            <q-btn
+              outline
+              no-caps
+              color="primary"
+              icon="o_print"
+              :label="t('printReceipt')"
+              class="vp-pill-btn od-action"
+              :loading="isExporting"
+              @click="printOrder"
+            />
 
             <q-btn-dropdown
               v-if="!isFinal"
@@ -57,27 +105,70 @@
               :loading="isUpdating"
             >
               <q-list class="od-status-list">
-                <q-item v-if="order.status === 'placed'" v-close-popup clickable @click="updateStatus('preparing')">
-                  <q-item-section avatar><span class="od-menu-icon vp-tone--preparing"><q-icon :name="statusIcon('preparing')" size="18px" /></span></q-item-section>
+                <q-item
+                  v-if="order.status === 'placed'"
+                  v-close-popup
+                  clickable
+                  @click="updateStatus('preparing')"
+                >
+                  <q-item-section avatar
+                    ><span class="od-menu-icon vp-tone--preparing"
+                      ><q-icon
+                        :name="statusIcon('preparing')"
+                        size="18px" /></span
+                  ></q-item-section>
                   <q-item-section>{{ t('startPreparing') }}</q-item-section>
                 </q-item>
-                <q-item v-if="['placed', 'preparing'].includes(order.status)" v-close-popup clickable @click="updateStatus('ready_for_pickup')">
-                  <q-item-section avatar><span class="od-menu-icon vp-tone--ready"><q-icon :name="statusIcon('ready_for_pickup')" size="18px" /></span></q-item-section>
+                <q-item
+                  v-if="['placed', 'preparing'].includes(order.status)"
+                  v-close-popup
+                  clickable
+                  @click="updateStatus('ready_for_pickup')"
+                >
+                  <q-item-section avatar
+                    ><span class="od-menu-icon vp-tone--ready"
+                      ><q-icon
+                        :name="statusIcon('ready_for_pickup')"
+                        size="18px" /></span
+                  ></q-item-section>
                   <q-item-section>{{ t('readyForPickup') }}</q-item-section>
                 </q-item>
-                <q-item v-if="order.status === 'ready_for_pickup'" v-close-popup clickable @click="updateStatus('picked_up')">
-                  <q-item-section avatar><span class="od-menu-icon vp-tone--done"><q-icon :name="statusIcon('picked_up')" size="18px" /></span></q-item-section>
+                <q-item
+                  v-if="order.status === 'ready_for_pickup'"
+                  v-close-popup
+                  clickable
+                  @click="updateStatus('picked_up')"
+                >
+                  <q-item-section avatar
+                    ><span class="od-menu-icon vp-tone--done"
+                      ><q-icon
+                        :name="statusIcon('picked_up')"
+                        size="18px" /></span
+                  ></q-item-section>
                   <q-item-section>{{ t('pickedUp') }}</q-item-section>
                 </q-item>
                 <q-separator class="od-menu-sep" />
-                <q-item v-close-popup clickable class="od-menu-danger" @click="promptCancelOrder">
-                  <q-item-section avatar><span class="od-menu-icon vp-tone--cancelled"><q-icon :name="statusIcon('cancelled')" size="18px" /></span></q-item-section>
+                <q-item
+                  v-close-popup
+                  clickable
+                  class="od-menu-danger"
+                  @click="promptCancelOrder"
+                >
+                  <q-item-section avatar
+                    ><span class="od-menu-icon vp-tone--cancelled"
+                      ><q-icon
+                        :name="statusIcon('cancelled')"
+                        size="18px" /></span
+                  ></q-item-section>
                   <q-item-section>{{ t('cancelOrder') }}</q-item-section>
                 </q-item>
               </q-list>
             </q-btn-dropdown>
 
-            <span v-else class="od-final"><q-icon name="o_lock" size="16px" /> {{ t('orderFinalized') }}</span>
+            <span v-else class="od-final"
+              ><q-icon name="o_lock" size="16px" />
+              {{ t('orderFinalized') }}</span
+            >
           </div>
         </header>
 
@@ -92,17 +183,29 @@
         <!-- Two columns on wide cards, progress and items on the left, customer and pickup on the right; narrow ones stack them in the same order. -->
         <div class="od-grid">
           <div class="od-col od-col--main">
-
             <section class="vp-card od-card od-card--progress">
               <div class="od-card-head od-card-head--progress">
                 <span class="od-card-title">{{ t('orderProgress') }}</span>
                 <!-- When the customer wants to collect: ASAP, or the slot they scheduled at checkout. -->
-                <div class="od-pickup" :class="{ 'od-pickup--scheduled': order.scheduled_pickup_at }">
-                  <q-icon :name="order.scheduled_pickup_at ? 'o_event' : 'o_bolt'" size="14px" />
+                <div
+                  class="od-pickup"
+                  :class="{ 'od-pickup--scheduled': order.scheduled_pickup_at }"
+                >
+                  <q-icon
+                    :name="order.scheduled_pickup_at ? 'o_event' : 'o_bolt'"
+                    size="14px"
+                  />
                   <span class="od-pickup-label">{{ t('pickupTime') }}</span>
                   <!-- The full slot on a wide card; just its start on a narrow one, so it fits beside the title. -->
-                  <span class="od-pickup-full">{{ formatPickupSlot(order.scheduled_pickup_at, pickupLocale) || t('pickupAsap') }}</span>
-                  <span class="od-pickup-short">{{ formatPickupSlot(order.scheduled_pickup_at, pickupLocale, { compact: true }) || t('pickupAsap') }}</span>
+                  <span class="od-pickup-full">{{
+                    formatPickupSlot(order.scheduled_pickup_at, pickupLocale) ||
+                    t('pickupAsap')
+                  }}</span>
+                  <span class="od-pickup-short">{{
+                    formatPickupSlot(order.scheduled_pickup_at, pickupLocale, {
+                      compact: true
+                    }) || t('pickupAsap')
+                  }}</span>
                 </div>
               </div>
               <ol class="od-steps" aria-label="Order progress">
@@ -110,10 +213,25 @@
                   v-for="step in steps"
                   :key="step.key"
                   class="od-step"
-                  :class="[`od-step--${step.state}`, { 'od-step--current': step.current, 'od-step--line-done': step.lineDone }]"
+                  :class="[
+                    `od-step--${step.state}`,
+                    {
+                      'od-step--current': step.current,
+                      'od-step--line-done': step.lineDone
+                    }
+                  ]"
                 >
                   <span class="od-step-dot">
-                    <q-icon :name="step.state === 'cancelled' ? 'close' : step.state === 'done' ? 'check' : step.icon" size="15px" />
+                    <q-icon
+                      :name="
+                        step.state === 'cancelled'
+                          ? 'close'
+                          : step.state === 'done'
+                            ? 'check'
+                            : step.icon
+                      "
+                      size="15px"
+                    />
                   </span>
                   <span class="od-step-text">
                     <span class="od-step-label">{{ step.label }}</span>
@@ -130,17 +248,36 @@
               </div>
 
               <ul class="od-items">
-                <li v-for="item in items" :key="item.order_item_id" class="od-item">
+                <li
+                  v-for="item in items"
+                  :key="item.order_item_id"
+                  class="od-item"
+                >
                   <span class="od-item-img">
-                    <img v-if="item.inventory?.image_url || item.image_url" :src="item.inventory?.image_url || item.image_url" alt="" />
+                    <img
+                      v-if="item.inventory?.image_url || item.image_url"
+                      :src="item.inventory?.image_url || item.image_url"
+                      alt=""
+                    />
                     <q-icon v-else name="o_inventory_2" size="22px" />
                   </span>
                   <div class="od-item-body">
-                    <div class="od-item-name">{{ item.inventory?.product_name || item.product_name || t('productFallback') }}</div>
-                    <div v-if="item.variant_name" class="od-item-variant">{{ item.variant_name }}</div>
-                    <div class="od-item-meta">₱{{ formatNumber(unitPrice(item)) }} × {{ item.quantity }}</div>
+                    <div class="od-item-name">{{
+                      item.inventory?.product_name ||
+                      item.product_name ||
+                      t('productFallback')
+                    }}</div>
+                    <div v-if="item.variant_name" class="od-item-variant">{{
+                      item.variant_name
+                    }}</div>
+                    <div class="od-item-meta"
+                      >₱{{ formatNumber(unitPrice(item)) }} ×
+                      {{ item.quantity }}</div
+                    >
                   </div>
-                  <div class="od-item-price">₱{{ formatNumber(lineTotal(item)) }}</div>
+                  <div class="od-item-price"
+                    >₱{{ formatNumber(lineTotal(item)) }}</div
+                  >
                 </li>
               </ul>
 
@@ -158,30 +295,58 @@
           </div>
 
           <div class="od-col od-col--side">
-
             <section class="vp-card od-card od-card--customer">
               <div class="od-card-head">
                 <span class="od-card-title">{{ t('customer') }}</span>
               </div>
               <div class="od-card-body">
                 <div class="od-person">
-                  <q-avatar size="42px" font-size="14px" class="vp-avatar od-person-avatar">
-                    <img v-if="order.consumer?.profile_picture_url" :src="order.consumer.profile_picture_url" alt="" />
+                  <q-avatar
+                    size="42px"
+                    font-size="14px"
+                    class="vp-avatar od-person-avatar"
+                  >
+                    <img
+                      v-if="order.consumer?.profile_picture_url"
+                      :src="order.consumer.profile_picture_url"
+                      alt=""
+                    />
                     <span v-else>{{ getInitials(customerName) }}</span>
                   </q-avatar>
                   <div class="od-person-text">
                     <div class="od-strong">{{ customerName }}</div>
-                    <div class="od-sub">{{ customerOrderCount }} {{ customerOrderCount === 1 ? t('orderFromStore') : t('ordersFromStore') }}</div>
+                    <div class="od-sub"
+                      >{{ customerOrderCount }}
+                      {{
+                        customerOrderCount === 1
+                          ? t('orderFromStore')
+                          : t('ordersFromStore')
+                      }}</div
+                    >
                   </div>
                 </div>
                 <dl class="od-contact">
                   <div class="od-contact-row">
-                    <dt><q-icon name="o_mail" size="16px" /><span class="vp-sr-only">Email</span></dt>
+                    <dt
+                      ><q-icon name="o_mail" size="16px" /><span
+                        class="vp-sr-only"
+                        >Email</span
+                      ></dt
+                    >
                     <dd>{{ order.consumer?.email || t('noEmail') }}</dd>
                   </div>
                   <div class="od-contact-row">
-                    <dt><q-icon name="o_call" size="16px" /><span class="vp-sr-only">Phone</span></dt>
-                    <dd>{{ order.consumer?.phone_number || order.customer_phone || t('noPhone') }}</dd>
+                    <dt
+                      ><q-icon name="o_call" size="16px" /><span
+                        class="vp-sr-only"
+                        >Phone</span
+                      ></dt
+                    >
+                    <dd>{{
+                      order.consumer?.phone_number ||
+                      order.customer_phone ||
+                      t('noPhone')
+                    }}</dd>
                   </div>
                 </dl>
               </div>
@@ -202,10 +367,16 @@
                 />
               </div>
               <div class="od-card-body od-place">
-                <span class="od-place-icon"><q-icon name="o_storefront" size="18px" /></span>
+                <span class="od-place-icon"
+                  ><q-icon name="o_storefront" size="18px"
+                /></span>
                 <div class="od-place-text">
-                  <div class="od-strong">{{ order.store?.store_name || t('storeFallback') }}</div>
-                  <div class="od-sub">{{ order.store?.address || t('noAddress') }}</div>
+                  <div class="od-strong">{{
+                    order.store?.store_name || t('storeFallback')
+                  }}</div>
+                  <div class="od-sub">{{
+                    order.store?.address || t('noAddress')
+                  }}</div>
                 </div>
               </div>
               <div v-if="hasRoute" class="od-map">
@@ -233,9 +404,13 @@
   <q-dialog v-model="showCancelDialog" persistent>
     <q-card class="od-dialog od-cancel-dialog">
       <div class="od-dialog-head">
-        <span class="od-dialog-icon"><q-icon name="o_cancel" size="22px" /></span>
+        <span class="od-dialog-icon"
+          ><q-icon name="o_cancel" size="22px"
+        /></span>
         <div>
-          <div class="od-dialog-title">{{ t('cancelDialogTitle') }} #{{ order?.order_id }}?</div>
+          <div class="od-dialog-title"
+            >{{ t('cancelDialogTitle') }} #{{ order?.order_id }}?</div
+          >
           <div class="od-dialog-text">{{ t('cancelDialogDesc') }}</div>
         </div>
       </div>
@@ -244,7 +419,11 @@
 
       <!-- One reason per card, like the consumer's cancel dialog; "Other" opens a box for your own words. -->
       <div class="od-dialog-body od-cancel-body">
-        <div class="od-reason-list" role="radiogroup" aria-label="Cancellation reason">
+        <div
+          class="od-reason-list"
+          role="radiogroup"
+          aria-label="Cancellation reason"
+        >
           <button
             v-for="opt in cancelOptions"
             :key="opt.value"
@@ -276,8 +455,24 @@
       </div>
 
       <div class="od-dialog-actions">
-        <q-btn v-close-popup outline no-caps color="primary" :label="t('keepOrderBtn')" class="od-dialog-btn" />
-        <q-btn unelevated no-caps color="primary" :label="t('cancelOrderBtn')" class="od-dialog-btn" :disable="!cancelReasonValid" :loading="isUpdating" @click="confirmCancelOrder" />
+        <q-btn
+          v-close-popup
+          outline
+          no-caps
+          color="primary"
+          :label="t('keepOrderBtn')"
+          class="od-dialog-btn"
+        />
+        <q-btn
+          unelevated
+          no-caps
+          color="primary"
+          :label="t('cancelOrderBtn')"
+          class="od-dialog-btn"
+          :disable="!cancelReasonValid"
+          :loading="isUpdating"
+          @click="confirmCancelOrder"
+        />
       </div>
     </q-card>
   </q-dialog>
@@ -341,7 +536,8 @@ const orderDetailsDict = {
     directions: 'Directions',
     storeFallback: 'Store',
     noAddress: 'No address saved',
-    noRouteNote: "The customer's location wasn't recorded, so there's no route to show.",
+    noRouteNote:
+      "The customer's location wasn't recorded, so there's no route to show.",
     pickupTime: 'Pickup time',
     pickupAsap: 'As soon as possible',
     cancelDialogTitle: 'Cancel order',
@@ -396,11 +592,12 @@ const orderDetailsDict = {
     directions: 'Direksyon',
     storeFallback: 'Tindahan',
     noAddress: 'Walang naka-save na address',
-    noRouteNote: "Walang record ng lokasyon ang customer, kaya walang map na maipakita.",
+    noRouteNote:
+      'Walang record ng lokasyon ang customer, kaya walang map na maipakita.',
     pickupTime: 'Oras ng pickup',
     pickupAsap: 'Sa lalong madaling panahon',
     cancelDialogTitle: 'I-cancel ang order',
-    cancelDialogDesc: "Pumili o magsulat ng dahilan. Hindi na ito maibabalik.",
+    cancelDialogDesc: 'Pumili o magsulat ng dahilan. Hindi na ito maibabalik.',
     placeholderCancel: 'Sabihin sa customer kung bakit…',
     keepOrderBtn: 'I-keep ang Order',
     cancelOrderBtn: 'I-cancel ang Order',
@@ -431,7 +628,11 @@ const pickupLocale = computed(() => (lang.value === 'ph' ? 'fil-PH' : 'en-PH'))
 const showCancelDialog = ref(false)
 const cancelReason = ref('')
 const cancelOtherText = ref('')
-const cancelReasonValid = computed(() => (cancelReason.value === 'Other' ? !!cancelOtherText.value.trim() : !!cancelReason.value))
+const cancelReasonValid = computed(() =>
+  cancelReason.value === 'Other'
+    ? !!cancelOtherText.value.trim()
+    : !!cancelReason.value
+)
 
 // Map the English core values (for the database) to the reactive translations
 const cancelOptions = computed(() => [
@@ -445,14 +646,32 @@ const FLOW = ['placed', 'preparing', 'ready_for_pickup', 'picked_up']
 
 const items = computed(() => order.value?.items || [])
 const productCount = computed(() => items.value.length)
-const customerName = computed(() => order.value?.consumer?.full_name || order.value?.customer_name || t('customerFallback'))
-const customerOrderCount = computed(() => Number(order.value?.consumer?.total_orders || order.value?.customer_orders_count || 1))
-const isFinal = computed(() => ['picked_up', 'cancelled', 'completed'].includes(order.value?.status))
+const customerName = computed(
+  () =>
+    order.value?.consumer?.full_name ||
+    order.value?.customer_name ||
+    t('customerFallback')
+)
+const customerOrderCount = computed(() =>
+  Number(
+    order.value?.consumer?.total_orders ||
+      order.value?.customer_orders_count ||
+      1
+  )
+)
+const isFinal = computed(() =>
+  ['picked_up', 'cancelled', 'completed'].includes(order.value?.status)
+)
 
 // The route map needs both ends; without the customer's pin it shows a short note instead.
 const hasRoute = computed(() => {
   const o = order.value
-  return [o?.store?.latitude, o?.store?.longitude, o?.consumer_latitude, o?.consumer_longitude].every(v => v !== null && v !== undefined && v !== '')
+  return [
+    o?.store?.latitude,
+    o?.store?.longitude,
+    o?.consumer_latitude,
+    o?.consumer_longitude
+  ].every(v => v !== null && v !== undefined && v !== '')
 })
 
 const promptCancelOrder = () => {
@@ -461,29 +680,61 @@ const promptCancelOrder = () => {
   showCancelDialog.value = true
 }
 
-const formatNumber = num => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const formatNumber = num =>
+  Number(num || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 
 // The day and the time are separate header details, "Sat, Nov 28" and "08:30 PM", so each gets the same dot between them.
-const placedDay = dateString => (dateString ? new Date(dateString).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '')
-const placedTime = dateString => (dateString ? new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '')
+const placedDay = dateString =>
+  dateString
+    ? new Date(dateString).toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      })
+    : ''
+const placedTime = dateString =>
+  dateString
+    ? new Date(dateString).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : ''
 
 const formatStepTime = dateString => {
   if (!dateString) return ''
-  return new Date(dateString).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return new Date(dateString).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
 }
 
 const getInitials = name => {
-  const parts = String(name || '').trim().split(/\s+/).filter(Boolean)
+  const parts = String(name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
   if (!parts.length) return '?'
-  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase()
+  return (
+    parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')
+  ).toUpperCase()
 }
 
-const lineTotal = item => Number(item.subtotal || Number(item.price || 0) * Number(item.quantity || 0))
-const unitPrice = item => (Number(item.quantity) ? lineTotal(item) / Number(item.quantity) : Number(item.price || 0))
+const lineTotal = item =>
+  Number(item.subtotal || Number(item.price || 0) * Number(item.quantity || 0))
+const unitPrice = item =>
+  Number(item.quantity)
+    ? lineTotal(item) / Number(item.quantity)
+    : Number(item.price || 0)
 
 // A completed order counts as picked up, so every step shows as reached.
 const isStatusActive = step => {
-  const status = order.value?.status === 'completed' ? 'picked_up' : order.value?.status
+  const status =
+    order.value?.status === 'completed' ? 'picked_up' : order.value?.status
   return FLOW.indexOf(status) >= FLOW.indexOf(step)
 }
 
@@ -492,20 +743,61 @@ const steps = computed(() => {
   const o = order.value
   if (!o) return []
 
-  const list = o.status === 'cancelled'
-    ? [
-        { key: 'placed', label: t('stepPlaced'), icon: statusIcon('placed'), state: 'done', time: formatStepTime(o.created_at) },
-        { key: 'cancelled', label: t('stepCancelled'), icon: 'close', state: 'cancelled', time: formatStepTime(o.updated_at) }
-      ]
-    : [
-        { key: 'placed', label: t('stepPlaced'), icon: statusIcon('placed'), time: formatStepTime(o.created_at) },
-        { key: 'preparing', label: t('stepPreparing'), icon: statusIcon('preparing'), time: o.preparing_at ? formatStepTime(o.preparing_at) : t('stepInProgress') },
-        { key: 'ready_for_pickup', label: t('stepReady'), icon: statusIcon('ready_for_pickup'), time: o.ready_at ? formatStepTime(o.ready_at) : t('stepAtCounter') },
-        { key: 'picked_up', label: t('stepPickedUp'), icon: statusIcon('picked_up'), time: o.picked_up_at ? formatStepTime(o.picked_up_at) : t('stepDone') }
-      ].map(step => {
-        const reached = isStatusActive(step.key)
-        return { ...step, state: reached ? 'done' : 'upcoming', time: reached ? step.time : t('stepPending') }
-      })
+  const list =
+    o.status === 'cancelled'
+      ? [
+          {
+            key: 'placed',
+            label: t('stepPlaced'),
+            icon: statusIcon('placed'),
+            state: 'done',
+            time: formatStepTime(o.created_at)
+          },
+          {
+            key: 'cancelled',
+            label: t('stepCancelled'),
+            icon: 'close',
+            state: 'cancelled',
+            time: formatStepTime(o.updated_at)
+          }
+        ]
+      : [
+          {
+            key: 'placed',
+            label: t('stepPlaced'),
+            icon: statusIcon('placed'),
+            time: formatStepTime(o.created_at)
+          },
+          {
+            key: 'preparing',
+            label: t('stepPreparing'),
+            icon: statusIcon('preparing'),
+            time: o.preparing_at
+              ? formatStepTime(o.preparing_at)
+              : t('stepInProgress')
+          },
+          {
+            key: 'ready_for_pickup',
+            label: t('stepReady'),
+            icon: statusIcon('ready_for_pickup'),
+            time: o.ready_at ? formatStepTime(o.ready_at) : t('stepAtCounter')
+          },
+          {
+            key: 'picked_up',
+            label: t('stepPickedUp'),
+            icon: statusIcon('picked_up'),
+            time: o.picked_up_at
+              ? formatStepTime(o.picked_up_at)
+              : t('stepDone')
+          }
+        ].map(step => {
+          const reached = isStatusActive(step.key)
+          return {
+            ...step,
+            state: reached ? 'done' : 'upcoming',
+            time: reached ? step.time : t('stepPending')
+          }
+        })
 
   const lastReached = list.map(s => s.state !== 'upcoming').lastIndexOf(true)
   return list.map((step, i) => ({
@@ -520,11 +812,17 @@ const printOrder = async () => {
 
   isExporting.value = true
   try {
-    const response = await api.get(`/vendor/orders/${order.value.order_id}/export`, { responseType: 'blob' })
+    const response = await api.get(
+      `/vendor/orders/${order.value.order_id}/export`,
+      { responseType: 'blob' }
+    )
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `Tindahan-Customer-Order-#${order.value.order_id}.pdf`)
+    link.setAttribute(
+      'download',
+      `Tindahan-Customer-Order-#${order.value.order_id}.pdf`
+    )
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -545,15 +843,30 @@ const updateStatus = async (newStatus, reason = null) => {
     const payload = { status: newStatus }
     if (reason) payload.cancellation_reason = reason
 
-    const res = await api.patch(`/vendor/orders/${order.value.order_id}/status`, payload)
+    const res = await api.patch(
+      `/vendor/orders/${order.value.order_id}/status`,
+      payload
+    )
     order.value.status = res.data.order.status
-    if (res.data.order.cancellation_reason) order.value.cancellation_reason = res.data.order.cancellation_reason
-    emit('status-changed', { orderId: order.value.order_id, status: order.value.status, cancellationReason: order.value.cancellation_reason || null })
-    $q.notify({ type: 'positive', message: `${t('notifyUpdateSuccess')} ${statusLabel(newStatus)}.` })
+    if (res.data.order.cancellation_reason)
+      order.value.cancellation_reason = res.data.order.cancellation_reason
+    emit('status-changed', {
+      orderId: order.value.order_id,
+      status: order.value.status,
+      cancellationReason: order.value.cancellation_reason || null
+    })
+    $q.notify({
+      type: 'positive',
+      message: `${t('notifyUpdateSuccess')} ${statusLabel(newStatus)}.`
+    })
     showCancelDialog.value = false
   } catch (err) {
     console.error(err.response?.data || err)
-    $q.notify({ type: 'negative', message: err.response?.data?.message || err.message || t('notifyUpdateFail') })
+    $q.notify({
+      type: 'negative',
+      message:
+        err.response?.data?.message || err.message || t('notifyUpdateFail')
+    })
   } finally {
     isUpdating.value = false
   }
@@ -562,7 +875,12 @@ const updateStatus = async (newStatus, reason = null) => {
 // Sends the chosen reason's wording, or the vendor's own words for "Other".
 const confirmCancelOrder = () => {
   if (!cancelReasonValid.value) return
-  updateStatus('cancelled', cancelReason.value === 'Other' ? cancelOtherText.value.trim() : cancelReason.value)
+  updateStatus(
+    'cancelled',
+    cancelReason.value === 'Other'
+      ? cancelOtherText.value.trim()
+      : cancelReason.value
+  )
 }
 
 const openDirections = () => {
@@ -573,7 +891,10 @@ const openDirections = () => {
   const dLng = order.value.store?.longitude
 
   if (oLat && oLng && dLat && dLng) {
-    window.open(`https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}`, '_blank')
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}`,
+      '_blank'
+    )
   }
 }
 
@@ -595,20 +916,26 @@ const fetchOrderDetails = async () => {
   }
 }
 
-watch(() => props.orderId, newId => {
-  if (newId) {
-    order.value = null
-    fetchOrderDetails()
+watch(
+  () => props.orderId,
+  newId => {
+    if (newId) {
+      order.value = null
+      fetchOrderDetails()
+    }
   }
-})
+)
 
 // The page stays mounted when only the order number changes, such as tapping a notification for another order, so it loads the new one.
-watch(() => route.params.id, (newId, oldId) => {
-  if (!props.isEmbedded && newId && newId !== oldId) {
-    order.value = null
-    fetchOrderDetails()
+watch(
+  () => route.params.id,
+  (newId, oldId) => {
+    if (!props.isEmbedded && newId && newId !== oldId) {
+      order.value = null
+      fetchOrderDetails()
+    }
   }
-})
+)
 
 onMounted(fetchOrderDetails)
 </script>
@@ -621,8 +948,14 @@ onMounted(fetchOrderDetails)
 }
 
 @keyframes od-fade-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -694,7 +1027,10 @@ onMounted(fetchOrderDetails)
 
   color: var(--c-text-3);
 
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .od-back-btn:hover {
@@ -952,10 +1288,18 @@ onMounted(fetchOrderDetails)
   display: contents;
 }
 
-.od-card--progress { order: 1; }
-.od-card--items { order: 2; }
-.od-card--customer { order: 3; }
-.od-card--pickup { order: 4; }
+.od-card--progress {
+  order: 1;
+}
+.od-card--items {
+  order: 2;
+}
+.od-card--customer {
+  order: 3;
+}
+.od-card--pickup {
+  order: 4;
+}
 
 @container od (min-width: 760px) {
   .od-grid {
@@ -1608,7 +1952,9 @@ onMounted(fetchOrderDetails)
 
   cursor: pointer;
 
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .od-reason:hover {
@@ -1639,7 +1985,9 @@ onMounted(fetchOrderDetails)
 
   background: #ffffff;
 
-  transition: border-color 0.15s, border-width 0.15s;
+  transition:
+    border-color 0.15s,
+    border-width 0.15s;
 }
 
 .od-reason--selected .od-reason-radio {

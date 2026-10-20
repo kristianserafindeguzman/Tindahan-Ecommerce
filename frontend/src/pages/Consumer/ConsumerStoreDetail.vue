@@ -1,16 +1,23 @@
 <template>
   <q-page class="storefront-page">
-
     <SiteHeader />
 
     <!-- MAIN CONTENT -->
     <div class="page-content">
-
       <!-- STORE BANNER -->
-      <q-skeleton v-if="storesLoading" square class="store-banner skeleton-banner" />
+      <q-skeleton
+        v-if="storesLoading"
+        square
+        class="store-banner skeleton-banner"
+      />
 
       <div v-else-if="store" class="store-banner">
-        <img v-if="store.image" :src="store.image" :alt="store.name" class="store-banner-img" />
+        <img
+          v-if="store.image"
+          :src="store.image"
+          :alt="store.name"
+          class="store-banner-img"
+        />
         <div v-else class="store-banner-placeholder">
           <q-icon name="o_storefront" size="56px" />
         </div>
@@ -29,29 +36,50 @@
             <template v-if="store.distance_meters != null">
               <span class="store-banner-meta-item">
                 <q-icon :name="travelIcon(store.distance_meters)" size="14px" />
-                {{ formatDistance(store.distance_meters) }} · {{ formatTravelTime(store.distance_meters) }}
+                {{ formatDistance(store.distance_meters) }} ·
+                {{ formatTravelTime(store.distance_meters) }}
               </span>
               <span class="store-banner-meta-sep">•</span>
             </template>
-            <span class="store-banner-meta-item store-banner-status" :class="{ 'store-banner-status-closed': !store.isOpen }">
-              <span class="store-banner-status-dot" :class="{ 'store-banner-status-dot-closed': !store.isOpen }" />
+            <span
+              class="store-banner-meta-item store-banner-status"
+              :class="{ 'store-banner-status-closed': !store.isOpen }"
+            >
+              <span
+                class="store-banner-status-dot"
+                :class="{ 'store-banner-status-dot-closed': !store.isOpen }"
+              />
               {{ storeStatus(store) }}
             </span>
           </div>
         </div>
 
-        <q-btn unelevated no-caps icon="o_directions" :label="t('Directions')" class="store-banner-directions" :disable="!hasDirections" @click="getDirections" />
+        <q-btn
+          unelevated
+          no-caps
+          icon="o_directions"
+          :label="t('Directions')"
+          class="store-banner-directions"
+          :disable="!hasDirections"
+          @click="getDirections"
+        />
       </div>
 
       <p v-else class="store-not-found">
         {{ t('Store not found.') }}
-        <span class="store-not-found-link" @click="router.push('/consumer/stores')">{{ t('Back to Stores') }}</span>
+        <span
+          class="store-not-found-link"
+          @click="router.push('/consumer/stores')"
+          >{{ t('Back to Stores') }}</span
+        >
       </p>
 
       <div class="page-header-row">
         <div>
           <h2 class="page-title">{{ t('Products') }}</h2>
-          <p class="page-subtitle">{{ t('Browse everything this store has to offer.') }}</p>
+          <p class="page-subtitle">{{
+            t('Browse everything this store has to offer.')
+          }}</p>
         </div>
 
         <div class="page-header-actions">
@@ -90,41 +118,54 @@
 
       <!-- CATEGORY PILLS -->
       <PillScroller v-if="VISIBLE_CATEGORIES.length">
-      <div class="category-pills-row">
-        <q-chip
-          clickable
-          dense
-          class="category-pill"
-          :class="{ 'category-pill-active': selectedCategory === 'All' }"
-          @click="selectedCategory = 'All'"
-        >
-          {{ t('All') }}
-        </q-chip>
-        <q-chip
-          v-for="category in VISIBLE_CATEGORIES"
-          :key="category.id"
-          clickable
-          dense
-          class="category-pill"
-          :class="{ 'category-pill-active': selectedCategory === category.label }"
-          @click="selectedCategory = category.label"
-        >
-          {{ t(category.label) }}
-        </q-chip>
-      </div>
+        <div class="category-pills-row">
+          <q-chip
+            clickable
+            dense
+            class="category-pill"
+            :class="{ 'category-pill-active': selectedCategory === 'All' }"
+            @click="selectedCategory = 'All'"
+          >
+            {{ t('All') }}
+          </q-chip>
+          <q-chip
+            v-for="category in VISIBLE_CATEGORIES"
+            :key="category.id"
+            clickable
+            dense
+            class="category-pill"
+            :class="{
+              'category-pill-active': selectedCategory === category.label
+            }"
+            @click="selectedCategory = category.label"
+          >
+            {{ t(category.label) }}
+          </q-chip>
+        </div>
       </PillScroller>
 
       <div class="products-layout">
-
         <div class="products-main">
           <div v-if="productsLoading" ref="gridEl" class="products-grid">
             <CardSkeleton v-for="n in skeletonCount" :key="n" />
           </div>
           <div v-else ref="gridEl" class="products-grid">
-            <ProductCard v-for="(product, i) in paginatedProducts" :key="product.id" v-intersection.once="onReveal" class="reveal" :style="{ '--reveal-delay': (i % 6) * 70 + 'ms' }" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
+            <ProductCard
+              v-for="(product, i) in paginatedProducts"
+              :key="product.id"
+              v-intersection.once="onReveal"
+              class="reveal"
+              :style="{ '--reveal-delay': (i % 6) * 70 + 'ms' }"
+              :product="product"
+              @add-to-cart="handleAddToCart"
+              @view-product="openProductModal"
+            />
           </div>
 
-          <p v-if="!productsLoading && !filteredProducts.length" class="products-empty">
+          <p
+            v-if="!productsLoading && !filteredProducts.length"
+            class="products-empty"
+          >
             {{ t('No products match your filters.') }}
           </p>
         </div>
@@ -145,14 +186,19 @@
             @clear="clearFilters"
           />
         </aside>
-
       </div>
 
       <AppPagination v-model="currentPage" :max="totalPages" />
 
       <!-- FILTERS POPUP (tablet: centered dialog, mobile: bottom sheet) -->
-      <q-dialog v-model="mobileFiltersOpen" :position="isSheetFilters ? 'bottom' : undefined">
-        <q-card class="filters-dialog-card" :class="{ 'filters-dialog-card-sheet': isSheetFilters }">
+      <q-dialog
+        v-model="mobileFiltersOpen"
+        :position="isSheetFilters ? 'bottom' : undefined"
+      >
+        <q-card
+          class="filters-dialog-card"
+          :class="{ 'filters-dialog-card-sheet': isSheetFilters }"
+        >
           <div v-if="isSheetFilters" class="filters-drag-handle" />
           <ProductFilters
             v-model:search="filterSearch"
@@ -170,13 +216,11 @@
           />
         </q-card>
       </q-dialog>
-
     </div>
 
     <SiteFooter />
 
     <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
-
   </q-page>
 </template>
 
@@ -220,7 +264,7 @@ const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 const showProductModal = ref(false)
 const selectedProduct = ref(null)
 
-const openProductModal = (product) => {
+const openProductModal = product => {
   selectedProduct.value = product
   showProductModal.value = true
 }
@@ -231,13 +275,24 @@ const { stores, loading: storesLoading, fetchStores } = useStores()
 const { addToCart } = useCart()
 
 const storeParam = computed(() => route.params.id)
-const store = computed(() => stores.value.find((s) => s.slug === storeParam.value || String(s.id) === String(storeParam.value)) || null)
+const store = computed(
+  () =>
+    stores.value.find(
+      s =>
+        s.slug === storeParam.value || String(s.id) === String(storeParam.value)
+    ) || null
+)
 
 // Same origin+destination pattern as ConsumerOrderDetails.vue's "Get Directions" button.
 const hasDirections = computed(() => {
   const lat = localStorage.getItem('consumer_lat')
   const lng = localStorage.getItem('consumer_lng')
-  return !!(lat != null && lng != null && store.value?.latitude != null && store.value?.longitude != null)
+  return !!(
+    lat != null &&
+    lng != null &&
+    store.value?.latitude != null &&
+    store.value?.longitude != null
+  )
 })
 
 const getDirections = () => {
@@ -246,15 +301,18 @@ const getDirections = () => {
   const oLng = localStorage.getItem('consumer_lng')
   const { latitude: dLat, longitude: dLng } = store.value
 
-  window.open(`https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}`, '_blank')
+  window.open(
+    `https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}`,
+    '_blank'
+  )
 }
 
 const storeProducts = computed(() => {
   if (!store.value) return []
-  return products.value.filter((product) => product.storeId === store.value.id)
+  return products.value.filter(product => product.storeId === store.value.id)
 })
 
-const handleAddToCart = async (product) => {
+const handleAddToCart = async product => {
   if (!isLoggedIn.value) {
     router.push('/login')
     return
@@ -262,12 +320,17 @@ const handleAddToCart = async (product) => {
 
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
+    $q.notify({
+      type: 'positive',
+      message: t('{name} added to cart.', { name: product.name })
+    })
   } catch (error) {
-    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
+    $q.notify({
+      type: 'negative',
+      message: t(error.response?.data?.message || 'Failed to add to cart.')
+    })
   }
 }
-
 
 onMounted(() => {
   fetchCategories()
@@ -280,7 +343,11 @@ const VISIBLE_CATEGORIES = computed(() => {
   const map = new Map()
   for (const product of storeProducts.value) {
     if (product.category && !map.has(product.category)) {
-      map.set(product.category, { id: product.category, label: product.category, value: product.category })
+      map.set(product.category, {
+        id: product.category,
+        label: product.category,
+        value: product.category
+      })
     }
   }
   return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label))
@@ -288,7 +355,10 @@ const VISIBLE_CATEGORIES = computed(() => {
 
 const CATEGORY_SELECT_OPTIONS = computed(() => [
   { label: 'All Categories', value: 'All' },
-  ...VISIBLE_CATEGORIES.value.map((category) => ({ label: category.label, value: category.label }))
+  ...VISIBLE_CATEGORIES.value.map(category => ({
+    label: category.label,
+    value: category.label
+  }))
 ])
 
 const SORT_OPTIONS = [
@@ -313,33 +383,48 @@ const isSheetFilters = computed(() => isMobileFilters.value)
 
 const mobileFiltersOpen = computed({
   get: () => filtersOpen.value && isMobileFilters.value,
-  set: (val) => { filtersOpen.value = val }
+  set: val => {
+    filtersOpen.value = val
+  }
 })
 
-const hasActiveFilters = computed(() =>
-  !!filterSearch.value?.trim() ||
-  selectedCategory.value !== 'All' ||
-  inStockOnly.value ||
-  priceMin.value != null ||
-  priceMax.value != null ||
-  sortBy.value !== 'popular'
+const hasActiveFilters = computed(
+  () =>
+    !!filterSearch.value?.trim() ||
+    selectedCategory.value !== 'All' ||
+    inStockOnly.value ||
+    priceMin.value != null ||
+    priceMax.value != null ||
+    sortBy.value !== 'popular'
 )
 
 const filteredProducts = computed(() => {
   const keyword = (filterSearch.value || '').trim().toLowerCase()
-  const list = storeProducts.value.filter((product) => {
-    if (keyword && ![product.name, product.store].some(name =>
-      String(name || '').toLowerCase().includes(keyword)
-    )) return false
-    if (selectedCategory.value !== 'All' && product.category !== selectedCategory.value) return false
+  const list = storeProducts.value.filter(product => {
+    if (
+      keyword &&
+      ![product.name, product.store].some(name =>
+        String(name || '')
+          .toLowerCase()
+          .includes(keyword)
+      )
+    )
+      return false
+    if (
+      selectedCategory.value !== 'All' &&
+      product.category !== selectedCategory.value
+    )
+      return false
     if (inStockOnly.value && !product.inStock) return false
     if (priceMin.value != null && product.price < priceMin.value) return false
     if (priceMax.value != null && product.price > priceMax.value) return false
     return true
   })
 
-  if (sortBy.value === 'price_asc') return [...list].sort((a, b) => a.price - b.price)
-  if (sortBy.value === 'price_desc') return [...list].sort((a, b) => b.price - a.price)
+  if (sortBy.value === 'price_asc')
+    return [...list].sort((a, b) => a.price - b.price)
+  if (sortBy.value === 'price_desc')
+    return [...list].sort((a, b) => b.price - a.price)
   return list
 })
 
@@ -357,7 +442,9 @@ const paginatedProducts = computed(() => {
 })
 
 // Jump back to page 1 when filters change shape, otherwise the user could be stranded on a now-empty page.
-watch(filteredProducts, () => { currentPage.value = 1 })
+watch(filteredProducts, () => {
+  currentPage.value = 1
+})
 
 const clearFilters = () => {
   filterSearch.value = ''
@@ -419,7 +506,11 @@ watch(storeParam, () => {
 
   border-radius: var(--r-2xl);
 
-  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-surface) 0%,
+    var(--c-surface) 100%
+  );
 }
 
 .store-banner-img {
@@ -445,7 +536,12 @@ watch(storeParam, () => {
   position: absolute;
   inset: 0;
 
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.3) 40%, rgba(0, 0, 0, 0) 68%);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.75) 0%,
+    rgba(0, 0, 0, 0.3) 40%,
+    rgba(0, 0, 0, 0) 68%
+  );
 }
 
 .store-banner-content {
@@ -533,7 +629,10 @@ watch(storeParam, () => {
 
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .store-banner-directions:hover {
@@ -668,7 +767,9 @@ watch(storeParam, () => {
   font-size: var(--fs-sm);
   font-weight: 500;
 
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 /* Hides Quasar's own focus/ripple overlay so it can't paint a stray ring over our border/hover treatment. */
@@ -745,7 +846,11 @@ watch(storeParam, () => {
   font-size: var(--fs-sm);
   font-weight: 500;
 
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
 }
 
 .category-pill:hover {
@@ -802,8 +907,14 @@ watch(storeParam, () => {
 
 /* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
 @keyframes storedetail-fade-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .store-banner,
@@ -811,7 +922,9 @@ watch(storeParam, () => {
   animation: storedetail-fade-up 0.5s ease both;
 }
 
-.products-grid { animation-delay: 0.1s; }
+.products-grid {
+  animation-delay: 0.1s;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .store-banner,

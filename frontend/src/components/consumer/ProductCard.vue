@@ -1,5 +1,10 @@
 <template>
-  <q-card flat class="product-card" :class="{ 'product-card-oos': !product.inStock }" @click="$emit('view-product', product)">
+  <q-card
+    flat
+    class="product-card"
+    :class="{ 'product-card-oos': !product.inStock }"
+    @click="$emit('view-product', product)"
+  >
     <div class="product-card-image">
       <img
         v-if="product.image && !imageFailed"
@@ -10,8 +15,12 @@
       />
       <q-icon v-else name="o_inventory_2" size="36px" />
 
-      <span v-if="product.category" class="product-category-tag">{{ t(product.category) }}</span>
-      <span v-if="!product.inStock" class="product-oos-tag">{{ t('Out of Stock') }}</span>
+      <span v-if="product.category" class="product-category-tag">{{
+        t(product.category)
+      }}</span>
+      <span v-if="!product.inStock" class="product-oos-tag">{{
+        t('Out of Stock')
+      }}</span>
 
       <q-btn
         v-if="product.inStock"
@@ -38,8 +47,15 @@
           <q-icon name="o_storefront" size="13px" class="product-meta-icon" />
           <span class="product-meta-text">{{ product.store }}</span>
         </div>
-        <div v-if="hasDistance" class="product-meta-row product-meta-row--travel">
-          <q-icon :name="travelIcon(product.distance_meters)" size="13px" class="product-meta-icon" />
+        <div
+          v-if="hasDistance"
+          class="product-meta-row product-meta-row--travel"
+        >
+          <q-icon
+            :name="travelIcon(product.distance_meters)"
+            size="13px"
+            class="product-meta-icon"
+          />
           <span class="product-meta-text">{{ travelText }}</span>
         </div>
       </div>
@@ -69,16 +85,18 @@ const props = defineProps({
 
 defineEmits(['add-to-cart', 'view-product'])
 
-const nameParts = computed(() => splitHighlightParts(props.product.name, props.highlightQuery))
+const nameParts = computed(() =>
+  splitHighlightParts(props.product.name, props.highlightQuery)
+)
 const imageFailed = ref(false)
 
 const hasDistance = computed(() => props.product.distance_meters != null)
 
 // Distance first: "498 m · 7 min walk".
-const travelText = computed(() =>
-  `${formatDistance(props.product.distance_meters)} · ${formatTravelTime(props.product.distance_meters)}`
+const travelText = computed(
+  () =>
+    `${formatDistance(props.product.distance_meters)} · ${formatTravelTime(props.product.distance_meters)}`
 )
-
 </script>
 
 <style scoped>
@@ -94,10 +112,12 @@ const travelText = computed(() =>
 
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 
-  transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s;
+  transition:
+    box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.2s;
 
   cursor: pointer;
-
 }
 
 .product-card:hover {
@@ -117,14 +137,22 @@ const travelText = computed(() =>
   aspect-ratio: 1 / 1;
   overflow: hidden;
 
-  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-surface) 0%,
+    var(--c-surface) 100%
+  );
   color: var(--c-brand);
 
   transition: background 0.2s;
 }
 
 .product-card:hover .product-card-image {
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-brand-tint) 0%,
+    var(--c-brand-tint-2) 100%
+  );
 }
 
 .product-card-img {
@@ -212,7 +240,9 @@ const travelText = computed(() =>
 
   box-shadow: 0 2px 6px rgba(189, 36, 39, 0.35);
 
-  transition: background-color 0.15s, transform 0.15s;
+  transition:
+    background-color 0.15s,
+    transform 0.15s;
 }
 
 .product-add-btn :deep(.q-icon) {

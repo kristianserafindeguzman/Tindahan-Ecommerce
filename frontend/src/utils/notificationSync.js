@@ -18,5 +18,7 @@ export function applyNotificationReadState(notifications, detail = {}) {
 
 export function publishNotificationReadState(detail) {
   if (typeof window === 'undefined') return
-  window.dispatchEvent(new CustomEvent(NOTIFICATION_READ_STATE_EVENT, { detail }))
+  window.dispatchEvent(
+    new CustomEvent(NOTIFICATION_READ_STATE_EVENT, { detail })
+  )
 }

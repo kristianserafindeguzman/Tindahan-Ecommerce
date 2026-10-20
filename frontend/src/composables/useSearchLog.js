@@ -38,28 +38,47 @@ const descriptionTerms = description =>
  * whichever product happens to contain the same substring.
  */
 export function resolveSearchCategory(query, products = [], categories = []) {
-  const needle = String(query || '').trim().toLowerCase()
+  const needle = String(query || '')
+    .trim()
+    .toLowerCase()
   if (!needle) return null
 
   const categoryId = category => category?.id ?? category?.category_id ?? null
 
   // 1. The category's own name.
-  const byName = categories.find(category => matchesAtWordStart(category.label, needle))
+  const byName = categories.find(category =>
+    matchesAtWordStart(category.label, needle)
+  )
   if (byName) return categoryId(byName)
 
-  // 2. The category's description, which is the list of things that belong in it.
+  // 2. A product name matching available inventory products (priority over descriptions so actual inventory category is used)
+  const byProductName = products.find(product =>
+    matchesAtWordStart(product.name, needle)
+  )
+  if (byProductName) return resolveProductCategory(byProductName, categories)
+
+  // 2b. Substring match in product name if word-start didn't match
+  const byProductSub = products.find(product =>
+    String(product.name || '')
+      .toLowerCase()
+      .includes(needle)
+  )
+  if (byProductSub) return resolveProductCategory(byProductSub, categories)
+
+  // 3. The category's description, which is the list of things that belong in it.
   const byDescription = categories.find(category =>
-    descriptionTerms(category.description).some(term => matchesAtWordStart(term, needle))
+    descriptionTerms(category.description).some(term =>
+      matchesAtWordStart(term, needle)
+    )
   )
   if (byDescription) return categoryId(byDescription)
 
-  // 3. A product name, using the product's own category id rather than matching its name back.
-  const byProductName = products.find(product => matchesAtWordStart(product.name, needle))
-  if (byProductName) return resolveProductCategory(byProductName, categories)
-
   // 4. A product description, last because it is the loosest match.
-  const byProductDescription = products.find(product => matchesAtWordStart(product.description, needle))
-  if (byProductDescription) return resolveProductCategory(byProductDescription, categories)
+  const byProductDescription = products.find(product =>
+    matchesAtWordStart(product.description, needle)
+  )
+  if (byProductDescription)
+    return resolveProductCategory(byProductDescription, categories)
 
   return null
 }
@@ -68,9 +87,12 @@ export function resolveSearchCategory(query, products = [], categories = []) {
 // holding a product shape that predates it.
 function resolveProductCategory(product, categories) {
   if (product.categoryId != null) return product.categoryId
+  if (product.category_id != null) return product.category_id
 
   const name = String(product.category || '').toLowerCase()
-  const match = categories.find(category => String(category.label || '').toLowerCase() === name)
+  const match = categories.find(
+    category => String(category.label || '').toLowerCase() === name
+  )
   return match?.id ?? match?.category_id ?? null
 }
 
@@ -84,16 +106,27 @@ const searchCoordinates = async () => {
     lat: Number(localStorage.getItem('consumer_lat')),
     lng: Number(localStorage.getItem('consumer_lng'))
   }
-  if (Number.isFinite(saved.lat) && Number.isFinite(saved.lng) && (saved.lat || saved.lng)) return saved
+  if (
+    Number.isFinite(saved.lat) &&
+    Number.isFinite(saved.lng) &&
+    (saved.lat || saved.lng)
+  )
+    return saved
 
   try {
     const { latitude, longitude } = await getCurrentPosition()
     return { lat: latitude, lng: longitude }
   } catch (error) {
-    console.info('Search logged without coordinates: no consumer location available.', error.message)
+    console.info(
+      'Search logged without coordinates: no consumer location available.',
+      error.message
+    )
     return null
   }
 }
+
+let lastLoggedQuery = ''
+let lastLoggedTime = 0
 
 export function useSearchLog() {
   const { products } = useProducts()
@@ -103,20 +136,47 @@ export function useSearchLog() {
    * Saves one submitted search. Call it from the places a consumer actually starts a search,
    * not from route changes, so back/forward navigation does not inflate the history.
    */
-  const logSearch = async query => {
-    const search = String(query || '').trim()
+  const logSearch = async (query, categoryId = null) => {
+    // Reject non-string arguments (e.g. Event objects leaked from Vue template bindings)
+    // before String() coercion turns them into "[object KeyboardEvent]" or similar.
+    if (typeof query !== 'string') return
+
+    const search = query.trim()
     // Guest searches are not attributable to a consumer, so they are not logged.
     if (!search || !localStorage.getItem('auth_token')) return
 
+    // Prevent duplicate entries from rapid resubmissions
+    const now = Date.now()
+    if (
+      search.toLowerCase() === lastLoggedQuery.toLowerCase() &&
+      now - lastLoggedTime < 1500
+    ) {
+      return
+    }
+    lastLoggedQuery = search
+    lastLoggedTime = now
+
     const coordinates = await searchCoordinates()
+    const resolvedCat =
+      categoryId != null
+        ? typeof categoryId === 'number'
+          ? categoryId
+          : Number(categoryId) || null
+        : resolveSearchCategory(search, products.value, categories.value)
 
     try {
       await api.post('/consumer/search-logs', {
         search_query: search,
-        category_id: resolveSearchCategory(search, products.value, categories.value),
+        category_id: resolvedCat,
         search_lat: coordinates?.lat ?? null,
         search_lng: coordinates?.lng ?? null
       })
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('search-logged', { detail: { query: search } })
+        )
+      }
     } catch (error) {
       console.error('Failed to save search log:', error.response?.data || error)
     }

@@ -5,7 +5,7 @@ export function useGridColumns(gridEl, fallback = 4) {
   const columns = ref(fallback)
   let observer = null
 
-  const measure = (el) => {
+  const measure = el => {
     // The resolved gridTemplateColumns lists one size per column, and reads none before the element is a grid.
     const value = getComputedStyle(el).gridTemplateColumns
     if (!value || value === 'none') return
@@ -13,15 +13,19 @@ export function useGridColumns(gridEl, fallback = 4) {
     if (count > 0) columns.value = count
   }
 
-  watch(gridEl, (el) => {
-    observer?.disconnect()
-    observer = null
-    if (!el) return
+  watch(
+    gridEl,
+    el => {
+      observer?.disconnect()
+      observer = null
+      if (!el) return
 
-    measure(el)
-    observer = new ResizeObserver(() => measure(el))
-    observer.observe(el)
-  }, { immediate: true })
+      measure(el)
+      observer = new ResizeObserver(() => measure(el))
+      observer.observe(el)
+    },
+    { immediate: true }
+  )
 
   onBeforeUnmount(() => observer?.disconnect())
 

@@ -1,11 +1,18 @@
 <template>
-  <q-page class="storefront-page" :style="showCheckoutBar ? { paddingBottom: `calc(${checkoutBarHeight}px + var(--bottom-nav-h))` } : null">
-
+  <q-page
+    class="storefront-page"
+    :style="
+      showCheckoutBar
+        ? {
+            paddingBottom: `calc(${checkoutBarHeight}px + var(--bottom-nav-h))`
+          }
+        : null
+    "
+  >
     <SiteHeader />
 
     <!-- MAIN CONTENT -->
     <div class="page-content">
-
       <!-- A shortcut to past and in-progress orders, so a shopper checking on an order doesn't
            have to go through the account menu. -->
       <div class="cart-title-row">
@@ -20,7 +27,9 @@
           class="orders-shortcut"
         />
       </div>
-      <p v-if="items.length" class="page-subtitle">{{ t('Choose a store to checkout.') }}</p>
+      <p v-if="items.length" class="page-subtitle">{{
+        t('Choose a store to checkout.')
+      }}</p>
 
       <div v-if="loading" class="cart-loading">
         <q-spinner size="32px" />
@@ -33,7 +42,11 @@
         class="cart-empty"
         icon="o_shopping_cart"
         :title="t('Your cart is empty')"
-        :text="t('Items you add from a store will wait here until you are ready to check out. You pay and collect at the store itself.')"
+        :text="
+          t(
+            'Items you add from a store will wait here until you are ready to check out. You pay and collect at the store itself.'
+          )
+        "
       >
         <template #action>
           <q-btn
@@ -47,142 +60,251 @@
       </EmptyState>
 
       <template v-else>
-      <!-- Shown once, above the cart itself: there is no delivery in Tindahan, and the
+        <!-- Shown once, above the cart itself: there is no delivery in Tindahan, and the
            pickup note in the summary below is easy to miss before checkout. -->
-      <ContextHint
-        v-if="showPickupHint"
-        class="cart-pickup-hint"
-        icon="o_storefront"
-        :title="t('Pickup only')"
-        :text="t('Tindahan orders are collected at the store. There is no delivery — you pay the store when you pick your order up.')"
-        :dismiss-label="t('Close')"
-        @dismiss="dismissPickupHint"
-      />
+        <ContextHint
+          v-if="showPickupHint"
+          class="cart-pickup-hint"
+          icon="o_storefront"
+          :title="t('Pickup only')"
+          :text="
+            t(
+              'Tindahan orders are collected at the store. There is no delivery — you pay the store when you pick your order up.'
+            )
+          "
+          :dismiss-label="t('Close')"
+          @dismiss="dismissPickupHint"
+        />
 
-      <div class="cart-layout">
+        <div class="cart-layout">
+          <div class="cart-main">
+            <div
+              v-for="group in groupedByStore"
+              :key="group.storeId"
+              class="store-card"
+              :class="{
+                'store-card-selected': selectedStoreId === group.storeId
+              }"
+            >
+              <div class="store-card-header">
+                <div class="store-card-header-info">
+                  <q-checkbox
+                    :model-value="selectedStoreId === group.storeId"
+                    :disable="
+                      !!selectedGroup && selectedStoreId !== group.storeId
+                    "
+                    color="primary"
+                    dense
+                    class="store-card-checkbox"
+                    @update:model-value="toggleStoreSelection(group.storeId)"
+                  />
+                  <q-icon name="o_storefront" size="15px" />
+                  <span class="store-card-name">{{ group.store }}</span>
+                </div>
 
-        <div class="cart-main">
-          <div
-            v-for="group in groupedByStore"
-            :key="group.storeId"
-            class="store-card"
-            :class="{ 'store-card-selected': selectedStoreId === group.storeId }"
-          >
+                <!-- Back to this group's own store, since a cart is checked out one store at a time. -->
+                <router-link
+                  v-if="group.storeId"
+                  :to="`/consumer/stores/${group.storeId}`"
+                  class="continue-shopping-link continue-shopping-link--header"
+                >
+                  {{ t('Continue Shopping') }}
+                  <q-icon name="o_chevron_right" size="16px" />
+                </router-link>
+              </div>
 
-            <div class="store-card-header">
-              <div class="store-card-header-info">
-                <q-checkbox
-                  :model-value="selectedStoreId === group.storeId"
-                  :disable="!!selectedGroup && selectedStoreId !== group.storeId"
-                  color="primary"
+              <div
+                v-for="item in group.items"
+                class="cart-item"
+                :key="item.cartId"
+                :class="{ 'cart-item-oos': !item.inStock || hasExpired(item) }"
+              >
+                <div class="cart-item-image">
+                  <img v-if="item.image" :src="item.image" :alt="item.name" />
+                  <q-icon v-else name="o_inventory_2" size="22px" />
+                </div>
+
+                <div class="cart-item-info">
+                  <div class="cart-item-name">{{ item.name }}</div>
+                  <div v-if="item.variantName" class="cart-item-variant">{{
+                    item.variantName
+                  }}</div>
+                  <div v-if="hasExpired(item)" class="cart-item-oos-tag">{{
+                    t('Expired')
+                  }}</div>
+                  <div v-else-if="!item.inStock" class="cart-item-oos-tag">{{
+                    t('Out of Stock')
+                  }}</div>
+                  <div
+                    v-else-if="item.expiresAt"
+                    class="cart-item-expiry-tag"
+                    >{{ formatTimeLeft(item.expiresAt) }}</div
+                  >
+                  <div class="cart-item-price"
+                    >₱{{ item.price.toFixed(2) }}</div
+                  >
+                </div>
+
+                <div class="stepper-wrapper">
+                  <div class="quantity-stepper">
+                    <!-- Each stepper button is named after its item, so a screen reader can tell six identical Decrease buttons apart. -->
+                    <q-btn
+                      flat
+                      dense
+                      :ripple="false"
+                      icon="o_remove"
+                      class="stepper-btn"
+                      :disable="item.quantity <= 1 || hasExpired(item)"
+                      :aria-label="
+                        t('Decrease quantity of {name}', { name: item.name })
+                      "
+                      @click="changeQuantity(item, item.quantity - 1)"
+                    />
+                    <span class="stepper-value">{{ item.quantity }}</span>
+                    <q-btn
+                      flat
+                      dense
+                      :ripple="false"
+                      icon="o_add"
+                      class="stepper-btn"
+                      :disable="
+                        item.quantity >= item.availableQuantity ||
+                        hasExpired(item)
+                      "
+                      :aria-label="
+                        t('Increase quantity of {name}', { name: item.name })
+                      "
+                      @click="changeQuantity(item, item.quantity + 1)"
+                    />
+                  </div>
+                  <div
+                    v-if="
+                      item.quantity >= item.availableQuantity &&
+                      !hasExpired(item)
+                    "
+                    class="stepper-limit"
+                  >
+                    {{ t('Max (') }}{{ item.availableQuantity }}
+                    {{ t('limit)') }}
+                  </div>
+                </div>
+
+                <div class="cart-item-line-total"
+                  >₱{{ (item.price * item.quantity).toFixed(2) }}</div
+                >
+
+                <q-btn
+                  flat
                   dense
-                  class="store-card-checkbox"
-                  @update:model-value="toggleStoreSelection(group.storeId)"
+                  :ripple="false"
+                  icon="o_delete"
+                  class="remove-btn"
+                  :aria-label="
+                    t('Remove {name} from cart', { name: item.name })
+                  "
+                  @click="removeItem(item)"
                 />
-                <q-icon name="o_storefront" size="15px" />
-                <span class="store-card-name">{{ group.store }}</span>
               </div>
 
-              <!-- Back to this group's own store, since a cart is checked out one store at a time. -->
-              <router-link v-if="group.storeId" :to="`/consumer/stores/${group.storeId}`" class="continue-shopping-link continue-shopping-link--header">
-                {{ t('Continue Shopping') }}
-                <q-icon name="o_chevron_right" size="16px" />
-              </router-link>
-            </div>
-
-            <div v-for="item in group.items" class="cart-item" :key="item.cartId" :class="{ 'cart-item-oos': !item.inStock || hasExpired(item) }">
-              <div class="cart-item-image">
-                <img v-if="item.image" :src="item.image" :alt="item.name" />
-                <q-icon v-else name="o_inventory_2" size="22px" />
+              <div class="store-card-subtotal">
+                <span>{{ t('Subtotal') }}</span>
+                <strong>₱{{ group.subtotal.toFixed(2) }}</strong>
               </div>
 
-              <div class="cart-item-info">
-                <div class="cart-item-name">{{ item.name }}</div>
-                <div v-if="item.variantName" class="cart-item-variant">{{ item.variantName }}</div>
-                <div v-if="hasExpired(item)" class="cart-item-oos-tag">{{ t('Expired') }}</div>
-                <div v-else-if="!item.inStock" class="cart-item-oos-tag">{{ t('Out of Stock') }}</div>
-                <div v-else-if="item.expiresAt" class="cart-item-expiry-tag">{{ formatTimeLeft(item.expiresAt) }}</div>
-                <div class="cart-item-price">₱{{ item.price.toFixed(2) }}</div>
+              <!-- Phone copy of the header link: there the store name needs the whole header row. -->
+              <div v-if="group.storeId" class="store-card-footer">
+                <router-link
+                  :to="`/consumer/stores/${group.storeId}`"
+                  class="continue-shopping-link"
+                >
+                  {{ t('Continue Shopping') }}
+                  <q-icon name="o_chevron_right" size="16px" />
+                </router-link>
               </div>
-
-              <div class="stepper-wrapper">
-                <div class="quantity-stepper">
-                  <!-- Each stepper button is named after its item, so a screen reader can tell six identical Decrease buttons apart. -->
-                  <q-btn
-                    flat
-                    dense
-                    :ripple="false"
-                    icon="o_remove"
-                    class="stepper-btn"
-                    :disable="item.quantity <= 1 || hasExpired(item)"
-                    :aria-label="t('Decrease quantity of {name}', { name: item.name })"
-                    @click="changeQuantity(item, item.quantity - 1)"
-                  />
-                  <span class="stepper-value">{{ item.quantity }}</span>
-                  <q-btn
-                    flat
-                    dense
-                    :ripple="false"
-                    icon="o_add"
-                    class="stepper-btn"
-                    :disable="item.quantity >= item.availableQuantity || hasExpired(item)"
-                    :aria-label="t('Increase quantity of {name}', { name: item.name })"
-                    @click="changeQuantity(item, item.quantity + 1)"
-                  />
-                </div>
-                <div v-if="item.quantity >= item.availableQuantity && !hasExpired(item)" class="stepper-limit">
-                  {{ t('Max (') }}{{ item.availableQuantity }} {{ t('limit)') }}
-                </div>
-              </div>
-
-              <div class="cart-item-line-total">₱{{ (item.price * item.quantity).toFixed(2) }}</div>
-
-              <q-btn
-                flat
-                dense
-                :ripple="false"
-                icon="o_delete"
-                class="remove-btn"
-                :aria-label="t('Remove {name} from cart', { name: item.name })"
-                @click="removeItem(item)"
-              />
-            </div>
-
-            <div class="store-card-subtotal">
-              <span>{{ t('Subtotal') }}</span>
-              <strong>₱{{ group.subtotal.toFixed(2) }}</strong>
-            </div>
-
-            <!-- Phone copy of the header link: there the store name needs the whole header row. -->
-            <div v-if="group.storeId" class="store-card-footer">
-              <router-link :to="`/consumer/stores/${group.storeId}`" class="continue-shopping-link">
-                {{ t('Continue Shopping') }}
-                <q-icon name="o_chevron_right" size="16px" />
-              </router-link>
             </div>
           </div>
+
+          <aside v-if="!$q.screen.lt.md" class="cart-summary">
+            <div class="summary-title">{{ t('Order Summary') }}</div>
+
+            <p v-if="!selectedGroup" class="summary-empty-hint">{{
+              t('Select a store from your cart to continue to checkout.')
+            }}</p>
+
+            <template v-else>
+              <div class="summary-row">
+                <span>{{ selectedGroup.store }} ({{ selectedItemCount }})</span>
+                <span>₱{{ selectedGroup.subtotal.toFixed(2) }}</span>
+              </div>
+              <q-separator class="summary-separator" />
+              <div class="summary-row summary-total">
+                <span>{{ t('Total') }}</span>
+                <span>₱{{ selectedGroup.subtotal.toFixed(2) }}</span>
+              </div>
+            </template>
+
+            <p v-if="selectedHasExpired" class="summary-expired-hint">
+              {{
+                t(
+                  'A reservation in this store expired. Remove the expired item to continue.'
+                )
+              }}
+            </p>
+
+            <q-btn
+              unelevated
+              no-caps
+              :label="t('Proceed to Checkout')"
+              class="checkout-btn"
+              :disable="checkoutBlocked"
+              @click="
+                router.push({
+                  path: '/consumer/checkout',
+                  query: { storeId: selectedGroup.storeId }
+                })
+              "
+            />
+            <p class="summary-pickup-note">{{
+              t("You'll pay and pick up your order at the store.")
+            }}</p>
+          </aside>
         </div>
 
-        <aside v-if="!$q.screen.lt.md" class="cart-summary">
-          <div class="summary-title">{{ t('Order Summary') }}</div>
-
-          <p v-if="!selectedGroup" class="summary-empty-hint">{{ t('Select a store from your cart to continue to checkout.') }}</p>
-
-          <template v-else>
-            <div class="summary-row">
-              <span>{{ selectedGroup.store }} ({{ selectedItemCount }})</span>
-              <span>₱{{ selectedGroup.subtotal.toFixed(2) }}</span>
+        <!-- Mobile/tablet: sticky checkout bar replaces the Order Summary sidebar. -->
+        <div
+          v-if="showCheckoutBar"
+          ref="checkoutBarEl"
+          class="cart-checkout-bar"
+        >
+          <div class="cart-checkout-bar-top">
+            <div class="cart-checkout-bar-info">
+              <div class="cart-checkout-bar-title">{{
+                selectedGroup ? t('Total') : t('Select a store to checkout')
+              }}</div>
+              <div
+                class="cart-checkout-bar-subtitle"
+                :class="{
+                  'cart-checkout-bar-subtitle-expired': selectedHasExpired
+                }"
+              >
+                <template v-if="selectedHasExpired">{{
+                  t('Remove the expired item to continue.')
+                }}</template>
+                <template v-else-if="selectedGroup"
+                  >{{ itemCount(selectedItemCount) }} ·
+                  {{ selectedGroup.store }}</template
+                >
+                <template v-else>{{
+                  t('Choose a store above to view your total.')
+                }}</template>
+              </div>
             </div>
-            <q-separator class="summary-separator" />
-            <div class="summary-row summary-total">
-              <span>{{ t('Total') }}</span>
-              <span>₱{{ selectedGroup.subtotal.toFixed(2) }}</span>
-            </div>
-          </template>
-
-          <p v-if="selectedHasExpired" class="summary-expired-hint">
-            {{ t('A reservation in this store expired. Remove the expired item to continue.') }}
-          </p>
+            <div class="cart-checkout-bar-price"
+              >₱{{
+                (selectedGroup ? selectedGroup.subtotal : 0).toFixed(2)
+              }}</div
+            >
+          </div>
 
           <q-btn
             unelevated
@@ -190,42 +312,18 @@
             :label="t('Proceed to Checkout')"
             class="checkout-btn"
             :disable="checkoutBlocked"
-            @click="router.push({ path: '/consumer/checkout', query: { storeId: selectedGroup.storeId } })"
+            @click="
+              router.push({
+                path: '/consumer/checkout',
+                query: { storeId: selectedGroup.storeId }
+              })
+            "
           />
-          <p class="summary-pickup-note">{{ t('You\'ll pay and pick up your order at the store.') }}</p>
-        </aside>
-
-      </div>
-
-      <!-- Mobile/tablet: sticky checkout bar replaces the Order Summary sidebar. -->
-      <div v-if="showCheckoutBar" ref="checkoutBarEl" class="cart-checkout-bar">
-        <div class="cart-checkout-bar-top">
-          <div class="cart-checkout-bar-info">
-            <div class="cart-checkout-bar-title">{{ selectedGroup ? t('Total') : t('Select a store to checkout') }}</div>
-            <div class="cart-checkout-bar-subtitle" :class="{ 'cart-checkout-bar-subtitle-expired': selectedHasExpired }">
-              <template v-if="selectedHasExpired">{{ t('Remove the expired item to continue.') }}</template>
-              <template v-else-if="selectedGroup">{{ itemCount(selectedItemCount) }} · {{ selectedGroup.store }}</template>
-              <template v-else>{{ t('Choose a store above to view your total.') }}</template>
-            </div>
-          </div>
-          <div class="cart-checkout-bar-price">₱{{ (selectedGroup ? selectedGroup.subtotal : 0).toFixed(2) }}</div>
         </div>
-
-        <q-btn
-          unelevated
-          no-caps
-          :label="t('Proceed to Checkout')"
-          class="checkout-btn"
-          :disable="checkoutBlocked"
-          @click="router.push({ path: '/consumer/checkout', query: { storeId: selectedGroup.storeId } })"
-        />
-      </div>
       </template>
-
     </div>
 
     <SiteFooter />
-
   </q-page>
 </template>
 
@@ -241,7 +339,10 @@ import ContextHint from '@/components/consumer/ContextHint.vue'
 import EmptyState from '@/components/consumer/EmptyState.vue'
 import { useCart } from '@/composables/useCart'
 import { useCartExpiry } from '@/composables/useCartExpiry'
-import { useConsumerHints, HINT_PICKUP_ONLY } from '@/composables/useConsumerHints'
+import {
+  useConsumerHints,
+  HINT_PICKUP_ONLY
+} from '@/composables/useConsumerHints'
 
 const { t, itemCount } = useConsumerLanguage()
 
@@ -262,14 +363,16 @@ onMounted(() => {
 })
 
 // Mobile/tablet: sticky checkout bar replaces the Order Summary sidebar.
-const showCheckoutBar = computed(() => $q.screen.lt.md && items.value.length > 0)
+const showCheckoutBar = computed(
+  () => $q.screen.lt.md && items.value.length > 0
+)
 
 // Reserves exactly the bar's measured height (not a guessed px value) as bottom padding, so SiteFooter sits flush against it with no gap or overlap.
 const checkoutBarEl = ref(null)
 const checkoutBarHeight = ref(0)
 let checkoutBarObserver = null
 
-watch(checkoutBarEl, (el) => {
+watch(checkoutBarEl, el => {
   checkoutBarObserver?.disconnect()
   checkoutBarObserver = null
 
@@ -292,7 +395,7 @@ onBeforeUnmount(() => {
 // Only one store can be checked out from at a time — the checkout flow is per-store pickup, not a combined order.
 const selectedStoreId = ref(null)
 
-const toggleStoreSelection = (storeId) => {
+const toggleStoreSelection = storeId => {
   selectedStoreId.value = selectedStoreId.value === storeId ? null : storeId
 }
 
@@ -302,7 +405,13 @@ const groupedByStore = computed(() => {
 
   for (const item of items.value) {
     if (!groups.has(item.storeId)) {
-      groups.set(item.storeId, { storeId: item.storeId, store: item.store, items: [], subtotal: 0, expiredCount: 0 })
+      groups.set(item.storeId, {
+        storeId: item.storeId,
+        store: item.store,
+        items: [],
+        subtotal: 0,
+        expiredCount: 0
+      })
     }
     const group = groups.get(item.storeId)
     group.items.push(item)
@@ -319,21 +428,30 @@ const groupedByStore = computed(() => {
 })
 
 // Drives the Order Summary — null whenever nothing is selected or the selected store's items are gone.
-const selectedGroup = computed(() =>
-  groupedByStore.value.find((group) => group.storeId === selectedStoreId.value) || null
+const selectedGroup = computed(
+  () =>
+    groupedByStore.value.find(
+      group => group.storeId === selectedStoreId.value
+    ) || null
 )
 
 const selectedItemCount = computed(() =>
   selectedGroup.value
-    ? selectedGroup.value.items.reduce((sum, item) => (hasExpired(item) ? sum : sum + item.quantity), 0)
+    ? selectedGroup.value.items.reduce(
+        (sum, item) => (hasExpired(item) ? sum : sum + item.quantity),
+        0
+      )
     : 0
 )
 
 const selectedHasExpired = computed(() => !!selectedGroup.value?.expiredCount)
 
 // The server re-checks every reservation, so the button blocks here rather than failing at the last step.
-const checkoutBlocked = computed(() =>
-  !selectedGroup.value || selectedHasExpired.value || selectedItemCount.value === 0
+const checkoutBlocked = computed(
+  () =>
+    !selectedGroup.value ||
+    selectedHasExpired.value ||
+    selectedItemCount.value === 0
 )
 
 const changeQuantity = async (item, newQuantity) => {
@@ -343,16 +461,25 @@ const changeQuantity = async (item, newQuantity) => {
   try {
     await updateQuantity(item.cartId, newQuantity)
   } catch (error) {
-    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to update quantity.') })
+    $q.notify({
+      type: 'negative',
+      message: t(error.response?.data?.message || 'Failed to update quantity.')
+    })
   }
 }
 
-const removeItem = async (item) => {
+const removeItem = async item => {
   try {
     await removeFromCart(item.cartId)
-    $q.notify({ type: 'positive', message: t('{name} removed from cart.', { name: item.name }) })
+    $q.notify({
+      type: 'positive',
+      message: t('{name} removed from cart.', { name: item.name })
+    })
   } catch (error) {
-    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to remove item.') })
+    $q.notify({
+      type: 'negative',
+      message: t(error.response?.data?.message || 'Failed to remove item.')
+    })
   }
 }
 </script>
@@ -469,8 +596,14 @@ const removeItem = async (item) => {
 
 /* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
 @keyframes cart-fade-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-title,
@@ -478,7 +611,9 @@ const removeItem = async (item) => {
   animation: cart-fade-up 0.5s ease both;
 }
 
-.cart-layout { animation-delay: 0.06s; }
+.cart-layout {
+  animation-delay: 0.06s;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .cart-empty,
@@ -504,7 +639,10 @@ const removeItem = async (item) => {
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .browse-btn:hover {
@@ -556,7 +694,9 @@ const removeItem = async (item) => {
   background: #ffffff;
   box-shadow: var(--sh-card);
 
-  transition: border-color 0.15s, box-shadow 0.2s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.2s;
 }
 
 .store-card:last-child {
@@ -568,7 +708,9 @@ const removeItem = async (item) => {
   border-color: var(--c-brand);
   background: #ffffff;
 
-  box-shadow: 0 0 0 3px var(--c-brand-tint), var(--sh-card);
+  box-shadow:
+    0 0 0 3px var(--c-brand-tint),
+    var(--sh-card);
 }
 
 .store-card-checkbox {
@@ -675,7 +817,11 @@ const removeItem = async (item) => {
   border-radius: var(--r-md);
   border: 1px solid var(--c-border);
 
-  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-surface) 0%,
+    var(--c-surface) 100%
+  );
   color: var(--c-brand);
 
   overflow: hidden;
@@ -939,7 +1085,10 @@ const removeItem = async (item) => {
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .checkout-btn:hover {

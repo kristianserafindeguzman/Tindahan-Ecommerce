@@ -1,16 +1,33 @@
-<template>  
-  <q-layout view="hHh LpR fFf" class="vendor-layout" :class="{ 'vendor-layout--dark': $q.dark.isActive }">
-
+<template>
+  <q-layout
+    view="hHh LpR fFf"
+    class="vendor-layout"
+    :class="{ 'vendor-layout--dark': $q.dark.isActive }"
+  >
     <!-- ================= MOBILE HEADER ================= -->
     <q-header v-if="$q.screen.lt.md" class="sari-brand-header">
       <q-toolbar class="q-px-md toolbar-mobile">
-
         <!-- Mobile Logo (Transparent) -->
-        <div class="header-logo-card flex flex-center cursor-pointer" @click="router.push('/vendor/dashboard')">
-          <img src="@/assets/tindahan-logo.png" alt="Tindahan Logo" class="header-logo-img" @error="$event.target.style.display='none'" />
+        <div
+          class="header-logo-card flex flex-center cursor-pointer"
+          @click="router.push('/vendor/dashboard')"
+        >
+          <img
+            src="@/assets/tindahan-logo.png"
+            alt="Tindahan Logo"
+            class="header-logo-img"
+            @error="$event.target.style.display = 'none'"
+          />
           <div class="header-logo-fallback row items-center no-wrap">
-            <q-icon name="storefront" size="24px" color="white" class="q-mr-xs" />
-            <span class="text-weight-bolder text-white text-body1">Tindahan</span>
+            <q-icon
+              name="storefront"
+              size="24px"
+              color="white"
+              class="q-mr-xs"
+            />
+            <span class="text-weight-bolder text-white text-body1"
+              >Tindahan</span
+            >
           </div>
         </div>
 
@@ -25,7 +42,9 @@
             icon="o_translate"
             color="white"
             class="header-action-btn"
-            :aria-label="lang === 'en' ? 'Switch to Filipino' : 'Switch to English'"
+            :aria-label="
+              lang === 'en' ? 'Switch to Filipino' : 'Switch to English'
+            "
             @click="toggleLanguage"
           >
             <q-tooltip>{{ lang === 'en' ? 'Filipino' : 'English' }}</q-tooltip>
@@ -42,54 +61,103 @@
             :aria-label="$q.dark.isActive ? t('lightMode') : t('darkMode')"
             @click="toggleDarkMode"
           >
-            <q-tooltip>{{ $q.dark.isActive ? t('lightMode') : t('darkMode') }}</q-tooltip>
+            <q-tooltip>{{
+              $q.dark.isActive ? t('lightMode') : t('darkMode')
+            }}</q-tooltip>
           </q-btn>
 
-          <q-btn flat round dense icon="notifications" color="white" class="header-action-btn relative-position" to="/vendor/notifications" aria-label="Notifications">
-            <q-badge v-if="unreadCount > 0" color="amber-9" text-color="white" floating rounded class="text-weight-bolder">
+          <q-btn
+            flat
+            round
+            dense
+            icon="notifications"
+            color="white"
+            class="header-action-btn relative-position"
+            to="/vendor/notifications"
+            aria-label="Notifications"
+          >
+            <q-badge
+              v-if="unreadCount > 0"
+              color="amber-9"
+              text-color="white"
+              floating
+              rounded
+              class="text-weight-bolder"
+            >
               {{ unreadCount > 99 ? '99+' : unreadCount }}
             </q-badge>
           </q-btn>
 
-          <q-btn flat round dense icon="logout" color="white" class="header-action-btn" :aria-label="t('signOut')" @click="handleLogout" />
+          <q-btn
+            flat
+            round
+            dense
+            icon="logout"
+            color="white"
+            class="header-action-btn"
+            :aria-label="t('signOut')"
+            @click="handleLogout"
+          />
         </div>
-
       </q-toolbar>
     </q-header>
 
-    <!-- ================= SIDEBAR ================= -->  
-    <q-drawer  
-      v-model="drawerOpen"  
-      :show-if-above="!$q.screen.lt.md"  
-      :width="264"  
-      :breakpoint="1024"  
-      class="sari-sidebar-drawer"  
-    >  
+    <!-- ================= SIDEBAR ================= -->
+    <q-drawer
+      v-model="drawerOpen"
+      :show-if-above="!$q.screen.lt.md"
+      :width="264"
+      :breakpoint="1024"
+      class="sari-sidebar-drawer"
+    >
       <div class="sidebar-layout column full-height no-wrap">
-
         <div class="sidebar-top">
-          <button type="button" class="sidebar-logo" aria-label="Go to dashboard" @click="router.push('/vendor/dashboard')">
-            <img src="@/assets/tindahan-logo.png" alt="Tindahan" class="sidebar-logo-img" />
+          <button
+            type="button"
+            class="sidebar-logo"
+            aria-label="Go to dashboard"
+            @click="router.push('/vendor/dashboard')"
+          >
+            <img
+              src="@/assets/tindahan-logo.png"
+              alt="Tindahan"
+              class="sidebar-logo-img"
+            />
           </button>
         </div>
 
         <!-- Dark Mode & Language Toggles — sit right below the logo, same as the admin sidebar -->
         <div class="sidebar-utility-controls">
-          <button type="button" class="sidebar-utility-chip" @click="toggleDarkMode">
-            <q-icon :name="$q.dark.isActive ? 'o_light_mode' : 'o_dark_mode'" size="16px" />
+          <button
+            type="button"
+            class="sidebar-utility-chip"
+            @click="toggleDarkMode"
+          >
+            <q-icon
+              :name="$q.dark.isActive ? 'o_light_mode' : 'o_dark_mode'"
+              size="16px"
+            />
             <span>{{ $q.dark.isActive ? t('lightMode') : t('darkMode') }}</span>
           </button>
 
-          <button type="button" class="sidebar-utility-chip" @click="toggleLanguage">
+          <button
+            type="button"
+            class="sidebar-utility-chip"
+            @click="toggleLanguage"
+          >
             <q-icon name="o_translate" size="16px" />
             <span>{{ lang === 'en' ? 'English' : 'Filipino' }}</span>
           </button>
         </div>
 
         <nav class="sidebar-links-container col scroll" aria-label="Store menu">
-          <div v-for="group in localizedNavGroups" :key="group.label" class="sidebar-group">  
-            <div class="sidebar-category-header">{{ group.label }}</div>  
-            <q-list class="sidebar-group-list">  
+          <div
+            v-for="group in localizedNavGroups"
+            :key="group.label"
+            class="sidebar-group"
+          >
+            <div class="sidebar-category-header">{{ group.label }}</div>
+            <q-list class="sidebar-group-list">
               <q-item
                 v-for="item in group.items"
                 :key="item.path"
@@ -100,106 +168,239 @@
                 active-class="solid-nav-active"
                 class="solid-nav-item uniform-menu-item"
               >
-                <q-item-section avatar class="nav-avatar-slot">  
-                  <q-icon :name="item.icon" size="20px" class="nav-icon-glyph" />  
-                </q-item-section>  
-                <q-item-section class="nav-label-text">{{ item.label }}</q-item-section>  
-              </q-item>            
-            </q-list>  
-          </div>  
+                <q-item-section avatar class="nav-avatar-slot">
+                  <q-icon
+                    :name="item.icon"
+                    size="20px"
+                    class="nav-icon-glyph"
+                  />
+                </q-item-section>
+                <q-item-section class="nav-label-text">{{
+                  item.label
+                }}</q-item-section>
+              </q-item>
+            </q-list>
+          </div>
         </nav>
 
         <div class="sidebar-footer-area">
           <div class="sidebar-account">
-            <q-avatar size="36px" class="sidebar-account-avatar">  
-              <img v-if="userProfilePicture" :src="userProfilePicture" alt="" />  
-              <q-icon v-else name="o_person" size="20px" />  
-            </q-avatar>  
-            <div class="sidebar-account-text">  
-              <div class="sidebar-account-name">  
-                <q-skeleton v-if="profileLoading" dark type="text" width="104px" />  
-                <template v-else>{{ userName }}</template>  
-              </div>  
-              <div class="sidebar-account-role">{{ t('storeOwner') }}</div>  
-            </div>  
-            <q-btn flat round dense icon="o_logout" class="sidebar-signout" aria-label="Sign out" @click="handleLogout">  
-              <q-tooltip>{{ t('signOut') }}</q-tooltip>  
-            </q-btn>  
-          </div>  
+            <q-avatar size="36px" class="sidebar-account-avatar">
+              <img v-if="userProfilePicture" :src="userProfilePicture" alt="" />
+              <q-icon v-else name="o_person" size="20px" />
+            </q-avatar>
+            <div class="sidebar-account-text">
+              <div class="sidebar-account-name">
+                <q-skeleton
+                  v-if="profileLoading"
+                  dark
+                  type="text"
+                  width="104px"
+                />
+                <template v-else>{{ userName }}</template>
+              </div>
+              <div class="sidebar-account-role">{{ t('storeOwner') }}</div>
+            </div>
+            <q-btn
+              flat
+              round
+              dense
+              icon="o_logout"
+              class="sidebar-signout"
+              aria-label="Sign out"
+              @click="handleLogout"
+            >
+              <q-tooltip>{{ t('signOut') }}</q-tooltip>
+            </q-btn>
+          </div>
         </div>
-
-      </div>  
+      </div>
     </q-drawer>
 
-    <!-- ================= MAIN CONTENT ================= -->  
-    <q-page-container :class="{ 'mobile-pb': $q.screen.lt.md }">  
-      <router-view />  
+    <!-- ================= MAIN CONTENT ================= -->
+    <q-page-container :class="{ 'mobile-pb': $q.screen.lt.md }">
+      <router-view />
     </q-page-container>
 
-    <!-- ================= MOBILE BOTTOM NAVIGATION ================= -->  
-    <q-footer v-if="$q.screen.lt.md" class="vendor-bottom-nav bg-white">  
-      <nav class="bottom-nav-inner" aria-label="Store menu">  
-        <q-btn data-tour="mnav-dashboard" flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path === '/vendor/dashboard' }" to="/vendor/dashboard">
-          <span class="bottom-nav-pill"><q-icon name="o_home" size="24px" /></span>
+    <!-- ================= MOBILE BOTTOM NAVIGATION ================= -->
+    <q-footer v-if="$q.screen.lt.md" class="vendor-bottom-nav bg-white">
+      <nav class="bottom-nav-inner" aria-label="Store menu">
+        <q-btn
+          data-tour="mnav-dashboard"
+          flat
+          no-caps
+          :ripple="false"
+          class="bottom-nav-tab"
+          :class="{
+            'bottom-nav-tab--active': $route.path === '/vendor/dashboard'
+          }"
+          to="/vendor/dashboard"
+        >
+          <span class="bottom-nav-pill"
+            ><q-icon name="o_home" size="24px"
+          /></span>
           <span class="bottom-nav-label">{{ t('home') }}</span>
         </q-btn>
-        <q-btn data-tour="mnav-orders" flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/orders') }">
-          <span class="bottom-nav-pill"><q-icon name="o_receipt_long" size="24px" /></span>  
-          <span class="bottom-nav-label">{{ t('orders') }}</span>  
-          <q-menu anchor="top middle" self="bottom middle" transition-show="jump-up" transition-hide="jump-down" class="solid-paper-menu" :offset="[0, 10]">  
-            <q-list style="min-width: 200px" class="q-py-xs">  
-              <q-item v-close-popup clickable v-ripple to="/vendor/orders/list" active-class="active-popup-item" class="popup-action-item">
-                <q-item-section avatar class="q-pr-sm min-w-0">  
-                  <div class="popup-icon-stamp"><q-icon name="list_alt" size="18px" /></div>  
-                </q-item-section>  
-                <q-item-section class="text-weight-bold text-caption">{{ t('orderList') }}</q-item-section>  
-              </q-item>  
-              <q-item v-close-popup clickable v-ripple to="/vendor/orders/customers" active-class="active-popup-item" class="popup-action-item">
-                <q-item-section avatar class="q-pr-sm min-w-0">  
-                  <div class="popup-icon-stamp"><q-icon name="people_outline" size="18px" /></div>  
-                </q-item-section>  
-                <q-item-section class="text-weight-bold text-caption">{{ t('customerOrders') }}</q-item-section>  
-              </q-item>  
-            </q-list>  
-          </q-menu>  
-        </q-btn>  
+        <q-btn
+          data-tour="mnav-orders"
+          flat
+          no-caps
+          :ripple="false"
+          class="bottom-nav-tab"
+          :class="{
+            'bottom-nav-tab--active': $route.path.includes('/vendor/orders')
+          }"
+        >
+          <span class="bottom-nav-pill"
+            ><q-icon name="o_receipt_long" size="24px"
+          /></span>
+          <span class="bottom-nav-label">{{ t('orders') }}</span>
+          <q-menu
+            anchor="top middle"
+            self="bottom middle"
+            transition-show="jump-up"
+            transition-hide="jump-down"
+            class="solid-paper-menu"
+            :offset="[0, 10]"
+          >
+            <q-list style="min-width: 200px" class="q-py-xs">
+              <q-item
+                v-close-popup
+                clickable
+                v-ripple
+                to="/vendor/orders/list"
+                active-class="active-popup-item"
+                class="popup-action-item"
+              >
+                <q-item-section avatar class="q-pr-sm min-w-0">
+                  <div class="popup-icon-stamp"
+                    ><q-icon name="list_alt" size="18px"
+                  /></div>
+                </q-item-section>
+                <q-item-section class="text-weight-bold text-caption">{{
+                  t('orderList')
+                }}</q-item-section>
+              </q-item>
+              <q-item
+                v-close-popup
+                clickable
+                v-ripple
+                to="/vendor/orders/customers"
+                active-class="active-popup-item"
+                class="popup-action-item"
+              >
+                <q-item-section avatar class="q-pr-sm min-w-0">
+                  <div class="popup-icon-stamp"
+                    ><q-icon name="people_outline" size="18px"
+                  /></div>
+                </q-item-section>
+                <q-item-section class="text-weight-bold text-caption">{{
+                  t('customerOrders')
+                }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
         <!-- Each item carries v-close-popup: QMenu does not close on a route change, so without it
              the menu stayed open over the page it had just navigated to and the tap looked ignored. -->
-        <q-btn data-tour="mnav-inventory" flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/products') }">
-          <span class="bottom-nav-pill"><q-icon name="o_inventory_2" size="24px" /></span>  
-          <span class="bottom-nav-label">{{ t('products') }}</span>  
-          <q-menu anchor="top middle" self="bottom middle" transition-show="jump-up" transition-hide="jump-down" class="solid-paper-menu" :offset="[0, 10]">  
-            <q-list style="min-width: 200px" class="q-py-xs">  
-              <q-item v-close-popup clickable v-ripple to="/vendor/products/list" active-class="active-popup-item" class="popup-action-item">
-                <q-item-section avatar class="q-pr-sm min-w-0">  
-                  <div class="popup-icon-stamp"><q-icon name="format_list_bulleted" size="18px" /></div>  
-                </q-item-section>  
-                <q-item-section class="text-weight-bold text-caption">{{ t('productList') }}</q-item-section>  
-              </q-item>  
-              <q-item v-close-popup clickable v-ripple to="/vendor/products/categories" active-class="active-popup-item" class="popup-action-item">
-                <q-item-section avatar class="q-pr-sm min-w-0">  
-                  <div class="popup-icon-stamp"><q-icon name="category" size="18px" /></div>  
-                </q-item-section>  
-                <q-item-section class="text-weight-bold text-caption">{{ t('categories') }}</q-item-section>  
-              </q-item>  
-            </q-list>  
-          </q-menu>  
-        </q-btn>  
-        <q-btn data-tour="mnav-analytics" flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/sales') }" to="/vendor/sales">
-          <span class="bottom-nav-pill"><q-icon name="o_analytics" size="24px" /></span>  
-          <span class="bottom-nav-label">{{ t('sales') }}</span>  
-        </q-btn>  
-        <q-btn data-tour="mnav-settings" flat no-caps :ripple="false" class="bottom-nav-tab" :class="{ 'bottom-nav-tab--active': $route.path.includes('/vendor/profile') }" to="/vendor/profile">
-          <span class="bottom-nav-pill"><q-icon name="o_person" size="24px" /></span>
+        <q-btn
+          data-tour="mnav-inventory"
+          flat
+          no-caps
+          :ripple="false"
+          class="bottom-nav-tab"
+          :class="{
+            'bottom-nav-tab--active': $route.path.includes('/vendor/products')
+          }"
+        >
+          <span class="bottom-nav-pill"
+            ><q-icon name="o_inventory_2" size="24px"
+          /></span>
+          <span class="bottom-nav-label">{{ t('products') }}</span>
+          <q-menu
+            anchor="top middle"
+            self="bottom middle"
+            transition-show="jump-up"
+            transition-hide="jump-down"
+            class="solid-paper-menu"
+            :offset="[0, 10]"
+          >
+            <q-list style="min-width: 200px" class="q-py-xs">
+              <q-item
+                v-close-popup
+                clickable
+                v-ripple
+                to="/vendor/products/list"
+                active-class="active-popup-item"
+                class="popup-action-item"
+              >
+                <q-item-section avatar class="q-pr-sm min-w-0">
+                  <div class="popup-icon-stamp"
+                    ><q-icon name="format_list_bulleted" size="18px"
+                  /></div>
+                </q-item-section>
+                <q-item-section class="text-weight-bold text-caption">{{
+                  t('productList')
+                }}</q-item-section>
+              </q-item>
+              <q-item
+                v-close-popup
+                clickable
+                v-ripple
+                to="/vendor/products/categories"
+                active-class="active-popup-item"
+                class="popup-action-item"
+              >
+                <q-item-section avatar class="q-pr-sm min-w-0">
+                  <div class="popup-icon-stamp"
+                    ><q-icon name="category" size="18px"
+                  /></div>
+                </q-item-section>
+                <q-item-section class="text-weight-bold text-caption">{{
+                  t('categories')
+                }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
+        <q-btn
+          data-tour="mnav-analytics"
+          flat
+          no-caps
+          :ripple="false"
+          class="bottom-nav-tab"
+          :class="{
+            'bottom-nav-tab--active': $route.path.includes('/vendor/sales')
+          }"
+          to="/vendor/sales"
+        >
+          <span class="bottom-nav-pill"
+            ><q-icon name="o_analytics" size="24px"
+          /></span>
+          <span class="bottom-nav-label">{{ t('sales') }}</span>
+        </q-btn>
+        <q-btn
+          data-tour="mnav-settings"
+          flat
+          no-caps
+          :ripple="false"
+          class="bottom-nav-tab"
+          :class="{
+            'bottom-nav-tab--active': $route.path.includes('/vendor/profile')
+          }"
+          to="/vendor/profile"
+        >
+          <span class="bottom-nav-pill"
+            ><q-icon name="o_person" size="24px"
+          /></span>
           <span class="bottom-nav-label">{{ t('profileNav') }}</span>
         </q-btn>
-      </nav>  
+      </nav>
     </q-footer>
 
     <!-- Lives at the layout level so the tour survives the route change it makes at the
          Add Product step, and so the profile page's Replay button can reach it. -->
     <VendorTutorial />
-
   </q-layout>
 </template>
 
@@ -217,10 +418,10 @@ import '@/css/vendor-pages.scss'
 const router = useRouter()
 const $q = useQuasar()
 
-const drawerOpen = ref(false)  
+const drawerOpen = ref(false)
 const profileLoading = ref(true)
-const userName = ref('Vendor')  
-const userProfilePicture = ref(null)  
+const userName = ref('Vendor')
+const userProfilePicture = ref(null)
 const storeName = ref('Loading...')
 
 // Language Dictionary mapped explicitly for the Layout components
@@ -275,7 +476,7 @@ const { lang, toggleLanguage, t } = useLanguage(layoutDict)
 // dialogs/menus can't be triggered by the admin module reusing the same class
 // names), and both are cleared on unmount so nothing bleeds into the
 // consumer/admin modules or the login page.
-const setDarkMode = (isDark) => {
+const setDarkMode = isDark => {
   $q.dark.set(isDark)
   document.body.classList.toggle('vendor-dark-mode', isDark)
 }
@@ -304,13 +505,18 @@ onMounted(async () => {
       const user = res.data.user
       userName.value = user.full_name || 'Vendor'
       userProfilePicture.value = user.profile_picture_url || null
-      storeName.value = user.store?.store_name || user.store_name || user.shop?.name || res.data.store_name || 'My Store'
+      storeName.value =
+        user.store?.store_name ||
+        user.store_name ||
+        user.shop?.name ||
+        res.data.store_name ||
+        'My Store'
     }
     fetchNotifications()
   } catch (error) {
-    console.error('Error fetching user info:', error)  
-    userName.value = 'Vendor'  
-    storeName.value = 'Store Unavailable'  
+    console.error('Error fetching user info:', error)
+    userName.value = 'Vendor'
+    storeName.value = 'Store Unavailable'
   } finally {
     profileLoading.value = false
   }
@@ -321,70 +527,115 @@ onBeforeUnmount(() => {
 })
 
 // Dynamically computes the navigation labels using the translation function
-const localizedNavGroups = computed(() => [  
-  {  
-    label: t('overview'),  
-    items: [  
-      { label: t('dashboard'), icon: 'o_dashboard', path: '/vendor/dashboard', tour: 'nav-dashboard' },
-      { label: t('sales'), icon: 'o_insights', path: '/vendor/sales', tour: 'nav-analytics' }
-    ]  
-  },  
-  {  
-    label: t('orders'),  
-    items: [  
-      { label: t('orderList'), icon: 'o_receipt_long', path: '/vendor/orders/list', tour: 'nav-orders' },
-      { label: t('customerOrders'), icon: 'o_people', path: '/vendor/orders/customers' }
-    ]  
-  },  
-  {  
-    label: t('products'),  
-    items: [  
-      { label: t('productList'), icon: 'o_inventory_2', path: '/vendor/products/list', tour: 'nav-inventory' },
-      { label: t('categories'), icon: 'o_category', path: '/vendor/products/categories' }
-    ]  
-  },  
-  {  
-    label: t('account'),  
-    items: [  
-      { label: t('profile'), icon: 'o_manage_accounts', path: '/vendor/profile', tour: 'nav-settings' }
-    ]  
-  }  
+const localizedNavGroups = computed(() => [
+  {
+    label: t('overview'),
+    items: [
+      {
+        label: t('dashboard'),
+        icon: 'o_dashboard',
+        path: '/vendor/dashboard',
+        tour: 'nav-dashboard'
+      },
+      {
+        label: t('sales'),
+        icon: 'o_insights',
+        path: '/vendor/sales',
+        tour: 'nav-analytics'
+      }
+    ]
+  },
+  {
+    label: t('orders'),
+    items: [
+      {
+        label: t('orderList'),
+        icon: 'o_receipt_long',
+        path: '/vendor/orders/list',
+        tour: 'nav-orders'
+      },
+      {
+        label: t('customerOrders'),
+        icon: 'o_people',
+        path: '/vendor/orders/customers'
+      }
+    ]
+  },
+  {
+    label: t('products'),
+    items: [
+      {
+        label: t('productList'),
+        icon: 'o_inventory_2',
+        path: '/vendor/products/list',
+        tour: 'nav-inventory'
+      },
+      {
+        label: t('categories'),
+        icon: 'o_category',
+        path: '/vendor/products/categories'
+      }
+    ]
+  },
+  {
+    label: t('account'),
+    items: [
+      {
+        label: t('profile'),
+        icon: 'o_manage_accounts',
+        path: '/vendor/profile',
+        tour: 'nav-settings'
+      }
+    ]
+  }
 ])
 
-const { logout } = useAuth()  
-const handleLogout = () => logout()  
+const { logout } = useAuth()
+const handleLogout = () => logout()
 </script>
 
-<style scoped>  
-.vendor-layout {  
-  background-color: #ffffff;  
+<style scoped>
+.vendor-layout {
+  background-color: #ffffff;
 }
 
-.leading-tight { line-height: 1.15; }  
-.border-bottom-solid { border-bottom: 1px solid var(--c-border); }  
-.border-top-solid { border-top: 1px solid var(--c-border); }  
-.border-solid-red { border: 2px solid var(--c-brand-tint-2); }
-
-.sari-brand-header {  
-  background: linear-gradient(90deg, #af2424 0%, #490f0f 100%) !important;  
-  color: #ffffff !important;  
-  box-shadow: var(--sh-header);  
+.leading-tight {
+  line-height: 1.15;
+}
+.border-bottom-solid {
+  border-bottom: 1px solid var(--c-border);
+}
+.border-top-solid {
+  border-top: 1px solid var(--c-border);
+}
+.border-solid-red {
+  border: 2px solid var(--c-brand-tint-2);
 }
 
-.toolbar-desktop { min-height: 68px; }  
+.sari-brand-header {
+  background: linear-gradient(90deg, #af2424 0%, #490f0f 100%) !important;
+  color: #ffffff !important;
+  box-shadow: var(--sh-header);
+}
+
+.toolbar-desktop {
+  min-height: 68px;
+}
 /* 60px leaves the content more room on a phone while still fitting the logo and icons comfortably. */
-.toolbar-mobile { min-height: 60px; }
-
-.header-action-btn {  
-  transition: background-color 0.15s;  
-}  
-.header-action-btn:hover {  
-  background: rgba(255, 255, 255, 0.12);  
+.toolbar-mobile {
+  min-height: 60px;
 }
 
-.header-logo-card {  
-  background: transparent;  
-  border-radius: var(--r-control);  
+.header-action-btn {
+  transition: background-color 0.15s;
+}
+.header-action-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.header-logo-card {
+  background: transparent;
+  border-radius: var(--r-control);
   padding: 0;
 }
 
@@ -395,15 +646,15 @@ const handleLogout = () => logout()
   width: auto;
   max-width: 160px;
   margin-left: -4px;
-  object-fit: contain;  
-  display: block;  
+  object-fit: contain;
+  display: block;
 }
 
-.header-logo-fallback {  
-  display: none;  
-}  
-.header-logo-img[style*="display: none"] + .header-logo-fallback {  
-  display: flex !important;  
+.header-logo-fallback {
+  display: none;
+}
+.header-logo-img[style*='display: none'] + .header-logo-fallback {
+  display: flex !important;
 }
 
 .lang-btn {
@@ -418,276 +669,288 @@ const handleLogout = () => logout()
   color: #ffffff !important;
 }
 
-.store-title-badge {  
-  background: rgba(255, 255, 255, 0.12);  
-  border-radius: var(--r-control);  
+.store-title-badge {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--r-control);
 }
 
-.badge-sub-label {  
-  font-size: 9px;  
-  font-weight: 700;  
-  letter-spacing: 0.08em;  
-  color: rgba(255, 255, 255, 0.72);  
-  line-height: 1;  
+.badge-sub-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1;
 }
 
-.badge-store-title {  
-  font-size: var(--fs-sm);  
-  font-weight: 700;  
-  color: #ffffff;  
-  max-width: 220px;  
+.badge-store-title {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: #ffffff;
+  max-width: 220px;
 }
 
-.vendor-profile-btn {  
-  background: rgba(255, 255, 255, 0.12);  
-  border-radius: var(--r-control);  
-  padding: 4px 10px;  
+.vendor-profile-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--r-control);
+  padding: 4px 10px;
 }
 
-.profile-frame {  
-  background: #ffffff;  
+.profile-frame {
+  background: #ffffff;
 }
 
-.solid-paper-menu {  
-  overflow: hidden;  
-  background: #ffffff;  
-  border: 1px solid var(--c-border);  
-  border-radius: var(--r-surface);  
-  box-shadow: var(--sh-pop) !important;  
+.solid-paper-menu {
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-surface);
+  box-shadow: var(--sh-pop) !important;
 }
 
-.paper-menu-item { border-radius: var(--r-control); margin: 2px 8px; }  
-.paper-menu-item:hover { background: var(--c-surface); }  
-.logout-paper-item:hover { background: var(--c-brand-tint); }
-
-.notification-card-item {  
-  border-bottom: 1px solid var(--c-hairline);  
-}  
-.unread-paper-notification {  
-  background: var(--c-brand-tint);  
+.paper-menu-item {
+  border-radius: var(--r-control);
+  margin: 2px 8px;
+}
+.paper-menu-item:hover {
+  background: var(--c-surface);
+}
+.logout-paper-item:hover {
+  background: var(--c-brand-tint);
 }
 
-.solid-icon-stamp {  
-  width: 36px;  
-  height: 36px;  
-  border-radius: var(--r-control);  
-  display: flex;  
-  align-items: center;  
-  justify-content: center;  
+.notification-card-item {
+  border-bottom: 1px solid var(--c-hairline);
+}
+.unread-paper-notification {
+  background: var(--c-brand-tint);
 }
 
-.unread-solid-tag {  
-  width: 8px;  
-  height: 8px;  
-  border-radius: 50%;  
-  background-color: var(--c-brand);  
+.solid-icon-stamp {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-:deep(.q-drawer.sari-sidebar-drawer),  
-:deep(.sari-sidebar-drawer) {  
-  background:  
-    radial-gradient(circle, rgba(255, 255, 255, 0.07) 1.5px, transparent 1.5px) 0 0 / 22px 22px,  
-    linear-gradient(180deg, #a82323 0%, #7a1818 55%, #490f0f 100%) !important;  
-  color: #ffffff !important;  
-  border-right: none !important;  
+.unread-solid-tag {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--c-brand);
 }
 
-.sidebar-layout {  
-  position: relative;  
-  background: transparent;  
+:deep(.q-drawer.sari-sidebar-drawer),
+:deep(.sari-sidebar-drawer) {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.07) 1.5px, transparent 1.5px)
+      0 0 / 22px 22px,
+    linear-gradient(180deg, #a82323 0%, #7a1818 55%, #490f0f 100%) !important;
+  color: #ffffff !important;
+  border-right: none !important;
 }
 
-.sidebar-top {  
-  display: flex;  
-  align-items: center;  
-  justify-content: center;  
-  padding: 26px 20px 8px;  
+.sidebar-layout {
+  position: relative;
+  background: transparent;
 }
 
-.sidebar-logo {  
-  padding: 0;  
-  border: none;  
-  background: transparent;  
-  cursor: pointer;  
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 26px 20px 8px;
 }
 
-.sidebar-logo:focus-visible {  
-  outline: 2px solid #ffffff;  
-  outline-offset: 4px;  
-  border-radius: var(--r-control);  
+.sidebar-logo {
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
 }
 
-.sidebar-logo-img {  
-  display: block;  
-  height: 148px;  
-  max-width: 240px;  
-  width: auto;  
-  object-fit: contain;  
+.sidebar-logo:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 4px;
+  border-radius: var(--r-control);
 }
 
-.sidebar-store {  
-  display: flex;  
-  align-items: center;  
-  gap: 12px;  
-  margin: 4px 16px 0;  
-  padding: 10px;  
-  border: 1px solid rgba(255, 255, 255, 0.16);  
-  border-radius: var(--r-surface);  
-  background: rgba(255, 255, 255, 0.1);  
+.sidebar-logo-img {
+  display: block;
+  height: 148px;
+  max-width: 240px;
+  width: auto;
+  object-fit: contain;
 }
 
-.sidebar-store-photo {  
-  display: flex;  
-  align-items: center;  
-  justify-content: center;  
-  flex-shrink: 0;  
-  width: 44px;  
-  height: 44px;  
-  overflow: hidden;  
-  border: 2px solid #ffffff;  
-  border-radius: var(--r-surface);  
-  background: #ffffff;  
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);  
+.sidebar-store {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 16px 0;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--r-surface);
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.sidebar-store-photo img {  
-  width: 100%;  
-  height: 100%;  
-  object-fit: cover;  
+.sidebar-store-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border: 2px solid #ffffff;
+  border-radius: var(--r-surface);
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.sidebar-store-text {  
-  min-width: 0;  
+.sidebar-store-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.sidebar-store-name {  
-  font-size: var(--fs-sm);  
-  font-weight: 700;  
-  color: #ffffff;  
+.sidebar-store-text {
+  min-width: 0;
 }
 
-.store-subtag {  
-  margin-top: 2px;  
-  color: rgba(255, 255, 255, 0.7);  
-  font-size: 10px;  
-  font-weight: 700;  
-  letter-spacing: 0.06em;  
-  text-transform: uppercase;  
+.sidebar-store-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: #ffffff;
 }
 
-.sidebar-links-container {  
-  margin-top: 18px;  
-  padding: 18px 12px 12px;  
-  border-top: 1px solid rgba(255, 255, 255, 0.12);  
+.store-subtag {
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.sidebar-group + .sidebar-group {  
-  margin-top: 18px;  
+.sidebar-links-container {
+  margin-top: 18px;
+  padding: 18px 12px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.sidebar-category-header {  
-  padding: 0 12px 6px;  
-  font-size: 10px;  
-  font-weight: 700;  
-  color: rgba(255, 255, 255, 0.55);  
-  letter-spacing: 0.1em;  
-  text-transform: uppercase;  
+.sidebar-group + .sidebar-group {
+  margin-top: 18px;
 }
 
-.sidebar-group-list {  
-  display: flex;  
-  flex-direction: column;  
-  gap: 2px;  
+.sidebar-category-header {
+  padding: 0 12px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
-.uniform-menu-item {  
-  border-radius: var(--r-control);  
-  color: rgba(255, 255, 255, 0.86);  
-  min-height: 42px;  
-  padding: 8px 12px !important;  
-  transition: background-color 0.15s, color 0.15s;  
+.sidebar-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.nav-avatar-slot {  
-  min-width: 32px !important;  
-  max-width: 32px !important;  
-  padding-right: 12px !important;  
-  display: flex;  
-  align-items: center;  
+.uniform-menu-item {
+  border-radius: var(--r-control);
+  color: rgba(255, 255, 255, 0.86);
+  min-height: 42px;
+  padding: 8px 12px !important;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
-.nav-icon-glyph {  
-  color: rgba(255, 255, 255, 0.75);  
+.nav-avatar-slot {
+  min-width: 32px !important;
+  max-width: 32px !important;
+  padding-right: 12px !important;
+  display: flex;
+  align-items: center;
 }
 
-.nav-label-text {  
-  font-size: var(--fs-sm) !important;  
-  font-weight: 600 !important;  
+.nav-icon-glyph {
+  color: rgba(255, 255, 255, 0.75);
 }
 
-.solid-nav-item:hover {  
-  background: rgba(255, 255, 255, 0.1);  
-  color: #ffffff;  
+.nav-label-text {
+  font-size: var(--fs-sm) !important;
+  font-weight: 600 !important;
 }
 
-.solid-nav-active,  
-.solid-nav-active:hover {  
-  background: #ffffff !important;  
-  color: var(--c-brand) !important;  
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);  
+.solid-nav-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
-.solid-nav-active .nav-icon-glyph {  
-  color: var(--c-brand) !important;  
+.solid-nav-active,
+.solid-nav-active:hover {
+  background: #ffffff !important;
+  color: var(--c-brand) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
 }
 
-.sidebar-footer-area {  
-  padding: 12px;  
-  border-top: 1px solid rgba(255, 255, 255, 0.12);  
+.solid-nav-active .nav-icon-glyph {
+  color: var(--c-brand) !important;
 }
 
-.sidebar-account {  
-  display: flex;  
-  align-items: center;  
-  gap: 10px;  
-  width: 100%;  
-  padding: 8px 10px;  
-  border: 1px solid rgba(255, 255, 255, 0.16);  
-  border-radius: var(--r-surface);  
-  background: rgba(255, 255, 255, 0.08);  
-  color: #ffffff;  
-  font-family: inherit;  
-  text-align: left;  
+.sidebar-footer-area {
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.sidebar-account-avatar {  
-  flex-shrink: 0;  
-  background: #ffffff;  
-  color: var(--c-brand);  
+.sidebar-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--r-surface);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font-family: inherit;
+  text-align: left;
 }
 
-.sidebar-account-text {  
-  flex: 1;  
-  min-width: 0;  
+.sidebar-account-avatar {
+  flex-shrink: 0;
+  background: #ffffff;
+  color: var(--c-brand);
 }
 
-.sidebar-account-name {  
-  overflow: hidden;  
-  font-size: var(--fs-sm);  
-  font-weight: 700;  
-  white-space: nowrap;  
-  text-overflow: ellipsis;  
+.sidebar-account-text {
+  flex: 1;
+  min-width: 0;
 }
 
-.sidebar-account-role {  
-  font-size: var(--fs-2xs);  
-  color: rgba(255, 255, 255, 0.7);  
+.sidebar-account-name {
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.sidebar-signout {  
-  flex-shrink: 0;  
-  color: rgba(255, 255, 255, 0.8);  
-  transition: background-color 0.15s, color 0.15s;  
+.sidebar-account-role {
+  font-size: var(--fs-2xs);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sidebar-signout {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.8);
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .sidebar-signout:hover {
@@ -731,114 +994,131 @@ const handleLogout = () => logout()
   color: #ffffff;
 }
 
-.vendor-bottom-nav {  
-  z-index: 2000;  
-  padding-bottom: env(safe-area-inset-bottom);  
-  border-top: 1px solid var(--c-border);  
-  box-shadow: var(--sh-dock);  
+.vendor-bottom-nav {
+  z-index: 2000;
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--c-border);
+  box-shadow: var(--sh-dock);
 }
 
-.bottom-nav-inner {  
-  display: flex;  
-  max-width: 560px;  
-  margin: 0 auto;  
-  padding: 0 6px;  
+.bottom-nav-inner {
+  display: flex;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 6px;
 }
 
-.bottom-nav-tab {  
-  flex: 1 1 0;  
-  min-width: 0;  
-  height: 64px;  
-  min-height: 0;  
-  padding: 0;  
-  border-radius: 0;  
-  color: var(--c-subtle);  
-  transition: color 0.15s;  
+.bottom-nav-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 64px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  color: var(--c-subtle);
+  transition: color 0.15s;
 }
 
-.bottom-nav-tab :deep(.q-btn__content) {  
-  flex-direction: column;  
-  flex-wrap: nowrap;  
-  gap: 4px;  
+.bottom-nav-tab :deep(.q-btn__content) {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 4px;
 }
 
-.bottom-nav-tab :deep(.q-focus-helper) {  
-  display: none;  
+.bottom-nav-tab :deep(.q-focus-helper) {
+  display: none;
 }
 
-.bottom-nav-pill {  
-  display: flex;  
-  align-items: center;  
-  justify-content: center;  
-  width: 56px;  
-  height: 30px;  
-  border-radius: var(--r-pill);  
-  transition: background-color 0.2s;  
+.bottom-nav-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 30px;
+  border-radius: var(--r-pill);
+  transition: background-color 0.2s;
 }
 
-.bottom-nav-label {  
-  max-width: 100%;  
-  overflow: hidden;  
-  white-space: nowrap;  
-  text-overflow: ellipsis;  
-  font-size: var(--fs-xs);  
-  font-weight: 600;  
-  line-height: 1.2;  
+.bottom-nav-label {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.2;
 }
 
-.bottom-nav-tab--active {  
-  color: var(--c-brand);  
+.bottom-nav-tab--active {
+  color: var(--c-brand);
 }
 
-.bottom-nav-tab--active .bottom-nav-pill {  
-  background: var(--c-brand-tint);  
+.bottom-nav-tab--active .bottom-nav-pill {
+  background: var(--c-brand-tint);
 }
 
-.bottom-nav-tab--active .bottom-nav-label {  
-  font-weight: 700;  
+.bottom-nav-tab--active .bottom-nav-label {
+  font-weight: 700;
 }
 
-.bottom-nav-tab:not(.bottom-nav-tab--active):hover .bottom-nav-pill {  
-  background: var(--c-surface);  
+.bottom-nav-tab:not(.bottom-nav-tab--active):hover .bottom-nav-pill {
+  background: var(--c-surface);
 }
 
-.bottom-nav-tab:focus-visible .bottom-nav-pill {  
-  box-shadow: 0 0 0 2px var(--c-brand);  
+.bottom-nav-tab:focus-visible .bottom-nav-pill {
+  box-shadow: 0 0 0 2px var(--c-brand);
 }
 
-@media (prefers-reduced-motion: reduce) {  
-  .bottom-nav-tab,  
-  .bottom-nav-pill {  
-    transition: none;  
-  }  
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav-tab,
+  .bottom-nav-pill {
+    transition: none;
+  }
 }
 
-.popup-action-item { border-radius: var(--r-control); margin: 4px 6px; color: var(--c-text-2); }  
-.popup-action-item:hover { background: var(--c-surface); }  
-.active-popup-item { background: var(--c-brand-tint) !important; color: var(--c-brand) !important; }
-
-.popup-icon-stamp {  
-  width: 30px;  
-  height: 30px;  
-  border-radius: var(--r-control);  
-  background: #ffffff;  
-  border: 1px solid var(--c-border);  
-  display: flex;  
-  align-items: center;  
-  justify-content: center;  
-  color: var(--c-subtle);  
+.popup-action-item {
+  border-radius: var(--r-control);
+  margin: 4px 6px;
+  color: var(--c-text-2);
+}
+.popup-action-item:hover {
+  background: var(--c-surface);
+}
+.active-popup-item {
+  background: var(--c-brand-tint) !important;
+  color: var(--c-brand) !important;
 }
 
-.active-popup-item .popup-icon-stamp {  
-  background: var(--c-brand);  
-  border-color: var(--c-brand);  
-  color: #ffffff;  
+.popup-icon-stamp {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-control);
+  background: #ffffff;
+  border: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-subtle);
 }
 
-.mobile-pb { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
-.min-w-0 { min-width: 0 !important; }
-.opacity-80 { opacity: 0.8; }
-.opacity-50 { opacity: 0.5; }
+.active-popup-item .popup-icon-stamp {
+  background: var(--c-brand);
+  border-color: var(--c-brand);
+  color: #ffffff;
+}
+
+.mobile-pb {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+.min-w-0 {
+  min-width: 0 !important;
+}
+.opacity-80 {
+  opacity: 0.8;
+}
+.opacity-50 {
+  opacity: 0.5;
+}
 
 /* =======================================================
    DARK MODE — a navy/blue-hued theme, the same palette as
@@ -926,8 +1206,10 @@ const handleLogout = () => logout()
   --sh-pop: 0 10px 30px rgba(0, 0, 0, 0.55);
   --sh-header: 0 1px 3px rgba(0, 0, 0, 0.4);
   --sh-dock: 0 -2px 10px rgba(0, 0, 0, 0.4);
-  --sh-brand: 0 0 0 1px rgba(255, 77, 77, 0.12), 0 3px 10px rgba(255, 52, 52, 0.2);
-  --sh-brand-hover: 0 0 0 1px rgba(255, 77, 77, 0.2), 0 5px 18px rgba(255, 52, 52, 0.3);
+  --sh-brand:
+    0 0 0 1px rgba(255, 77, 77, 0.12), 0 3px 10px rgba(255, 52, 52, 0.2);
+  --sh-brand-hover:
+    0 0 0 1px rgba(255, 77, 77, 0.2), 0 5px 18px rgba(255, 52, 52, 0.3);
 }
 
 /* SHELL — header, sidebar and mobile dock move to the same navy surface as
@@ -946,7 +1228,9 @@ const handleLogout = () => logout()
 .vendor-layout--dark .solid-nav-active:hover {
   background: linear-gradient(135deg, #ef3b3b, var(--c-brand-deep)) !important;
   color: #ffffff !important;
-  box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.16), 0 7px 20px rgba(255, 52, 52, 0.24);
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 77, 0.16),
+    0 7px 20px rgba(255, 52, 52, 0.24);
 }
 
 .vendor-layout--dark .solid-nav-active .nav-icon-glyph {
@@ -1039,7 +1323,12 @@ const handleLogout = () => logout()
    solid button glows instead of sitting flat, and an outline/flat one gets a
    tinted fill instead of just thin red text floating on the navy ground. */
 .vendor-layout--dark :deep(.q-btn.bg-primary) {
-  background: linear-gradient(135deg, #ff6a6a 0%, #e63232 60%, #bd2020 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #ff6a6a 0%,
+    #e63232 60%,
+    #bd2020 100%
+  ) !important;
   box-shadow: 0 4px 14px rgba(255, 77, 77, 0.35) !important;
 }
 
@@ -1053,12 +1342,16 @@ const handleLogout = () => logout()
 .vendor-layout--dark :deep(.q-btn--outline.text-primary) {
   border-color: #ff4d4d !important;
   background: rgba(255, 77, 77, 0.1) !important;
-  box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.2), 0 0 14px rgba(255, 77, 77, 0.35) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 77, 0.2),
+    0 0 14px rgba(255, 77, 77, 0.35) !important;
 }
 
 .vendor-layout--dark :deep(.q-btn--outline.text-primary:hover) {
   background: rgba(255, 77, 77, 0.2) !important;
-  box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.32), 0 0 22px rgba(255, 77, 77, 0.55) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 77, 0.32),
+    0 0 22px rgba(255, 77, 77, 0.55) !important;
 }
 
 .vendor-layout--dark :deep(.q-btn--flat.text-primary:hover) {
@@ -1066,7 +1359,12 @@ const handleLogout = () => logout()
 }
 
 .vendor-layout--dark :deep(.q-btn.bg-negative) {
-  background: linear-gradient(135deg, #ff8a8a 0%, #e63232 60%, #bd2020 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #ff8a8a 0%,
+    #e63232 60%,
+    #bd2020 100%
+  ) !important;
   box-shadow: 0 4px 14px rgba(255, 92, 92, 0.35) !important;
 }
 
@@ -1145,15 +1443,27 @@ body.body--dark.vendor-dark-mode .q-dialog .q-card {
    light-mode tint that reads muddy against navy once teleported to <body>. */
 body.body--dark.vendor-dark-mode .vp-dialog-icon,
 body.body--dark.vendor-dark-mode .dialog-icon {
-  background: linear-gradient(145deg, rgba(255, 77, 77, 0.24) 0%, rgba(255, 77, 77, 0.08) 100%) !important;
-  box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.28), 0 0 18px rgba(255, 77, 77, 0.28) !important;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 77, 77, 0.24) 0%,
+    rgba(255, 77, 77, 0.08) 100%
+  ) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 77, 0.28),
+    0 0 18px rgba(255, 77, 77, 0.28) !important;
   color: #ff6a6a !important;
 }
 
 body.body--dark.vendor-dark-mode .vp-dialog-icon--danger,
 body.body--dark.vendor-dark-mode .dialog-icon--danger {
-  background: linear-gradient(145deg, rgba(255, 92, 92, 0.26) 0%, rgba(255, 92, 92, 0.1) 100%) !important;
-  box-shadow: 0 0 0 1px rgba(255, 92, 92, 0.3), 0 0 18px rgba(255, 92, 92, 0.3) !important;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 92, 92, 0.26) 0%,
+    rgba(255, 92, 92, 0.1) 100%
+  ) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 92, 92, 0.3),
+    0 0 18px rgba(255, 92, 92, 0.3) !important;
   color: #ff7a7a !important;
 }
 
@@ -1162,8 +1472,14 @@ body.body--dark.vendor-dark-mode .dialog-icon--danger {
    both ProductDetailsModal.vue and AddProductModal.vue). */
 body.body--dark.vendor-dark-mode .pm-section-head,
 body.body--dark.vendor-dark-mode .pm-dropzone-icon {
-  background: linear-gradient(145deg, rgba(255, 77, 77, 0.24) 0%, rgba(255, 77, 77, 0.08) 100%) !important;
-  box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.28), 0 0 18px rgba(255, 77, 77, 0.28) !important;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 77, 77, 0.24) 0%,
+    rgba(255, 77, 77, 0.08) 100%
+  ) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 77, 0.28),
+    0 0 18px rgba(255, 77, 77, 0.28) !important;
   color: #ff6a6a !important;
 }
 
@@ -1222,7 +1538,12 @@ body.body--dark.vendor-dark-mode .active-popup-item .popup-icon-stamp {
 /* Same button redesign as the scoped block above, repeated here for the
    confirm/cancel/delete buttons that live inside a teleported dialog. */
 body.body--dark.vendor-dark-mode .q-btn.bg-primary {
-  background: linear-gradient(135deg, #ff6a6a 0%, #e63232 60%, #bd2020 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #ff6a6a 0%,
+    #e63232 60%,
+    #bd2020 100%
+  ) !important;
   box-shadow: 0 4px 14px rgba(255, 77, 77, 0.35) !important;
 }
 
@@ -1235,12 +1556,16 @@ body.body--dark.vendor-dark-mode .q-btn.bg-primary:hover {
 body.body--dark.vendor-dark-mode .q-btn--outline.text-primary {
   border-color: #ff4d4d !important;
   background: rgba(255, 77, 77, 0.1) !important;
-  box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.2), 0 0 14px rgba(255, 77, 77, 0.35) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 77, 0.2),
+    0 0 14px rgba(255, 77, 77, 0.35) !important;
 }
 
 body.body--dark.vendor-dark-mode .q-btn--outline.text-primary:hover {
   background: rgba(255, 77, 77, 0.2) !important;
-  box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.32), 0 0 22px rgba(255, 77, 77, 0.55) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 77, 0.32),
+    0 0 22px rgba(255, 77, 77, 0.55) !important;
 }
 
 body.body--dark.vendor-dark-mode .q-btn--flat.text-primary:hover {
@@ -1248,7 +1573,12 @@ body.body--dark.vendor-dark-mode .q-btn--flat.text-primary:hover {
 }
 
 body.body--dark.vendor-dark-mode .q-btn.bg-negative {
-  background: linear-gradient(135deg, #ff8a8a 0%, #e63232 60%, #bd2020 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #ff8a8a 0%,
+    #e63232 60%,
+    #bd2020 100%
+  ) !important;
   box-shadow: 0 4px 14px rgba(255, 92, 92, 0.35) !important;
 }
 
@@ -1276,10 +1606,13 @@ body.body--dark.vendor-dark-mode .q-notification.app-toast {
   --toast-disc: #24314e;
   --toast-ink: #c7d0e4;
 
-  background: linear-gradient(var(--toast-wash), var(--toast-wash)), #16213a !important;
+  background:
+    linear-gradient(var(--toast-wash), var(--toast-wash)), #16213a !important;
   color: #eef2fb !important;
 
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(0, 0, 0, 0.3);
 }
 
 body.body--dark.vendor-dark-mode .app-toast.app-toast--positive {

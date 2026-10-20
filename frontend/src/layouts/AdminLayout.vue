@@ -1,5 +1,9 @@
-<template>  
-  <q-layout view="hHh LpR fFf" class="admin-layout" :class="{ 'admin-layout--dark': $q.dark.isActive }">
+<template>
+  <q-layout
+    view="hHh LpR fFf"
+    class="admin-layout"
+    :class="{ 'admin-layout--dark': $q.dark.isActive }"
+  >
     <!-- PHONE HEADER -->
     <q-header v-if="$q.screen.lt.md" class="admin-header">
       <q-toolbar class="q-px-md toolbar-mobile">
@@ -9,12 +13,7 @@
           :aria-label="t('goToDashboard')"
           @click="router.push('/admin/dashboard')"
         >
-          <img
-            :src="logo"
-            alt=""
-            aria-hidden="true"
-            class="header-logo-img"
-          />
+          <img :src="logo" alt="" aria-hidden="true" class="header-logo-img" />
         </button>
 
         <q-space />
@@ -28,8 +27,12 @@
           :aria-label="t('switchLanguage')"
           @click="toggleLanguage"
         >
-          <span class="lang-code-indicator">{{ lang === 'en' ? 'EN' : 'PH' }}</span>
-          <q-tooltip>{{ lang === 'en' ? 'Palitan sa Filipino' : 'Switch to English' }}</q-tooltip>
+          <span class="lang-code-indicator">{{
+            lang === 'en' ? 'EN' : 'PH'
+          }}</span>
+          <q-tooltip>{{
+            lang === 'en' ? 'Palitan sa Filipino' : 'Switch to English'
+          }}</q-tooltip>
         </q-btn>
 
         <!-- Dark Mode Toggle -->
@@ -42,7 +45,9 @@
           :aria-label="t('toggleTheme')"
           @click="toggleDarkMode"
         >
-          <q-tooltip>{{ $q.dark.isActive ? t('lightMode') : t('darkMode') }}</q-tooltip>
+          <q-tooltip>{{
+            $q.dark.isActive ? t('lightMode') : t('darkMode')
+          }}</q-tooltip>
         </q-btn>
 
         <!-- Notifications Bell -->
@@ -53,7 +58,11 @@
           icon="o_notifications"
           class="header-action-btn"
           to="/admin/notifications"
-          :aria-label="unreadCount ? `${t('notifications')}, ${unreadCount}` : t('notifications')"
+          :aria-label="
+            unreadCount
+              ? `${t('notifications')}, ${unreadCount}`
+              : t('notifications')
+          "
         >
           <q-badge v-if="unreadCount" floating rounded class="header-badge">
             {{ unreadCount > 99 ? '99+' : unreadCount }}
@@ -105,7 +114,10 @@
             class="sidebar-utility-chip"
             @click="toggleDarkMode"
           >
-            <q-icon :name="$q.dark.isActive ? 'o_light_mode' : 'o_dark_mode'" size="16px" />
+            <q-icon
+              :name="$q.dark.isActive ? 'o_light_mode' : 'o_dark_mode'"
+              size="16px"
+            />
             <span>{{ $q.dark.isActive ? t('lightMode') : t('darkMode') }}</span>
           </button>
 
@@ -280,7 +292,7 @@ const toggleLanguage = () => {
 // mode" body marker this layout toggles itself, which the unscoped dark-mode
 // style block below reads instead, so it can only ever match while the admin
 // module itself turned dark mode on.
-const setDarkMode = (isDark) => {
+const setDarkMode = isDark => {
   $q.dark.set(isDark)
   document.body.classList.toggle('admin-dark-mode', isDark)
 }
@@ -295,7 +307,9 @@ const toggleDarkMode = () => {
 
 const readAdminName = () => {
   try {
-    return JSON.parse(localStorage.getItem('auth_user') || '{}').full_name || 'Admin'
+    return (
+      JSON.parse(localStorage.getItem('auth_user') || '{}').full_name || 'Admin'
+    )
   } catch {
     return 'Admin'
   }
@@ -307,7 +321,11 @@ const localizedNavGroups = computed(() => {
     {
       label: t('overview'),
       items: [
-        { label: t('dashboard'), icon: 'o_dashboard', path: '/admin/dashboard' },
+        {
+          label: t('dashboard'),
+          icon: 'o_dashboard',
+          path: '/admin/dashboard'
+        },
         {
           label: t('notifications'),
           icon: 'o_notifications',
@@ -335,7 +353,11 @@ const localizedNavGroups = computed(() => {
 const localizedBottomTabs = computed(() => {
   return [
     { label: t('home'), icon: 'o_home', path: '/admin/dashboard' },
-    { label: t('approvals'), icon: 'o_pending_actions', path: '/admin/approvals' },
+    {
+      label: t('approvals'),
+      icon: 'o_pending_actions',
+      path: '/admin/approvals'
+    },
     { label: t('vendors'), icon: 'o_storefront', path: '/admin/vendors' },
     { label: t('consumers'), icon: 'o_groups', path: '/admin/consumers' },
     { label: t('map'), icon: 'o_map', path: '/admin/store-map' }
@@ -458,8 +480,10 @@ const handleLogout = () => logout()
   --sh-pop: 0 10px 30px rgba(0, 0, 0, 0.55);
   --sh-header: 0 1px 3px rgba(0, 0, 0, 0.4);
   --sh-dock: 0 -2px 10px rgba(0, 0, 0, 0.4);
-  --sh-brand: 0 0 0 1px rgba(255, 77, 77, 0.12), 0 3px 10px rgba(255, 52, 52, 0.2);
-  --sh-brand-hover: 0 0 0 1px rgba(255, 77, 77, 0.2), 0 5px 18px var(--adm-active-glow);
+  --sh-brand:
+    0 0 0 1px rgba(255, 77, 77, 0.12), 0 3px 10px rgba(255, 52, 52, 0.2);
+  --sh-brand-hover:
+    0 0 0 1px rgba(255, 77, 77, 0.2), 0 5px 18px var(--adm-active-glow);
 }
 
 .admin-layout--dark :deep(.vp-search .q-field__control),
@@ -675,7 +699,10 @@ const handleLogout = () => logout()
 }
 
 .admin-layout--dark .sidebar-top {
-  background-image: radial-gradient(rgba(96, 141, 255, 0.18) 1px, transparent 1px);
+  background-image: radial-gradient(
+    rgba(96, 141, 255, 0.18) 1px,
+    transparent 1px
+  );
 }
 
 .admin-layout--dark .header-action-btn,
@@ -697,7 +724,11 @@ const handleLogout = () => logout()
 
 .admin-layout--dark .nav-item--active,
 .admin-layout--dark .nav-item--active:hover {
-  background: linear-gradient(135deg, #ef3b3b, var(--adm-active-deep)) !important;
+  background: linear-gradient(
+    135deg,
+    #ef3b3b,
+    var(--adm-active-deep)
+  ) !important;
   box-shadow:
     0 0 0 1px rgba(255, 77, 77, 0.16),
     0 7px 20px rgba(255, 52, 52, 0.24);
@@ -726,7 +757,9 @@ const handleLogout = () => logout()
 
 .header-action-btn {
   color: var(--adm-secondary);
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .header-action-btn:hover {
@@ -811,25 +844,38 @@ const handleLogout = () => logout()
   --adm-chip-bg: rgba(255, 255, 255, 0.14);
 
   border-right: none !important;
-  background: linear-gradient(135deg, #c9232a 0%, #8a161b 55%, #430c0f 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #c9232a 0%,
+    #8a161b 55%,
+    #430c0f 100%
+  ) !important;
   color: #ffffff !important;
 }
 
 /* A handful of spots read --adm-active (the brand red) directly rather than a
    text/surface token; left alone they'd paint red-on-red once the sidebar
    itself turns red, so they get an explicit white treatment instead. */
-.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .nav-item:hover .nav-icon {
+.admin-layout:not(.admin-layout--dark)
+  :deep(.admin-sidebar)
+  .nav-item:hover
+  .nav-icon {
   color: #ffffff !important;
 }
 
 .admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .nav-item--active,
-.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .nav-item--active:hover {
+.admin-layout:not(.admin-layout--dark)
+  :deep(.admin-sidebar)
+  .nav-item--active:hover {
   background: rgba(255, 255, 255, 0.18) !important;
   box-shadow: inset 3px 0 0 0 #ffffff;
   color: #ffffff !important;
 }
 
-.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .nav-item--active .nav-icon {
+.admin-layout:not(.admin-layout--dark)
+  :deep(.admin-sidebar)
+  .nav-item--active
+  .nav-icon {
   color: #ffffff !important;
 }
 
@@ -838,17 +884,23 @@ const handleLogout = () => logout()
   color: #c9232a !important;
 }
 
-.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .sidebar-account-avatar {
+.admin-layout:not(.admin-layout--dark)
+  :deep(.admin-sidebar)
+  .sidebar-account-avatar {
   background: rgba(255, 255, 255, 0.18) !important;
   color: #ffffff !important;
 }
 
-.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .sidebar-signout:hover {
+.admin-layout:not(.admin-layout--dark)
+  :deep(.admin-sidebar)
+  .sidebar-signout:hover {
   background: rgba(255, 255, 255, 0.16) !important;
   color: #ffffff !important;
 }
 
-.admin-layout:not(.admin-layout--dark) :deep(.admin-sidebar) .sidebar-utility-chip:hover {
+.admin-layout:not(.admin-layout--dark)
+  :deep(.admin-sidebar)
+  .sidebar-utility-chip:hover {
   border-color: #ffffff !important;
   color: #ffffff !important;
 }
@@ -987,7 +1039,9 @@ const handleLogout = () => logout()
   padding: 8px 12px !important;
   border-radius: var(--r-control);
   color: var(--adm-text);
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .nav-avatar-slot {
@@ -1092,7 +1146,9 @@ const handleLogout = () => logout()
 .sidebar-signout {
   flex-shrink: 0;
   color: var(--adm-secondary);
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .sidebar-signout:hover {
@@ -1254,7 +1310,9 @@ body.body--dark.admin-dark-mode .q-tooltip {
 }
 
 body.body--dark.admin-dark-mode .apexcharts-tooltip.apexcharts-theme-dark,
-body.body--dark.admin-dark-mode .apexcharts-tooltip.apexcharts-theme-dark .apexcharts-tooltip-title {
+body.body--dark.admin-dark-mode
+  .apexcharts-tooltip.apexcharts-theme-dark
+  .apexcharts-tooltip-title {
   background: var(--c-surface-2);
   border-color: var(--c-border);
   color: var(--c-text);
@@ -1274,7 +1332,10 @@ body.body--dark.admin-dark-mode .q-dialog .q-field__label {
   color: var(--c-muted);
 }
 
-body.body--dark.admin-dark-mode .q-dialog .q-field--outlined .q-field__control:before {
+body.body--dark.admin-dark-mode
+  .q-dialog
+  .q-field--outlined
+  .q-field__control:before {
   border-color: var(--c-border);
 }
 

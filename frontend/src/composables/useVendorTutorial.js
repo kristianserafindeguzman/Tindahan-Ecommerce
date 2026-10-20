@@ -56,7 +56,7 @@ export function useVendorTutorial() {
     }
   }
 
-  const setTutorialState = (state) => {
+  const setTutorialState = state => {
     try {
       localStorage.setItem(storageKey(), state)
     } catch {
@@ -66,7 +66,11 @@ export function useVendorTutorial() {
 
   const hasSeenLocally = () => {
     const state = getTutorialState()
-    return state === TUTORIAL_COMPLETED || state === TUTORIAL_SKIPPED || state === TUTORIAL_OFFERED
+    return (
+      state === TUTORIAL_COMPLETED ||
+      state === TUTORIAL_SKIPPED ||
+      state === TUTORIAL_OFFERED
+    )
   }
 
   const hasSeenTutorial = () => hasSeenLocally() || seenOnServer()
@@ -81,7 +85,8 @@ export function useVendorTutorial() {
       const { data } = await api.post('/vendor/tutorial/seen')
       const user = readAuthUser()
       if (user) {
-        user.tutorial_seen_at = data?.tutorial_seen_at || new Date().toISOString()
+        user.tutorial_seen_at =
+          data?.tutorial_seen_at || new Date().toISOString()
         localStorage.setItem('auth_user', JSON.stringify(user))
       }
     } catch {

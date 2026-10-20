@@ -5,7 +5,9 @@
     <!-- MAIN CONTENT -->
     <div class="page-content">
       <h1 class="page-title">{{ t('My Orders') }}</h1>
-      <p class="page-subtitle">{{ t('Track, manage, and view your order history.') }}</p>
+      <p class="page-subtitle">{{
+        t('Track, manage, and view your order history.')
+      }}</p>
 
       <div v-if="loading" class="orders-list">
         <div v-for="n in 3" :key="n" class="order-card">
@@ -24,10 +26,20 @@
         v-else-if="!orders.length"
         icon="o_receipt_long"
         :title="t('No orders yet')"
-        :text="t('Once you check out, your orders appear here so you can follow each one from placed to ready for pickup.')"
+        :text="
+          t(
+            'Once you check out, your orders appear here so you can follow each one from placed to ready for pickup.'
+          )
+        "
       >
         <template #action>
-          <q-btn unelevated no-caps :label="t('Browse Products')" class="browse-btn" @click="router.push('/consumer/home')" />
+          <q-btn
+            unelevated
+            no-caps
+            :label="t('Browse Products')"
+            class="browse-btn"
+            @click="router.push('/consumer/home')"
+          />
         </template>
       </EmptyState>
 
@@ -41,7 +53,13 @@
           narrow-indicator
           :breakpoint="0"
         >
-          <q-tab v-for="tab in orderTabs" :key="tab.value" :name="tab.value" :label="t(tab.label)" class="orders-tab" />
+          <q-tab
+            v-for="tab in orderTabs"
+            :key="tab.value"
+            :name="tab.value"
+            :label="t(tab.label)"
+            class="orders-tab"
+          />
         </q-tabs>
 
         <!-- Per-tab, so "no active orders" does not read as "no orders at all" to someone
@@ -49,22 +67,43 @@
         <EmptyState
           v-if="!displayedOrders.length"
           :icon="activeTab === 'active' ? 'o_pending_actions' : 'o_history'"
-          :title="activeTab === 'active' ? t('Nothing in progress') : t('No past orders')"
-          :text="activeTab === 'active'
-            ? t('You have no active orders right now. Anything you order next shows up here while the store prepares it.')
-            : t('Orders you have picked up or cancelled will be kept here.')"
+          :title="
+            activeTab === 'active'
+              ? t('Nothing in progress')
+              : t('No past orders')
+          "
+          :text="
+            activeTab === 'active'
+              ? t(
+                  'You have no active orders right now. Anything you order next shows up here while the store prepares it.'
+                )
+              : t('Orders you have picked up or cancelled will be kept here.')
+          "
         >
           <template v-if="activeTab === 'active'" #action>
-            <q-btn unelevated no-caps :label="t('Browse Products')" class="browse-btn" @click="router.push('/consumer/home')" />
+            <q-btn
+              unelevated
+              no-caps
+              :label="t('Browse Products')"
+              class="browse-btn"
+              @click="router.push('/consumer/home')"
+            />
           </template>
         </EmptyState>
 
         <div v-else class="orders-layout">
           <div class="orders-list">
-            <div v-for="order in displayedOrders" :key="order.order_id" class="order-card cursor-pointer" @click="viewOrder(order)">
+            <div
+              v-for="order in displayedOrders"
+              :key="order.order_id"
+              class="order-card cursor-pointer"
+              @click="viewOrder(order)"
+            >
               <div class="order-card-top">
                 <div class="order-card-left">
-                  <div class="order-store">{{ order.store?.store_name || t('Unknown Store') }}</div>
+                  <div class="order-store">{{
+                    order.store?.store_name || t('Unknown Store')
+                  }}</div>
                   <div class="order-card-meta">
                     #{{ order.order_id }}
                     <span class="order-meta-dot">&bull;</span>
@@ -73,24 +112,45 @@
                   </div>
                 </div>
                 <div class="order-card-right">
-                  <div class="order-total">₱{{ parseFloat(order.total_amount).toFixed(2) }}</div>
-                  <div class="order-item-count">{{ order.items?.length || 0 }} {{ order.items?.length === 1 ? t('Item') : t('Items') }}</div>
+                  <div class="order-total"
+                    >₱{{ parseFloat(order.total_amount).toFixed(2) }}</div
+                  >
+                  <div class="order-item-count"
+                    >{{ order.items?.length || 0 }}
+                    {{
+                      order.items?.length === 1 ? t('Item') : t('Items')
+                    }}</div
+                  >
                 </div>
               </div>
 
               <q-separator class="card-divider" />
 
               <div class="order-items">
-                <div v-for="item in order.items" :key="item.order_item_id" class="order-item">
+                <div
+                  v-for="item in order.items"
+                  :key="item.order_item_id"
+                  class="order-item"
+                >
                   <div class="order-item-image">
-                    <img v-if="item.inventory?.image_url" :src="item.inventory.image_url" :alt="item.inventory.product_name" />
+                    <img
+                      v-if="item.inventory?.image_url"
+                      :src="item.inventory.image_url"
+                      :alt="item.inventory.product_name"
+                    />
                     <q-icon v-else name="o_inventory_2" size="20px" />
                   </div>
                   <div class="order-item-info">
-                    <div class="order-item-name">{{ item.inventory?.product_name || t('Unavailable Product') }}</div>
-                    <div class="order-item-qty">{{ t('Qty:') }} {{ item.quantity }}</div>
+                    <div class="order-item-name">{{
+                      item.inventory?.product_name || t('Unavailable Product')
+                    }}</div>
+                    <div class="order-item-qty"
+                      >{{ t('Qty:') }} {{ item.quantity }}</div
+                    >
                   </div>
-                  <div class="order-item-price">₱{{ parseFloat(item.subtotal).toFixed(2) }}</div>
+                  <div class="order-item-price"
+                    >₱{{ parseFloat(item.subtotal).toFixed(2) }}</div
+                  >
                 </div>
               </div>
 
@@ -98,10 +158,21 @@
 
               <div class="order-card-bottom">
                 <div class="order-card-bottom-row">
-                  <span class="status-badge" :class="statusBadgeClass(order.status)">{{ formatStatus(order.status) }}</span>
+                  <span
+                    class="status-badge"
+                    :class="statusBadgeClass(order.status)"
+                    >{{ formatStatus(order.status) }}</span
+                  >
                   <div class="order-card-right-mobile">
-                    <div class="order-total">₱{{ parseFloat(order.total_amount).toFixed(2) }}</div>
-                    <div class="order-item-count">{{ order.items?.length || 0 }} {{ order.items?.length === 1 ? t('Item') : t('Items') }}</div>
+                    <div class="order-total"
+                      >₱{{ parseFloat(order.total_amount).toFixed(2) }}</div
+                    >
+                    <div class="order-item-count"
+                      >{{ order.items?.length || 0 }}
+                      {{
+                        order.items?.length === 1 ? t('Item') : t('Items')
+                      }}</div
+                    >
                   </div>
                 </div>
                 <div class="order-card-actions">
@@ -115,13 +186,22 @@
                     :loading="reorderingId === order.order_id"
                     @click.stop="reorderItems(order)"
                   />
-                  <q-btn unelevated no-caps :label="t('View Order Details')" class="view-details-btn" @click.stop="viewOrder(order)" />
+                  <q-btn
+                    unelevated
+                    no-caps
+                    :label="t('View Order Details')"
+                    class="view-details-btn"
+                    @click.stop="viewOrder(order)"
+                  />
                 </div>
               </div>
 
               <div v-if="order.cancellation_reason" class="cancellation-reason">
                 <q-icon name="o_error_outline" size="16px" />
-                <span>{{ t('Cancelled:') }} {{ t(order.cancellation_reason) }}</span>
+                <span
+                  >{{ t('Cancelled:') }}
+                  {{ t(order.cancellation_reason) }}</span
+                >
               </div>
             </div>
           </div>
@@ -164,9 +244,15 @@ const activeTab = ref('active')
 const ACTIVE_STATUSES = ['placed', 'preparing', 'ready_for_pickup']
 const PAST_STATUSES = ['cancelled', 'picked_up']
 
-const activeOrders = computed(() => orders.value.filter((order) => ACTIVE_STATUSES.includes(order.status)))
-const pastOrders = computed(() => orders.value.filter((order) => PAST_STATUSES.includes(order.status)))
-const displayedOrders = computed(() => (activeTab.value === 'active' ? activeOrders.value : pastOrders.value))
+const activeOrders = computed(() =>
+  orders.value.filter(order => ACTIVE_STATUSES.includes(order.status))
+)
+const pastOrders = computed(() =>
+  orders.value.filter(order => PAST_STATUSES.includes(order.status))
+)
+const displayedOrders = computed(() =>
+  activeTab.value === 'active' ? activeOrders.value : pastOrders.value
+)
 
 const fetchOrders = async () => {
   loading.value = true
@@ -193,9 +279,10 @@ const STATUS_BADGE_CLASSES = {
   cancelled: 'status-badge-cancelled'
 }
 
-const statusBadgeClass = (status) => STATUS_BADGE_CLASSES[status] || 'status-badge-default'
+const statusBadgeClass = status =>
+  STATUS_BADGE_CLASSES[status] || 'status-badge-default'
 
-const orderAddressText = (order) => {
+const orderAddressText = order => {
   const address = order.store?.address
   const cLat = order.consumer_latitude
   const cLng = order.consumer_longitude
@@ -210,18 +297,18 @@ const orderAddressText = (order) => {
 }
 
 // Sentence case, such as "Ready for pickup", matching the vendor badges.
-const formatStatus = (status) => {
+const formatStatus = status => {
   if (!status) return ''
   const text = String(status).split('_').join(' ').toLowerCase()
   return t(text.charAt(0).toUpperCase() + text.slice(1))
 }
 
-const viewOrder = (order) => {
+const viewOrder = order => {
   localStorage.setItem('consumer_selected_order_id', order.order_id)
   router.push('/consumer/orders/details')
 }
 
-const reorderItems = async (order) => {
+const reorderItems = async order => {
   if (!order.items?.length) return
   reorderingId.value = order.order_id
 
@@ -240,14 +327,20 @@ const reorderItems = async (order) => {
   reorderingId.value = null
 
   if (!successCount) {
-    $q.notify({ type: 'negative', message: t('None of these items are available anymore.') })
+    $q.notify({
+      type: 'negative',
+      message: t('None of these items are available anymore.')
+    })
     return
   }
 
   $q.notify({
     type: 'positive',
     message: failCount
-      ? t('{count} item(s) added to cart. {failed} item(s) are no longer available.', { count: successCount, failed: failCount })
+      ? t(
+          '{count} item(s) added to cart. {failed} item(s) are no longer available.',
+          { count: successCount, failed: failCount }
+        )
       : t('{count} item(s) added to cart.', { count: successCount })
   })
   router.push('/consumer/cart')
@@ -325,7 +418,10 @@ const reorderItems = async (order) => {
   font-size: var(--fs-sm);
   font-weight: 500;
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .browse-btn:hover {
@@ -406,7 +502,10 @@ const reorderItems = async (order) => {
   background: #ffffff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s,
+    border-color 0.2s;
 
   /* Plays on initial load AND on tab switch (Active/Past re-creates these cards via v-for :key) — a nice "refreshing" cue rather than a jarring swap. */
   animation: orders-fade-up 0.4s ease both;
@@ -414,8 +513,14 @@ const reorderItems = async (order) => {
 
 /* PAGE ENTRANCE — opacity/transform only so it never shifts layout. */
 @keyframes orders-fade-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-title {
@@ -517,7 +622,11 @@ const reorderItems = async (order) => {
   border-radius: var(--r-md);
   border: 1px solid var(--c-border);
 
-  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-surface) 0%,
+    var(--c-surface) 100%
+  );
   color: var(--c-brand);
 
   display: flex;
@@ -643,7 +752,10 @@ const reorderItems = async (order) => {
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .reorder-btn:hover {
@@ -693,7 +805,10 @@ const reorderItems = async (order) => {
   font-size: var(--fs-sm);
   font-weight: 600;
 
-  transition: border-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 /* Hides Quasar's own focus/ripple overlay so it can't paint a stray ring over our border/hover treatment. */

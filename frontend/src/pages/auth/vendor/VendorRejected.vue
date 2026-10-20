@@ -9,7 +9,11 @@
         <div class="status-title">{{ t('Application Not Approved') }}</div>
 
         <p class="status-message">
-          {{ t('We reviewed your merchant application for Tindahan. Unfortunately, we cannot approve your request at this time due to specific compliance requirements.') }}
+          {{
+            t(
+              'We reviewed your merchant application for Tindahan. Unfortunately, we cannot approve your request at this time due to specific compliance requirements.'
+            )
+          }}
         </p>
 
         <div v-if="rejectionReason" class="reason-box">
@@ -86,7 +90,6 @@ onMounted(fetchReason)
 </script>
 
 <style scoped>
-
 .status-content {
   text-align: center;
 
@@ -165,7 +168,10 @@ onMounted(fetchReason)
 
   box-shadow: var(--sh-brand);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .primary-btn:hover {
@@ -265,7 +271,6 @@ onMounted(fetchReason)
 /* MOBILE */
 
 @media (max-width: 600px) {
-
   .status-content {
     padding: 0 0 8px;
   }
@@ -301,4 +306,5 @@ onMounted(fetchReason)
     --fs-sm: 14px;
     --fs-md: 15px;
   }
-}</style>
+}
+</style>

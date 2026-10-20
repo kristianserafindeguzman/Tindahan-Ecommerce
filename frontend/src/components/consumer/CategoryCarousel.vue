@@ -1,6 +1,16 @@
 <template>
   <div class="categories-row">
-    <q-btn flat dense round :ripple="false" icon="o_chevron_left" class="categories-nav" :disable="atStart" :aria-label="t('Previous categories')" @click="scrollByPage(-1)" />
+    <q-btn
+      flat
+      dense
+      round
+      :ripple="false"
+      icon="o_chevron_left"
+      class="categories-nav"
+      :disable="atStart"
+      :aria-label="t('Previous categories')"
+      @click="scrollByPage(-1)"
+    />
 
     <div class="categories-track" ref="track" @scroll.passive="updateEnds">
       <CategoryCard
@@ -11,7 +21,17 @@
       />
     </div>
 
-    <q-btn flat dense round :ripple="false" icon="o_chevron_right" class="categories-nav" :disable="atEnd" :aria-label="t('More categories')" @click="scrollByPage(1)" />
+    <q-btn
+      flat
+      dense
+      round
+      :ripple="false"
+      icon="o_chevron_right"
+      class="categories-nav"
+      :disable="atEnd"
+      :aria-label="t('More categories')"
+      @click="scrollByPage(1)"
+    />
   </div>
 </template>
 
@@ -45,7 +65,10 @@ const updateEnds = () => {
 }
 
 const scrollByPage = direction => {
-  track.value?.scrollBy({ left: direction * track.value.clientWidth, behavior: 'smooth' })
+  track.value?.scrollBy({
+    left: direction * track.value.clientWidth,
+    behavior: 'smooth'
+  })
 }
 
 // The ends change when the window resizes or the categories arrive, not only on scroll.
@@ -59,7 +82,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => resizeObserver?.disconnect())
 
-watch(() => props.categories.length, () => nextTick(updateEnds))
+watch(
+  () => props.categories.length,
+  () => nextTick(updateEnds)
+)
 </script>
 
 <style scoped>
@@ -113,7 +139,10 @@ watch(() => props.categories.length, () => nextTick(updateEnds))
   background: #ffffff;
   color: var(--c-brand);
 
-  transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    opacity 0.15s;
 
   cursor: pointer;
 }

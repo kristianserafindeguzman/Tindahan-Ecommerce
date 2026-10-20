@@ -2,12 +2,23 @@
   <div class="notif-panel">
     <div class="notif-head">
       <div class="notif-title">{{ t('title') }}</div>
-      <q-btn flat dense no-caps :label="t('markAllAsRead')" color="primary" class="notif-mark-all" :disable="unreadCount === 0" @click="markAllAsRead" />
+      <q-btn
+        flat
+        dense
+        no-caps
+        :label="t('markAllAsRead')"
+        color="primary"
+        class="notif-mark-all"
+        :disable="unreadCount === 0"
+        @click="markAllAsRead"
+      />
     </div>
 
     <div class="notif-list">
       <div v-if="!notifications.length" class="notif-empty">
-        <div class="notif-empty-icon"><q-icon name="o_notifications_none" size="24px" /></div>
+        <div class="notif-empty-icon"
+          ><q-icon name="o_notifications_none" size="24px"
+        /></div>
         <div class="notif-empty-title">{{ t('emptyTitle') }}</div>
         <div class="notif-empty-text">{{ emptyText || t('emptyText') }}</div>
       </div>
@@ -28,11 +39,19 @@
         <span class="notif-body">
           <span class="notif-item-title">{{ textOf(notif).title }}</span>
           <span class="notif-item-message">{{ textOf(notif).message }}</span>
-          <span v-if="textOf(notif).pickup" class="notif-item-detail">{{ textOf(notif).pickupLabel }}: {{ textOf(notif).pickup }}</span>
-          <span v-if="textOf(notif).reason" class="notif-item-detail">{{ textOf(notif).reasonLabel }}: {{ textOf(notif).reason }}</span>
+          <span v-if="textOf(notif).pickup" class="notif-item-detail"
+            >{{ textOf(notif).pickupLabel }}: {{ textOf(notif).pickup }}</span
+          >
+          <span v-if="textOf(notif).reason" class="notif-item-detail"
+            >{{ textOf(notif).reasonLabel }}: {{ textOf(notif).reason }}</span
+          >
           <span class="notif-item-time">{{ timeAgo(notif.created_at) }}</span>
         </span>
-        <span v-if="!notif.is_read" class="notif-dot" :aria-label="t('unread')" />
+        <span
+          v-if="!notif.is_read"
+          class="notif-dot"
+          :aria-label="t('unread')"
+        />
       </button>
     </div>
 
@@ -44,7 +63,11 @@
         no-caps
         color="primary"
         icon-right="o_chevron_right"
-        :label="notifications.length > LIMIT ? t('viewAllCount').replace('{count}', notifications.length) : t('viewAll')"
+        :label="
+          notifications.length > LIMIT
+            ? t('viewAllCount').replace('{count}', notifications.length)
+            : t('viewAll')
+        "
         class="notif-view-all"
         @click="router.push(viewAllPath)"
       />
@@ -55,7 +78,11 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useVendorNotifications, notificationKind, notificationText } from '@/composables/useVendorNotifications'
+import {
+  useVendorNotifications,
+  notificationKind,
+  notificationText
+} from '@/composables/useVendorNotifications'
 import { useLanguage } from '@/composables/useLanguage'
 
 const LIMIT = 5
@@ -64,7 +91,11 @@ const LIMIT = 5
 const props = defineProps({
   feed: { type: Object, default: null },
   kindOf: { type: Function, default: notificationKind },
-  linkFor: { type: Function, default: notif => (notif.order_id ? `/vendor/orders/${notif.order_id}` : null) },
+  linkFor: {
+    type: Function,
+    default: notif =>
+      notif.order_id ? `/vendor/orders/${notif.order_id}` : null
+  },
   viewAllPath: { type: String, default: '/vendor/notifications' },
   emptyText: { type: String, default: '' }
 })
@@ -91,14 +122,22 @@ const { t } = useLanguage({
 })
 
 // Vendor notifications arrive in English and are shown in the chosen language; the admin bell passes its own feed and keeps its text as sent.
-const textOf = notif => (props.feed ? { title: notif.title, message: notif.message } : notificationText(notif))
+const textOf = notif =>
+  props.feed
+    ? { title: notif.title, message: notif.message }
+    : notificationText(notif)
 
 const router = useRouter()
-const { notifications, unreadCount, markAsRead, markAllAsRead, timeAgo } = props.feed || useVendorNotifications()
+const { notifications, unreadCount, markAsRead, markAllAsRead, timeAgo } =
+  props.feed || useVendorNotifications()
 
-const latest = computed(() => [...notifications.value].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, LIMIT))
+const latest = computed(() =>
+  [...notifications.value]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, LIMIT)
+)
 
-const openNotification = (notif) => {
+const openNotification = notif => {
   markAsRead(notif)
   const link = props.linkFor(notif)
   if (link) router.push(link)
@@ -163,7 +202,11 @@ const openNotification = (notif) => {
 
   border-radius: var(--r-surface);
 
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-brand-tint) 0%,
+    var(--c-brand-tint-2) 100%
+  );
   color: var(--c-brand);
 }
 

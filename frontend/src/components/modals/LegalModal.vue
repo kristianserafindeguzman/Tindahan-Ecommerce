@@ -1,7 +1,9 @@
 <template>
-  <q-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)">
+  <q-dialog
+    :model-value="modelValue"
+    @update:model-value="$emit('update:modelValue', $event)"
+  >
     <q-card class="legal-dialog">
-
       <q-card-section class="legal-header">
         <div class="legal-title">{{ doc.title }}</div>
         <q-btn
@@ -18,15 +20,24 @@
       <q-separator />
 
       <q-card-section class="legal-body scroll">
-        <p><strong>{{ doc.updated }}</strong></p>
+        <p
+          ><strong>{{ doc.updated }}</strong></p
+        >
 
         <template v-for="(block, index) in doc.blocks" :key="index">
-          <p v-if="block.heading"><strong>{{ block.heading }}</strong></p>
+          <p v-if="block.heading"
+            ><strong>{{ block.heading }}</strong></p
+          >
           <p v-else-if="block.p">{{ block.p }}</p>
           <component :is="block.ol ? 'ol' : 'ul'" v-else>
-            <li v-for="(item, itemIndex) in block.ol || block.ul" :key="itemIndex">
+            <li
+              v-for="(item, itemIndex) in block.ol || block.ul"
+              :key="itemIndex"
+            >
               <template v-if="typeof item === 'string'">{{ item }}</template>
-              <template v-else><strong>{{ item.label }}</strong> {{ item.text }}</template>
+              <template v-else
+                ><strong>{{ item.label }}</strong> {{ item.text }}</template
+              >
             </li>
           </component>
         </template>
@@ -43,7 +54,6 @@
           @click="$emit('update:modelValue', false)"
         />
       </q-card-actions>
-
     </q-card>
   </q-dialog>
 </template>
@@ -108,7 +118,8 @@ const doc = computed(() => props.content[lang.value] || props.content.en)
   margin: 0 0 12px;
 }
 
-.legal-body ul, .legal-body ol {
+.legal-body ul,
+.legal-body ol {
   margin-top: 0;
   padding-left: 20px;
   margin-bottom: 12px;
@@ -135,7 +146,10 @@ const doc = computed(() => props.content[lang.value] || props.content.en)
   font-size: 13px;
   font-weight: 500;
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .close-button:hover {

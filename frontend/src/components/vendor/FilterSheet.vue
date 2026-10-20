@@ -1,12 +1,34 @@
 <template>
   <!-- The Filters button: a dropdown panel on desktop, and a centred dialog on phones and tablets, where a dropdown would cover the list it filters. -->
-  <q-btn outline no-caps no-wrap color="primary" icon="o_tune" label="Filters" class="vp-pill-btn fs-btn" @click="openDialog">
+  <q-btn
+    outline
+    no-caps
+    no-wrap
+    color="primary"
+    icon="o_tune"
+    label="Filters"
+    class="vp-pill-btn fs-btn"
+    @click="openDialog"
+  >
     <span v-if="count" class="fs-count">{{ count }}</span>
-    <q-menu v-if="!useDialog" anchor="bottom right" self="top right" :offset="[0, 6]">
+    <q-menu
+      v-if="!useDialog"
+      anchor="bottom right"
+      self="top right"
+      :offset="[0, 6]"
+    >
       <div class="fs-panel">
         <div class="fs-head">
           <span class="fs-title">{{ title }}</span>
-          <q-btn flat dense no-caps color="primary" label="Clear" :disable="!count" @click="$emit('clear')" />
+          <q-btn
+            flat
+            dense
+            no-caps
+            color="primary"
+            label="Clear"
+            :disable="!count"
+            @click="$emit('clear')"
+          />
         </div>
         <slot />
       </div>
@@ -17,14 +39,37 @@
     <q-card class="vp-dialog fs-dialog">
       <div class="fs-dialog-head">
         <span class="fs-title">{{ title }}</span>
-        <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close filters" />
+        <q-btn
+          v-close-popup
+          flat
+          round
+          dense
+          icon="o_close"
+          class="vp-dialog-close"
+          aria-label="Close filters"
+        />
       </div>
       <div class="fs-dialog-body">
         <slot />
       </div>
       <div class="vp-dialog-actions fs-dialog-actions">
-        <q-btn outline no-caps color="primary" label="Clear" class="vp-dialog-btn" :disable="!count" @click="$emit('clear')" />
-        <q-btn v-close-popup unelevated no-caps color="primary" :label="doneLabel" class="vp-dialog-btn" />
+        <q-btn
+          outline
+          no-caps
+          color="primary"
+          label="Clear"
+          class="vp-dialog-btn"
+          :disable="!count"
+          @click="$emit('clear')"
+        />
+        <q-btn
+          v-close-popup
+          unelevated
+          no-caps
+          color="primary"
+          :label="doneLabel"
+          class="vp-dialog-btn"
+        />
       </div>
     </q-card>
   </q-dialog>

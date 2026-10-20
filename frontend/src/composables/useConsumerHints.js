@@ -32,7 +32,7 @@ function storageKey(hint) {
 }
 
 export function useConsumerHints() {
-  const isDismissed = (hint) => {
+  const isDismissed = hint => {
     // Read so Vue tracks it; the value itself is irrelevant.
     void dismissedVersion.value
     try {
@@ -44,7 +44,7 @@ export function useConsumerHints() {
     }
   }
 
-  const dismissHint = (hint) => {
+  const dismissHint = hint => {
     try {
       localStorage.setItem(storageKey(hint), '1')
     } catch {

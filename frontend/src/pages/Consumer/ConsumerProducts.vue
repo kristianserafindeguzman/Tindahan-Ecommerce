@@ -1,15 +1,15 @@
 <template>
   <q-page class="storefront-page">
-
     <SiteHeader />
 
     <!-- MAIN CONTENT -->
     <div class="page-content">
-
       <div class="page-header-row">
         <div>
           <h1 class="page-title">{{ t('All Products') }}</h1>
-          <p class="page-subtitle">{{ t('Browse all products from sari-sari stores near you.') }}</p>
+          <p class="page-subtitle">{{
+            t('Browse all products from sari-sari stores near you.')
+          }}</p>
         </div>
 
         <div class="page-header-actions">
@@ -48,46 +48,64 @@
 
       <!-- CATEGORY PILLS -->
       <PillScroller>
-      <div class="category-pills-row">
-        <q-chip
-          clickable
-          dense
-          class="category-pill"
-          :class="{ 'category-pill-active': selectedCategory === 'All' }"
-          @click="selectedCategory = 'All'"
-        >
-          {{ t('All') }}
-        </q-chip>
-        <q-chip
-          v-for="category in VISIBLE_CATEGORIES"
-          :key="category.id"
-          clickable
-          dense
-          class="category-pill"
-          :class="{ 'category-pill-active': selectedCategory === category.label }"
-          @click="selectedCategory = category.label"
-        >
-          <!-- The English label stays the filter value; only the text shown is translated. -->
-          {{ t(category.label) }}
-        </q-chip>
-        <q-chip clickable dense class="category-pill category-pill-more" @click="filtersOpen = true">
-          {{ t('More') }}
-          <q-icon name="o_expand_more" size="16px" />
-        </q-chip>
-      </div>
+        <div class="category-pills-row">
+          <q-chip
+            clickable
+            dense
+            class="category-pill"
+            :class="{ 'category-pill-active': selectedCategory === 'All' }"
+            @click="selectedCategory = 'All'"
+          >
+            {{ t('All') }}
+          </q-chip>
+          <q-chip
+            v-for="category in VISIBLE_CATEGORIES"
+            :key="category.id"
+            clickable
+            dense
+            class="category-pill"
+            :class="{
+              'category-pill-active': selectedCategory === category.label
+            }"
+            @click="selectedCategory = category.label"
+          >
+            <!-- The English label stays the filter value; only the text shown is translated. -->
+            {{ t(category.label) }}
+          </q-chip>
+          <q-chip
+            clickable
+            dense
+            class="category-pill category-pill-more"
+            @click="filtersOpen = true"
+          >
+            {{ t('More') }}
+            <q-icon name="o_expand_more" size="16px" />
+          </q-chip>
+        </div>
       </PillScroller>
 
       <div class="products-layout">
-
         <div class="products-main">
           <div v-if="productsLoading" ref="gridEl" class="products-grid">
             <CardSkeleton v-for="n in skeletonCount" :key="n" />
           </div>
           <div v-else ref="gridEl" class="products-grid">
-            <ProductCard v-for="(product, i) in paginatedProducts" :key="product.id" v-intersection.once="onReveal" class="reveal" :style="{ '--reveal-delay': (i % 6) * 70 + 'ms' }" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
+            <ProductCard
+              v-for="(product, i) in paginatedProducts"
+              :key="product.id"
+              v-intersection.once="onReveal"
+              class="reveal"
+              :style="{ '--reveal-delay': (i % 6) * 70 + 'ms' }"
+              :product="product"
+              @add-to-cart="handleAddToCart"
+              @view-product="openProductModal"
+            />
           </div>
 
-          <p v-if="!productsLoading && !filteredProducts.length" class="products-empty">
+          <p
+            v-if="!productsLoading && !filteredProducts.length"
+            class="products-empty"
+          >
             {{ t('No products match your filters.') }}
           </p>
         </div>
@@ -109,14 +127,19 @@
             @clear="clearFilters"
           />
         </aside>
-
       </div>
 
       <AppPagination v-model="currentPage" :max="totalPages" />
 
       <!-- FILTERS POPUP (tablet: centered dialog, mobile: bottom sheet) -->
-      <q-dialog v-model="mobileFiltersOpen" :position="isSheetFilters ? 'bottom' : undefined">
-        <q-card class="filters-dialog-card" :class="{ 'filters-dialog-card-sheet': isSheetFilters }">
+      <q-dialog
+        v-model="mobileFiltersOpen"
+        :position="isSheetFilters ? 'bottom' : undefined"
+      >
+        <q-card
+          class="filters-dialog-card"
+          :class="{ 'filters-dialog-card-sheet': isSheetFilters }"
+        >
           <div v-if="isSheetFilters" class="filters-drag-handle" />
           <ProductFilters
             v-model:search="filterSearch"
@@ -135,13 +158,11 @@
           />
         </q-card>
       </q-dialog>
-
     </div>
 
     <SiteFooter />
 
     <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
-
   </q-page>
 </template>
 
@@ -183,7 +204,7 @@ const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
 const showProductModal = ref(false)
 const selectedProduct = ref(null)
 
-const openProductModal = (product) => {
+const openProductModal = product => {
   selectedProduct.value = product
   showProductModal.value = true
 }
@@ -192,7 +213,7 @@ const { categories, fetchCategories } = useCategories()
 const { products, loading: productsLoading, fetchProducts } = useProducts()
 const { addToCart } = useCart()
 
-const handleAddToCart = async (product) => {
+const handleAddToCart = async product => {
   if (!isLoggedIn.value) {
     router.push('/login')
     return
@@ -200,9 +221,15 @@ const handleAddToCart = async (product) => {
 
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
+    $q.notify({
+      type: 'positive',
+      message: t('{name} added to cart.', { name: product.name })
+    })
   } catch (error) {
-    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
+    $q.notify({
+      type: 'negative',
+      message: t(error.response?.data?.message || 'Failed to add to cart.')
+    })
   }
 }
 
@@ -215,12 +242,18 @@ const VISIBLE_CATEGORIES = computed(() => categories.value.slice(0, 7))
 
 const CATEGORY_SELECT_OPTIONS = computed(() => [
   { label: 'All Categories', value: 'All' },
-  ...categories.value.map((category) => ({ label: category.label, value: category.label }))
+  ...categories.value.map(category => ({
+    label: category.label,
+    value: category.label
+  }))
 ])
 
 const STORE_SELECT_OPTIONS = computed(() => [
   { label: 'All Stores', value: 'All' },
-  ...[...new Set(products.value.map((product) => product.store))].map((store) => ({ label: store, value: store }))
+  ...[...new Set(products.value.map(product => product.store))].map(store => ({
+    label: store,
+    value: store
+  }))
 ])
 
 const SORT_OPTIONS = [
@@ -239,9 +272,12 @@ const priceMax = ref(null)
 const inStockOnly = ref(false)
 const sortBy = ref('popular')
 
-watch(() => route.query.category, category => {
-  selectedCategory.value = category || 'All'
-})
+watch(
+  () => route.query.category,
+  category => {
+    selectedCategory.value = category || 'All'
+  }
+)
 
 // Below this width the sidebar doesn't fit, so filtersOpen opens a popup dialog instead.
 const isMobileFilters = computed(() => $q.screen.width < 900)
@@ -251,35 +287,51 @@ const isSheetFilters = computed(() => isMobileFilters.value)
 
 const mobileFiltersOpen = computed({
   get: () => filtersOpen.value && isMobileFilters.value,
-  set: (val) => { filtersOpen.value = val }
+  set: val => {
+    filtersOpen.value = val
+  }
 })
 
-const hasActiveFilters = computed(() =>
-  !!filterSearch.value?.trim() ||
-  selectedCategory.value !== 'All' ||
-  selectedStore.value !== 'All' ||
-  inStockOnly.value ||
-  priceMin.value != null ||
-  priceMax.value != null ||
-  sortBy.value !== 'popular'
+const hasActiveFilters = computed(
+  () =>
+    !!filterSearch.value?.trim() ||
+    selectedCategory.value !== 'All' ||
+    selectedStore.value !== 'All' ||
+    inStockOnly.value ||
+    priceMin.value != null ||
+    priceMax.value != null ||
+    sortBy.value !== 'popular'
 )
 
 const filteredProducts = computed(() => {
   const keyword = (filterSearch.value || '').trim().toLowerCase()
-  const list = products.value.filter((product) => {
-    if (keyword && ![product.name, product.store].some(name =>
-      String(name || '').toLowerCase().includes(keyword)
-    )) return false
-    if (selectedCategory.value !== 'All' && product.category !== selectedCategory.value) return false
-    if (selectedStore.value !== 'All' && product.store !== selectedStore.value) return false
+  const list = products.value.filter(product => {
+    if (
+      keyword &&
+      ![product.name, product.store].some(name =>
+        String(name || '')
+          .toLowerCase()
+          .includes(keyword)
+      )
+    )
+      return false
+    if (
+      selectedCategory.value !== 'All' &&
+      product.category !== selectedCategory.value
+    )
+      return false
+    if (selectedStore.value !== 'All' && product.store !== selectedStore.value)
+      return false
     if (inStockOnly.value && !product.inStock) return false
     if (priceMin.value != null && product.price < priceMin.value) return false
     if (priceMax.value != null && product.price > priceMax.value) return false
     return true
   })
 
-  if (sortBy.value === 'price_asc') return [...list].sort((a, b) => a.price - b.price)
-  if (sortBy.value === 'price_desc') return [...list].sort((a, b) => b.price - a.price)
+  if (sortBy.value === 'price_asc')
+    return [...list].sort((a, b) => a.price - b.price)
+  if (sortBy.value === 'price_desc')
+    return [...list].sort((a, b) => b.price - a.price)
   return list
 })
 
@@ -297,7 +349,9 @@ const paginatedProducts = computed(() => {
 })
 
 // Jump back to page 1 when filters change shape, otherwise the user could be stranded on a now-empty page.
-watch(filteredProducts, () => { currentPage.value = 1 })
+watch(filteredProducts, () => {
+  currentPage.value = 1
+})
 
 const clearFilters = () => {
   filterSearch.value = ''
@@ -442,7 +496,9 @@ const clearFilters = () => {
   font-size: var(--fs-sm);
   font-weight: 500;
 
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 /* Hides Quasar's own focus/ripple overlay so it can't paint a stray ring over our border/hover treatment. */
@@ -519,7 +575,11 @@ const clearFilters = () => {
   font-size: var(--fs-sm);
   font-weight: 500;
 
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
 }
 
 .category-pill:hover {
@@ -583,8 +643,14 @@ const clearFilters = () => {
 
 /* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
 @keyframes products-fade-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-header-row,
@@ -593,8 +659,12 @@ const clearFilters = () => {
   animation: products-fade-up 0.5s ease both;
 }
 
-.category-pills-row { animation-delay: 0.06s; }
-.products-grid { animation-delay: 0.12s; }
+.category-pills-row {
+  animation-delay: 0.06s;
+}
+.products-grid {
+  animation-delay: 0.12s;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .page-header-row,

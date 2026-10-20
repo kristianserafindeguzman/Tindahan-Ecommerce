@@ -2,7 +2,6 @@
   <header class="site-header">
     <div class="header-bar">
       <div class="header-bar-inner">
-
         <img
           src="@/assets/tindahan-logo.png"
           alt="Tindahan Logo"
@@ -57,41 +56,73 @@
             />
           </div>
 
-          <div v-if="suggestionsOpen" class="search-suggestions" @mousedown.prevent>
+          <div
+            v-if="suggestionsOpen"
+            class="search-suggestions"
+            @mousedown.prevent
+          >
             <template v-if="!searchInput.trim()">
               <div v-if="recentSearches.length" class="suggestions-section">
                 <div class="suggestions-section-header">
                   <span>{{ t('Recent Searches') }}</span>
-                  <span class="suggestions-clear" @click="clearRecentSearches">{{ t('Clear') }}</span>
+                  <span
+                    class="suggestions-clear"
+                    @click="clearRecentSearches"
+                    >{{ t('Clear') }}</span
+                  >
                 </div>
                 <div
                   v-for="(term, i) in recentSearches"
                   :key="term"
                   class="suggestion-item"
-                  :class="{ 'suggestion-item-active': activeSuggestionIndex === i }"
-                  @click="selectSuggestion(term)"
+                  :class="{
+                    'suggestion-item-active': activeSuggestionIndex === i
+                  }"
+                  @click="selectRecentSearch(term)"
                 >
-                  <q-icon name="o_history" size="16px" class="suggestion-icon" />
+                  <q-icon
+                    name="o_history"
+                    size="16px"
+                    class="suggestion-icon"
+                  />
                   <span class="suggestion-text">{{ term }}</span>
                 </div>
               </div>
-              <div v-else class="suggestions-empty">{{ t('Start typing to search products and stores.') }}</div>
+              <div v-else class="suggestions-empty">{{
+                t('Start typing to search products and stores.')
+              }}</div>
             </template>
 
             <template v-else>
               <div v-if="productSuggestions.length" class="suggestions-section">
-                <div class="suggestions-section-header"><span>{{ t('Products') }}</span></div>
+                <div class="suggestions-section-header"
+                  ><span>{{ t('Products') }}</span></div
+                >
                 <div
                   v-for="(product, i) in productSuggestions"
                   :key="`p${product.id}`"
                   class="suggestion-item"
-                  :class="{ 'suggestion-item-active': activeSuggestionIndex === i }"
-                  @click="selectSuggestion(product.name)"
+                  :class="{
+                    'suggestion-item-active': activeSuggestionIndex === i
+                  }"
+                  @click="selectProductSuggestion(product)"
                 >
-                  <q-icon name="o_inventory_2" size="16px" class="suggestion-icon" />
+                  <q-icon
+                    name="o_inventory_2"
+                    size="16px"
+                    class="suggestion-icon"
+                  />
                   <span class="suggestion-text">
-                    <template v-for="(part, pi) in splitHighlightParts(product.name, searchInput)" :key="pi">
-                      <mark v-if="part.match" class="suggestion-highlight">{{ part.text }}</mark>
+                    <template
+                      v-for="(part, pi) in splitHighlightParts(
+                        product.name,
+                        searchInput
+                      )"
+                      :key="pi"
+                    >
+                      <mark v-if="part.match" class="suggestion-highlight">{{
+                        part.text
+                      }}</mark>
                       <template v-else>{{ part.text }}</template>
                     </template>
                   </span>
@@ -99,33 +130,60 @@
               </div>
 
               <div v-if="storeSuggestions.length" class="suggestions-section">
-                <div class="suggestions-section-header"><span>{{ t('Stores') }}</span></div>
+                <div class="suggestions-section-header"
+                  ><span>{{ t('Stores') }}</span></div
+                >
                 <div
                   v-for="(store, i) in storeSuggestions"
                   :key="`s${store.id}`"
                   class="suggestion-item"
-                  :class="{ 'suggestion-item-active': activeSuggestionIndex === productSuggestions.length + i }"
-                  @click="selectSuggestion(store.name)"
+                  :class="{
+                    'suggestion-item-active':
+                      activeSuggestionIndex === productSuggestions.length + i
+                  }"
+                  @click="selectStoreSuggestion(store)"
                 >
-                  <q-icon name="o_storefront" size="16px" class="suggestion-icon" />
+                  <q-icon
+                    name="o_storefront"
+                    size="16px"
+                    class="suggestion-icon"
+                  />
                   <span class="suggestion-text">
-                    <template v-for="(part, pi) in splitHighlightParts(store.name, searchInput)" :key="pi">
-                      <mark v-if="part.match" class="suggestion-highlight">{{ part.text }}</mark>
+                    <template
+                      v-for="(part, pi) in splitHighlightParts(
+                        store.name,
+                        searchInput
+                      )"
+                      :key="pi"
+                    >
+                      <mark v-if="part.match" class="suggestion-highlight">{{
+                        part.text
+                      }}</mark>
                       <template v-else>{{ part.text }}</template>
                     </template>
                   </span>
                 </div>
               </div>
 
-              <div v-if="!productSuggestions.length && !storeSuggestions.length" class="suggestions-empty">
+              <div
+                v-if="!productSuggestions.length && !storeSuggestions.length"
+                class="suggestions-empty"
+              >
                 {{ t('No matches for "{query}"', { query: searchInput }) }}
               </div>
             </template>
           </div>
         </div>
 
-        <div class="header-location" :title="address || t('Enter Address')" @click="toggleAddressMenu">
-          <span class="header-location-pill" :class="{ 'header-location-expanded': addressMenuOpen }">
+        <div
+          class="header-location"
+          :title="address || t('Enter Address')"
+          @click="toggleAddressMenu"
+        >
+          <span
+            class="header-location-pill"
+            :class="{ 'header-location-expanded': addressMenuOpen }"
+          >
             <q-icon name="o_location_on" size="15px" />
             <span>{{ displayAddress }}</span>
           </span>
@@ -134,58 +192,80 @@
           <component
             :is="isAddressSheet ? QDialog : QMenu"
             v-model="addressMenuOpen"
-            v-bind="isAddressSheet
-              ? { class: 'address-sheet-dialog' }
-              : { noParentEvent: true, anchor: 'bottom left', self: 'top left', offset: [0, 8], class: 'address-menu-menu' }"
+            v-bind="
+              isAddressSheet
+                ? { class: 'address-sheet-dialog' }
+                : {
+                    noParentEvent: true,
+                    anchor: 'bottom left',
+                    self: 'top left',
+                    offset: [0, 8],
+                    class: 'address-menu-menu'
+                  }
+            "
             :position="isAddressSheet ? 'bottom' : undefined"
           >
-          <div class="address-menu-panel" :class="{ 'address-menu-panel-sheet': isAddressSheet }" @click.stop>
-            <div v-if="isAddressSheet" class="address-menu-drag-handle" />
-            <q-btn
-              v-if="isAddressSheet"
-              flat
-              round
-              dense
-              icon="o_close"
-              class="address-sheet-close"
-              :aria-label="t('Close')"
-              @click="addressMenuOpen = false"
-            />
+            <div
+              class="address-menu-panel"
+              :class="{ 'address-menu-panel-sheet': isAddressSheet }"
+              @click.stop
+            >
+              <div v-if="isAddressSheet" class="address-menu-drag-handle" />
+              <q-btn
+                v-if="isAddressSheet"
+                flat
+                round
+                dense
+                icon="o_close"
+                class="address-sheet-close"
+                :aria-label="t('Close')"
+                @click="addressMenuOpen = false"
+              />
 
-            <div class="address-menu-scroll">
-              <div class="address-menu-title">
-                <q-icon name="o_location_on" size="16px" class="address-menu-title-icon" />
-                <span>{{ t('Address') }}</span>
+              <div class="address-menu-scroll">
+                <div class="address-menu-title">
+                  <q-icon
+                    name="o_location_on"
+                    size="16px"
+                    class="address-menu-title-icon"
+                  />
+                  <span>{{ t('Address') }}</span>
+                </div>
+
+                <AddressAutocomplete
+                  ref="addressInputRef"
+                  v-model="draftAddress"
+                  dense
+                  outlined
+                  hide-bottom-space
+                  :translate="t"
+                  :placeholder="t('Enter your address')"
+                  class="address-menu-input"
+                  @pin="onAddressPin"
+                  @enter="confirmAddress"
+                />
+
+                <VendorLocationMap
+                  ref="addressMapRef"
+                  :translate="t"
+                  :initial="addressPin"
+                  class="address-menu-map"
+                  @location-selected="onLocationSelected"
+                />
               </div>
 
-              <AddressAutocomplete
-                ref="addressInputRef"
-                v-model="draftAddress"
-                dense
-                outlined
-                hide-bottom-space
-                :translate="t"
-                :placeholder="t('Enter your address')"
-                class="address-menu-input"
-                @pin="onAddressPin"
-                @enter="confirmAddress"
-              />
-
-              <VendorLocationMap ref="addressMapRef" :translate="t" :initial="addressPin" class="address-menu-map" @location-selected="onLocationSelected" />
+              <div class="address-menu-footer">
+                <q-btn
+                  unelevated
+                  no-caps
+                  :label="t('Confirm Address')"
+                  class="address-menu-confirm"
+                  :disable="!draftAddress.trim()"
+                  @mousedown.prevent
+                  @click="confirmAddress"
+                />
+              </div>
             </div>
-
-            <div class="address-menu-footer">
-              <q-btn
-                unelevated
-                no-caps
-                :label="t('Confirm Address')"
-                class="address-menu-confirm"
-                :disable="!draftAddress.trim()"
-                @mousedown.prevent
-                @click="confirmAddress"
-              />
-            </div>
-          </div>
           </component>
 
           <!-- Desktop only: a bubble hanging off the pill, which has room to its right in
@@ -202,32 +282,56 @@
         </div>
 
         <!-- Compact bar's right-hand cluster, holding the language switch, notifications and the cart. -->
-        <div v-if="isCompactHeader" ref="mobileActionsRef" class="header-mobile-actions">
-          <LanguageSwitcher header compact class="header-language header-language--compact" />
+        <div
+          v-if="isCompactHeader"
+          ref="mobileActionsRef"
+          class="header-mobile-actions"
+        >
+          <LanguageSwitcher
+            header
+            compact
+            class="header-language header-language--compact"
+          />
 
-          <NotificationsMenu v-if="isLoggedIn" :anchor-target="mobileActionsRef" />
+          <NotificationsMenu
+            v-if="isLoggedIn"
+            :anchor-target="mobileActionsRef"
+          />
 
           <q-btn
             flat
             dense
             round
             icon="o_shopping_cart"
-            :aria-label="isLoggedIn && cartItemCount ? t('Cart, {count} items', { count: cartItemCount }) : t('Cart')"
+            :aria-label="
+              isLoggedIn && cartItemCount
+                ? t('Cart, {count} items', { count: cartItemCount })
+                : t('Cart')
+            "
             class="header-mobile-btn"
             @click="router.push('/consumer/cart')"
           >
-            <span v-if="isLoggedIn && cartItemCount" class="icon-badge-count">{{ cartItemCount }}</span>
+            <span v-if="isLoggedIn && cartItemCount" class="icon-badge-count">{{
+              cartItemCount
+            }}</span>
           </q-btn>
         </div>
 
         <div ref="headerActionsRef" class="header-actions">
-
           <!-- LOGGED IN -->
           <template v-if="isLoggedIn">
             <div class="icon-btn-wrap">
-              <q-btn flat dense :ripple="false" class="icon-btn" @click="toggleNotificationsMenu">
+              <q-btn
+                flat
+                dense
+                :ripple="false"
+                class="icon-btn"
+                @click="toggleNotificationsMenu"
+              >
                 <q-icon name="o_notifications" :size="actionIconSize" />
-                <span v-if="unreadNotificationCount" class="icon-badge-count">{{ unreadNotificationCount }}</span>
+                <span v-if="unreadNotificationCount" class="icon-badge-count">{{
+                  unreadNotificationCount
+                }}</span>
 
                 <!-- no-parent-event, because the button's click already decides whether to open, while QMenu handles outside-click, Escape and focus. -->
                 <q-menu
@@ -239,66 +343,90 @@
                   :offset="[0, 8]"
                   class="header-menu"
                 >
-                <div class="cart-menu-inner notifications-inner">
-                  <div class="cart-menu-title notifications-title">
-                    {{ t('Notifications') }}
+                  <div class="cart-menu-inner notifications-inner">
+                    <div class="cart-menu-title notifications-title">
+                      {{ t('Notifications') }}
+                      <q-btn
+                        v-if="unreadNotificationCount"
+                        flat
+                        dense
+                        no-caps
+                        :label="t('Mark all as read')"
+                        color="primary"
+                        size="sm"
+                        :loading="markingNotifications"
+                        @click="markAllAsRead"
+                      />
+                    </div>
+
+                    <div v-if="!notifications.length" class="cart-menu-empty">{{
+                      t('No notifications yet.')
+                    }}</div>
+
+                    <div v-else class="notifications-scroll">
+                      <button
+                        v-for="notif in notifications.slice(0, 10)"
+                        :key="notif.notification_id"
+                        type="button"
+                        class="cart-menu-item notification-item"
+                        :class="{ 'notification-item--unread': !notif.is_read }"
+                        @click="handleNotificationClick(notif)"
+                      >
+                        <span
+                          class="notification-menu-icon"
+                          :class="`notification-menu-icon--${notificationPresentation(notif).tone}`"
+                        >
+                          <q-icon
+                            :name="notificationPresentation(notif).icon"
+                            size="22px"
+                          />
+                        </span>
+                        <div class="cart-menu-item-info notification-menu-body">
+                          <div
+                            class="cart-menu-item-name notification-menu-title"
+                            >{{ consumerNotificationText(notif, t).title }}</div
+                          >
+                          <div
+                            class="cart-menu-item-meta notification-menu-message"
+                            >{{
+                              consumerNotificationText(notif, t).message
+                            }}</div
+                          >
+                          <div class="notification-menu-time">{{
+                            notificationTime(notif.created_at, t, locale.value)
+                          }}</div>
+                        </div>
+                      </button>
+                    </div>
+
+                    <!-- The panel shows ten notifications, so this links to the rest, like the cart menu's View All. -->
                     <q-btn
-                      v-if="unreadNotificationCount"
-                      flat
-                      dense
+                      v-close-popup
+                      unelevated
                       no-caps
-                      :label="t('Mark all as read')"
-                      color="primary"
-                      size="sm"
-                      :loading="markingNotifications"
-                      @click="markAllAsRead"
+                      :label="t('View All Notifications')"
+                      class="cart-menu-view-all"
+                      @click="goToNotifications"
                     />
                   </div>
-
-                  <div v-if="!notifications.length" class="cart-menu-empty">{{ t('No notifications yet.') }}</div>
-
-                  <div v-else class="notifications-scroll">
-                    <button
-                      v-for="notif in notifications.slice(0, 10)"
-                      :key="notif.notification_id"
-                      type="button"
-                      class="cart-menu-item notification-item"
-                      :class="{ 'notification-item--unread': !notif.is_read }"
-                      @click="handleNotificationClick(notif)"
-                    >
-                      <span
-                        class="notification-menu-icon"
-                        :class="`notification-menu-icon--${notificationPresentation(notif).tone}`"
-                      >
-                        <q-icon :name="notificationPresentation(notif).icon" size="22px" />
-                      </span>
-                      <div class="cart-menu-item-info notification-menu-body">
-                        <div class="cart-menu-item-name notification-menu-title">{{ consumerNotificationText(notif, t).title }}</div>
-                        <div class="cart-menu-item-meta notification-menu-message">{{ consumerNotificationText(notif, t).message }}</div>
-                        <div class="notification-menu-time">{{ notificationTime(notif.created_at, t, locale.value) }}</div>
-                      </div>
-                    </button>
-                  </div>
-
-                  <!-- The panel shows ten notifications, so this links to the rest, like the cart menu's View All. -->
-                  <q-btn
-                    unelevated
-                    no-caps
-                    :label="t('View All Notifications')"
-                    class="cart-menu-view-all"
-                    @click="notificationsMenuOpen = false; router.push('/consumer/notifications')"
-                  />
-                </div>
                 </q-menu>
               </q-btn>
             </div>
 
             <div class="icon-btn-wrap">
-              <q-btn flat dense :ripple="false" class="icon-btn" @click="handleCartIconClick">
+              <q-btn
+                flat
+                dense
+                :ripple="false"
+                class="icon-btn"
+                @click="handleCartIconClick"
+              >
                 <q-icon name="o_shopping_cart" :size="actionIconSize" />
-                <span v-if="cartItemCount" class="icon-badge-count">{{ cartItemCount }}</span>
+                <span v-if="cartItemCount" class="icon-badge-count">{{
+                  cartItemCount
+                }}</span>
 
-              <!-- Desktop only — on mobile/tablet handleCartIconClick navigates straight to the Cart page instead of opening this. -->
+                <!-- Desktop only — on mobile/tablet handleCartIconClick navigates straight to the Cart page instead of opening this. -->
                 <q-menu
                   v-model="cartMenuOpen"
                   no-parent-event
@@ -308,41 +436,70 @@
                   :offset="[0, 8]"
                   class="header-menu"
                 >
-                <div class="cart-menu-inner">
-                  <div class="cart-menu-title">{{ t('My Cart') }}</div>
+                  <div class="cart-menu-inner">
+                    <div class="cart-menu-title">{{ t('My Cart') }}</div>
 
-                  <div v-if="!cartItems.length" class="cart-menu-empty">{{ t('Your cart is empty.') }}</div>
+                    <div v-if="!cartItems.length" class="cart-menu-empty">{{
+                      t('Your cart is empty.')
+                    }}</div>
 
-                  <template v-else>
-                    <div v-for="item in cartItems.slice(0, 4)" :key="item.cartId" class="cart-menu-item">
-                      <div class="cart-menu-item-image">
-                        <img v-if="item.image" :src="item.image" :alt="item.name" />
-                        <q-icon v-else name="o_inventory_2" size="16px" />
+                    <template v-else>
+                      <div
+                        v-for="item in cartItems.slice(0, 4)"
+                        :key="item.cartId"
+                        class="cart-menu-item"
+                      >
+                        <div class="cart-menu-item-image">
+                          <img
+                            v-if="item.image"
+                            :src="item.image"
+                            :alt="item.name"
+                          />
+                          <q-icon v-else name="o_inventory_2" size="16px" />
+                        </div>
+                        <div class="cart-menu-item-info">
+                          <div class="cart-menu-item-name">{{ item.name }}</div>
+                          <div class="cart-menu-item-meta"
+                            >{{ t('Qty') }} {{ item.quantity }} · ₱{{
+                              item.price.toFixed(2)
+                            }}</div
+                          >
+                        </div>
                       </div>
-                      <div class="cart-menu-item-info">
-                        <div class="cart-menu-item-name">{{ item.name }}</div>
-                        <div class="cart-menu-item-meta">{{ t('Qty') }} {{ item.quantity }} · ₱{{ item.price.toFixed(2) }}</div>
+                      <div v-if="cartItems.length > 4" class="cart-menu-more">
+                        +{{
+                          t(
+                            cartItems.length - 4 === 1
+                              ? '{count} more item'
+                              : '{count} more items',
+                            { count: cartItems.length - 4 }
+                          )
+                        }}
                       </div>
-                    </div>
-                    <div v-if="cartItems.length > 4" class="cart-menu-more">
-                      +{{ t(cartItems.length - 4 === 1 ? '{count} more item' : '{count} more items', { count: cartItems.length - 4 }) }}
-                    </div>
-                  </template>
+                    </template>
 
-                  <q-btn
-                    unelevated
-                    no-caps
-                    :label="t('View All Cart')"
-                    class="cart-menu-view-all"
-                    @click="cartMenuOpen = false; router.push('/consumer/cart')"
-                  />
-                </div>
+                    <q-btn
+                      v-close-popup
+                      unelevated
+                      no-caps
+                      :label="t('View All Cart')"
+                      class="cart-menu-view-all"
+                      @click="goToCart"
+                    />
+                  </div>
                 </q-menu>
               </q-btn>
             </div>
 
             <div class="icon-btn-wrap">
-              <q-btn flat dense no-caps :ripple="false" class="account-btn" @click="toggleAccountMenu">
+              <q-btn
+                flat
+                dense
+                no-caps
+                :ripple="false"
+                class="account-btn"
+                @click="toggleAccountMenu"
+              >
                 <q-avatar :size="avatarSize" class="account-avatar">
                   <img v-if="userAvatar" :src="userAvatar" />
                   <q-icon v-else name="o_person" :size="avatarIconSize" />
@@ -358,20 +515,22 @@
                   :offset="[0, 8]"
                   class="header-menu"
                 >
-                <div class="cart-menu-inner account-menu-inner">
-                  <q-list>
-                    <q-item clickable @click="accountMenuOpen = false; router.push('/consumer/profile')">
-                      <q-item-section>{{ t('My Profile') }}</q-item-section>
-                    </q-item>
-                    <q-item clickable @click="accountMenuOpen = false; router.push('/consumer/orders')">
-                      <q-item-section>{{ t('My Orders') }}</q-item-section>
-                    </q-item>
-                    <q-separator />
-                    <q-item clickable @click="accountMenuOpen = false; handleLogout()">
-                      <q-item-section class="text-red-9">{{ t('Logout') }}</q-item-section>
-                    </q-item>
-                  </q-list>
-                </div>
+                  <div class="cart-menu-inner account-menu-inner">
+                    <q-list>
+                      <q-item v-close-popup clickable @click="goToProfile">
+                        <q-item-section>{{ t('My Profile') }}</q-item-section>
+                      </q-item>
+                      <q-item v-close-popup clickable @click="goToOrders">
+                        <q-item-section>{{ t('My Orders') }}</q-item-section>
+                      </q-item>
+                      <q-separator />
+                      <q-item v-close-popup clickable @click="handleLogout">
+                        <q-item-section class="text-red-9">{{
+                          t('Logout')
+                        }}</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </div>
                 </q-menu>
               </q-btn>
             </div>
@@ -401,7 +560,6 @@
           <!-- Last in the row, at the far right edge of the header, after the account and
                auth buttons: it is a preference, not something reached on every visit. -->
           <LanguageSwitcher header class="header-language" />
-
         </div>
 
         <!-- Compact header only: a full-width row of the header grid, under the search box.
@@ -416,27 +574,55 @@
       </div>
     </div>
 
-    <q-dialog v-model="mobileMenuOpen" position="left" full-height class="mobile-menu-dialog">
+    <q-dialog
+      v-model="mobileMenuOpen"
+      position="left"
+      full-height
+      class="mobile-menu-dialog"
+    >
       <q-card class="mobile-menu">
         <div class="mobile-menu-head">
-          <img src="@/assets/tindahan-mobile.png" alt="Tindahan" class="mobile-menu-logo" />
-          <q-btn v-close-popup flat round dense icon="close" :aria-label="t('Close menu')" class="mobile-menu-close" />
+          <img
+            src="@/assets/tindahan-mobile.png"
+            alt="Tindahan"
+            class="mobile-menu-logo"
+          />
+          <q-btn
+            v-close-popup
+            flat
+            round
+            dense
+            icon="close"
+            :aria-label="t('Close menu')"
+            class="mobile-menu-close"
+          />
         </div>
 
         <q-separator />
 
         <!-- Account links only, since Home, Products and Stores live in the bottom tab bar. -->
         <div class="mobile-menu-scroll">
-
           <q-list v-if="isLoggedIn" padding>
-            <q-item v-if="isLoggedIn" v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/profile')">
+            <q-item
+              v-if="isLoggedIn"
+              v-close-popup
+              clickable
+              class="mobile-menu-item"
+              @click="router.push('/consumer/profile')"
+            >
               <q-item-section avatar class="mobile-menu-avatar">
                 <q-icon name="o_person" size="22px" />
               </q-item-section>
               <q-item-section>{{ t('My Profile') }}</q-item-section>
             </q-item>
 
-            <q-item v-if="isLoggedIn" v-close-popup clickable class="mobile-menu-item" @click="router.push('/consumer/orders')">
+            <q-item
+              v-if="isLoggedIn"
+              v-close-popup
+              clickable
+              class="mobile-menu-item"
+              @click="router.push('/consumer/orders')"
+            >
               <q-item-section avatar class="mobile-menu-avatar">
                 <q-icon name="o_receipt_long" size="22px" />
               </q-item-section>
@@ -445,7 +631,13 @@
 
             <q-separator v-if="isLoggedIn" />
 
-            <q-item v-if="isLoggedIn" v-close-popup clickable class="mobile-menu-item mobile-menu-logout" @click="handleLogout">
+            <q-item
+              v-if="isLoggedIn"
+              v-close-popup
+              clickable
+              class="mobile-menu-item mobile-menu-logout"
+              @click="handleLogout"
+            >
               <q-item-section avatar class="mobile-menu-avatar">
                 <q-icon name="o_logout" size="22px" />
               </q-item-section>
@@ -454,8 +646,22 @@
           </q-list>
 
           <div v-if="!isLoggedIn" class="mobile-menu-auth">
-            <q-btn v-close-popup unelevated no-caps :label="t('Log in')" class="mobile-menu-login" @click="goToLogin" />
-            <q-btn v-close-popup unelevated no-caps :label="t('Sign up')" class="mobile-menu-signup" @click="goToSignup" />
+            <q-btn
+              v-close-popup
+              unelevated
+              no-caps
+              :label="t('Log in')"
+              class="mobile-menu-login"
+              @click="goToLogin"
+            />
+            <q-btn
+              v-close-popup
+              unelevated
+              no-caps
+              :label="t('Sign up')"
+              class="mobile-menu-signup"
+              @click="goToSignup"
+            />
           </div>
         </div>
       </q-card>
@@ -529,8 +735,15 @@ import AddressAutocomplete from '@/components/shared/AddressAutocomplete.vue'
 import NotificationsMenu from '@/components/consumer/NotificationsMenu.vue'
 import LanguageSwitcher from '@/components/consumer/LanguageSwitcher.vue'
 import ContextHint from '@/components/consumer/ContextHint.vue'
-import { useConsumerHints, HINT_LOCATION_SETUP } from '@/composables/useConsumerHints'
-import { notificationPresentation, notificationTime, consumerNotificationText } from '@/utils/notificationPresentation'
+import {
+  useConsumerHints,
+  HINT_LOCATION_SETUP
+} from '@/composables/useConsumerHints'
+import {
+  notificationPresentation,
+  notificationTime,
+  consumerNotificationText
+} from '@/utils/notificationPresentation'
 import {
   NOTIFICATION_READ_STATE_EVENT,
   applyNotificationReadState,
@@ -566,7 +779,9 @@ const dismissLocationHint = () => dismissHint(HINT_LOCATION_SETUP)
 const locationHintProps = computed(() => ({
   icon: 'o_location_on',
   title: t('Set your location'),
-  text: t('Tap here to add your address. We use it to sort stores and products by how near they are to you.'),
+  text: t(
+    'Tap here to add your address. We use it to sort stores and products by how near they are to you.'
+  ),
   dismissLabel: t('Close')
 }))
 
@@ -589,7 +804,7 @@ const headerActionsRef = ref(null)
 const mobileActionsRef = ref(null)
 
 /** Only one header dropdown may be open at a time, and since QMenu treats a sibling button as inside its target, each toggle closes the rest itself. */
-const closeHeaderMenus = (except) => {
+const closeHeaderMenus = except => {
   if (except !== 'notifications') notificationsMenuOpen.value = false
   if (except !== 'cart') cartMenuOpen.value = false
   if (except !== 'account') accountMenuOpen.value = false
@@ -627,14 +842,14 @@ const toggleAddressMenu = () => {
 }
 
 // A map tap or late device fix fills the box only when the user has not typed in it, so an address missing from the suggestions survives being pinned.
-const onLocationSelected = (location) => {
+const onLocationSelected = location => {
   // mapSelected runs whatever the lookup returned, since the pin still moved; a failed reverse geocode gives an empty address, which must not blank the box the shopper is editing.
   const takesAddress = addressInputRef.value?.mapSelected(location) !== false
   if (takesAddress && location.address) draftAddress.value = location.address
   draftLocation.value = location
 }
 
-const onAddressPin = (location) => {
+const onAddressPin = location => {
   draftLocation.value = location
   addressMapRef.value?.showLocation(location.latitude, location.longitude)
 }
@@ -644,7 +859,11 @@ const confirmAddress = async () => {
   if (!draftAddress.value.trim()) return
   if (addressInputRef.value && !(await addressInputRef.value.settle())) return
   if (draftLocation.value) {
-    setAddress(draftAddress.value.trim(), draftLocation.value.latitude, draftLocation.value.longitude)
+    setAddress(
+      draftAddress.value.trim(),
+      draftLocation.value.latitude,
+      draftLocation.value.longitude
+    )
   } else {
     setAddress(draftAddress.value.trim())
   }
@@ -670,10 +889,12 @@ const { items: cartItems, itemCount: cartItemCount, fetchCart } = useCart()
 const mobileMenuOpen = ref(false)
 // The bottom tab bar replaces the nav row and hamburger below 1024px and hides on checkout, a focused flow with its own bottom bar.
 const BOTTOM_NAV_HIDDEN_ON = ['/consumer/checkout']
-const showBottomNav = computed(() => $q.screen.lt.md && !BOTTOM_NAV_HIDDEN_ON.includes(route.path))
+const showBottomNav = computed(
+  () => $q.screen.lt.md && !BOTTOM_NAV_HIDDEN_ON.includes(route.path)
+)
 
 // The drawer only opens from the bar's Menu tab, so it closes whenever the bar goes away.
-watch(showBottomNav, (shown) => {
+watch(showBottomNav, shown => {
   if (!shown) {
     mobileMenuOpen.value = false
   }
@@ -705,7 +926,10 @@ const toggleAccountMenu = () => {
 }
 
 onMounted(() => {
-  window.addEventListener(NOTIFICATION_READ_STATE_EVENT, syncNotificationReadState)
+  window.addEventListener(
+    NOTIFICATION_READ_STATE_EVENT,
+    syncNotificationReadState
+  )
   // Search suggestions reuse already-fetched products, stores and categories, so the header only fetches them on the session's first page.
   if (!products.value.length) fetchProducts()
   if (!stores.value.length) fetchStores()
@@ -713,7 +937,9 @@ onMounted(() => {
   autoDetectAddress()
   // Long enough for autoDetectAddress to have asked the browser and come back, so the
   // hint only appears for shoppers who really are without an address.
-  locationHintTimer = setTimeout(() => { locationHintReady.value = true }, 2500)
+  locationHintTimer = setTimeout(() => {
+    locationHintReady.value = true
+  }, 2500)
   // Cart routes are auth-gated — an unconditional fetch would 401 for guests.
   if (isLoggedIn.value) {
     fetchCart()
@@ -722,7 +948,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener(NOTIFICATION_READ_STATE_EVENT, syncNotificationReadState)
+  window.removeEventListener(
+    NOTIFICATION_READ_STATE_EVENT,
+    syncNotificationReadState
+  )
   clearTimeout(locationHintTimer)
 })
 
@@ -736,7 +965,9 @@ const userAvatar = computed(() => {
 })
 
 const notifications = ref([])
-const unreadNotificationCount = computed(() => notifications.value.filter(n => !n.is_read).length)
+const unreadNotificationCount = computed(
+  () => notifications.value.filter(n => !n.is_read).length
+)
 
 const notificationsMenuOpen = ref(false)
 const markingNotifications = ref(false)
@@ -768,7 +999,7 @@ const fetchNotifications = async () => {
   }
 }
 
-const markAsRead = async (id) => {
+const markAsRead = async id => {
   const notif = notifications.value.find(n => n.notification_id === id)
   if (notif && !notif.is_read) {
     notif.is_read = true
@@ -782,7 +1013,7 @@ const markAsRead = async (id) => {
   }
 }
 
-const handleNotificationClick = async (notif) => {
+const handleNotificationClick = async notif => {
   if (!notif.is_read) {
     await markAsRead(notif.notification_id)
   }
@@ -797,7 +1028,7 @@ const markAllAsRead = async () => {
   if (markingNotifications.value) return
   markingNotifications.value = true
   const previous = notifications.value.map(n => n.is_read)
-  notifications.value.forEach(n => n.is_read = true)
+  notifications.value.forEach(n => (n.is_read = true))
   try {
     await api.post('/consumer/notifications/read-all')
     publishNotificationReadState({ all: true, isRead: true })
@@ -806,13 +1037,17 @@ const markAllAsRead = async () => {
       n.is_read = previous[index]
     })
     console.error('Failed to mark all notifications as read', err)
-    $q.notify({ type: 'negative', message: t('Could not mark notifications as read') })
+    $q.notify({
+      type: 'negative',
+      message: t('Could not mark notifications as read')
+    })
   } finally {
     markingNotifications.value = false
   }
 }
 
 const handleLogout = async () => {
+  accountMenuOpen.value = false
   try {
     await api.post('/logout')
   } catch {
@@ -824,7 +1059,28 @@ const handleLogout = async () => {
   router.push('/login')
 }
 
+const goToNotifications = () => {
+  notificationsMenuOpen.value = false
+  router.push('/consumer/notifications')
+}
+
+const goToCart = () => {
+  cartMenuOpen.value = false
+  router.push('/consumer/cart')
+}
+
+const goToProfile = () => {
+  accountMenuOpen.value = false
+  router.push('/consumer/profile')
+}
+
+const goToOrders = () => {
+  accountMenuOpen.value = false
+  router.push('/consumer/orders')
+}
+
 const goToLogin = () => {
+  accountMenuOpen.value = false
   router.push('/login')
 }
 
@@ -854,7 +1110,10 @@ function loadRecentSearches() {
 const recentSearches = ref(loadRecentSearches())
 
 function saveRecentSearch(term) {
-  const next = [term, ...recentSearches.value.filter((s) => s.toLowerCase() !== term.toLowerCase())].slice(0, MAX_RECENT_SEARCHES)
+  const next = [
+    term,
+    ...recentSearches.value.filter(s => s.toLowerCase() !== term.toLowerCase())
+  ].slice(0, MAX_RECENT_SEARCHES)
   recentSearches.value = next
   localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next))
 }
@@ -868,19 +1127,24 @@ const clearRecentSearches = () => {
 const productSuggestions = computed(() => {
   const q = searchInput.value.trim().toLowerCase()
   if (!q) return []
-  return products.value.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 4)
+  return products.value
+    .filter(p => p.name.toLowerCase().includes(q))
+    .slice(0, 4)
 })
 
 const storeSuggestions = computed(() => {
   const q = searchInput.value.trim().toLowerCase()
   if (!q) return []
-  return stores.value.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 3)
+  return stores.value.filter(s => s.name.toLowerCase().includes(q)).slice(0, 3)
 })
 
 // Flat list backing arrow-key navigation — recent searches when empty, live matches once typing.
 const suggestionTerms = computed(() => {
   if (!searchInput.value.trim()) return recentSearches.value
-  return [...productSuggestions.value.map((p) => p.name), ...storeSuggestions.value.map((s) => s.name)]
+  return [
+    ...productSuggestions.value.map(p => p.name),
+    ...storeSuggestions.value.map(s => s.name)
+  ]
 })
 
 const openSuggestions = () => {
@@ -894,18 +1158,20 @@ const closeSuggestions = () => {
   activeSuggestionIndex.value = -1
 }
 
-const moveActiveSuggestion = (delta) => {
+const moveActiveSuggestion = delta => {
   if (!suggestionsOpen.value) {
     openSuggestions()
     return
   }
   const len = suggestionTerms.value.length
   if (!len) return
-  activeSuggestionIndex.value = (activeSuggestionIndex.value + delta + len) % len
+  activeSuggestionIndex.value =
+    (activeSuggestionIndex.value + delta + len) % len
 }
 
 function navigateToSearchPage(q) {
-  const alreadyThere = route.path === '/consumer/search' && (route.query.q || '') === q
+  const alreadyThere =
+    route.path === '/consumer/search' && (route.query.q || '') === q
   if (alreadyThere) return
 
   const target = { path: '/consumer/search', query: q ? { q } : {} }
@@ -918,7 +1184,7 @@ function navigateToSearchPage(q) {
 
 // Recent searches are local history only; the database log is written by submitSearch, so that
 // browser back/forward through ?q= does not record searches the consumer never made.
-watch(searchQuery, (q) => {
+watch(searchQuery, q => {
   if (q) {
     saveRecentSearch(q)
   }
@@ -926,47 +1192,101 @@ watch(searchQuery, (q) => {
   closeSuggestions()
 })
 
-const selectSuggestion = (term) => {
-  searchInput.value = term
-  searchQuery.value = term
-  // Trigger submission on select
-  submitSearch()
+let isLoggingSearch = false
+
+const selectProductSuggestion = async product => {
+  if (!product || isLoggingSearch) return
+  isLoggingSearch = true
+  try {
+    const term = product.name
+    searchInput.value = term
+    searchQuery.value = term
+    saveRecentSearch(term)
+    closeSuggestions()
+    navigateToSearchPage(term)
+    await logSearch(product.name, product.categoryId)
+  } finally {
+    isLoggingSearch = false
+  }
+}
+
+const selectStoreSuggestion = async store => {
+  if (!store || isLoggingSearch) return
+  isLoggingSearch = true
+  try {
+    const term = store.name
+    searchInput.value = term
+    searchQuery.value = term
+    saveRecentSearch(term)
+    closeSuggestions()
+    navigateToSearchPage(term)
+    await logSearch(store.name, null)
+  } finally {
+    isLoggingSearch = false
+  }
+}
+
+const selectRecentSearch = async term => {
+  if (!term || isLoggingSearch) return
+  isLoggingSearch = true
+  try {
+    searchInput.value = term
+    searchQuery.value = term
+    saveRecentSearch(term)
+    closeSuggestions()
+    navigateToSearchPage(term)
+    await logSearch(term, null)
+  } finally {
+    isLoggingSearch = false
+  }
 }
 
 // Enter, the search button, or a mobile keyboard's search key all land here.
 const submitSearch = async () => {
-  // Enter on a highlighted suggestion uses that suggestion, clearing the active index first so the next submitSearch call does not loop.
-  if (
-    activeSuggestionIndex.value >= 0 &&
-    suggestionTerms.value[activeSuggestionIndex.value]
-  ) {
-    const term = suggestionTerms.value[activeSuggestionIndex.value]
+  if (isLoggingSearch) return
+
+  // Enter on a highlighted suggestion uses that suggestion
+  if (activeSuggestionIndex.value >= 0) {
+    const pLen = productSuggestions.value.length
+    const sLen = storeSuggestions.value.length
+    const idx = activeSuggestionIndex.value
     activeSuggestionIndex.value = -1
-    selectSuggestion(term)
-    return
+
+    if (!searchInput.value.trim()) {
+      if (recentSearches.value[idx]) {
+        await selectRecentSearch(recentSearches.value[idx])
+        return
+      }
+    } else {
+      if (idx < pLen && productSuggestions.value[idx]) {
+        await selectProductSuggestion(productSuggestions.value[idx])
+        return
+      } else if (idx < pLen + sLen && storeSuggestions.value[idx - pLen]) {
+        await selectStoreSuggestion(storeSuggestions.value[idx - pLen])
+        return
+      }
+    }
   }
 
   const q = searchInput.value.trim()
-
   if (!q) return
 
-  searchInput.value = q
-  searchQuery.value = q
-
-  // Navigate to search results synchronously to avoid UI delay
-  navigateToSearchPage(q)
-  closeSuggestions()
-  
-  if (q) {
+  isLoggingSearch = true
+  try {
+    searchInput.value = q
+    searchQuery.value = q
     saveRecentSearch(q)
+    closeSuggestions()
+    navigateToSearchPage(q)
+    // When submitting manually, log the actual typed query without a hardcoded category
+    await logSearch(q, null)
+  } finally {
+    isLoggingSearch = false
   }
-
-  // Save the search to the database
-  await logSearch(q)
 }
 
 // Just opens/refreshes the suggestions dropdown — typing never triggers a search on its own.
-const onSearchInput = (val) => {
+const onSearchInput = val => {
   // Quasar's clearable "x" emits null (not ''), which would break every .trim() call downstream.
   searchInput.value = val || ''
   activeSuggestionIndex.value = -1
@@ -974,24 +1294,38 @@ const onSearchInput = (val) => {
 }
 
 // Keeps the input synced when ?q= changes from outside this component (browser back/forward, a recent-search chip).
-watch(() => route.query.q, (q) => {
-  const next = q || ''
-  searchInput.value = next
-  searchQuery.value = next
-})
+watch(
+  () => route.query.q,
+  q => {
+    const next = q || ''
+    searchInput.value = next
+    searchQuery.value = next
+  }
+)
 
 const tabs = [
   { label: 'Home', value: 'home', to: '/consumer/home', icon: 'o_home' },
-  { label: 'Products', value: 'products', to: '/consumer/products', icon: 'o_inventory_2' },
-  { label: 'Stores', value: 'stores', to: '/consumer/stores', icon: 'o_storefront' }
+  {
+    label: 'Products',
+    value: 'products',
+    to: '/consumer/products',
+    icon: 'o_inventory_2'
+  },
+  {
+    label: 'Stores',
+    value: 'stores',
+    to: '/consumer/stores',
+    icon: 'o_storefront'
+  }
 ]
 
 // A tab stays lit on its child routes, so /consumer/stores/12 still lights Stores.
-const isTabActive = (tab) => route.path === tab.to || route.path.startsWith(tab.to + '/')
+const isTabActive = tab =>
+  route.path === tab.to || route.path.startsWith(tab.to + '/')
 
 const activeTab = computed(() => tabs.find(isTabActive)?.value ?? null)
 
-const goToTab = (tab) => {
+const goToTab = tab => {
   if (tab.to) router.push(tab.to)
 }
 </script>
@@ -1003,12 +1337,7 @@ const goToTab = (tab) => {
   /* Higher than any page-level fixed-bottom bar (all z-index: 100), so this stacking context always wins and its dropdowns never end up underneath one. */
   z-index: 200;
 
-  background:
-    linear-gradient(
-      90deg,
-      #af2424 0%,
-      #490f0f 100%
-    );
+  background: linear-gradient(90deg, #af2424 0%, #490f0f 100%);
 
   /* Was a tight neutral 0 2px 10px, which read as a hard line where the red met the page. */
   box-shadow: var(--sh-header);
@@ -1336,7 +1665,11 @@ const goToTab = (tab) => {
   border-radius: var(--r-md);
   border: 1px solid var(--c-border);
 
-  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-surface) 0%,
+    var(--c-surface) 100%
+  );
   color: var(--c-brand);
 
   overflow: hidden;
@@ -1395,7 +1728,10 @@ const goToTab = (tab) => {
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .cart-menu-view-all:hover {
@@ -1486,7 +1822,10 @@ const goToTab = (tab) => {
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .address-menu-confirm:hover {
@@ -1626,7 +1965,6 @@ const goToTab = (tab) => {
   font-family: 'Roboto', Arial, sans-serif;
 }
 
-
 .mobile-menu-head {
   display: flex;
   align-items: center;
@@ -1732,8 +2070,12 @@ const goToTab = (tab) => {
 }
 
 @keyframes search-dim-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1749,7 +2091,9 @@ const goToTab = (tab) => {
   min-width: 140px;
   max-width: 560px;
 
-  transition: max-width 0.25s ease, min-width 0.25s ease;
+  transition:
+    max-width 0.25s ease,
+    min-width 0.25s ease;
 }
 
 .header-search {
@@ -1942,7 +2286,10 @@ const goToTab = (tab) => {
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .header-search-btn:hover {
@@ -2331,7 +2678,7 @@ const goToTab = (tab) => {
 
   /* No expand-on-focus here, since search already owns the whole of row two. */
 
-/* Caps the fixed 460px panel to the screen width, leaving placement to QMenu and QDialog. */
+  /* Caps the fixed 460px panel to the screen width, leaving placement to QMenu and QDialog. */
   .address-menu-panel {
     max-width: calc(100vw - 32px);
   }
@@ -2429,7 +2776,6 @@ const goToTab = (tab) => {
 
   border-top: 1px solid var(--c-hairline);
 }
-
 </style>
 
 <style>

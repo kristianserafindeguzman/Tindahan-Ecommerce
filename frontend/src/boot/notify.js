@@ -10,9 +10,18 @@ export default boot(() => {
   })
 
   const types = {
-    positive: { icon: 'o_check_circle', classes: 'app-toast app-toast--positive' },
-    negative: { icon: 'o_error_outline', classes: 'app-toast app-toast--negative' },
-    warning: { icon: 'o_warning_amber', classes: 'app-toast app-toast--warning' },
+    positive: {
+      icon: 'o_check_circle',
+      classes: 'app-toast app-toast--positive'
+    },
+    negative: {
+      icon: 'o_error_outline',
+      classes: 'app-toast app-toast--negative'
+    },
+    warning: {
+      icon: 'o_warning_amber',
+      classes: 'app-toast app-toast--warning'
+    },
     info: { icon: 'o_info', classes: 'app-toast app-toast--info' }
   }
 

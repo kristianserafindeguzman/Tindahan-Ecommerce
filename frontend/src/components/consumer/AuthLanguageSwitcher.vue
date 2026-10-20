@@ -30,7 +30,9 @@ import LanguageSwitcher from './LanguageSwitcher.vue'
 
   font-weight: 700;
 
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 .auth-language-switcher :deep(.language-header-btn:hover) {

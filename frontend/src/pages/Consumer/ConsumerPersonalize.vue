@@ -1,11 +1,9 @@
 <template>
   <q-page class="storefront-page">
-
     <SiteHeader />
 
     <!-- MAIN CONTENT -->
     <div class="page-content">
-
       <div class="page-header-row">
         <div>
           <h1 class="page-title">{{ pageTitle }}</h1>
@@ -14,31 +12,36 @@
       </div>
 
       <div class="products-grid">
-        <ProductCard v-for="product in paginatedProducts" :key="product.id" :product="product" @add-to-cart="handleAddToCart" @view-product="openProductModal" />
+        <ProductCard
+          v-for="product in paginatedProducts"
+          :key="product.id"
+          :product="product"
+          @add-to-cart="handleAddToCart"
+          @view-product="openProductModal"
+        />
       </div>
 
       <p v-if="!products.length" class="products-empty">
-        {{ !isFallback
-          ? t('No recommendations yet — check back soon.')
-          : t('No popular products to show near you right now.')
+        {{
+          !isFallback
+            ? t('No recommendations yet — check back soon.')
+            : t('No popular products to show near you right now.')
         }}
       </p>
 
       <AppPagination v-model="currentPage" :max="totalPages" />
-
     </div>
 
     <SiteFooter />
 
     <ProductDetailModal v-model="showProductModal" :product="selectedProduct" />
-
   </q-page>
 </template>
 
 <script setup>
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
@@ -60,7 +63,8 @@ const fetchProducts = async () => {
     const lat = localStorage.getItem('consumer_lat')
     const lng = localStorage.getItem('consumer_lng')
     const params = lat && lng ? { lat, lng } : {}
-    
+    params._t = Date.now() // Prevent stale cached results
+
     const response = await api.get('/consumer/personalized-feed', { params })
     products.value = response.data.products
     isFallback.value = response.data.is_fallback
@@ -70,29 +74,49 @@ const fetchProducts = async () => {
 }
 const { addToCart } = useCart()
 
-onMounted(fetchProducts)
+onMounted(() => {
+  fetchProducts()
+  if (typeof window !== 'undefined') {
+    window.addEventListener('search-logged', fetchProducts)
+  }
+})
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('search-logged', fetchProducts)
+  }
+})
 
 const showProductModal = ref(false)
 const selectedProduct = ref(null)
 
-const openProductModal = (product) => {
+const openProductModal = product => {
   selectedProduct.value = product
   showProductModal.value = true
 }
 
-const handleAddToCart = async (product) => {
+const handleAddToCart = async product => {
   try {
     await addToCart(product.id)
-    $q.notify({ type: 'positive', message: t('{name} added to cart.', { name: product.name }) })
+    $q.notify({
+      type: 'positive',
+      message: t('{name} added to cart.', { name: product.name })
+    })
   } catch (error) {
-    $q.notify({ type: 'negative', message: t(error.response?.data?.message || 'Failed to add to cart.') })
+    $q.notify({
+      type: 'negative',
+      message: t(error.response?.data?.message || 'Failed to add to cart.')
+    })
   }
 }
 
-const pageTitle = computed(() => !isFallback.value ? t('Recommended for You') : t('Popular Products Near You'))
-const pageSubtitle = computed(() => !isFallback.value
-  ? t('Products picked based on your activity and preferences.')
-  : t('Popular picks from sari-sari stores near you.')
+const pageTitle = computed(() =>
+  !isFallback.value ? t('Recommended for You') : t('Popular Products Near You')
+)
+const pageSubtitle = computed(() =>
+  !isFallback.value
+    ? t('Products picked based on your activity and preferences.')
+    : t('Popular picks from sari-sari stores near you.')
 )
 
 // The feed is paginated client-side, 60 products per page.
@@ -186,8 +210,14 @@ const paginatedProducts = computed(() => {
 
 /* PAGE ENTRANCE — page load only (fresh DOM each navigation), opacity/transform only so it never shifts layout. */
 @keyframes personalize-fade-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-header-row,
@@ -195,7 +225,9 @@ const paginatedProducts = computed(() => {
   animation: personalize-fade-up 0.5s ease both;
 }
 
-.products-grid { animation-delay: 0.08s; }
+.products-grid {
+  animation-delay: 0.08s;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .page-header-row,

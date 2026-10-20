@@ -18,16 +18,20 @@ export function useCartExpiry() {
 
   onBeforeUnmount(() => clearInterval(timer))
 
-  const hasExpired = (item) =>
-    item.isExpired || (!!item.expiresAt && new Date(item.expiresAt).getTime() <= now.value)
+  const hasExpired = item =>
+    item.isExpired ||
+    (!!item.expiresAt && new Date(item.expiresAt).getTime() <= now.value)
 
-  const formatTimeLeft = (expiresAt) => {
+  const formatTimeLeft = expiresAt => {
     if (!expiresAt) return null
     const diff = new Date(expiresAt).getTime() - now.value
     if (diff <= 0) return t('Expired')
     const minutes = Math.floor(diff / 60000)
     const seconds = Math.floor((diff % 60000) / 1000)
-    return t('Expires in {min}:{sec}', { min: minutes, sec: seconds.toString().padStart(2, '0') })
+    return t('Expires in {min}:{sec}', {
+      min: minutes,
+      sec: seconds.toString().padStart(2, '0')
+    })
   }
 
   // One refetch the moment a reservation lapses, so availability and the header badge catch up.

@@ -33,7 +33,9 @@ function t(key, params = {}) {
   if (key == null) return ''
   const text =
     language.value === 'fil'
-      ? (Object.hasOwn(messages, key) ? messages[key] : String(key))
+      ? Object.hasOwn(messages, key)
+        ? messages[key]
+        : String(key)
       : String(key)
   return text.replace(/\{(\w+)\}/g, (match, name) =>
     Object.hasOwn(params, name) ? String(params[name]) : match
@@ -61,7 +63,9 @@ function storeStatus(store) {
     return t(text)
   }
   return store.isOpen
-    ? (store.closesAt ? t('Open until {time}', { time: store.closesAt }) : t('Open'))
+    ? store.closesAt
+      ? t('Open until {time}', { time: store.closesAt })
+      : t('Open')
     : t('Closed now')
 }
 

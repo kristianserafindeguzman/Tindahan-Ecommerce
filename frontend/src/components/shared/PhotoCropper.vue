@@ -1,11 +1,17 @@
 <template>
   <div class="photo-cropper">
-    <div ref="stageEl" class="cropper-stage" :style="{ height: `${stageHeight}px` }">
+    <div
+      ref="stageEl"
+      class="cropper-stage"
+      :style="{ height: `${stageHeight}px` }"
+    >
       <canvas
         ref="canvasEl"
         class="cropper-canvas"
         role="img"
-        :aria-label="round ? 'Photo inside a round frame' : 'Photo inside a crop frame'"
+        :aria-label="
+          round ? 'Photo inside a round frame' : 'Photo inside a crop frame'
+        "
         @pointerdown="onPointerDown"
         @pointermove="onPointerMove"
         @pointerup="onPointerUp"
@@ -15,7 +21,16 @@
     </div>
 
     <div class="cropper-zoom">
-      <q-btn flat round dense icon="o_zoom_out" class="cropper-zoom-btn" aria-label="Zoom out" :disable="zoom <= 1" @click="stepZoom(-0.25)" />
+      <q-btn
+        flat
+        round
+        dense
+        icon="o_zoom_out"
+        class="cropper-zoom-btn"
+        aria-label="Zoom out"
+        :disable="zoom <= 1"
+        @click="stepZoom(-0.25)"
+      />
       <q-slider
         :model-value="zoom"
         :min="1"
@@ -26,7 +41,16 @@
         aria-label="Zoom"
         @update:model-value="value => zoomAt(value, frameCenter())"
       />
-      <q-btn flat round dense icon="o_zoom_in" class="cropper-zoom-btn" aria-label="Zoom in" :disable="zoom >= MAX_ZOOM" @click="stepZoom(0.25)" />
+      <q-btn
+        flat
+        round
+        dense
+        icon="o_zoom_in"
+        class="cropper-zoom-btn"
+        aria-label="Zoom in"
+        :disable="zoom >= MAX_ZOOM"
+        @click="stepZoom(0.25)"
+      />
     </div>
   </div>
 </template>
@@ -74,13 +98,19 @@ let recentre = false
 let drawRequest = 0
 
 const scale = () => baseScale * zoom.value
-const frameCenter = () => ({ x: frame.x + frame.w / 2, y: frame.y + frame.h / 2 })
+const frameCenter = () => ({
+  x: frame.x + frame.w / 2,
+  y: frame.y + frame.h / 2
+})
 
 // Sizes the stage to the frame's shape plus padding, capped by the screen height, and centres the frame in it.
 function layout() {
   width = stageEl.value?.clientWidth || 0
   const screen = window.visualViewport?.height ?? window.innerHeight
-  height = Math.min((width - PAD * 2) / props.aspect + PAD * 2, Math.max(180, screen - DIALOG_CHROME))
+  height = Math.min(
+    (width - PAD * 2) / props.aspect + PAD * 2,
+    Math.max(180, screen - DIALOG_CHROME)
+  )
   stageHeight.value = height
 
   let fw = width - PAD * 2
@@ -95,15 +125,23 @@ function layout() {
 // Keeps the photo covering the whole frame, so the saved crop never contains empty space.
 function clamp() {
   const s = scale()
-  offset.x = Math.min(frame.x, Math.max(frame.x + frame.w - img.width * s, offset.x))
-  offset.y = Math.min(frame.y, Math.max(frame.y + frame.h - img.height * s, offset.y))
+  offset.x = Math.min(
+    frame.x,
+    Math.max(frame.x + frame.w - img.width * s, offset.x)
+  )
+  offset.y = Math.min(
+    frame.y,
+    Math.max(frame.y + frame.h - img.height * s, offset.y)
+  )
 }
 
 // Lays out the stage for the current width, centring a newly loaded photo or else keeping the same point under the frame's centre.
 function fit() {
   if (!img || !stageEl.value?.clientWidth) return
   const before = frameCenter()
-  const point = recentre ? null : { x: (before.x - offset.x) / scale(), y: (before.y - offset.y) / scale() }
+  const point = recentre
+    ? null
+    : { x: (before.x - offset.x) / scale(), y: (before.y - offset.y) / scale() }
   layout()
   baseScale = Math.max(frame.w / img.width, frame.h / img.height)
   const c = frameCenter()
@@ -180,9 +218,9 @@ function zoomAt(value, at) {
   requestDraw()
 }
 
-const stepZoom = (delta) => zoomAt(zoom.value + delta, frameCenter())
+const stepZoom = delta => zoomAt(zoom.value + delta, frameCenter())
 
-const stagePoint = (e) => {
+const stagePoint = e => {
   const r = canvasEl.value.getBoundingClientRect()
   return { x: e.clientX - r.left, y: e.clientY - r.top }
 }
@@ -218,7 +256,10 @@ function onPointerMove(e) {
   } else if (pointers.size === 2 && pinch) {
     const [a, b] = [...pointers.values()]
     const dist = Math.hypot(a.x - b.x, a.y - b.y)
-    zoomAt(pinch.zoom * (dist / pinch.dist), { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 })
+    zoomAt(pinch.zoom * (dist / pinch.dist), {
+      x: (a.x + b.x) / 2,
+      y: (a.y + b.y) / 2
+    })
   }
 }
 
@@ -248,19 +289,23 @@ function toBlob(type = 'image/jpeg', quality = 0.9) {
 
 defineExpose({ toBlob })
 
-watch(() => props.src, (src) => {
-  img = null
-  zoom.value = 1
-  if (!src) return
-  const next = new Image()
-  next.onload = () => {
-    if (props.src !== src) return
-    img = next
-    recentre = true
-    fit()
-  }
-  next.src = src
-}, { immediate: true })
+watch(
+  () => props.src,
+  src => {
+    img = null
+    zoom.value = 1
+    if (!src) return
+    const next = new Image()
+    next.onload = () => {
+      if (props.src !== src) return
+      img = next
+      recentre = true
+      fit()
+    }
+    next.src = src
+  },
+  { immediate: true }
+)
 
 const onResize = () => fit()
 

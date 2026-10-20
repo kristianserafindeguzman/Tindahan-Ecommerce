@@ -43,13 +43,17 @@ let mutationObserver = null
 const update = () => {
   if (!scrollEl) return
   canScrollLeft.value = scrollEl.scrollLeft > 1
-  canScrollRight.value = scrollEl.scrollLeft + scrollEl.clientWidth < scrollEl.scrollWidth - 1
+  canScrollRight.value =
+    scrollEl.scrollLeft + scrollEl.clientWidth < scrollEl.scrollWidth - 1
 }
 
 // Most of a visible width per click, leaving one pill overlapping so the user keeps their place.
-const scrollByPage = (direction) => {
+const scrollByPage = direction => {
   if (!scrollEl) return
-  scrollEl.scrollBy({ left: direction * scrollEl.clientWidth * 0.75, behavior: 'smooth' })
+  scrollEl.scrollBy({
+    left: direction * scrollEl.clientWidth * 0.75,
+    behavior: 'smooth'
+  })
 }
 
 onMounted(() => {
@@ -63,7 +67,11 @@ onMounted(() => {
   resizeObserver.observe(scrollEl)
 
   mutationObserver = new MutationObserver(update)
-  mutationObserver.observe(scrollEl, { childList: true, subtree: true, characterData: true })
+  mutationObserver.observe(scrollEl, {
+    childList: true,
+    subtree: true,
+    characterData: true
+  })
 
   update()
 })
@@ -132,7 +140,10 @@ onBeforeUnmount(() => {
 
   box-sizing: border-box;
 
-  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .pill-scroller-arrow:hover :deep(.q-icon) {

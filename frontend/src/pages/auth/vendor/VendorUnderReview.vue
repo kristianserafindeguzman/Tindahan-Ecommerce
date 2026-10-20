@@ -9,7 +9,11 @@
         <div class="status-title">{{ t('Application Under Review') }}</div>
 
         <p class="status-message">
-          {{ t('Our administrators are currently reviewing your store details and business credentials to ensure everything meets our community standards.') }}
+          {{
+            t(
+              'Our administrators are currently reviewing your store details and business credentials to ensure everything meets our community standards.'
+            )
+          }}
         </p>
 
         <div class="next-steps-box">
@@ -18,7 +22,11 @@
             {{ t('Next Steps') }}
           </div>
           <p class="next-steps-text">
-            {{ t('The verification process typically takes 1–3 business days. You will receive an email notification once your account has been approved and your store is ready for setup.') }}
+            {{
+              t(
+                'The verification process typically takes 1–3 business days. You will receive an email notification once your account has been approved and your store is ready for setup.'
+              )
+            }}
           </p>
         </div>
       </q-card-section>
@@ -45,7 +53,9 @@
 
       <div class="support-link">
         {{ t('Need help?') }}
-        <a href="#" @click.prevent="showContactSupport = true">{{ t('Contact Support') }}</a>
+        <a href="#" @click.prevent="showContactSupport = true">{{
+          t('Contact Support')
+        }}</a>
       </div>
     </q-card>
 
@@ -100,7 +110,6 @@ onMounted(checkStatus)
 </script>
 
 <style scoped>
-
 .status-content {
   text-align: center;
 
@@ -179,7 +188,10 @@ onMounted(checkStatus)
 
   box-shadow: var(--sh-brand);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .primary-btn:hover {
@@ -286,7 +298,6 @@ onMounted(checkStatus)
 /* MOBILE */
 
 @media (max-width: 600px) {
-
   .status-content {
     padding: 0 0 8px;
   }
@@ -318,4 +329,5 @@ onMounted(checkStatus)
     --fs-sm: 14px;
     --fs-md: 15px;
   }
-}</style>
+}
+</style>

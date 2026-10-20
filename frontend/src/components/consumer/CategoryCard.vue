@@ -1,6 +1,9 @@
 <template>
   <q-card flat class="category-tile" @click="$emit('click', category)">
-    <div class="category-tile-icon" :class="`category-tile-icon--${category.tone || 'brand'}`">
+    <div
+      class="category-tile-icon"
+      :class="`category-tile-icon--${category.tone || 'brand'}`"
+    >
       <q-icon :name="category.icon" size="22px" />
     </div>
     <!-- category.label stays the English name the tile routes with; only the text is translated. -->
@@ -44,7 +47,11 @@ defineEmits(['click'])
   background: #ffffff;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   cursor: pointer;
 
@@ -52,8 +59,14 @@ defineEmits(['click'])
 }
 
 @keyframes card-fade-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -80,12 +93,19 @@ defineEmits(['click'])
   /* !important: QCard rounds a direct first-child's top corners to match its own radius by default. */
   border-radius: 50% !important;
 
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 /* One muted tone per category, so the icons sit under the red brand bar without competing with it. */
 .category-tile-icon--brand {
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-brand-tint) 0%,
+    var(--c-brand-tint-2) 100%
+  );
   color: var(--c-brand);
 }
 

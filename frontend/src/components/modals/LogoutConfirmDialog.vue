@@ -4,12 +4,26 @@
       <q-card-section class="logout-content">
         <div class="logout-title">Log out?</div>
 
-        <p class="logout-message">Are you sure you want to log out of your account?</p>
+        <p class="logout-message"
+          >Are you sure you want to log out of your account?</p
+        >
       </q-card-section>
 
       <q-card-actions class="logout-actions">
-        <q-btn outline no-caps label="Cancel" class="logout-cancel" @click="onDialogCancel" />
-        <q-btn unelevated no-caps label="Log out" class="logout-btn" @click="onDialogOK" />
+        <q-btn
+          outline
+          no-caps
+          label="Cancel"
+          class="logout-cancel"
+          @click="onDialogCancel"
+        />
+        <q-btn
+          unelevated
+          no-caps
+          label="Log out"
+          class="logout-btn"
+          @click="onDialogOK"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -21,7 +35,8 @@ import { useDialogPluginComponent } from 'quasar'
 // Opened through $q.dialog({ component }), so OK and Cancel resolve the caller's onOk and onCancel.
 defineEmits([...useDialogPluginComponent.emits])
 
-const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } = useDialogPluginComponent()
+const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
+  useDialogPluginComponent()
 </script>
 
 <style scoped>
@@ -88,7 +103,10 @@ const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } = useDialogPluginC
 
   box-shadow: var(--sh-brand);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .logout-btn:hover {

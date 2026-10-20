@@ -61,7 +61,11 @@ export function useAddress() {
       const resolvedAddress = await reverseGeocode(latitude, longitude)
       // The coordinates are what checkout needs, so they are saved even when the reverse lookup
       // comes back empty; the pill then shows the coordinates rather than nothing.
-      setAddress(resolvedAddress || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`, latitude, longitude)
+      setAddress(
+        resolvedAddress || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+        latitude,
+        longitude
+      )
       return true
     } catch (error) {
       console.warn('Location detection failed:', error.message)
@@ -69,5 +73,11 @@ export function useAddress() {
     }
   }
 
-  return { address, locationVersion, setAddress, autoDetectAddress, detectAddress }
+  return {
+    address,
+    locationVersion,
+    setAddress,
+    autoDetectAddress,
+    detectAddress
+  }
 }

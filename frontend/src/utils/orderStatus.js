@@ -11,11 +11,16 @@ const META = {
 }
 
 // Turns "Ready for pickup" or "ready_for_pickup" into the same key.
-export const statusKey = status => String(status || '').trim().toLowerCase().replace(/\s+/g, '_')
+export const statusKey = status =>
+  String(status || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_')
 
 export const statusTone = status => META[statusKey(status)]?.tone || 'neutral'
 
-export const statusIcon = status => META[statusKey(status)]?.icon || 'o_help_outline'
+export const statusIcon = status =>
+  META[statusKey(status)]?.icon || 'o_help_outline'
 
 // Sentence case, such as "Ready for pickup", the way the consumer side writes it.
 export const statusLabel = status => {

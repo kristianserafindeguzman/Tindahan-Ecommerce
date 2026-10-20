@@ -1,43 +1,87 @@
 <template>
   <q-page class="dash-page">
     <div class="dash-container">
-
       <!-- ================= WELCOME BANNER ================= -->
       <!-- The consumer home's red banner, turned into the store owner's daily welcome. -->
       <!-- Its colour and icon follow the time of day, from a sunrise orange to a night indigo. -->
-      <section data-tour="dash-hero" class="dash-hero" :class="`dash-hero--${dayPhase.key}`">
+      <section
+        data-tour="dash-hero"
+        class="dash-hero"
+        :class="`dash-hero--${dayPhase.key}`"
+      >
         <div class="dash-hero-content">
           <div class="hero-eyebrow-row">
             <span class="hero-eyebrow hero-eyebrow--panel">
               <q-icon name="o_storefront" size="14px" />
-              {{ t('panelLabel').replace('{store}', vendorStore?.store_name || t('myStoreFallback')) }}
+              {{
+                t('panelLabel').replace(
+                  '{store}',
+                  vendorStore?.store_name || t('myStoreFallback')
+                )
+              }}
             </span>
             <span class="hero-eyebrow">
               <q-icon :name="dayPhase.icon" size="14px" />
               {{ currentDate }}
             </span>
             <!-- Shown once the store has loaded, so it never flashes "Closed now" first. -->
-            <span v-if="!loading" class="hero-status" :class="isStoreOpen ? 'hero-status--open' : 'hero-status--closed'">
+            <span
+              v-if="!loading"
+              class="hero-status"
+              :class="isStoreOpen ? 'hero-status--open' : 'hero-status--closed'"
+            >
               <span class="store-status-dot" />
               {{ isStoreOpen ? t('openNow') : t('closedNow') }}
             </span>
           </div>
 
           <h1 class="hero-title">{{ timeGreeting }}, {{ userName }}!</h1>
-          <p class="hero-sub">{{ t('heroSub').replace('{store}', vendorStore?.store_name || t('yourStoreFallback')) }}</p>
+          <p class="hero-sub">{{
+            t('heroSub').replace(
+              '{store}',
+              vendorStore?.store_name || t('yourStoreFallback')
+            )
+          }}</p>
 
           <div class="hero-actions">
-            <q-btn unelevated no-caps :label="t('viewStore')" class="hero-cta" @click="liveStoreModal = true">
+            <q-btn
+              unelevated
+              no-caps
+              :label="t('viewStore')"
+              class="hero-cta"
+              @click="liveStoreModal = true"
+            >
               <q-icon name="o_storefront" size="16px" class="q-ml-xs" />
             </q-btn>
-            <q-btn unelevated no-caps :label="t('manageProducts')" class="hero-cta hero-cta--ghost" @click="router.push('/vendor/products/list')">
+            <q-btn
+              unelevated
+              no-caps
+              :label="t('manageProducts')"
+              class="hero-cta hero-cta--ghost"
+              @click="router.push('/vendor/products/list')"
+            >
               <q-icon name="o_arrow_forward" size="16px" class="q-ml-xs" />
             </q-btn>
             <!-- Notifications ride in the banner's own row of buttons on desktop, while phones reach them from the top bar. -->
-            <q-btn unelevated class="hero-cta hero-cta--ghost hero-bell" aria-label="Notifications">
+            <q-btn
+              unelevated
+              class="hero-cta hero-cta--ghost hero-bell"
+              aria-label="Notifications"
+            >
               <q-icon name="o_notifications" />
-              <q-badge v-if="unreadCount > 0" floating rounded class="hero-bell-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</q-badge>
-              <q-menu class="notif-menu" anchor="bottom left" self="top left" :offset="[0, 8]">
+              <q-badge
+                v-if="unreadCount > 0"
+                floating
+                rounded
+                class="hero-bell-badge"
+                >{{ unreadCount > 99 ? '99+' : unreadCount }}</q-badge
+              >
+              <q-menu
+                class="notif-menu"
+                anchor="bottom left"
+                self="top left"
+                :offset="[0, 8]"
+              >
                 <NotificationsPanel />
               </q-menu>
             </q-btn>
@@ -58,18 +102,25 @@
                 <q-icon :name="kpi.icon" size="20px" />
               </span>
             </div>
-            <q-skeleton v-if="loading" type="text" width="45%" class="kpi-skeleton" />
+            <q-skeleton
+              v-if="loading"
+              type="text"
+              width="45%"
+              class="kpi-skeleton"
+            />
             <div v-else class="kpi-value">{{ kpi.value }}</div>
           </div>
         </div>
       </div>
 
       <div class="row q-col-gutter-md q-mb-md items-stretch">
-
         <!-- ================= REVENUE ================= -->
         <div class="col-12 col-md-8">
           <div data-tour="dash-revenue" class="dash-card dash-card--fill">
-            <div data-tour="dash-revenue-head" class="card-header card-header--stack">
+            <div
+              data-tour="dash-revenue-head"
+              class="card-header card-header--stack"
+            >
               <div>
                 <div class="section-title">{{ t('revenueTitle') }}</div>
                 <div class="section-subtitle">{{ t('revenueSub') }}</div>
@@ -82,7 +133,10 @@
                   type="button"
                   role="tab"
                   class="segmented-btn"
-                  :class="{ 'segmented-btn--active': activeRevenueFilter === filter.value }"
+                  :class="{
+                    'segmented-btn--active':
+                      activeRevenueFilter === filter.value
+                  }"
                   :aria-selected="activeRevenueFilter === filter.value"
                   @click="activeRevenueFilter = filter.value"
                 >
@@ -93,7 +147,9 @@
 
             <div class="revenue-total">
               <div class="revenue-total-label">{{ t('totalPeriod') }}</div>
-              <div class="revenue-total-value">₱{{ formatNumber(totalRevenue) }}</div>
+              <div class="revenue-total-value"
+                >₱{{ formatNumber(totalRevenue) }}</div
+              >
             </div>
 
             <div class="chart-box">
@@ -115,19 +171,31 @@
         <!-- ================= DEMAND FORECAST ================= -->
         <div class="col-12 col-md-4">
           <!-- The forecast is the system's own prediction, so it gets a deep red card of its own. -->
-          <div data-tour="dash-forecast" class="dash-card dash-card--fill forecast-card">
+          <div
+            data-tour="dash-forecast"
+            class="dash-card dash-card--fill forecast-card"
+          >
             <div data-tour="dash-forecast-head" class="card-header">
               <div>
                 <div class="section-title forecast-title">
-                  <span class="forecast-badge"><q-icon name="o_auto_awesome" size="16px" /></span>
+                  <span class="forecast-badge"
+                    ><q-icon name="o_auto_awesome" size="16px"
+                  /></span>
                   {{ t('forecastTitle') }}
                 </div>
                 <div class="section-subtitle">{{ t('forecastSub') }}</div>
               </div>
-              <q-btn flat round dense icon="o_refresh" size="sm" class="forecast-refresh-btn"
+              <q-btn
+                flat
+                round
+                dense
+                icon="o_refresh"
+                size="sm"
+                class="forecast-refresh-btn"
                 :loading="mlForecast.refreshing"
                 :aria-label="t('refreshForecast')"
-                @click="refreshForecast" />
+                @click="refreshForecast"
+              />
             </div>
 
             <div v-if="mlForecast.loading" class="empty-state">
@@ -136,30 +204,51 @@
             </div>
 
             <div v-else-if="mlForecast.error" class="empty-state">
-              <div class="state-icon tone-danger"><q-icon name="o_sync_problem" size="24px" /></div>
+              <div class="state-icon tone-danger"
+                ><q-icon name="o_sync_problem" size="24px"
+              /></div>
               <div class="empty-state-title">{{ t('forecastErrorTitle') }}</div>
               <div class="empty-state-text">{{ t('forecastErrorSub') }}</div>
             </div>
 
             <div v-else-if="!mlForecast.has_forecast" class="empty-state">
-              <div class="state-icon tone-brand"><q-icon name="o_insights" size="24px" /></div>
+              <div class="state-icon tone-brand"
+                ><q-icon name="o_insights" size="24px"
+              /></div>
               <div class="empty-state-title">{{ t('forecastEmptyTitle') }}</div>
               <div class="empty-state-text">{{ t('forecastEmptySub') }}</div>
             </div>
 
             <template v-else>
               <div class="forecast-list">
-                <div v-for="(item, idx) in mlForecast.top_products" :key="idx" class="forecast-item">
-                  <span class="forecast-rank" :class="{ 'forecast-rank--top': idx === 0 }">{{ idx + 1 }}</span>
+                <div
+                  v-for="(item, idx) in mlForecast.top_products"
+                  :key="idx"
+                  class="forecast-item"
+                >
+                  <span
+                    class="forecast-rank"
+                    :class="{ 'forecast-rank--top': idx === 0 }"
+                    >{{ idx + 1 }}</span
+                  >
                   <div class="forecast-thumb">
-                    <img v-if="resolveProductImage(item)" :src="resolveProductImage(item)" :alt="item.product_name" />
+                    <img
+                      v-if="resolveProductImage(item)"
+                      :src="resolveProductImage(item)"
+                      :alt="item.product_name"
+                    />
                     <q-icon v-else name="o_image" size="18px" />
                   </div>
                   <div class="forecast-body">
                     <div class="forecast-name">{{ item.product_name }}</div>
-                    <div class="forecast-meta">{{ getDemandCategory(item.predicted_quantity) }}</div>
+                    <div class="forecast-meta">{{
+                      getDemandCategory(item.predicted_quantity)
+                    }}</div>
                   </div>
-                  <span class="forecast-qty">{{ formatPieces(item.predicted_quantity) }} {{ t('pcs') }}</span>
+                  <span class="forecast-qty"
+                    >{{ formatPieces(item.predicted_quantity) }}
+                    {{ t('pcs') }}</span
+                  >
                 </div>
               </div>
 
@@ -184,16 +273,35 @@
             <div class="section-title">{{ t('recentOrdersTitle') }}</div>
             <div class="section-subtitle">{{ t('recentOrdersSub') }}</div>
           </div>
-          <q-btn outline no-caps color="primary" :label="t('viewAll')" icon-right="o_chevron_right" class="card-action-btn" @click="router.push('/vendor/orders/list')" />
+          <q-btn
+            outline
+            no-caps
+            color="primary"
+            :label="t('viewAll')"
+            icon-right="o_chevron_right"
+            class="card-action-btn"
+            @click="router.push('/vendor/orders/list')"
+          />
         </div>
 
         <!-- Placeholder rows shaped like the table on wide screens and the list on phones. -->
-        <div v-if="loading" :class="$q.screen.lt.md ? 'recent-skeleton-list' : 'orders-table-wrap'">
-          <SkeletonTable :columns="RECENT_SKELETON" :rows="5" :list="$q.screen.lt.md" />
+        <div
+          v-if="loading"
+          :class="
+            $q.screen.lt.md ? 'recent-skeleton-list' : 'orders-table-wrap'
+          "
+        >
+          <SkeletonTable
+            :columns="RECENT_SKELETON"
+            :rows="5"
+            :list="$q.screen.lt.md"
+          />
         </div>
 
         <div v-else-if="!recentOrders.length" class="empty-state">
-          <div class="state-icon tone-brand"><q-icon name="o_receipt_long" size="24px" /></div>
+          <div class="state-icon tone-brand"
+            ><q-icon name="o_receipt_long" size="24px"
+          /></div>
           <div class="empty-state-title">{{ t('emptyOrdersTitle') }}</div>
           <div class="empty-state-text">{{ t('emptyOrdersSub') }}</div>
         </div>
@@ -212,26 +320,48 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="order in recentOrders.slice(0, 5)" :key="order.id" class="orders-row" @click="openOrder(order)">
-                <td><span class="order-id">#{{ order.id }}</span></td>
+              <tr
+                v-for="order in recentOrders.slice(0, 5)"
+                :key="order.id"
+                class="orders-row"
+                @click="openOrder(order)"
+              >
+                <td
+                  ><span class="order-id">#{{ order.id }}</span></td
+                >
                 <td>
                   <div class="order-customer">
                     <q-avatar size="32px" class="order-avatar">
                       <img v-if="order.avatar" :src="order.avatar" alt="" />
                       <q-icon v-else name="o_person" size="18px" />
                     </q-avatar>
-                    <span class="order-customer-name">{{ order.customer }}</span>
+                    <span class="order-customer-name">{{
+                      order.customer
+                    }}</span>
                   </div>
                 </td>
                 <td class="order-date">{{ order.date }}</td>
-                <td class="text-right order-total">₱{{ formatNumber(order.price) }}</td>
+                <td class="text-right order-total"
+                  >₱{{ formatNumber(order.price) }}</td
+                >
                 <td>
-                  <span class="vp-status" :class="`vp-status--${getStatusTone(order.status)}`">
+                  <span
+                    class="vp-status"
+                    :class="`vp-status--${getStatusTone(order.status)}`"
+                  >
                     {{ translateStatus(order.status) }}
                   </span>
                 </td>
                 <td class="text-right">
-                  <q-btn flat round dense icon="o_chevron_right" class="order-open-btn" :aria-label="`Open order #${order.id}`" @click.stop="openOrder(order)" />
+                  <q-btn
+                    flat
+                    round
+                    dense
+                    icon="o_chevron_right"
+                    class="order-open-btn"
+                    :aria-label="`Open order #${order.id}`"
+                    @click.stop="openOrder(order)"
+                  />
                 </td>
               </tr>
             </tbody>
@@ -240,46 +370,86 @@
 
         <!-- A tappable list on phones, with the total and status on the right. -->
         <div v-else class="orders-list">
-          <button v-for="order in recentOrders.slice(0, 5)" :key="order.id" type="button" class="orders-list-item" @click="openOrder(order)">
+          <button
+            v-for="order in recentOrders.slice(0, 5)"
+            :key="order.id"
+            type="button"
+            class="orders-list-item"
+            @click="openOrder(order)"
+          >
             <q-avatar size="38px" class="order-avatar">
               <img v-if="order.avatar" :src="order.avatar" alt="" />
               <q-icon v-else name="o_person" size="20px" />
             </q-avatar>
             <div class="orders-list-body">
               <div class="order-customer-name">{{ order.customer }}</div>
-              <div class="orders-list-meta">#{{ order.id }} · {{ order.date }}</div>
+              <div class="orders-list-meta"
+                >#{{ order.id }} · {{ order.date }}</div
+              >
             </div>
             <div class="orders-list-side">
               <div class="order-total">₱{{ formatNumber(order.price) }}</div>
-              <span class="vp-status" :class="`vp-status--${getStatusTone(order.status)}`">
+              <span
+                class="vp-status"
+                :class="`vp-status--${getStatusTone(order.status)}`"
+              >
                 {{ translateStatus(order.status) }}
               </span>
             </div>
           </button>
         </div>
       </div>
-
     </div>
 
     <!-- ================= STORE PREVIEW ================= -->
     <!-- The map is drawn once the dialog has opened, and removed when it closes. -->
-    <q-dialog v-model="liveStoreModal" transition-show="scale" transition-hide="scale" @show="initMap" @hide="cleanupMap">
+    <q-dialog
+      v-model="liveStoreModal"
+      transition-show="scale"
+      transition-hide="scale"
+      @show="initMap"
+      @hide="cleanupMap"
+    >
       <q-card class="dash-dialog">
         <div class="dash-dialog-header">
-          <div class="dialog-icon"><q-icon name="o_storefront" size="22px" /></div>
+          <div class="dialog-icon"
+            ><q-icon name="o_storefront" size="22px"
+          /></div>
           <div class="dialog-header-text">
-            <div class="dialog-title">{{ vendorStore?.store_name || t('myStoreFallback') }}</div>
+            <div class="dialog-title">{{
+              vendorStore?.store_name || t('myStoreFallback')
+            }}</div>
             <div class="section-subtitle">{{ t('storePreviewSub') }}</div>
           </div>
-          <q-btn flat round dense icon="o_close" class="dialog-close-btn" aria-label="Close store preview" v-close-popup />
+          <q-btn
+            flat
+            round
+            dense
+            icon="o_close"
+            class="dialog-close-btn"
+            aria-label="Close store preview"
+            v-close-popup
+          />
         </div>
 
         <div class="dash-dialog-body">
           <div class="preview-banner">
-            <img v-if="vendorStore?.store_picture_url" :src="vendorStore.store_picture_url" alt="Storefront" />
-            <div v-else class="preview-banner-empty"><q-icon name="o_storefront" size="48px" /></div>
+            <img
+              v-if="vendorStore?.store_picture_url"
+              :src="vendorStore.store_picture_url"
+              alt="Storefront"
+            />
+            <div v-else class="preview-banner-empty"
+              ><q-icon name="o_storefront" size="48px"
+            /></div>
             <!-- Same guard as the banner pill, so a dialog opened mid-load never shows "Closed now" for an open store. -->
-            <span v-if="!loading" class="store-status preview-status" :class="isStoreOpen ? 'store-status--open' : 'store-status--closed'">
+            <span
+              v-if="!loading"
+              class="store-status preview-status"
+              :class="
+                isStoreOpen ? 'store-status--open' : 'store-status--closed'
+              "
+            >
               <span class="store-status-dot" />
               {{ isStoreOpen ? t('openNow') : t('closedNow') }}
             </span>
@@ -289,7 +459,9 @@
             <div class="info-icon"><q-icon name="o_person" size="18px" /></div>
             <div class="info-body">
               <div class="info-label">{{ t('storeOwnerLabel') }}</div>
-              <div class="info-value">{{ ownerFullName || t('notProvided') }}</div>
+              <div class="info-value">{{
+                ownerFullName || t('notProvided')
+              }}</div>
             </div>
           </div>
 
@@ -297,7 +469,9 @@
             <div class="info-icon"><q-icon name="o_phone" size="18px" /></div>
             <div class="info-body">
               <div class="info-label">{{ t('contactLabel') }}</div>
-              <div class="info-value">{{ vendorPhone || t('notProvided') }}</div>
+              <div class="info-value">{{
+                vendorPhone || t('notProvided')
+              }}</div>
             </div>
           </div>
 
@@ -305,18 +479,31 @@
             <div class="info-icon"><q-icon name="o_place" size="18px" /></div>
             <div class="info-body">
               <div class="info-label">{{ t('addressLabel') }}</div>
-              <div class="info-value">{{ vendorStore?.address || t('notProvided') }}</div>
+              <div class="info-value">{{
+                vendorStore?.address || t('notProvided')
+              }}</div>
             </div>
           </div>
 
           <div class="info-row info-row-last info-row--top">
-            <div class="info-icon"><q-icon name="o_schedule" size="18px" /></div>
+            <div class="info-icon"
+              ><q-icon name="o_schedule" size="18px"
+            /></div>
             <div class="info-body">
               <div class="info-label">{{ t('storeHoursLabel') }}</div>
               <div class="preview-hours">
-                <div v-for="day in weekDays" :key="day.name" class="preview-hours-row" :class="{ 'preview-hours-row--closed': !day.isOpen }">
+                <div
+                  v-for="day in weekDays"
+                  :key="day.name"
+                  class="preview-hours-row"
+                  :class="{ 'preview-hours-row--closed': !day.isOpen }"
+                >
                   <span>{{ t('day_' + day.name) }}</span>
-                  <span>{{ day.isOpen ? `${formatTime(day.openTime)} – ${formatTime(day.closeTime)}` : t('closed') }}</span>
+                  <span>{{
+                    day.isOpen
+                      ? `${formatTime(day.openTime)} – ${formatTime(day.closeTime)}`
+                      : t('closed')
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -326,8 +513,21 @@
         </div>
 
         <div class="dash-dialog-actions">
-          <q-btn outline no-caps color="primary" :label="t('closeBtn')" v-close-popup />
-          <q-btn unelevated no-caps color="primary" :label="t('editStoreDetails')" class="btn-gradient" @click="goToProfile" />
+          <q-btn
+            outline
+            no-caps
+            color="primary"
+            :label="t('closeBtn')"
+            v-close-popup
+          />
+          <q-btn
+            unelevated
+            no-caps
+            color="primary"
+            :label="t('editStoreDetails')"
+            class="btn-gradient"
+            @click="goToProfile"
+          />
         </div>
       </q-card>
     </q-dialog>
@@ -347,7 +547,11 @@ import { useVendorNotifications } from '@/composables/useVendorNotifications'
 import { useLanguage } from '@/composables/useLanguage'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { markerIconUrl, markerIcon2xUrl, markerShadowUrl } from '@/utils/leafletDefaultIcon'
+import {
+  markerIconUrl,
+  markerIcon2xUrl,
+  markerShadowUrl
+} from '@/utils/leafletDefaultIcon'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -381,8 +585,10 @@ const dashboardDict = {
     forecastErrorTitle: 'Forecast unavailable',
     forecastErrorSub: "We couldn't load predictions right now.",
     forecastEmptyTitle: 'Collecting trends',
-    forecastEmptySub: 'A few more completed orders are needed to predict your fast-moving items.',
-    notifyForecastRefreshed: "Demand forecast for today's sales refreshed successfully!",
+    forecastEmptySub:
+      'A few more completed orders are needed to predict your fast-moving items.',
+    notifyForecastRefreshed:
+      "Demand forecast for today's sales refreshed successfully!",
     notifyForecastFailed: "Couldn't refresh forecast. Please try again.",
     pcs: 'pcs',
     demandHigh: 'High demand',
@@ -446,8 +652,10 @@ const dashboardDict = {
     forecastErrorTitle: 'Walang forecast',
     forecastErrorSub: 'Hindi ma-load ang mga prediction ngayon.',
     forecastEmptyTitle: 'Kinukuha pa ang trends',
-    forecastEmptySub: 'Kailangan pa ng ilang order para mahulaan ang mga mabilis mabentang paninda.',
-    notifyForecastRefreshed: 'Matagumpay na na-refresh ang demand forecast para sa benta ngayong araw!',
+    forecastEmptySub:
+      'Kailangan pa ng ilang order para mahulaan ang mga mabilis mabentang paninda.',
+    notifyForecastRefreshed:
+      'Matagumpay na na-refresh ang demand forecast para sa benta ngayong araw!',
     notifyForecastFailed: 'Hindi ma-refresh ang forecast. Subukan ulit.',
     pcs: 'piraso',
     demandHigh: 'Mataas ang demand',
@@ -488,8 +696,11 @@ const dashboardDict = {
 const { t, lang } = useLanguage(dashboardDict)
 
 // Determines the correct color class for the order status badges
-const getStatusTone = (status) => {
-  const s = String(status || '').toLowerCase().trim().replace(/[\s_-]+/g, '_')
+const getStatusTone = status => {
+  const s = String(status || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[\s_-]+/g, '_')
   if (s.includes('ready')) return 'ready'
   if (s.includes('picked') || s.includes('complete')) return 'done'
   if (s.includes('cancel')) return 'cancelled'
@@ -498,9 +709,12 @@ const getStatusTone = (status) => {
 }
 
 // Directly translates the status string based on active language
-const translateStatus = (status) => {
+const translateStatus = status => {
   if (!status) return ''
-  const key = String(status).toLowerCase().trim().replace(/[\s-]+/g, '_')
+  const key = String(status)
+    .toLowerCase()
+    .trim()
+    .replace(/[\s-]+/g, '_')
 
   const statusDict = {
     en: {
@@ -576,10 +790,34 @@ const stats = ref({
 
 // Each order count uses its status's own colour and icon, the same as the status badges.
 const kpis = computed(() => [
-  { key: 'placed', label: t('kpiPlaced'), icon: statusIcon('placed'), tone: 'placed', value: stats.value.placed_orders },
-  { key: 'preparing', label: t('kpiPreparing'), icon: statusIcon('preparing'), tone: 'preparing', value: stats.value.preparing_orders },
-  { key: 'picked', label: t('kpiPicked'), icon: statusIcon('picked_up'), tone: 'done', value: stats.value.picked_up_orders },
-  { key: 'cancelled', label: t('kpiCancelled'), icon: statusIcon('cancelled'), tone: 'cancelled', value: stats.value.cancelled_orders }
+  {
+    key: 'placed',
+    label: t('kpiPlaced'),
+    icon: statusIcon('placed'),
+    tone: 'placed',
+    value: stats.value.placed_orders
+  },
+  {
+    key: 'preparing',
+    label: t('kpiPreparing'),
+    icon: statusIcon('preparing'),
+    tone: 'preparing',
+    value: stats.value.preparing_orders
+  },
+  {
+    key: 'picked',
+    label: t('kpiPicked'),
+    icon: statusIcon('picked_up'),
+    tone: 'done',
+    value: stats.value.picked_up_orders
+  },
+  {
+    key: 'cancelled',
+    label: t('kpiCancelled'),
+    icon: statusIcon('cancelled'),
+    tone: 'cancelled',
+    value: stats.value.cancelled_orders
+  }
 ])
 
 // --- Revenue chart ---
@@ -588,21 +826,57 @@ const chartLoading = ref(false)
 const chartSeries = ref([{ name: 'Revenue', data: [] }])
 const chartHeight = computed(() => ($q.screen.lt.md ? 200 : 280))
 
-const totalRevenue = computed(() => (chartSeries.value[0]?.data || []).reduce((a, b) => a + b, 0))
+const totalRevenue = computed(() =>
+  (chartSeries.value[0]?.data || []).reduce((a, b) => a + b, 0)
+)
 
-const peso = value => '₱' + Number(value).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+const peso = value =>
+  '₱' +
+  Number(value).toLocaleString('en-PH', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })
 
 // ApexCharts draws into SVG attributes, which can't read CSS variables, so the brand and text colours are written out.
 const chartOptions = ref({
-  chart: { type: 'area', toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'Roboto, Arial, sans-serif' },
+  chart: {
+    type: 'area',
+    toolbar: { show: false },
+    zoom: { enabled: false },
+    fontFamily: 'Roboto, Arial, sans-serif'
+  },
   colors: ['#bd2427'],
   dataLabels: { enabled: false },
   stroke: { curve: 'smooth', width: 2.5 },
-  xaxis: { categories: [], labels: { style: { colors: '#8992a2', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
-  yaxis: { labels: { style: { colors: '#8992a2', fontSize: '11px' }, formatter: peso } },
+  xaxis: {
+    categories: [],
+    labels: { style: { colors: '#8992a2', fontSize: '11px' } },
+    axisBorder: { show: false },
+    axisTicks: { show: false }
+  },
+  yaxis: {
+    labels: { style: { colors: '#8992a2', fontSize: '11px' }, formatter: peso }
+  },
   grid: { borderColor: '#f0f0f0', strokeDashArray: 4 },
-  tooltip: { y: { formatter: value => '₱' + Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) } },
-  fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.28, opacityTo: 0.02, stops: [0, 100] } }
+  tooltip: {
+    y: {
+      formatter: value =>
+        '₱' +
+        Number(value).toLocaleString('en-PH', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
+    }
+  },
+  fill: {
+    type: 'gradient',
+    gradient: {
+      shadeIntensity: 1,
+      opacityFrom: 0.28,
+      opacityTo: 0.02,
+      stops: [0, 100]
+    }
+  }
 })
 
 let chartRequestId = 0
@@ -626,10 +900,15 @@ const fetchChartData = async ({ background = false } = {}) => {
     if (requestId !== chartRequestId || request.signal.aborted) return
 
     if (res.data) {
-      chartSeries.value = [{ name: 'Revenue', data: res.data.map(item => Number(item.total)) }]
+      chartSeries.value = [
+        { name: 'Revenue', data: res.data.map(item => Number(item.total)) }
+      ]
       chartOptions.value = {
         ...chartOptions.value,
-        xaxis: { ...chartOptions.value.xaxis, categories: res.data.map(item => item.period) }
+        xaxis: {
+          ...chartOptions.value.xaxis,
+          categories: res.data.map(item => item.period)
+        }
       }
     }
   } catch (error) {
@@ -654,16 +933,31 @@ onBeforeUnmount(() => {
 // --- Greeting and store status ---
 
 // Filipino honorifics such as Aling and Mang belong with the name after them, so "Aling Nena" is greeted in full.
-const HONORIFICS = ['aling', 'mang', 'ate', 'kuya', 'manang', 'manong', 'tita', 'tito', 'lola', 'lolo']
-const greetingName = (fullName) => {
+const HONORIFICS = [
+  'aling',
+  'mang',
+  'ate',
+  'kuya',
+  'manang',
+  'manong',
+  'tita',
+  'tito',
+  'lola',
+  'lolo'
+]
+const greetingName = fullName => {
   const parts = (fullName || '').trim().split(/\s+/)
   if (!parts[0]) return 'Vendor'
-  return HONORIFICS.includes(parts[0].toLowerCase()) && parts[1] ? `${parts[0]} ${parts[1]}` : parts[0]
+  return HONORIFICS.includes(parts[0].toLowerCase()) && parts[1]
+    ? `${parts[0]} ${parts[1]}`
+    : parts[0]
 }
 
 // A clock that ticks every minute, so the greeting, the banner's colour and the open status keep up while the page stays open.
 const clock = ref(new Date())
-const clockTimer = setInterval(() => { clock.value = new Date() }, 60000)
+const clockTimer = setInterval(() => {
+  clock.value = new Date()
+}, 60000)
 onBeforeUnmount(() => clearInterval(clockTimer))
 
 const timeGreeting = computed(() => {
@@ -684,21 +978,48 @@ const dayPhase = computed(() => {
 })
 
 const currentDate = computed(() =>
-  new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(clock.value)
+  new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(clock.value)
 )
 
 // Store hours are saved per day, while older stores only kept a list of day names with one shared time.
 const weekDays = computed(() => {
-  const fullDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-  if (!vendorStore.value?.operating_days) return fullDays.map(name => ({ name, isOpen: false, openTime: null, closeTime: null }))
+  const fullDays = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday'
+  ]
+  if (!vendorStore.value?.operating_days)
+    return fullDays.map(name => ({
+      name,
+      isOpen: false,
+      openTime: null,
+      closeTime: null
+    }))
 
   let raw = vendorStore.value.operating_days
   if (typeof raw === 'string') {
-    try { raw = JSON.parse(raw) } catch { raw = null }
+    try {
+      raw = JSON.parse(raw)
+    } catch {
+      raw = null
+    }
   }
 
-  const defaultOpen = vendorStore.value.opening_time ? vendorStore.value.opening_time.substring(0, 5) : null
-  const defaultClose = vendorStore.value.closing_time ? vendorStore.value.closing_time.substring(0, 5) : null
+  const defaultOpen = vendorStore.value.opening_time
+    ? vendorStore.value.opening_time.substring(0, 5)
+    : null
+  const defaultClose = vendorStore.value.closing_time
+    ? vendorStore.value.closing_time.substring(0, 5)
+    : null
 
   return fullDays.map(dayName => {
     let isOpen = false
@@ -707,11 +1028,15 @@ const weekDays = computed(() => {
     if (raw !== null && typeof raw === 'object' && !Array.isArray(raw)) {
       if (raw[dayName]) {
         isOpen = !!raw[dayName].is_open
-        if (raw[dayName].opening_time) openTime = raw[dayName].opening_time.substring(0, 5)
-        if (raw[dayName].closing_time) closeTime = raw[dayName].closing_time.substring(0, 5)
+        if (raw[dayName].opening_time)
+          openTime = raw[dayName].opening_time.substring(0, 5)
+        if (raw[dayName].closing_time)
+          closeTime = raw[dayName].closing_time.substring(0, 5)
       }
     } else if (Array.isArray(raw)) {
-      isOpen = raw.some(d => dayName.toLowerCase().startsWith(String(d).toLowerCase()))
+      isOpen = raw.some(d =>
+        dayName.toLowerCase().startsWith(String(d).toLowerCase())
+      )
     }
     return { name: dayName, isOpen, openTime, closeTime }
   })
@@ -721,7 +1046,15 @@ const weekDays = computed(() => {
 const isStoreOpen = computed(() => {
   if (!vendorStore.value?.operating_days) return false
   const now = clock.value
-  const todayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][now.getDay()]
+  const todayName = [
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday'
+  ][now.getDay()]
   const today = weekDays.value.find(d => d.name === todayName)
 
   if (!today || !today.isOpen) return false
@@ -733,7 +1066,8 @@ const isStoreOpen = computed(() => {
   const openMinutes = openH * 60 + openM
   const closeMinutes = closeH * 60 + closeM
 
-  if (openMinutes <= closeMinutes) return minutes >= openMinutes && minutes <= closeMinutes
+  if (openMinutes <= closeMinutes)
+    return minutes >= openMinutes && minutes <= closeMinutes
   return minutes >= openMinutes || minutes <= closeMinutes
 })
 
@@ -749,7 +1083,10 @@ const formatTime = timeString => {
 
 const formatNumber = num => {
   const clean = Number(String(num).replace(/[^0-9.-]+/g, ''))
-  return Number(clean || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return Number(clean || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 }
 
 const formatPieces = val => {
@@ -767,8 +1104,15 @@ const getDemandCategory = qty => {
 const formatLastSync = timestamp => {
   const date = timestamp ? new Date(timestamp) : null
   if (!date || Number.isNaN(date.getTime())) return t('updatedToday')
-  const day = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  const day = date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+  const time = date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
   return t('updatedFormat').replace('{day}', day).replace('{time}', time)
 }
 
@@ -777,12 +1121,27 @@ const normalize = str => (str ? String(str).toLowerCase().trim() : '')
 // A forecast item may carry its own image, and otherwise borrows it from the matching catalogue product.
 const resolveProductImage = item => {
   if (!item) return null
-  if (typeof item.image_url === 'string' && item.image_url.trim() !== '') return item.image_url.trim()
+  if (typeof item.image_url === 'string' && item.image_url.trim() !== '')
+    return item.image_url.trim()
 
   const matched = catalogProducts.value.find(p => {
-    if (item.product_id && p.product_id && Number(item.product_id) === Number(p.product_id)) return true
-    if (item.inventory_id && p.inventory_id && Number(item.inventory_id) === Number(p.inventory_id)) return true
-    return !!(item.product_name && p.product_name && normalize(item.product_name) === normalize(p.product_name))
+    if (
+      item.product_id &&
+      p.product_id &&
+      Number(item.product_id) === Number(p.product_id)
+    )
+      return true
+    if (
+      item.inventory_id &&
+      p.inventory_id &&
+      Number(item.inventory_id) === Number(p.inventory_id)
+    )
+      return true
+    return !!(
+      item.product_name &&
+      p.product_name &&
+      normalize(item.product_name) === normalize(p.product_name)
+    )
   })
   return matched?.image_url || null
 }
@@ -817,8 +1176,10 @@ const initMap = async () => {
 
     const rawLat = vendorStore.value?.latitude
     const rawLng = vendorStore.value?.longitude
-    const lat = rawLat && !Number.isNaN(Number(rawLat)) ? Number(rawLat) : 14.5995
-    const lng = rawLng && !Number.isNaN(Number(rawLng)) ? Number(rawLng) : 120.9842
+    const lat =
+      rawLat && !Number.isNaN(Number(rawLat)) ? Number(rawLat) : 14.5995
+    const lng =
+      rawLng && !Number.isNaN(Number(rawLng)) ? Number(rawLng) : 120.9842
 
     try {
       map = L.map(container).setView([lat, lng], 15)
@@ -837,7 +1198,9 @@ const initMap = async () => {
       })
 
       L.marker([lat, lng], { icon }).addTo(map)
-      setTimeout(() => { if (map) map.invalidateSize() }, 200)
+      setTimeout(() => {
+        if (map) map.invalidateSize()
+      }, 200)
     } catch (err) {
       console.warn('Map preview could not start:', err)
     }
@@ -848,7 +1211,10 @@ const initMap = async () => {
 
 onMounted(async () => {
   fetchChartData()
-  chartRefreshTimer = setInterval(() => fetchChartData({ background: true }), 15000)
+  chartRefreshTimer = setInterval(
+    () => fetchChartData({ background: true }),
+    15000
+  )
 
   try {
     const [profileRes, statsRes, productsRes] = await Promise.allSettled([
@@ -915,14 +1281,21 @@ const refreshForecast = async () => {
       mlForecast.value.summary = data.summary
       mlForecast.value.top_products = data.top_products || []
       mlForecast.value.generated_at = data.generated_at
-      $q.notify({ type: 'positive', icon: 'o_check_circle', message: t('notifyForecastRefreshed') })
+      $q.notify({
+        type: 'positive',
+        icon: 'o_check_circle',
+        message: t('notifyForecastRefreshed')
+      })
     } else {
       console.warn('Forecast refresh returned no forecast:', data)
     }
-
   } catch (err) {
     console.error('Failed to refresh forecast:', err)
-    $q.notify({ type: 'negative', icon: 'o_warning', message: t('notifyForecastFailed') })
+    $q.notify({
+      type: 'negative',
+      icon: 'o_warning',
+      message: t('notifyForecastFailed')
+    })
   } finally {
     mlForecast.value.refreshing = false
   }
@@ -1002,8 +1375,14 @@ const refreshForecast = async () => {
   box-shadow: 0 4px 16px rgba(101, 16, 18, 0.2);
 
   background:
-    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0 0 / 26px 26px,
-    linear-gradient(145deg, var(--c-brand) 0%, var(--c-brand-deep) 55%, var(--c-brand-active) 100%);
+    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0
+      0 / 26px 26px,
+    linear-gradient(
+      145deg,
+      var(--c-brand) 0%,
+      var(--c-brand-deep) 55%,
+      var(--c-brand-active) 100%
+    );
 
   color: #ffffff;
 
@@ -1013,19 +1392,22 @@ const refreshForecast = async () => {
 /* The banner's colour follows the time of day; midday keeps the brand red above. */
 .dash-hero--dawn {
   background:
-    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0 0 / 26px 26px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0
+      0 / 26px 26px,
     linear-gradient(145deg, #d2612e 0%, #c0392f 50%, #942133 100%);
 }
 
 .dash-hero--morning {
   background:
-    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0 0 / 26px 26px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0
+      0 / 26px 26px,
     linear-gradient(145deg, #d24d2a 0%, #bd2427 55%, #9c171b 100%);
 }
 
 .dash-hero--evening {
   background:
-    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0 0 / 26px 26px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px) 0
+      0 / 26px 26px,
     linear-gradient(145deg, #b3304a 0%, #82204f 55%, #4a1942 100%);
 
   box-shadow: 0 4px 16px rgba(74, 25, 66, 0.28);
@@ -1033,7 +1415,8 @@ const refreshForecast = async () => {
 
 .dash-hero--night {
   background:
-    radial-gradient(circle, rgba(255, 255, 255, 0.12) 1.5px, transparent 1.5px) 0 0 / 26px 26px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.12) 1.5px, transparent 1.5px)
+      0 0 / 26px 26px,
     linear-gradient(145deg, #3b2a6b 0%, #26194d 55%, #140f2b 100%);
 
   box-shadow: 0 4px 16px rgba(20, 15, 43, 0.35);
@@ -1055,8 +1438,14 @@ const refreshForecast = async () => {
 }
 
 @keyframes dash-fade-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1150,7 +1539,10 @@ const refreshForecast = async () => {
 
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .hero-cta:hover {
@@ -1305,7 +1697,9 @@ const refreshForecast = async () => {
 
   box-shadow: var(--sh-card);
 
-  transition: box-shadow 0.2s, border-color 0.2s;
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s;
 }
 
 .dash-card:hover {
@@ -1375,14 +1769,42 @@ const refreshForecast = async () => {
 
 /* TONES — one tinted background and text colour per status, shared by the count tiles and the order chips. */
 
-.tone-info { background: var(--c-info-tint); color: var(--c-info); }
-.tone-warning { background: var(--c-warning-tint); color: var(--c-warning); }
-.tone-success { background: var(--c-success-tint); color: var(--c-success); }
-.tone-danger { background: var(--c-danger-tint); color: var(--c-danger); }
-.tone-wait { background: var(--c-status-wait-tint); color: var(--c-status-wait); }
-.tone-active { background: var(--c-status-active-tint); color: var(--c-status-active); }
-.tone-neutral { background: var(--c-surface); color: var(--c-text-3); }
-.tone-brand { background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%); color: var(--c-brand); }
+.tone-info {
+  background: var(--c-info-tint);
+  color: var(--c-info);
+}
+.tone-warning {
+  background: var(--c-warning-tint);
+  color: var(--c-warning);
+}
+.tone-success {
+  background: var(--c-success-tint);
+  color: var(--c-success);
+}
+.tone-danger {
+  background: var(--c-danger-tint);
+  color: var(--c-danger);
+}
+.tone-wait {
+  background: var(--c-status-wait-tint);
+  color: var(--c-status-wait);
+}
+.tone-active {
+  background: var(--c-status-active-tint);
+  color: var(--c-status-active);
+}
+.tone-neutral {
+  background: var(--c-surface);
+  color: var(--c-text-3);
+}
+.tone-brand {
+  background: linear-gradient(
+    145deg,
+    var(--c-brand-tint) 0%,
+    var(--c-brand-tint-2) 100%
+  );
+  color: var(--c-brand);
+}
 
 /* ORDER COUNTS */
 
@@ -1464,7 +1886,9 @@ const refreshForecast = async () => {
 
   cursor: pointer;
 
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .segmented-btn:hover:not(.segmented-btn--active) {
@@ -1543,7 +1967,8 @@ const refreshForecast = async () => {
   border-color: transparent;
 
   background:
-    radial-gradient(circle, rgba(255, 255, 255, 0.07) 1.5px, transparent 1.5px) 0 0 / 22px 22px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.07) 1.5px, transparent 1.5px)
+      0 0 / 22px 22px,
     linear-gradient(160deg, #4a0f13 0%, #7a181c 55%, #a51d22 100%);
   color: #ffffff;
 
@@ -1873,11 +2298,21 @@ const refreshForecast = async () => {
   font-size: var(--fs-sm);
 }
 
-.orders-table .col-order { width: 11%; }
-.orders-table .col-date { width: 22%; }
-.orders-table .col-total { width: 13%; }
-.orders-table .col-status { width: 17%; }
-.orders-table .col-open { width: 6%; }
+.orders-table .col-order {
+  width: 11%;
+}
+.orders-table .col-date {
+  width: 22%;
+}
+.orders-table .col-total {
+  width: 13%;
+}
+.orders-table .col-status {
+  width: 17%;
+}
+.orders-table .col-open {
+  width: 6%;
+}
 
 .orders-table th {
   padding: 10px 20px;
@@ -2096,7 +2531,11 @@ const refreshForecast = async () => {
 
   border-radius: var(--r-surface);
 
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-brand-tint) 0%,
+    var(--c-brand-tint-2) 100%
+  );
   color: var(--c-brand);
 }
 
@@ -2199,7 +2638,11 @@ const refreshForecast = async () => {
 
   border-radius: var(--r-surface);
 
-  background: linear-gradient(145deg, var(--c-brand-tint) 0%, var(--c-brand-tint-2) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-brand-tint) 0%,
+    var(--c-brand-tint-2) 100%
+  );
   color: var(--c-brand);
 }
 
@@ -2284,7 +2727,9 @@ const refreshForecast = async () => {
 
   box-shadow: var(--sh-brand);
 
-  transition: background-color 0.15s, box-shadow 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s;
 }
 
 .btn-gradient:hover {

@@ -4,7 +4,16 @@
       <div class="filters-panel-title-group">
         <span class="filters-panel-title">{{ t('Filters') }}</span>
       </div>
-      <q-btn flat dense round :ripple="false" icon="o_close" class="filters-close-btn" :aria-label="t('Close filters')" @click="$emit('close')" />
+      <q-btn
+        flat
+        dense
+        round
+        :ripple="false"
+        icon="o_close"
+        class="filters-close-btn"
+        :aria-label="t('Close filters')"
+        @click="$emit('close')"
+      />
     </div>
 
     <div class="filters-scroll">
@@ -35,7 +44,9 @@
           hide-bottom-space
           behavior="menu"
         />
-        <p v-if="distanceDisabled" class="filter-hint">{{ t('Set your location to filter by distance.') }}</p>
+        <p v-if="distanceDisabled" class="filter-hint">{{
+          t('Set your location to filter by distance.')
+        }}</p>
       </div>
 
       <div v-if="!hideCategory" class="filter-group">
@@ -55,9 +66,23 @@
       <div class="filter-group">
         <label class="filter-label">{{ t('Price Range') }}</label>
         <div class="price-range-row">
-          <q-input v-model.number="priceMin" type="number" dense outlined hide-bottom-space :placeholder="t('Min')" />
+          <q-input
+            v-model.number="priceMin"
+            type="number"
+            dense
+            outlined
+            hide-bottom-space
+            :placeholder="t('Min')"
+          />
           <span class="price-range-sep">–</span>
-          <q-input v-model.number="priceMax" type="number" dense outlined hide-bottom-space :placeholder="t('Max')" />
+          <q-input
+            v-model.number="priceMax"
+            type="number"
+            dense
+            outlined
+            hide-bottom-space
+            :placeholder="t('Max')"
+          />
         </div>
       </div>
 
@@ -65,7 +90,9 @@
         <label class="filter-label">{{ t('Store') }}</label>
         <q-select
           v-model="store"
-          :options="translateOptions(storeOptions, option => option.value === 'All')"
+          :options="
+            translateOptions(storeOptions, option => option.value === 'All')
+          "
           dense
           outlined
           emit-value
@@ -76,7 +103,9 @@
       </div>
 
       <div v-if="!hideInStock" class="filter-group filter-group-row">
-        <label class="filter-label filter-label-inline">{{ t('In Stock Only') }}</label>
+        <label class="filter-label filter-label-inline">{{
+          t('In Stock Only')
+        }}</label>
         <q-toggle v-model="inStock" dense color="primary" />
       </div>
 
@@ -107,7 +136,12 @@
       />
 
       <div class="clear-filters-row">
-        <button type="button" class="clear-filters-link" @click="$emit('clear')">{{ t('Clear all filters') }}</button>
+        <button
+          type="button"
+          class="clear-filters-link"
+          @click="$emit('clear')"
+          >{{ t('Clear all filters') }}</button
+        >
       </div>
     </div>
   </div>
@@ -166,7 +200,9 @@ const maxDistance = defineModel('maxDistance')
 const category = defineModel('category')
 const store = defineModel('store')
 const normalizePrice = value =>
-  value == null || String(value).trim() === '' || !Number.isFinite(Number(value))
+  value == null ||
+  String(value).trim() === '' ||
+  !Number.isFinite(Number(value))
     ? null
     : Number(value)
 const priceMin = defineModel('priceMin', { set: normalizePrice })
@@ -373,7 +409,10 @@ const sort = defineModel('sort')
 
   box-shadow: 0 2px 8px rgba(189, 36, 39, 0.25);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .apply-filters-btn:hover {

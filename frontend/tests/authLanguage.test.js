@@ -14,20 +14,41 @@ const language = useConsumerLanguage()
 async function componentRender(path) {
   const source = await readFile(new URL(path, import.meta.url), 'utf8')
   const { descriptor } = parse(source)
-  const { code } = compile(descriptor.template.content, { mode: 'function', prefixIdentifiers: true })
+  const { code } = compile(descriptor.template.content, {
+    mode: 'function',
+    prefixIdentifiers: true
+  })
   return new Function('Vue', code)(Vue)
 }
 
 async function renderAuth(file, overrides = {}) {
-  const source = await readFile(new URL('../src/pages/auth/' + file, import.meta.url), 'utf8')
+  const source = await readFile(
+    new URL('../src/pages/auth/' + file, import.meta.url),
+    'utf8'
+  )
   const { descriptor } = parse(source)
-  const { code } = compile(descriptor.template.content, { mode: 'function', prefixIdentifiers: true })
-  const state = Object.fromEntries([...code.matchAll(/_ctx\.(\w+)/g)].map((match) => [match[1], false]))
+  const { code } = compile(descriptor.template.content, {
+    mode: 'function',
+    prefixIdentifiers: true
+  })
+  const state = Object.fromEntries(
+    [...code.matchAll(/_ctx\.(\w+)/g)].map(match => [match[1], false])
+  )
   Object.assign(state, {
     t: language.t,
     PASSWORD_REQUIREMENTS,
     locale: language.locale.value,
-    form: { identifier: '', password: '', firstName: '', lastName: '', birthday: '', email: '', phoneNumber: '', confirmPassword: '', operatingDays: [] },
+    form: {
+      identifier: '',
+      password: '',
+      firstName: '',
+      lastName: '',
+      birthday: '',
+      email: '',
+      phoneNumber: '',
+      confirmPassword: '',
+      operatingDays: []
+    },
     step: 1,
     STEPS: ['Account', 'Verify phone', 'Store', 'Hours', 'Location', 'Review'],
     DAY_ORDER: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
@@ -49,19 +70,36 @@ async function renderAuth(file, overrides = {}) {
     const declaration = ast.program.body
       .flatMap(node => node.declarations || [])
       .find(node => node.id.name === 'otpErrorText')
-    const expression = script.slice(declaration.init.start, declaration.init.end)
-    const message = new Function('computed', 'otpError', 't', 'return ' + expression)(
-      Vue.computed, Vue.toRef(state, 'otpError'), language.t
+    const expression = script.slice(
+      declaration.init.start,
+      declaration.init.end
     )
-    Object.defineProperty(state, 'otpErrorText', { enumerable: true, get: () => message.value })
+    const message = new Function(
+      'computed',
+      'otpError',
+      't',
+      'return ' + expression
+    )(Vue.computed, Vue.toRef(state, 'otpError'), language.t)
+    Object.defineProperty(state, 'otpErrorText', {
+      enumerable: true,
+      get: () => message.value
+    })
   }
-  const app = Vue.createSSRApp({ data: () => state, render: new Function('Vue', code)(Vue) })
+  const app = Vue.createSSRApp({
+    data: () => state,
+    render: new Function('Vue', code)(Vue)
+  })
   app.component('AuthLanguageSwitcher', {
-    render: await componentRender('../src/components/consumer/AuthLanguageSwitcher.vue')
+    render: await componentRender(
+      '../src/components/consumer/AuthLanguageSwitcher.vue'
+    )
   })
   app.component('RouterLink', {
     props: ['to'],
-    setup: (props, { slots }) => () => Vue.h('a', { href: props.to }, slots.default?.())
+    setup:
+      (props, { slots }) =>
+      () =>
+        Vue.h('a', { href: props.to }, slots.default?.())
   })
   app.component('AuthShell', {
     props: { wide: Boolean },
@@ -71,30 +109,84 @@ async function renderAuth(file, overrides = {}) {
   app.component('LanguageSwitcher', {
     props: { header: Boolean, compact: Boolean, settings: Boolean },
     setup: () => useConsumerLanguage(),
-    render: await componentRender('../src/components/consumer/LanguageSwitcher.vue')
+    render: await componentRender(
+      '../src/components/consumer/LanguageSwitcher.vue'
+    )
   })
-  const container = { setup: (_, { slots }) => () => Vue.h('div', slots.default?.()) }
-  for (const name of ['QPage', 'QForm', 'QCard', 'QCardSection', 'QCardActions', 'QSeparator', 'QList', 'QItem', 'QItemSection']) app.component(name, container)
+  const container = {
+    setup:
+      (_, { slots }) =>
+      () =>
+        Vue.h('div', slots.default?.())
+  }
+  for (const name of [
+    'QPage',
+    'QForm',
+    'QCard',
+    'QCardSection',
+    'QCardActions',
+    'QSeparator',
+    'QList',
+    'QItem',
+    'QItemSection'
+  ])
+    app.component(name, container)
   app.directive('close-popup', {})
   app.component('QBtnDropdown', {
     props: ['label'],
-    setup: (props, { slots }) => () => Vue.h('div', [Vue.h('button', { 'data-language-trigger': '' }, props.label), slots.default?.()])
+    setup:
+      (props, { slots }) =>
+      () =>
+        Vue.h('div', [
+          Vue.h('button', { 'data-language-trigger': '' }, props.label),
+          slots.default?.()
+        ])
   })
-  app.component('QDialog', { props: ['modelValue'], setup: (props, { slots }) => () => props.modelValue ? Vue.h('div', slots.default?.()) : null })
+  app.component('QDialog', {
+    props: ['modelValue'],
+    setup:
+      (props, { slots }) =>
+      () =>
+        props.modelValue ? Vue.h('div', slots.default?.()) : null
+  })
   app.component('QInput', {
     inheritAttrs: false,
     props: ['label', 'rules'],
-    setup: (props) => () => {
+    setup: props => () => {
       const error = props.rules?.[0]?.('')
-      return Vue.h('div', [Vue.h('input', { 'aria-label': props.label }), error && error !== true ? Vue.h('span', error) : null])
+      return Vue.h('div', [
+        Vue.h('input', { 'aria-label': props.label }),
+        error && error !== true ? Vue.h('span', error) : null
+      ])
     }
   })
-  app.component('QBtn', { props: ['label'], setup: (props) => () => Vue.h('button', props.label) })
-  for (const name of ['QSelect', 'QToggle']) app.component(name, { props: ['label'], setup: (props) => () => Vue.h('span', props.label) })
-  app.component('BirthdayInput', { props: ['translate'], setup: (props) => () => Vue.h('span', props.translate('Birth Month')) })
-  app.component('VendorLocationMap', { props: ['translate'], setup: (props) => () => Vue.h('span', props.translate('Your Location')) })
+  app.component('QBtn', {
+    props: ['label'],
+    setup: props => () => Vue.h('button', props.label)
+  })
+  for (const name of ['QSelect', 'QToggle'])
+    app.component(name, {
+      props: ['label'],
+      setup: props => () => Vue.h('span', props.label)
+    })
+  app.component('BirthdayInput', {
+    props: ['translate'],
+    setup: props => () => Vue.h('span', props.translate('Birth Month'))
+  })
+  app.component('VendorLocationMap', {
+    props: ['translate'],
+    setup: props => () => Vue.h('span', props.translate('Your Location'))
+  })
   app.component('AddressAutocomplete', { render: () => null })
-  for (const name of ['QIcon', 'QBtnToggle', 'TermsModal', 'PrivacyModal', 'ContactSupportModal', 'PhotoCropper']) app.component(name, { render: () => null })
+  for (const name of [
+    'QIcon',
+    'QBtnToggle',
+    'TermsModal',
+    'PrivacyModal',
+    'ContactSupportModal',
+    'PhotoCropper'
+  ])
+    app.component(name, { render: () => null })
   return renderToString(app)
 }
 
@@ -119,8 +211,25 @@ test('auth pages follow the Consumer language and restore their English view', a
 })
 
 test('all auth pages expose the existing EN/FIL dropdown and preserve form values', async () => {
-  for (const file of ['LoginPage.vue', 'consumer/ConsumerRegister.vue', 'consumer/ConsumerVerify.vue', 'consumer/ConsumerSuccess.vue', 'vendor/VendorRegister.vue', 'vendor/VendorRejected.vue', 'vendor/VendorUnderReview.vue']) {
-    const fields = { firstName: 'Sample', lastName: 'Owner', storeName: 'Sample Store', identifier: 'buyer@example.com', email: 'buyer@example.com', phoneNumber: '09123456789', password: 'SamePassword123', operatingDays: ['Mon'] }
+  for (const file of [
+    'LoginPage.vue',
+    'consumer/ConsumerRegister.vue',
+    'consumer/ConsumerVerify.vue',
+    'consumer/ConsumerSuccess.vue',
+    'vendor/VendorRegister.vue',
+    'vendor/VendorRejected.vue',
+    'vendor/VendorUnderReview.vue'
+  ]) {
+    const fields = {
+      firstName: 'Sample',
+      lastName: 'Owner',
+      storeName: 'Sample Store',
+      identifier: 'buyer@example.com',
+      email: 'buyer@example.com',
+      phoneNumber: '09123456789',
+      password: 'SamePassword123',
+      operatingDays: ['Mon']
+    }
     const state = { form: fields }
     language.setLanguage('en')
     const english = await renderAuth(file, state)
@@ -128,7 +237,10 @@ test('all auth pages expose the existing EN/FIL dropdown and preserve form value
     language.setLanguage('fil')
     const filipino = await renderAuth(file, state)
     assert.match(filipino, /data-language-trigger(?:="")?>FIL<\/button>/, file)
-    assert.ok(filipino.includes('English') && filipino.includes('Filipino'), file)
+    assert.ok(
+      filipino.includes('English') && filipino.includes('Filipino'),
+      file
+    )
     assert.equal(state.form, fields)
     assert.equal(fields.password, 'SamePassword123')
     assert.equal(fields.email, 'buyer@example.com')
@@ -155,7 +267,14 @@ test('vendor registration translates steps, errors, location controls and dialog
     showCropModal: true,
     showSuccess: true,
     ownerName: 'Application Under Review',
-    form: { firstName: 'Application', lastName: 'Under Review', storeName: 'Your Store', detectedAddress: 'Store Location', phoneNumber: '09123456789', operatingDays: ['Mon'] },
+    form: {
+      firstName: 'Application',
+      lastName: 'Under Review',
+      storeName: 'Your Store',
+      detectedAddress: 'Store Location',
+      phoneNumber: '09123456789',
+      operatingDays: ['Mon']
+    },
     finalAddress: 'Store Location'
   })
   for (const text of [
@@ -180,8 +299,12 @@ test('vendor registration translates steps, errors, location controls and dialog
     'Store Location',
     '09123456789',
     'Mon'
-  ]) assert.ok(registration.includes(text), text)
-  const rejected = await renderAuth('vendor/VendorRejected.vue', { rejectionReason: 'Application Under Review', rejectedBy: 'Your Store' })
+  ])
+    assert.ok(registration.includes(text), text)
+  const rejected = await renderAuth('vendor/VendorRejected.vue', {
+    rejectionReason: 'Application Under Review',
+    rejectedBy: 'Your Store'
+  })
   assert.ok(rejected.includes('Dahilan Kung Bakit Hindi Na-approve'))
   assert.ok(rejected.includes('Ni-review ni'))
   assert.ok(rejected.includes('Application Under Review'))
@@ -193,11 +316,16 @@ test('vendor registration translates steps, errors, location controls and dialog
 })
 
 test('vendor OTP recovery messages switch languages while keeping unknown server errors intact', async () => {
-  for (const error of ['Please verify your phone number again before registering.', 'A custom server error.']) {
+  for (const error of [
+    'Please verify your phone number again before registering.',
+    'A custom server error.'
+  ]) {
     const state = { otpError: error + ' We sent you a new code.' }
     language.setLanguage('fil')
     const filipino = await renderAuth('vendor/VendorRegister.vue', state)
-    assert.ok(filipino.includes(language.t(error) + ' Nag-send kami ng bagong code.'))
+    assert.ok(
+      filipino.includes(language.t(error) + ' Nag-send kami ng bagong code.')
+    )
     language.setLanguage('en')
     const english = await renderAuth('vendor/VendorRegister.vue', state)
     assert.ok(english.includes(error + ' We sent you a new code.'))
@@ -224,12 +352,18 @@ test('auth errors, field labels, registration choices and countdowns use Filipin
   })
   assert.ok(registration.includes('Registered na ang email na ito.'))
   assert.ok(registration.includes('Hindi tugma ang passwords.'))
-  const verification = await renderAuth('consumer/ConsumerVerify.vue', { otpError: 'Invalid verification code. Please try again.' })
-  assert.ok(verification.includes('Nag-send kami ng 6-digit verification code sa'))
+  const verification = await renderAuth('consumer/ConsumerVerify.vue', {
+    otpError: 'Invalid verification code. Please try again.'
+  })
+  assert.ok(
+    verification.includes('Nag-send kami ng 6-digit verification code sa')
+  )
   assert.ok(verification.includes('0912***6789'))
   assert.ok(verification.includes('I-resend (0:12)'))
   assert.ok(verification.includes('Digit 1 sa 6'))
-  assert.ok(verification.includes('Hindi valid ang verification code. Subukan ulit.'))
+  assert.ok(
+    verification.includes('Hindi valid ang verification code. Subukan ulit.')
+  )
   const reset = await renderAuth('LoginPage.vue', {
     showForgotOtp: true,
     forgotResendTimer: 12,
@@ -239,7 +373,11 @@ test('auth errors, field labels, registration choices and countdowns use Filipin
   assert.ok(reset.includes('I-verify ang Phone Number'))
   assert.ok(reset.includes('0912***6789'))
   assert.ok(reset.includes('I-resend (0:12)'))
-  const missing = await renderAuth('consumer/ConsumerVerify.vue', { hasPhone: false })
-  assert.ok(missing.includes('Hindi namin alam kung aling number ang ive-verify'))
+  const missing = await renderAuth('consumer/ConsumerVerify.vue', {
+    hasPhone: false
+  })
+  assert.ok(
+    missing.includes('Hindi namin alam kung aling number ang ive-verify')
+  )
   language.setLanguage('en')
 })

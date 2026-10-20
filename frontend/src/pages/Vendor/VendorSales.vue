@@ -1,7 +1,6 @@
 <template>
   <q-page class="vp-page">
     <div class="vp-container">
-
       <div class="vp-header">
         <div>
           <h1 class="vp-title">{{ t('title') }}</h1>
@@ -9,44 +8,102 @@
         </div>
         <div class="vp-header-actions">
           <!-- Picking a day loads it straight away; All time and Today are one tap. -->
-          <q-btn outline no-caps color="primary" icon="o_calendar_month" :label="displayDate" class="vp-pill-btn sr-date-btn">
-            <q-popup-proxy ref="datePopup" anchor="bottom right" self="top right" :offset="[0, 8]">
+          <q-btn
+            outline
+            no-caps
+            color="primary"
+            icon="o_calendar_month"
+            :label="displayDate"
+            class="vp-pill-btn sr-date-btn"
+          >
+            <q-popup-proxy
+              ref="datePopup"
+              anchor="bottom right"
+              self="top right"
+              :offset="[0, 8]"
+            >
               <div class="sr-calendar">
-                <q-date v-model="selectedDate" mask="YYYY/MM/DD" color="primary" flat minimal class="sr-date" @update:model-value="closeDatePopup" />
+                <q-date
+                  v-model="selectedDate"
+                  mask="YYYY/MM/DD"
+                  color="primary"
+                  flat
+                  minimal
+                  class="sr-date"
+                  @update:model-value="closeDatePopup"
+                />
                 <div class="sr-calendar-foot">
-                  <q-btn v-close-popup flat dense no-caps :label="t('btnAllTime')" class="sr-quick" :class="{ 'sr-quick--on': !selectedDate }" @click="clearDate" />
-                  <q-btn v-close-popup flat dense no-caps :label="t('btnToday')" class="sr-quick" :class="{ 'sr-quick--on': isToday }" @click="setToday" />
+                  <q-btn
+                    v-close-popup
+                    flat
+                    dense
+                    no-caps
+                    :label="t('btnAllTime')"
+                    class="sr-quick"
+                    :class="{ 'sr-quick--on': !selectedDate }"
+                    @click="clearDate"
+                  />
+                  <q-btn
+                    v-close-popup
+                    flat
+                    dense
+                    no-caps
+                    :label="t('btnToday')"
+                    class="sr-quick"
+                    :class="{ 'sr-quick--on': isToday }"
+                    @click="setToday"
+                  />
                 </div>
               </div>
             </q-popup-proxy>
           </q-btn>
           <!-- Shares data-tour with the desktop aside below: only one of the two is ever
                rendered, so the tutorial finds whichever this screen actually has. -->
-          <q-btn v-if="$q.screen.lt.lg" data-tour="sr-entry" unelevated no-caps color="primary" icon="add" :label="t('btnRecordSale')" class="vp-primary-btn" @click="showMobileManualModal = true" />
+          <q-btn
+            v-if="$q.screen.lt.lg"
+            data-tour="sr-entry"
+            unelevated
+            no-caps
+            color="primary"
+            icon="add"
+            :label="t('btnRecordSale')"
+            class="vp-primary-btn"
+            @click="showMobileManualModal = true"
+          />
         </div>
       </div>
 
       <div class="sr-grid">
         <div class="sr-main">
-
           <!-- REVENUE — the total, what it came from, and a small bar chart of the records behind it. -->
           <section v-if="!loadError" data-tour="sr-hero" class="sr-hero">
             <div class="sr-hero-main">
               <div data-tour="sr-hero-head" class="sr-hero-top">
-                <span class="sr-eyebrow"><q-icon name="o_payments" size="16px" /> {{ t('eyebrowRevenue') }} · {{ displayDate }}</span>
+                <span class="sr-eyebrow"
+                  ><q-icon name="o_payments" size="16px" />
+                  {{ t('eyebrowRevenue') }} · {{ displayDate }}</span
+                >
               </div>
               <div class="sr-hero-value">
-                <q-skeleton v-if="loading" type="rect" width="180px" height="52px" />
+                <q-skeleton
+                  v-if="loading"
+                  type="rect"
+                  width="180px"
+                  height="52px"
+                />
                 <span v-else>₱{{ formatNumber(metrics.revenue) }}</span>
               </div>
               <div v-if="!loading" class="sr-hero-facts">
                 <span class="sr-fact">
                   <q-icon name="o_receipt_long" size="16px" />
-                  {{ recordCount }} {{ shownDate ? t('orderWord') : t('dayWord') }}{{ recordCount === 1 ? '' : 's' }}
+                  {{ recordCount }}
+                  {{ shownDate ? t('orderWord') : t('dayWord')
+                  }}{{ recordCount === 1 ? '' : 's' }}
                 </span>
                 <span class="sr-fact">
                   <q-icon name="o_shopping_basket" size="16px" />
-                  {{ itemsSold }} {{ itemsSold === 1 ? t('itemSold') : t('itemsSold') }}
+                  {{ itemsSold }}
+                  {{ itemsSold === 1 ? t('itemSold') : t('itemsSold') }}
                 </span>
                 <span class="sr-fact">
                   <q-icon name="o_sell" size="16px" />
@@ -57,18 +114,31 @@
 
             <div v-if="!loading && heroBars.length" class="sr-hero-chart">
               <div class="sr-bars" role="img" :aria-label="heroBarDescription">
-                <span v-for="bar in heroBars" :key="bar.key" class="sr-bar" :style="{ height: `${bar.height}%` }" :title="bar.title" />
+                <span
+                  v-for="bar in heroBars"
+                  :key="bar.key"
+                  class="sr-bar"
+                  :style="{ height: `${bar.height}%` }"
+                  :title="bar.title"
+                />
               </div>
               <div class="sr-bars-label">{{ heroBarLabel }}</div>
             </div>
-            <q-icon v-else name="o_insights" class="sr-hero-art" aria-hidden="true" />
+            <q-icon
+              v-else
+              name="o_insights"
+              class="sr-hero-art"
+              aria-hidden="true"
+            />
           </section>
 
           <div v-if="!loadError" data-tour="sr-stats" class="vp-stats sr-stats">
             <div class="vp-card vp-stat">
               <div class="vp-stat-top">
                 <span class="vp-stat-label">{{ t('statAvgOrderValue') }}</span>
-                <span class="vp-stat-icon vp-tone--info"><q-icon name="o_receipt_long" size="20px" /></span>
+                <span class="vp-stat-icon vp-tone--info"
+                  ><q-icon name="o_receipt_long" size="20px"
+                /></span>
               </div>
               <div class="vp-stat-value">
                 <q-skeleton v-if="loading" type="text" width="120px" />
@@ -78,7 +148,9 @@
             <div class="vp-card vp-stat">
               <div class="vp-stat-top">
                 <span class="vp-stat-label">{{ t('statCancelRate') }}</span>
-                <span class="vp-stat-icon vp-tone--danger"><q-icon name="o_remove_shopping_cart" size="20px" /></span>
+                <span class="vp-stat-icon vp-tone--danger"
+                  ><q-icon name="o_remove_shopping_cart" size="20px"
+                /></span>
               </div>
               <div class="vp-stat-value">
                 <q-skeleton v-if="loading" type="text" width="80px" />
@@ -88,11 +160,17 @@
             <div class="vp-card vp-stat vp-stat--wide">
               <div class="vp-stat-top">
                 <span class="vp-stat-label">{{ t('statBestSeller') }}</span>
-                <span class="vp-stat-icon vp-tone--wait"><q-icon name="o_emoji_events" size="20px" /></span>
+                <span class="vp-stat-icon vp-tone--wait"
+                  ><q-icon name="o_emoji_events" size="20px"
+                /></span>
               </div>
               <div class="vp-stat-value vp-stat-value--text">
                 <q-skeleton v-if="loading" type="text" width="140px" />
-                <span v-else>{{ metrics.bestSellingCategory ? categoryLabel(metrics.bestSellingCategory) : t('noDataYet') }}</span>
+                <span v-else>{{
+                  metrics.bestSellingCategory
+                    ? categoryLabel(metrics.bestSellingCategory)
+                    : t('noDataYet')
+                }}</span>
               </div>
             </div>
           </div>
@@ -102,10 +180,22 @@
             <div class="sr-card-head">
               <div>
                 <div class="sr-card-title">{{ t('salesRecordsTitle') }}</div>
-                <div class="sr-card-sub">{{ selectedDate ? t('ordersOn') + ' ' + displayDate : t('dailyTotalsAllTime') }}</div>
+                <div class="sr-card-sub">{{
+                  selectedDate
+                    ? t('ordersOn') + ' ' + displayDate
+                    : t('dailyTotalsAllTime')
+                }}</div>
               </div>
-              <q-skeleton v-if="loading" type="rect" width="30px" height="20px" class="sr-count-sk" />
-              <span v-else-if="!loadError" class="sr-count">{{ transactions.length }}</span>
+              <q-skeleton
+                v-if="loading"
+                type="rect"
+                width="30px"
+                height="20px"
+                class="sr-count-sk"
+              />
+              <span v-else-if="!loadError" class="sr-count">{{
+                transactions.length
+              }}</span>
             </div>
 
             <!-- Placeholder rows in the columns of the view being loaded: one day's orders, or All time's daily totals. -->
@@ -120,16 +210,30 @@
             />
 
             <div v-else-if="loadError" class="vp-empty" role="alert">
-              <div class="vp-empty-icon"><q-icon name="o_error_outline" size="24px" /></div>
+              <div class="vp-empty-icon"
+                ><q-icon name="o_error_outline" size="24px"
+              /></div>
               <div class="vp-empty-title">{{ t('loadErrorTitle') }}</div>
               <div class="vp-empty-text">{{ t('loadErrorText') }}</div>
-              <q-btn outline no-caps color="primary" :label="t('btnRetry')" class="vp-pill-btn sr-retry" @click="fetchSalesData" />
+              <q-btn
+                outline
+                no-caps
+                color="primary"
+                :label="t('btnRetry')"
+                class="vp-pill-btn sr-retry"
+                @click="fetchSalesData"
+              />
             </div>
 
             <div v-else-if="!transactions.length" class="vp-empty">
-              <div class="vp-empty-icon"><q-icon name="o_query_stats" size="24px" /></div>
+              <div class="vp-empty-icon"
+                ><q-icon name="o_query_stats" size="24px"
+              /></div>
               <div class="vp-empty-title">{{ t('emptySalesTitle') }}</div>
-              <div class="vp-empty-text">{{ t('emptySalesText1') }} {{ displayDate }}. {{ t('emptySalesText2') }}</div>
+              <div class="vp-empty-text"
+                >{{ t('emptySalesText1') }} {{ displayDate }}.
+                {{ t('emptySalesText2') }}</div
+              >
             </div>
 
             <div v-else-if="!$q.screen.lt.md" class="vp-table-wrap">
@@ -144,11 +248,18 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(row, index) in pagedRows" :key="`${row.order_id}-${index}`">
-                    <td><span class="vp-id">#{{ row.order_id }}</span></td>
+                  <tr
+                    v-for="(row, index) in pagedRows"
+                    :key="`${row.order_id}-${index}`"
+                  >
+                    <td
+                      ><span class="vp-id">#{{ row.order_id }}</span></td
+                    >
                     <td class="sr-product">{{ row.product }}</td>
                     <td class="vp-muted">{{ row.quantity }}</td>
-                    <td class="text-right vp-amount">₱{{ formatNumber(row.total) }}</td>
+                    <td class="text-right vp-amount"
+                      >₱{{ formatNumber(row.total) }}</td
+                    >
                     <td><OrderStatusBadge :status="row.status" /></td>
                   </tr>
                 </tbody>
@@ -159,42 +270,97 @@
                   <tr>
                     <th>{{ t('colDate') }}</th>
                     <th class="col-sold">{{ t('colProductsSold') }}</th>
-                    <th class="text-right col-revenue">{{ t('colRevenue') }}</th>
+                    <th class="text-right col-revenue">{{
+                      t('colRevenue')
+                    }}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="row in pagedRows" :key="row.sale_date">
                     <td class="sr-product">{{ row.sale_date }}</td>
                     <td class="vp-muted">{{ row.total_items }}</td>
-                    <td class="text-right vp-amount">₱{{ formatNumber(row.daily_revenue) }}</td>
+                    <td class="text-right vp-amount"
+                      >₱{{ formatNumber(row.daily_revenue) }}</td
+                    >
                   </tr>
                 </tbody>
               </table>
             </div>
 
             <div v-else class="vp-list">
-              <div v-for="(row, index) in pagedRows" :key="`${row.order_id || row.sale_date}-${index}`" class="sr-list-item">
+              <div
+                v-for="(row, index) in pagedRows"
+                :key="`${row.order_id || row.sale_date}-${index}`"
+                class="sr-list-item"
+              >
                 <div class="vp-list-body">
-                  <span class="vp-name">{{ shownDate ? `${t('colOrder')} #${row.order_id}` : row.sale_date }}</span>
-                  <div class="vp-list-meta">{{ shownDate ? `${row.product} · ${t('qtyWord')} ${row.quantity}` : `${row.total_items} ${t('itemsSoldWord')}` }}</div>
+                  <span class="vp-name">{{
+                    shownDate
+                      ? `${t('colOrder')} #${row.order_id}`
+                      : row.sale_date
+                  }}</span>
+                  <div class="vp-list-meta">{{
+                    shownDate
+                      ? `${row.product} · ${t('qtyWord')} ${row.quantity}`
+                      : `${row.total_items} ${t('itemsSoldWord')}`
+                  }}</div>
                 </div>
                 <div class="vp-list-side">
-                  <span class="vp-amount">₱{{ formatNumber(shownDate ? row.total : row.daily_revenue) }}</span>
+                  <span class="vp-amount"
+                    >₱{{
+                      formatNumber(shownDate ? row.total : row.daily_revenue)
+                    }}</span
+                  >
                   <OrderStatusBadge v-if="shownDate" :status="row.status" />
                 </div>
               </div>
             </div>
 
-            <div v-if="!loading && !loadError && transactions.length > PAGE_SIZES[0]" class="vp-pager sr-pager">
-              <span>{{ t('showingWord') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('ofWord') }} {{ transactions.length }}</span>
+            <div
+              v-if="
+                !loading && !loadError && transactions.length > PAGE_SIZES[0]
+              "
+              class="vp-pager sr-pager"
+            >
+              <span
+                >{{ t('showingWord') }} {{ rangeStart }}–{{ rangeEnd }}
+                {{ t('ofWord') }} {{ transactions.length }}</span
+              >
               <div class="sr-pager-right">
                 <label class="sr-page-size">
                   {{ t('rowsWord') }}
-                  <q-select v-model="pageSize" :options="PAGE_SIZES" dense outlined options-dense behavior="menu" class="vp-input sr-page-select" aria-label="Rows per page" />
+                  <q-select
+                    v-model="pageSize"
+                    :options="PAGE_SIZES"
+                    dense
+                    outlined
+                    options-dense
+                    behavior="menu"
+                    class="vp-input sr-page-select"
+                    aria-label="Rows per page"
+                  />
                 </label>
                 <div class="vp-pager-btns">
-                  <q-btn outline no-caps color="primary" icon="o_chevron_left" class="vp-pill-btn" aria-label="Previous page" :disable="page === 1" @click="page--" />
-                  <q-btn outline no-caps color="primary" icon="o_chevron_right" class="vp-pill-btn" aria-label="Next page" :disable="page >= pageCount" @click="page++" />
+                  <q-btn
+                    outline
+                    no-caps
+                    color="primary"
+                    icon="o_chevron_left"
+                    class="vp-pill-btn"
+                    aria-label="Previous page"
+                    :disable="page === 1"
+                    @click="page--"
+                  />
+                  <q-btn
+                    outline
+                    no-caps
+                    color="primary"
+                    icon="o_chevron_right"
+                    class="vp-pill-btn"
+                    aria-label="Next page"
+                    :disable="page >= pageCount"
+                    @click="page++"
+                  />
                 </div>
               </div>
             </div>
@@ -202,24 +368,45 @@
         </div>
 
         <!-- RECORD A SALE — beside the records on wide screens, in a sheet on smaller ones. -->
-        <aside v-if="!$q.screen.lt.lg" data-tour="sr-entry" class="vp-card sr-entry">
+        <aside
+          v-if="!$q.screen.lt.lg"
+          data-tour="sr-entry"
+          class="vp-card sr-entry"
+        >
           <div class="sr-entry-head">
-            <span class="vp-stat-icon vp-tone--brand"><q-icon name="o_add_shopping_cart" size="20px" /></span>
+            <span class="vp-stat-icon vp-tone--brand"
+              ><q-icon name="o_add_shopping_cart" size="20px"
+            /></span>
             <div>
               <div class="sr-card-title">{{ t('recordSaleTitle') }}</div>
-              <div class="sr-card-sub">{{ t('recordSaleSub') }} {{ displayDate }}.</div>
+              <div class="sr-card-sub"
+                >{{ t('recordSaleSub') }} {{ displayDate }}.</div
+              >
             </div>
           </div>
 
           <div v-if="!canRecordSaleDate" class="sr-locked">
-            <div class="vp-empty-icon"><q-icon name="o_edit_calendar" size="24px" /></div>
-            <div class="vp-empty-title">{{ t(isFutureDate ? 'futureDayTitle' : 'pickDayTitle') }}</div>
-            <div class="vp-empty-text">{{ t(isFutureDate ? 'futureDayDesc' : 'pickDayDesc') }}</div>
+            <div class="vp-empty-icon"
+              ><q-icon name="o_edit_calendar" size="24px"
+            /></div>
+            <div class="vp-empty-title">{{
+              t(isFutureDate ? 'futureDayTitle' : 'pickDayTitle')
+            }}</div>
+            <div class="vp-empty-text">{{
+              t(isFutureDate ? 'futureDayDesc' : 'pickDayDesc')
+            }}</div>
           </div>
 
-          <q-form v-else ref="asideForm" class="sr-form" @submit.prevent="askToRecord">
+          <q-form
+            v-else
+            ref="asideForm"
+            class="sr-form"
+            @submit.prevent="askToRecord"
+          >
             <div>
-              <label class="vp-field-label">{{ t('formProduct') }} <span class="sr-req">*</span></label>
+              <label class="vp-field-label"
+                >{{ t('formProduct') }} <span class="sr-req">*</span></label
+              >
               <q-select
                 v-model="manualForm.product"
                 :options="inventoryOptions"
@@ -240,25 +427,58 @@
                 @update:model-value="onProductSelected"
               >
                 <template #no-option>
-                  <q-item><q-item-section class="sr-no-option">{{ t('noProductsFound') }}</q-item-section></q-item>
+                  <q-item
+                    ><q-item-section class="sr-no-option">{{
+                      t('noProductsFound')
+                    }}</q-item-section></q-item
+                  >
                 </template>
               </q-select>
             </div>
             <div class="sr-form-row">
               <div>
                 <label class="vp-field-label">{{ t('formQuantity') }}</label>
-                <q-input v-model.number="manualForm.quantity" type="number" min="1" :max="maxQuantity" outlined dense hide-bottom-space class="vp-input" :rules="quantityRules" />
+                <q-input
+                  v-model.number="manualForm.quantity"
+                  type="number"
+                  min="1"
+                  :max="maxQuantity"
+                  outlined
+                  dense
+                  hide-bottom-space
+                  class="vp-input"
+                  :rules="quantityRules"
+                />
               </div>
               <div>
                 <label class="vp-field-label">{{ t('formUnitPrice') }}</label>
-                <q-input v-model.number="manualForm.unitPrice" type="number" min="0" :max="MAX_AMOUNT" step="0.01" outlined dense hide-bottom-space class="vp-input" :rules="priceRules" />
+                <q-input
+                  v-model.number="manualForm.unitPrice"
+                  type="number"
+                  min="0"
+                  :max="MAX_AMOUNT"
+                  step="0.01"
+                  outlined
+                  dense
+                  hide-bottom-space
+                  class="vp-input"
+                  :rules="priceRules"
+                />
               </div>
             </div>
             <div class="sr-estimate">
               <span>{{ t('estimatedTotal') }}</span>
               <strong>{{ estimateText }}</strong>
             </div>
-            <q-btn type="submit" unelevated no-caps color="primary" :label="t('btnRecordSale')" class="vp-primary-btn sr-submit" :loading="submitting" />
+            <q-btn
+              type="submit"
+              unelevated
+              no-caps
+              color="primary"
+              :label="t('btnRecordSale')"
+              class="vp-primary-btn sr-submit"
+              :loading="submitting"
+            />
           </q-form>
         </aside>
       </div>
@@ -268,23 +488,48 @@
     <q-dialog v-model="showMobileManualModal">
       <q-card class="sr-dialog">
         <div class="sr-entry-head sr-dialog-head">
-          <span class="vp-stat-icon vp-tone--brand"><q-icon name="o_add_shopping_cart" size="20px" /></span>
+          <span class="vp-stat-icon vp-tone--brand"
+            ><q-icon name="o_add_shopping_cart" size="20px"
+          /></span>
           <div>
             <div class="sr-card-title">{{ t('recordSaleTitle') }}</div>
-            <div class="sr-card-sub">{{ t('recordSaleSub') }} {{ displayDate }}.</div>
+            <div class="sr-card-sub"
+              >{{ t('recordSaleSub') }} {{ displayDate }}.</div
+            >
           </div>
-          <q-btn v-close-popup flat round dense icon="o_close" class="vp-dialog-close" aria-label="Close" />
+          <q-btn
+            v-close-popup
+            flat
+            round
+            dense
+            icon="o_close"
+            class="vp-dialog-close"
+            aria-label="Close"
+          />
         </div>
 
         <div v-if="!canRecordSaleDate" class="sr-locked">
-          <div class="vp-empty-icon"><q-icon name="o_edit_calendar" size="24px" /></div>
-          <div class="vp-empty-title">{{ t(isFutureDate ? 'futureDayTitle' : 'pickDayTitle') }}</div>
-          <div class="vp-empty-text">{{ t(isFutureDate ? 'futureDayDesc' : 'pickDayDesc') }}</div>
+          <div class="vp-empty-icon"
+            ><q-icon name="o_edit_calendar" size="24px"
+          /></div>
+          <div class="vp-empty-title">{{
+            t(isFutureDate ? 'futureDayTitle' : 'pickDayTitle')
+          }}</div>
+          <div class="vp-empty-text">{{
+            t(isFutureDate ? 'futureDayDesc' : 'pickDayDesc')
+          }}</div>
         </div>
 
-        <q-form v-else ref="sheetForm" class="sr-form" @submit.prevent="askToRecord">
+        <q-form
+          v-else
+          ref="sheetForm"
+          class="sr-form"
+          @submit.prevent="askToRecord"
+        >
           <div>
-            <label class="vp-field-label">{{ t('formProduct') }} <span class="sr-req">*</span></label>
+            <label class="vp-field-label"
+              >{{ t('formProduct') }} <span class="sr-req">*</span></label
+            >
             <q-select
               v-model="manualForm.product"
               :options="inventoryOptions"
@@ -305,25 +550,58 @@
               @update:model-value="onProductSelected"
             >
               <template #no-option>
-                <q-item><q-item-section class="sr-no-option">{{ t('noProductsFound') }}</q-item-section></q-item>
+                <q-item
+                  ><q-item-section class="sr-no-option">{{
+                    t('noProductsFound')
+                  }}</q-item-section></q-item
+                >
               </template>
             </q-select>
           </div>
           <div class="sr-form-row">
             <div>
               <label class="vp-field-label">{{ t('formQuantity') }}</label>
-              <q-input v-model.number="manualForm.quantity" type="number" min="1" :max="maxQuantity" outlined dense hide-bottom-space class="vp-input" :rules="quantityRules" />
+              <q-input
+                v-model.number="manualForm.quantity"
+                type="number"
+                min="1"
+                :max="maxQuantity"
+                outlined
+                dense
+                hide-bottom-space
+                class="vp-input"
+                :rules="quantityRules"
+              />
             </div>
             <div>
               <label class="vp-field-label">{{ t('formUnitPrice') }}</label>
-              <q-input v-model.number="manualForm.unitPrice" type="number" min="0" :max="MAX_AMOUNT" step="0.01" outlined dense hide-bottom-space class="vp-input" :rules="priceRules" />
+              <q-input
+                v-model.number="manualForm.unitPrice"
+                type="number"
+                min="0"
+                :max="MAX_AMOUNT"
+                step="0.01"
+                outlined
+                dense
+                hide-bottom-space
+                class="vp-input"
+                :rules="priceRules"
+              />
             </div>
           </div>
           <div class="sr-estimate">
             <span>{{ t('estimatedTotal') }}</span>
             <strong>{{ estimateText }}</strong>
           </div>
-          <q-btn type="submit" unelevated no-caps color="primary" :label="t('btnRecordSale')" class="vp-primary-btn sr-submit" :loading="submitting" />
+          <q-btn
+            type="submit"
+            unelevated
+            no-caps
+            color="primary"
+            :label="t('btnRecordSale')"
+            class="vp-primary-btn sr-submit"
+            :loading="submitting"
+          />
         </q-form>
       </q-card>
     </q-dialog>
@@ -331,18 +609,41 @@
     <q-dialog v-model="confirmOpen" persistent>
       <q-card class="vp-dialog">
         <div class="vp-dialog-head">
-          <span class="vp-dialog-icon"><q-icon name="o_point_of_sale" size="22px" /></span>
+          <span class="vp-dialog-icon"
+            ><q-icon name="o_point_of_sale" size="22px"
+          /></span>
           <div>
             <div class="vp-dialog-title">{{ t('confirmSaleTitle') }}</div>
             <div class="vp-dialog-text">
-              <strong>{{ manualForm.quantity }} × {{ manualForm.product?.product_name }}</strong> {{ t('confirmSaleFor') }} <strong>{{ estimateText }}</strong>
-              {{ t('confirmSaleOn') }} {{ displayDate }}. {{ t('confirmSaleDesc') }}
+              <strong
+                >{{ manualForm.quantity }} ×
+                {{ manualForm.product?.product_name }}</strong
+              >
+              {{ t('confirmSaleFor') }} <strong>{{ estimateText }}</strong>
+              {{ t('confirmSaleOn') }} {{ displayDate }}.
+              {{ t('confirmSaleDesc') }}
             </div>
           </div>
         </div>
         <div class="vp-dialog-actions">
-          <q-btn v-close-popup outline no-caps color="primary" :label="t('btnCancel')" class="vp-dialog-btn" :disable="submitting" />
-          <q-btn unelevated no-caps color="primary" :label="t('btnRecordSale')" class="vp-dialog-btn" :loading="submitting" @click="recordSale" />
+          <q-btn
+            v-close-popup
+            outline
+            no-caps
+            color="primary"
+            :label="t('btnCancel')"
+            class="vp-dialog-btn"
+            :disable="submitting"
+          />
+          <q-btn
+            unelevated
+            no-caps
+            color="primary"
+            :label="t('btnRecordSale')"
+            class="vp-dialog-btn"
+            :loading="submitting"
+            @click="recordSale"
+          />
         </div>
       </q-card>
     </q-dialog>
@@ -350,7 +651,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import {
+  ref,
+  reactive,
+  computed,
+  onMounted,
+  onUnmounted,
+  watch,
+  nextTick
+} from 'vue'
 import { useQuasar, date } from 'quasar'
 import { api } from '@/boot/axios'
 import OrderStatusBadge from '@/components/vendor/OrderStatusBadge.vue'
@@ -410,7 +719,8 @@ const vendorSalesDict = {
     recordSaleTitle: 'Record a Sale',
     recordSaleSub: 'Add a walk-in sale for',
     pickDayTitle: 'Pick a day first',
-    pickDayDesc: "Choose a specific date from the calendar to record a sale. All time can't take new entries.",
+    pickDayDesc:
+      "Choose a specific date from the calendar to record a sale. All time can't take new entries.",
     futureDayTitle: 'Future date selected',
     futureDayDesc: 'Sales can only be recorded for today or a past date.',
     formProduct: 'Product',
@@ -437,7 +747,8 @@ const vendorSalesDict = {
   },
   ph: {
     title: 'Sales Reports',
-    subtitle: 'I-track ang kita, mag-record ng walk-in sales at silipin ang benta araw-araw.',
+    subtitle:
+      'I-track ang kita, mag-record ng walk-in sales at silipin ang benta araw-araw.',
     btnAllTime: 'Buong panahon',
     btnToday: 'Ngayon',
     btnRecordSale: 'I-record ang Benta',
@@ -448,7 +759,8 @@ const vendorSalesDict = {
     itemsSold: 'mga paninda',
     perOrder: 'kada order',
     ariaBarsDay: 'Kabuuan ng bawat order sa araw na ito',
-    ariaBarsRecentOrders: 'Kabuuan ng bawat isa sa pinakahuling 16 order sa araw na ito',
+    ariaBarsRecentOrders:
+      'Kabuuan ng bawat isa sa pinakahuling 16 order sa araw na ito',
     ariaBarsAllTime: 'Kita sa bawat isa sa pinakahuling 14 araw na may benta',
     labelBarsDay: 'Bawat order ngayong araw',
     labelBarsRecentOrders: 'Pinakahuling 16 order sa araw na ito',
@@ -482,9 +794,11 @@ const vendorSalesDict = {
     recordSaleTitle: 'Mag-record ng Benta',
     recordSaleSub: 'Magdagdag ng walk-in sale para sa',
     pickDayTitle: 'Pumili muna ng araw',
-    pickDayDesc: "Pumili ng partikular na petsa sa kalendaryo. Hindi pwedeng magdagdag ng benta sa 'Buong panahon'.",
+    pickDayDesc:
+      "Pumili ng partikular na petsa sa kalendaryo. Hindi pwedeng magdagdag ng benta sa 'Buong panahon'.",
     futureDayTitle: 'Petsa sa hinaharap ang napili',
-    futureDayDesc: 'Maaari lang mag-record ng benta para sa araw na ito o sa nakaraang petsa.',
+    futureDayDesc:
+      'Maaari lang mag-record ng benta para sa araw na ito o sa nakaraang petsa.',
     formProduct: 'Paninda',
     searchProduct: 'Hanapin ang paninda',
     ruleProduct: 'Pumili ng paninda.',
@@ -530,7 +844,9 @@ const ALL_TIME_SKELETON = [
 ]
 const todayKey = () => manilaParts(new Date(Date.now())).ymd.replace(/-/g, '/')
 const today = ref(todayKey())
-const refreshToday = () => { today.value = todayKey() }
+const refreshToday = () => {
+  today.value = todayKey()
+}
 
 const selectedDate = ref(today.value)
 const showMobileManualModal = ref(false)
@@ -552,11 +868,17 @@ const displayDate = computed(() => {
 })
 
 const isToday = computed(() => selectedDate.value === today.value)
-const isFutureDate = computed(() => !!selectedDate.value && selectedDate.value > today.value)
-const canRecordSaleDate = computed(() => !!selectedDate.value && !isFutureDate.value)
+const isFutureDate = computed(
+  () => !!selectedDate.value && selectedDate.value > today.value
+)
+const canRecordSaleDate = computed(
+  () => !!selectedDate.value && !isFutureDate.value
+)
 
 const closeDatePopup = () => datePopup.value?.hide()
-const clearDate = () => { selectedDate.value = null }
+const clearDate = () => {
+  selectedDate.value = null
+}
 const setToday = () => {
   refreshToday()
   selectedDate.value = today.value
@@ -571,32 +893,71 @@ const metrics = reactive({
 const transactions = ref([])
 const submitting = ref(false)
 
-const pageCount = computed(() => Math.max(1, Math.ceil(transactions.value.length / pageSize.value)))
-const pagedRows = computed(() => transactions.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value))
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil(transactions.value.length / pageSize.value))
+)
+const pagedRows = computed(() =>
+  transactions.value.slice(
+    (page.value - 1) * pageSize.value,
+    page.value * pageSize.value
+  )
+)
 const rangeStart = computed(() => (page.value - 1) * pageSize.value + 1)
-const rangeEnd = computed(() => Math.min(page.value * pageSize.value, transactions.value.length))
+const rangeEnd = computed(() =>
+  Math.min(page.value * pageSize.value, transactions.value.length)
+)
 
-watch(pageSize, () => { page.value = 1 })
+watch(pageSize, () => {
+  page.value = 1
+})
 
-const formatNumber = num => Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const formatNumber = num =>
+  Number(num || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 
 // Count orders across all loaded records, independent of the current table page; All time counts days.
-const recordCount = computed(() => (shownDate.value ? new Set(transactions.value.map(row => row.order_id)).size : transactions.value.length))
+const recordCount = computed(() =>
+  shownDate.value
+    ? new Set(transactions.value.map(row => row.order_id)).size
+    : transactions.value.length
+)
 
-const itemsSold = computed(() => transactions.value.reduce((sum, row) => sum + Number((shownDate.value ? row.quantity : row.total_items) || 0), 0))
+const itemsSold = computed(() =>
+  transactions.value.reduce(
+    (sum, row) =>
+      sum + Number((shownDate.value ? row.quantity : row.total_items) || 0),
+    0
+  )
+)
 
-const heroBarLabel = computed(() => t(shownDate.value
-  ? (transactions.value.length > 16 ? 'labelBarsRecentOrders' : 'labelBarsDay')
-  : 'labelBarsAllTime'))
-const heroBarDescription = computed(() => t(shownDate.value
-  ? (transactions.value.length > 16 ? 'ariaBarsRecentOrders' : 'ariaBarsDay')
-  : 'ariaBarsAllTime'))
+const heroBarLabel = computed(() =>
+  t(
+    shownDate.value
+      ? transactions.value.length > 16
+        ? 'labelBarsRecentOrders'
+        : 'labelBarsDay'
+      : 'labelBarsAllTime'
+  )
+)
+const heroBarDescription = computed(() =>
+  t(
+    shownDate.value
+      ? transactions.value.length > 16
+        ? 'ariaBarsRecentOrders'
+        : 'ariaBarsDay'
+      : 'ariaBarsAllTime'
+  )
+)
 
 // The API sorts sales newest first, including backdated walk-in orders.
 // Show a small chronological sample while the totals include every record.
 const heroBars = computed(() => {
   const rows = transactions.value.slice(0, shownDate.value ? 16 : 14).reverse()
-  const values = rows.map(row => Number((shownDate.value ? row.total : row.daily_revenue) || 0))
+  const values = rows.map(row =>
+    Number((shownDate.value ? row.total : row.daily_revenue) || 0)
+  )
   const max = Math.max(0, ...values)
   if (!max) return []
   return rows.map((row, i) => ({
@@ -612,7 +973,12 @@ const manualForm = reactive({
   unitPrice: 0
 })
 
-const estimatedTotal = computed(() => (manualForm.quantity || 0) * Math.round(Number(manualForm.unitPrice || 0) * 100) / 100)
+const estimatedTotal = computed(
+  () =>
+    ((manualForm.quantity || 0) *
+      Math.round(Number(manualForm.unitPrice || 0) * 100)) /
+    100
+)
 
 // Keep the price and total within the database's DECIMAL(8, 2) money columns.
 const MAX_AMOUNT = 999999.99
@@ -623,20 +989,30 @@ const maxQuantity = computed(() => {
 })
 
 const quantityRules = computed(() => [
-  val => (Number.isInteger(Number(val)) && Number(val) > 0) || t('ruleQuantityWhole'),
-  val => Number(val) <= maxQuantity.value || t('ruleQuantityStock').replace('{max}', maxQuantity.value)
+  val =>
+    (Number.isInteger(Number(val)) && Number(val) > 0) ||
+    t('ruleQuantityWhole'),
+  val =>
+    Number(val) <= maxQuantity.value ||
+    t('ruleQuantityStock').replace('{max}', maxQuantity.value)
 ])
 
 const priceRules = computed(() => [
-  val => (val !== '' && val !== null && Number(val) >= 0) || t('rulePriceValid'),
+  val =>
+    (val !== '' && val !== null && Number(val) >= 0) || t('rulePriceValid'),
   val => /^\d+(\.\d{1,2})?$/.test(String(val)) || t('rulePricePrecision'),
   val => Number(val) <= MAX_AMOUNT || t('rulePriceMax'),
-  val => Math.round(Number(val) * 100) * Number(manualForm.quantity || 0) <= MAX_AMOUNT * 100 || t('ruleTotalMax')
+  val =>
+    Math.round(Number(val) * 100) * Number(manualForm.quantity || 0) <=
+      MAX_AMOUNT * 100 || t('ruleTotalMax')
 ])
 
 // The total only shows once both fields pass their checks, so an out-of-range entry never prints a meaningless figure.
 const estimateText = computed(() => {
-  const valid = [...quantityRules.value.map(rule => rule(manualForm.quantity)), ...priceRules.value.map(rule => rule(manualForm.unitPrice))].every(result => result === true)
+  const valid = [
+    ...quantityRules.value.map(rule => rule(manualForm.quantity)),
+    ...priceRules.value.map(rule => rule(manualForm.unitPrice))
+  ].every(result => result === true)
   return valid ? `₱${formatNumber(estimatedTotal.value)}` : '—'
 })
 
@@ -646,7 +1022,11 @@ const inventoryOptions = ref([])
 const filterInventory = (val, update) => {
   update(() => {
     const needle = val.toLowerCase()
-    inventoryOptions.value = needle ? inventoryData.value.filter(v => v.product_name.toLowerCase().includes(needle)) : inventoryData.value
+    inventoryOptions.value = needle
+      ? inventoryData.value.filter(v =>
+          v.product_name.toLowerCase().includes(needle)
+        )
+      : inventoryData.value
   })
 }
 
@@ -673,7 +1053,11 @@ const recordSale = async () => {
       total_amount: estimatedTotal.value,
       sale_date: selectedDate.value.replace(/\//g, '-')
     })
-    $q.notify({ type: 'positive', message: t('notifySaleRecorded'), position: 'top-right' })
+    $q.notify({
+      type: 'positive',
+      message: t('notifySaleRecorded'),
+      position: 'top-right'
+    })
     confirmOpen.value = false
     showMobileManualModal.value = false
     manualForm.product = null
@@ -686,7 +1070,11 @@ const recordSale = async () => {
     })
     await fetchSalesData()
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.response?.data?.message || t('notifySaleFailed'), position: 'top-right' })
+    $q.notify({
+      type: 'negative',
+      message: error.response?.data?.message || t('notifySaleFailed'),
+      position: 'top-right'
+    })
   } finally {
     submitting.value = false
   }
@@ -717,7 +1105,8 @@ const fetchSalesData = async () => {
       metrics.revenue = metricsRes.data.revenue || 0
       metrics.avgOrderValue = metricsRes.data.avg_order_value || 0
       metrics.cancellationRate = metricsRes.data.cancellation_rate || 0
-      metrics.bestSellingCategory = metricsRes.data.best_selling_category || null
+      metrics.bestSellingCategory =
+        metricsRes.data.best_selling_category || null
     }
 
     transactions.value = transRes.data || []
@@ -781,8 +1170,14 @@ onUnmounted(() => clearInterval(dayTimer))
   border-radius: var(--r-surface);
 
   background:
-    radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px) 0 0 / 16px 16px,
-    linear-gradient(145deg, var(--c-brand) 0%, var(--c-brand-deep) 60%, var(--c-brand-active) 100%);
+    radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px) 0 0 / 16px
+      16px,
+    linear-gradient(
+      145deg,
+      var(--c-brand) 0%,
+      var(--c-brand-deep) 60%,
+      var(--c-brand-active) 100%
+    );
   color: #ffffff;
 
   box-shadow: var(--sh-header);
@@ -1047,12 +1442,24 @@ onUnmounted(() => clearInterval(dayTimer))
   width: 76px;
 }
 
-.sr-table .col-order { width: 14%; }
-.sr-table .col-items { width: 11%; }
-.sr-table .col-total { width: 16%; }
-.sr-table .col-status { width: 20%; }
-.sr-table .col-sold { width: 30%; }
-.sr-table .col-revenue { width: 30%; }
+.sr-table .col-order {
+  width: 14%;
+}
+.sr-table .col-items {
+  width: 11%;
+}
+.sr-table .col-total {
+  width: 16%;
+}
+.sr-table .col-status {
+  width: 20%;
+}
+.sr-table .col-sold {
+  width: 30%;
+}
+.sr-table .col-revenue {
+  width: 30%;
+}
 
 .sr-list-item {
   display: flex;

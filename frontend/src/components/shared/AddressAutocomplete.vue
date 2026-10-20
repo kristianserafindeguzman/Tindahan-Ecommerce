@@ -12,7 +12,12 @@
       @blur="closeSuggestions"
     />
 
-    <div v-if="open" class="address-suggestions" :class="{ 'address-suggestions-above': above }" @mousedown.prevent>
+    <div
+      v-if="open"
+      class="address-suggestions"
+      :class="{ 'address-suggestions-above': above }"
+      @mousedown.prevent
+    >
       <div
         v-for="(suggestion, i) in suggestions"
         :key="suggestion.address"
@@ -20,16 +25,34 @@
         :class="{ 'address-suggestion-active': activeIndex === i }"
         @click="pick(suggestion)"
       >
-        <q-icon name="o_location_on" size="16px" class="address-suggestion-icon" />
+        <q-icon
+          name="o_location_on"
+          size="16px"
+          class="address-suggestion-icon"
+        />
         <span class="address-suggestion-text">
-          <template v-for="(part, pi) in splitHighlightParts(suggestion.address, modelValue)" :key="pi">
-            <mark v-if="part.match" class="address-suggestion-highlight">{{ part.text }}</mark>
+          <template
+            v-for="(part, pi) in splitHighlightParts(
+              suggestion.address,
+              modelValue
+            )"
+            :key="pi"
+          >
+            <mark v-if="part.match" class="address-suggestion-highlight">{{
+              part.text
+            }}</mark>
             <template v-else>{{ part.text }}</template>
           </template>
         </span>
       </div>
       <div v-if="!suggestions.length" class="address-suggestions-note">
-        {{ searching ? translate('Finding places...') : translate("Can't find it? Pin your spot on the map, then edit the address if needed.") }}
+        {{
+          searching
+            ? translate('Finding places...')
+            : translate(
+                "Can't find it? Pin your spot on the map, then edit the address if needed."
+              )
+        }}
       </div>
       <!-- The map only knows streets and areas for most addresses, so the pin usually lands close rather than exact. -->
       <div v-else class="address-suggestions-note address-suggestions-hint">
@@ -69,7 +92,8 @@ const SEARCH_TIMEOUT_MS = 8000
 // How long a confirm waits for a search still running on just-typed text before going ahead with the current pin.
 const SETTLE_WAIT_MS = 3000
 
-const hasPinned = props.pinned?.latitude != null && props.pinned?.longitude != null
+const hasPinned =
+  props.pinned?.latitude != null && props.pinned?.longitude != null
 
 const suggestions = ref([])
 const open = ref(false)
@@ -114,19 +138,28 @@ const closeSuggestions = () => {
 const shouldAutoPin = (query, result) => {
   if (pinChosenByUser) return false
   if (query.includes(',') || !searchBias) return true
-  const meters = calculateDistanceMeters(searchBias.latitude, searchBias.longitude, result.latitude, result.longitude)
+  const meters = calculateDistanceMeters(
+    searchBias.latitude,
+    searchBias.longitude,
+    result.latitude,
+    result.longitude
+  )
   return meters == null || meters <= LONE_NAME_PIN_RANGE_M
 }
 
-const runSearch = async (query) => {
+const runSearch = async query => {
   const controller = new AbortController()
   searchController = controller
-  const timeout = setTimeout(() => controller.abort(new Error('Address search timed out')), SEARCH_TIMEOUT_MS)
+  const timeout = setTimeout(
+    () => controller.abort(new Error('Address search timed out')),
+    SEARCH_TIMEOUT_MS
+  )
   try {
     const results = await searchAddresses(query, searchBias, controller.signal)
     suggestions.value = results
     // The pin follows the typed address to its best match, leaving the text as typed, until the user places it themselves.
-    if (results.length && shouldAutoPin(query, results[0])) emit('pin', results[0])
+    if (results.length && shouldAutoPin(query, results[0]))
+      emit('pin', results[0])
   } catch (error) {
     // Cancelled for newer typing, a pick or a blur, which own the list now; a timeout keeps searchController and falls through as a failure.
     if (searchController !== controller) return
@@ -139,7 +172,7 @@ const runSearch = async (query) => {
 }
 
 // A pin the user placed survives typing, so adding a unit number to a map-picked address still saves where the pin is.
-const onInput = (value) => {
+const onInput = value => {
   const text = value ?? ''
   emit('update:modelValue', text)
   typed = true
@@ -166,12 +199,15 @@ const moveActive = (event, delta) => {
   const len = suggestions.value.length
   if (!open.value || !len) return
   event.preventDefault()
-  activeIndex.value = activeIndex.value < 0
-    ? (delta > 0 ? 0 : len - 1)
-    : (activeIndex.value + delta + len) % len
+  activeIndex.value =
+    activeIndex.value < 0
+      ? delta > 0
+        ? 0
+        : len - 1
+      : (activeIndex.value + delta + len) % len
 }
 
-const pick = (suggestion) => {
+const pick = suggestion => {
   emit('update:modelValue', suggestion.address)
   typed = false
   pinChosenByUser = true
@@ -181,7 +217,7 @@ const pick = (suggestion) => {
 }
 
 // Enter picks the highlighted suggestion when there is one, and is otherwise the parent's, such as for confirming the typed address.
-const onEnter = async (event) => {
+const onEnter = async event => {
   const suggestion = open.value && suggestions.value[activeIndex.value]
   if (suggestion) {
     event.preventDefault()
@@ -199,7 +235,7 @@ const settle = async () => {
   const seq = searchSeq
   const finished = await Promise.race([
     startSearch().then(() => true),
-    new Promise((resolve) => setTimeout(() => resolve(false), SETTLE_WAIT_MS))
+    new Promise(resolve => setTimeout(() => resolve(false), SETTLE_WAIT_MS))
   ])
   if (seq !== searchSeq) return false
   if (!finished) closeSuggestions()
@@ -207,7 +243,7 @@ const settle = async () => {
 }
 
 // The parent forwards its map's location-selected events here, and should put the map's address in the box only when this returns true, which it does unless the box holds typed text.
-const mapSelected = (location) => {
+const mapSelected = location => {
   searchBias = location
   // The device fix taken when a map opens is only a starting guess, so it neither holds the pin nor closes suggestions mid-typing.
   if (!location.auto) {

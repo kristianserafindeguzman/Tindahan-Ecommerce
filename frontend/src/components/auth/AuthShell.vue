@@ -8,20 +8,41 @@
       <div class="auth-hero-copy">
         <!-- Back to the storefront: "/" sends a guest to the consumer home page, and anyone
              already signed in (a vendor on a status screen) to their own home instead. -->
-        <router-link to="/" class="auth-hero-logo" :aria-label="t('Go to home page')">
-          <img src="@/assets/tindahan-logo.png" alt="Tindahan" class="auth-hero-logo-img" />
+        <router-link
+          to="/"
+          class="auth-hero-logo"
+          :aria-label="t('Go to home page')"
+        >
+          <img
+            src="@/assets/tindahan-logo.png"
+            alt="Tindahan"
+            class="auth-hero-logo-img"
+          />
         </router-link>
         <!-- Each word is kept whole, so the headline only wraps between words and never splits
              "sari-sari" at its hyphen. -->
         <h2 class="auth-hero-title">
-          <template v-for="(word, index) in t('Your neighborhood sari-sari store, now online.').split(' ')" :key="index">{{ index ? ' ' : '' }}<span class="auth-word">{{ word }}</span></template>
+          <template
+            v-for="(word, index) in t(
+              'Your neighborhood sari-sari store, now online.'
+            ).split(' ')"
+            :key="index"
+            >{{ index ? ' ' : ''
+            }}<span class="auth-word">{{ word }}</span></template
+          >
         </h2>
         <p class="auth-hero-text">
-          {{ t('Browse stores near you, order ahead, and pick up when it\'s ready, all while helping local store owners grow.') }}
+          {{
+            t(
+              "Browse stores near you, order ahead, and pick up when it's ready, all while helping local store owners grow."
+            )
+          }}
         </p>
       </div>
 
-      <p class="auth-hero-foot">© {{ year }} {{ t('Tindahan App. All rights reserved.') }}</p>
+      <p class="auth-hero-foot"
+        >© {{ year }} {{ t('Tindahan App. All rights reserved.') }}</p
+      >
     </aside>
 
     <!-- The page's own form, in a raised card. -->
@@ -84,8 +105,16 @@ const year = new Date().getFullYear()
   z-index: -2;
 
   background:
-    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 55%, rgba(20, 2, 3, 0.55) 100%),
-    radial-gradient(ellipse 55% 65% at 76% 48%, rgba(255, 110, 100, 0.22), transparent 70%),
+    radial-gradient(
+      ellipse 120% 90% at 50% 40%,
+      transparent 55%,
+      rgba(20, 2, 3, 0.55) 100%
+    ),
+    radial-gradient(
+      ellipse 55% 65% at 76% 48%,
+      rgba(255, 110, 100, 0.22),
+      transparent 70%
+    ),
     linear-gradient(150deg, #9e1a1f 0%, #6e1014 50%, #300607 100%);
 }
 
@@ -137,7 +166,9 @@ const year = new Date().getFullYear()
 
   cursor: pointer;
 
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .auth-hero-logo:hover {
@@ -226,7 +257,11 @@ const year = new Date().getFullYear()
 
   /* A faint warm wash instead of flat white, brightest where the heading sits. */
   background:
-    radial-gradient(ellipse 90% 60% at 50% 0%, #ffffff 0%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(
+      ellipse 90% 60% at 50% 0%,
+      #ffffff 0%,
+      rgba(255, 255, 255, 0) 70%
+    ),
     linear-gradient(180deg, #fffdfc 0%, #fbf1ef 100%);
 
   /* A warm lift off the red, with no outline of its own. */
@@ -302,8 +337,16 @@ const year = new Date().getFullYear()
 
   .auth-shell::before {
     background:
-      radial-gradient(ellipse 140% 80% at 50% 30%, transparent 50%, rgba(20, 2, 3, 0.5) 100%),
-      radial-gradient(ellipse 90% 40% at 50% 62%, rgba(255, 110, 100, 0.2), transparent 70%),
+      radial-gradient(
+        ellipse 140% 80% at 50% 30%,
+        transparent 50%,
+        rgba(20, 2, 3, 0.5) 100%
+      ),
+      radial-gradient(
+        ellipse 90% 40% at 50% 62%,
+        rgba(255, 110, 100, 0.2),
+        transparent 70%
+      ),
       linear-gradient(170deg, #9e1a1f 0%, #6e1014 55%, #300607 100%);
   }
 

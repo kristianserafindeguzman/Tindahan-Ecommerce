@@ -1,14 +1,22 @@
 <template>
   <!-- Placeholder that fills the same box as its card, with geometry derived from the card's type and radius tokens so it cannot drift. -->
   <q-card flat bordered class="cskel">
-    <q-skeleton square :animation="anim" :class="['cskel__image', `cskel__image--${variant}`]" />
+    <q-skeleton
+      square
+      :animation="anim"
+      :class="['cskel__image', `cskel__image--${variant}`]"
+    />
 
     <q-card-section class="cskel__body">
       <template v-if="variant === 'product'">
         <!-- name sits above price, matching ProductCard -->
         <div class="cskel__name">
           <q-skeleton type="text" :animation="anim" class="cskel__line" />
-          <q-skeleton type="text" :animation="anim" class="cskel__line cskel__line--short" />
+          <q-skeleton
+            type="text"
+            :animation="anim"
+            class="cskel__line cskel__line--short"
+          />
         </div>
         <q-skeleton type="text" :animation="anim" class="cskel__price" />
       </template>
@@ -33,7 +41,7 @@ defineProps({
   variant: {
     type: String,
     default: 'product',
-    validator: (v) => ['product', 'store'].includes(v)
+    validator: v => ['product', 'store'].includes(v)
   }
 })
 

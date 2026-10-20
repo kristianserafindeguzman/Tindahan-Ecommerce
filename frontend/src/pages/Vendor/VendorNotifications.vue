@@ -1,13 +1,21 @@
 <template>
   <q-page class="vp-page">
     <div class="vp-container">
-
       <div class="vp-header">
         <div>
           <h1 class="vp-title">{{ t('title') }}</h1>
           <p class="vp-subtitle">{{ t('subtitle') }}</p>
         </div>
-        <q-btn outline no-caps color="primary" icon="o_done_all" :label="t('markAllAsRead')" class="vp-pill-btn" :disable="!unreadCount" @click="markAllAsRead" />
+        <q-btn
+          outline
+          no-caps
+          color="primary"
+          icon="o_done_all"
+          :label="t('markAllAsRead')"
+          class="vp-pill-btn"
+          :disable="!unreadCount"
+          @click="markAllAsRead"
+        />
       </div>
 
       <div class="vp-card">
@@ -32,7 +40,12 @@
         <!-- Placeholder rows shaped like the real ones until the first answer arrives. -->
         <div v-if="loading && !notifications.length" class="nt-skeletons">
           <div v-for="n in 6" :key="n" class="nt-skeleton">
-            <q-skeleton type="rect" width="40px" height="40px" class="nt-skeleton-icon" />
+            <q-skeleton
+              type="rect"
+              width="40px"
+              height="40px"
+              class="nt-skeleton-icon"
+            />
             <div class="nt-skeleton-lines">
               <q-skeleton type="text" width="35%" />
               <q-skeleton type="text" width="70%" />
@@ -42,8 +55,12 @@
         </div>
 
         <div v-else-if="!filtered.length" class="vp-empty">
-          <div class="vp-empty-icon"><q-icon name="o_notifications_none" size="24px" /></div>
-          <div class="vp-empty-title">{{ active === 'unread' ? t('emptyUnreadTitle') : t('emptyAllTitle') }}</div>
+          <div class="vp-empty-icon"
+            ><q-icon name="o_notifications_none" size="24px"
+          /></div>
+          <div class="vp-empty-title">{{
+            active === 'unread' ? t('emptyUnreadTitle') : t('emptyAllTitle')
+          }}</div>
           <div class="vp-empty-text">
             {{ active === 'unread' ? t('emptyUnreadDesc') : t('emptyAllDesc') }}
           </div>
@@ -52,7 +69,11 @@
         <template v-else>
           <!-- Grouped by day, so today's news sits apart from older ones; each notification is its own card. -->
           <div class="nt-groups">
-            <section v-for="group in groups" :key="group.label" class="nt-group">
+            <section
+              v-for="group in groups"
+              :key="group.label"
+              class="nt-group"
+            >
               <h2 class="nt-group-label">{{ group.label }}</h2>
               <div class="nt-list">
                 <button
@@ -69,37 +90,73 @@
                   <span class="nt-body">
                     <span class="nt-head">
                       <span class="nt-title">{{ item.text.title }}</span>
-                      <span v-if="!item.notif.is_read" class="nt-new">{{ t('newBadge') }}</span>
-                      <span class="nt-time">{{ formatClock(item.notif.created_at) }} · {{ timeAgo(item.notif.created_at) }}</span>
+                      <span v-if="!item.notif.is_read" class="nt-new">{{
+                        t('newBadge')
+                      }}</span>
+                      <span class="nt-time"
+                        >{{ formatClock(item.notif.created_at) }} ·
+                        {{ timeAgo(item.notif.created_at) }}</span
+                      >
                     </span>
                     <span class="nt-message">{{ item.text.message }}</span>
-                    <span v-if="item.text.pickup || item.text.reason" class="nt-meta">
+                    <span
+                      v-if="item.text.pickup || item.text.reason"
+                      class="nt-meta"
+                    >
                       <span v-if="item.text.pickup" class="nt-chip">
                         <q-icon name="o_schedule" size="14px" />
                         {{ item.text.pickupLabel }}: {{ item.text.pickup }}
                       </span>
-                      <span v-if="item.text.reason" class="nt-chip nt-chip--reason">
+                      <span
+                        v-if="item.text.reason"
+                        class="nt-chip nt-chip--reason"
+                      >
                         <q-icon name="o_info" size="14px" />
                         {{ item.text.reasonLabel }}: {{ item.text.reason }}
                       </span>
                     </span>
                   </span>
-                  <q-icon v-if="item.notif.order_id" name="o_chevron_right" size="20px" class="nt-arrow" />
+                  <q-icon
+                    v-if="item.notif.order_id"
+                    name="o_chevron_right"
+                    size="20px"
+                    class="nt-arrow"
+                  />
                 </button>
               </div>
             </section>
           </div>
 
           <div v-if="pageCount > 1" class="vp-pager">
-            <span>{{ t('showingWord') }} {{ rangeStart }}–{{ rangeEnd }} {{ t('ofWord') }} {{ filtered.length }}</span>
+            <span
+              >{{ t('showingWord') }} {{ rangeStart }}–{{ rangeEnd }}
+              {{ t('ofWord') }} {{ filtered.length }}</span
+            >
             <div class="vp-pager-btns">
-              <q-btn outline no-caps color="primary" icon="o_chevron_left" class="vp-pill-btn" :aria-label="t('prevPage')" :disable="page === 1" @click="page--" />
-              <q-btn outline no-caps color="primary" icon="o_chevron_right" class="vp-pill-btn" :aria-label="t('nextPage')" :disable="page === pageCount" @click="page++" />
+              <q-btn
+                outline
+                no-caps
+                color="primary"
+                icon="o_chevron_left"
+                class="vp-pill-btn"
+                :aria-label="t('prevPage')"
+                :disable="page === 1"
+                @click="page--"
+              />
+              <q-btn
+                outline
+                no-caps
+                color="primary"
+                icon="o_chevron_right"
+                class="vp-pill-btn"
+                :aria-label="t('nextPage')"
+                :disable="page === pageCount"
+                @click="page++"
+              />
             </div>
           </div>
         </template>
       </div>
-
     </div>
   </q-page>
 </template>
@@ -107,11 +164,23 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useVendorNotifications, notificationKind, notificationText } from '@/composables/useVendorNotifications'
+import {
+  useVendorNotifications,
+  notificationKind,
+  notificationText
+} from '@/composables/useVendorNotifications'
 import { useLanguage } from '@/composables/useLanguage'
 
 const router = useRouter()
-const { notifications, loading, unreadCount, fetchNotifications, markAsRead, markAllAsRead, timeAgo } = useVendorNotifications()
+const {
+  notifications,
+  loading,
+  unreadCount,
+  fetchNotifications,
+  markAsRead,
+  markAllAsRead,
+  timeAgo
+} = useVendorNotifications()
 
 // Language Dictionary for Notifications
 const vendorNotificationsDict = {
@@ -139,7 +208,8 @@ const vendorNotificationsDict = {
   },
   ph: {
     title: 'Mga Notification',
-    subtitle: 'Mga bagong order at cancellation mula sa tindahan mo, pinakabago una.',
+    subtitle:
+      'Mga bagong order at cancellation mula sa tindahan mo, pinakabago una.',
     markAllAsRead: 'I-mark lahat as read',
     filterAria: 'I-filter ang notifications',
     filterAll: 'Lahat',
@@ -190,15 +260,25 @@ const filtered = computed(() =>
     .filter(n => matches(n, active.value))
 )
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / PAGE_SIZE)))
-const paged = computed(() => filtered.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil(filtered.value.length / PAGE_SIZE))
+)
+const paged = computed(() =>
+  filtered.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE)
+)
 const rangeStart = computed(() => (page.value - 1) * PAGE_SIZE + 1)
-const rangeEnd = computed(() => Math.min(page.value * PAGE_SIZE, filtered.value.length))
+const rangeEnd = computed(() =>
+  Math.min(page.value * PAGE_SIZE, filtered.value.length)
+)
 
-watch(active, () => { page.value = 1 })
+watch(active, () => {
+  page.value = 1
+})
 
 // Reading one under "Unread" takes it off the list, so a later page that runs out steps back rather than showing nothing.
-watch(pageCount, count => { if (page.value > count) page.value = count })
+watch(pageCount, count => {
+  if (page.value > count) page.value = count
+})
 
 // "Today", "Yesterday", or the date, for each day's heading.
 const dayLabel = dateString => {
@@ -209,22 +289,35 @@ const dayLabel = dateString => {
   yesterday.setDate(today.getDate() - 1)
   if (date.toDateString() === today.toDateString()) return t('dayToday')
   if (date.toDateString() === yesterday.toDateString()) return t('dayYesterday')
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
 }
 
 // Each row carries its kind and its text in the current language, worked out once per render.
-const groups = computed(() => paged.value.reduce((list, notif) => {
-  const label = dayLabel(notif.created_at)
-  const item = { notif, kind: notificationKind(notif), text: notificationText(notif) }
-  const last = list[list.length - 1]
-  if (last && last.label === label) last.items.push(item)
-  else list.push({ label, items: [item] })
-  return list
-}, []))
+const groups = computed(() =>
+  paged.value.reduce((list, notif) => {
+    const label = dayLabel(notif.created_at)
+    const item = {
+      notif,
+      kind: notificationKind(notif),
+      text: notificationText(notif)
+    }
+    const last = list[list.length - 1]
+    if (last && last.label === label) last.items.push(item)
+    else list.push({ label, items: [item] })
+    return list
+  }, [])
+)
 
 const formatClock = dateString => {
   const date = new Date(dateString)
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  return Number.isNaN(date.getTime())
+    ? ''
+    : date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
 const openNotification = notif => {
@@ -314,7 +407,10 @@ onMounted(fetchNotifications)
 
   cursor: pointer;
 
-  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .nt-item:hover {
@@ -340,7 +436,9 @@ onMounted(fetchNotifications)
 .nt-item--unread:hover {
   border-color: var(--c-brand-tint-2);
 
-  box-shadow: inset 4px 0 0 var(--c-brand), 0 4px 14px rgba(15, 23, 42, 0.06);
+  box-shadow:
+    inset 4px 0 0 var(--c-brand),
+    0 4px 14px rgba(15, 23, 42, 0.06);
 }
 
 .nt-icon {

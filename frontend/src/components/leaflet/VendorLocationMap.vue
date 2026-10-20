@@ -1,6 +1,5 @@
 <template>
   <div class="location-wrapper">
-
     <!-- MAP -->
     <div ref="mapContainer" class="map"></div>
 
@@ -19,7 +18,6 @@
     <div v-if="locationError" class="location-error">
       {{ translate(locationError) }}
     </div>
-
   </div>
 </template>
 
@@ -58,50 +56,34 @@ const defaultLocation = {
   longitude: 121.0351
 }
 
-
 // INITIALIZE MAP
 
 onMounted(() => {
-
-  const hasInitial = props.initial?.latitude != null && props.initial?.longitude != null
+  const hasInitial =
+    props.initial?.latitude != null && props.initial?.longitude != null
   const start = hasInitial ? props.initial : defaultLocation
 
   map = L.map(mapContainer.value, {
     zoomControl: true
-  }).setView(
-    [start.latitude, start.longitude],
-    hasInitial ? 17 : 15
-  )
+  }).setView([start.latitude, start.longitude], hasInitial ? 17 : 15)
 
   // OpenStreetMap tiles
-  L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {
-      attribution:
-        '&copy; OpenStreetMap contributors',
-      maxZoom: 19
-    }
-  ).addTo(map)
-
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map)
 
   // Keeps the map correct when its box changes size, such as the enlarged map on vendor registration.
   resizeObserver = new ResizeObserver(() => map?.invalidateSize())
   resizeObserver.observe(mapContainer.value)
 
-
   // Click anywhere on map
-  map.on('click', async (event) => {
-
+  map.on('click', async event => {
     const latitude = event.latlng.lat
     const longitude = event.latlng.lng
 
-    await selectLocation(
-      latitude,
-      longitude
-    )
-
+    await selectLocation(latitude, longitude)
   })
-
 
   // A saved pin is shown as it is, and otherwise the map tries the browser's location.
   if (hasInitial) {
@@ -110,63 +92,42 @@ onMounted(() => {
     // Flagged auto so the parent can tell this opening guess from a spot the user chose.
     useCurrentLocation(true)
   }
-
 })
-
 
 // CURRENT LOCATION
 
 const useCurrentLocation = async (auto = false) => {
-
   loadingLocation.value = true
 
   const version = pinVersion
 
   try {
-
     locationError.value = ''
 
     const { latitude, longitude } = await getCurrentPosition()
 
     if (version !== pinVersion) return
 
-    await selectLocation(
-      latitude,
-      longitude,
-      auto
-    )
-
+    await selectLocation(latitude, longitude, auto)
   } catch (error) {
-
-    console.warn(
-      'Unable to get location:',
-      error.message
-    )
+    console.warn('Unable to get location:', error.message)
 
     // The map was closed, or the user gave up waiting and tapped their spot themselves, so a late failure has nothing left to report.
     if (unmounted || version !== pinVersion) return
 
     // A denied permission is the user's own setting and needs different advice from a lookup that simply failed.
-    locationError.value = error.code === 1
-      ? 'Location is blocked for this site. Tap the map to place your pin.'
-      : 'Could not get your location. Tap the map to place your pin.'
-
+    locationError.value =
+      error.code === 1
+        ? 'Location is blocked for this site. Tap the map to place your pin.'
+        : 'Could not get your location. Tap the map to place your pin.'
   } finally {
-
     loadingLocation.value = false
-
   }
 }
 
-
 // SELECT LOCATION
 
-const selectLocation = async (
-  latitude,
-  longitude,
-  auto = false
-) => {
-
+const selectLocation = async (latitude, longitude, auto = false) => {
   // Bails out if the map was unmounted while a geolocation or reverse-geocode call was still in flight, since touching a removed map or emitting into a closed panel would throw or corrupt state.
   if (unmounted) return
 
@@ -177,39 +138,25 @@ const selectLocation = async (
 
   const version = pinVersion
 
-
   // Reverse geocode
-  const address =
-    await reverseGeocode(
-      latitude,
-      longitude
-    )
+  const address = await reverseGeocode(latitude, longitude)
 
   // A newer pin replaced this one while the lookup ran, so its address would label the wrong spot.
   if (unmounted || version !== pinVersion) return
 
   // Send data to VendorRegistration
-  emit(
-    'location-selected',
-    {
-      latitude,
-      longitude,
-      address,
-      auto
-    }
-  )
-
+  emit('location-selected', {
+    latitude,
+    longitude,
+    address,
+    auto
+  })
 }
-
 
 // SHOW LOCATION
 
 // Moves the pin to coordinates whose address the parent already has, such as a picked search suggestion, so it skips the lookup and emits nothing.
-const showLocation = (
-  latitude,
-  longitude
-) => {
-
+const showLocation = (latitude, longitude) => {
   if (unmounted) return
 
   // A pin is on the map now, however it got there, so whatever went wrong reaching the browser's location no longer matters.
@@ -218,28 +165,20 @@ const showLocation = (
 
   pinVersion++
 
-  map.setView(
-    [latitude, longitude],
-    17
-  )
+  map.setView([latitude, longitude], 17)
 
   if (marker) {
     map.removeLayer(marker)
   }
 
-  marker = L.marker(
-    [latitude, longitude]
-  ).addTo(map)
-
+  marker = L.marker([latitude, longitude]).addTo(map)
 }
 
 defineExpose({ showLocation })
 
-
 // CLEANUP
 
 onBeforeUnmount(() => {
-
   unmounted = true
 
   resizeObserver?.disconnect()
@@ -247,14 +186,10 @@ onBeforeUnmount(() => {
   if (map) {
     map.remove()
   }
-
 })
-
 </script>
 
-
 <style scoped>
-
 .location-wrapper {
   position: relative;
 
@@ -271,14 +206,12 @@ onBeforeUnmount(() => {
   border-radius: 10px;
 }
 
-
 .map {
   width: 100%;
   height: 100%;
 
   min-height: 280px;
 }
-
 
 /* LOCATION BUTTON */
 
@@ -307,24 +240,20 @@ onBeforeUnmount(() => {
   font-size: 12px;
   font-weight: 600;
 
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 
   cursor: pointer;
 }
 
-
 .location-button:hover {
   background: #f7f7f7;
 }
-
 
 .location-button:disabled {
   opacity: 0.7;
 
   cursor: wait;
 }
-
 
 /* Sits along the bottom of the map, clear of the Your Location button in the corner. */
 .location-error {
@@ -353,7 +282,6 @@ onBeforeUnmount(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
-
 .location-icon {
   font-size: 18px;
 
@@ -361,6 +289,4 @@ onBeforeUnmount(() => {
 
   color: #111111;
 }
-
-
 </style>

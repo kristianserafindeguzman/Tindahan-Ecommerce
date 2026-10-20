@@ -6,31 +6,69 @@
     @show="onDialogShow"
   >
     <q-card class="map-dialog-card">
-
       <div class="map-container" :class="{ 'has-store-popup': storePopupOpen }">
         <div ref="mapEl" class="leaflet-map" />
 
         <div class="map-address-overlay">
           <div class="map-address-label">{{ t('Your Location') }}</div>
-          <div class="map-address-text">{{ address || t('Enter Address') }}</div>
+          <div class="map-address-text">{{
+            address || t('Enter Address')
+          }}</div>
         </div>
 
         <div class="map-status-legend">
-          <span><span class="map-status-dot map-status-dot-open" />{{ t('Open') }}</span>
-          <span><span class="map-status-dot map-status-dot-closed" />{{ t('Closed') }}</span>
+          <span
+            ><span class="map-status-dot map-status-dot-open" />{{
+              t('Open')
+            }}</span
+          >
+          <span
+            ><span class="map-status-dot map-status-dot-closed" />{{
+              t('Closed')
+            }}</span
+          >
         </div>
 
         <div class="map-controls">
-          <q-btn round unelevated class="map-control-btn" icon="o_add" :aria-label="t('Zoom in')" @click="zoomIn" />
-          <q-btn round unelevated class="map-control-btn" icon="o_remove" :aria-label="t('Zoom out')" @click="zoomOut" />
-          <q-btn round unelevated class="map-control-btn map-locate-btn" icon="o_my_location" :aria-label="t('Centre on my location')" @click="locateMe" />
+          <q-btn
+            round
+            unelevated
+            class="map-control-btn"
+            icon="o_add"
+            :aria-label="t('Zoom in')"
+            @click="zoomIn"
+          />
+          <q-btn
+            round
+            unelevated
+            class="map-control-btn"
+            icon="o_remove"
+            :aria-label="t('Zoom out')"
+            @click="zoomOut"
+          />
+          <q-btn
+            round
+            unelevated
+            class="map-control-btn map-locate-btn"
+            icon="o_my_location"
+            :aria-label="t('Centre on my location')"
+            @click="locateMe"
+          />
         </div>
       </div>
 
       <aside class="map-sidebar">
         <div class="sidebar-header">
           <div class="sidebar-title">{{ t('Stores near you') }}</div>
-          <q-btn flat round dense icon="o_close" class="sidebar-close-btn" :aria-label="t('Close map')" @click="closeDialog" />
+          <q-btn
+            flat
+            round
+            dense
+            icon="o_close"
+            class="sidebar-close-btn"
+            :aria-label="t('Close map')"
+            @click="closeDialog"
+          />
         </div>
 
         <q-input
@@ -48,13 +86,19 @@
           </template>
         </q-input>
 
-        <div class="sidebar-status-filters" role="group" :aria-label="t('Filter stores')">
+        <div
+          class="sidebar-status-filters"
+          role="group"
+          :aria-label="t('Filter stores')"
+        >
           <button
             v-for="filter in statusFilters"
             :key="filter.value"
             type="button"
             class="sidebar-status-filter"
-            :class="{ 'sidebar-status-filter-active': statusFilter === filter.value }"
+            :class="{
+              'sidebar-status-filter-active': statusFilter === filter.value
+            }"
             :aria-pressed="statusFilter === filter.value"
             @click="statusFilter = filter.value"
           >
@@ -67,7 +111,9 @@
           <q-spinner size="24px" />
           <p class="sidebar-loading-text">{{ t('Loading stores…') }}</p>
         </div>
-        <p v-else-if="!filteredStores.length" class="sidebar-empty">{{ t('No stores found.') }}</p>
+        <p v-else-if="!filteredStores.length" class="sidebar-empty">{{
+          t('No stores found.')
+        }}</p>
 
         <div v-else class="sidebar-list">
           <button
@@ -83,18 +129,26 @@
             </span>
             <span class="sidebar-store-info">
               <span class="sidebar-store-name">{{ store.name }}</span>
-              <span class="sidebar-store-hours" :class="{ 'sidebar-store-hours-closed': !store.isOpen }">
+              <span
+                class="sidebar-store-hours"
+                :class="{ 'sidebar-store-hours-closed': !store.isOpen }"
+              >
                 {{ storeStatus(store) }}
               </span>
-              <span v-if="store.distance_meters != null" class="sidebar-store-distance">
+              <span
+                v-if="store.distance_meters != null"
+                class="sidebar-store-distance"
+              >
                 <q-icon name="o_directions_walk" size="12px" />
-                <span>{{ formatTravelTime(store.distance_meters) }} · {{ formatDistance(store.distance_meters) }}</span>
+                <span
+                  >{{ formatTravelTime(store.distance_meters) }} ·
+                  {{ formatDistance(store.distance_meters) }}</span
+                >
               </span>
             </span>
           </button>
         </div>
       </aside>
-
     </q-card>
   </q-dialog>
 </template>
@@ -145,26 +199,30 @@ const disposeMap = () => {
   map?.remove()
   map = null
   consumerMarker = null
-  Object.keys(markersById).forEach((key) => delete markersById[key])
+  Object.keys(markersById).forEach(key => delete markersById[key])
   storePopupOpen.value = false
 }
 
-watch(() => props.modelValue, (open) => {
-  if (!open) disposeMap()
-})
+watch(
+  () => props.modelValue,
+  open => {
+    if (!open) disposeMap()
+  }
+)
 
-const storeIcon = (isOpen) => L.divIcon({
-  className: `store-map-marker ${isOpen ? 'store-map-marker-open' : 'store-map-marker-closed'}`,
-  html: `
+const storeIcon = isOpen =>
+  L.divIcon({
+    className: `store-map-marker ${isOpen ? 'store-map-marker-open' : 'store-map-marker-closed'}`,
+    html: `
     <svg width="30" height="40" viewBox="0 0 30 40">
       <path d="M15 0C6.7 0 0 6.7 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.7 23.3 0 15 0z" fill="currentColor" stroke="#ffffff" stroke-width="1.5"/>
       <circle cx="15" cy="15" r="6.5" fill="#ffffff"/>
     </svg>
   `,
-  iconSize: [30, 40],
-  iconAnchor: [15, 40],
-  popupAnchor: [0, -36]
-})
+    iconSize: [30, 40],
+    iconAnchor: [15, 40],
+    popupAnchor: [0, -36]
+  })
 
 const meIcon = L.divIcon({
   className: 'me-map-marker',
@@ -186,8 +244,10 @@ const savedPosition = () => {
   if (lat == null || lng == null || !lat.trim() || !lng.trim()) return null
   const latitude = Number(lat)
   const longitude = Number(lng)
-  return Number.isFinite(latitude) && Math.abs(latitude) <= 90 &&
-    Number.isFinite(longitude) && Math.abs(longitude) <= 180
+  return Number.isFinite(latitude) &&
+    Math.abs(latitude) <= 90 &&
+    Number.isFinite(longitude) &&
+    Math.abs(longitude) <= 180
     ? [latitude, longitude]
     : null
 }
@@ -214,25 +274,42 @@ watch(locationVersion, () => {
   fetchStores({ silent: true })
 })
 
-const openCount = computed(() => stores.value.filter(store => store.isOpen).length)
+const openCount = computed(
+  () => stores.value.filter(store => store.isOpen).length
+)
 const statusFilters = computed(() => [
   { value: 'all', label: t('All'), count: stores.value.length },
   { value: 'open', label: t('Open'), count: openCount.value },
-  { value: 'closed', label: t('Closed'), count: stores.value.length - openCount.value }
+  {
+    value: 'closed',
+    label: t('Closed'),
+    count: stores.value.length - openCount.value
+  }
 ])
 
 const filteredStores = computed(() => {
   const q = (searchQuery.value || '').trim().toLowerCase()
   return stores.value
-    .filter(store => statusFilter.value === 'all' || (statusFilter.value === 'open') === !!store.isOpen)
+    .filter(
+      store =>
+        statusFilter.value === 'all' ||
+        (statusFilter.value === 'open') === !!store.isOpen
+    )
     .filter(store => !q || store.name.toLowerCase().includes(q))
     .sort((a, b) => Number(b.isOpen) - Number(a.isOpen))
 })
 
-const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
-const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => HTML_ESCAPES[char])
+const HTML_ESCAPES = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+}
+const escapeHtml = value =>
+  String(value).replace(/[&<>"']/g, char => HTML_ESCAPES[char])
 
-const buildStorePopup = (store) => {
+const buildStorePopup = store => {
   const name = escapeHtml(store.name)
   const image = store.image ? escapeHtml(store.image) : ''
   return `
@@ -252,7 +329,7 @@ const renderMarkers = () => {
   if (!map || unmounted) return
 
   const seen = new Set()
-  filteredStores.value.forEach((store) => {
+  filteredStores.value.forEach(store => {
     if (store.latitude == null || store.longitude == null) return
     seen.add(String(store.id))
     const title = `${store.name}: ${t(store.isOpen ? 'Open' : 'Closed')}`
@@ -263,7 +340,10 @@ const renderMarkers = () => {
       existing.setPopupContent(buildStorePopup(store))
       existing.getElement()?.setAttribute('title', title)
     } else {
-      markersById[store.id] = L.marker([store.latitude, store.longitude], { icon: storeIcon(store.isOpen), title })
+      markersById[store.id] = L.marker([store.latitude, store.longitude], {
+        icon: storeIcon(store.isOpen),
+        title
+      })
         .addTo(map)
         .bindPopup(buildStorePopup(store))
     }
@@ -279,7 +359,7 @@ const renderMarkers = () => {
 
 watch([filteredStores, lang], renderMarkers)
 
-const focusStore = (store) => {
+const focusStore = store => {
   const marker = markersById[store.id]
   if (!marker) {
     closeDialog()
@@ -312,10 +392,13 @@ const locateMe = () => {
     return
   }
   if (!navigator.geolocation) return
-  navigator.geolocation.getCurrentPosition((position) => {
+  navigator.geolocation.getCurrentPosition(position => {
     if (unmounted || map !== currentMap) return
     updateConsumerMarker([position.coords.latitude, position.coords.longitude])
-    currentMap.setView([position.coords.latitude, position.coords.longitude], 15)
+    currentMap.setView(
+      [position.coords.latitude, position.coords.longitude],
+      15
+    )
   })
 }
 
@@ -324,14 +407,19 @@ const onDialogShow = async () => {
   const session = mapSession
 
   await nextTick()
-  if (unmounted || !props.modelValue || session !== mapSession || !mapEl.value) return
+  if (unmounted || !props.modelValue || session !== mapSession || !mapEl.value)
+    return
 
   const position = savedPosition()
   const center = position || [14.5995, 120.9842]
   map = L.map(mapEl.value, { zoomControl: false }).setView(center, 15)
   storePopupOpen.value = false
-  map.on('popupopen', () => { storePopupOpen.value = true })
-  map.on('popupclose', () => { storePopupOpen.value = false })
+  map.on('popupopen', () => {
+    storePopupOpen.value = true
+  })
+  map.on('popupclose', () => {
+    storePopupOpen.value = false
+  })
   map.on('resize', repositionOpenPopup)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
@@ -665,8 +753,14 @@ onBeforeUnmount(() => {
 }
 
 @keyframes map-fade-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -710,7 +804,11 @@ onBeforeUnmount(() => {
   border-radius: var(--r-md);
   border: 1px solid var(--c-border);
 
-  background: linear-gradient(145deg, var(--c-surface) 0%, var(--c-surface) 100%);
+  background: linear-gradient(
+    145deg,
+    var(--c-surface) 0%,
+    var(--c-surface) 100%
+  );
   color: var(--c-brand);
 
   overflow: hidden;
@@ -872,7 +970,9 @@ onBeforeUnmount(() => {
 
   font-size: 16px !important;
 
-  transition: color 0.15s, background-color 0.15s;
+  transition:
+    color 0.15s,
+    background-color 0.15s;
 }
 
 .map-container :deep(.leaflet-popup-close-button:hover) {

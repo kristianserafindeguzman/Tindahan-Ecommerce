@@ -1,6 +1,11 @@
 <template>
   <!-- Welcome, shown once to an approved vendor on their first visit to the dashboard. -->
-  <q-dialog v-model="showWelcome" persistent transition-show="scale" transition-hide="scale">
+  <q-dialog
+    v-model="showWelcome"
+    persistent
+    transition-show="scale"
+    transition-hide="scale"
+  >
     <q-card class="tour-dialog">
       <!-- The whole tour follows the vendor module's language, so switching here also switches every step. -->
       <div class="tour-lang-row">
@@ -28,24 +33,55 @@
       </q-card-section>
 
       <q-card-actions class="tour-actions">
-        <q-btn outline no-caps :label="t('skipBtn')" class="tour-btn tour-btn--secondary" @click="skipFromWelcome" />
-        <q-btn unelevated no-caps :label="t('startBtn')" class="tour-btn tour-btn--primary" @click="startFromWelcome" />
+        <q-btn
+          outline
+          no-caps
+          :label="t('skipBtn')"
+          class="tour-btn tour-btn--secondary"
+          @click="skipFromWelcome"
+        />
+        <q-btn
+          unelevated
+          no-caps
+          :label="t('startBtn')"
+          class="tour-btn tour-btn--primary"
+          @click="startFromWelcome"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
 
   <!-- Closing card, shown after the last step. -->
-  <q-dialog v-model="showFinish" persistent transition-show="scale" transition-hide="scale">
+  <q-dialog
+    v-model="showFinish"
+    persistent
+    transition-show="scale"
+    transition-hide="scale"
+  >
     <q-card class="tour-dialog">
       <q-card-section class="tour-content">
-        <div class="tour-done-icon"><q-icon name="o_check_circle" size="26px" /></div>
+        <div class="tour-done-icon"
+          ><q-icon name="o_check_circle" size="26px"
+        /></div>
         <div class="tour-title">{{ t('doneTitle') }}</div>
         <p class="tour-message">{{ t('doneBody') }}</p>
       </q-card-section>
 
       <q-card-actions class="tour-actions tour-actions--stacked">
-        <q-btn unelevated no-caps :label="t('addFirstBtn')" class="tour-btn tour-btn--primary" @click="goAddProduct" />
-        <q-btn outline no-caps :label="t('dashboardBtn')" class="tour-btn tour-btn--secondary" @click="goDashboard" />
+        <q-btn
+          unelevated
+          no-caps
+          :label="t('addFirstBtn')"
+          class="tour-btn tour-btn--primary"
+          @click="goAddProduct"
+        />
+        <q-btn
+          outline
+          no-caps
+          :label="t('dashboardBtn')"
+          class="tour-btn tour-btn--secondary"
+          @click="goDashboard"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -58,7 +94,11 @@ import { useQuasar } from 'quasar'
 import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 import { useLanguage } from '@/composables/useLanguage'
-import { useVendorTutorial, TUTORIAL_COMPLETED, TUTORIAL_SKIPPED } from '@/composables/useVendorTutorial'
+import {
+  useVendorTutorial,
+  TUTORIAL_COMPLETED,
+  TUTORIAL_SKIPPED
+} from '@/composables/useVendorTutorial'
 import logoDark from '@/assets/tindahan-black.png'
 import logoLight from '@/assets/tindahan-logo.png'
 
@@ -73,8 +113,10 @@ const router = useRouter()
 const tutorialDict = {
   en: {
     welcomeTitle: 'Welcome to Tindahan!',
-    welcomeBody: 'Let us walk you through your whole store — the dashboard, your products, orders, sales reports and settings.',
-    welcomeNote: 'About three minutes. You can leave at any point and pick it up again later.',
+    welcomeBody:
+      'Let us walk you through your whole store — the dashboard, your products, orders, sales reports and settings.',
+    welcomeNote:
+      'About three minutes. You can leave at any point and pick it up again later.',
     startBtn: 'Start Tutorial',
     skipBtn: 'Skip',
 
@@ -87,64 +129,87 @@ const tutorialDict = {
     secSettings: 'Store Settings',
 
     s1Title: 'Your dashboard',
-    s1Body: 'Everything starts here. This link brings you back to the overview from anywhere in your store.',
+    s1Body:
+      'Everything starts here. This link brings you back to the overview from anywhere in your store.',
     s2Title: 'Store status',
-    s2Body: 'Your greeting, today’s date, and whether your store is open right now based on the hours you set. View Store shows customers exactly what they see.',
+    s2Body:
+      'Your greeting, today’s date, and whether your store is open right now based on the hours you set. View Store shows customers exactly what they see.',
     s3Title: 'Order counts',
-    s3Body: 'How many orders are waiting, being prepared, ready for pickup, and completed. Check this first each morning.',
+    s3Body:
+      'How many orders are waiting, being prepared, ready for pickup, and completed. Check this first each morning.',
     s4Title: 'Revenue',
-    s4Body: 'Your earnings over time. Switch the period to compare a day, a week or a month.',
+    s4Body:
+      'Your earnings over time. Switch the period to compare a day, a week or a month.',
     s5Title: 'Demand forecast',
-    s5Body: 'The system predicts which products will sell most in the coming days, so you can restock before you run out.',
+    s5Body:
+      'The system predicts which products will sell most in the coming days, so you can restock before you run out.',
     s6Title: 'Recent orders',
-    s6Body: 'Your five newest orders. Tap one to open it, or View All to see the full list.',
+    s6Body:
+      'Your five newest orders. Tap one to open it, or View All to see the full list.',
 
     s7Title: 'Product List',
-    s7Body: 'Your inventory lives here — every item you sell, with its price, stock and category.',
+    s7Body:
+      'Your inventory lives here — every item you sell, with its price, stock and category.',
     s8Title: 'Add Product',
-    s8Body: 'Use this to list a new item: name, price, stock, category and a photo. Do this first so customers have something to buy.',
+    s8Body:
+      'Use this to list a new item: name, price, stock, category and a photo. Do this first so customers have something to buy.',
     s9Title: 'Stock insights',
-    s9Body: 'A restock alert for what is running low, the trend for what is about to move, and your current best performer.',
+    s9Body:
+      'A restock alert for what is running low, the trend for what is about to move, and your current best performer.',
     s10Title: 'Finding a product',
-    s10Body: 'Search by name, or filter by category, stock level and price. Tap any product to edit it, change its stock, or remove it.',
+    s10Body:
+      'Search by name, or filter by category, stock level and price. Tap any product to edit it, change its stock, or remove it.',
 
     s11Title: 'Categories',
-    s11Body: 'Group your products — snacks, drinks, canned goods — so customers can browse your store. Add Category creates a new one; Export saves a report.',
+    s11Body:
+      'Group your products — snacks, drinks, canned goods — so customers can browse your store. Add Category creates a new one; Export saves a report.',
 
     s12Title: 'Order List',
     s12Body: 'Every order a customer places arrives here.',
     s13Title: 'Order status',
-    s13Body: 'Filter by stage, and see at a glance how many are in each. Placed orders need your attention first.',
+    s13Body:
+      'Filter by stage, and see at a glance how many are in each. Placed orders need your attention first.',
     s14Title: 'Working an order',
-    s14Body: 'Search, sort or filter, then tap an order to open it and move it along: preparing, ready for pickup, then picked up. Export saves the list as a report.',
+    s14Body:
+      'Search, sort or filter, then tap an order to open it and move it along: preparing, ready for pickup, then picked up. Export saves the list as a report.',
 
     s15Title: 'Customers',
-    s15Body: 'Your regulars, and everything each one has ordered from you. Pick a name to see their full history.',
+    s15Body:
+      'Your regulars, and everything each one has ordered from you. Pick a name to see their full history.',
 
     s16Title: 'Sales Reports',
-    s16Body: 'The numbers behind your store — how much you earned and what sold.',
+    s16Body:
+      'The numbers behind your store — how much you earned and what sold.',
     s17Title: 'Revenue for the period',
-    s17Body: 'Your total, the orders behind it, and items sold. The date button at the top right switches between a single day and all time.',
+    s17Body:
+      'Your total, the orders behind it, and items sold. The date button at the top right switches between a single day and all time.',
     s18Title: 'Performance',
-    s18Body: 'Average order value, how often orders get cancelled, and your best-selling category.',
+    s18Body:
+      'Average order value, how often orders get cancelled, and your best-selling category.',
     s19Title: 'Record a walk-in sale',
-    s19Body: 'Sold something over the counter? Record it here so your stock and your reports stay correct.',
+    s19Body:
+      'Sold something over the counter? Record it here so your stock and your reports stay correct.',
 
     s20Title: 'Store Settings',
     s20Body: 'Your store and account settings all live on this page.',
     s21Title: 'Your details',
-    s21Body: 'Your own name, mobile number and email — the contact details tied to your account.',
+    s21Body:
+      'Your own name, mobile number and email — the contact details tied to your account.',
     s22Title: 'Store photo',
-    s22Body: 'The storefront photo customers see first. A clear, well-lit shot makes a real difference.',
+    s22Body:
+      'The storefront photo customers see first. A clear, well-lit shot makes a real difference.',
     s23Title: 'Store details',
-    s23Body: 'Your store name, address with its map pin, and opening hours. The hours here are what set your store to open or closed on the dashboard.',
+    s23Body:
+      'Your store name, address with its map pin, and opening hours. The hours here are what set your store to open or closed on the dashboard.',
     s24Title: 'Security',
     s24Body: 'Change your password here. Do it regularly, and never share it.',
     s25Title: 'Help & Support',
-    s25Body: 'Replay Tutorial brings this whole walkthrough back whenever you need it.',
+    s25Body:
+      'Replay Tutorial brings this whole walkthrough back whenever you need it.',
 
     doneTitle: 'You’re all set!',
-    doneBody: 'That is your whole store. Add your first product to start selling, or head back to the dashboard.',
+    doneBody:
+      'That is your whole store. Add your first product to start selling, or head back to the dashboard.',
     addFirstBtn: 'Add Your First Product',
     dashboardBtn: 'Go to Dashboard',
 
@@ -156,8 +221,10 @@ const tutorialDict = {
   },
   ph: {
     welcomeTitle: 'Maligayang pagdating sa Tindahan!',
-    welcomeBody: 'Ililibot ka namin sa buong tindahan mo — ang dashboard, mga paninda, order, sales report, at settings.',
-    welcomeNote: 'Mga tatlong minuto lang ito. Pwede kang huminto kahit kailan at ituloy ulit mamaya.',
+    welcomeBody:
+      'Ililibot ka namin sa buong tindahan mo — ang dashboard, mga paninda, order, sales report, at settings.',
+    welcomeNote:
+      'Mga tatlong minuto lang ito. Pwede kang huminto kahit kailan at ituloy ulit mamaya.',
     startBtn: 'Simulan ang Tutorial',
     skipBtn: 'Laktawan',
 
@@ -170,64 +237,89 @@ const tutorialDict = {
     secSettings: 'Settings ng Tindahan',
 
     s1Title: 'Ang dashboard mo',
-    s1Body: 'Dito nagsisimula ang lahat. Pindutin ang link na ito para bumalik sa overview mula saanmang bahagi ng tindahan mo.',
+    s1Body:
+      'Dito nagsisimula ang lahat. Pindutin ang link na ito para bumalik sa overview mula saanmang bahagi ng tindahan mo.',
     s2Title: 'Status ng tindahan',
-    s2Body: 'Makikita rito ang pagbati sa iyo, ang petsa ngayon, at kung bukas ang tindahan mo batay sa oras na itinakda mo. Ipinapakita ng View Store ang eksaktong nakikita ng mga customer.',
+    s2Body:
+      'Makikita rito ang pagbati sa iyo, ang petsa ngayon, at kung bukas ang tindahan mo batay sa oras na itinakda mo. Ipinapakita ng View Store ang eksaktong nakikita ng mga customer.',
     s3Title: 'Bilang ng mga order',
-    s3Body: 'Ilan ang naghihintay, inihahanda, pwede nang kunin, at tapos na. Ito ang unang tingnan mo tuwing umaga.',
+    s3Body:
+      'Ilan ang naghihintay, inihahanda, pwede nang kunin, at tapos na. Ito ang unang tingnan mo tuwing umaga.',
     s4Title: 'Kita',
-    s4Body: 'Ang kinikita mo sa paglipas ng panahon. Palitan ang period para ikumpara ang kita kada araw, linggo, o buwan.',
+    s4Body:
+      'Ang kinikita mo sa paglipas ng panahon. Palitan ang period para ikumpara ang kita kada araw, linggo, o buwan.',
     s5Title: 'Demand forecast',
-    s5Body: 'Hinuhulaan ng system kung aling paninda ang pinakamabebenta sa mga susunod na araw, para makapag-restock ka bago maubusan.',
+    s5Body:
+      'Hinuhulaan ng system kung aling paninda ang pinakamabebenta sa mga susunod na araw, para makapag-restock ka bago maubusan.',
     s6Title: 'Mga bagong order',
-    s6Body: 'Ang limang pinakabago mong order. Pindutin ang isa para buksan, o ang View All para makita ang buong listahan.',
+    s6Body:
+      'Ang limang pinakabago mong order. Pindutin ang isa para buksan, o ang View All para makita ang buong listahan.',
 
     s7Title: 'Listahan ng Paninda',
-    s7Body: 'Nandito ang imbentaryo mo — lahat ng paninda mo, kasama ang presyo, stock, at kategorya.',
+    s7Body:
+      'Nandito ang imbentaryo mo — lahat ng paninda mo, kasama ang presyo, stock, at kategorya.',
     s8Title: 'Magdagdag ng Paninda',
-    s8Body: 'Dito ka magdadagdag ng bagong item: pangalan, presyo, stock, kategorya, at litrato. Unahin mo ito para may mabili ang mga customer.',
+    s8Body:
+      'Dito ka magdadagdag ng bagong item: pangalan, presyo, stock, kategorya, at litrato. Unahin mo ito para may mabili ang mga customer.',
     s9Title: 'Insights sa stock',
-    s9Body: 'Babala para sa mga paubos na, ang trend ng mga malapit nang dumami ang benta, at ang pinakamabenta mo ngayon.',
+    s9Body:
+      'Babala para sa mga paubos na, ang trend ng mga malapit nang dumami ang benta, at ang pinakamabenta mo ngayon.',
     s10Title: 'Paghahanap ng paninda',
-    s10Body: 'Maghanap ayon sa pangalan, o mag-filter ayon sa kategorya, dami ng stock, at presyo. Pindutin ang kahit anong paninda para i-edit ito, baguhin ang stock, o alisin.',
+    s10Body:
+      'Maghanap ayon sa pangalan, o mag-filter ayon sa kategorya, dami ng stock, at presyo. Pindutin ang kahit anong paninda para i-edit ito, baguhin ang stock, o alisin.',
 
     s11Title: 'Mga Kategorya',
-    s11Body: 'I-grupo ang mga paninda mo — tsitsirya, inumin, de-lata — para madaling ma-browse ng customer. Gumagawa ng bago ang Add Category; nagse-save naman ng report ang Export.',
+    s11Body:
+      'I-grupo ang mga paninda mo — tsitsirya, inumin, de-lata — para madaling ma-browse ng customer. Gumagawa ng bago ang Add Category; nagse-save naman ng report ang Export.',
 
     s12Title: 'Listahan ng Order',
     s12Body: 'Dito pumapasok ang bawat order ng mga customer.',
     s13Title: 'Status ng order',
-    s13Body: 'Mag-filter ayon sa status at makikita agad kung ilan ang nasa bawat isa. Unahin ang mga bagong pasok na order.',
+    s13Body:
+      'Mag-filter ayon sa status at makikita agad kung ilan ang nasa bawat isa. Unahin ang mga bagong pasok na order.',
     s14Title: 'Pag-asikaso ng order',
-    s14Body: 'Maghanap, mag-sort, o mag-filter, saka pindutin ang order para buksan at i-update ang status nito: inihahanda, pwede nang kunin, at nakuha na. Nagse-save ng listahan bilang report ang Export.',
+    s14Body:
+      'Maghanap, mag-sort, o mag-filter, saka pindutin ang order para buksan at i-update ang status nito: inihahanda, pwede nang kunin, at nakuha na. Nagse-save ng listahan bilang report ang Export.',
 
     s15Title: 'Mga Customer',
-    s15Body: 'Ang mga suki mo at lahat ng inorder nila sa iyo. Pumili ng pangalan para makita ang buong order history nila.',
+    s15Body:
+      'Ang mga suki mo at lahat ng inorder nila sa iyo. Pumili ng pangalan para makita ang buong order history nila.',
 
     s16Title: 'Mga Benta',
-    s16Body: 'Ang mga numero sa likod ng tindahan mo — magkano ang kinita mo at ano ang nabenta.',
+    s16Body:
+      'Ang mga numero sa likod ng tindahan mo — magkano ang kinita mo at ano ang nabenta.',
     s17Title: 'Kita sa napiling panahon',
-    s17Body: 'Ang kabuuang kita mo, ang mga order na pinanggalingan nito, at ang dami ng nabentang item. Ang date button sa kanang itaas ang nagpapalit sa pagitan ng isang araw at lahat ng panahon.',
+    s17Body:
+      'Ang kabuuang kita mo, ang mga order na pinanggalingan nito, at ang dami ng nabentang item. Ang date button sa kanang itaas ang nagpapalit sa pagitan ng isang araw at lahat ng panahon.',
     s18Title: 'Performance',
-    s18Body: 'Ang average na halaga ng bawat order, kung gaano kadalas nakakansela ang mga order, at ang pinakamabenta mong kategorya.',
+    s18Body:
+      'Ang average na halaga ng bawat order, kung gaano kadalas nakakansela ang mga order, at ang pinakamabenta mong kategorya.',
     s19Title: 'Itala ang walk-in na benta',
-    s19Body: 'May nabenta ka sa counter? Itala mo rito para laging tama ang stock at mga report mo.',
+    s19Body:
+      'May nabenta ka sa counter? Itala mo rito para laging tama ang stock at mga report mo.',
 
     s20Title: 'Settings ng Tindahan',
-    s20Body: 'Nasa page na ito ang lahat ng settings ng tindahan at account mo.',
+    s20Body:
+      'Nasa page na ito ang lahat ng settings ng tindahan at account mo.',
     s21Title: 'Mga detalye mo',
-    s21Body: 'Ang pangalan, mobile number, at email mo — ang contact details na naka-link sa account mo.',
+    s21Body:
+      'Ang pangalan, mobile number, at email mo — ang contact details na naka-link sa account mo.',
     s22Title: 'Litrato ng tindahan',
-    s22Body: 'Ang litrato ng tindahan na unang nakikita ng customer. Malaking tulong ang malinaw at maliwanag na kuha.',
+    s22Body:
+      'Ang litrato ng tindahan na unang nakikita ng customer. Malaking tulong ang malinaw at maliwanag na kuha.',
     s23Title: 'Detalye ng tindahan',
-    s23Body: 'Ang pangalan ng tindahan, address kasama ang pin sa mapa, at oras ng pagbubukas. Ang oras dito ang nagsasabi kung bukas o sarado ang tindahan mo sa dashboard.',
+    s23Body:
+      'Ang pangalan ng tindahan, address kasama ang pin sa mapa, at oras ng pagbubukas. Ang oras dito ang nagsasabi kung bukas o sarado ang tindahan mo sa dashboard.',
     s24Title: 'Seguridad',
-    s24Body: 'Dito mo papalitan ang password mo. Palitan ito paminsan-minsan, at huwag itong ibigay kaninuman.',
+    s24Body:
+      'Dito mo papalitan ang password mo. Palitan ito paminsan-minsan, at huwag itong ibigay kaninuman.',
     s25Title: 'Tulong at Suporta',
-    s25Body: 'Ibabalik ng Ulitin ang Tutorial ang buong gabay na ito kahit kailan mo kailanganin.',
+    s25Body:
+      'Ibabalik ng Ulitin ang Tutorial ang buong gabay na ito kahit kailan mo kailanganin.',
 
     doneTitle: 'Handa ka na!',
-    doneBody: 'Iyan ang buong tindahan mo. Idagdag ang una mong paninda para makapagsimulang magbenta, o bumalik sa dashboard.',
+    doneBody:
+      'Iyan ang buong tindahan mo. Idagdag ang una mong paninda para makapagsimulang magbenta, o bumalik sa dashboard.',
     addFirstBtn: 'Idagdag ang Unang Paninda',
     dashboardBtn: 'Pumunta sa Dashboard',
 
@@ -240,7 +332,13 @@ const tutorialDict = {
 }
 
 const { t, lang, setLanguage } = useLanguage(tutorialDict)
-const { replaySignal, shouldAutoStart, hasSeenLocally, markTutorialSeen, setTutorialState } = useVendorTutorial()
+const {
+  replaySignal,
+  shouldAutoStart,
+  hasSeenLocally,
+  markTutorialSeen,
+  setTutorialState
+} = useVendorTutorial()
 
 // Same two languages as the header's toggle; the labels stay in their own language so a
 // vendor who cannot read the current one can still find theirs.
@@ -270,44 +368,240 @@ const PROFILE = '/vendor/profile'
 // the tour can walk forward and backward across all seven pages.
 const STEP_DEFS = [
   // ---- Dashboard ----
-  { route: DASHBOARD, section: 'secDashboard', nav: 'dashboard', titleKey: 's1Title', bodyKey: 's1Body' },
-  { route: DASHBOARD, section: 'secDashboard', wide: '[data-tour="dash-hero"]', titleKey: 's2Title', bodyKey: 's2Body', side: 'bottom', align: 'start' },
-  { route: DASHBOARD, section: 'secDashboard', wide: '[data-tour="dash-kpis"]', titleKey: 's3Title', bodyKey: 's3Body', side: 'bottom', align: 'start' },
-  { route: DASHBOARD, section: 'secDashboard', wide: '[data-tour="dash-revenue"]', compact: '[data-tour="dash-revenue-head"]', titleKey: 's4Title', bodyKey: 's4Body', side: 'top' },
-  { route: DASHBOARD, section: 'secDashboard', wide: '[data-tour="dash-forecast"]', compact: '[data-tour="dash-forecast-head"]', titleKey: 's5Title', bodyKey: 's5Body', side: 'left', compactSide: 'bottom' },
-  { route: DASHBOARD, section: 'secDashboard', wide: '[data-tour="dash-recent"]', compact: '[data-tour="dash-recent-head"]', titleKey: 's6Title', bodyKey: 's6Body', side: 'top' },
+  {
+    route: DASHBOARD,
+    section: 'secDashboard',
+    nav: 'dashboard',
+    titleKey: 's1Title',
+    bodyKey: 's1Body'
+  },
+  {
+    route: DASHBOARD,
+    section: 'secDashboard',
+    wide: '[data-tour="dash-hero"]',
+    titleKey: 's2Title',
+    bodyKey: 's2Body',
+    side: 'bottom',
+    align: 'start'
+  },
+  {
+    route: DASHBOARD,
+    section: 'secDashboard',
+    wide: '[data-tour="dash-kpis"]',
+    titleKey: 's3Title',
+    bodyKey: 's3Body',
+    side: 'bottom',
+    align: 'start'
+  },
+  {
+    route: DASHBOARD,
+    section: 'secDashboard',
+    wide: '[data-tour="dash-revenue"]',
+    compact: '[data-tour="dash-revenue-head"]',
+    titleKey: 's4Title',
+    bodyKey: 's4Body',
+    side: 'top'
+  },
+  {
+    route: DASHBOARD,
+    section: 'secDashboard',
+    wide: '[data-tour="dash-forecast"]',
+    compact: '[data-tour="dash-forecast-head"]',
+    titleKey: 's5Title',
+    bodyKey: 's5Body',
+    side: 'left',
+    compactSide: 'bottom'
+  },
+  {
+    route: DASHBOARD,
+    section: 'secDashboard',
+    wide: '[data-tour="dash-recent"]',
+    compact: '[data-tour="dash-recent-head"]',
+    titleKey: 's6Title',
+    bodyKey: 's6Body',
+    side: 'top'
+  },
 
   // ---- Products ----
-  { route: PRODUCTS, section: 'secProducts', nav: 'inventory', titleKey: 's7Title', bodyKey: 's7Body' },
-  { route: PRODUCTS, section: 'secProducts', wide: '[data-tour="add-product"]', titleKey: 's8Title', bodyKey: 's8Body', side: 'bottom', align: 'end' },
-  { route: PRODUCTS, section: 'secProducts', wide: '[data-tour="pl-insights"]', titleKey: 's9Title', bodyKey: 's9Body', side: 'bottom', align: 'start' },
-  { route: PRODUCTS, section: 'secProducts', wide: '[data-tour="pl-list"]', compact: '[data-tour="pl-toolbar"]', titleKey: 's10Title', bodyKey: 's10Body', side: 'top', compactSide: 'bottom' },
+  {
+    route: PRODUCTS,
+    section: 'secProducts',
+    nav: 'inventory',
+    titleKey: 's7Title',
+    bodyKey: 's7Body'
+  },
+  {
+    route: PRODUCTS,
+    section: 'secProducts',
+    wide: '[data-tour="add-product"]',
+    titleKey: 's8Title',
+    bodyKey: 's8Body',
+    side: 'bottom',
+    align: 'end'
+  },
+  {
+    route: PRODUCTS,
+    section: 'secProducts',
+    wide: '[data-tour="pl-insights"]',
+    titleKey: 's9Title',
+    bodyKey: 's9Body',
+    side: 'bottom',
+    align: 'start'
+  },
+  {
+    route: PRODUCTS,
+    section: 'secProducts',
+    wide: '[data-tour="pl-list"]',
+    compact: '[data-tour="pl-toolbar"]',
+    titleKey: 's10Title',
+    bodyKey: 's10Body',
+    side: 'top',
+    compactSide: 'bottom'
+  },
 
   // ---- Categories ----
-  { route: CATEGORIES, section: 'secCategories', wide: '[data-tour="cat-actions"]', titleKey: 's11Title', bodyKey: 's11Body', side: 'bottom', align: 'end' },
+  {
+    route: CATEGORIES,
+    section: 'secCategories',
+    wide: '[data-tour="cat-actions"]',
+    titleKey: 's11Title',
+    bodyKey: 's11Body',
+    side: 'bottom',
+    align: 'end'
+  },
 
   // ---- Orders ----
-  { route: ORDERS, section: 'secOrders', nav: 'orders', titleKey: 's12Title', bodyKey: 's12Body' },
-  { route: ORDERS, section: 'secOrders', wide: '[data-tour="ol-chips"]', titleKey: 's13Title', bodyKey: 's13Body', side: 'bottom', align: 'start' },
-  { route: ORDERS, section: 'secOrders', wide: '[data-tour="ol-list"]', compact: '[data-tour="ol-toolbar"]', titleKey: 's14Title', bodyKey: 's14Body', side: 'top', compactSide: 'bottom' },
+  {
+    route: ORDERS,
+    section: 'secOrders',
+    nav: 'orders',
+    titleKey: 's12Title',
+    bodyKey: 's12Body'
+  },
+  {
+    route: ORDERS,
+    section: 'secOrders',
+    wide: '[data-tour="ol-chips"]',
+    titleKey: 's13Title',
+    bodyKey: 's13Body',
+    side: 'bottom',
+    align: 'start'
+  },
+  {
+    route: ORDERS,
+    section: 'secOrders',
+    wide: '[data-tour="ol-list"]',
+    compact: '[data-tour="ol-toolbar"]',
+    titleKey: 's14Title',
+    bodyKey: 's14Body',
+    side: 'top',
+    compactSide: 'bottom'
+  },
 
   // ---- Customers ----
-  { route: CUSTOMERS, section: 'secCustomers', wide: '[data-tour="co-directory"]', compact: '[data-tour="co-directory-head"]', titleKey: 's15Title', bodyKey: 's15Body', side: 'right', compactSide: 'bottom' },
+  {
+    route: CUSTOMERS,
+    section: 'secCustomers',
+    wide: '[data-tour="co-directory"]',
+    compact: '[data-tour="co-directory-head"]',
+    titleKey: 's15Title',
+    bodyKey: 's15Body',
+    side: 'right',
+    compactSide: 'bottom'
+  },
 
   // ---- Sales reports ----
-  { route: SALES, section: 'secSales', nav: 'analytics', titleKey: 's16Title', bodyKey: 's16Body' },
-  { route: SALES, section: 'secSales', wide: '[data-tour="sr-hero"]', compact: '[data-tour="sr-hero-head"]', titleKey: 's17Title', bodyKey: 's17Body', side: 'bottom', align: 'start' },
-  { route: SALES, section: 'secSales', wide: '[data-tour="sr-stats"]', titleKey: 's18Title', bodyKey: 's18Body', side: 'bottom', align: 'start' },
+  {
+    route: SALES,
+    section: 'secSales',
+    nav: 'analytics',
+    titleKey: 's16Title',
+    bodyKey: 's16Body'
+  },
+  {
+    route: SALES,
+    section: 'secSales',
+    wide: '[data-tour="sr-hero"]',
+    compact: '[data-tour="sr-hero-head"]',
+    titleKey: 's17Title',
+    bodyKey: 's17Body',
+    side: 'bottom',
+    align: 'start'
+  },
+  {
+    route: SALES,
+    section: 'secSales',
+    wide: '[data-tour="sr-stats"]',
+    titleKey: 's18Title',
+    bodyKey: 's18Body',
+    side: 'bottom',
+    align: 'start'
+  },
   // One attribute, two elements: the aside at >=lg, the header button below it. Only one exists.
-  { route: SALES, section: 'secSales', wide: '[data-tour="sr-entry"]', titleKey: 's19Title', bodyKey: 's19Body', side: 'left', compactSide: 'bottom' },
+  {
+    route: SALES,
+    section: 'secSales',
+    wide: '[data-tour="sr-entry"]',
+    titleKey: 's19Title',
+    bodyKey: 's19Body',
+    side: 'left',
+    compactSide: 'bottom'
+  },
 
   // ---- Store settings ----
-  { route: PROFILE, section: 'secSettings', nav: 'settings', titleKey: 's20Title', bodyKey: 's20Body' },
-  { route: PROFILE, section: 'secSettings', wide: '[data-tour="pf-personal"]', compact: '[data-tour="pf-personal-head"]', titleKey: 's21Title', bodyKey: 's21Body', side: 'bottom', align: 'start' },
-  { route: PROFILE, section: 'secSettings', wide: '[data-tour="pf-photo"]', compact: '[data-tour="pf-photo-head"]', titleKey: 's22Title', bodyKey: 's22Body', side: 'left', compactSide: 'bottom' },
-  { route: PROFILE, section: 'secSettings', wide: '[data-tour="pf-details"]', compact: '[data-tour="pf-details-head"]', titleKey: 's23Title', bodyKey: 's23Body', side: 'top', compactSide: 'bottom' },
-  { route: PROFILE, section: 'secSettings', wide: '[data-tour="pf-security"]', titleKey: 's24Title', bodyKey: 's24Body', side: 'top' },
-  { route: PROFILE, section: 'secSettings', wide: '[data-tour="pf-help"]', titleKey: 's25Title', bodyKey: 's25Body', side: 'top' }
+  {
+    route: PROFILE,
+    section: 'secSettings',
+    nav: 'settings',
+    titleKey: 's20Title',
+    bodyKey: 's20Body'
+  },
+  {
+    route: PROFILE,
+    section: 'secSettings',
+    wide: '[data-tour="pf-personal"]',
+    compact: '[data-tour="pf-personal-head"]',
+    titleKey: 's21Title',
+    bodyKey: 's21Body',
+    side: 'bottom',
+    align: 'start'
+  },
+  {
+    route: PROFILE,
+    section: 'secSettings',
+    wide: '[data-tour="pf-photo"]',
+    compact: '[data-tour="pf-photo-head"]',
+    titleKey: 's22Title',
+    bodyKey: 's22Body',
+    side: 'left',
+    compactSide: 'bottom'
+  },
+  {
+    route: PROFILE,
+    section: 'secSettings',
+    wide: '[data-tour="pf-details"]',
+    compact: '[data-tour="pf-details-head"]',
+    titleKey: 's23Title',
+    bodyKey: 's23Body',
+    side: 'top',
+    compactSide: 'bottom'
+  },
+  {
+    route: PROFILE,
+    section: 'secSettings',
+    wide: '[data-tour="pf-security"]',
+    titleKey: 's24Title',
+    bodyKey: 's24Body',
+    side: 'top'
+  },
+  {
+    route: PROFILE,
+    section: 'secSettings',
+    wide: '[data-tour="pf-help"]',
+    titleKey: 's25Title',
+    bodyKey: 's25Body',
+    side: 'top'
+  }
 ]
 
 let tour = null
@@ -316,12 +610,15 @@ let navigating = false
 
 // A nav step points at the sidebar item on desktop and the bottom tab on phones and
 // tablets; everything else uses its own wide/compact pair.
-const selectorFor = (def) => {
-  if (def.nav) return isCompact.value ? `[data-tour="mnav-${def.nav}"]` : `[data-tour="nav-${def.nav}"]`
+const selectorFor = def => {
+  if (def.nav)
+    return isCompact.value
+      ? `[data-tour="mnav-${def.nav}"]`
+      : `[data-tour="nav-${def.nav}"]`
   return (isCompact.value && def.compact) || def.wide
 }
 
-const sideFor = (def) => {
+const sideFor = def => {
   if (def.nav) return isCompact.value ? 'top' : 'right'
   if (isCompact.value) return def.compactSide || def.side || 'bottom'
   return def.side || 'bottom'
@@ -330,8 +627,10 @@ const sideFor = (def) => {
 // Driver only waits when the element is missing, so a generous budget costs nothing on a
 // step whose target is already there. The first step of each page gets the longer one,
 // since that page is still mounting and fetching when the step begins.
-const waitFor = (index) =>
-  index === 0 || STEP_DEFS[index].route !== STEP_DEFS[index - 1].route ? 4000 : 1000
+const waitFor = index =>
+  index === 0 || STEP_DEFS[index].route !== STEP_DEFS[index - 1].route
+    ? 4000
+    : 1000
 
 const buildSteps = () =>
   STEP_DEFS.map((def, index) => ({
@@ -345,7 +644,7 @@ const buildSteps = () =>
     }
   }))
 
-const ensureRoute = async (path) => {
+const ensureRoute = async path => {
   if (!path || route.path === path) return
   await router.push(path)
   await nextTick()
@@ -359,7 +658,7 @@ const closeTour = () => {
   }
 }
 
-const finishTour = (state) => {
+const finishTour = state => {
   closeTour()
   setTutorialState(state)
   if (state === TUTORIAL_COMPLETED) showFinish.value = true
@@ -386,11 +685,12 @@ const buildLangSwitch = () => {
     const button = document.createElement('button')
     button.type = 'button'
     button.className = 'tour-pop-lang-option'
-    if (lang.value === option.value) button.classList.add('tour-pop-lang-option--active')
+    if (lang.value === option.value)
+      button.classList.add('tour-pop-lang-option--active')
     button.setAttribute('aria-pressed', String(lang.value === option.value))
     button.textContent = option.value === 'en' ? 'EN' : 'FIL'
     button.title = option.label
-    button.addEventListener('click', (event) => {
+    button.addEventListener('click', event => {
       event.stopPropagation()
       if (lang.value !== option.value) setLanguage(option.value)
     })
@@ -427,7 +727,8 @@ const startTour = async () => {
     // Names the area the step belongs to, so 25 steps across seven pages stay legible,
     // and puts the language switch on the same line.
     onPopoverRender: (popover, opts) => {
-      const index = opts?.index ?? opts?.state?.activeIndex ?? tour?.getActiveIndex() ?? 0
+      const index =
+        opts?.index ?? opts?.state?.activeIndex ?? tour?.getActiveIndex() ?? 0
       const def = STEP_DEFS[index]
       if (!def || !popover?.title?.parentElement) return
       const head = document.createElement('div')
@@ -519,7 +820,11 @@ const goDashboard = () => {
 watch(isCompact, () => {
   if (!tour?.isActive()) return
   const index = tour.getActiveIndex() ?? 0
-  tour.setConfig({ ...tour.getConfig(), stagePadding: isCompact.value ? 4 : 6, steps: buildSteps() })
+  tour.setConfig({
+    ...tour.getConfig(),
+    stagePadding: isCompact.value ? 4 : 6,
+    steps: buildSteps()
+  })
   tour.drive(index)
 })
 
@@ -535,7 +840,7 @@ watch(lang, () => {
 })
 
 // The Replay button on the profile page bumps this counter.
-watch(replaySignal, (value) => {
+watch(replaySignal, value => {
   if (value > 0) startTour()
 })
 
@@ -749,7 +1054,10 @@ onBeforeUnmount(() => {
 
   box-shadow: var(--sh-brand);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .tour-btn--primary:hover {
@@ -1091,27 +1399,41 @@ body.body--dark.vendor-dark-mode .driver-popover.tindahan-tour-popover {
 
 /* driver.css paints the arrow white on whichever side is showing; the other three sides are
    already transparent there, so only the visible one has to be re-tinted to the card. */
-body.body--dark.vendor-dark-mode .tindahan-tour-popover .driver-popover-arrow-side-left {
+body.body--dark.vendor-dark-mode
+  .tindahan-tour-popover
+  .driver-popover-arrow-side-left {
   border-left-color: #111a2e;
 }
 
-body.body--dark.vendor-dark-mode .tindahan-tour-popover .driver-popover-arrow-side-right {
+body.body--dark.vendor-dark-mode
+  .tindahan-tour-popover
+  .driver-popover-arrow-side-right {
   border-right-color: #111a2e;
 }
 
-body.body--dark.vendor-dark-mode .tindahan-tour-popover .driver-popover-arrow-side-top {
+body.body--dark.vendor-dark-mode
+  .tindahan-tour-popover
+  .driver-popover-arrow-side-top {
   border-top-color: #111a2e;
 }
 
-body.body--dark.vendor-dark-mode .tindahan-tour-popover .driver-popover-arrow-side-bottom {
+body.body--dark.vendor-dark-mode
+  .tindahan-tour-popover
+  .driver-popover-arrow-side-bottom {
   border-bottom-color: #111a2e;
 }
 
 /* The same lit gradient the layout gives .dialog-icon and the pages give .info-icon, instead
    of the flat light-mode tint, which reads muddy against navy. */
 body.body--dark.vendor-dark-mode .tour-dialog .tour-done-icon {
-  background: linear-gradient(145deg, rgba(74, 222, 128, 0.24) 0%, rgba(74, 222, 128, 0.08) 100%);
-  box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.28), 0 0 18px rgba(74, 222, 128, 0.26);
+  background: linear-gradient(
+    145deg,
+    rgba(74, 222, 128, 0.24) 0%,
+    rgba(74, 222, 128, 0.08) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(74, 222, 128, 0.28),
+    0 0 18px rgba(74, 222, 128, 0.26);
   color: #86efac;
 }
 

@@ -1,7 +1,6 @@
 <template>
   <AuthShell class="login-page">
     <div class="login-content">
-
       <h1>{{ t('Sign up') }}</h1>
 
       <p class="subtitle">
@@ -13,7 +12,6 @@
         class="login-form"
         @submit.prevent="handleRegister"
       >
-
         <!-- FIRST / LAST NAME -->
         <div class="name-row">
           <div class="field-group">
@@ -28,7 +26,10 @@
               class="login-input"
               reactive-rules
               :rules="[
-                val => !firstNameTouched || !!val?.trim() || t('First name is required.'),
+                val =>
+                  !firstNameTouched ||
+                  !!val?.trim() ||
+                  t('First name is required.'),
                 val => !firstNameTouched || nameRule(val)
               ]"
               @blur="firstNameTouched = true"
@@ -47,7 +48,10 @@
               class="login-input"
               reactive-rules
               :rules="[
-                val => !lastNameTouched || !!val?.trim() || t('Last name is required.'),
+                val =>
+                  !lastNameTouched ||
+                  !!val?.trim() ||
+                  t('Last name is required.'),
                 val => !lastNameTouched || nameRule(val)
               ]"
               @blur="lastNameTouched = true"
@@ -135,15 +139,16 @@
           >
             <template #append>
               <q-icon
-                :name="showPassword
-                  ? 'o_visibility'
-                  : 'o_visibility_off'"
+                :name="showPassword ? 'o_visibility' : 'o_visibility_off'"
                 class="password-icon cursor-pointer"
                 @click="showPassword = !showPassword"
               />
             </template>
           </q-input>
-          <div v-if="passwordStrong" class="field-message field-message-success">
+          <div
+            v-if="passwordStrong"
+            class="field-message field-message-success"
+          >
             <q-icon name="o_check_circle" size="12px" />
             {{ t('Strong password.') }}
           </div>
@@ -165,16 +170,24 @@
           >
             <template #append>
               <q-icon
-                :name="showConfirmPassword
-                  ? 'o_visibility'
-                  : 'o_visibility_off'"
+                :name="
+                  showConfirmPassword ? 'o_visibility' : 'o_visibility_off'
+                "
                 class="password-icon cursor-pointer"
                 @click="showConfirmPassword = !showConfirmPassword"
               />
             </template>
           </q-input>
-          <div v-if="confirmPasswordMessage" class="field-message" :class="`field-message-${confirmPasswordMessage.type}`">
-            <q-icon v-if="confirmPasswordMessage.type === 'success'" name="o_check_circle" size="12px" />
+          <div
+            v-if="confirmPasswordMessage"
+            class="field-message"
+            :class="`field-message-${confirmPasswordMessage.type}`"
+          >
+            <q-icon
+              v-if="confirmPasswordMessage.type === 'success'"
+              name="o_check_circle"
+              size="12px"
+            />
             {{ t(confirmPasswordMessage.text) }}
           </div>
         </div>
@@ -194,7 +207,6 @@
           :loading="loading"
           :disable="!canRegister"
         />
-
       </q-form>
 
       <!-- LOGIN LINK -->
@@ -214,20 +226,27 @@
 
       <!-- TERMS -->
       <p class="terms">
-        <span class="terms-intro">{{ t('By signing up, you agree to our') }}</span>
+        <span class="terms-intro">{{
+          t('By signing up, you agree to our')
+        }}</span>
         <span class="terms-links">
-          <a href="#" @click.prevent="showTerms = true">{{ t('Terms and Conditions') }}</a>
+          <a href="#" @click.prevent="showTerms = true">{{
+            t('Terms and Conditions')
+          }}</a>
           {{ t('and') }}
-          <span class="terms-policy"><a href="#" @click.prevent="showPrivacy = true">{{ t('Privacy Policy') }}</a>.</span>
+          <span class="terms-policy"
+            ><a href="#" @click.prevent="showPrivacy = true">{{
+              t('Privacy Policy')
+            }}</a
+            >.</span
+          >
         </span>
       </p>
-
     </div>
 
     <!-- LEGAL MODALS -->
     <TermsModal v-model="showTerms" />
     <PrivacyModal v-model="showPrivacy" />
-
   </AuthShell>
 </template>
 
@@ -237,7 +256,10 @@ import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
-import { PASSWORD_REQUIREMENTS, validatePassword } from '@/utils/passwordValidation'
+import {
+  PASSWORD_REQUIREMENTS,
+  validatePassword
+} from '@/utils/passwordValidation'
 import TermsModal from '@/components/modals/TermsModal.vue'
 import PrivacyModal from '@/components/modals/PrivacyModal.vue'
 import BirthdayInput from '@/components/shared/BirthdayInput.vue'
@@ -270,8 +292,11 @@ const form = reactive({
 const nameRule = val =>
   /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(val) || t('Only letters are allowed.')
 
-const emailRule = val => /.+@.+\..+/.test(val) || t('Enter a valid email address.')
-const phoneRule = val => /^09\d{9}$/.test(val) || t('Mobile number must start with 09 and contain 11 digits.')
+const emailRule = val =>
+  /.+@.+\..+/.test(val) || t('Enter a valid email address.')
+const phoneRule = val =>
+  /^09\d{9}$/.test(val) ||
+  t('Mobile number must start with 09 and contain 11 digits.')
 const passwordRule = val => validatePassword(val, t)
 
 const birthdayRule = val => isValidBirthday(val) || t('Enter a valid birthday.')
@@ -285,23 +310,34 @@ const phoneTouched = ref(false)
 const passwordTouched = ref(false)
 
 // Shown once the password passes its rule, the same positive state as Change Password on the profile page.
-const passwordStrong = computed(() => !!form.password && passwordRule(form.password) === true)
+const passwordStrong = computed(
+  () => !!form.password && passwordRule(form.password) === true
+)
 
 // Confirm Password uses its own message (not Quasar's :rules) to show a positive "Passwords match" state, not just errors.
 const confirmPasswordMessage = computed(() => {
   if (!form.confirmPassword) return null
-  if (form.confirmPassword !== form.password) return { type: 'error', text: 'Passwords do not match.' }
+  if (form.confirmPassword !== form.password)
+    return { type: 'error', text: 'Passwords do not match.' }
   return { type: 'success', text: 'Passwords match.' }
 })
 
-const canRegister = computed(() =>
-  !!form.firstName.trim() && nameRule(form.firstName) === true &&
-  !!form.lastName.trim() && nameRule(form.lastName) === true &&
-  !!form.birthday && birthdayRule(form.birthday) === true &&
-  !!form.email && emailRule(form.email) === true &&
-  !!form.phoneNumber && phoneRule(form.phoneNumber) === true &&
-  !!form.password && passwordRule(form.password) === true &&
-  !!form.confirmPassword && form.confirmPassword === form.password
+const canRegister = computed(
+  () =>
+    !!form.firstName.trim() &&
+    nameRule(form.firstName) === true &&
+    !!form.lastName.trim() &&
+    nameRule(form.lastName) === true &&
+    !!form.birthday &&
+    birthdayRule(form.birthday) === true &&
+    !!form.email &&
+    emailRule(form.email) === true &&
+    !!form.phoneNumber &&
+    phoneRule(form.phoneNumber) === true &&
+    !!form.password &&
+    passwordRule(form.password) === true &&
+    !!form.confirmPassword &&
+    form.confirmPassword === form.password
 )
 
 const handleRegister = async () => {
@@ -342,15 +378,18 @@ const handleRegister = async () => {
         role: 'Consumer'
       }
     })
-
   } catch (error) {
     loading.value = false
     if (error.response && error.response.status === 422) {
       const errors = error.response.data.errors
       const firstError = Object.values(errors || {})[0]
-      registerError.value = firstError?.[0] || 'Validation failed. Please check your inputs.'
+      registerError.value =
+        firstError?.[0] || 'Validation failed. Please check your inputs.'
     } else {
-      registerError.value = error.response?.data?.message || error.message || 'Something went wrong.'
+      registerError.value =
+        error.response?.data?.message ||
+        error.message ||
+        'Something went wrong.'
     }
   } finally {
     loading.value = false
@@ -519,7 +558,10 @@ const goToLogin = () => {
 
   box-shadow: var(--sh-brand);
 
-  transition: background-color 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .login-button:not(.disabled):hover {
@@ -633,7 +675,6 @@ const goToLogin = () => {
 /* MOBILE */
 
 @media (max-width: 600px) {
-
   .login-content {
     max-width: 100%;
   }
@@ -688,4 +729,5 @@ const goToLogin = () => {
     padding-inline: 6px;
     margin-inline: -6px;
   }
-}</style>
+}
+</style>

@@ -126,7 +126,7 @@ const routes = [
       }
     ]
   },
-  
+
   // ----- Protected Vendor Routes (VendorLayout) -----
   {
     path: '/vendor',
@@ -135,39 +135,39 @@ const routes = [
     children: [
       {
         path: 'dashboard',
-        component: () => import('@/pages/Vendor/VendorDashboard.vue'),
+        component: () => import('@/pages/Vendor/VendorDashboard.vue')
       },
       {
         path: 'notifications',
-        component: () => import('@/pages/Vendor/VendorNotifications.vue'),
+        component: () => import('@/pages/Vendor/VendorNotifications.vue')
       },
       {
         path: 'products/list',
-        component: () => import('@/pages/Vendor/Products/ProductList.vue'),
+        component: () => import('@/pages/Vendor/Products/ProductList.vue')
       },
       {
         path: 'products/categories',
-        component: () => import('@/pages/Vendor/Products/ProductCategory.vue'),
+        component: () => import('@/pages/Vendor/Products/ProductCategory.vue')
       },
       {
         path: 'profile',
-        component: () => import('@/pages/Vendor/VendorProfile.vue'),
+        component: () => import('@/pages/Vendor/VendorProfile.vue')
       },
       {
         path: 'sales',
-        component: () => import('@/pages/Vendor/VendorSales.vue'),
+        component: () => import('@/pages/Vendor/VendorSales.vue')
       },
       {
         path: 'orders/list',
-        component: () => import('@/pages/Vendor/Orders/OrderList.vue'),
+        component: () => import('@/pages/Vendor/Orders/OrderList.vue')
       },
       {
         path: 'orders/customers',
-        component: () => import('@/pages/Vendor/Orders/CustomerOrders.vue'),
+        component: () => import('@/pages/Vendor/Orders/CustomerOrders.vue')
       },
       {
         path: 'orders/:id',
-        component: () => import('@/pages/Vendor/Orders/OrderDetails.vue'),
+        component: () => import('@/pages/Vendor/Orders/OrderDetails.vue')
       }
     ]
   },
@@ -177,43 +177,42 @@ const routes = [
     path: '/admin',
     component: () => import('@/layouts/AdminLayout.vue'),
     meta: { requiresAuth: true, role: 'Admin' },
-children: [
+    children: [
+      {
+        path: '',
+        redirect: '/admin/dashboard'
+      },
 
-  {
-    path: '',
-    redirect: '/admin/dashboard'
-  },
+      {
+        path: 'dashboard',
+        component: () => import('@/pages/Admin/AdminDashboard.vue')
+      },
 
-  {
-    path: 'dashboard',
-    component: () => import('@/pages/Admin/AdminDashboard.vue')
-  },
+      {
+        path: 'approvals',
+        component: () => import('@/pages/Admin/AdminApprovals.vue')
+      },
 
-  {
-    path: 'approvals',
-    component: () => import('@/pages/Admin/AdminApprovals.vue')
-  },
+      {
+        path: 'vendors',
+        component: () => import('@/pages/Admin/AdminVendors.vue')
+      },
 
-  {
-    path: 'vendors',
-    component: () => import('@/pages/Admin/AdminVendors.vue')
-  },
+      {
+        path: 'consumers',
+        component: () => import('@/pages/Admin/AdminConsumers.vue')
+      },
 
-  {
-    path: 'consumers',
-    component: () => import('@/pages/Admin/AdminConsumers.vue')
-  },
+      {
+        path: 'store-map',
+        component: () => import('@/pages/Admin/AdminStoreMap.vue')
+      },
 
-  {
-    path: 'store-map',
-    component: () => import('@/pages/Admin/AdminStoreMap.vue')
-  },
-
-  {
-    path: 'notifications',
-    component: () => import('@/pages/Admin/AdminNotifications.vue')
-  }
-]
+      {
+        path: 'notifications',
+        component: () => import('@/pages/Admin/AdminNotifications.vue')
+      }
+    ]
   },
 
   {
