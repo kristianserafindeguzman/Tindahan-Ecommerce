@@ -1,3 +1,5 @@
+import { selectConsumerOrder } from '../src/utils/consumerOrderSelection.js'
+import { createNotificationStore } from '../src/utils/notificationStore.js'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
@@ -282,14 +284,26 @@ test('consumer notification filters, live translation and read actions preserve 
     get: async () => ({ data: notices }),
     patch: async url => {
       calls.push(url)
+      const id = Number(url.split('/').at(-2))
+      notices.find(notice => notice.notification_id === id).is_read = true
     },
     post: async url => {
       calls.push(url)
+      notices.forEach(notice => {
+        notice.is_read = true
+      })
     }
   }
+  const notificationStore = createNotificationStore({
+    api,
+    role: 'Consumer',
+    getSession: () => ({ token: 'test-token', role: 'Consumer' })
+  })
   const component = await loadComponent(
     '../src/pages/Consumer/ConsumerNotifications.vue',
     {
+      selectConsumerOrder,
+      useNotifications: () => notificationStore,
       useConsumerLanguage,
       useRouter: () => ({ push: path => routes.push(path) }),
       useQuasar: () => ({ notify() {} }),

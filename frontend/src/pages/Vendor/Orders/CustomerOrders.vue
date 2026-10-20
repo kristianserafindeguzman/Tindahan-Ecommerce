@@ -401,6 +401,10 @@
 </template>
 
 <script setup>
+import {
+  useLiveResource,
+  backgroundOptions
+} from '@/composables/useLiveResource'
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { api } from '@/boot/axios'
 import { useQuasar } from 'quasar'
@@ -650,10 +654,13 @@ const formatDate = dateString => {
   })
 }
 
-const fetchCustomers = async () => {
-  customersLoading.value = true
+const fetchCustomers = async ({ background = false } = {}) => {
+  if (!background) customersLoading.value = true
   try {
-    const res = await api.get('/vendor/customers')
+    const res = await api.get(
+      '/vendor/customers',
+      backgroundOptions(background)
+    )
     customers.value = res.data || []
   } catch (error) {
     console.error('Failed to load customers', error)
@@ -756,6 +763,17 @@ const goToOrder = order => {
 }
 
 onMounted(fetchCustomers)
+useLiveResource('orders', async options => {
+  await fetchCustomers(options)
+  const customerId = selectedCustomer.value?.user_id
+  if (!customerId) return
+  const { data } = await api.get(
+    `/vendor/customers/${customerId}/orders`,
+    backgroundOptions(true)
+  )
+  if (selectedCustomer.value?.user_id === customerId)
+    customerOrders.value = data || []
+})
 </script>
 
 <style scoped>

@@ -64,6 +64,10 @@
 </template>
 
 <script setup>
+import {
+  useLiveResource,
+  backgroundOptions
+} from '@/composables/useLiveResource'
 import AuthShell from '@/components/auth/AuthShell.vue'
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -79,10 +83,10 @@ const { logout } = useAuth()
 const loading = ref(false)
 const showContactSupport = ref(false)
 
-const checkStatus = async () => {
-  loading.value = true
+const checkStatus = async ({ background = false } = {}) => {
+  if (!background) loading.value = true
   try {
-    const { data } = await api.get('/user')
+    const { data } = await api.get('/user', backgroundOptions(background))
 
     if (data.vendor_status) {
       localStorage.setItem('vendor_status', data.vendor_status)
@@ -107,6 +111,7 @@ const checkStatus = async () => {
 }
 
 onMounted(checkStatus)
+useLiveResource('profile', checkStatus)
 </script>
 
 <style scoped>

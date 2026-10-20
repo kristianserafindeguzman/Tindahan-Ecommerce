@@ -45,6 +45,8 @@ Route::post('/forgot-password/reset', [AuthController::class, 'resetPassword']);
 
 // ----- Authenticated Routes (Sanctum token required) -----
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/broadcasting/auth', [\App\Http\Controllers\RealtimeController::class, 'authenticate']);
+    Route::get('/realtime/config', [\App\Http\Controllers\RealtimeController::class, 'config']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     // ----- Global Category Routes -----

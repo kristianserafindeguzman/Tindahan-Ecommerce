@@ -423,6 +423,10 @@
 </template>
 
 <script setup>
+import {
+  useLiveResource,
+  backgroundOptions
+} from '@/composables/useLiveResource'
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
@@ -433,12 +437,14 @@ import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import { formatDistance, calculateDistanceMeters } from '@/utils/distance'
 import { formatPickupSlot } from '@/utils/pickupSlots'
+import { CONSUMER_ORDER_SELECTED } from '@/utils/consumerOrderSelection'
 
 const { t, locale } = useConsumerLanguage()
 
 const router = useRouter()
 const $q = useQuasar()
 const order = ref(null)
+const selectedOrderId = ref(localStorage.getItem('consumer_selected_order_id'))
 
 const showCancelDialog = ref(false)
 const isCancelling = ref(false)
@@ -675,20 +681,29 @@ watch(actionsBarEl, el => {
 
 onBeforeUnmount(() => actionsBarObserver?.disconnect())
 
-const fetchOrderDetails = async () => {
-  const id = localStorage.getItem('consumer_selected_order_id')
+let orderRequest = 0
+let disposed = false
+const fetchOrderDetails = async ({ background = false } = {}) => {
+  if (disposed) return
+  const requestId = ++orderRequest
+  const id = selectedOrderId.value
   if (!id) {
     router.replace('/consumer/orders')
     return
   }
 
   try {
-    const res = await api.get(`/consumer/orders/${id}`)
-    order.value = res.data
+    const res = await api.get(
+      `/consumer/orders/${id}`,
+      backgroundOptions(background)
+    )
+    if (requestId === orderRequest) order.value = res.data
   } catch (error) {
+    if (requestId !== orderRequest) return
     console.error('Failed to load order details', error)
     if (error.response?.status === 404 || error.response?.status === 403) {
-      localStorage.removeItem('consumer_selected_order_id')
+      if (localStorage.getItem('consumer_selected_order_id') === id)
+        localStorage.removeItem('consumer_selected_order_id')
       router.replace('/consumer/orders')
     }
   }
@@ -717,16 +732,23 @@ const confirmCancelOrder = async () => {
 }
 
 const isRefreshing = ref(false)
+let manualRefreshTicket = null
 
 // Always says what happened, so a refresh that finds nothing new doesn't look like a button that did nothing.
 const refreshOrder = async () => {
-  if (!order.value || isRefreshing.value) return
+  if (disposed || !order.value || isRefreshing.value) return
 
   const previousStatus = order.value.status
+  const requestId = ++orderRequest
+  const ticket = {}
+  manualRefreshTicket = ticket
   isRefreshing.value = true
 
   try {
-    const res = await api.get(`/consumer/orders/${order.value.order_id}`)
+    const res = await api.get(`/consumer/orders/${order.value.order_id}`, {
+      timeout: 15000
+    })
+    if (requestId !== orderRequest) return
     order.value = res.data
 
     if (res.data.status !== previousStatus) {
@@ -743,6 +765,7 @@ const refreshOrder = async () => {
       })
     }
   } catch (error) {
+    if (requestId !== orderRequest) return
     $q.notify({
       type: 'negative',
       message: t(
@@ -751,13 +774,33 @@ const refreshOrder = async () => {
       )
     })
   } finally {
-    isRefreshing.value = false
+    if (manualRefreshTicket === ticket) {
+      manualRefreshTicket = null
+      isRefreshing.value = false
+    }
   }
 }
 
+const onOrderSelected = () => {
+  selectedOrderId.value = localStorage.getItem('consumer_selected_order_id')
+  order.value = null
+  showCancelDialog.value = false
+  showReceiptDialog.value = false
+  manualRefreshTicket = null
+  isRefreshing.value = false
+  void fetchOrderDetails()
+}
+
 onMounted(() => {
+  window.addEventListener(CONSUMER_ORDER_SELECTED, onOrderSelected)
   fetchOrderDetails()
 })
+onBeforeUnmount(() => {
+  disposed = true
+  orderRequest++
+  window.removeEventListener(CONSUMER_ORDER_SELECTED, onOrderSelected)
+})
+useLiveResource('orders', fetchOrderDetails)
 </script>
 
 <style scoped>

@@ -23,6 +23,14 @@ api.interceptors.response.use(
   response => response,
   error => {
     if (error.response) {
+      // A delayed failure from an old socket/session must not log out a new account.
+      const requestToken = error.config?.headers?.Authorization
+      if (
+        requestToken &&
+        requestToken !== `Bearer ${localStorage.getItem('auth_token')}`
+      ) {
+        return Promise.reject(error)
+      }
       const status = error.response.status
       const errorCode = error.response.data?.error_code
 

@@ -21,7 +21,7 @@ async function mountDashboard(t) {
       /import\s*\{([^}]+)\}\s*from\s*['"]vue['"]/g,
       (_, names) => 'const {' + names.replace(/\s+as\s+/g, ':') + '} = Vue'
     )
-    .replace(/^import[^\n]*\r?\n/gm, '')
+    .replace(/import[\s\S]*?from\s*['"][^'"]+['"];?/g, '')
     .replace('export default', 'return')
   const pending = []
   const intervals = new Map()
@@ -41,6 +41,8 @@ async function mountDashboard(t) {
     }
   }
   const deps = {
+    useLiveResource: () => {},
+    backgroundOptions: () => ({}),
     api,
     useRouter: () => ({ push() {} }),
     useQuasar: () => ({ screen: { lt: { md: false } } }),

@@ -214,6 +214,11 @@
 </template>
 
 <script setup>
+import { selectConsumerOrder } from '@/utils/consumerOrderSelection'
+import {
+  useLiveResource,
+  backgroundOptions
+} from '@/composables/useLiveResource'
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 
 import { ref, computed, onMounted } from 'vue'
@@ -254,11 +259,16 @@ const displayedOrders = computed(() =>
   activeTab.value === 'active' ? activeOrders.value : pastOrders.value
 )
 
-const fetchOrders = async () => {
-  loading.value = true
+let orderRequest = 0
+const fetchOrders = async ({ background = false } = {}) => {
+  if (!background) loading.value = true
+  const requestId = ++orderRequest
   try {
-    const { data } = await api.get('/consumer/orders')
-    orders.value = data
+    const { data } = await api.get(
+      '/consumer/orders',
+      backgroundOptions(background)
+    )
+    if (requestId === orderRequest) orders.value = data
   } catch (error) {
     console.error('Failed to load orders', error)
   } finally {
@@ -304,7 +314,7 @@ const formatStatus = status => {
 }
 
 const viewOrder = order => {
-  localStorage.setItem('consumer_selected_order_id', order.order_id)
+  selectConsumerOrder(order.order_id)
   router.push('/consumer/orders/details')
 }
 
@@ -345,6 +355,7 @@ const reorderItems = async order => {
   })
   router.push('/consumer/cart')
 }
+useLiveResource('orders', fetchOrders)
 </script>
 
 <style scoped>

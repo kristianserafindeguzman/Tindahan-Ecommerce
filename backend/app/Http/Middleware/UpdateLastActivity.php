@@ -17,7 +17,10 @@ class UpdateLastActivity
     {
         $response = $next($request);
 
-        if ($request->user()) {
+        $passive = $request->is('api/realtime/*', 'api/broadcasting/*')
+            || ($request->isMethod('GET') && $request->header('X-Background-Sync') === '1');
+
+        if ($request->user() && ! $passive) {
             $request->user()->update([
                 'last_activity_at' => now(),
             ]);

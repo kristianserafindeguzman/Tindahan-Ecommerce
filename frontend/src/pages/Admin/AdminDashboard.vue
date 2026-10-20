@@ -330,6 +330,10 @@
 </template>
 
 <script setup>
+import {
+  useLiveResource,
+  backgroundOptions
+} from '@/composables/useLiveResource'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -827,12 +831,15 @@ const activity = computed(() => {
 const listOf = res =>
   Array.isArray(res.data) ? res.data : res.data?.data || []
 
-const loadDashboard = async () => {
+const loadDashboard = async ({ background = false } = {}) => {
   try {
     const [statsRes, appsRes, consumersRes] = await Promise.all([
-      api.get('/admin/stats'),
-      api.get('/admin/vendors/pending'),
-      api.get('/admin/consumers', { params: { tab: 'active' } })
+      api.get('/admin/stats', backgroundOptions(background)),
+      api.get('/admin/vendors/pending', backgroundOptions(background)),
+      api.get('/admin/consumers', {
+        ...backgroundOptions(background),
+        params: { tab: 'active' }
+      })
     ])
     stats.value = { ...stats.value, ...statsRes.data }
     applications.value = listOf(appsRes)
@@ -840,10 +847,11 @@ const loadDashboard = async () => {
     loadedAt.value = new Date()
   } catch (error) {
     console.error('Failed to load the admin dashboard', error)
-    $q.notify({
-      type: 'negative',
-      message: t('failedLoad')
-    })
+    if (!background)
+      $q.notify({
+        type: 'negative',
+        message: t('failedLoad')
+      })
   } finally {
     loading.value = false
   }
@@ -890,6 +898,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => clearInterval(clockTimer))
+useLiveResource(['applications', 'notifications'], loadDashboard)
 </script>
 
 <style scoped>

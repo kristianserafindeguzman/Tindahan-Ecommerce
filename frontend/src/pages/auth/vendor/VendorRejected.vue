@@ -54,9 +54,13 @@
 </template>
 
 <script setup>
+import {
+  useLiveResource,
+  backgroundOptions
+} from '@/composables/useLiveResource'
 import AuthShell from '@/components/auth/AuthShell.vue'
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 import { useAuth } from '@/composables/useAuth'
@@ -65,6 +69,7 @@ import ContactSupportModal from '@/components/modals/ContactSupportModal.vue'
 const { t } = useConsumerLanguage()
 
 const route = useRoute()
+const router = useRouter()
 const { logout } = useAuth()
 
 const showContactSupport = ref(false)
@@ -72,9 +77,15 @@ const rejectionReason = ref('')
 const rejectedBy = ref('')
 const loading = ref(true)
 
-const fetchReason = async () => {
+const fetchReason = async ({ background = false } = {}) => {
   try {
-    const { data } = await api.get('/user')
+    const { data } = await api.get('/user', backgroundOptions(background))
+    if (data.vendor_status)
+      localStorage.setItem('vendor_status', data.vendor_status)
+    if (data.vendor_status === 'approved') {
+      await router.replace('/vendor/dashboard')
+      return
+    }
     rejectionReason.value = data.rejection_reason || route.query.reason || ''
     rejectedBy.value = data.rejected_by || route.query.rejected_by || ''
   } catch (error) {
@@ -87,6 +98,7 @@ const fetchReason = async () => {
 }
 
 onMounted(fetchReason)
+useLiveResource('profile', fetchReason)
 </script>
 
 <style scoped>
