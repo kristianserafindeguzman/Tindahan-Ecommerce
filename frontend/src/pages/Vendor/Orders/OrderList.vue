@@ -317,6 +317,10 @@
 </template>
 
 <script setup>
+import {
+  useLiveResource,
+  backgroundOptions
+} from '@/composables/useLiveResource'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -585,16 +589,21 @@ const exportOrders = async () => {
   }
 }
 
-onMounted(async () => {
+let orderRequest = 0
+const fetchOrders = async ({ background = false } = {}) => {
+  const requestId = ++orderRequest
   try {
-    const res = await api.get('/vendor/orders')
-    if (res.data) orders.value = res.data.data || res.data
+    const res = await api.get('/vendor/orders', backgroundOptions(background))
+    if (requestId === orderRequest && res.data)
+      orders.value = res.data.data || res.data
   } catch (error) {
     console.error('Failed to load orders', error)
   } finally {
     loading.value = false
   }
-})
+}
+onMounted(fetchOrders)
+useLiveResource('orders', fetchOrders)
 </script>
 
 <style scoped>

@@ -144,42 +144,36 @@
 </template>
 
 <script setup>
+import { selectConsumerOrder } from '@/utils/consumerOrderSelection'
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import SiteHeader from '@/components/consumer/SiteHeader.vue'
 import SiteFooter from '@/components/consumer/SiteFooter.vue'
 import '@/css/vendor-pages.scss'
-import { api } from '@/boot/axios'
 import {
   notificationPresentation,
   notificationTime,
   consumerNotificationText
 } from '@/utils/notificationPresentation'
-import {
-  NOTIFICATION_READ_STATE_EVENT,
-  applyNotificationReadState,
-  publishNotificationReadState
-} from '@/utils/notificationSync'
+import { useNotifications } from '@/composables/useNotifications'
 
 const { t, locale } = useConsumerLanguage()
 
 const router = useRouter()
 const $q = useQuasar()
 
-const notifications = ref([])
-const loading = ref(true)
+const {
+  notifications,
+  loading,
+  unreadCount,
+  fetchNotifications,
+  markAsRead: persistRead,
+  markAllAsRead: persistAll
+} = useNotifications('Consumer')
 const markingAll = ref(false)
-
-const syncNotificationReadState = event => {
-  applyNotificationReadState(notifications.value, event.detail)
-}
-
-const unreadCount = computed(
-  () => notifications.value.filter(n => !n.is_read).length
-)
 
 const relativeTime = value => notificationTime(value, t, locale.value)
 
@@ -274,32 +268,11 @@ const formatClock = value => {
       })
 }
 
-const fetchNotifications = async () => {
-  loading.value = true
-  try {
-    const { data } = await api.get('/consumer/notifications')
-    notifications.value = Array.isArray(data) ? data : data?.data || []
-  } catch (error) {
-    console.error('Failed to load notifications', error)
-    notifications.value = []
-  } finally {
-    loading.value = false
-  }
-}
-
 // Mark locally for an immediate row update, then restore it if persistence fails.
-const markRead = async notif => {
-  if (notif.is_read) return
-  notif.is_read = true
+const markRead = async notification => {
   try {
-    await api.patch(`/consumer/notifications/${notif.notification_id}/read`)
-    publishNotificationReadState({
-      notificationId: notif.notification_id,
-      isRead: true
-    })
-  } catch (error) {
-    notif.is_read = false
-    console.error('Failed to mark notification as read', error)
+    await persistRead(notification)
+  } catch {
     $q.notify({
       type: 'negative',
       message: t('Could not mark notifications as read')
@@ -309,23 +282,16 @@ const markRead = async notif => {
 
 const openOrder = async notif => {
   await markRead(notif)
-  localStorage.setItem('consumer_selected_order_id', notif.order_id)
+  selectConsumerOrder(notif.order_id)
   router.push('/consumer/orders/details')
 }
 
 const markAllAsRead = async () => {
+  if (markingAll.value) return
   markingAll.value = true
-  const previous = notifications.value.map(n => n.is_read)
-  notifications.value.forEach(n => {
-    n.is_read = true
-  })
   try {
-    await api.post('/consumer/notifications/read-all')
-    publishNotificationReadState({ all: true, isRead: true })
+    await persistAll()
   } catch {
-    notifications.value.forEach((n, i) => {
-      n.is_read = previous[i]
-    })
     $q.notify({
       type: 'negative',
       message: t('Could not mark notifications as read')
@@ -336,18 +302,7 @@ const markAllAsRead = async () => {
 }
 
 onMounted(() => {
-  window.addEventListener(
-    NOTIFICATION_READ_STATE_EVENT,
-    syncNotificationReadState
-  )
   fetchNotifications()
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener(
-    NOTIFICATION_READ_STATE_EVENT,
-    syncNotificationReadState
-  )
 })
 </script>
 <style scoped>

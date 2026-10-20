@@ -715,6 +715,7 @@
 </template>
 
 <script setup>
+import { selectConsumerOrder } from '@/utils/consumerOrderSelection'
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
@@ -744,11 +745,7 @@ import {
   notificationTime,
   consumerNotificationText
 } from '@/utils/notificationPresentation'
-import {
-  NOTIFICATION_READ_STATE_EVENT,
-  applyNotificationReadState,
-  publishNotificationReadState
-} from '@/utils/notificationSync'
+import { useNotifications } from '@/composables/useNotifications'
 
 const { t, locale } = useConsumerLanguage()
 
@@ -926,10 +923,6 @@ const toggleAccountMenu = () => {
 }
 
 onMounted(() => {
-  window.addEventListener(
-    NOTIFICATION_READ_STATE_EVENT,
-    syncNotificationReadState
-  )
   // Search suggestions reuse already-fetched products, stores and categories, so the header only fetches them on the session's first page.
   if (!products.value.length) fetchProducts()
   if (!stores.value.length) fetchStores()
@@ -948,10 +941,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener(
-    NOTIFICATION_READ_STATE_EVENT,
-    syncNotificationReadState
-  )
   clearTimeout(locationHintTimer)
 })
 
@@ -964,17 +953,16 @@ const userAvatar = computed(() => {
   }
 })
 
-const notifications = ref([])
-const unreadNotificationCount = computed(
-  () => notifications.value.filter(n => !n.is_read).length
-)
+const {
+  notifications,
+  unreadCount: unreadNotificationCount,
+  fetchNotifications,
+  markAsRead: persistRead,
+  markAllAsRead: persistAll
+} = useNotifications('Consumer')
 
 const notificationsMenuOpen = ref(false)
 const markingNotifications = ref(false)
-
-const syncNotificationReadState = event => {
-  applyNotificationReadState(notifications.value, event.detail)
-}
 
 // Like handleCartIconClick, below md the bell opens the notifications page instead of the ten-row preview.
 const toggleNotificationsMenu = () => {
@@ -989,36 +977,17 @@ const toggleNotificationsMenu = () => {
   if (notificationsMenuOpen.value) fetchNotifications()
 }
 
-const fetchNotifications = async () => {
-  if (!isLoggedIn.value) return
-  try {
-    const res = await api.get('/consumer/notifications')
-    notifications.value = Array.isArray(res.data) ? res.data : []
-  } catch (err) {
-    console.error('Failed to fetch notifications', err)
-  }
-}
-
-const markAsRead = async id => {
-  const notif = notifications.value.find(n => n.notification_id === id)
-  if (notif && !notif.is_read) {
-    notif.is_read = true
-    try {
-      await api.patch(`/consumer/notifications/${id}/read`)
-      publishNotificationReadState({ notificationId: id, isRead: true })
-    } catch (err) {
-      notif.is_read = false
-      console.error('Failed to mark notification as read', err)
-    }
-  }
-}
+const markAsRead = id =>
+  persistRead(id).catch(error =>
+    console.error('Failed to mark notification as read', error)
+  )
 
 const handleNotificationClick = async notif => {
   if (!notif.is_read) {
     await markAsRead(notif.notification_id)
   }
   if (notif.order_id) {
-    localStorage.setItem('consumer_selected_order_id', notif.order_id)
+    selectConsumerOrder(notif.order_id)
     notificationsMenuOpen.value = false
     router.push('/consumer/orders/details')
   }
@@ -1027,16 +996,9 @@ const handleNotificationClick = async notif => {
 const markAllAsRead = async () => {
   if (markingNotifications.value) return
   markingNotifications.value = true
-  const previous = notifications.value.map(n => n.is_read)
-  notifications.value.forEach(n => (n.is_read = true))
   try {
-    await api.post('/consumer/notifications/read-all')
-    publishNotificationReadState({ all: true, isRead: true })
-  } catch (err) {
-    notifications.value.forEach((n, index) => {
-      n.is_read = previous[index]
-    })
-    console.error('Failed to mark all notifications as read', err)
+    await persistAll()
+  } catch {
     $q.notify({
       type: 'negative',
       message: t('Could not mark notifications as read')

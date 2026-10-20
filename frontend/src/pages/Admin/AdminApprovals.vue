@@ -231,6 +231,10 @@
 </template>
 
 <script setup>
+import {
+  useLiveResource,
+  backgroundOptions
+} from '@/composables/useLiveResource'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
@@ -413,17 +417,21 @@ const onDecided = ({ storeId, status, reason }) => {
   if (reason) app.rejection_reason = reason
 }
 
-const fetchApplications = async () => {
-  loading.value = true
+const fetchApplications = async ({ background = false } = {}) => {
+  if (!background) loading.value = true
   try {
-    const { data } = await api.get('/admin/vendors/pending')
+    const { data } = await api.get(
+      '/admin/vendors/pending',
+      backgroundOptions(background)
+    )
     applications.value = Array.isArray(data) ? data : data?.data || []
   } catch (error) {
     console.error('Failed to load applications', error)
-    $q.notify({
-      type: 'negative',
-      message: t('loadError')
-    })
+    if (!background)
+      $q.notify({
+        type: 'negative',
+        message: t('loadError')
+      })
   } finally {
     loading.value = false
   }
@@ -462,6 +470,7 @@ const handleExport = async () => {
 }
 
 onMounted(fetchApplications)
+useLiveResource('applications', fetchApplications)
 </script>
 
 <style scoped>

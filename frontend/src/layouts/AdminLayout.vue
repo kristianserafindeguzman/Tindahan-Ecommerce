@@ -365,7 +365,6 @@ const localizedBottomTabs = computed(() => {
 })
 
 const { unreadCount, fetchNotifications } = useAdminNotifications()
-let notificationTimer = null
 
 onMounted(() => {
   try {
@@ -376,11 +375,9 @@ onMounted(() => {
   }
 
   fetchNotifications()
-  notificationTimer = setInterval(fetchNotifications, 60000)
 })
 
 onBeforeUnmount(() => {
-  clearInterval(notificationTimer)
   setDarkMode(false)
 })
 

@@ -479,6 +479,10 @@
 </template>
 
 <script setup>
+import {
+  useLiveResource,
+  backgroundOptions
+} from '@/composables/useLiveResource'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { api } from '@/boot/axios'
@@ -900,19 +904,23 @@ const openDirections = () => {
 
 let lastRequest = 0
 
-const fetchOrderDetails = async () => {
+const fetchOrderDetails = async ({ background = false } = {}) => {
   const id = props.orderId || route.params.id
   if (!id) return
 
   const requestId = ++lastRequest
-  loadError.value = false
+  if (!background) loadError.value = false
   try {
-    const res = await api.get(`/vendor/orders/${id}`)
+    const res = await api.get(
+      `/vendor/orders/${id}`,
+      backgroundOptions(background)
+    )
     // A slower answer for an order that is no longer open is dropped.
     if (requestId === lastRequest) order.value = res.data
   } catch (error) {
     console.error('Failed to load order details', error)
-    if (requestId === lastRequest) loadError.value = true
+    if (requestId === lastRequest && (!background || !order.value))
+      loadError.value = true
   }
 }
 
@@ -938,6 +946,7 @@ watch(
 )
 
 onMounted(fetchOrderDetails)
+useLiveResource('orders', fetchOrderDetails)
 </script>
 
 <style scoped>

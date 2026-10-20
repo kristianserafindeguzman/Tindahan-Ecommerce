@@ -75,18 +75,14 @@
 </template>
 
 <script setup>
+import { selectConsumerOrder } from '@/utils/consumerOrderSelection'
 import { useConsumerLanguage } from '@/composables/useConsumerLanguage'
 
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
-import { api } from '@/boot/axios'
 import { consumerNotificationText } from '@/utils/notificationPresentation'
-import {
-  NOTIFICATION_READ_STATE_EVENT,
-  applyNotificationReadState,
-  publishNotificationReadState
-} from '@/utils/notificationSync'
+import { useNotifications } from '@/composables/useNotifications'
 
 const { t } = useConsumerLanguage()
 
@@ -105,34 +101,21 @@ const anchorTarget = computed(() => props.anchorTarget)
 
 const MAX_SHOWN = 10
 
-const notifications = ref([])
+const {
+  notifications,
+  loading,
+  unreadCount,
+  fetchNotifications,
+  markAsRead: persistRead,
+  markAllAsRead: persistAll
+} = useNotifications('Consumer')
 const open = ref(false)
-
-const syncNotificationReadState = event => {
-  applyNotificationReadState(notifications.value, event.detail)
-}
-
-const unreadCount = computed(
-  () => notifications.value.filter(n => !n.is_read).length
-)
 
 const ariaLabel = computed(() =>
   unreadCount.value
     ? t('Notifications, {count} unread', { count: unreadCount.value })
     : t('Notifications')
 )
-
-const isLoggedIn = () => !!localStorage.getItem('auth_token')
-
-const fetchNotifications = async () => {
-  if (!isLoggedIn()) return
-  try {
-    const res = await api.get('/consumer/notifications')
-    notifications.value = res.data
-  } catch (error) {
-    console.error('Failed to fetch notifications', error)
-  }
-}
 
 // This instance only renders in the compact header, so it always opens the notifications page, like the cart icon.
 const toggle = () => {
@@ -146,38 +129,25 @@ const toggle = () => {
 }
 
 onMounted(() => {
-  window.addEventListener(
-    NOTIFICATION_READ_STATE_EVENT,
-    syncNotificationReadState
-  )
   fetchNotifications()
 })
 
-onBeforeUnmount(() => {
-  window.removeEventListener(
-    NOTIFICATION_READ_STATE_EVENT,
-    syncNotificationReadState
-  )
-})
-
 // Mark locally for an immediate badge update, then restore it if persistence fails.
-const markAsRead = async id => {
-  const notif = notifications.value.find(n => n.notification_id === id)
-  if (!notif || notif.is_read) return
-  notif.is_read = true
+const markAsRead = async notification => {
   try {
-    await api.patch(`/consumer/notifications/${id}/read`)
-    publishNotificationReadState({ notificationId: id, isRead: true })
-  } catch (error) {
-    notif.is_read = false
-    console.error('Failed to mark notification as read', error)
+    await persistRead(notification)
+  } catch {
+    $q.notify({
+      type: 'negative',
+      message: t('Could not mark notifications as read')
+    })
   }
 }
 
 const select = async notif => {
   if (!notif.is_read) await markAsRead(notif.notification_id)
   if (notif.order_id) {
-    localStorage.setItem('consumer_selected_order_id', notif.order_id)
+    selectConsumerOrder(notif.order_id)
     open.value = false
     router.push('/consumer/orders/details')
   }
@@ -189,18 +159,9 @@ const goToAll = () => {
 }
 
 const markAllAsRead = async () => {
-  const previous = notifications.value.map(n => n.is_read)
-  notifications.value.forEach(n => {
-    n.is_read = true
-  })
   try {
-    await api.post('/consumer/notifications/read-all')
-    publishNotificationReadState({ all: true, isRead: true })
-  } catch (error) {
-    notifications.value.forEach((n, index) => {
-      n.is_read = previous[index]
-    })
-    console.error('Failed to mark all notifications as read', error)
+    await persistAll()
+  } catch {
     $q.notify({
       type: 'negative',
       message: t('Could not mark notifications as read')

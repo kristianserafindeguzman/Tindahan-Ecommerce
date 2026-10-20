@@ -535,6 +535,10 @@
 </template>
 
 <script setup>
+import {
+  useLiveResource,
+  backgroundOptions
+} from '@/composables/useLiveResource'
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -1300,6 +1304,17 @@ const refreshForecast = async () => {
     mlForecast.value.refreshing = false
   }
 }
+useLiveResource('orders', async () => {
+  const { data } = await api.get('/vendor/stats', backgroundOptions(true))
+  stats.value = {
+    placed_orders: data.placed_orders || 0,
+    preparing_orders: data.preparing_orders || 0,
+    picked_up_orders: data.picked_up_orders || 0,
+    cancelled_orders: data.cancelled_orders || 0
+  }
+  recentOrders.value = data.recent_orders || []
+  await fetchChartData({ background: true })
+})
 </script>
 
 <style scoped>

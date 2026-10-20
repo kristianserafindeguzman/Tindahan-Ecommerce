@@ -1,52 +1,17 @@
-import { ref, computed } from 'vue'
-import { api } from '@/boot/axios'
+import { useNotifications } from '@/composables/useNotifications'
 
-// One shared list for the whole admin area, so the phone bar, the banner bell and the notifications page always agree.
-const notifications = ref([])
-const loading = ref(false)
-
-const unreadCount = computed(
-  () => notifications.value.filter(n => !n.is_read).length
-)
-
-const fetchNotifications = async () => {
-  loading.value = true
-  try {
-    const { data } = await api.get('/admin/notifications')
-    notifications.value = Array.isArray(data) ? data : data?.data || []
-  } catch (error) {
-    console.error('Failed to fetch notifications', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-// Marks one as read straight away and puts it back if the server refuses.
-const markAsRead = async notification => {
-  if (notification.is_read) return
-  notification.is_read = true
-  try {
-    await api.patch(`/admin/notifications/${notification.notification_id}/read`)
-  } catch (error) {
-    notification.is_read = false
-    console.error('Failed to mark notification as read', error)
-  }
-}
-
-const markAllAsRead = async () => {
-  const unread = notifications.value.filter(n => !n.is_read)
-  unread.forEach(n => {
-    n.is_read = true
-  })
-  try {
-    await api.post('/admin/notifications/read-all')
-  } catch (error) {
-    unread.forEach(n => {
-      n.is_read = false
-    })
-    console.error('Failed to mark all notifications as read', error)
-  }
-}
+const feed = useNotifications('Admin')
+const { notifications, loading, unreadCount, fetchNotifications } = feed
+const markAsRead = notification =>
+  feed
+    .markAsRead(notification)
+    .catch(error => console.error('Failed to mark notification as read', error))
+const markAllAsRead = () =>
+  feed
+    .markAllAsRead()
+    .catch(error =>
+      console.error('Failed to mark notifications as read', error)
+    )
 
 // Short relative times, such as "5m ago" or "2d ago".
 const timeAgo = dateString => {

@@ -2,6 +2,7 @@ const AUTH_KEYS = [
   'auth_token',
   'auth_user',
   'auth_role',
+  'vendor_status',
   'consumer_selected_order_id'
 ]
 
@@ -10,4 +11,6 @@ export function clearAuthStorage() {
   for (const key of AUTH_KEYS) {
     localStorage.removeItem(key)
   }
+  if (typeof window !== 'undefined')
+    window.dispatchEvent(new Event('auth-session-changed'))
 }
