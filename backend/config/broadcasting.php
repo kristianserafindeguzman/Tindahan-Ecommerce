@@ -9,7 +9,12 @@ return [
             'key' => 'tindahan',
             'secret' => '',
             'app_id' => 'tindahan',
-            'options' => ['host' => '127.0.0.1', 'port' => 8080, 'scheme' => 'http', 'useTLS' => false],
+            'options' => [
+                'host' => env('REVERB_PUBLISH_HOST', '127.0.0.1'),
+                'port' => (int) env('REVERB_PUBLISH_PORT', 8080),
+                'scheme' => env('REVERB_PUBLISH_SCHEME', 'http'),
+                'useTLS' => env('REVERB_PUBLISH_SCHEME', 'http') === 'https',
+            ],
             'client_options' => ['connect_timeout' => 1, 'timeout' => 2],
         ],
         'log' => ['driver' => 'log'],

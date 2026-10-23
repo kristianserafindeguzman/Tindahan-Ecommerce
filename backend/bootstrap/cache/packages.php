@@ -25,9 +25,9 @@
       0 => 'Laravel\\Pao\\Laravel\\ServiceProvider',
     ),
   ),
-  'laravel/reverb' =>
+  'laravel/reverb' => 
   array (
-    'providers' =>
+    'providers' => 
     array (
       0 => 'Laravel\\Reverb\\ApplicationManagerServiceProvider',
       1 => 'Laravel\\Reverb\\ReverbServiceProvider',

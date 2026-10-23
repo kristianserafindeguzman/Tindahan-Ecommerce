@@ -242,7 +242,7 @@
     'Illuminate\\Concurrency\\ConcurrencyServiceProvider' => 
     array (
     ),
-    'Illuminate\\Image\\ImageServiceProvider' =>
+    'Illuminate\\Image\\ImageServiceProvider' => 
     array (
     ),
     'Illuminate\\Hashing\\HashServiceProvider' => 
@@ -269,7 +269,7 @@
     'Illuminate\\Validation\\ValidationServiceProvider' => 
     array (
     ),
-    'Laravel\\Reverb\\ApplicationManagerServiceProvider' =>
+    'Laravel\\Reverb\\ApplicationManagerServiceProvider' => 
     array (
     ),
     'Laravel\\Tinker\\TinkerServiceProvider' => 
